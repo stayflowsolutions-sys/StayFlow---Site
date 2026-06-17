@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>StayFlow | Smart Stay Solutions</title>
+<title>StayFlow</title>
 
 <style>
 
@@ -12,78 +14,114 @@
     margin:0;
     padding:0;
     box-sizing:border-box;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family:Arial, Helvetica, sans-serif;
 }
+
 
 body{
     background:#000;
     color:white;
-    min-height:100vh;
     overflow-x:hidden;
 }
 
-/* brilho de fundo bem discreto */
+
+/* nébula suave */
+
 body::before{
+
     content:"";
     position:fixed;
-    width:500px;
-    height:500px;
-    background:radial-gradient(circle, rgba(0,140,255,0.12), transparent 70%);
-    top:20%;
+
+    width:450px;
+    height:450px;
+
+    top:15%;
     left:50%;
+
     transform:translateX(-50%);
-    filter:blur(80px);
+
+    background:
+    radial-gradient(circle,
+    rgba(0,140,255,0.10),
+    transparent 70%);
+
+    filter:blur(100px);
+
     z-index:-1;
+
 }
 
 
-/* NAV */
 
-nav{
+/* HEADER */
+
+header{
+
     height:90px;
+
     display:flex;
     align-items:center;
-    justify-content:space-between;
+    justify-content:center;
+
     padding:0 8%;
+
 }
 
 
-/* LOGO sem caixa */
+
+/* LOGO SEM QUADRADO */
 
 .logo{
-    font-size:32px;
-    font-weight:700;
-    letter-spacing:-1px;
+
+    font-size:38px;
+    font-weight:800;
+
     color:white;
+
+    letter-spacing:-2px;
+
 }
 
+
 .logo span{
+
     color:#008cff;
+
 }
+
+
+
 
 
 /* HERO */
 
 .hero{
 
-    min-height:80vh;
+    min-height:75vh;
+
     display:flex;
     flex-direction:column;
-    align-items:center;
     justify-content:center;
+    align-items:center;
+
     text-align:center;
-    padding:40px 20px;
+
+    padding:30px 20px;
 
 }
+
 
 
 .hero h1{
 
     font-size:64px;
+
     max-width:850px;
+
     line-height:1.05;
 
 }
+
 
 
 .hero h1 span{
@@ -93,31 +131,46 @@ nav{
 }
 
 
+
 .hero p{
 
     margin-top:25px;
-    max-width:600px;
-    color:#9ca3af;
+
+    max-width:620px;
+
+    color:#a1a1aa;
+
     font-size:20px;
+
     line-height:1.5;
 
 }
 
 
-/* BOTAO */
 
-.btn{
+/* BOTÃO */
+
+.button{
 
     margin-top:40px;
-    padding:16px 35px;
-    border-radius:30px;
+
+    padding:16px 40px;
+
+    border-radius:40px;
+
     background:#008cff;
+
     color:white;
+
     text-decoration:none;
+
     font-weight:bold;
-    box-shadow:0 0 25px rgba(0,140,255,0.35);
+
+    box-shadow:
+    0 0 25px rgba(0,140,255,0.25);
 
 }
+
 
 
 /* CARDS */
@@ -125,88 +178,74 @@ nav{
 .cards{
 
     display:flex;
+
     justify-content:center;
+
     gap:25px;
+
     flex-wrap:wrap;
-    padding:60px 8%;
+
+    padding:50px 8%;
 
 }
+
 
 
 .card{
 
     width:280px;
+
     padding:35px;
 
-    background:#050505;
+    background:#030303;
 
     border-radius:20px;
 
-    position:relative;
 
-    border:1px solid rgba(0,140,255,0.25);
+    /* só linha fina */
+
+    border:1px solid rgba(0,140,255,0.35);
+
 
     box-shadow:
-    inset 0 0 15px rgba(0,140,255,0.05);
+    inset 0 0 20px rgba(0,140,255,0.04);
 
 }
 
-
-/* linha azul fina na borda */
-
-.card::before{
-
-    content:"";
-    position:absolute;
-    inset:0;
-
-    border-radius:20px;
-
-    padding:1px;
-
-    background:
-    linear-gradient(90deg,
-    rgba(0,140,255,0.7),
-    transparent 40%,
-    transparent 60%,
-    rgba(0,140,255,0.7));
-
-    -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-
-    -webkit-mask-composite:xor;
-
-    mask-composite:exclude;
-
-}
 
 
 .card h3{
 
-    margin-bottom:15px;
     color:#008cff;
 
+    margin-bottom:15px;
+
 }
+
 
 
 .card p{
 
     color:#9ca3af;
+
     line-height:1.5;
 
 }
 
 
-/* RESPONSIVO */
+
+
 
 @media(max-width:700px){
 
 .hero h1{
+
 font-size:42px;
+
 }
 
 }
+
 
 </style>
 
@@ -216,13 +255,15 @@ font-size:42px;
 <body>
 
 
-<nav>
+<header>
 
 <div class="logo">
+
 Stay<span>Flow</span>
+
 </div>
 
-</nav>
+</header>
 
 
 
@@ -230,23 +271,27 @@ Stay<span>Flow</span>
 
 
 <h1>
+
 AI powered <span>reservation engine</span>
-for modern stays
+
 </h1>
 
 
 <p>
-Automate guest conversations, increase bookings and save time with intelligent AI assistance.
+
+Smart automation for stays. More bookings, less work.
+
 </p>
 
 
-<a class="btn" href="#">
+<a class="button" href="#">
+
 Book a Demo
+
 </a>
 
 
 </section>
-
 
 
 
@@ -255,41 +300,32 @@ Book a Demo
 
 <div class="card">
 
-<h3>
-AI Assistant
-</h3>
+<h3>AI Assistant</h3>
 
 <p>
-Your guests get instant answers 24/7 through smart automation.
+Answer guests instantly with intelligent automation.
 </p>
 
 </div>
 
 
-
 <div class="card">
 
-<h3>
-Instant Replies
-</h3>
+<h3>Instant Replies</h3>
 
 <p>
-Never lose a booking because of slow response times.
+Never miss opportunities because of slow responses.
 </p>
 
 </div>
 
 
-
-
 <div class="card">
 
-<h3>
-More Bookings
-</h3>
+<h3>More Bookings</h3>
 
 <p>
-Turn conversations into reservations automatically.
+Convert conversations into reservations.
 </p>
 
 </div>
@@ -298,6 +334,6 @@ Turn conversations into reservations automatically.
 </section>
 
 
-
 </body>
+
 </html>
