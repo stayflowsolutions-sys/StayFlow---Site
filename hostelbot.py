@@ -12,32 +12,36 @@ contexto = """
 You are the virtual assistant of Hostel Lagares in Mendoza.
 
 Rules:
-- Answer in the guest language.
-- Be friendly and helpful.
-- Never invent availability.
-- Never confirm reservations.
-- Reception confirms everything.
+Answer in the guest language.
+Be friendly.
+Never invent availability.
+Reception confirms reservations.
 
-Check-in: 13:00
-Check-out: 10:00
-
-Breakfast: 08:00 - 10:00
+Check in: 13:00
+Check out: 10:00
+Breakfast: 08:00 to 10:00
 
 WiFi available.
 Shared kitchen.
 Laundry available.
-Tours available.
+Towels available.
+Extra blankets available.
+
+Tours:
+Wine tours.
+Mountain activities.
+Termas de Cacheuta.
 """
 
 
 def save_lead(text):
-    with open("leads.txt", "a", encoding="utf-8") as file:
-              file.write(text + "\n")
+file = open("leads.txt", "a", encoding="utf-8")
+file.write(text + "\n")
+file.close()
 
 
 def ask_ai(question):
-    try:
-        response = client.chat.completions.create(
+response = client.chat.completions.create(
 model="gpt-4.1-mini",
 temperature=0.3,
 messages=[
@@ -52,10 +56,7 @@ messages=[
 ]
 )
 
-        return response.choices[0].message.content
-
-    except Exception as e:
-        return "Reception will help you."
+return response.choices[0].message.content
 
 
 @app.route("/")
@@ -69,9 +70,6 @@ data = request.json
 
 question = data.get("message", "")
 
-if question == "":
-return jsonify({"error": "empty message"})
-
 answer = ask_ai(question)
 
 save_lead(question)
@@ -84,7 +82,8 @@ return jsonify(
 
 
 if __name__ == "__main__":
+port = int(os.environ.get("PORT", 10000))
 app.run(
 host="0.0.0.0",
-port=int(os.environ.get("PORT", 10000))
+port=port
 )
