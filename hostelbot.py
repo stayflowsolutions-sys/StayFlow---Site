@@ -43,13 +43,13 @@ Adventure activities.
 
 def save_lead(text):
 
-with open(
+    with open(
 "leads.txt",
 "a",
 encoding="utf-8"
 ) as file:
 
-file.write(text + "\n")
+        file.write(text + "\n")
 
 
 def ask_ai(question):
