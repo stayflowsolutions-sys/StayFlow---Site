@@ -18,48 +18,28 @@ Rules:
 - Never confirm reservations.
 - Reception confirms everything.
 
-Information:
-
 Check-in: 13:00
 Check-out: 10:00
 
-Breakfast included:
-08:00 - 10:00
+Breakfast: 08:00 - 10:00
 
 WiFi available.
 Shared kitchen.
 Laundry available.
-Towels available.
-Extra blankets available.
-
-Tours:
-Wine tours.
-Classic tours.
-Mountain activities.
-Termas de Cacheuta.
-Adventure activities.
+Tours available.
 """
 
 
 def save_lead(text):
-
-    with open(
-"leads.txt",
-"a",
-encoding="utf-8"
-) as file:
-
-        file.write(text + "\n")
+with open("leads.txt", "a", encoding="utf-8") as file:
+file.write(text + "\n")
 
 
 def ask_ai(question):
-
+try:
 response = client.chat.completions.create(
-
 model="gpt-4.1-mini",
-
 temperature=0.3,
-
 messages=[
 {
 "role": "system",
@@ -74,6 +54,9 @@ messages=[
 
 return response.choices[0].message.content
 
+except Exception as e:
+return "Reception will help you."
+
 
 @app.route("/")
 def home():
@@ -82,22 +65,16 @@ return "HostelBot online"
 
 @app.route("/message", methods=["POST"])
 def message():
-
 data = request.json
 
-question = data.get(
-"message",
-""
-)
+question = data.get("message", "")
 
-if not question:
-return jsonify(
-{"error": "No message"}
-)
-
+if question == "":
+return jsonify({"error": "empty message"})
 
 answer = ask_ai(question)
 
+save_lead(question)
 
 return jsonify(
 {
@@ -107,13 +84,7 @@ return jsonify(
 
 
 if __name__ == "__main__":
-
 app.run(
 host="0.0.0.0",
-port=int(
-os.environ.get(
-"PORT",
-10000
-)
-)
+port=int(os.environ.get("PORT", 10000))
 )
