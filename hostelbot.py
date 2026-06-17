@@ -74,8 +74,8 @@ answer = ask_ai(question)
 
 save_lead(question)
 
-return jsonify(
-{        
+    return jsonify(
+        {        
             "reply": answer
 }
 )
