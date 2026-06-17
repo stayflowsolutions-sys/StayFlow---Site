@@ -31,8 +31,8 @@ Tours available.
 
 
 def save_lead(text):
-with open("leads.txt", "a", encoding="utf-8") as file:
-file.write(text + "\n")
+    with open("leads.txt", "a", encoding="utf-8") as file:
+              file.write(text + "\n")
 
 
 def ask_ai(question):
