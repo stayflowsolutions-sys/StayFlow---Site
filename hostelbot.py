@@ -35,28 +35,28 @@ Termas de Cacheuta.
 
 
 def save_lead(text):
-file = open("leads.txt", "a", encoding="utf-8")
-file.write(text + "\n")
-file.close()
+    file = open("leads.txt", "a", encoding="utf-8")
+    file.write(text + "\n")
+    file.close()
 
 
 def ask_ai(question):
-response = client.chat.completions.create(
-model="gpt-4.1-mini",
-temperature=0.3,
-messages=[
-{
-"role": "system",
-"content": contexto
-},
-{
-"role": "user",
-"content": question
-}
-]
-)
-
-return response.choices[0].message.content
+    response = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        temperature=0.3,
+        messages=[
+            {
+                "role": "system",
+                "content": contexto
+            },
+            {
+                "role": "user",
+                "content": question
+            }
+        ]
+    )
+  
+    return response.choices[0].message.content
 
 
 @app.route("/")
