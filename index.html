@@ -17,32 +17,12 @@ overflow-x:hidden;
 }
 
 
-/* PAGE BLUE LIGHT */
-
-body::before{
-content:"";
-position:fixed;
-inset:0;
-pointer-events:none;
-
-background:
-linear-gradient(to bottom, #0D6EFD70, transparent 20%),
-linear-gradient(to top, #0D6EFD50, transparent 20%),
-linear-gradient(to right, #0D6EFD50, transparent 18%),
-linear-gradient(to left, #0D6EFD50, transparent 18%);
-
-filter:blur(45px);
-z-index:0;
-}
-
-
 .container{
 max-width:1100px;
 margin:auto;
 padding:70px 25px;
 text-align:center;
 position:relative;
-z-index:1;
 }
 
 
