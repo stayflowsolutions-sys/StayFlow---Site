@@ -61,12 +61,12 @@ def ask_ai(question):
 
 @app.route("/")
 def home():
-return "HostelBot online"
+    return "HostelBot online"
 
 
 @app.route("/message", methods=["POST"])
 def message():
-data = request.json
+    data = request.json
 
 question = data.get("message", "")
 
@@ -75,8 +75,8 @@ answer = ask_ai(question)
 save_lead(question)
 
 return jsonify(
-{
-"reply": answer
+{        
+            "reply": answer
 }
 )
 
