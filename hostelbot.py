@@ -64,6 +64,12 @@ def home():
     return "HostelBot online"
 
 
+@app.route("/test")
+def test():
+    answer = ask_ai("Hi, i want to book a private room")
+    return answer
+
+
 @app.route("/message", methods=["POST"])
 def message():
     data = request.json
