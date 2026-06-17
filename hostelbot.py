@@ -36,8 +36,8 @@ def save_lead(text):
 
 
 def ask_ai(question):
-try:
-response = client.chat.completions.create(
+    try:
+        response = client.chat.completions.create(
 model="gpt-4.1-mini",
 temperature=0.3,
 messages=[
@@ -52,10 +52,10 @@ messages=[
 ]
 )
 
-return response.choices[0].message.content
+        return response.choices[0].message.content
 
-except Exception as e:
-return "Reception will help you."
+    except Exception as e:
+        return "Reception will help you."
 
 
 @app.route("/")
