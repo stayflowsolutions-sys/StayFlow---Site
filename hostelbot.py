@@ -68,17 +68,17 @@ def home():
 def message():
     data = request.json
 
-question = data.get("message", "")
+    question = data.get("message", "")
 
-answer = ask_ai(question)
+    answer = ask_ai(question)
 
-save_lead(question)
+    save_lead(question)
 
     return jsonify(
         {        
             "reply": answer
-}
-)
+        }
+    )
 
 
 if __name__ == "__main__":
