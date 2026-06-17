@@ -1,0 +1,6 @@
+2026-06-16 23:47:18.528635 | English | Private | 2 guests | 18/07/2026 | 21/07/2026
+2026-06-17 00:05:11.129677 | Spanish | Shared | 2 guests | 18/06/2026 | 21/06/2026
+2026-06-17 00:26:20.873242 | Portuguese | Shared | 2 guests | 25/07/2026 | 30/07/2026
+TYPE ROOM | Private | Guests: 2 | Checkin: 25/08/2026 | Checkout: 28/08/2026 | Name: joao gui | Phone: 1545434 | Email: caiodsjafhi@asdifad | Towels: 1 | Blankets: 2
+TYPE ROOM | Private | Guests: 2 | Checkin: 29/12/2026 | Checkout: 02/01/2027 | Name: joao gui | Phone: 165465 | Email: joaogui@gmail.com | Towels: 1 | Blankets: 1
+ROOM | Shared | Guests: 1 | Checkin: 11/11/2026 | Checkout: 12/11/2026 | Name: joao | Phone: 465465 | Email: scubaousfbaosf@gmail.com | Towels: 1 | Blankets: 1
