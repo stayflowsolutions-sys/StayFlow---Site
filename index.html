@@ -11,23 +11,47 @@ margin:0;
 font-family:Arial,sans-serif;
 background:#050505;
 color:white;
-background-image:
-radial-gradient(circle at top, #0D6EFD55 0%, transparent 35%);
+position:relative;
+min-height:100vh;
+overflow-x:hidden;
 }
+
+
+/* PAGE BLUE LIGHT */
+
+body::before{
+content:"";
+position:fixed;
+inset:0;
+pointer-events:none;
+
+background:
+linear-gradient(to bottom, #0D6EFD70, transparent 20%),
+linear-gradient(to top, #0D6EFD50, transparent 20%),
+linear-gradient(to right, #0D6EFD50, transparent 18%),
+linear-gradient(to left, #0D6EFD50, transparent 18%);
+
+filter:blur(45px);
+z-index:0;
+}
+
 
 .container{
 max-width:1100px;
 margin:auto;
 padding:70px 25px;
 text-align:center;
+position:relative;
+z-index:1;
 }
 
 
-/* HERO */
+/* LOGO */
 
 .logo-area{
 margin-bottom:50px;
 }
+
 
 .logo-area img{
 width:350px;
@@ -35,11 +59,14 @@ filter:drop-shadow(0 0 45px #0D6EFD);
 }
 
 
+/* HERO */
+
 h1{
 font-size:60px;
 line-height:1.1;
 margin:20px 0;
 }
+
 
 .hero-text{
 font-size:22px;
@@ -48,6 +75,7 @@ line-height:1.6;
 max-width:700px;
 margin:auto;
 }
+
 
 
 /* BUTTON */
@@ -69,6 +97,7 @@ box-shadow:0 0 35px #0D6EFD;
 a{
 text-decoration:none;
 }
+
 
 
 /* CARDS */
@@ -128,6 +157,9 @@ font-size:20px;
 line-height:1.7;
 }
 
+
+
+/* FOOTER */
 
 .footer{
 margin-top:70px;
