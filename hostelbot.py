@@ -1,12 +1,16 @@
 from flask import Flask, request, jsonify
 from openai import OpenAI
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
+
 
 contexto = """
 You are the virtual assistant of Hostel Lagares in Mendoza.
@@ -63,7 +67,10 @@ def message():
 
     data = request.json
 
-    question = data.get("message", "")
+    question = data.get(
+        "message",
+        ""
+    )
 
     answer = ask_ai(question)
 
@@ -76,7 +83,14 @@ def message():
 
 if __name__ == "__main__":
 
+    port = int(
+        os.environ.get(
+            "PORT",
+            10000
+        )
+    )
+
     app.run(
         host="0.0.0.0",
-        port=10000
+        port=port
     )
