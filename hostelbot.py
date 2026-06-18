@@ -15,9 +15,49 @@ client = OpenAI(
 
 
 MEMORY_FILE = "conversations.json"
+LEADS_FILE = "leads.txt"
+
+
+contexto = """
+You are the virtual assistant of Hostel Lagares in Mendoza.
+
+Your goal is to help guests and collect booking information.
+
+Rules:
+- Answer in the guest language.
+- Be friendly.
+- Never invent availability.
+- Do not transfer to reception unless guest asks or needs a human.
+- Help collect reservation details.
+
+When someone wants to book, ask naturally for:
+- name
+- arrival date
+- departure date
+- number of guests
+- room preference
+
+Save useful booking information.
+
+Check in: 13:00
+Check out: 10:00
+
+Breakfast: 08:00 to 10:00
+
+WiFi available.
+Shared kitchen.
+Laundry available.
+Towels available.
+
+Tours:
+Wine tours.
+Mountain activities.
+Termas de Cacheuta.
+"""
 
 
 def load_memory():
+
     if not os.path.exists(MEMORY_FILE):
         return {}
 
@@ -53,7 +93,6 @@ def save_message(phone, role, text):
 
     if phone not in memory:
         memory[phone] = {
-            "status": "AI",
             "messages": []
         }
 
@@ -66,38 +105,21 @@ def save_message(phone, role, text):
         }
     )
 
-
     save_memory(memory)
 
 
 
-contexto = """
-You are the virtual assistant of Hostel Lagares in Mendoza.
+def save_lead(phone, text):
 
-Rules:
-Answer in the guest language.
-Be friendly.
-Never invent availability.
-Reception confirms reservations.
+    with open(
+        LEADS_FILE,
+        "a",
+        encoding="utf-8"
+    ) as f:
 
-If the guest asks for human, reception or staff,
-say you are transferring them.
-
-Check in: 13:00
-Check out: 10:00
-
-Breakfast: 08:00 to 10:00
-
-WiFi available.
-Shared kitchen.
-Laundry available.
-Towels available.
-
-Tours:
-Wine tours.
-Mountain activities.
-Termas de Cacheuta.
-"""
+        f.write(
+            phone + " | " + text + "\n"
+        )
 
 
 
@@ -128,8 +150,8 @@ def ask_ai(phone, question):
 
         messages=[
             {
-                "role":"system",
-                "content":contexto
+                "role": "system",
+                "content": contexto
             }
         ]
         +
@@ -137,16 +159,14 @@ def ask_ai(phone, question):
         +
         [
             {
-                "role":"user",
-                "content":question
+                "role": "user",
+                "content": question
             }
         ]
-
     )
 
 
     return response.choices[0].message.content
-
 
 
 
@@ -178,6 +198,12 @@ def message():
     save_message(
         phone,
         "user",
+        text
+    )
+
+
+    save_lead(
+        phone,
         text
     )
 
