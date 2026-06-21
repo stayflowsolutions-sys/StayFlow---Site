@@ -7,7 +7,6 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
 <title>StayFlow | Dashboard</title>
 
 
@@ -15,14 +14,10 @@
 
 
 *{
-
 margin:0;
 padding:0;
 box-sizing:border-box;
-
 }
-
-
 
 
 
@@ -94,9 +89,9 @@ margin-bottom:45px;
 
 .brand-icon{
 
-width:42px;
+width:48px;
 
-height:42px;
+height:48px;
 
 display:flex;
 
@@ -104,17 +99,23 @@ align-items:center;
 
 justify-content:center;
 
-border-radius:12px;
+}
 
-background:#0D6EFD;
 
-color:white;
 
-font-weight:900;
 
-font-size:18px;
+.brand-icon img{
+
+width:48px;
+
+height:48px;
+
+object-fit:contain;
 
 }
+
+
+
 
 
 
@@ -131,13 +132,11 @@ letter-spacing:-1px;
 
 
 
-
 .brand-text span{
 
 color:#0D6EFD;
 
 }
-
 
 
 
@@ -160,8 +159,6 @@ border-radius:14px;
 margin-bottom:10px;
 
 }
-
-
 
 
 
@@ -189,9 +186,6 @@ padding:35px;
 
 
 
-
-
-
 .header{
 
 display:flex;
@@ -203,7 +197,6 @@ align-items:center;
 margin-bottom:35px;
 
 }
-
 
 
 
@@ -221,7 +214,6 @@ margin-top:8px;
 
 
 
-
 .system-status{
 
 color:#00d26a;
@@ -229,8 +221,6 @@ color:#00d26a;
 font-size:14px;
 
 }
-
-
 
 
 
@@ -271,8 +261,6 @@ transition:.2s;
 
 
 
-
-
 .card:hover{
 
 border-color:#0D6EFD;
@@ -284,7 +272,6 @@ transform:translateY(-4px);
 
 
 
-
 .card-title{
 
 color:#9ba3b2;
@@ -292,7 +279,6 @@ color:#9ba3b2;
 margin-bottom:15px;
 
 }
-
 
 
 
@@ -348,9 +334,7 @@ line-height:2;
 
 
 
-
 @media(max-width:800px){
-
 
 
 .dashboard-layout{
@@ -358,6 +342,7 @@ line-height:2;
 grid-template-columns:1fr;
 
 }
+
 
 
 
@@ -375,6 +360,7 @@ padding:20px;
 
 
 
+
 .menu{
 
 display:flex;
@@ -384,6 +370,8 @@ gap:8px;
 overflow-x:auto;
 
 }
+
+
 
 
 
@@ -399,11 +387,14 @@ margin-bottom:0;
 
 
 
+
 .main{
 
 padding:20px;
 
 }
+
+
 
 
 
@@ -421,14 +412,15 @@ gap:15px;
 
 
 
-
 }
 
 
 
 
-</style>
 
+
+
+</style>
 
 </head>
 
@@ -437,7 +429,6 @@ gap:15px;
 
 
 <body>
-
 
 
 
@@ -458,15 +449,26 @@ gap:15px;
 
 
 
+
 <div class="brand">
+
+
 
 
 
 <div class="brand-icon">
 
-SF
+
+
+<img src="logo.png" alt="StayFlow Logo">
+
+
 
 </div>
+
+
+
+
 
 
 
@@ -476,6 +478,7 @@ SF
 Stay<span>Flow</span>
 
 </div>
+
 
 
 
@@ -495,11 +498,14 @@ Stay<span>Flow</span>
 
 
 
+
+
 <a href="dashboard.html">
 
 Dashboard
 
 </a>
+
 
 
 
@@ -515,11 +521,13 @@ Inbox
 
 
 
+
 <a href="reservations.html">
 
 Reservations
 
 </a>
+
 
 
 
@@ -535,6 +543,7 @@ Statistics
 
 
 
+
 <a href="settings.html">
 
 Settings
@@ -545,8 +554,9 @@ Settings
 
 
 
-</nav>
 
+
+</nav>
 
 
 
@@ -571,13 +581,16 @@ Settings
 
 
 
+
 <div class="header">
 
 
 
 
 
+
 <div>
+
 
 
 
@@ -589,6 +602,8 @@ Dashboard
 
 
 
+
+
 <p>
 
 StayFlow hostel overview
@@ -597,7 +612,10 @@ StayFlow hostel overview
 
 
 
+
+
 </div>
+
 
 
 
@@ -629,7 +647,6 @@ StayFlow hostel overview
 
 
 <div class="cards">
-
 
 
 
@@ -700,6 +717,7 @@ Reservations
 
 
 
+
 <a class="card" href="statistics.html">
 
 
@@ -762,8 +780,6 @@ Occupancy
 
 
 
-
-
 </div>
 
 
@@ -783,6 +799,7 @@ Occupancy
 Recent Activity
 
 </h2>
+
 
 
 
@@ -809,7 +826,10 @@ Analytics available in Statistics.
 
 
 
+
 </section>
+
+
 
 
 
