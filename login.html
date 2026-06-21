@@ -13,13 +13,11 @@
 
 <style>
 
-
 *{
 margin:0;
 padding:0;
 box-sizing:border-box;
 }
-
 
 
 body{
@@ -34,9 +32,9 @@ font-family:Arial, Helvetica, sans-serif;
 
 display:flex;
 
-align-items:center;
-
 justify-content:center;
+
+align-items:center;
 
 overflow:hidden;
 
@@ -63,38 +61,6 @@ pointer-events:none;
 
 
 
-body::after{
-
-content:"";
-
-position:fixed;
-
-top:-300px;
-
-left:50%;
-
-transform:translateX(-50%);
-
-width:800px;
-
-height:800px;
-
-
-background:
-radial-gradient(
-circle,
-rgba(13,110,253,.12),
-transparent 70%
-);
-
-
-pointer-events:none;
-
-}
-
-
-
-
 .login-wrapper{
 
 width:100%;
@@ -108,8 +74,6 @@ position:relative;
 z-index:2;
 
 }
-
-
 
 
 
@@ -135,12 +99,7 @@ color:#0D6EFD;
 
 
 
-
-
-
-
 .login-card{
-
 
 background:#0d0f14;
 
@@ -151,13 +110,9 @@ border-radius:30px;
 padding:40px;
 
 box-shadow:
-
 0 0 45px rgba(13,110,253,.12);
 
 }
-
-
-
 
 
 
@@ -165,37 +120,31 @@ box-shadow:
 
 font-size:32px;
 
-margin-bottom:12px;
+margin-bottom:15px;
 
 }
 
 
 
-
-
-.login-subtitle{
+.login-text{
 
 color:#9ba3b2;
 
 line-height:1.6;
 
-margin-bottom:35px;
+margin-bottom:30px;
 
 }
 
 
 
-
-
-
-
-.login-label{
+label{
 
 display:block;
 
-font-size:14px;
-
 color:#9ba3b2;
+
+font-size:14px;
 
 margin-bottom:8px;
 
@@ -203,15 +152,13 @@ margin-bottom:8px;
 
 
 
-
-
-
-
-.login-input{
+input{
 
 width:100%;
 
 padding:16px;
+
+margin-bottom:20px;
 
 background:#050505;
 
@@ -221,19 +168,13 @@ border-radius:15px;
 
 color:white;
 
-font-size:16px;
-
-margin-bottom:20px;
-
 outline:none;
 
 }
 
 
 
-
-
-.login-input:focus{
+input:focus{
 
 border-color:#0D6EFD;
 
@@ -241,75 +182,44 @@ border-color:#0D6EFD;
 
 
 
-
-
-
-
-
-
-.login-submit{
-
+.login-btn{
 
 width:100%;
 
-
 padding:17px;
-
 
 border:none;
 
-
 border-radius:50px;
-
 
 background:#0D6EFD;
 
-
 color:white;
-
 
 font-size:18px;
 
-
 font-weight:bold;
-
 
 cursor:pointer;
 
-
-
 box-shadow:
-
 0 0 25px rgba(13,110,253,.35);
 
 }
 
 
 
+.back{
 
-
-
-
-
-.login-links{
+text-align:center;
 
 margin-top:25px;
-
-display:flex;
-
-flex-direction:column;
-
-align-items:center;
-
-gap:15px;
 
 }
 
 
 
-
-
-.login-links a{
+.back a{
 
 color:#9ba3b2;
 
@@ -318,42 +228,6 @@ text-decoration:none;
 font-size:14px;
 
 }
-
-
-
-
-
-.login-links a:hover{
-
-color:white;
-
-}
-
-
-
-
-
-
-
-@media(max-width:500px){
-
-
-.login-card{
-
-padding:30px;
-
-}
-
-
-.login-brand{
-
-font-size:36px;
-
-}
-
-
-}
-
 
 
 </style>
@@ -365,18 +239,22 @@ font-size:36px;
 <body>
 
 
+
 <div class="login-wrapper">
 
-<!-- LOGIN CARD -->
+
+<div class="login-brand">
+
+Stay<span>Flow</span>
+
+</div>
 
 
 <div class="login-card">
 
-
-
 <h1>
 
-Welcome
+Welcome Back
 
 </h1>
 
@@ -384,7 +262,7 @@ Welcome
 
 
 
-<p class="login-subtitle">
+<p class="login-text">
 
 Access your StayFlow workspace
 and manage your hostel operations.
@@ -397,13 +275,7 @@ and manage your hostel operations.
 
 
 
-<form>
-
-
-
-
-
-<label class="login-label">
+<label>
 
 Email
 
@@ -412,10 +284,7 @@ Email
 
 
 
-
 <input
-
-class="login-input"
 
 type="email"
 
@@ -429,8 +298,7 @@ placeholder="you@hostel.com"
 
 
 
-
-<label class="login-label">
+<label>
 
 Password
 
@@ -439,10 +307,7 @@ Password
 
 
 
-
 <input
-
-class="login-input"
 
 type="password"
 
@@ -459,9 +324,11 @@ placeholder="Enter your password"
 
 <button
 
-class="login-submit"
+class="login-btn"
 
-type="submit">
+type="button"
+
+onclick="window.location.href='dashboard.html'">
 
 Sign In
 
@@ -471,33 +338,11 @@ Sign In
 
 
 
-<form action="dashboard.html">
 
 
 
 
-
-
-
-
-
-<div class="login-links">
-
-
-
-
-
-<a href="#">
-
-Forgot password?
-
-</a>
-
-
-
-
-
-
+<div class="back">
 
 
 <a href="index.html">
@@ -508,9 +353,6 @@ Forgot password?
 
 
 
-
-
-
 </div>
 
 
@@ -520,7 +362,6 @@ Forgot password?
 
 
 </div>
-
 
 
 
