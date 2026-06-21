@@ -12,6 +12,7 @@
 
 <style>
 
+
 *{
 margin:0;
 padding:0;
@@ -29,6 +30,8 @@ font-family:Arial,Helvetica,sans-serif;
 
 
 
+
+
 .topbar{
 
 background:#0d0f14;
@@ -38,15 +41,20 @@ border-bottom:1px solid #1b2535;
 padding:18px 30px;
 
 display:flex;
-align-items:center;
+
 justify-content:space-between;
 
+align-items:center;
+
 position:sticky;
+
 top:0;
 
 z-index:10;
 
 }
+
+
 
 
 
@@ -59,9 +67,11 @@ gap:12px;
 }
 
 
+
 .brand img{
 
 width:45px;
+
 height:45px;
 
 object-fit:contain;
@@ -70,9 +80,12 @@ object-fit:contain;
 
 
 
+
+
 .brand-name{
 
 font-size:28px;
+
 font-weight:800;
 
 }
@@ -87,10 +100,16 @@ color:#0D6EFD;
 
 
 
+
+
+
+
 .actions{
 
 display:flex;
+
 gap:15px;
+
 align-items:center;
 
 }
@@ -106,9 +125,11 @@ color:#00d26a;
 
 
 
+
 select{
 
 background:#111827;
+
 color:white;
 
 border:none;
@@ -126,6 +147,7 @@ border-radius:20px;
 .menu{
 
 display:flex;
+
 gap:10px;
 
 padding:20px 30px;
@@ -157,6 +179,7 @@ white-space:nowrap;
 
 
 
+
 .menu button.active{
 
 background:#0D6EFD;
@@ -164,6 +187,7 @@ background:#0D6EFD;
 color:white;
 
 }
+
 
 
 
@@ -175,11 +199,13 @@ padding:30px;
 
 
 
+
 .page{
 
 display:none;
 
 }
+
 
 
 
@@ -191,33 +217,31 @@ display:block;
 
 
 
-h1{
-
-margin-bottom:10px;
-
-}
-
-
 
 .subtitle{
 
 color:#9ba3b2;
 
-margin-bottom:25px;
+margin:10px 0 25px;
 
 }
+
+
+
 
 
 .cards{
 
 display:grid;
 
-grid-template-columns:
-repeat(auto-fit,minmax(220px,1fr));
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 
 gap:20px;
 
 }
+
+
+
 
 
 .card{
@@ -238,11 +262,9 @@ padding:25px;
 
 font-size:30px;
 
-font-weight:bold;
-
 color:#0D6EFD;
 
-margin-top:10px;
+font-weight:bold;
 
 }
 
@@ -259,7 +281,8 @@ gap:20px;
 
 
 .conversations,
-.chat{
+.chat,
+.panel{
 
 background:#0d0f14;
 
@@ -271,6 +294,7 @@ border-radius:25px;
 
 
 
+
 .conversation{
 
 padding:18px;
@@ -278,14 +302,6 @@ padding:18px;
 border-bottom:1px solid #1b2535;
 
 cursor:pointer;
-
-}
-
-
-
-.conversation:hover{
-
-background:#111827;
 
 }
 
@@ -302,7 +318,6 @@ font-size:12px;
 
 
 
-
 .chat{
 
 min-height:450px;
@@ -312,7 +327,6 @@ display:flex;
 flex-direction:column;
 
 }
-
 
 
 
@@ -326,10 +340,7 @@ display:flex;
 
 justify-content:space-between;
 
-align-items:center;
-
 }
-
 
 
 
@@ -338,25 +349,13 @@ align-items:center;
 
 background:#0D6EFD;
 
-color:white;
-
 border:none;
+
+color:white;
 
 padding:10px 18px;
 
 border-radius:20px;
-
-}
-
-
-
-
-
-.messages{
-
-padding:25px;
-
-flex:1;
 
 }
 
@@ -372,9 +371,10 @@ border-radius:18px;
 
 max-width:70%;
 
-margin-bottom:15px;
+margin:15px;
 
 }
+
 
 
 
@@ -399,21 +399,83 @@ margin-left:auto;
 
 
 
+
+
+.reservation-tools{
+
+display:flex;
+
+gap:15px;
+
+margin-bottom:20px;
+
+flex-wrap:wrap;
+
+}
+
+
+
+
+
+.reservation-tools input,
+.reservation-tools select{
+
+background:#0d0f14;
+
+border:1px solid #1b2535;
+
+color:white;
+
+padding:12px 15px;
+
+border-radius:15px;
+
+}
+
+
+
+
+
+.new-btn{
+
+background:#0D6EFD;
+
+color:white;
+
+border:none;
+
+padding:12px 20px;
+
+border-radius:20px;
+
+cursor:pointer;
+
+}
+
+
+
+
 table{
 
 width:100%;
 
 background:#0d0f14;
 
+border:1px solid #1b2535;
+
 border-radius:20px;
 
 border-collapse:collapse;
+
+overflow:hidden;
 
 }
 
 
 
-th,td{
+
+th,
+td{
 
 padding:16px;
 
@@ -425,11 +487,42 @@ text-align:left;
 
 
 
+
+
 th{
 
 color:#9ba3b2;
 
 }
+
+
+
+
+
+.status-confirmed{
+
+color:#00d26a;
+
+}
+
+
+
+
+.status-pending{
+
+color:#ffd166;
+
+}
+
+
+
+
+.status-cancelled{
+
+color:#ff5c5c;
+
+}
+
 
 
 
@@ -449,6 +542,7 @@ gap:15px;
 }
 
 
+
 .inbox-layout{
 
 grid-template-columns:1fr;
@@ -463,6 +557,14 @@ padding:20px;
 }
 
 
+
+table{
+
+font-size:12px;
+
+}
+
+
 }
 
 </style>
@@ -471,10 +573,6 @@ padding:20px;
 
 
 <body>
-
-
-
-
 
 <header class="topbar">
 
@@ -499,13 +597,13 @@ Stay<span>Flow</span>
 
 
 
-
-
 <div class="actions">
 
 
 <div class="status" data-key="online">
+
 ● AI Online
+
 </div>
 
 
@@ -526,6 +624,7 @@ Español
 <option value="pt">
 Português
 </option>
+
 
 
 </select>
@@ -552,63 +651,51 @@ Português
 
 <button class="active" onclick="openTab('dashboard',this)">
 
-<span data-key="dashboard">
 Dashboard
-</span>
 
 </button>
-
-
 
 
 
 <button onclick="openTab('inbox',this)">
 
-<span data-key="inbox">
 Inbox
-</span>
 
 </button>
-
 
 
 
 
 <button onclick="openTab('reservations',this)">
 
-<span data-key="reservations">
 Reservations
-</span>
 
 </button>
-
 
 
 
 
 <button onclick="openTab('statistics',this)">
 
-<span data-key="statistics">
 Statistics
-</span>
 
 </button>
-
 
 
 
 
 <button onclick="openTab('settings',this)">
 
-<span data-key="settings">
 Settings
-</span>
 
 </button>
 
 
 
+
 </nav>
+
+
 
 
 
@@ -623,25 +710,19 @@ Settings
 
 
 
+
+
 <section id="dashboard" class="page active">
 
 
-
-<h1 data-key="dashboard">
-
+<h1>
 Dashboard
-
 </h1>
 
 
-
-
-<p class="subtitle" data-key="overview">
-
+<p class="subtitle">
 StayFlow overview
-
 </p>
-
 
 
 
@@ -650,46 +731,34 @@ StayFlow overview
 
 
 
-
-
 <div class="card">
-
-<div data-key="messages">
 
 Messages
 
-</div>
-
-
 <div class="value">
+
 24
-</div>
-
 
 </div>
 
 
+</div>
 
 
 
 
 <div class="card">
-
-<div data-key="reservations">
 
 Reservations
 
-</div>
-
-
 <div class="value">
+
 42
-</div>
-
 
 </div>
 
 
+</div>
 
 
 
@@ -697,13 +766,7 @@ Reservations
 
 <div class="card">
 
-
-<div data-key="occupancy">
-
 Occupancy
-
-</div>
-
 
 <div class="value">
 
@@ -712,16 +775,13 @@ Occupancy
 </div>
 
 
-
 </div>
 
 
 
 
 
-
 </div>
-
 
 
 
@@ -734,23 +794,17 @@ Occupancy
 
 
 
+
 <section id="inbox" class="page">
 
 
-
-
-
-<h1 data-key="inbox">
-
+<h1>
 Inbox
-
 </h1>
 
 
 
-
-
-<p class="subtitle" data-key="guest">
+<p class="subtitle">
 
 Guest conversations
 
@@ -760,12 +814,7 @@ Guest conversations
 
 
 
-
-
-
 <div class="inbox-layout">
-
-
 
 
 
@@ -773,50 +822,26 @@ Guest conversations
 
 
 
-
-
 <div class="conversation">
 
 <b>
-
 Maria
-
 </b>
 
-
 <br>
-
-
-<small>
 
 Argentina · Dorm 4 Bed 2
 
-</small>
-
-
 <br>
-
-
-<span data-key="availability">
 
 Availability?
 
-</span>
-
-
-
 <span class="badge">
-
 AI
-
 </span>
-
 
 
 </div>
-
-
-
 
 
 
@@ -825,29 +850,20 @@ AI
 <div class="conversation">
 
 <b>
-
 John
-
 </b>
 
 
 <br>
 
-
-<small>
-
 USA · Private Room
-
-</small>
-
 
 <br>
 
-
-<span data-key="transfer">
-
 Transfer?
 
+<span class="badge">
+AI
 </span>
 
 
@@ -856,9 +872,8 @@ Transfer?
 
 
 
-
-
 </div>
+
 
 
 
@@ -874,15 +889,99 @@ Transfer?
 
 
 <h3>
-
 Maria
-
 </h3>
 
 
-<button class="takeover" data-key="takeover">
+
+<button class="takeover">
 
 Take Over
+
+</button>
+
+
+</div>
+
+
+
+
+
+
+<div>
+
+
+<div class="message guest">
+
+Hi, do you have a bed?
+
+</div>
+
+
+
+<div class="message ai">
+
+Yes, I can help.
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="reservations" class="page">
+
+
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+
+
+<div>
+
+<h1>
+Reservations
+</h1>
+
+
+<p class="subtitle">
+Booking management
+</p>
+
+
+</div>
+
+
+
+<button class="new-btn">
+
++ New Reservation
 
 </button>
 
@@ -895,58 +994,68 @@ Take Over
 
 
 
-<div class="messages">
+
+<div class="reservation-tools">
 
 
 
-<div class="message guest">
+<input placeholder="Search guest...">
 
-Hi, do you have a bed?
+
+
+<select>
+
+<option>
+All Status
+</option>
+
+<option>
+Confirmed
+</option>
+
+<option>
+Pending
+</option>
+
+
+<option>
+Cancelled
+</option>
+
+
+</select>
+
+
+
+
+<select>
+
+<option>
+All Payments
+</option>
+
+
+<option>
+Card
+</option>
+
+
+<option>
+Cash
+</option>
+
+
+</select>
+
+
+
+
 
 </div>
 
 
 
 
-<div class="message ai">
-
-Yes, I can help you.
-
-</div>
-
-
-
-
-
-
-</div>
-
-
-
-
-
-
-</div>
-
-
-
-
-
-</div>
-
-
-
-
-
-
-</section>
-
-<section id="reservations" class="page">
-
-
-<h1 data-key="reservations">
-Reservations
-</h1>
 
 
 
@@ -960,42 +1069,125 @@ Guest
 </th>
 
 <th>
+Country
+</th>
+
+<th>
 Room
 </th>
 
 <th>
-Bed
+Dates
 </th>
 
 <th>
 Payment
 </th>
 
+<th>
+Amount
+</th>
+
+<th>
+Status
+</th>
+
+
 
 </tr>
+
+
 
 
 
 <tr>
 
+
 <td>
 Carlos
 </td>
 
-<td>
-Dorm 2
-</td>
 
 <td>
-Bed 4
+Argentina
 </td>
 
-<td data-key="card">
+
+<td>
+Dorm 2 Bed 4
+</td>
+
+
+<td>
+21-25 Jun
+</td>
+
+
+<td>
 Card
 </td>
 
 
+<td>
+$120
+</td>
+
+
+<td class="status-confirmed">
+Confirmed
+</td>
+
+
+
 </tr>
+
+
+
+
+
+
+<tr>
+
+
+<td>
+Maria
+</td>
+
+
+<td>
+Brazil
+</td>
+
+
+<td>
+Private
+</td>
+
+
+<td>
+25-28 Jun
+</td>
+
+
+<td>
+Cash
+</td>
+
+
+<td>
+$180
+</td>
+
+
+<td class="status-pending">
+Pending
+</td>
+
+
+
+</tr>
+
+
 
 
 
@@ -1003,21 +1195,23 @@ Card
 
 
 
+
+
+
 </section>
-
-
-
-
-
-
-
 
 <section id="statistics" class="page">
 
 
-<h1 data-key="statistics">
+<h1>
 Statistics
 </h1>
+
+
+<p class="subtitle">
+Business intelligence
+</p>
+
 
 
 
@@ -1027,46 +1221,29 @@ Statistics
 
 <div class="card">
 
-<div data-key="topcountry">
-
 Top Country
 
-</div>
-
-
 <div class="value">
-
 Argentina
-
 </div>
 
 
 </div>
-
 
 
 
 
 
 <div class="card">
-
-<div data-key="bestmonth">
 
 Best Month
 
-</div>
-
-
 <div class="value">
-
 January
-
 </div>
 
 
 </div>
-
-
 
 
 
@@ -1074,17 +1251,25 @@ January
 
 <div class="card">
 
-<div data-key="revenue">
-
 Revenue
 
+<div class="value">
+$0
 </div>
 
+
+</div>
+
+
+
+
+
+<div class="card">
+
+Conversion
 
 <div class="value">
-
-$0
-
+0%
 </div>
 
 
@@ -1095,11 +1280,13 @@ $0
 
 
 </div>
+
 
 
 
 
 </section>
+
 
 
 
@@ -1111,11 +1298,16 @@ $0
 <section id="settings" class="page">
 
 
-<h1 data-key="settings">
-
+<h1>
 Settings
-
 </h1>
+
+
+<p class="subtitle">
+System configuration
+</p>
+
+
 
 
 
@@ -1125,21 +1317,13 @@ Settings
 
 <div class="card">
 
-
-<div data-key="ai">
-
 AI Assistant
-
-</div>
-
-
 
 <div class="value">
 
 ON
 
 </div>
-
 
 
 </div>
@@ -1151,14 +1335,7 @@ ON
 
 <div class="card">
 
-
-<div data-key="handoff">
-
 Human Handoff
-
-</div>
-
-
 
 <div class="value">
 
@@ -1167,13 +1344,33 @@ ON
 </div>
 
 
+</div>
+
+
+
+
+
+
+<div class="card">
+
+Notifications
+
+<div class="value">
+
+ON
+
+</div>
+
 
 </div>
 
 
 
 
+
 </div>
+
+
 
 
 
@@ -1200,163 +1397,7 @@ ON
 
 
 
-
-const translations = {
-
-
-en:{
-
-dashboard:"Dashboard",
-inbox:"Inbox",
-reservations:"Reservations",
-statistics:"Statistics",
-settings:"Settings",
-
-overview:"StayFlow overview",
-messages:"Messages",
-occupancy:"Occupancy",
-guest:"Guest conversations",
-
-availability:"Availability?",
-transfer:"Transfer?",
-
-takeover:"Take Over",
-
-topcountry:"Top Country",
-bestmonth:"Best Month",
-revenue:"Revenue",
-
-ai:"AI Assistant",
-handoff:"Human Handoff",
-
-card:"Card",
-
-online:"● AI Online"
-
-},
-
-
-
-
-
-
-es:{
-
-dashboard:"Panel",
-inbox:"Bandeja",
-reservations:"Reservas",
-statistics:"Estadísticas",
-settings:"Configuración",
-
-overview:"Resumen de StayFlow",
-messages:"Mensajes",
-occupancy:"Ocupación",
-guest:"Conversaciones",
-
-availability:"Disponibilidad?",
-transfer:"Traslado?",
-
-takeover:"Tomar control",
-
-topcountry:"País principal",
-bestmonth:"Mejor mes",
-revenue:"Ingresos",
-
-ai:"Asistente IA",
-handoff:"Transferencia humana",
-
-card:"Tarjeta",
-
-online:"● IA Activa"
-
-},
-
-
-
-
-
-
-pt:{
-
-dashboard:"Painel",
-inbox:"Caixa",
-reservations:"Reservas",
-statistics:"Estatísticas",
-settings:"Configurações",
-
-overview:"Resumo StayFlow",
-messages:"Mensagens",
-occupancy:"Ocupação",
-guest:"Conversas",
-
-availability:"Disponibilidade?",
-transfer:"Transfer?",
-
-takeover:"Assumir",
-
-topcountry:"País principal",
-bestmonth:"Melhor mês",
-revenue:"Receita",
-
-ai:"Assistente IA",
-handoff:"Transferência humana",
-
-card:"Cartão",
-
-online:"● IA Online"
-
-}
-
-
-
-};
-
-
-
-
-
-
-
-
-
-function changeLanguage(){
-
-
-
-let lang =
-document.getElementById("language").value;
-
-
-
-
-document.querySelectorAll("[data-key]")
-.forEach(element=>{
-
-
-let key =
-element.getAttribute("data-key");
-
-
-element.innerText =
-translations[lang][key];
-
-
-
-});
-
-
-
-}
-
-
-
-
-
-
-
-
 function openTab(id,button){
-
 
 
 document.querySelectorAll(".page")
@@ -1368,12 +1409,14 @@ page.classList.remove("active");
 
 
 
+let section=document.getElementById(id);
 
 
-document.getElementById(id)
-.classList.add("active");
+if(section){
 
+section.classList.add("active");
 
+}
 
 
 
@@ -1388,8 +1431,6 @@ btn.classList.remove("active");
 
 
 
-
-
 button.classList.add("active");
 
 
@@ -1399,7 +1440,69 @@ button.classList.add("active");
 
 
 
+
+
+const translations={
+
+
+en:{},
+
+es:{},
+
+pt:{}
+
+
+};
+
+
+
+
+
+function changeLanguage(){
+
+
+let lang=document.getElementById("language").value;
+
+
+if(lang==="es"){
+
+
+document.querySelector("title").innerText="StayFlow | Panel";
+
+
+}
+
+
+
+if(lang==="pt"){
+
+
+document.querySelector("title").innerText="StayFlow | Painel";
+
+
+}
+
+
+
+if(lang==="en"){
+
+
+document.querySelector("title").innerText="StayFlow";
+
+
+}
+
+
+
+}
+
+
+
+
+
+
 </script>
+
 
 
 
