@@ -12,7 +12,6 @@
 
 <style>
 
-
 *{
 margin:0;
 padding:0;
@@ -24,6 +23,7 @@ body{
 
 background:#050505;
 color:white;
+
 font-family:Arial,Helvetica,sans-serif;
 
 }
@@ -38,7 +38,7 @@ background:#0d0f14;
 
 border-bottom:1px solid #1b2535;
 
-padding:18px 30px;
+padding:16px 30px;
 
 display:flex;
 
@@ -50,7 +50,7 @@ position:sticky;
 
 top:0;
 
-z-index:10;
+z-index:50;
 
 }
 
@@ -61,7 +61,9 @@ z-index:10;
 .brand{
 
 display:flex;
+
 align-items:center;
+
 gap:12px;
 
 }
@@ -70,9 +72,9 @@ gap:12px;
 
 .brand img{
 
-width:45px;
+width:46px;
 
-height:45px;
+height:46px;
 
 object-fit:contain;
 
@@ -102,23 +104,105 @@ color:#0D6EFD;
 
 
 
-
-
-.actions{
+.top-actions{
 
 display:flex;
 
-gap:15px;
-
 align-items:center;
 
+gap:12px;
+
 }
+
+
+
+
+
+.search{
+
+background:#050505;
+
+border:1px solid #1b2535;
+
+color:white;
+
+padding:11px 15px;
+
+border-radius:20px;
+
+outline:none;
+
+width:180px;
+
+}
+
+
+
+
+
+
+.notification{
+
+background:#111827;
+
+padding:10px 14px;
+
+border-radius:20px;
+
+cursor:pointer;
+
+}
+
+
+
+
+.count{
+
+background:#0D6EFD;
+
+border-radius:50%;
+
+padding:2px 7px;
+
+font-size:12px;
+
+}
+
+
+
+
 
 
 
 .status{
 
 color:#00d26a;
+
+font-size:14px;
+
+}
+
+
+
+
+
+
+
+.new-btn{
+
+background:#0D6EFD;
+
+color:white;
+
+border:none;
+
+padding:12px 20px;
+
+border-radius:22px;
+
+cursor:pointer;
+
+font-weight:bold;
 
 }
 
@@ -152,9 +236,12 @@ gap:10px;
 
 padding:20px 30px;
 
+background:#050505;
+
 overflow-x:auto;
 
 }
+
 
 
 
@@ -191,6 +278,7 @@ color:white;
 
 
 
+
 .content{
 
 padding:30px;
@@ -199,13 +287,11 @@ padding:30px;
 
 
 
-
 .page{
 
 display:none;
 
 }
-
 
 
 
@@ -218,11 +304,20 @@ display:block;
 
 
 
+
+h1{
+
+margin-bottom:10px;
+
+}
+
+
+
 .subtitle{
 
 color:#9ba3b2;
 
-margin:10px 0 25px;
+margin-bottom:25px;
 
 }
 
@@ -262,9 +357,11 @@ padding:25px;
 
 font-size:30px;
 
+font-weight:bold;
+
 color:#0D6EFD;
 
-font-weight:bold;
+margin-top:10px;
 
 }
 
@@ -280,8 +377,8 @@ gap:20px;
 
 
 
-.conversations,
-.chat,
+
+
 .panel{
 
 background:#0d0f14;
@@ -290,7 +387,10 @@ border:1px solid #1b2535;
 
 border-radius:25px;
 
+padding:20px;
+
 }
+
 
 
 
@@ -307,6 +407,14 @@ cursor:pointer;
 
 
 
+.conversation:hover{
+
+background:#111827;
+
+}
+
+
+
 .badge{
 
 color:#00d26a;
@@ -318,7 +426,14 @@ font-size:12px;
 
 
 
+
 .chat{
+
+background:#0d0f14;
+
+border:1px solid #1b2535;
+
+border-radius:25px;
 
 min-height:450px;
 
@@ -339,6 +454,8 @@ border-bottom:1px solid #1b2535;
 display:flex;
 
 justify-content:space-between;
+
+align-items:center;
 
 }
 
@@ -362,7 +479,6 @@ border-radius:20px;
 
 
 
-
 .message{
 
 padding:14px;
@@ -374,7 +490,6 @@ max-width:70%;
 margin:15px;
 
 }
-
 
 
 
@@ -399,20 +514,17 @@ margin-left:auto;
 
 
 
-
-
 .reservation-tools{
 
 display:flex;
 
-gap:15px;
-
-margin-bottom:20px;
+gap:12px;
 
 flex-wrap:wrap;
 
-}
+margin-bottom:20px;
 
+}
 
 
 
@@ -426,7 +538,7 @@ border:1px solid #1b2535;
 
 color:white;
 
-padding:12px 15px;
+padding:12px;
 
 border-radius:15px;
 
@@ -436,32 +548,11 @@ border-radius:15px;
 
 
 
-.new-btn{
-
-background:#0D6EFD;
-
-color:white;
-
-border:none;
-
-padding:12px 20px;
-
-border-radius:20px;
-
-cursor:pointer;
-
-}
-
-
-
-
 table{
 
 width:100%;
 
 background:#0d0f14;
-
-border:1px solid #1b2535;
 
 border-radius:20px;
 
@@ -487,8 +578,6 @@ text-align:left;
 
 
 
-
-
 th{
 
 color:#9ba3b2;
@@ -499,7 +588,7 @@ color:#9ba3b2;
 
 
 
-.status-confirmed{
+.confirmed{
 
 color:#00d26a;
 
@@ -507,8 +596,7 @@ color:#00d26a;
 
 
 
-
-.status-pending{
+.pending{
 
 color:#ffd166;
 
@@ -517,9 +605,95 @@ color:#ffd166;
 
 
 
-.status-cancelled{
 
-color:#ff5c5c;
+
+
+.modal{
+
+display:none;
+
+position:fixed;
+
+inset:0;
+
+background:rgba(0,0,0,.75);
+
+align-items:center;
+
+justify-content:center;
+
+z-index:100;
+
+}
+
+
+
+
+
+.modal-box{
+
+background:#0d0f14;
+
+border:1px solid #1b2535;
+
+border-radius:25px;
+
+padding:30px;
+
+width:380px;
+
+display:flex;
+
+flex-direction:column;
+
+gap:14px;
+
+}
+
+
+
+
+
+.modal-box input,
+.modal-box select{
+
+background:#050505;
+
+color:white;
+
+border:1px solid #1b2535;
+
+padding:12px;
+
+border-radius:15px;
+
+}
+
+
+
+
+
+.modal-actions{
+
+display:flex;
+
+gap:10px;
+
+}
+
+
+
+.cancel-btn{
+
+background:#111827;
+
+color:white;
+
+border:1px solid #1b2535;
+
+padding:12px 18px;
+
+border-radius:20px;
 
 }
 
@@ -535,9 +709,9 @@ color:#ff5c5c;
 
 flex-direction:column;
 
-align-items:flex-start;
-
 gap:15px;
+
+align-items:flex-start;
 
 }
 
@@ -558,9 +732,9 @@ padding:20px;
 
 
 
-table{
+.search{
 
-font-size:12px;
+width:140px;
 
 }
 
@@ -580,27 +754,45 @@ font-size:12px;
 
 <div class="brand">
 
-
 <img src="IMG_3520.png">
 
-
 <div class="brand-name">
-
 Stay<span>Flow</span>
+</div>
 
 </div>
 
 
+
+
+
+<div class="top-actions">
+
+
+<input class="search" placeholder="Search...">
+
+
+
+<div class="notification">
+
+🔔 <span class="count">3</span>
+
 </div>
 
 
 
 
 
-<div class="actions">
+<button class="new-btn" onclick="openReservation()">
+
++ New Reservation
+
+</button>
 
 
-<div class="status" data-key="online">
+
+
+<div class="status">
 
 ● AI Online
 
@@ -608,23 +800,20 @@ Stay<span>Flow</span>
 
 
 
+
 <select id="language" onchange="changeLanguage()">
 
-
-<option value="en">
+<option>
 English
 </option>
 
-
-<option value="es">
+<option>
 Español
 </option>
 
-
-<option value="pt">
+<option>
 Português
 </option>
-
 
 
 </select>
@@ -632,6 +821,7 @@ Português
 
 
 </div>
+
 
 
 
@@ -645,57 +835,37 @@ Português
 
 
 
-
 <nav class="menu">
 
 
+
 <button class="active" onclick="openTab('dashboard',this)">
-
 Dashboard
-
 </button>
-
 
 
 <button onclick="openTab('inbox',this)">
-
 Inbox
-
 </button>
-
-
 
 
 <button onclick="openTab('reservations',this)">
-
 Reservations
-
 </button>
-
-
 
 
 <button onclick="openTab('statistics',this)">
-
 Statistics
-
 </button>
-
-
 
 
 <button onclick="openTab('settings',this)">
-
 Settings
-
 </button>
-
 
 
 
 </nav>
-
-
 
 
 
@@ -709,9 +879,6 @@ Settings
 
 
 
-
-
-
 <section id="dashboard" class="page active">
 
 
@@ -719,16 +886,13 @@ Settings
 Dashboard
 </h1>
 
-
 <p class="subtitle">
 StayFlow overview
 </p>
 
 
 
-
 <div class="cards">
-
 
 
 <div class="card">
@@ -736,14 +900,10 @@ StayFlow overview
 Messages
 
 <div class="value">
-
 24
-
 </div>
 
-
 </div>
-
 
 
 
@@ -752,15 +912,10 @@ Messages
 Reservations
 
 <div class="value">
-
 42
-
 </div>
 
-
 </div>
-
-
 
 
 
@@ -769,20 +924,14 @@ Reservations
 Occupancy
 
 <div class="value">
-
 82%
+</div>
 
 </div>
 
 
-</div>
-
-
-
-
 
 </div>
-
 
 
 </section>
@@ -803,13 +952,9 @@ Inbox
 </h1>
 
 
-
 <p class="subtitle">
-
 Guest conversations
-
 </p>
-
 
 
 
@@ -818,15 +963,12 @@ Guest conversations
 
 
 
-<div class="conversations">
-
+<div class="panel">
 
 
 <div class="conversation">
 
-<b>
-Maria
-</b>
+<b>Maria</b>
 
 <br>
 
@@ -840,7 +982,6 @@ Availability?
 AI
 </span>
 
-
 </div>
 
 
@@ -849,10 +990,7 @@ AI
 
 <div class="conversation">
 
-<b>
-John
-</b>
-
+<b>John</b>
 
 <br>
 
@@ -866,14 +1004,11 @@ Transfer?
 AI
 </span>
 
-
 </div>
 
 
 
-
 </div>
-
 
 
 
@@ -884,7 +1019,6 @@ AI
 <div class="chat">
 
 
-
 <div class="chat-header">
 
 
@@ -893,11 +1027,8 @@ Maria
 </h3>
 
 
-
 <button class="takeover">
-
 Take Over
-
 </button>
 
 
@@ -906,31 +1037,21 @@ Take Over
 
 
 
-
-
 <div>
 
 
 <div class="message guest">
-
 Hi, do you have a bed?
-
 </div>
-
 
 
 <div class="message ai">
-
-Yes, I can help.
-
+Yes, I can help you.
 </div>
 
 
 
 </div>
-
-
-
 
 
 </div>
@@ -939,10 +1060,7 @@ Yes, I can help.
 
 
 
-
 </div>
-
-
 
 
 
@@ -955,15 +1073,9 @@ Yes, I can help.
 
 
 
-
 <section id="reservations" class="page">
 
 
-
-<div style="display:flex;justify-content:space-between;align-items:center;">
-
-
-<div>
 
 <h1>
 Reservations
@@ -975,32 +1087,13 @@ Booking management
 </p>
 
 
-</div>
-
-
-
-<button class="new-btn">
-
-+ New Reservation
-
-</button>
-
-
-
-</div>
-
-
-
-
 
 
 
 <div class="reservation-tools">
 
 
-
-<input placeholder="Search guest...">
-
+<input placeholder="Search guest">
 
 
 <select>
@@ -1017,28 +1110,19 @@ Confirmed
 Pending
 </option>
 
-
-<option>
-Cancelled
-</option>
-
-
 </select>
-
 
 
 
 <select>
 
 <option>
-All Payments
+Payment
 </option>
-
 
 <option>
 Card
 </option>
-
 
 <option>
 Cash
@@ -1046,8 +1130,6 @@ Cash
 
 
 </select>
-
-
 
 
 
@@ -1064,34 +1146,12 @@ Cash
 
 <tr>
 
-<th>
-Guest
-</th>
-
-<th>
-Country
-</th>
-
-<th>
-Room
-</th>
-
-<th>
-Dates
-</th>
-
-<th>
-Payment
-</th>
-
-<th>
-Amount
-</th>
-
-<th>
-Status
-</th>
-
+<th>Guest</th>
+<th>Country</th>
+<th>Room</th>
+<th>Dates</th>
+<th>Payment</th>
+<th>Status</th>
 
 
 </tr>
@@ -1099,94 +1159,24 @@ Status
 
 
 
-
 <tr>
 
+<td>Carlos</td>
 
-<td>
-Carlos
-</td>
+<td>Argentina</td>
 
+<td>Dorm 2</td>
 
-<td>
-Argentina
-</td>
+<td>21-25 Jun</td>
 
+<td>Card</td>
 
-<td>
-Dorm 2 Bed 4
-</td>
-
-
-<td>
-21-25 Jun
-</td>
-
-
-<td>
-Card
-</td>
-
-
-<td>
-$120
-</td>
-
-
-<td class="status-confirmed">
+<td class="confirmed">
 Confirmed
 </td>
 
 
-
 </tr>
-
-
-
-
-
-
-<tr>
-
-
-<td>
-Maria
-</td>
-
-
-<td>
-Brazil
-</td>
-
-
-<td>
-Private
-</td>
-
-
-<td>
-25-28 Jun
-</td>
-
-
-<td>
-Cash
-</td>
-
-
-<td>
-$180
-</td>
-
-
-<td class="status-pending">
-Pending
-</td>
-
-
-
-</tr>
-
 
 
 
@@ -1196,9 +1186,15 @@ Pending
 
 
 
-
-
 </section>
+
+
+
+
+
+
+
+
 
 <section id="statistics" class="page">
 
@@ -1208,15 +1204,7 @@ Statistics
 </h1>
 
 
-<p class="subtitle">
-Business intelligence
-</p>
-
-
-
-
 <div class="cards">
-
 
 
 <div class="card">
@@ -1227,10 +1215,7 @@ Top Country
 Argentina
 </div>
 
-
 </div>
-
-
 
 
 
@@ -1242,10 +1227,7 @@ Best Month
 January
 </div>
 
-
 </div>
-
-
 
 
 
@@ -1257,36 +1239,14 @@ Revenue
 $0
 </div>
 
-
-</div>
-
-
-
-
-
-<div class="card">
-
-Conversion
-
-<div class="value">
-0%
 </div>
 
 
 </div>
-
-
-
-
-
-</div>
-
-
 
 
 
 </section>
-
 
 
 
@@ -1303,16 +1263,7 @@ Settings
 </h1>
 
 
-<p class="subtitle">
-System configuration
-</p>
-
-
-
-
-
 <div class="cards">
-
 
 
 <div class="card">
@@ -1320,16 +1271,10 @@ System configuration
 AI Assistant
 
 <div class="value">
-
 ON
-
 </div>
 
-
 </div>
-
-
-
 
 
 
@@ -1338,40 +1283,13 @@ ON
 Human Handoff
 
 <div class="value">
-
 ON
+</div>
 
 </div>
 
 
 </div>
-
-
-
-
-
-
-<div class="card">
-
-Notifications
-
-<div class="value">
-
-ON
-
-</div>
-
-
-</div>
-
-
-
-
-
-</div>
-
-
-
 
 
 </section>
@@ -1391,68 +1309,129 @@ ON
 
 
 
+<div id="reservationModal" class="modal">
+
+
+
+<div class="modal-box">
+
+
+<h2>
+New Reservation
+</h2>
+
+
+
+<input placeholder="Guest name">
+
+
+<input placeholder="Country">
+
+
+<input placeholder="Room">
+
+
+<input placeholder="Dates">
+
+
+
+<select>
+
+<option>
+Card
+</option>
+
+<option>
+Cash
+</option>
+
+</select>
+
+
+
+
+
+<div class="modal-actions">
+
+
+<button class="new-btn">
+Save
+</button>
+
+
+
+<button class="cancel-btn"
+onclick="closeReservation()">
+
+Cancel
+
+</button>
+
+
+</div>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
 
 <script>
 
 
 
-
-function openTab(id,button){
+function openTab(id,btn){
 
 
 document.querySelectorAll(".page")
-.forEach(page=>{
-
-page.classList.remove("active");
-
-});
+.forEach(p=>p.classList.remove("active"));
 
 
 
-let section=document.getElementById(id);
-
-
-if(section){
-
-section.classList.add("active");
-
-}
-
+document.getElementById(id)
+.classList.add("active");
 
 
 
 
 document.querySelectorAll(".menu button")
-.forEach(btn=>{
-
-btn.classList.remove("active");
-
-});
+.forEach(b=>b.classList.remove("active"));
 
 
 
-button.classList.add("active");
-
-
+btn.classList.add("active");
 
 }
 
 
 
 
+function openReservation(){
+
+document.getElementById("reservationModal")
+.style.display="flex";
+
+}
 
 
-const translations={
 
 
-en:{},
+function closeReservation(){
 
-es:{},
+document.getElementById("reservationModal")
+.style.display="none";
 
-pt:{}
-
-
-};
+}
 
 
 
@@ -1460,50 +1439,30 @@ pt:{}
 
 function changeLanguage(){
 
-
-let lang=document.getElementById("language").value;
-
-
-if(lang==="es"){
+let lang =
+document.getElementById("language").value;
 
 
-document.querySelector("title").innerText="StayFlow | Panel";
+if(lang==="Español"){
 
+document.title="StayFlow | Panel";
 
 }
 
 
+if(lang==="Português"){
 
-if(lang==="pt"){
-
-
-document.querySelector("title").innerText="StayFlow | Painel";
-
+document.title="StayFlow | Painel";
 
 }
 
 
-
-if(lang==="en"){
-
-
-document.querySelector("title").innerText="StayFlow";
-
-
 }
-
-
-
-}
-
-
 
 
 
 
 </script>
-
-
 
 
 
