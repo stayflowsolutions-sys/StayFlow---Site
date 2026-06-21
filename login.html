@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -8,10 +9,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
-<title>StayFlow | Client Login</title>
+<title>StayFlow Login</title>
 
 
 <style>
+
 
 *{
 margin:0;
@@ -22,7 +24,7 @@ box-sizing:border-box;
 
 body{
 
-min-height:100vh;
+height:100vh;
 
 background:#050505;
 
@@ -32,66 +34,48 @@ font-family:Arial, Helvetica, sans-serif;
 
 display:flex;
 
-justify-content:center;
-
 align-items:center;
 
-overflow:hidden;
+justify-content:center;
 
 }
 
 
 
-body::before{
+.login-container{
 
-content:"";
+width:390px;
 
-position:fixed;
+background:#0b0d12;
 
-inset:0;
+border:1px solid #1b2535;
 
-border:1px solid rgba(13,110,253,.18);
+border-radius:30px;
 
-box-shadow:
-inset 0 0 18px rgba(13,110,253,.06);
+padding:35px;
 
-pointer-events:none;
-
-}
-
-
-
-.login-wrapper{
-
-width:100%;
-
-max-width:430px;
-
-padding:25px;
-
-position:relative;
-
-z-index:2;
+box-shadow:0 0 40px rgba(13,110,253,.15);
 
 }
 
 
 
-.login-brand{
+
+.logo{
 
 text-align:center;
 
-font-size:42px;
+font-size:34px;
 
-font-weight:bold;
+font-weight:800;
 
-margin-bottom:35px;
+margin-bottom:10px;
 
 }
 
 
 
-.login-brand span{
+.logo span{
 
 color:#0D6EFD;
 
@@ -99,38 +83,13 @@ color:#0D6EFD;
 
 
 
-.login-card{
-
-background:#0d0f14;
-
-border:1px solid #1b2535;
-
-border-radius:30px;
-
-padding:40px;
-
-box-shadow:
-0 0 45px rgba(13,110,253,.12);
-
-}
 
 
+.subtitle{
 
-.login-card h1{
-
-font-size:32px;
-
-margin-bottom:15px;
-
-}
-
-
-
-.login-text{
+text-align:center;
 
 color:#9ba3b2;
-
-line-height:1.6;
 
 margin-bottom:30px;
 
@@ -138,96 +97,92 @@ margin-bottom:30px;
 
 
 
+
 label{
-
-display:block;
-
-color:#9ba3b2;
 
 font-size:14px;
 
-margin-bottom:8px;
+color:#9ba3b2;
 
 }
 
 
 
-input{
+
+input,
+select{
+
 
 width:100%;
 
-padding:16px;
+padding:14px;
+
+margin-top:8px;
 
 margin-bottom:20px;
 
-background:#050505;
+border-radius:15px;
 
 border:1px solid #1b2535;
 
-border-radius:15px;
+background:#050505;
 
 color:white;
 
 outline:none;
 
-}
-
-
-
-input:focus{
-
-border-color:#0D6EFD;
 
 }
 
 
 
-.login-btn{
+
+button{
+
 
 width:100%;
 
-padding:17px;
+padding:15px;
 
 border:none;
 
-border-radius:50px;
+border-radius:20px;
 
 background:#0D6EFD;
 
 color:white;
 
-font-size:18px;
-
 font-weight:bold;
 
 cursor:pointer;
 
-box-shadow:
-0 0 25px rgba(13,110,253,.35);
+font-size:16px;
+
 
 }
 
 
 
-.back{
+button:hover{
 
-text-align:center;
+opacity:.9;
+
+}
+
+
+
+.footer{
 
 margin-top:25px;
 
-}
+text-align:center;
 
+color:#667085;
 
-
-.back a{
-
-color:#9ba3b2;
-
-text-decoration:none;
-
-font-size:14px;
+font-size:13px;
 
 }
+
 
 
 </style>
@@ -236,38 +191,54 @@ font-size:14px;
 </head>
 
 
+
 <body>
 
 
 
-<div class="login-wrapper">
+<div class="login-container">
 
 
-<div class="login-brand">
+
+<div class="logo">
 
 Stay<span>Flow</span>
 
 </div>
 
 
-<div class="login-card">
 
-<h1>
+<div class="subtitle">
 
-Welcome Back
+Smart Stay Solutions
 
-</h1>
-
+</div>
 
 
 
 
-<p class="login-text">
 
-Access your StayFlow workspace
-and manage your hostel operations.
+<label>
 
-</p>
+Hostel
+
+</label>
+
+
+<select id="hostel">
+
+
+<option>
+Hostel Lagares
+</option>
+
+
+<option>
+Demo Hostel
+</option>
+
+
+</select>
 
 
 
@@ -282,16 +253,10 @@ Email
 </label>
 
 
-
-
-<input
-
-type="email"
-
-placeholder="you@hostel.com"
-
+<input 
+id="email"
+placeholder="email@hostel.com"
 >
-
 
 
 
@@ -305,13 +270,13 @@ Password
 </label>
 
 
-
-
 <input
+
+id="password"
 
 type="password"
 
-placeholder="Enter your password"
+placeholder="••••••••"
 
 >
 
@@ -321,16 +286,48 @@ placeholder="Enter your password"
 
 
 
+<label>
 
-<button
+Language
 
-class="login-btn"
+</label>
 
-type="button"
 
-onclick="window.location.href='dashboard.html'">
+<select id="language">
 
-Sign In
+
+<option value="en">
+
+English
+
+</option>
+
+
+<option value="es">
+
+Español
+
+</option>
+
+
+<option value="pt">
+
+Português
+
+</option>
+
+
+</select>
+
+
+
+
+
+
+
+<button onclick="login()">
+
+Enter StayFlow
 
 </button>
 
@@ -340,26 +337,9 @@ Sign In
 
 
 
+<div class="footer">
 
-
-<div class="back">
-
-
-<a href="index.html">
-
-← Back to StayFlow website
-
-</a>
-
-
-
-</div>
-
-
-
-
-
-
+AI powered hostel operations
 
 </div>
 
@@ -370,6 +350,58 @@ Sign In
 
 </div>
 
+
+
+
+
+
+
+<script>
+
+
+
+function login(){
+
+
+const user = {
+
+
+name:"Carlos",
+
+
+role:"Owner",
+
+
+hostel:
+document.getElementById("hostel").value,
+
+
+language:
+document.getElementById("language").value
+
+
+};
+
+
+
+localStorage.setItem(
+"stayflowUser",
+JSON.stringify(user)
+);
+
+
+
+
+window.location.href="dashboard.html";
+
+
+
+}
+
+
+
+
+</script>
 
 
 
@@ -379,3 +411,4 @@ Sign In
 </body>
 
 </html>
+
