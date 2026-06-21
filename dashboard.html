@@ -3,7 +3,7 @@
 
 <head>
 
-<title>StayFlow Dashboard</title>
+<title>StayFlow</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -22,6 +22,7 @@ color:white;
 font-family:"Segoe UI",Arial,sans-serif;
 overflow-x:hidden;
 }
+
 
 
 .sidebar{
@@ -48,11 +49,12 @@ overflow-y:auto;
 }
 
 
+
 .sidebar.open{
-
 left:0;
-
 }
+
+
 
 
 .overlay{
@@ -70,20 +72,36 @@ z-index:15;
 
 
 .overlay.show{
+display:block;
+}
+
+
+
+
+.logo-img{
+
+width:160px;
+
+height:auto;
 
 display:block;
+
+margin:0 auto 20px;
 
 }
 
 
 
-.logo{
+
+.brand-name{
+
+text-align:center;
+
+font-family:"Segoe Script","Brush Script MT",cursive;
 
 font-size:34px;
 
-font-weight:800;
-
-letter-spacing:-1.5px;
+letter-spacing:1px;
 
 margin-bottom:25px;
 
@@ -91,7 +109,7 @@ margin-bottom:25px;
 
 
 
-.logo span{
+.brand-name span{
 
 color:#1b8cff;
 
@@ -102,6 +120,8 @@ color:#1b8cff;
 
 .profile{
 
+background:#0b0b0b;
+
 border:1px solid #1b8cff44;
 
 border-radius:18px;
@@ -109,8 +129,6 @@ border-radius:18px;
 padding:15px;
 
 margin-bottom:20px;
-
-background:#0b0b0b;
 
 }
 
@@ -152,6 +170,7 @@ background:#1b8cff22;
 
 
 
+
 .topbar{
 
 height:80px;
@@ -180,11 +199,35 @@ cursor:pointer;
 
 
 
+
+.lang span{
+
+cursor:pointer;
+
+margin:0 5px;
+
+color:#aaa;
+
+}
+
+
+
+.lang span:hover{
+
+color:#1b8cff;
+
+}
+
+
+
+
+
 .content{
 
 padding:25px;
 
 }
+
 
 
 
@@ -197,6 +240,8 @@ grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:18px;
 
 }
+
+
 
 
 
@@ -214,6 +259,8 @@ padding:20px;
 
 
 
+
+
 .value{
 
 font-size:32px;
@@ -222,9 +269,9 @@ font-weight:bold;
 
 color:#1b8cff;
 
-margin-top:10px;
-
 }
+
+
 
 
 
@@ -235,19 +282,10 @@ display:none;
 }
 
 
+
 .page.active{
 
 display:block;
-
-}
-
-
-
-.lang span{
-
-cursor:pointer;
-
-margin:0 5px;
 
 }
 
@@ -270,16 +308,6 @@ cursor:pointer;
 }
 
 
-.badge{
-
-padding:5px 10px;
-
-border-radius:20px;
-
-background:#1b8cff22;
-
-}
-
 
 </style>
 
@@ -289,35 +317,32 @@ background:#1b8cff22;
 <body>
 
 
+
 <div class="overlay" id="overlay"></div>
+
 
 
 <div class="sidebar" id="sidebar">
 
 
-<div class="logo">
+<img src="IMG_3520.png" class="logo-img">
+
+
+<div class="brand-name">
+
 Stay<span>Flow</span>
+
 </div>
+
 
 
 
 <div class="profile">
 
-<b id="hostel">
+
+<b>
 Hostel Lagares
 </b>
-
-<br><br>
-
-<span id="today">
-Today
-</span>
-
-<br>
-
-<span id="clock">
-00:00
-</span>
 
 
 <br><br>
@@ -325,26 +350,35 @@ Today
 
 👤 Jorge
 
+
 <br>
 
 Owner
 
 
-
 <br><br>
 
 
-<select id="role">
+<select>
 
-<option>Owner</option>
+<option>
+Owner
+</option>
 
-<option>Reception</option>
+<option>
+Reception
+</option>
 
-<option>Housekeeping</option>
+<option>
+Housekeeping
+</option>
 
-<option>Maintenance</option>
+<option>
+Maintenance
+</option>
 
 </select>
+
 
 
 </div>
@@ -357,7 +391,7 @@ Owner
 
 
 <button class="active" onclick="openPage('home',this)">
-🏠 <span data="home">Home</span>
+🏠 Home
 </button>
 
 
@@ -417,6 +451,7 @@ Owner
 <div class="main">
 
 
+
 <div class="topbar">
 
 
@@ -430,24 +465,30 @@ Owner
 
 🌐
 
-<span onclick="changeLang('pt')">PT</span>
+<span onclick="changeLang('pt')">
+PT
+</span>
 
 |
 
-<span onclick="changeLang('en')">EN</span>
+<span onclick="changeLang('en')">
+EN
+</span>
 
 |
 
-<span onclick="changeLang('es')">ES</span>
+<span onclick="changeLang('es')">
+ES
+</span>
 
 
 </div>
 
 
+
 </div>
 
-  <div class="content">
-
+<div class="content">
 
 
 <section id="home" class="page active">
@@ -467,11 +508,10 @@ Good morning, Jorge 👋
 Occupancy
 
 <div class="value">
-18 / 22
+18/22
 </div>
 
 </div>
-
 
 
 
@@ -487,7 +527,6 @@ Check-ins
 
 
 
-
 <div class="card">
 
 Check-outs
@@ -497,7 +536,6 @@ Check-outs
 </div>
 
 </div>
-
 
 
 
@@ -516,7 +554,6 @@ $320
 
 
 
-
 <br>
 
 
@@ -526,7 +563,6 @@ $320
 
 
 <div class="card">
-
 
 <h2>🤖 AI Snapshot</h2>
 
@@ -540,7 +576,6 @@ $320
 
 92% automation
 
-
 </div>
 
 
@@ -549,9 +584,7 @@ $320
 
 <div class="card">
 
-
 <h2>📋 Daily Operations</h2>
-
 
 4 arrivals
 
@@ -567,7 +600,6 @@ $320
 
 2 maintenance
 
-
 </div>
 
 
@@ -576,9 +608,7 @@ $320
 
 <div class="card">
 
-
 <h2>⚠ Priorities</h2>
-
 
 🔴 Payment pending
 
@@ -590,7 +620,6 @@ $320
 
 🔵 Guest request
 
-
 </div>
 
 
@@ -599,27 +628,23 @@ $320
 
 <div class="card">
 
-
 <h2>💡 AI Suggestions</h2>
-
 
 High occupancy weekend
 
 <br><br>
 
-Promote wine tour
+Promote wine tours
 
 <br><br>
 
 Increase private rooms
 
-
 </div>
 
 
 
 </div>
-
 
 
 </section>
@@ -635,58 +660,68 @@ Increase private rooms
 <section id="reservations" class="page">
 
 
-<h1>Reservations</h1>
+<h1 data-i18n="reservations">
+Reservations
+</h1>
+
 
 
 <div class="cards">
 
 
+
 <div class="card">
 
-<h2>New Reservation</h2>
+
+<h2>
+New Reservation
+</h2>
 
 
 Maria Silva
 
+
 <br>
+
 
 Dorm 4 Bed 2
 
+
 <br>
+
 
 3 nights
 
+
 <br><br>
 
-<span class="badge">
-Confirmed
-</span>
 
+Confirmed
 
 </div>
+
+
 
 
 
 <div class="card">
 
-<h2>Pending Payments</h2>
+
+<h2>
+Pending Payments
+</h2>
 
 
-Maria
-
-$25
+Maria $25
 
 
 <br><br>
 
 
-John
-
-$40
+John $40
 
 
 </div>
-
 
 
 </div>
@@ -705,7 +740,9 @@ $40
 <section id="rooms" class="page">
 
 
-<h1>Rooms</h1>
+<h1>
+Rooms
+</h1>
 
 
 
@@ -715,16 +752,22 @@ $40
 <div class="card">
 
 
-<h2>Dorm 1</h2>
+<h2>
+Dorm 1
+</h2>
 
 
 🟢 Bed 1 Available
 
+
 <br><br>
+
 
 🔵 Bed 2 Occupied
 
+
 <br><br>
+
 
 🟡 Bed 3 Cleaning
 
@@ -734,17 +777,22 @@ $40
 
 
 
+
 <div class="card">
 
 
-<h2>Dorm 4</h2>
+<h2>
+Dorm 4
+</h2>
 
 
-🔵 Maria
+Maria
+
 
 <br><br>
 
-🟡 Cleaning
+
+Cleaning
 
 
 <br><br>
@@ -761,15 +809,21 @@ Checkout Complete
 
 
 
+
+
 <div class="card">
 
 
-<h2>Blocked Beds</h2>
+<h2>
+Blocked Beds
+</h2>
 
 
 🔴 Bed 4
 
+
 <br>
+
 
 Broken ladder
 
@@ -777,9 +831,7 @@ Broken ladder
 </div>
 
 
-
 </div>
-
 
 
 </section>
@@ -795,17 +847,22 @@ Broken ladder
 <section id="guests" class="page">
 
 
-<h1>Guests CRM</h1>
+<h1>
+Guests CRM
+</h1>
 
 
 
 <div class="cards">
 
 
+
 <div class="card">
 
 
-<h2>Maria Silva</h2>
+<h2>
+Maria Silva
+</h2>
 
 
 Brazil
@@ -820,10 +877,7 @@ Dorm 4 Bed 2
 <br><br>
 
 
-Notes:
-
-Late arrival
-
+Late arrival note
 
 
 <br><br>
@@ -836,7 +890,6 @@ Move Room
 </button>
 
 
-
 </div>
 
 
@@ -845,21 +898,28 @@ Move Room
 <div class="card">
 
 
-<h2>Guest History</h2>
+<h2>
+Guest History
+</h2>
 
 
 Previous stays
 
+
 <br><br>
+
 
 Notes
 
+
 <br><br>
+
 
 Documents
 
 
 </div>
+
 
 
 </div>
@@ -878,7 +938,9 @@ Documents
 <section id="operations" class="page">
 
 
-<h1>Operations</h1>
+<h1>
+Operations
+</h1>
 
 
 
@@ -892,20 +954,19 @@ Documents
 <h2>🧹 Housekeeping</h2>
 
 
-Dorm 4 Bed 2
-
-
-<br>
-
-Waiting cleaning
+Cleaning queue
 
 
 <br><br>
 
 
-Assigned:
+Dorm 4 Bed 2
 
-Maria
+
+<br>
+
+
+Assigned Maria
 
 
 </div>
@@ -921,6 +982,7 @@ Maria
 
 
 Broken shower
+
 
 <br><br>
 
@@ -948,6 +1010,7 @@ Electrical issue
 
 Need toilet paper
 
+
 <br><br>
 
 
@@ -972,7 +1035,7 @@ Noise complaint
 <br><br>
 
 
-Lost phone charger
+Lost & Found
 
 
 </div>
@@ -995,22 +1058,22 @@ Lost phone charger
 
 <div class="card">
 
-<h2>☕ Breakfast Inventory</h2>
+<h2>☕ Breakfast Stock</h2>
 
 
 Coffee 🟢
 
+
 <br><br>
+
 
 Milk 🟡 LOW
 
+
 <br><br>
+
 
 Bread 🔴 CRITICAL
-
-<br><br>
-
-Sugar 🟢
 
 
 </div>
@@ -1020,16 +1083,21 @@ Sugar 🟢
 
 <div class="card">
 
+
 <h2>🧻 Guest Supplies</h2>
 
 
 Toilet Paper 🔴
 
+
 <br><br>
+
 
 Soap 🟢
 
+
 <br><br>
+
 
 Towels 🟢
 
@@ -1041,17 +1109,21 @@ Towels 🟢
 
 <div class="card">
 
+
 <h2>🧹 Cleaning</h2>
 
 
 Trash Bags 🟡
 
+
 <br><br>
 
-Floor Cleaner 🟢
+
+Products 🟢
 
 
 </div>
+
 
 
 </div>
@@ -1073,11 +1145,15 @@ Floor Cleaner 🟢
 
 ☐ Milk
 
+
 <br><br>
+
 
 ☐ Bread
 
+
 <br><br>
+
 
 ☐ Toilet Paper
 
@@ -1090,13 +1166,12 @@ Floor Cleaner 🟢
 
 <button class="action" onclick="purchase()">
 
-Mark Purchased
+Purchased
 
 </button>
 
 
 </div>
-
 
 
 </section>
@@ -1120,8 +1195,7 @@ Mark Purchased
 
 <div class="card">
 
-
-<h2>Morning Shift</h2>
+<h2>Morning</h2>
 
 
 08:00 - 16:00
@@ -1136,23 +1210,20 @@ Maria
 <br><br>
 
 
-☑ Inventory
+Inventory
 
 <br>
 
-☑ Breakfast
-
+Breakfast
 
 </div>
-
-
 
 
 
 <div class="card">
 
 
-<h2>Afternoon Shift</h2>
+<h2>Afternoon</h2>
 
 
 16:00 - 00:00
@@ -1167,11 +1238,7 @@ Jorge
 <br><br>
 
 
-☑ Check-ins
-
-<br>
-
-☐ Handover
+Check-ins
 
 
 </div>
@@ -1179,11 +1246,10 @@ Jorge
 
 
 
-
 <div class="card">
 
 
-<h2>Night Shift</h2>
+<h2>Night</h2>
 
 
 00:00 - 08:00
@@ -1196,6 +1262,7 @@ João
 
 
 </div>
+
 
 
 </div>
@@ -1217,8 +1284,8 @@ João
 <h1>Team</h1>
 
 
-
 <div class="cards">
+
 
 
 <div class="card">
@@ -1253,19 +1320,17 @@ Housekeeping
 <br><br>
 
 
-Tasks:
-
-6
+Tasks: 6
 
 
 <br>
 
-Completed:
 
-4
+Completed: 4
 
 
 </div>
+
 
 
 
@@ -1276,24 +1341,17 @@ Completed:
 <h2>Activity Log</h2>
 
 
-11:22
-
-<br>
-
 Inventory updated
 
 
 <br><br>
 
 
-10:50
-
-<br>
-
 Maintenance created
 
 
 </div>
+
 
 
 </div>
@@ -1315,11 +1373,10 @@ Maintenance created
 <h1>Notifications</h1>
 
 
-
 <div class="card">
 
 
-🔔 New WhatsApp message
+🔔 WhatsApp message
 
 
 <br><br>
@@ -1338,7 +1395,6 @@ Maintenance created
 
 
 🧹 Cleaning completed
-
 
 
 </div>
@@ -1375,12 +1431,11 @@ Hostel Lagares
 <br><br>
 
 
-Plan:
-
-Pro
+Plan Pro
 
 
 </div>
+
 
 
 
@@ -1390,9 +1445,11 @@ Pro
 <h2>Users</h2>
 
 
-Create employees
+Employees
+
 
 <br><br>
+
 
 Permissions
 
@@ -1400,8 +1457,8 @@ Permissions
 </div>
 
 
-</div>
 
+</div>
 
 
 </section>
@@ -1430,6 +1487,8 @@ document.getElementById("overlay");
 
 
 
+
+
 function toggleMenu(){
 
 sidebar.classList.toggle("open");
@@ -1437,7 +1496,6 @@ sidebar.classList.toggle("open");
 overlay.classList.toggle("show");
 
 }
-
 
 
 
@@ -1454,7 +1512,7 @@ overlay.classList.remove("show");
 
 
 
-function openPage(page,btn){
+function openPage(page,button){
 
 
 document.querySelectorAll(".page")
@@ -1472,7 +1530,7 @@ document.querySelectorAll(".menu button")
 
 
 
-btn.classList.add("active");
+button.classList.add("active");
 
 
 
@@ -1488,16 +1546,14 @@ overlay.classList.remove("show");
 
 
 
-
 function updateClock(){
 
 
 let now=new Date();
 
 
-document.getElementById("clock")
-.innerHTML=
-
+document.title =
+"StayFlow | "+
 now.toLocaleTimeString([],{
 hour:"2-digit",
 minute:"2-digit"
@@ -1505,6 +1561,7 @@ minute:"2-digit"
 
 
 }
+
 
 
 setInterval(updateClock,1000);
@@ -1535,8 +1592,7 @@ function purchase(){
 
 
 document.getElementById("shopping")
-.innerHTML=
-
+.innerHTML =
 "Purchased ✅<br><br>Waiting restock";
 
 
@@ -1551,25 +1607,13 @@ document.getElementById("shopping")
 const translations={
 
 
-pt:{
-
-welcome:"Bom dia, Jorge 👋"
-
-},
+pt:{welcome:"Bom dia, Jorge 👋"},
 
 
-en:{
-
-welcome:"Good morning, Jorge 👋"
-
-},
+en:{welcome:"Good morning, Jorge 👋"},
 
 
-es:{
-
-welcome:"Buenos días, Jorge 👋"
-
-}
+es:{welcome:"Buenos días, Jorge 👋"}
 
 
 };
@@ -1578,12 +1622,19 @@ welcome:"Buenos días, Jorge 👋"
 
 
 
+
 function changeLang(lang){
 
 
-document.getElementById("welcome")
-.innerHTML=
+localStorage.setItem(
+"language",
+lang
+);
 
+
+
+document.getElementById("welcome")
+.innerHTML =
 translations[lang].welcome;
 
 
@@ -1593,8 +1644,24 @@ translations[lang].welcome;
 
 
 
-let startX=0;
+let saved =
+localStorage.getItem("language");
 
+
+if(saved){
+
+changeLang(saved);
+
+}
+
+
+
+
+
+
+
+
+let startX=0;
 
 
 document.addEventListener(
@@ -1616,6 +1683,7 @@ let move=e.touches[0].clientX;
 
 if(startX-move>100){
 
+
 sidebar.classList.remove("open");
 
 overlay.classList.remove("show");
@@ -1623,8 +1691,8 @@ overlay.classList.remove("show");
 
 }
 
-
 });
+
 
 
 
