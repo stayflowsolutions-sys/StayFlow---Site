@@ -19,20 +19,28 @@ box-sizing:border-box;
 
 
 body{
+
 margin:0;
+
 background:#050505;
+
 color:white;
+
 font-family:'Poppins','Segoe UI',sans-serif;
+
 }
 
 
 .sidebar{
 
 position:fixed;
+
 left:-300px;
+
 top:0;
 
 width:300px;
+
 height:100vh;
 
 background:#080808;
@@ -51,7 +59,9 @@ overflow:auto;
 
 
 .sidebar.open{
+
 left:0;
+
 }
 
 
@@ -59,6 +69,7 @@ left:0;
 .overlay{
 
 position:fixed;
+
 inset:0;
 
 background:#000b;
@@ -71,9 +82,10 @@ z-index:10;
 
 
 .overlay.show{
-display:block;
-}
 
+display:block;
+
+}
 
 
 
@@ -113,6 +125,8 @@ color:#1b8cff;
 
 
 
+
+
 .profile{
 
 background:#0b0b0b;
@@ -126,6 +140,8 @@ padding:15px;
 margin-bottom:20px;
 
 }
+
+
 
 
 
@@ -153,6 +169,7 @@ font-size:15px;
 
 
 
+
 .menu button.active,
 .menu button:hover{
 
@@ -170,7 +187,7 @@ height:75px;
 
 display:flex;
 
-align-items:flex-start;
+align-items:center;
 
 justify-content:space-between;
 
@@ -179,6 +196,7 @@ padding:20px 25px;
 border-bottom:1px solid #ffffff15;
 
 }
+
 
 
 
@@ -192,11 +210,14 @@ cursor:pointer;
 
 
 
+
+
 .content{
 
 padding:25px;
 
 }
+
 
 
 
@@ -212,6 +233,7 @@ gap:18px;
 
 
 
+
 .card{
 
 background:#0b0b0b;
@@ -223,6 +245,7 @@ border-radius:20px;
 padding:20px;
 
 }
+
 
 
 
@@ -243,6 +266,7 @@ display:block;
 
 
 
+
 .value{
 
 font-size:32px;
@@ -256,28 +280,35 @@ color:#1b8cff;
 
 
 
-.lang span{
+table{
 
-cursor:pointer;
+width:100%;
 
-margin:5px;
+border-collapse:collapse;
+
+}
+
+
+
+td,th{
+
+padding:10px;
+
+border-bottom:1px solid #ffffff15;
+
+text-align:left;
 
 }
 
 
 
 
-.action{
 
-background:#1b8cff;
+.lang span{
 
-border:0;
+cursor:pointer;
 
-color:white;
-
-border-radius:12px;
-
-padding:10px 15px;
+margin:5px;
 
 }
 
@@ -304,7 +335,11 @@ padding:10px 15px;
 
 
 
+
+
 <img src="IMG_3520.png" class="logo-img">
+
+
 
 
 
@@ -313,6 +348,8 @@ padding:10px 15px;
 Stay<span>Flow</span>
 
 </div>
+
+
 
 
 
@@ -344,7 +381,10 @@ Jorge
 
 
 
+
 <div class="menu">
+
+
 
 
 
@@ -353,6 +393,7 @@ Jorge
 🏠 <span data-i18n="home"></span>
 
 </button>
+
 
 
 
@@ -368,11 +409,15 @@ Jorge
 
 
 
+
+
 <button onclick="openPage('operations',this)">
 
 🧹 <span data-i18n="operations"></span>
 
 </button>
+
+
 
 
 
@@ -388,11 +433,15 @@ Jorge
 
 
 
+
+
 <button onclick="openPage('bathrooms',this)">
 
 🚿 <span data-i18n="bathrooms"></span>
 
 </button>
+
+
 
 
 
@@ -408,11 +457,16 @@ Jorge
 
 
 
+
+
+
 <button onclick="openPage('extras',this)">
 
 🎒 <span data-i18n="extras"></span>
 
 </button>
+
+
 
 
 
@@ -428,11 +482,15 @@ Jorge
 
 
 
+
+
 <button onclick="openPage('analytics',this)">
 
 📊 <span data-i18n="analytics"></span>
 
 </button>
+
+
 
 
 
@@ -446,10 +504,18 @@ Jorge
 
 
 
-</div>
 
 
 </div>
+
+
+
+
+
+</div>
+
+
+
 
 
 
@@ -481,6 +547,7 @@ Jorge
 
 
 
+
 <div class="lang">
 
 🌐
@@ -493,6 +560,8 @@ Jorge
 
 
 </div>
+
+
 
 
 </div>
@@ -511,6 +580,21 @@ Jorge
 <div class="cards">
 
 
+
+<div class="card">
+
+<h2 data-i18n="occupancy"></h2>
+
+<div class="value">82%</div>
+
+<p data-i18n="today"></p>
+
+</div>
+
+
+
+
+
 <div class="card">
 
 <h2 data-i18n="arrivals"></h2>
@@ -520,6 +604,9 @@ Jorge
 <p data-i18n="today"></p>
 
 </div>
+
+
+
 
 
 
@@ -536,6 +623,7 @@ Jorge
 
 
 
+
 <div class="card">
 
 <h2 data-i18n="cleaning"></h2>
@@ -548,19 +636,9 @@ Jorge
 
 
 
-
-<div class="card">
-
-<h2 data-i18n="alerts"></h2>
-
-<p data-i18n="low_stock"></p>
-
-<p data-i18n="maintenance_pending"></p>
-
 </div>
 
 
-</div>
 
 
 
@@ -592,7 +670,6 @@ Jorge
 </p>
 
 
-
 <p>
 
 <span data-i18n="questions_answered"></span>:
@@ -617,21 +694,16 @@ Jorge
 
 <p>
 
-<span data-i18n="employee"></span>:
 Maria
 
 </p>
 
 
-<p>
-
-<span data-i18n="shift"></span>:
-08:00 - 16:00
-
-</p>
+<p data-i18n="shift"></p>
 
 
 </div>
+
 
 
 
@@ -657,6 +729,7 @@ Maria
 
 
 
+
 <div class="cards">
 
 
@@ -670,8 +743,6 @@ Maria
 
 
 
-
-
 <p>
 
 👤 Maria Silva
@@ -680,15 +751,11 @@ Maria
 
 
 
-
-
 <p>
 
 🌎 Brasil
 
 </p>
-
-
 
 
 
@@ -725,7 +792,6 @@ Cama 12
 
 
 
-
 <p>
 
 🟢 <span data-i18n="confirmed"></span>
@@ -746,9 +812,6 @@ Cama 12
 
 
 <h2 data-i18n="checkin"></h2>
-
-
-<p data-i18n="guest_arrival"></p>
 
 
 <p>
@@ -772,9 +835,15 @@ Cama 1
 </p>
 
 
+
+<p>
+
+22/06
+
+</p>
+
+
 </div>
-
-
 
 
 
@@ -814,6 +883,7 @@ Ana
 </div>
 
 
+
 </section>
 
 
@@ -832,6 +902,7 @@ Ana
 
 
 
+
 <div class="cards">
 
 
@@ -845,10 +916,9 @@ Ana
 
 
 
-
 <p>
 
-Room 4
+Quarto 4
 
 </p>
 
@@ -856,7 +926,7 @@ Room 4
 
 <p>
 
-Bed 2
+Cama 2
 
 </p>
 
@@ -879,7 +949,11 @@ Bed 2
 
 
 
-<p data-i18n="waiting"></p>
+<p>
+
+🟡 <span data-i18n="waiting"></span>
+
+</p>
 
 
 
@@ -891,29 +965,23 @@ Bed 2
 
 
 
-
 <div class="card">
 
 
-<h2 data-i18n="maintenance"></h2>
+<h2 data-i18n="cleaning_process"></h2>
 
 
 
-<p>
-
-🛏 <span data-i18n="broken_bed"></span>
-
-</p>
+<p data-i18n="checkout_registered"></p>
 
 
+<p data-i18n="cleaning_created"></p>
 
 
-<p>
+<p data-i18n="linen_sent"></p>
 
-🚿 <span data-i18n="broken_shower"></span>
 
-</p>
-
+<p data-i18n="cleaning_completed"></p>
 
 
 
@@ -931,7 +999,6 @@ Bed 2
 
 
 <h2 data-i18n="handover"></h2>
-
 
 
 <p>
@@ -994,9 +1061,7 @@ Bed 2
 
 <div class="card">
 
-
 <h2 data-i18n="clean_available"></h2>
-
 
 <div class="value">
 
@@ -1026,6 +1091,7 @@ Bed 2
 </div>
 
 
+
 </div>
 
 
@@ -1047,7 +1113,9 @@ Bed 2
 </div>
 
 
+
 </div>
+
 
 
 
@@ -1074,6 +1142,8 @@ Bed 2
 
 
 </div>
+
+
 
 
 
@@ -1114,8 +1184,8 @@ Bed 2
 <p>☐ <span data-i18n="towels"></span></p>
 
 
-
 </div>
+
 
 
 
@@ -1143,7 +1213,6 @@ Bed 2
 
 
 
-
 <p>
 
 <span data-i18n="employee"></span>
@@ -1155,6 +1224,8 @@ Maria
 
 
 </div>
+
+
 
 
 
@@ -1175,8 +1246,8 @@ Maria
 <section id="supplies" class="page">
 
 
-
 <h1 data-i18n="supplies"></h1>
+
 
 
 
@@ -1220,6 +1291,7 @@ Maria
 
 
 
+
 </div>
 
 
@@ -1236,37 +1308,15 @@ Maria
 
 
 
-<p>
+<p data-i18n="detergent"></p>
 
-<span data-i18n="detergent"></span>
+<p data-i18n="disinfectant"></p>
 
-</p>
-
-
-
-
-<p>
-
-<span data-i18n="disinfectant"></span>
-
-</p>
-
-
-
-
-<p>
-
-<span data-i18n="trash_bags"></span>
-
-</p>
-
+<p data-i18n="trash_bags"></p>
 
 
 
 </div>
-
-
-
 
 
 
@@ -1280,29 +1330,11 @@ Maria
 
 
 
-<p>
+<p>☐ <span data-i18n="coffee"></span></p>
 
-☐ <span data-i18n="coffee"></span>
+<p>☐ <span data-i18n="paper"></span></p>
 
-</p>
-
-
-
-<p>
-
-☐ <span data-i18n="paper"></span>
-
-</p>
-
-
-
-<p>
-
-☐ <span data-i18n="soap"></span>
-
-</p>
-
-
+<p>☐ <span data-i18n="soap"></span></p>
 
 
 
@@ -1313,13 +1345,14 @@ Maria
 </button>
 
 
-
 </div>
 
 
 
 
+
 </div>
+
 
 
 
@@ -1334,7 +1367,6 @@ Maria
 
 
 <section id="extras" class="page">
-
 
 
 <h1 data-i18n="extras"></h1>
@@ -1367,7 +1399,6 @@ Maria
 
 
 
-
 <p>
 
 <span data-i18n="in_use"></span>:
@@ -1378,9 +1409,7 @@ Maria
 
 
 
-
 </div>
-
 
 
 
@@ -1394,7 +1423,6 @@ Maria
 <h2 data-i18n="blankets"></h2>
 
 
-
 <p>
 
 <span data-i18n="available"></span>:
@@ -1403,6 +1431,32 @@ Maria
 
 </p>
 
+
+</div>
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="extra_requests"></h2>
+
+
+<p>
+
+Toalha extra
+
+</p>
+
+
+<p>
+
+Coberta extra
+
+</p>
 
 
 </div>
@@ -1448,7 +1502,6 @@ Maria
 <h2 data-i18n="wine_tour"></h2>
 
 
-
 <p>
 
 <span data-i18n="bookings"></span>:
@@ -1456,7 +1509,6 @@ Maria
 6
 
 </p>
-
 
 
 
@@ -1478,7 +1530,6 @@ Maria
 
 
 
-
 <div class="card">
 
 
@@ -1487,7 +1538,6 @@ Maria
 
 
 <p data-i18n="offer_tours"></p>
-
 
 
 <p data-i18n="increase_sales"></p>
@@ -1505,23 +1555,12 @@ Maria
 
 
 
-
 </section>
-
-
-
-
-
-
-
 
 <section id="analytics" class="page">
 
 
-
 <h1 data-i18n="analytics"></h1>
-
-
 
 
 
@@ -1544,9 +1583,180 @@ Maria
 </div>
 
 
+<p>
+
+30 camas
+
+</p>
+
+
+<p>
+
+25 ocupadas
+
+</p>
+
+
+<p>
+
+5 disponíveis
+
+</p>
+
+
 
 </div>
 
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="reservations_stats"></h2>
+
+
+<p>
+
+<span data-i18n="new_bookings"></span>:
+45
+
+</p>
+
+
+<p>
+
+<span data-i18n="cancelations"></span>:
+3
+
+</p>
+
+
+<p>
+
+<span data-i18n="noshow"></span>:
+1
+
+</p>
+
+
+<p>
+
+<span data-i18n="conversion"></span>:
+74%
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="operation_stats"></h2>
+
+
+
+<p>
+
+<span data-i18n="checkouts_today"></span>:
+12
+
+</p>
+
+
+
+<p>
+
+<span data-i18n="average_cleaning_time"></span>:
+18 min
+
+</p>
+
+
+
+
+<p>
+
+<span data-i18n="late_cleaning"></span>:
+2
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="financial"></h2>
+
+
+
+<p>
+
+<span data-i18n="hosting_revenue"></span>:
+$850
+
+</p>
+
+
+
+<p>
+
+<span data-i18n="extras_revenue"></span>:
+$120
+
+</p>
+
+
+
+<p>
+
+<span data-i18n="tours_revenue"></span>:
+$300
+
+</p>
+
+
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="cards">
 
 
 
@@ -1559,30 +1769,97 @@ Maria
 
 
 
+
 <p>
 
-Maria 92%
+🏆 Maria
 
 </p>
 
 
 <p>
 
-Jorge 88%
+92%
+
+</p>
+
+
+
+
+<p>
+
+Jorge
 
 </p>
 
 
 <p>
 
-Joao 76%
+88%
+
+</p>
+
+
+
+<p>
+
+Joao
+
+</p>
+
+
+<p>
+
+76%
+
+</p>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="productivity"></h2>
+
+
+
+<p>
+
+<span data-i18n="tasks_completed"></span>:
+86
+
+</p>
+
+
+
+<p>
+
+<span data-i18n="average_task_time"></span>:
+14 min
+
+</p>
+
+
+
+<p>
+
+<span data-i18n="checklists_done"></span>:
+95%
 
 </p>
 
 
 
 </div>
-
 
 
 
@@ -1613,37 +1890,111 @@ Joao 76%
 
 
 
+
 <div class="card">
 
 
 
-<p>
-
-21/06 11:42
-
-</p>
 
 
+<table>
 
 
-<p data-i18n="checkout_registered"></p>
+<tr>
+
+<th data-i18n="time"></th>
+
+<th data-i18n="user"></th>
+
+<th data-i18n="action"></th>
+
+<th data-i18n="details"></th>
+
+
+</tr>
 
 
 
-<p data-i18n="cleaning_completed"></p>
+
+
+<tr>
+
+<td>11:05</td>
+
+<td>Recepção</td>
+
+<td data-i18n="checkout"></td>
+
+<td>Cama 12</td>
+
+
+</tr>
 
 
 
-<p data-i18n="linen_updated"></p>
+
+
+<tr>
+
+<td>11:08</td>
+
+<td>Sistema</td>
+
+<td data-i18n="cleaning_created"></td>
+
+<td>Quarto 4</td>
+
+
+</tr>
 
 
 
-<p data-i18n="bathroom_checked"></p>
+
+
+<tr>
+
+<td>11:40</td>
+
+<td>Maria</td>
+
+<td data-i18n="cleaning_completed"></td>
+
+<td>Enxoval enviado</td>
+
+
+</tr>
+
+
+
+
+
+<tr>
+
+<td>11:42</td>
+
+<td>Sistema</td>
+
+<td data-i18n="linen_updated"></td>
+
+<td>-1 lençol</td>
+
+
+</tr>
+
+
+
+
+
+</table>
+
+
 
 
 
 
 </div>
+
+
 
 
 
@@ -1713,13 +2064,16 @@ checkout:"Check-out",
 guest_arrival:"Chegada do hóspede",
 confirmed:"Confirmada",
 
-cleaning_created:"Limpeza gerada",
+cleaning_created:"Limpeza criada",
+cleaning_completed:"Limpeza concluída",
 
 cleaning_board:"Painel de limpeza",
+cleaning_process:"Processo de limpeza",
 waiting:"Aguardando",
 
-maintenance:"Manutenção",
+linen_sent:"Enxoval enviado",
 
+maintenance:"Manutenção",
 broken_bed:"Cama quebrada",
 broken_shower:"Chuveiro com defeito",
 
@@ -1753,8 +2107,7 @@ coffee:"Café",
 milk:"Leite",
 bread:"Pão",
 
-cleaning_products:"Produtos limpeza",
-
+cleaning_products:"Produtos de limpeza",
 detergent:"Detergente",
 disinfectant:"Desinfetante",
 trash_bags:"Sacos de lixo",
@@ -1765,8 +2118,9 @@ complete:"Concluir",
 blankets:"Cobertas",
 available:"Disponível",
 
-wine_tour:"Tour de vinho",
+extra_requests:"Pedidos extras",
 
+wine_tour:"Tour de vinho",
 bookings:"Reservas",
 revenue:"Receita",
 
@@ -1776,15 +2130,35 @@ increase_sales:"Aumentar vendas",
 
 occupancy:"Ocupação",
 
-employee_stats:"Estatísticas funcionários",
+reservations_stats:"Estatísticas de reservas",
+cancelations:"Cancelamentos",
+noshow:"No-show",
+conversion:"Conversão",
 
-checkout_registered:"Checkout registrado",
-cleaning_completed:"Limpeza concluída",
-linen_updated:"Enxoval atualizado",
-bathroom_checked:"Banheiro conferido"
+operation_stats:"Estatísticas operacionais",
+checkouts_today:"Check-outs hoje",
+average_cleaning_time:"Tempo médio limpeza",
+late_cleaning:"Limpezas atrasadas",
+
+financial:"Financeiro",
+hosting_revenue:"Receita hospedagem",
+extras_revenue:"Receita extras",
+tours_revenue:"Receita tours",
+
+employee_stats:"Estatísticas funcionários",
+productivity:"Produtividade",
+tasks_completed:"Tarefas concluídas",
+average_task_time:"Tempo médio tarefa",
+checklists_done:"Checklists completos",
+
+time:"Hora",
+user:"Usuário",
+action:"Ação",
+details:"Detalhes",
 
 
 },
+
 
 
 
@@ -1841,12 +2215,15 @@ guest_arrival:"Guest arrival",
 confirmed:"Confirmed",
 
 cleaning_created:"Cleaning created",
+cleaning_completed:"Cleaning completed",
 
 cleaning_board:"Cleaning board",
+cleaning_process:"Cleaning process",
 waiting:"Waiting",
 
-maintenance:"Maintenance",
+linen_sent:"Linen sent",
 
+maintenance:"Maintenance",
 broken_bed:"Broken bed",
 broken_shower:"Broken shower",
 
@@ -1881,7 +2258,6 @@ milk:"Milk",
 bread:"Bread",
 
 cleaning_products:"Cleaning products",
-
 detergent:"Detergent",
 disinfectant:"Disinfectant",
 trash_bags:"Trash bags",
@@ -1892,8 +2268,9 @@ complete:"Complete",
 blankets:"Blankets",
 available:"Available",
 
-wine_tour:"Wine tour",
+extra_requests:"Extra requests",
 
+wine_tour:"Wine tour",
 bookings:"Bookings",
 revenue:"Revenue",
 
@@ -1903,15 +2280,36 @@ increase_sales:"Increase sales",
 
 occupancy:"Occupancy",
 
-employee_stats:"Employee statistics",
+reservations_stats:"Reservation statistics",
+cancelations:"Cancellations",
+noshow:"No show",
+conversion:"Conversion",
 
-checkout_registered:"Checkout registered",
-cleaning_completed:"Cleaning completed",
-linen_updated:"Linen updated",
-bathroom_checked:"Bathroom checked"
+operation_stats:"Operation statistics",
+checkouts_today:"Check-outs today",
+average_cleaning_time:"Average cleaning time",
+late_cleaning:"Late cleanings",
+
+financial:"Financial",
+hosting_revenue:"Accommodation revenue",
+extras_revenue:"Extras revenue",
+tours_revenue:"Tours revenue",
+
+employee_stats:"Employee statistics",
+productivity:"Productivity",
+tasks_completed:"Completed tasks",
+average_task_time:"Average task time",
+checklists_done:"Completed checklists",
+
+time:"Time",
+user:"User",
+action:"Action",
+details:"Details"
 
 
 },
+
+
 
 
 
@@ -1962,78 +2360,32 @@ bed:"Cama",
 checkin:"Check-in",
 checkout:"Check-out",
 
-guest_arrival:"Llegada huésped",
 confirmed:"Confirmada",
 
 cleaning_created:"Limpieza creada",
+cleaning_completed:"Limpieza completada",
 
 cleaning_board:"Panel limpieza",
 waiting:"Esperando",
 
+linen_sent:"Ropa enviada",
+
 maintenance:"Mantenimiento",
 
-broken_bed:"Cama rota",
-broken_shower:"Ducha rota",
-
-handover:"Cambio de turno",
-bathroom_check:"Revisar baños",
-supplies_check:"Revisar insumos",
-report_problem:"Registrar problema",
-
-clean_available:"Limpio disponible",
-in_use:"En uso",
-laundry:"Lavandería",
-damaged:"Dañado",
-
 bathrooms:"Baños",
-bathroom_checklist:"Checklist baño",
-bathroom_status:"Estado baño",
-
-floor:"Piso",
-toilet:"Inodoro",
-sink:"Lavamanos",
-mirror:"Espejo",
-paper:"Papel higiénico",
-soap:"Jabón",
 towels:"Toallas",
-
-ready:"Listo",
-last_clean:"Última limpieza",
-
-breakfast:"Desayuno",
-coffee:"Café",
-milk:"Leche",
-bread:"Pan",
-
-cleaning_products:"Productos limpieza",
-
-detergent:"Detergente",
-disinfectant:"Desinfectante",
-trash_bags:"Bolsas basura",
-
-shopping_list:"Lista compras",
-complete:"Completar",
-
-blankets:"Mantas",
-available:"Disponible",
-
-wine_tour:"Tour vino",
-
-bookings:"Reservas",
-revenue:"Ingresos",
-
-ai_recommendations:"Recomendaciones IA",
-offer_tours:"Ofrecer tours",
-increase_sales:"Aumentar ventas",
+soap:"Jabón",
+paper:"Papel higiénico",
 
 occupancy:"Ocupación",
 
+reservations_stats:"Estadísticas reservas",
 employee_stats:"Estadísticas empleados",
 
-checkout_registered:"Checkout registrado",
-cleaning_completed:"Limpieza completada",
-linen_updated:"Ropa actualizada",
-bathroom_checked:"Baño revisado"
+time:"Hora",
+user:"Usuario",
+action:"Acción",
+details:"Detalles"
 
 
 }
@@ -2062,7 +2414,6 @@ document.querySelectorAll("[data-i18n]")
 let key = el.dataset.i18n;
 
 
-
 if(translations[lang][key]){
 
 el.innerHTML =
@@ -2071,12 +2422,10 @@ translations[lang][key];
 }
 
 
-
 });
 
 
 }
-
 
 
 
@@ -2092,7 +2441,6 @@ applyLanguage(lang);
 
 
 
-
 function toggleMenu(){
 
 
@@ -2101,13 +2449,12 @@ document
 .classList.toggle("open");
 
 
-
 document
 .getElementById("overlay")
 .classList.toggle("show");
 
-}
 
+}
 
 
 
@@ -2121,9 +2468,7 @@ document
 
 
 
-
 function openPage(id,btn){
-
 
 
 document
@@ -2169,8 +2514,6 @@ toggleMenu();
 
 
 
-
-
 applyLanguage(
 localStorage.getItem("stayflow_language") || "pt"
 );
@@ -2183,3 +2526,5 @@ localStorage.getItem("stayflow_language") || "pt"
 </body>
 
 </html>
+
+ 
