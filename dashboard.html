@@ -15,10 +15,15 @@
 
 
 *{
+
 margin:0;
 padding:0;
 box-sizing:border-box;
+
 }
+
+
+
 
 
 body{
@@ -51,6 +56,7 @@ min-height:100vh;
 
 
 
+
 .sidebar{
 
 background:#0d0f14;
@@ -65,13 +71,15 @@ padding:30px 20px;
 
 
 
+
+
 .logo{
 
 font-size:32px;
 
 font-weight:bold;
 
-margin-bottom:50px;
+margin-bottom:45px;
 
 }
 
@@ -82,6 +90,8 @@ margin-bottom:50px;
 color:#0D6EFD;
 
 }
+
+
 
 
 
@@ -106,6 +116,8 @@ margin-bottom:10px;
 
 
 
+
+
 .menu a:hover{
 
 background:#111827;
@@ -118,11 +130,15 @@ color:white;
 
 
 
+
+
 .main{
 
 padding:35px;
 
 }
+
+
 
 
 
@@ -139,6 +155,8 @@ align-items:center;
 margin-bottom:35px;
 
 }
+
+
 
 
 
@@ -161,6 +179,10 @@ color:#00d26a;
 font-size:14px;
 
 }
+
+
+
+
 
 
 
@@ -191,7 +213,7 @@ border:1px solid #1b2535;
 
 border-radius:25px;
 
-padding:30px;
+padding:28px;
 
 text-decoration:none;
 
@@ -216,8 +238,6 @@ transform:translateY(-5px);
 
 
 
-
-
 .card-title{
 
 color:#9ba3b2;
@@ -229,9 +249,68 @@ margin-bottom:15px;
 
 
 
+
 .card-value{
 
-font-size:30px;
+font-size:28px;
+
+font-weight:bold;
+
+color:#0D6EFD;
+
+}
+
+ .analytics{
+
+margin-top:40px;
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+gap:20px;
+
+}
+
+
+
+
+
+
+.analytics-card{
+
+background:#0d0f14;
+
+border:1px solid #1b2535;
+
+border-radius:25px;
+
+padding:25px;
+
+}
+
+
+
+
+
+
+.analytics-title{
+
+color:#9ba3b2;
+
+font-size:14px;
+
+margin-bottom:15px;
+
+}
+
+
+
+
+
+.analytics-value{
+
+font-size:26px;
 
 font-weight:bold;
 
@@ -278,7 +357,13 @@ line-height:2;
 
 }
 
- @media(max-width:800px){
+
+
+
+
+
+@media(max-width:800px){
+
 
 
 .dashboard-layout{
@@ -294,7 +379,6 @@ grid-template-columns:1fr;
 display:none;
 
 }
-
 
 
 
@@ -323,6 +407,7 @@ gap:15px;
 
 
 
+
 </style>
 
 
@@ -346,6 +431,7 @@ gap:15px;
 <!-- SIDEBAR -->
 
 
+
 <aside class="sidebar">
 
 
@@ -355,7 +441,6 @@ gap:15px;
 Stay<span>Flow</span>
 
 </div>
-
 
 
 
@@ -380,7 +465,6 @@ Dashboard
 Inbox
 
 </a>
-
 
 
 
@@ -415,7 +499,9 @@ Settings
 
 
 
+
 </nav>
+
 
 
 
@@ -433,6 +519,7 @@ Settings
 
 
 <!-- MAIN -->
+
 
 
 <main class="main">
@@ -458,7 +545,6 @@ Hostel Dashboard
 
 
 
-
 <p>
 
 Your StayFlow operations center
@@ -474,8 +560,6 @@ Your StayFlow operations center
 
 
 
-
-
 <div class="ai-status">
 
 ● AI Assistant Ready
@@ -486,8 +570,6 @@ Your StayFlow operations center
 
 
 
-
-
 </div>
 
 
@@ -497,9 +579,7 @@ Your StayFlow operations center
 
 
 
-
 <div class="cards">
-
 
 
 
@@ -518,7 +598,6 @@ Messages
 
 
 
-
 <div class="card-value">
 
 Inbox
@@ -527,10 +606,7 @@ Inbox
 
 
 
-
 </a>
-
-
 
 
 
@@ -551,13 +627,11 @@ Reservations
 
 
 
-
 <div class="card-value">
 
 Manage
 
 </div>
-
 
 
 
@@ -583,13 +657,11 @@ Guests
 
 
 
-
 <div class="card-value">
 
 Soon
 
 </div>
-
 
 
 
@@ -615,7 +687,6 @@ AI Status
 
 
 
-
 <div class="card-value">
 
 Online
@@ -624,6 +695,13 @@ Online
 
 
 
+</div>
+
+
+
+
+
+
 
 </div>
 
@@ -634,7 +712,138 @@ Online
 
 
 
+
+<!-- ANALYTICS -->
+
+
+
+<section class="analytics">
+
+
+
+
+
+
+<div class="analytics-card">
+
+
+
+<div class="analytics-title">
+
+Best Month
+
 </div>
+
+
+
+<div class="analytics-value">
+
+January
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="analytics-card">
+
+
+
+<div class="analytics-title">
+
+Revenue
+
+</div>
+
+
+
+<div class="analytics-value">
+
+$12,450
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="analytics-card">
+
+
+
+<div class="analytics-title">
+
+Top Source
+
+</div>
+
+
+
+<div class="analytics-value">
+
+WhatsApp
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="analytics-card">
+
+
+
+<div class="analytics-title">
+
+Payment
+
+</div>
+
+
+
+<div class="analytics-value">
+
+Card
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+</section>
 
 
 
@@ -660,17 +869,19 @@ Recent Activity
 
 <p>
 
-AI conversations will appear here
+Reservations and AI conversations will appear here.
 
 <br>
 
-New reservations will be tracked here
+Analytics will update from real bookings.
 
 <br>
 
-Future integrations: WhatsApp, Booking, Airbnb
+Future: WhatsApp, Booking and Airbnb sync.
 
 </p>
+
+
 
 
 
@@ -691,7 +902,10 @@ Future integrations: WhatsApp, Booking, Airbnb
 
 
 
+
+
 </div>
+
 
 
 
@@ -700,4 +914,5 @@ Future integrations: WhatsApp, Booking, Airbnb
 
 </body>
 
-</html> 
+</html>
+
