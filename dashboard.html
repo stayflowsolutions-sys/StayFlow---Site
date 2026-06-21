@@ -8,11 +8,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>StayFlow Dashboard</title>
+<title>StayFlow</title>
 
 
 <style>
-
 
 *{
 margin:0;
@@ -28,8 +27,6 @@ color:white;
 font-family:Arial,Helvetica,sans-serif;
 
 }
-
-
 
 
 
@@ -66,15 +63,13 @@ left:0;
 
 
 
-
-
 .logo{
 
 font-size:30px;
 
 font-weight:800;
 
-margin-bottom:35px;
+margin-bottom:20px;
 
 }
 
@@ -88,9 +83,32 @@ color:#0D6EFD;
 
 
 
+.profile-box{
+
+background:#050505;
+
+border:1px solid #1b2535;
+
+border-radius:20px;
+
+padding:15px;
+
+margin-bottom:25px;
+
+}
+
+
+
+.profile-box small{
+
+color:#9ba3b2;
+
+}
+
+
+
 
 .menu button{
-
 
 width:100%;
 
@@ -127,7 +145,6 @@ color:white;
 
 
 
-
 .main{
 
 min-height:100vh;
@@ -137,7 +154,6 @@ min-height:100vh;
 
 
 .topbar{
-
 
 height:75px;
 
@@ -159,10 +175,7 @@ top:0;
 
 z-index:20;
 
-
 }
-
-
 
 
 
@@ -189,7 +202,6 @@ cursor:pointer;
 
 
 
-
 .actions{
 
 display:flex;
@@ -203,9 +215,7 @@ gap:15px;
 
 
 
-
 .search{
-
 
 background:#050505;
 
@@ -213,7 +223,7 @@ border:1px solid #1b2535;
 
 color:white;
 
-padding:12px 15px;
+padding:12px;
 
 border-radius:20px;
 
@@ -241,7 +251,6 @@ font-weight:bold;
 
 
 
-
 .content{
 
 padding:30px;
@@ -265,6 +274,7 @@ display:block;
 
 
 
+
 .card-grid{
 
 display:grid;
@@ -279,7 +289,6 @@ gap:20px;
 
 .card{
 
-
 background:#0b0d12;
 
 border:1px solid #1b2535;
@@ -288,10 +297,7 @@ border-radius:25px;
 
 padding:25px;
 
-
 }
-
-
 
 
 
@@ -303,26 +309,14 @@ color:#0D6EFD;
 
 font-weight:bold;
 
-margin-top:10px;
-
 }
-
-
-
-
-
-small{
-
-color:#9ba3b2;
-
-}
-
 
 
 </style>
 
 
 </head>
+
 
 
 
@@ -334,12 +328,41 @@ color:#9ba3b2;
 <div class="sidebar" id="sidebar">
 
 
-
 <div class="logo">
 
 Stay<span>Flow</span>
 
 </div>
+
+
+
+
+
+<div class="profile-box">
+
+
+<div style="font-size:35px">
+
+👤
+
+</div>
+
+
+<div id="sidebarUser">
+
+Loading...
+
+</div>
+
+
+<small>
+Account
+</small>
+
+
+</div>
+
+
 
 
 
@@ -356,11 +379,9 @@ Stay<span>Flow</span>
 </button>
 
 
-
 <button onclick="openPage('reservations',this)">
 🛏 Reservations
 </button>
-
 
 
 <button onclick="openPage('rooms',this)">
@@ -368,11 +389,9 @@ Stay<span>Flow</span>
 </button>
 
 
-
 <button onclick="openPage('guests',this)">
 👤 Guests
 </button>
-
 
 
 <button onclick="openPage('operations',this)">
@@ -380,17 +399,14 @@ Stay<span>Flow</span>
 </button>
 
 
-
 <button onclick="openPage('schedule',this)">
 📅 Schedule
 </button>
 
 
-
 <button onclick="openPage('team',this)">
 👥 Team
 </button>
-
 
 
 <button onclick="openPage('settings',this)">
@@ -431,14 +447,16 @@ Stay<span>Flow</span>
 
 
 
-<div id="welcome">
+<div>
 
 StayFlow
 
 </div>
 
 
+
 </div>
+
 
 
 
@@ -448,7 +466,7 @@ StayFlow
 <div class="actions">
 
 
-<input class="search" placeholder="Search guest...">
+<input class="search" placeholder="Search guest">
 
 
 <div>
@@ -466,21 +484,17 @@ StayFlow
 </button>
 
 
+<select>
 
-<select id="language" onchange="changeLanguage()">
-
-
-<option value="en">
+<option>
 EN
 </option>
 
-
-<option value="es">
+<option>
 ES
 </option>
 
-
-<option value="pt">
+<option>
 PT
 </option>
 
@@ -492,8 +506,8 @@ PT
 </div>
 
 
-
 </div>
+
 
 
 
@@ -509,33 +523,18 @@ PT
 
 
 
-
-
 <section id="home" class="page active">
 
 
-
-<h1 data="homeTitle">
+<h1>
 Dashboard
 </h1>
 
 
-
-<small>
-Today's hostel overview
-</small>
-
-
-
-
-<br><br>
-
-
-
+<br>
 
 
 <div class="card-grid">
-
 
 
 <div class="card">
@@ -547,8 +546,6 @@ Check-ins
 </div>
 
 </div>
-
-
 
 
 <div class="card">
@@ -563,17 +560,15 @@ Check-outs
 
 
 
-
 <div class="card">
 
-Cleaning Tasks
+Tasks
 
 <div class="value">
 6
 </div>
 
 </div>
-
 
 
 
@@ -589,7 +584,6 @@ Occupancy
 
 
 
-
 </div>
 
 
@@ -599,13 +593,11 @@ Occupancy
 <br>
 
 
-
-
 <div class="card">
 
 
 <h2>
-Today's Operations
+Today Operations
 </h2>
 
 
@@ -628,10 +620,7 @@ Today's Operations
 
 
 
-
-
 </section>
-
 
 
 
@@ -642,37 +631,17 @@ Today's Operations
 
 <section id="inbox" class="page">
 
-
-<h1>
-Inbox
-</h1>
-
+<h1>Inbox</h1>
 
 <br>
 
-
 <div class="card">
 
-
-WhatsApp
-
-<br><br>
-
-
-🤖 AI active
-
-<br><br>
-
-
-Human takeover available
-
-
+WhatsApp + AI + Human takeover
 
 </div>
 
-
 </section>
-
 
 
 
@@ -683,47 +652,28 @@ Human takeover available
 
 <section id="reservations" class="page">
 
-
-<h1>
-Reservations
-</h1>
-
+<h1>Reservations</h1>
 
 <br>
 
-
 <div class="card">
 
-
 <button class="new-btn">
-
 + New Reservation
-
 </button>
 
+<br><br>
+
+Maria — Dorm 4 Bed 2
 
 <br><br>
 
-
-Maria
-
-Dorm 4 Bed 2
-
-
-<br><br>
-
-
-John
-
-Private Room
-
+John — Private Room
 
 
 </div>
 
-
 </section>
-
 
 
 
@@ -734,42 +684,30 @@ Private Room
 
 <section id="rooms" class="page">
 
-
-<h1>
-Rooms
-</h1>
-
+<h1>Rooms</h1>
 
 <br>
 
-
 <div class="card">
-
 
 Dorm 4
 
 <br><br>
 
-
-Bed 1 🟢 Available
-
-<br>
-
-
-Bed 2 🔴 Occupied
+Bed 1 🟢
 
 <br>
 
+Bed 2 🔴
+
+<br>
 
 Bed 3 🟡 Cleaning
 
 
-
 </div>
 
-
 </section>
-
 
 
 
@@ -780,43 +718,26 @@ Bed 3 🟡 Cleaning
 
 <section id="guests" class="page">
 
-
-<h1>
-Guests
-</h1>
-
+<h1>Guests</h1>
 
 <br>
 
-
 <div class="card">
-
 
 Maria
 
-
 <br><br>
 
-
-Dorm 4 - Bed 2
-
+Dorm 4 Bed 2
 
 <br><br>
-
-
-<button class="new-btn">
 
 Edit Guest
-
-</button>
-
 
 
 </div>
 
-
 </section>
-
 
 
 
@@ -827,33 +748,21 @@ Edit Guest
 
 <section id="operations" class="page">
 
-
-<h1>
-Operations
-</h1>
-
+<h1>Operations</h1>
 
 <br>
-
 
 <div class="card">
 
-
 🧹 Housekeeping
-
 
 <br><br>
 
-
 Dorm 4 Bed 2
-
 
 <br>
 
-
-Assigned:
-Maria
-
+Assigned: Maria
 
 
 </div>
@@ -868,41 +777,27 @@ Maria
 
 
 
+
 <section id="schedule" class="page">
 
-
-<h1>
-Schedule
-</h1>
-
+<h1>Schedule</h1>
 
 <br>
 
-
 <div class="card">
-
 
 Monday
 
 <br><br>
 
-
-08:00 - 16:00
-
-Carlos - Reception
-
+08-16 Carlos Reception
 
 <br><br>
 
-
-16:00 - 00:00
-
-Maria - Housekeeping
-
+16-00 Maria Housekeeping
 
 
 </div>
-
 
 </section>
 
@@ -916,42 +811,24 @@ Maria - Housekeeping
 <section id="team" class="page">
 
 
-<h1>
-Team
-
-</h1>
-
+<h1>Team</h1>
 
 <br>
 
 
 <div class="card">
 
-
-Carlos
-
-<br>
-
-Owner
-
+Carlos — Owner
 
 <br><br>
 
-
-Maria
-
-<br>
-
-Housekeeping
-
+Maria — Housekeeping
 
 
 </div>
 
 
 </section>
-
-
 
 
 
@@ -962,10 +839,7 @@ Housekeeping
 <section id="settings" class="page">
 
 
-<h1>
-Settings
-</h1>
-
+<h1>Settings</h1>
 
 <br>
 
@@ -973,22 +847,7 @@ Settings
 <div class="card">
 
 
-Plan:
-
-Pro
-
-
-<br><br>
-
-
-Modules:
-
-AI
-
-Reservations
-
-Operations
-
+Plan: Pro
 
 
 </div>
@@ -1002,12 +861,13 @@ Operations
 
 
 
-
 </div>
 
 
-</div>
 
+
+
+</div>
 
 
 
@@ -1018,8 +878,6 @@ Operations
 
 
 <script>
-
-
 
 
 function toggleMenu(){
@@ -1035,17 +893,12 @@ document
 
 
 
-
-
-
 function openPage(id,btn){
-
 
 
 document
 .querySelectorAll(".page")
 .forEach(p=>p.classList.remove("active"));
-
 
 
 document
@@ -1070,9 +923,8 @@ btn.classList.add("active");
 
 
 
-
-
-const user = JSON.parse(
+const user =
+JSON.parse(
 localStorage.getItem("stayflowUser")
 );
 
@@ -1082,69 +934,30 @@ if(user){
 
 
 document
-.getElementById("welcome")
+.getElementById("sidebarUser")
 .innerHTML =
 
 user.name
 +
-" | "
+"<br>"
 +
 user.role
 +
-" | "
+"<br><small>"
 +
-user.hostel;
+user.hostel
++
+"</small>";
 
 
 }
 
-
-
-
-
-
-
-function changeLanguage(){
-
-
-let lang =
-document.getElementById("language").value;
-
-
-if(lang=="es"){
-
-
-document.querySelector("h1").innerHTML="Panel";
-
-
-}
-
-
-if(lang=="pt"){
-
-
-document.querySelector("h1").innerHTML="Painel";
-
-
-}
-
-
-if(lang=="en"){
-
-
-document.querySelector("h1").innerHTML="Dashboard";
-
-
-}
-
-
-
-}
 
 
 
 
 </script>
+
 
 
 
