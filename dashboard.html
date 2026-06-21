@@ -7,7 +7,6 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
 <title>StayFlow | Dashboard</title>
 
 
@@ -15,9 +14,11 @@
 
 
 *{
+
 margin:0;
 padding:0;
 box-sizing:border-box;
+
 }
 
 
@@ -78,13 +79,12 @@ margin-bottom:45px;
 
 
 
+
 .logo span{
 
 color:#0D6EFD;
 
 }
-
-
 
 
 
@@ -108,6 +108,8 @@ margin-bottom:10px;
 
 
 
+
+
 .menu a:hover{
 
 background:#111827;
@@ -121,12 +123,12 @@ color:white;
 
 
 
-
 .main{
 
 padding:35px;
 
 }
+
 
 
 
@@ -160,6 +162,7 @@ margin-top:8px;
 
 
 
+
 .system-status{
 
 color:#00d26a;
@@ -167,6 +170,8 @@ color:#00d26a;
 font-size:14px;
 
 }
+
+
 
 
 
@@ -182,8 +187,6 @@ repeat(auto-fit,minmax(220px,1fr));
 gap:20px;
 
 }
-
-
 
 
 
@@ -245,6 +248,11 @@ color:#0D6EFD;
 
 }
 
+
+
+
+
+
 .activity{
 
 margin-top:40px;
@@ -258,6 +266,7 @@ border-radius:25px;
 padding:30px;
 
 }
+
 
 
 
@@ -281,7 +290,11 @@ line-height:2;
 
 }
 
+ .mobile-note{
 
+display:none;
+
+}
 
 
 
@@ -297,9 +310,36 @@ grid-template-columns:1fr;
 
 
 
+
 .sidebar{
 
-display:none;
+border-right:none;
+
+border-bottom:1px solid #1b2535;
+
+padding:20px;
+
+}
+
+
+
+.menu{
+
+display:flex;
+
+gap:8px;
+
+overflow-x:auto;
+
+}
+
+
+
+.menu a{
+
+white-space:nowrap;
+
+margin-bottom:0;
 
 }
 
@@ -334,9 +374,13 @@ gap:15px;
 
 
 
+
 </style>
 
 </head>
+
+
+
 
 
 
@@ -347,7 +391,9 @@ gap:15px;
 
 
 
+
 <div class="dashboard-layout">
+
 
 
 
@@ -370,6 +416,7 @@ Stay<span>Flow</span>
 
 
 
+
 <nav class="menu">
 
 
@@ -379,7 +426,6 @@ Stay<span>Flow</span>
 Dashboard
 
 </a>
-
 
 
 
@@ -414,7 +460,7 @@ Statistics
 
 
 
-<a href="#">
+<a href="settings.html">
 
 Settings
 
@@ -425,7 +471,6 @@ Settings
 
 
 </nav>
-
 
 
 
@@ -449,6 +494,8 @@ Settings
 
 
 
+
+
 <div class="header">
 
 
@@ -456,11 +503,13 @@ Settings
 <div>
 
 
+
 <h1>
 
 Dashboard
 
 </h1>
+
 
 
 <p>
@@ -510,11 +559,13 @@ StayFlow hostel overview
 <a class="card" href="inbox.html">
 
 
+
 <div class="card-title">
 
 Messages
 
 </div>
+
 
 
 <div class="card-value">
@@ -535,8 +586,8 @@ Messages
 
 
 
-
 <a class="card" href="reservations.html">
+
 
 
 <div class="card-title">
@@ -544,6 +595,7 @@ Messages
 Reservations
 
 </div>
+
 
 
 <div class="card-value">
@@ -564,8 +616,8 @@ Reservations
 
 
 
-
 <a class="card" href="statistics.html">
+
 
 
 <div class="card-title">
@@ -573,6 +625,7 @@ Reservations
 Statistics
 
 </div>
+
 
 
 <div class="card-value">
@@ -592,8 +645,8 @@ View
 
 
 
-
 <div class="card">
+
 
 
 <div class="card-title">
@@ -601,6 +654,7 @@ View
 Occupancy
 
 </div>
+
 
 
 <div class="card-value">
@@ -612,7 +666,6 @@ Occupancy
 
 
 </div>
-
 
 
 
@@ -688,6 +741,9 @@ Analytics available in Statistics.
 
 
 
+
+
 </body>
 
-</html>
+</html> 
+
