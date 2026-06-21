@@ -11,20 +11,14 @@
 <title>StayFlow | Dashboard</title>
 
 
-
 <style>
 
 
 *{
-
 margin:0;
 padding:0;
 box-sizing:border-box;
-
 }
-
-
-
 
 
 body{
@@ -57,10 +51,6 @@ min-height:100vh;
 
 
 
-
-
-
-
 .sidebar{
 
 background:#0d0f14;
@@ -70,8 +60,6 @@ border-right:1px solid #1b2535;
 padding:30px 20px;
 
 }
-
-
 
 
 
@@ -89,8 +77,6 @@ margin-bottom:50px;
 
 
 
-
-
 .logo span{
 
 color:#0D6EFD;
@@ -102,10 +88,13 @@ color:#0D6EFD;
 
 
 
-
 .menu a{
 
 display:block;
+
+text-decoration:none;
+
+color:#9ba3b2;
 
 padding:14px;
 
@@ -113,13 +102,7 @@ border-radius:14px;
 
 margin-bottom:10px;
 
-text-decoration:none;
-
-color:#9ba3b2;
-
 }
-
-
 
 
 
@@ -135,17 +118,11 @@ color:white;
 
 
 
-
-
-
-
 .main{
 
 padding:35px;
 
 }
-
-
 
 
 
@@ -165,8 +142,6 @@ margin-bottom:35px;
 
 
 
-
-
 .header p{
 
 color:#9ba3b2;
@@ -174,8 +149,6 @@ color:#9ba3b2;
 margin-top:8px;
 
 }
-
-
 
 
 
@@ -193,10 +166,6 @@ font-size:14px;
 
 
 
-
-
-
-
 .cards{
 
 display:grid;
@@ -207,7 +176,6 @@ repeat(auto-fit,minmax(220px,1fr));
 gap:20px;
 
 }
-
 
 
 
@@ -232,7 +200,6 @@ color:white;
 transition:.2s;
 
 }
-
 
 
 
@@ -262,9 +229,6 @@ margin-bottom:15px;
 
 
 
-
-
-
 .card-value{
 
 font-size:30px;
@@ -274,48 +238,6 @@ font-weight:bold;
 color:#0D6EFD;
 
 }
-
-
-
-
-
-
-
-
-.quick-actions{
-
-margin-top:40px;
-
-display:flex;
-
-gap:20px;
-
-flex-wrap:wrap;
-
-}
-
-
-
-
-
-
-.action-btn{
-
-background:#0D6EFD;
-
-color:white;
-
-text-decoration:none;
-
-padding:16px 28px;
-
-border-radius:50px;
-
-font-weight:bold;
-
-}
-
-
 
 
 
@@ -339,13 +261,11 @@ padding:30px;
 
 
 
-
 .activity h2{
 
 margin-bottom:20px;
 
 }
-
 
 
 
@@ -358,7 +278,7 @@ line-height:2;
 
 }
 
-@media(max-width:800px){
+ @media(max-width:800px){
 
 
 .dashboard-layout{
@@ -403,9 +323,6 @@ gap:15px;
 
 
 
-
-
-
 </style>
 
 
@@ -413,8 +330,6 @@ gap:15px;
 
 
 <body>
-
-
 
 
 
@@ -429,7 +344,6 @@ gap:15px;
 
 
 <!-- SIDEBAR -->
-
 
 
 <aside class="sidebar">
@@ -457,7 +371,6 @@ Stay<span>Flow</span>
 Dashboard
 
 </a>
-
 
 
 
@@ -502,7 +415,6 @@ Settings
 
 
 
-
 </nav>
 
 
@@ -523,9 +435,7 @@ Settings
 <!-- MAIN -->
 
 
-
 <main class="main">
-
 
 
 
@@ -536,9 +446,8 @@ Settings
 
 
 
-
-
 <div>
+
 
 
 <h1>
@@ -546,6 +455,8 @@ Settings
 Hostel Dashboard
 
 </h1>
+
+
 
 
 <p>
@@ -556,7 +467,9 @@ Your StayFlow operations center
 
 
 
+
 </div>
+
 
 
 
@@ -574,6 +487,7 @@ Your StayFlow operations center
 
 
 
+
 </div>
 
 
@@ -581,10 +495,6 @@ Your StayFlow operations center
 
 
 
-
-
-
-<!-- CARDS -->
 
 
 
@@ -608,6 +518,7 @@ Messages
 
 
 
+
 <div class="card-value">
 
 Inbox
@@ -616,7 +527,9 @@ Inbox
 
 
 
+
 </a>
+
 
 
 
@@ -638,11 +551,13 @@ Reservations
 
 
 
+
 <div class="card-value">
 
 Manage
 
 </div>
+
 
 
 
@@ -656,7 +571,7 @@ Manage
 
 
 
-<a class="card" href="#">
+<div class="card">
 
 
 
@@ -668,15 +583,17 @@ Guests
 
 
 
+
 <div class="card-value">
 
-View
+Soon
 
 </div>
 
 
 
-</a>
+
+</div>
 
 
 
@@ -685,7 +602,8 @@ View
 
 
 
-<a class="card" href="#">
+
+<div class="card">
 
 
 
@@ -697,6 +615,7 @@ AI Status
 
 
 
+
 <div class="card-value">
 
 Online
@@ -705,7 +624,8 @@ Online
 
 
 
-</a>
+
+</div>
 
 
 
@@ -721,58 +641,10 @@ Online
 
 
 
-
-
-
-<!-- ACTIONS -->
-
-
-
-<div class="quick-actions">
-
-
-
-
-
-<a class="action-btn" href="inbox.html">
-
-Open Inbox
-
-</a>
-
-
-
-
-
-
-<a class="action-btn" href="reservations.html">
-
-Reservations
-
-</a>
-
-
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<!-- ACTIVITY -->
 
 
 
 <section class="activity">
-
-
 
 
 
@@ -804,11 +676,7 @@ Future integrations: WhatsApp, Booking, Airbnb
 
 
 
-
-
 </section>
-
-
 
 
 
@@ -823,11 +691,7 @@ Future integrations: WhatsApp, Booking, Airbnb
 
 
 
-
-
 </div>
-
-
 
 
 
@@ -836,4 +700,4 @@ Future integrations: WhatsApp, Booking, Airbnb
 
 </body>
 
-</html>
+</html> 
