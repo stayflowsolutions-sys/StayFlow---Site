@@ -3,9 +3,9 @@
 
 <head>
 
-<title>StayFlow</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>StayFlow</title>
 
 
 <style>
@@ -14,100 +14,142 @@
 box-sizing:border-box;
 }
 
+
 body{
+
 margin:0;
+
 background:#050505;
+
 color:white;
+
 font-family:'Montserrat','Poppins','Segoe UI',sans-serif;
+
 }
+
 
 
 .sidebar{
+
 position:fixed;
-top:0;
+
 left:-290px;
-width:290px;
+
+top:0;
+
 height:100vh;
+
+width:290px;
+
 background:#080808;
+
 border-right:1px solid #1b8cff55;
-padding:22px;
+
+padding:20px;
+
 transition:.3s;
-z-index:20;
+
+z-index:10;
+
 overflow-y:auto;
+
 }
+
 
 
 .sidebar.open{
+
 left:0;
+
 }
 
 
+
 .overlay{
+
 position:fixed;
+
 inset:0;
+
 background:#000b;
+
 display:none;
-z-index:15;
+
+z-index:5;
+
 }
 
 
 .overlay.show{
+
 display:block;
+
 }
+
+
+
 
 
 .logo-img{
+
 width:150px;
+
 display:block;
+
 margin:auto;
+
 }
 
 
-.brand-name{
+
+
+.brand{
+
 text-align:center;
+
 font-size:32px;
+
 font-weight:800;
+
 letter-spacing:3px;
-text-transform:uppercase;
+
 margin:15px;
+
 }
 
 
-.brand-name span{
+.brand span{
+
 color:#1b8cff;
-}
-
-
-
-.profile,
-.card{
-
-background:#0b0b0b;
-border:1px solid #1b8cff33;
-border-radius:20px;
-padding:18px;
 
 }
+
 
 
 
 .menu button{
 
 width:100%;
-padding:12px;
+
 background:none;
+
 border:0;
+
 color:white;
+
+padding:12px;
+
 text-align:left;
+
 border-radius:12px;
+
 cursor:pointer;
 
 }
 
 
 
-.menu button.active,
-.menu button:hover{
+.menu button.active{
 
 background:#1b8cff22;
 
@@ -118,70 +160,97 @@ background:#1b8cff22;
 .topbar{
 
 height:75px;
+
 display:flex;
+
 align-items:center;
+
 justify-content:space-between;
+
 padding:0 25px;
+
 border-bottom:1px solid #ffffff15;
 
 }
 
 
-.menu-icon{
-font-size:28px;
-cursor:pointer;
-}
-
 
 .content{
+
 padding:25px;
+
 }
+
+
 
 
 .cards{
 
 display:grid;
+
 grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
 gap:18px;
 
 }
 
 
 
-.page{
-display:none;
+
+.card{
+
+background:#0b0b0b;
+
+border:1px solid #1b8cff33;
+
+border-radius:20px;
+
+padding:20px;
+
 }
+
+
+
+
+.page{
+
+display:none;
+
+}
+
 
 
 .page.active{
+
 display:block;
+
 }
+
 
 
 .value{
+
 font-size:30px;
+
 color:#1b8cff;
+
 font-weight:bold;
+
 }
+
 
 
 .lang span{
+
 cursor:pointer;
+
 margin:5px;
-}
-
-
-.action{
-
-background:#1b8cff;
-color:white;
-border:0;
-padding:10px 15px;
-border-radius:12px;
 
 }
+
 
 </style>
+
 
 </head>
 
@@ -189,34 +258,25 @@ border-radius:12px;
 <body>
 
 
-<div id="overlay" class="overlay"></div>
+
+<div class="overlay" id="overlay"></div>
 
 
-<div id="sidebar" class="sidebar">
+
+<div class="sidebar" id="sidebar">
 
 
 <img src="IMG_3520.png" class="logo-img">
 
 
-<div class="brand-name">
+
+<div class="brand">
+
 Stay<span>Flow</span>
-</div>
-
-
-
-<div class="profile">
-
-<b data-i18n="hostel"></b>
-
-<br><br>
-
-Jorge
-
-<br>
-
-<span data-i18n="owner"></span>
 
 </div>
+
+
 
 
 
@@ -224,54 +284,88 @@ Jorge
 
 
 <button class="active" onclick="openPage('home',this)">
+
 🏠 <span data-i18n="home"></span>
+
 </button>
 
 
 <button onclick="openPage('reservations',this)">
+
 🛏 <span data-i18n="reservations"></span>
+
 </button>
 
 
 <button onclick="openPage('guests',this)">
+
 👥 <span data-i18n="guests"></span>
+
 </button>
 
 
 <button onclick="openPage('operations',this)">
+
 🧹 <span data-i18n="operations"></span>
+
 </button>
 
 
 <button onclick="openPage('linen',this)">
+
 🧺 <span data-i18n="linen"></span>
+
 </button>
 
 
 <button onclick="openPage('bathrooms',this)">
+
 🚿 <span data-i18n="bathrooms"></span>
+
 </button>
 
 
 <button onclick="openPage('supplies',this)">
+
 📦 <span data-i18n="supplies"></span>
+
+</button>
+
+
+<button onclick="openPage('extras',this)">
+
+🎒 <span data-i18n="extras"></span>
+
+</button>
+
+
+<button onclick="openPage('tours',this)">
+
+🚐 <span data-i18n="tours"></span>
+
 </button>
 
 
 <button onclick="openPage('analytics',this)">
+
 📊 <span data-i18n="analytics"></span>
+
 </button>
 
 
 <button onclick="openPage('audit',this)">
+
 📋 <span data-i18n="audit"></span>
+
 </button>
 
 
+
 </div>
 
 
 </div>
+
 
 
 
@@ -279,11 +373,14 @@ Jorge
 <div class="main">
 
 
+
 <div class="topbar">
 
 
-<div class="menu-icon" onclick="toggleMenu()">
+<div onclick="toggleMenu()">
+
 ☰
+
 </div>
 
 
@@ -292,7 +389,7 @@ Jorge
 
 
 
-<div>
+<div class="lang">
 
 🌐
 
@@ -318,8 +415,8 @@ Jorge
 <h1 data-i18n="welcome"></h1>
 
 
-<div class="cards">
 
+<div class="cards">
 
 
 <div class="card">
@@ -329,7 +426,6 @@ Jorge
 <div class="value">4</div>
 
 </div>
-
 
 
 
@@ -343,7 +439,6 @@ Jorge
 
 
 
-
 <div class="card">
 
 <h2 data-i18n="cleaning"></h2>
@@ -354,16 +449,16 @@ Jorge
 
 
 
-
 <div class="card">
 
 <h2 data-i18n="alerts"></h2>
 
-<p data-i18n="paper_low"></p>
+<p data-i18n="alert_paper"></p>
 
-<p data-i18n="maintenance_alert"></p>
+<p data-i18n="alert_maintenance"></p>
 
 </div>
+
 
 
 </div>
@@ -375,22 +470,14 @@ Jorge
 
 <div class="card">
 
-<h2 data-i18n="ai_snapshot"></h2>
-
+<h2 data-i18n="ai_summary"></h2>
 
 <p>
-
-<span data-i18n="messages"></span>:
-17
-
+<span data-i18n="messages"></span>: 17
 </p>
 
-
 <p>
-
-<span data-i18n="reservations"></span>:
-4
-
+<span data-i18n="new_bookings"></span>: 4
 </p>
 
 
@@ -398,17 +485,13 @@ Jorge
 
 
 
-
-
 <div class="card">
 
-<h2 data-i18n="performance"></h2>
-
+<h2 data-i18n="team_performance"></h2>
 
 <p>
 Maria 92%
 </p>
-
 
 <p>
 Jorge 88%
@@ -416,7 +499,6 @@ Jorge 88%
 
 
 </div>
-
 
 
 </div>
@@ -439,6 +521,7 @@ Jorge 88%
 <h1 data-i18n="reservations"></h1>
 
 
+
 <div class="cards">
 
 
@@ -450,17 +533,16 @@ Jorge 88%
 
 <p data-i18n="guest"></p>
 
-
 <p data-i18n="room"></p>
-
 
 <p data-i18n="nights"></p>
 
+<p data-i18n="status_confirmed"></p>
 
-<p data-i18n="confirmed"></p>
 
 
 </div>
+
 
 
 
@@ -473,11 +555,12 @@ Jorge 88%
 
 <p data-i18n="guest_arrival"></p>
 
-
 <p data-i18n="room_assignment"></p>
 
 
+
 </div>
+
 
 
 </div>
@@ -499,6 +582,7 @@ Jorge 88%
 <h1 data-i18n="guests"></h1>
 
 
+
 <div class="cards">
 
 
@@ -512,8 +596,9 @@ Maria Silva
 
 <p data-i18n="country"></p>
 
+<p data-i18n="stay_history"></p>
 
-<p data-i18n="previous_stays"></p>
+<p data-i18n="notes"></p>
 
 
 </div>
@@ -525,11 +610,10 @@ Maria Silva
 <div class="card">
 
 
-<h2 data-i18n="history"></h2>
+<h2 data-i18n="guest_profile"></h2>
 
 
 <p data-i18n="preferences"></p>
-
 
 <p data-i18n="requests"></p>
 
@@ -537,8 +621,9 @@ Maria Silva
 </div>
 
 
-
 </div>
+
+
 
 </section>
 
@@ -556,6 +641,8 @@ Maria Silva
 <h1 data-i18n="operations"></h1>
 
 
+
+
 <div class="cards">
 
 
@@ -566,13 +653,23 @@ Maria Silva
 <h2 data-i18n="cleaning_tasks"></h2>
 
 
-<p data-i18n="created"></p>
+<p>
+
+<span data-i18n="task_status"></span>:
+
+<span data-i18n="pending"></span>
+
+</p>
 
 
-<p data-i18n="assigned"></p>
 
+<p>
 
-<p data-i18n="waiting_cleaning"></p>
+<span data-i18n="created_by"></span>:
+
+Jorge
+
+</p>
 
 
 </div>
@@ -587,10 +684,9 @@ Maria Silva
 <h2 data-i18n="maintenance"></h2>
 
 
-<p data-i18n="broken_shower"></p>
-
-
 <p data-i18n="broken_bed"></p>
+
+<p data-i18n="broken_shower"></p>
 
 
 </div>
@@ -602,19 +698,18 @@ Maria Silva
 <div class="card">
 
 
-<h2 data-i18n="handover"></h2>
+<h2 data-i18n="shift_handover"></h2>
 
 
-<p>☐ <span data-i18n="bathroom_check"></span></p>
+<p>☐ <span data-i18n="check_bathrooms"></span></p>
 
+<p>☐ <span data-i18n="check_supplies"></span></p>
 
-<p>☐ <span data-i18n="supplies_check"></span></p>
-
-
-<p>☐ <span data-i18n="issues_report"></span></p>
+<p>☐ <span data-i18n="report_issues"></span></p>
 
 
 </div>
+
 
 
 </div>
@@ -633,10 +728,12 @@ Maria Silva
 <section id="linen" class="page">
 
 
-<h1 data-i18n="linen"></h1>
+<h1 data-i18n="linen_control"></h1>
+
 
 
 <div class="cards">
+
 
 
 <div class="card">
@@ -669,7 +766,18 @@ Maria Silva
 
 
 
+<div class="card">
+
+<h2 data-i18n="damaged"></h2>
+
+<div class="value">1</div>
+
 </div>
+
+
+
+</div>
+
 
 </section>
 
@@ -679,13 +787,15 @@ Maria Silva
 <h1 data-i18n="bathrooms"></h1>
 
 
+
 <div class="cards">
 
 
 <div class="card">
 
 
-<h2 data-i18n="bathroom_one"></h2>
+<h2 data-i18n="bathroom_checklist"></h2>
+
 
 
 <p>☐ <span data-i18n="floor"></span></p>
@@ -704,6 +814,30 @@ Maria Silva
 
 
 </div>
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="bathroom_status"></h2>
+
+
+<p data-i18n="ready"></p>
+
+
+<p>
+
+<span data-i18n="last_clean"></span>:
+
+10:30
+
+</p>
+
+
+</div>
+
 
 
 </div>
@@ -725,6 +859,7 @@ Maria Silva
 <h1 data-i18n="supplies"></h1>
 
 
+
 <div class="cards">
 
 
@@ -732,7 +867,7 @@ Maria Silva
 <div class="card">
 
 
-<h2 data-i18n="breakfast"></h2>
+<h2 data-i18n="breakfast_items"></h2>
 
 
 <p data-i18n="coffee"></p>
@@ -751,14 +886,14 @@ Maria Silva
 <div class="card">
 
 
-<h2 data-i18n="guest_supplies"></h2>
+<h2 data-i18n="cleaning_products"></h2>
 
 
-<p data-i18n="toilet_paper"></p>
+<p data-i18n="detergent"></p>
 
-<p data-i18n="soap"></p>
+<p data-i18n="disinfectant"></p>
 
-<p data-i18n="towels"></p>
+<p data-i18n="trash_bags"></p>
 
 
 </div>
@@ -773,15 +908,104 @@ Maria Silva
 <h2 data-i18n="shopping_list"></h2>
 
 
-<p>☐ <span data-i18n="coffee"></span></p>
 
-<p>☐ <span data-i18n="toilet_paper"></span></p>
-
-<p>☐ <span data-i18n="cleaning_products"></span></p>
-
+<p>
+☐ <span data-i18n="coffee"></span>
+</p>
 
 
-<button class="action" data-i18n="mark_done"></button>
+<p>
+☐ <span data-i18n="toilet_paper"></span>
+</p>
+
+
+<p>
+☐ <span data-i18n="soap"></span>
+</p>
+
+
+
+<button class="action">
+
+<span data-i18n="complete"></span>
+
+</button>
+
+
+
+</div>
+
+
+</div>
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="extras" class="page">
+
+
+<h1 data-i18n="extras"></h1>
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="towels"></h2>
+
+
+<p>
+
+<span data-i18n="available"></span>:
+
+15
+
+</p>
+
+
+
+<p>
+
+<span data-i18n="in_use"></span>:
+
+8
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="blankets"></h2>
+
+
+<p>
+
+<span data-i18n="available"></span>:
+
+12
+
+</p>
 
 
 </div>
@@ -789,6 +1013,77 @@ Maria Silva
 
 
 </div>
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="tours" class="page">
+
+
+<h1 data-i18n="tours"></h1>
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="wine_tour"></h2>
+
+
+<p>
+
+<span data-i18n="bookings"></span>:
+
+6
+
+</p>
+
+
+
+<p>
+
+<span data-i18n="revenue"></span>:
+
+$180
+
+</p>
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="ai_recommendations"></h2>
+
+
+<p data-i18n="offer_tours"></p>
+
+<p data-i18n="increase_sales"></p>
+
+
+</div>
+
+
+</div>
+
 
 
 </section>
@@ -817,6 +1112,7 @@ Maria Silva
 
 <h2 data-i18n="occupancy"></h2>
 
+
 <div class="value">82%</div>
 
 
@@ -825,10 +1121,11 @@ Maria Silva
 
 
 
+
 <div class="card">
 
 
-<h2 data-i18n="team"></h2>
+<h2 data-i18n="employee_stats"></h2>
 
 
 <p>
@@ -846,11 +1143,13 @@ Joao 76%
 </p>
 
 
-</div>
-
-
 
 </div>
+
+
+
+</div>
+
 
 
 </section>
@@ -869,14 +1168,8 @@ Joao 76%
 <h1 data-i18n="audit"></h1>
 
 
+
 <div class="card">
-
-
-<p>
-
-21/06 11:42
-
-</p>
 
 
 <p data-i18n="checkout_completed"></p>
@@ -885,31 +1178,17 @@ Joao 76%
 <p data-i18n="cleaning_completed"></p>
 
 
+<p data-i18n="linen_updated"></p>
+
+
 <p data-i18n="bathroom_checked"></p>
 
 
 </div>
 
 
+
 </section>
-
-
-
-
-
-
-
-
-
-</div>
-
-
-</div>
-
-
-
-
-
 
 <script>
 
@@ -917,14 +1196,11 @@ Joao 76%
 const translations = {
 
 
-
 pt:{
 
 
 home:"Início",
 welcome:"Bom dia Jorge 👋",
-hostel:"Hostel",
-owner:"Dono",
 
 reservations:"Reservas",
 guests:"Hóspedes",
@@ -932,56 +1208,63 @@ operations:"Operações",
 linen:"Enxoval",
 bathrooms:"Banheiros",
 supplies:"Insumos",
+extras:"Extras",
+tours:"Passeios",
 analytics:"Análises",
 audit:"Auditoria",
+
 
 arrivals:"Chegadas",
 departures:"Saídas",
 cleaning:"Limpeza",
 alerts:"Alertas",
 
-paper_low:"Papel higiênico baixo",
-maintenance_alert:"Manutenção pendente",
+alert_paper:"Papel higiênico baixo",
+alert_maintenance:"Manutenção pendente",
 
-ai_snapshot:"Resumo IA",
-performance:"Desempenho",
-
+ai_summary:"Resumo IA",
 messages:"Mensagens",
+new_bookings:"Novas reservas",
+team_performance:"Desempenho equipe",
+
 new_reservation:"Nova reserva",
 guest:"Hóspede",
 room:"Quarto",
 nights:"Noites",
-confirmed:"Confirmado",
+status_confirmed:"Confirmado",
 
 checkin:"Check-in",
 guest_arrival:"Chegada do hóspede",
 room_assignment:"Definir quarto",
 
 country:"País",
-previous_stays:"Estadias anteriores",
-history:"Histórico",
+stay_history:"Histórico de estadias",
+notes:"Observações",
+guest_profile:"Perfil do hóspede",
 preferences:"Preferências",
 requests:"Solicitações",
 
 cleaning_tasks:"Tarefas de limpeza",
-created:"Criado",
-assigned:"Responsável",
-waiting_cleaning:"Aguardando limpeza",
+task_status:"Status",
+pending:"Pendente",
+created_by:"Criado por",
 
 maintenance:"Manutenção",
-broken_shower:"Chuveiro quebrado",
 broken_bed:"Cama quebrada",
+broken_shower:"Chuveiro com defeito",
 
-handover:"Repasse de turno",
-bathroom_check:"Conferir banheiros",
-supplies_check:"Conferir insumos",
-issues_report:"Registrar problemas",
+shift_handover:"Repasse de turno",
+check_bathrooms:"Conferir banheiros",
+check_supplies:"Conferir insumos",
+report_issues:"Registrar problemas",
 
+linen_control:"Controle de enxoval",
 clean_available:"Limpo disponível",
 in_use:"Em uso",
 laundry:"Lavanderia",
+damaged:"Danificado",
 
-bathroom_one:"Banheiro 1",
+bathroom_checklist:"Checklist banheiro",
 floor:"Piso",
 toilet:"Vaso",
 sink:"Pia",
@@ -990,25 +1273,49 @@ toilet_paper:"Papel higiênico",
 soap:"Sabão",
 towels:"Toalhas",
 
-breakfast:"Café da manhã",
+bathroom_status:"Status banheiro",
+ready:"Pronto",
+last_clean:"Última limpeza",
+
+breakfast_items:"Itens café da manhã",
 coffee:"Café",
 milk:"Leite",
 bread:"Pão",
 
-guest_supplies:"Itens hóspedes",
+cleaning_products:"Produtos limpeza",
+detergent:"Detergente",
+disinfectant:"Desinfetante",
+trash_bags:"Sacos de lixo",
+
 shopping_list:"Lista de compras",
-cleaning_products:"Produtos de limpeza",
-mark_done:"Finalizar",
+complete:"Finalizar",
+
+blankets:"Cobertas",
+available:"Disponível",
+
+wine_tour:"Tour vinho",
+bookings:"Reservas",
+revenue:"Receita",
+
+ai_recommendations:"Sugestões IA",
+offer_tours:"Oferecer passeios",
+increase_sales:"Aumentar vendas",
 
 occupancy:"Ocupação",
-team:"Equipe",
+employee_stats:"Funcionários",
 
-checkout_completed:"Checkout realizado",
+checkout_completed:"Checkout registrado",
 cleaning_completed:"Limpeza concluída",
-bathroom_checked:"Banheiro conferido"
+linen_updated:"Enxoval atualizado",
+bathroom_checked:"Banheiro conferido",
+
+hostel:"Hostel",
+owner:"Dono"
 
 
 },
+
+
 
 
 
@@ -1017,8 +1324,6 @@ en:{
 
 home:"Home",
 welcome:"Good morning Jorge 👋",
-hostel:"Hostel",
-owner:"Owner",
 
 reservations:"Reservations",
 guests:"Guests",
@@ -1026,56 +1331,63 @@ operations:"Operations",
 linen:"Linen",
 bathrooms:"Bathrooms",
 supplies:"Supplies",
+extras:"Extras",
+tours:"Tours",
 analytics:"Analytics",
 audit:"Audit",
+
 
 arrivals:"Arrivals",
 departures:"Departures",
 cleaning:"Cleaning",
 alerts:"Alerts",
 
-paper_low:"Toilet paper low",
-maintenance_alert:"Maintenance pending",
+alert_paper:"Toilet paper low",
+alert_maintenance:"Maintenance pending",
 
-ai_snapshot:"AI Snapshot",
-performance:"Performance",
-
+ai_summary:"AI Summary",
 messages:"Messages",
+new_bookings:"New bookings",
+team_performance:"Team performance",
+
 new_reservation:"New reservation",
 guest:"Guest",
 room:"Room",
 nights:"Nights",
-confirmed:"Confirmed",
+status_confirmed:"Confirmed",
 
 checkin:"Check-in",
 guest_arrival:"Guest arrival",
 room_assignment:"Room assignment",
 
 country:"Country",
-previous_stays:"Previous stays",
-history:"History",
+stay_history:"Stay history",
+notes:"Notes",
+guest_profile:"Guest profile",
 preferences:"Preferences",
 requests:"Requests",
 
 cleaning_tasks:"Cleaning tasks",
-created:"Created",
-assigned:"Assigned",
-waiting_cleaning:"Waiting cleaning",
+task_status:"Status",
+pending:"Pending",
+created_by:"Created by",
 
 maintenance:"Maintenance",
-broken_shower:"Broken shower",
 broken_bed:"Broken bed",
+broken_shower:"Broken shower",
 
-handover:"Shift handover",
-bathroom_check:"Bathroom check",
-supplies_check:"Supplies check",
-issues_report:"Report issues",
+shift_handover:"Shift handover",
+check_bathrooms:"Check bathrooms",
+check_supplies:"Check supplies",
+report_issues:"Report issues",
 
+linen_control:"Linen control",
 clean_available:"Clean available",
 in_use:"In use",
 laundry:"Laundry",
+damaged:"Damaged",
 
-bathroom_one:"Bathroom 1",
+bathroom_checklist:"Bathroom checklist",
 floor:"Floor",
 toilet:"Toilet",
 sink:"Sink",
@@ -1084,124 +1396,47 @@ toilet_paper:"Toilet paper",
 soap:"Soap",
 towels:"Towels",
 
-breakfast:"Breakfast",
+bathroom_status:"Bathroom status",
+ready:"Ready",
+last_clean:"Last clean",
+
+breakfast_items:"Breakfast items",
 coffee:"Coffee",
 milk:"Milk",
 bread:"Bread",
 
-guest_supplies:"Guest supplies",
-shopping_list:"Shopping list",
 cleaning_products:"Cleaning products",
-mark_done:"Finish",
+detergent:"Detergent",
+disinfectant:"Disinfectant",
+trash_bags:"Trash bags",
+
+shopping_list:"Shopping list",
+complete:"Complete",
+
+blankets:"Blankets",
+available:"Available",
+
+wine_tour:"Wine tour",
+bookings:"Bookings",
+revenue:"Revenue",
+
+ai_recommendations:"AI recommendations",
+offer_tours:"Offer tours",
+increase_sales:"Increase sales",
 
 occupancy:"Occupancy",
-team:"Team",
+employee_stats:"Employee stats",
 
-checkout_completed:"Checkout completed",
+checkout_completed:"Checkout registered",
 cleaning_completed:"Cleaning completed",
-bathroom_checked:"Bathroom checked"
-
-
-}
-
-};
-
-,
-
-
-es:{
-
-
-home:"Inicio",
-welcome:"Buenos días Jorge 👋",
+linen_updated:"Linen updated",
+bathroom_checked:"Bathroom checked",
 
 hostel:"Hostel",
-owner:"Dueño",
-
-reservations:"Reservas",
-guests:"Huéspedes",
-operations:"Operaciones",
-linen:"Ropa de cama",
-bathrooms:"Baños",
-supplies:"Insumos",
-analytics:"Análisis",
-audit:"Auditoría",
-
-arrivals:"Llegadas",
-departures:"Salidas",
-cleaning:"Limpieza",
-alerts:"Alertas",
-
-paper_low:"Papel higiénico bajo",
-maintenance_alert:"Mantenimiento pendiente",
-
-ai_snapshot:"Resumen IA",
-performance:"Rendimiento",
-
-messages:"Mensajes",
-new_reservation:"Nueva reserva",
-guest:"Huésped",
-room:"Habitación",
-nights:"Noches",
-confirmed:"Confirmado",
-
-checkin:"Check-in",
-guest_arrival:"Llegada del huésped",
-room_assignment:"Asignar habitación",
-
-country:"País",
-previous_stays:"Estadías anteriores",
-history:"Historial",
-preferences:"Preferencias",
-requests:"Solicitudes",
-
-cleaning_tasks:"Tareas de limpieza",
-created:"Creado",
-assigned:"Responsable",
-waiting_cleaning:"Esperando limpieza",
-
-maintenance:"Mantenimiento",
-broken_shower:"Ducha rota",
-broken_bed:"Cama rota",
-
-handover:"Cambio de turno",
-bathroom_check:"Revisar baños",
-supplies_check:"Revisar insumos",
-issues_report:"Registrar problemas",
-
-clean_available:"Limpio disponible",
-in_use:"En uso",
-laundry:"Lavandería",
-
-bathroom_one:"Baño 1",
-floor:"Piso",
-toilet:"Inodoro",
-sink:"Lavamanos",
-mirror:"Espejo",
-toilet_paper:"Papel higiénico",
-soap:"Jabón",
-towels:"Toallas",
-
-breakfast:"Desayuno",
-coffee:"Café",
-milk:"Leche",
-bread:"Pan",
-
-guest_supplies:"Artículos huéspedes",
-shopping_list:"Lista de compras",
-cleaning_products:"Productos limpieza",
-mark_done:"Finalizar",
-
-occupancy:"Ocupación",
-team:"Equipo",
-
-checkout_completed:"Checkout realizado",
-cleaning_completed:"Limpieza realizada",
-bathroom_checked:"Baño revisado"
+owner:"Owner"
 
 
-}
-
+},
 
 
 };
@@ -1212,12 +1447,12 @@ bathroom_checked:"Baño revisado"
 
 
 
-function applyLanguage(code){
+function applyLanguage(lang){
 
 
 localStorage.setItem(
-"stayflow_language",
-code
+"stayflow_lang",
+lang
 );
 
 
@@ -1227,27 +1462,30 @@ document
 .forEach(el=>{
 
 
-const key =
-el.getAttribute("data-i18n");
+let key =
+el.dataset.i18n;
 
 
-if(
-translations[code] &&
-translations[code][key]
-){
-
+if(translations[lang][key]){
 
 el.innerHTML =
-translations[code][key];
-
+translations[lang][key];
 
 }
-
 
 
 });
 
 
+}
+
+
+
+
+
+function changeLang(lang){
+
+applyLanguage(lang);
 
 }
 
@@ -1256,64 +1494,41 @@ translations[code][key];
 
 
 
-function changeLang(code){
-
-applyLanguage(code);
-
-}
+applyLanguage(
+localStorage.getItem("stayflow_lang") || "pt"
+);
 
 
 
 
 
-
-let savedLanguage =
-localStorage.getItem("stayflow_language")
-||
-"pt";
-
-
-applyLanguage(savedLanguage);
-
-
-
-
-
-
-
-
-
-/* MENU */
-
-
-const sidebar =
-document.getElementById("sidebar");
-
-
-const overlay =
-document.getElementById("overlay");
 
 
 
 function toggleMenu(){
 
+document
+.getElementById("sidebar")
+.classList.toggle("open");
 
-sidebar.classList.toggle("open");
 
-overlay.classList.toggle("show");
+document
+.getElementById("overlay")
+.classList.toggle("show");
 
 
 }
 
 
 
-overlay.onclick=function(){
 
 
-sidebar.classList.remove("open");
 
-overlay.classList.remove("show");
+document
+.getElementById("overlay")
+.onclick=function(){
 
+toggleMenu();
 
 };
 
@@ -1323,20 +1538,12 @@ overlay.classList.remove("show");
 
 
 
-
-
-function openPage(id,button){
-
+function openPage(id,btn){
 
 
 document
 .querySelectorAll(".page")
-.forEach(page=>{
-
-page.classList.remove("active");
-
-});
-
+.forEach(p=>p.classList.remove("active"));
 
 
 document
@@ -1347,52 +1554,34 @@ document
 
 document
 .querySelectorAll(".menu button")
-.forEach(btn=>{
-
-btn.classList.remove("active");
-
-});
+.forEach(b=>b.classList.remove("active"));
 
 
-button.classList.add("active");
+
+btn.classList.add("active");
 
 
 
 document
 .getElementById("pageTitle")
-.setAttribute(
-"data-i18n",
-id
-);
-
+.dataset.i18n=id;
 
 
 applyLanguage(
-localStorage.getItem("stayflow_language") || "pt"
+localStorage.getItem("stayflow_lang") || "pt"
 );
 
 
-
 toggleMenu();
-
 
 }
 
 
 
 
-
-
-
-
-
-/* HORA REAL */
-
-
 function updateClock(){
 
-
-let time =
+let now =
 new Date()
 .toLocaleTimeString([],{
 
@@ -1402,10 +1591,8 @@ minute:"2-digit"
 });
 
 
-
 document.title =
-"StayFlow • "+time;
-
+"StayFlow • "+now;
 
 }
 
@@ -1413,11 +1600,6 @@ document.title =
 setInterval(updateClock,1000);
 
 updateClock();
-
-
-
-
-
 
 
 
