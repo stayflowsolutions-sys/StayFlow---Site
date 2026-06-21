@@ -7,8 +7,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
-<title>StayFlow | Dashboard</title>
+<title>StayFlow Dashboard</title>
 
 
 <style>
@@ -21,14 +20,19 @@ box-sizing:border-box;
 }
 
 
-
 body{
 
 background:#050505;
-
 color:white;
+font-family:Inter,Arial,sans-serif;
+min-height:100vh;
 
-font-family:Inter,Arial,Helvetica,sans-serif;
+}
+
+
+
+
+.app{
 
 min-height:100vh;
 
@@ -38,29 +42,32 @@ min-height:100vh;
 
 
 
-.dashboard-layout{
 
-display:grid;
+.topbar{
 
-grid-template-columns:240px 1fr;
-
-min-height:100vh;
-
-}
-
-
-
-
-
-.sidebar{
+height:80px;
 
 background:#0d0f14;
 
-border-right:1px solid #1b2535;
+border-bottom:1px solid #1b2535;
 
-padding:30px 20px;
+display:flex;
+
+align-items:center;
+
+justify-content:space-between;
+
+padding:0 30px;
+
+position:sticky;
+
+top:0;
+
+z-index:10;
 
 }
+
+
 
 
 
@@ -74,37 +81,17 @@ align-items:center;
 
 gap:12px;
 
-margin-bottom:45px;
-
 }
 
 
 
 
 
-.brand-icon{
+.brand img{
 
-width:48px;
+width:45px;
 
-height:48px;
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
-}
-
-
-
-
-
-.brand-icon img{
-
-width:48px;
-
-height:48px;
+height:45px;
 
 object-fit:contain;
 
@@ -114,19 +101,19 @@ object-fit:contain;
 
 
 
-.brand-text{
+.brand-name{
 
 font-size:28px;
 
 font-weight:800;
 
-letter-spacing:-1px;
-
 }
 
 
 
-.brand-text span{
+
+
+.brand-name span{
 
 color:#0D6EFD;
 
@@ -138,19 +125,14 @@ color:#0D6EFD;
 
 
 
-.menu a{
 
-display:block;
+.menu{
 
-text-decoration:none;
+display:flex;
 
-color:#9ba3b2;
+gap:10px;
 
-padding:14px;
-
-border-radius:14px;
-
-margin-bottom:10px;
+overflow-x:auto;
 
 }
 
@@ -158,7 +140,30 @@ margin-bottom:10px;
 
 
 
-.menu a:hover{
+.menu button{
+
+background:none;
+
+border:none;
+
+color:#9ba3b2;
+
+padding:12px 18px;
+
+border-radius:14px;
+
+cursor:pointer;
+
+font-size:15px;
+
+}
+
+
+
+
+
+.menu button:hover,
+.menu button.active{
 
 background:#111827;
 
@@ -172,7 +177,7 @@ color:white;
 
 
 
-.main{
+.content{
 
 padding:35px;
 
@@ -182,15 +187,9 @@ padding:35px;
 
 
 
-.header{
+.page{
 
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
-margin-bottom:35px;
+display:none;
 
 }
 
@@ -198,31 +197,31 @@ margin-bottom:35px;
 
 
 
-.header p{
+.page.active{
+
+display:block;
+
+}
+
+
+
+
+
+h1{
+
+margin-bottom:10px;
+
+}
+
+
+
+.subtitle{
 
 color:#9ba3b2;
 
-margin-top:8px;
+margin-bottom:30px;
 
 }
-
-
-
-
-
-.system-status{
-
-color:#00d26a;
-
-font-size:14px;
-
-}
-
-
-
-
-
-
 
 .cards{
 
@@ -247,25 +246,7 @@ border:1px solid #1b2535;
 
 border-radius:25px;
 
-padding:28px;
-
-text-decoration:none;
-
-color:white;
-
-transition:.2s;
-
-}
-
-
-
-
-
-.card:hover{
-
-border-color:#0D6EFD;
-
-transform:translateY(-4px);
+padding:25px;
 
 }
 
@@ -287,7 +268,7 @@ margin-bottom:15px;
 
 .card-value{
 
-font-size:28px;
+font-size:30px;
 
 font-weight:bold;
 
@@ -301,9 +282,8 @@ color:#0D6EFD;
 
 
 
-.activity{
 
-margin-top:40px;
+.table-box{
 
 background:#0d0f14;
 
@@ -311,7 +291,26 @@ border:1px solid #1b2535;
 
 border-radius:25px;
 
-padding:30px;
+padding:25px;
+
+margin-top:25px;
+
+}
+
+
+
+
+.row{
+
+display:flex;
+
+justify-content:space-between;
+
+padding:15px 0;
+
+border-bottom:1px solid #1b2535;
+
+color:#cbd5e1;
 
 }
 
@@ -319,9 +318,34 @@ padding:30px;
 
 
 
-.activity h2{
 
-margin-bottom:20px;
+
+.settings-box{
+
+display:grid;
+
+grid-template-columns:
+repeat(auto-fit,minmax(250px,1fr));
+
+gap:20px;
+
+}
+
+
+
+
+
+
+
+.setting{
+
+background:#0d0f14;
+
+border:1px solid #1b2535;
+
+border-radius:25px;
+
+padding:25px;
 
 }
 
@@ -329,14 +353,19 @@ margin-bottom:20px;
 
 
 
-.activity p{
+.toggle{
 
-color:#9ba3b2;
+width:48px;
 
-line-height:2;
+height:24px;
+
+background:#0D6EFD;
+
+border-radius:30px;
+
+margin-top:15px;
 
 }
-
 
 
 
@@ -346,85 +375,52 @@ line-height:2;
 @media(max-width:800px){
 
 
+.topbar{
 
-.dashboard-layout{
-
-grid-template-columns:1fr;
-
-}
-
-
-
-
-
-.sidebar{
-
-border-right:none;
-
-border-bottom:1px solid #1b2535;
-
-padding:20px;
-
-}
-
-
-
-
-
-.menu{
-
-display:flex;
-
-gap:8px;
-
-overflow-x:auto;
-
-}
-
-
-
-
-
-.menu a{
-
-white-space:nowrap;
-
-margin-bottom:0;
-
-}
-
-
-
-
-
-.main{
-
-padding:20px;
-
-}
-
-
-
-
-
-.header{
+height:auto;
 
 flex-direction:column;
 
 align-items:flex-start;
 
-gap:15px;
+gap:20px;
+
+padding:20px;
+
+}
+
+
+
+.content{
+
+padding:20px;
+
+}
+
+
+
+.menu{
+
+width:100%;
+
+}
+
+
+
+.menu button{
+
+white-space:nowrap;
 
 }
 
 
 
 }
+
 
 
 
 </style>
-
 
 </head>
 
@@ -439,14 +435,14 @@ gap:15px;
 
 
 
-<div class="dashboard-layout">
+<div class="app">
 
 
 
 
 
 
-<aside class="sidebar">
+<header class="topbar">
 
 
 
@@ -456,25 +452,14 @@ gap:15px;
 <div class="brand">
 
 
-
-<div class="brand-icon">
-
-<img src="IMG_3520.png" alt="StayFlow Logo">
-
-</div>
+<img src="IMG_3520.png">
 
 
-
-
-
-<div class="brand-text">
+<div class="brand-name">
 
 Stay<span>Flow</span>
 
 </div>
-
-
-
 
 
 </div>
@@ -491,47 +476,52 @@ Stay<span>Flow</span>
 
 
 
-<a href="dashboard.html">
+<button class="active" onclick="showPage('dashboard',this)">
 
 Dashboard
 
-</a>
+</button>
 
 
 
 
-<a href="inbox.html">
+<button onclick="showPage('inbox',this)">
 
 Inbox
 
-</a>
+</button>
 
 
 
 
-<a href="reservations.html">
+
+<button onclick="showPage('reservations',this)">
 
 Reservations
 
-</a>
+</button>
 
 
 
 
-<a href="statistics.html">
+
+<button onclick="showPage('statistics',this)">
 
 Statistics
 
-</a>
+</button>
 
 
 
 
-<a href="settings.html">
+
+<button onclick="showPage('settings',this)">
 
 Settings
 
-</a>
+</button>
+
+
 
 
 
@@ -543,7 +533,7 @@ Settings
 
 
 
-</aside>
+</header>
 
 
 
@@ -551,70 +541,18 @@ Settings
 
 
 
+<main class="content">
 
-
-<main class="main">
-
-
-
-
-
-
-
-
-<div class="header">
-
-
-
-
-
-<div>
-
+<section id="dashboard" class="page active">
 
 
 <h1>
-
 Dashboard
-
 </h1>
 
-
-
-<p>
-
-StayFlow hostel overview
-
+<p class="subtitle">
+StayFlow overview
 </p>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<div class="system-status">
-
-● AI Assistant Ready
-
-</div>
-
-
-
-
-
-
-
-</div>
-
-
-
-
-
 
 
 
@@ -623,99 +561,17 @@ StayFlow hostel overview
 
 
 
-
-
-
-
-<a class="card" href="inbox.html">
-
-
+<div class="card">
 
 <div class="card-title">
-
 Messages
-
 </div>
 
-
-
-
 <div class="card-value">
-
 12
-
 </div>
 
-
-
-
-</a>
-
-
-
-
-
-
-
-
-
-<a class="card" href="reservations.html">
-
-
-
-<div class="card-title">
-
-Reservations
-
 </div>
-
-
-
-
-<div class="card-value">
-
-28
-
-</div>
-
-
-
-
-</a>
-
-
-
-
-
-
-
-
-<a class="card" href="statistics.html">
-
-
-
-<div class="card-title">
-
-Statistics
-
-</div>
-
-
-
-
-<div class="card-value">
-
-View
-
-</div>
-
-
-
-
-</a>
-
-
-
 
 
 
@@ -723,34 +579,29 @@ View
 
 <div class="card">
 
-
-
 <div class="card-title">
-
-Occupancy
-
+Reservations
 </div>
-
-
-
 
 <div class="card-value">
+28
+</div>
 
+</div>
+
+
+
+
+
+<div class="card">
+
+<div class="card-title">
+Occupancy
+</div>
+
+<div class="card-value">
 78%
-
 </div>
-
-
-
-
-</div>
-
-
-
-
-
-
-
 
 </div>
 
@@ -758,40 +609,178 @@ Occupancy
 
 
 
+<div class="card">
+
+<div class="card-title">
+AI Status
+</div>
+
+<div class="card-value">
+ON
+</div>
+
+</div>
+
+
+
+</div>
 
 
 
 
-<section class="activity">
 
 
+
+<div class="table-box">
 
 <h2>
-
 Recent Activity
-
 </h2>
 
 
+<div class="row">
+
+New reservation
+
+<span>
+Today
+</span>
+
+</div>
+
+
+<div class="row">
+
+AI answered guest
+
+<span>
+10 min
+</span>
+
+</div>
+
+
+</div>
 
 
 
-<p>
+</section>
 
-New reservations will appear here.
 
-<br>
 
-AI conversations and updates will be tracked here.
 
-<br>
 
-Analytics available in Statistics.
 
+
+
+
+
+<section id="inbox" class="page">
+
+
+
+<h1>
+Inbox
+</h1>
+
+
+<p class="subtitle">
+Guest conversations
 </p>
 
 
 
+
+
+<div class="table-box">
+
+
+<div class="row">
+
+Guest #1024
+
+<span>
+AI
+</span>
+
+</div>
+
+
+
+<div class="row">
+
+Guest #1025
+
+<span>
+Human
+</span>
+
+</div>
+
+
+
+
+</div>
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="reservations" class="page">
+
+
+
+<h1>
+Reservations
+</h1>
+
+
+<p class="subtitle">
+Manage bookings
+</p>
+
+
+
+
+
+<div class="table-box">
+
+
+<div class="row">
+
+Room + Bed
+
+<span>
+Payment
+</span>
+
+</div>
+
+
+
+
+<div class="row">
+
+Dorm 4 - Bed 2
+
+<span>
+Card
+</span>
+
+</div>
+
+
+
+
+</div>
 
 
 
@@ -805,8 +794,148 @@ Analytics available in Statistics.
 
 
 
-</main>
 
+<section id="statistics" class="page">
+
+
+
+<h1>
+Statistics
+</h1>
+
+
+<p class="subtitle">
+Business intelligence
+</p>
+
+
+
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+<div class="card-title">
+Best Month
+</div>
+
+<div class="card-value">
+January
+</div>
+
+</div>
+
+
+
+
+
+<div class="card">
+
+<div class="card-title">
+Top Country
+</div>
+
+<div class="card-value">
+Argentina
+</div>
+
+</div>
+
+
+
+
+
+<div class="card">
+
+<div class="card-title">
+Revenue
+</div>
+
+<div class="card-value">
+$0
+</div>
+
+</div>
+
+
+
+
+</div>
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="settings" class="page">
+
+
+
+<h1>
+Settings
+</h1>
+
+
+<p class="subtitle">
+Hostel configuration
+</p>
+
+
+
+
+
+<div class="settings-box">
+
+
+
+<div class="setting">
+
+<h3>
+AI Assistant
+</h3>
+
+<div class="toggle"></div>
+
+</div>
+
+
+
+
+
+<div class="setting">
+
+<h3>
+Human Handoff
+</h3>
+
+<div class="toggle"></div>
+
+</div>
+
+
+
+
+
+<div class="setting">
+
+<h3>
+Notifications
+</h3>
+
+<div class="toggle"></div>
+
+</div>
 
 
 
@@ -817,6 +946,62 @@ Analytics available in Statistics.
 
 
 
+
+
+</section>
+
+
+
+
+
+
+</main>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+<script>
+
+
+function showPage(page,button){
+
+
+document.querySelectorAll(".page")
+.forEach(p=>p.classList.remove("active"));
+
+
+
+document.getElementById(page)
+.classList.add("active");
+
+
+
+
+document.querySelectorAll(".menu button")
+.forEach(b=>b.classList.remove("active"));
+
+
+
+button.classList.add("active");
+
+}
+
+
+
+</script>
 
 
 
