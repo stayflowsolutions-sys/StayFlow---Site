@@ -39,9 +39,9 @@ position:fixed;
 
 top:0;
 
-left:-300px;
+left:-310px;
 
-width:300px;
+width:310px;
 
 height:100vh;
 
@@ -49,15 +49,16 @@ background:#080808;
 
 border-right:1px solid #1b8cff55;
 
-padding:20px;
+padding:22px;
 
 transition:.3s;
 
-z-index:20;
+z-index:50;
 
 overflow-y:auto;
 
 }
+
 
 
 .sidebar.open{
@@ -69,17 +70,18 @@ left:0;
 
 
 
+
 .overlay{
 
 position:fixed;
 
 inset:0;
 
-background:#000b;
+background:#000c;
 
 display:none;
 
-z-index:10;
+z-index:40;
 
 }
 
@@ -99,11 +101,13 @@ display:block;
 
 width:150px;
 
-display:block;
-
 margin:auto;
 
+display:block;
+
 }
+
+
 
 
 
@@ -117,7 +121,7 @@ font-weight:800;
 
 letter-spacing:2px;
 
-margin:15px 0;
+margin:18px 0;
 
 }
 
@@ -133,17 +137,15 @@ color:#1b8cff;
 
 
 
-
-
 .profile{
 
 background:#0d0d0d;
 
 border:1px solid #1b8cff44;
 
-border-radius:18px;
+border-radius:20px;
 
-padding:15px;
+padding:16px;
 
 margin-bottom:20px;
 
@@ -157,23 +159,27 @@ margin-bottom:20px;
 
 width:100%;
 
-background:none;
-
 border:0;
+
+background:none;
 
 color:white;
 
-padding:12px;
+padding:13px;
+
+border-radius:14px;
 
 text-align:left;
-
-border-radius:12px;
 
 cursor:pointer;
 
 font-size:15px;
 
+margin-bottom:4px;
+
 }
+
+
 
 
 
@@ -188,9 +194,17 @@ background:#1b8cff22;
 
 
 
+.main{
+
+min-height:100vh;
+
+}
+
+
+
 .topbar{
 
-height:75px;
+height:80px;
 
 display:flex;
 
@@ -198,12 +212,11 @@ align-items:center;
 
 justify-content:space-between;
 
-padding:20px;
+padding:20px 25px;
 
 border-bottom:1px solid #ffffff15;
 
 }
-
 
 
 
@@ -215,6 +228,7 @@ font-size:28px;
 cursor:pointer;
 
 }
+
 
 
 
@@ -235,6 +249,7 @@ display:none;
 }
 
 
+
 .page.active{
 
 display:block;
@@ -244,15 +259,19 @@ display:block;
 
 
 
+
+
+
 .grid{
 
 display:grid;
 
-grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
 
 gap:18px;
 
 }
+
 
 
 
@@ -263,11 +282,23 @@ background:#0b0b0b;
 
 border:1px solid #1b8cff33;
 
-border-radius:18px;
+border-radius:22px;
 
 padding:20px;
 
+overflow:hidden;
+
 }
+
+
+
+
+.card h2{
+
+margin-top:0;
+
+}
+
 
 
 
@@ -276,12 +307,43 @@ padding:20px;
 
 font-size:34px;
 
-font-weight:bold;
+font-weight:800;
 
 color:#1b8cff;
 
 }
 
+
+
+
+
+
+
+.panel-title{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+gap:10px;
+
+margin-bottom:20px;
+
+}
+
+
+
+
+
+.table-wrap{
+
+width:100%;
+
+overflow-x:auto;
+
+}
 
 
 
@@ -294,13 +356,14 @@ border-collapse:collapse;
 }
 
 
+
 th,td{
 
 padding:12px;
 
 border-bottom:1px solid #ffffff15;
 
-text-align:left;
+text-align:center;
 
 }
 
@@ -318,21 +381,60 @@ margin:5px;
 
 
 
-button.action{
 
-background:#1b8cff;
 
-border:0;
+.audit-list{
 
-color:white;
+display:grid;
 
-padding:10px 15px;
-
-border-radius:12px;
+gap:15px;
 
 }
 
 
+
+.audit-item{
+
+background:#101010;
+
+border:1px solid #1b8cff22;
+
+border-radius:16px;
+
+padding:15px;
+
+}
+
+
+
+.audit-item small{
+
+color:#aaa;
+
+}
+
+
+
+@media(max-width:700px){
+
+
+.content{
+
+padding:15px;
+
+}
+
+
+
+.topbar{
+
+padding:15px;
+
+}
+
+
+
+}
 
 </style>
 
@@ -340,17 +442,10 @@ border-radius:12px;
 </head>
 
 
-
 <body>
 
 
-
-
 <div id="overlay" class="overlay"></div>
-
-
-
-
 
 
 
@@ -358,11 +453,7 @@ border-radius:12px;
 
 
 
-
-
 <img src="IMG_3520.png" class="logo-img">
-
-
 
 
 
@@ -376,19 +467,23 @@ Stay<span>Flow</span>
 
 
 
-
-
 <div class="profile">
+
 
 <b data-i18n="hostel"></b>
 
+
 <br><br>
+
 
 Jorge
 
+
 <br>
 
+
 <span data-i18n="owner"></span>
+
 
 </div>
 
@@ -397,12 +492,7 @@ Jorge
 
 
 
-
-
-
 <div class="menu">
-
-
 
 
 
@@ -505,15 +595,11 @@ Jorge
 
 
 
-
 </div>
 
 
 
-
 </div>
-
-
 
 
 
@@ -523,9 +609,7 @@ Jorge
 <div class="main">
 
 
-
 <div class="topbar">
-
 
 
 <div class="menu-icon" onclick="toggleMenu()">
@@ -537,11 +621,7 @@ Jorge
 
 
 
-
 <h2 id="pageTitle" data-i18n="home"></h2>
-
-
-
 
 
 
@@ -560,10 +640,9 @@ Jorge
 </div>
 
 
-
-
 </div>
-<div class="content">
+
+ <div class="content">
 
 
 
@@ -584,14 +663,23 @@ Jorge
 
 <div class="value">82%</div>
 
-<p>30 <span data-i18n="beds_total"></span></p>
 
-<p>25 <span data-i18n="beds_occupied"></span></p>
+<p>
+30 <span data-i18n="beds_total"></span>
+</p>
 
-<p>5 <span data-i18n="beds_available"></span></p>
+
+<p>
+25 <span data-i18n="beds_occupied"></span>
+</p>
+
+
+<p>
+5 <span data-i18n="beds_available"></span>
+</p>
+
 
 </div>
-
 
 
 
@@ -603,14 +691,14 @@ Jorge
 
 <h2 data-i18n="arrivals"></h2>
 
+
 <div class="value">4</div>
+
 
 <p data-i18n="today"></p>
 
 
 </div>
-
-
 
 
 
@@ -637,7 +725,6 @@ Jorge
 
 
 
-
 <div class="card">
 
 
@@ -654,7 +741,10 @@ Jorge
 
 
 
+
 </div>
+
+
 
 
 
@@ -672,17 +762,14 @@ Jorge
 <h2 data-i18n="ai_summary"></h2>
 
 
-
 <p>
 💬 <span data-i18n="messages"></span>: 320
 </p>
 
 
-
 <p>
 🤖 <span data-i18n="questions_answered"></span>: 95%
 </p>
-
 
 
 <p>
@@ -699,11 +786,11 @@ Jorge
 
 
 
+
 <div class="card">
 
 
 <h2 data-i18n="team"></h2>
-
 
 
 <p>
@@ -713,7 +800,6 @@ Maria
 </p>
 
 
-
 <p>
 
 08:00 - 16:00
@@ -721,8 +807,9 @@ Maria
 </p>
 
 
-
 </div>
+
+
 
 
 
@@ -741,7 +828,6 @@ Maria
 
 
 <section id="reservations" class="page">
-
 
 
 <h1 data-i18n="reservations"></h1>
@@ -780,7 +866,6 @@ Maria
 
 
 
-
 <p>
 
 🛏 <span data-i18n="room"></span>:
@@ -788,7 +873,6 @@ Maria
 Dorm 4
 
 </p>
-
 
 
 
@@ -805,14 +889,11 @@ Cama 12
 
 
 
-
 <p>
 
 📅 21/06 - 24/06
 
 </p>
-
-
 
 
 
@@ -826,6 +907,7 @@ Cama 12
 
 
 </div>
+
 
 
 
@@ -868,9 +950,7 @@ Cama 1
 </p>
 
 
-
 </div>
-
 
 
 
@@ -891,6 +971,7 @@ Ana
 </p>
 
 
+
 <p>
 
 11:00
@@ -906,14 +987,13 @@ Ana
 </p>
 
 
-
 </div>
 
 
 
 
-
 </div>
+
 
 
 
@@ -937,6 +1017,7 @@ Ana
 
 
 
+
 <div class="grid">
 
 
@@ -947,7 +1028,6 @@ Ana
 
 
 <h2 data-i18n="cleaning_board"></h2>
-
 
 
 <p>
@@ -964,7 +1044,6 @@ Cama 12
 </p>
 
 
-
 <p>
 
 🕒 11:15
@@ -978,7 +1057,6 @@ Cama 12
 👤 Maria
 
 </p>
-
 
 
 
@@ -999,26 +1077,30 @@ Cama 12
 
 <p>
 
-1 - <span data-i18n="checkout_registered"></span>
+1️⃣ <span data-i18n="checkout_registered"></span>
 
 </p>
+
 
 
 <p>
 
-2 - <span data-i18n="linen_sent"></span>
+2️⃣ <span data-i18n="linen_sent"></span>
 
 </p>
+
 
 
 <p>
 
-3 - <span data-i18n="cleaning_completed"></span>
+3️⃣ <span data-i18n="cleaning_completed"></span>
 
 </p>
+
 
 
 </div>
+
 
 
 
@@ -1033,11 +1115,25 @@ Cama 12
 
 
 
-<p>☑ <span data-i18n="bathroom_check"></span></p>
+<p>
 
-<p>☑ <span data-i18n="supplies_check"></span></p>
+☑ <span data-i18n="bathroom_check"></span>
 
-<p>☐ <span data-i18n="report_problem"></span></p>
+</p>
+
+
+<p>
+
+☑ <span data-i18n="supplies_check"></span>
+
+</p>
+
+
+<p>
+
+☐ <span data-i18n="report_problem"></span>
+
+</p>
 
 
 
@@ -1071,6 +1167,7 @@ Cama 12
 
 
 
+
 <div class="grid">
 
 
@@ -1079,9 +1176,16 @@ Cama 12
 
 <div class="card">
 
+
 <h2 data-i18n="clean_available"></h2>
 
-<div class="value">20</div>
+
+<div class="value">
+
+20
+
+</div>
+
 
 </div>
 
@@ -1089,11 +1193,20 @@ Cama 12
 
 
 
+
+
 <div class="card">
+
 
 <h2 data-i18n="in_use"></h2>
 
-<div class="value">30</div>
+
+<div class="value">
+
+30
+
+</div>
+
 
 </div>
 
@@ -1101,13 +1214,24 @@ Cama 12
 
 
 
+
+
 <div class="card">
+
 
 <h2 data-i18n="laundry"></h2>
 
-<div class="value">10</div>
+
+<div class="value">
+
+10
 
 </div>
+
+
+
+</div>
+
 
 
 
@@ -1116,29 +1240,44 @@ Cama 12
 
 <div class="card">
 
+
 <h2 data-i18n="damaged"></h2>
 
-<div class="value">2</div>
+
+<div class="value">
+
+2
 
 </div>
 
 
 
 </div>
+
+
+
+
+
+
+</div>
+
 
 
 
 
 </section>
 
- <section id="bathrooms" class="page">
+<section id="bathrooms" class="page">
 
 
 <h1 data-i18n="bathrooms"></h1>
 
 
 
+
 <div class="grid">
+
+
 
 
 
@@ -1177,25 +1316,26 @@ Cama 12
 <h2 data-i18n="bathroom_status"></h2>
 
 
-<p data-i18n="ready"></p>
-
-
 <p>
 
-<span data-i18n="last_clean"></span>:
-
-10:30
+🟢 <span data-i18n="ready"></span>
 
 </p>
 
 
 <p>
 
-<span data-i18n="employee"></span>:
-
-Maria
+🕒 <span data-i18n="last_clean"></span>: 10:30
 
 </p>
+
+
+<p>
+
+👤 Maria
+
+</p>
+
 
 
 </div>
@@ -1204,7 +1344,9 @@ Maria
 
 
 
+
 </div>
+
 
 
 </section>
@@ -1241,9 +1383,7 @@ Maria
 
 <p>
 
-🛏 <span data-i18n="sheets"></span>:
-
-30
+🛏 <span data-i18n="sheets"></span>: 30
 
 </p>
 
@@ -1251,9 +1391,7 @@ Maria
 
 <p>
 
-🛌 <span data-i18n="pillowcases"></span>:
-
-30
+🛌 <span data-i18n="pillowcases"></span>: 30
 
 </p>
 
@@ -1261,12 +1399,9 @@ Maria
 
 <p>
 
-🧺 <span data-i18n="blankets"></span>:
-
-20
+🧺 <span data-i18n="blankets"></span>: 20
 
 </p>
-
 
 
 
@@ -1288,9 +1423,7 @@ Maria
 
 <p>
 
-<span data-i18n="dirty_items"></span>:
-
-10
+<span data-i18n="dirty_items"></span>: 10
 
 </p>
 
@@ -1298,9 +1431,7 @@ Maria
 
 <p>
 
-<span data-i18n="washing"></span>:
-
-6
+<span data-i18n="washing"></span>: 6
 
 </p>
 
@@ -1308,9 +1439,7 @@ Maria
 
 <p>
 
-<span data-i18n="ready"></span>:
-
-4
+<span data-i18n="ready"></span>: 4
 
 </p>
 
@@ -1335,7 +1464,7 @@ Maria
 
 <p>
 
-Checkout → Lavanderia
+Check-out → Lavanderia
 
 </p>
 
@@ -1343,7 +1472,7 @@ Checkout → Lavanderia
 
 <p>
 
-Limpeza → Disponível
+Limpeza confirmada → Estoque disponível
 
 </p>
 
@@ -1351,18 +1480,20 @@ Limpeza → Disponível
 
 <p>
 
-Sistema registra usuário e hora
+Registro: usuário + hora
 
 </p>
 
 
-</div>
-
-
-
 
 </div>
 
+
+
+
+
+
+</div>
 
 
 
@@ -1380,6 +1511,8 @@ Sistema registra usuário e hora
 
 
 <h1 data-i18n="extras"></h1>
+
+
 
 
 
@@ -1403,7 +1536,6 @@ Sistema registra usuário e hora
 15
 
 </p>
-
 
 
 <p>
@@ -1431,12 +1563,9 @@ Sistema registra usuário e hora
 
 <p>
 
-<span data-i18n="available"></span>:
-
 12
 
 </p>
-
 
 
 </div>
@@ -1460,7 +1589,6 @@ Sistema registra usuário e hora
 </p>
 
 
-
 <p>
 
 ☑ Coberta extra
@@ -1470,7 +1598,6 @@ Sistema registra usuário e hora
 
 
 </div>
-
 
 
 
@@ -1500,6 +1627,7 @@ Sistema registra usuário e hora
 
 
 
+
 <div class="grid">
 
 
@@ -1512,6 +1640,7 @@ Sistema registra usuário e hora
 <h2 data-i18n="wine_tour"></h2>
 
 
+
 <p>
 
 <span data-i18n="bookings"></span>:
@@ -1519,6 +1648,7 @@ Sistema registra usuário e hora
 6
 
 </p>
+
 
 
 <p>
@@ -1530,7 +1660,9 @@ $180
 </p>
 
 
+
 </div>
+
 
 
 
@@ -1543,26 +1675,30 @@ $180
 <h2 data-i18n="ai_recommendations"></h2>
 
 
+
 <p data-i18n="offer_tours"></p>
 
 
 <p data-i18n="increase_sales"></p>
 
 
-</div>
-
-
-
-
 
 </div>
+
+
+
+
+
+
+</div>
+
 
 
 
 
 </section>
 
- <section id="analytics" class="page">
+  <section id="analytics" class="page">
 
 
 <h1 data-i18n="analytics"></h1>
@@ -1577,49 +1713,6 @@ $180
 
 
 
-<div class="card">
-
-
-<h2 data-i18n="occupancy"></h2>
-
-
-<div class="value">
-
-82%
-
-</div>
-
-
-
-<p>
-
-30 <span data-i18n="beds_total"></span>
-
-</p>
-
-
-<p>
-
-25 <span data-i18n="beds_occupied"></span>
-
-</p>
-
-
-<p>
-
-5 <span data-i18n="beds_available"></span>
-
-</p>
-
-
-
-</div>
-
-
-
-
-
-
 
 <div class="card">
 
@@ -1627,9 +1720,16 @@ $180
 <h2 data-i18n="reservation_performance"></h2>
 
 
+<div class="value">
+
+45
+
+</div>
+
+
 <p>
 
-📥 <span data-i18n="new_bookings"></span>: 45
+📥 <span data-i18n="new_bookings"></span>
 
 </p>
 
@@ -1648,15 +1748,10 @@ $180
 </p>
 
 
-<p>
-
-📈 <span data-i18n="conversion"></span>: 74%
-
-</p>
-
-
 
 </div>
+
+
 
 
 
@@ -1671,20 +1766,26 @@ $180
 
 
 
+<div class="value">
+
+12
+
+</div>
+
+
+
 <p>
 
-🚪 <span data-i18n="checkouts_today"></span>: 12
+🚪 <span data-i18n="checkouts_today"></span>
 
 </p>
 
 
-
 <p>
 
-🧹 <span data-i18n="average_cleaning_time"></span>: 18 min
+🧹 18 min
 
 </p>
-
 
 
 
@@ -1696,16 +1797,8 @@ $180
 
 
 
-
-<p>
-
-🔧 <span data-i18n="maintenance"></span>: 4
-
-</p>
-
-
-
 </div>
+
 
 
 
@@ -1722,34 +1815,46 @@ $180
 
 <p>
 
-🏨 <span data-i18n="hosting_revenue"></span>:
+🏨 <span data-i18n="hosting_revenue"></span>
+
+</p>
+
+
+<h3>
 
 $850
 
-</p>
-
+</h3>
 
 
 
 <p>
 
-🎒 <span data-i18n="extras_revenue"></span>:
+🎒 <span data-i18n="extras_revenue"></span>
+
+</p>
+
+
+<h3>
 
 $120
 
-</p>
-
+</h3>
 
 
 
 <p>
 
-🚐 <span data-i18n="tours_revenue"></span>:
-
-$300
+🚐 <span data-i18n="tours_revenue"></span>
 
 </p>
 
+
+<h3>
+
+$300
+
+</h3>
 
 
 </div>
@@ -1774,10 +1879,12 @@ $300
 
 
 
+
 <div class="card">
 
 
 <h2 data-i18n="employee_stats"></h2>
+
 
 
 
@@ -1789,9 +1896,12 @@ $300
 
 <th data-i18n="employee"></th>
 
-<th data-i18n="productivity"></th>
+<th>%</th>
+
+<th data-i18n="tasks_completed"></th>
 
 </tr>
+
 
 
 
@@ -1801,7 +1911,10 @@ $300
 
 <td>92%</td>
 
+<td>38</td>
+
 </tr>
+
 
 
 
@@ -1811,7 +1924,10 @@ $300
 
 <td>88%</td>
 
+<td>31</td>
+
 </tr>
+
 
 
 
@@ -1820,6 +1936,8 @@ $300
 <td>Joao</td>
 
 <td>76%</td>
+
+<td>17</td>
 
 </tr>
 
@@ -1838,49 +1956,6 @@ $300
 
 
 
-<div class="card">
-
-
-<h2 data-i18n="productivity"></h2>
-
-
-
-<p>
-
-☑ <span data-i18n="tasks_completed"></span>:
-
-86
-
-</p>
-
-
-
-<p>
-
-⏱ <span data-i18n="average_task_time"></span>:
-
-14 min
-
-</p>
-
-
-
-<p>
-
-📋 <span data-i18n="checklists_done"></span>:
-
-95%
-
-</p>
-
-
-
-</div>
-
-
-
-
-
 
 <div class="card">
 
@@ -1891,9 +1966,14 @@ $300
 
 <p>
 
-🧺 <span data-i18n="laundry"></span>:
+🧺 <span data-i18n="laundry"></span>: 10
 
-10
+</p>
+
+
+<p>
+
+🟢 <span data-i18n="clean_available"></span>: 20
 
 </p>
 
@@ -1901,22 +1981,9 @@ $300
 
 <p>
 
-🛏 <span data-i18n="linen"></span>:
-
-30
+🛏 30
 
 </p>
-
-
-
-<p>
-
-🟢 <span data-i18n="clean_available"></span>:
-
-20
-
-</p>
-
 
 
 
@@ -1945,7 +2012,9 @@ $300
 <section id="audit" class="page">
 
 
+
 <h1 data-i18n="audit"></h1>
+
 
 
 
@@ -1955,106 +2024,186 @@ $300
 
 
 
+<div class="panel-title">
+
+<h2 data-i18n="activity_log"></h2>
 
 
-<table>
+<button class="action">
+
+Export
+
+</button>
 
 
-
-<tr>
-
-<th data-i18n="time"></th>
-
-<th data-i18n="user"></th>
-
-<th data-i18n="department"></th>
-
-<th data-i18n="action"></th>
-
-<th data-i18n="details"></th>
-
-</tr>
+</div>
 
 
 
 
 
-<tr>
-
-<td>11:05</td>
-
-<td>Recepção</td>
-
-<td>Front</td>
-
-<td data-i18n="checkout"></td>
-
-<td>Cama 12 liberada</td>
-
-</tr>
+<div class="audit-list">
 
 
 
 
 
 
-<tr>
-
-<td>11:08</td>
-
-<td>Sistema</td>
-
-<td>Automático</td>
-
-<td data-i18n="cleaning_created"></td>
-
-<td>Quarto 4</td>
-
-</tr>
+<div class="audit-item">
 
 
+<h3>
+
+🚪 Check-out
+
+</h3>
 
 
+<p>
+
+👤 Recepção
+
+</p>
 
 
-<tr>
+<p>
 
-<td>11:40</td>
+🕒 11:05
 
-<td>Maria</td>
-
-<td>Limpeza</td>
-
-<td data-i18n="cleaning_completed"></td>
-
-<td>Enxoval enviado</td>
-
-</tr>
+</p>
 
 
+<small>
+
+Cama 12 liberada para limpeza
+
+</small>
 
 
-
-
-<tr>
-
-<td>11:42</td>
-
-<td>Sistema</td>
-
-<td>Estoque</td>
-
-<td data-i18n="inventory_updated"></td>
-
-<td>-1 lençol</td>
-
-</tr>
+</div>
 
 
 
 
 
-</table>
+
+
+
+<div class="audit-item">
+
+
+<h3>
+
+🧹 Limpeza criada
+
+</h3>
+
+
+<p>
+
+👤 Sistema
+
+</p>
+
+
+<p>
+
+🕒 11:08
+
+</p>
+
+
+<small>
+
+Quarto 4 enviado para faxina
+
+</small>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="audit-item">
+
+
+<h3>
+
+✅ Limpeza concluída
+
+</h3>
+
+
+<p>
+
+👤 Maria
+
+</p>
+
+
+<p>
+
+🕒 11:40
+
+</p>
+
+
+<small>
+
+Enxoval enviado para lavanderia
+
+</small>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="audit-item">
+
+
+<h3>
+
+📦 Estoque atualizado
+
+</h3>
+
+
+<p>
+
+👤 Sistema
+
+</p>
+
+
+<p>
+
+🕒 11:42
+
+</p>
+
+
+<small>
+
+Lençol movido para lavanderia
+
+</small>
+
+
+</div>
+
 
 
 
@@ -2068,13 +2217,19 @@ $300
 
 
 
+</div>
+
+
+
+
+
 
 </section>
 
- <script>
+  <script>
 
 
-const translations={
+const translations = {
 
 
 pt:{
@@ -2108,10 +2263,11 @@ beds_total:"camas totais",
 beds_occupied:"camas ocupadas",
 beds_available:"camas disponíveis",
 
-ai_summary:"Resumo IA",
 messages:"Mensagens",
 questions_answered:"Perguntas respondidas",
 new_bookings:"Novas reservas",
+
+ai_summary:"Resumo IA",
 
 team:"Equipe",
 employee:"Funcionário",
@@ -2126,15 +2282,17 @@ checkout:"Check-out",
 
 confirmed:"Confirmada",
 
-cleaning_board:"Painel de limpeza",
+cleaning_board:"Painel limpeza",
 cleaning_flow:"Fluxo limpeza",
 
 checkout_registered:"Check-out registrado",
 cleaning_created:"Limpeza criada",
 cleaning_completed:"Limpeza concluída",
+
 linen_sent:"Enxoval enviado",
 
 handover:"Repasse de turno",
+
 bathroom_check:"Conferir banheiros",
 supplies_check:"Conferir insumos",
 report_problem:"Registrar problema",
@@ -2161,23 +2319,23 @@ last_clean:"Última limpeza",
 linen_stock:"Estoque enxoval",
 sheets:"Lençóis",
 pillowcases:"Fronhas",
+blankets:"Cobertas",
 
 dirty_items:"Itens sujos",
 washing:"Lavando",
 
 inventory_flow:"Fluxo estoque",
-inventory_updated:"Estoque atualizado",
 
 extra_requests:"Pedidos extras",
 
 wine_tour:"Tour de vinho",
+
 bookings:"Reservas",
 revenue:"Receita",
 
 ai_recommendations:"Sugestões IA",
 offer_tours:"Oferecer passeios",
 increase_sales:"Aumentar vendas",
-
 
 reservation_performance:"Desempenho reservas",
 
@@ -2188,7 +2346,6 @@ conversion:"Conversão",
 operation_stats:"Operação",
 
 checkouts_today:"Check-outs hoje",
-average_cleaning_time:"Tempo médio limpeza",
 late_cleaning:"Limpezas atrasadas",
 
 financial:"Financeiro",
@@ -2197,18 +2354,15 @@ hosting_revenue:"Receita hospedagem",
 extras_revenue:"Receita extras",
 tours_revenue:"Receita tours",
 
-productivity:"Produtividade",
+employee_stats:"Estatísticas funcionários",
+
 tasks_completed:"Tarefas concluídas",
-average_task_time:"Tempo médio tarefa",
-checklists_done:"Checklists completos",
 
 inventory_stats:"Controle estoque",
 
-time:"Hora",
-user:"Usuário",
-department:"Setor",
-action:"Ação",
-details:"Detalhes"
+activity_log:"Registro de atividades"
+
+
 
 },
 
@@ -2250,10 +2404,11 @@ beds_total:"total beds",
 beds_occupied:"occupied beds",
 beds_available:"available beds",
 
-ai_summary:"AI Summary",
 messages:"Messages",
 questions_answered:"Answered questions",
 new_bookings:"New bookings",
+
+ai_summary:"AI Summary",
 
 team:"Team",
 employee:"Employee",
@@ -2274,9 +2429,11 @@ cleaning_flow:"Cleaning flow",
 checkout_registered:"Checkout registered",
 cleaning_created:"Cleaning created",
 cleaning_completed:"Cleaning completed",
+
 linen_sent:"Linen sent",
 
 handover:"Shift handover",
+
 bathroom_check:"Check bathrooms",
 supplies_check:"Check supplies",
 report_problem:"Report problem",
@@ -2303,16 +2460,17 @@ last_clean:"Last cleaning",
 linen_stock:"Linen stock",
 sheets:"Sheets",
 pillowcases:"Pillowcases",
+blankets:"Blankets",
 
 dirty_items:"Dirty items",
 washing:"Washing",
 
 inventory_flow:"Inventory flow",
-inventory_updated:"Inventory updated",
 
 extra_requests:"Extra requests",
 
 wine_tour:"Wine tour",
+
 bookings:"Bookings",
 revenue:"Revenue",
 
@@ -2328,9 +2486,8 @@ conversion:"Conversion",
 
 operation_stats:"Operations",
 
-checkouts_today:"Checkouts today",
-average_cleaning_time:"Average cleaning time",
-late_cleaning:"Late cleaning",
+checkouts_today:"Check-outs today",
+late_cleaning:"Late cleanings",
 
 financial:"Financial",
 
@@ -2338,20 +2495,18 @@ hosting_revenue:"Hosting revenue",
 extras_revenue:"Extras revenue",
 tours_revenue:"Tours revenue",
 
-productivity:"Productivity",
+employee_stats:"Employee statistics",
+
 tasks_completed:"Completed tasks",
-average_task_time:"Average task time",
-checklists_done:"Completed checklists",
 
 inventory_stats:"Inventory control",
 
-time:"Time",
-user:"User",
-department:"Department",
-action:"Action",
-details:"Details"
+activity_log:"Activity log"
+
+
 
 },
+
 
 
 
@@ -2396,17 +2551,17 @@ confirmed:"Confirmada",
 cleaning_created:"Limpieza creada",
 cleaning_completed:"Limpieza completada",
 
+linen:"Ropa de cama",
+laundry:"Lavandería",
+
 towels:"Toallas",
 soap:"Jabón",
 paper:"Papel higiénico",
 
-laundry:"Lavandería",
+employee:"Empleado",
 
-time:"Hora",
-user:"Usuario",
-department:"Sector",
-action:"Acción",
-details:"Detalles"
+activity_log:"Registro de actividad"
+
 
 }
 
@@ -2418,10 +2573,15 @@ details:"Detalles"
 
 
 
+
+
 function applyLanguage(lang){
 
 
-localStorage.setItem("stayflow_language",lang);
+localStorage.setItem(
+"stayflow_language",
+lang
+);
 
 
 
@@ -2429,7 +2589,8 @@ document.querySelectorAll("[data-i18n]")
 .forEach(el=>{
 
 
-let key=el.dataset.i18n;
+const key=el.dataset.i18n;
+
 
 
 if(translations[lang][key]){
@@ -2439,8 +2600,8 @@ el.innerHTML=translations[lang][key];
 }
 
 
-});
 
+});
 
 }
 
@@ -2459,12 +2620,14 @@ applyLanguage(lang);
 
 
 
+
 function toggleMenu(){
 
 
 document
 .getElementById("sidebar")
 .classList.toggle("open");
+
 
 
 document
@@ -2487,7 +2650,10 @@ document
 
 
 
+
+
 function openPage(id,btn){
+
 
 
 document
@@ -2527,7 +2693,10 @@ localStorage.getItem("stayflow_language")||"pt"
 toggleMenu();
 
 
+
 }
+
+
 
 
 
@@ -2545,4 +2714,3 @@ localStorage.getItem("stayflow_language")||"pt"
 </body>
 
 </html>
- 
