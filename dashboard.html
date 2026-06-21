@@ -16,11 +16,17 @@ box-sizing:border-box;
 
 
 body{
+
 margin:0;
+
 background:#050505;
+
 color:white;
-font-family:"Segoe UI",Arial,sans-serif;
+
+font-family:'Montserrat','Poppins','Segoe UI',Arial,sans-serif;
+
 overflow-x:hidden;
+
 }
 
 
@@ -28,17 +34,20 @@ overflow-x:hidden;
 .sidebar{
 
 position:fixed;
-top:0;
-left:-280px;
 
-width:280px;
+top:0;
+
+left:-290px;
+
+width:290px;
+
 height:100vh;
 
 background:#080808;
 
 border-right:1px solid #1b8cff55;
 
-padding:25px;
+padding:22px;
 
 transition:.3s;
 
@@ -51,8 +60,11 @@ overflow-y:auto;
 
 
 .sidebar.open{
+
 left:0;
+
 }
+
 
 
 
@@ -60,9 +72,10 @@ left:0;
 .overlay{
 
 position:fixed;
+
 inset:0;
 
-background:#000a;
+background:#000b;
 
 display:none;
 
@@ -71,22 +84,24 @@ z-index:15;
 }
 
 
+
 .overlay.show{
+
 display:block;
+
 }
+
 
 
 
 
 .logo-img{
 
-width:160px;
-
-height:auto;
+width:150px;
 
 display:block;
 
-margin:0 auto 20px;
+margin:0 auto 15px;
 
 }
 
@@ -97,11 +112,13 @@ margin:0 auto 20px;
 
 text-align:center;
 
-font-family:"Segoe Script","Brush Script MT",cursive;
+font-size:32px;
 
-font-size:34px;
+font-weight:800;
 
-letter-spacing:1px;
+letter-spacing:3px;
+
+text-transform:uppercase;
 
 margin-bottom:25px;
 
@@ -114,6 +131,7 @@ margin-bottom:25px;
 color:#1b8cff;
 
 }
+
 
 
 
@@ -134,13 +152,12 @@ margin-bottom:20px;
 
 
 
+
 .menu button{
 
 width:100%;
 
-padding:13px;
-
-margin-bottom:5px;
+padding:12px;
 
 border:0;
 
@@ -152,9 +169,9 @@ text-align:left;
 
 border-radius:12px;
 
-cursor:pointer;
+margin-bottom:5px;
 
-font-size:15px;
+cursor:pointer;
 
 }
 
@@ -173,7 +190,7 @@ background:#1b8cff22;
 
 .topbar{
 
-height:80px;
+height:75px;
 
 display:flex;
 
@@ -183,19 +200,32 @@ justify-content:space-between;
 
 padding:0 25px;
 
-border-bottom:1px solid #ffffff12;
+border-bottom:1px solid #ffffff15;
 
 }
+
 
 
 
 .menu-icon{
 
-font-size:30px;
+font-size:28px;
 
 cursor:pointer;
 
 }
+
+
+
+
+.page-title{
+
+font-size:22px;
+
+font-weight:700;
+
+}
+
 
 
 
@@ -206,18 +236,7 @@ cursor:pointer;
 
 margin:0 5px;
 
-color:#aaa;
-
 }
-
-
-
-.lang span:hover{
-
-color:#1b8cff;
-
-}
-
 
 
 
@@ -230,7 +249,6 @@ padding:25px;
 
 
 
-
 .cards{
 
 display:grid;
@@ -240,7 +258,6 @@ grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:18px;
 
 }
-
 
 
 
@@ -259,18 +276,15 @@ padding:20px;
 
 
 
-
-
 .value{
 
-font-size:32px;
+font-size:30px;
 
 font-weight:bold;
 
 color:#1b8cff;
 
 }
-
 
 
 
@@ -297,11 +311,11 @@ background:#1b8cff;
 
 border:0;
 
+color:white;
+
 padding:10px 15px;
 
 border-radius:12px;
-
-color:white;
 
 cursor:pointer;
 
@@ -309,7 +323,21 @@ cursor:pointer;
 
 
 
+
+.status{
+
+padding:5px 12px;
+
+border-radius:20px;
+
+background:#1b8cff22;
+
+}
+
+
+
 </style>
+
 
 </head>
 
@@ -322,10 +350,14 @@ cursor:pointer;
 
 
 
+
+
 <div class="sidebar" id="sidebar">
 
 
+
 <img src="IMG_3520.png" class="logo-img">
+
 
 
 <div class="brand-name">
@@ -337,12 +369,11 @@ Stay<span>Flow</span>
 
 
 
+
 <div class="profile">
 
 
-<b>
-Hostel Lagares
-</b>
+<b>Hostel Lagares</b>
 
 
 <br><br>
@@ -353,6 +384,7 @@ Hostel Lagares
 
 <br>
 
+
 Owner
 
 
@@ -361,27 +393,20 @@ Owner
 
 <select>
 
-<option>
-Owner
-</option>
+<option>Owner</option>
 
-<option>
-Reception
-</option>
+<option>Reception</option>
 
-<option>
-Housekeeping
-</option>
+<option>Housekeeping</option>
 
-<option>
-Maintenance
-</option>
+<option>Maintenance</option>
+
 
 </select>
 
 
-
 </div>
+
 
 
 
@@ -390,9 +415,11 @@ Maintenance
 <div class="menu">
 
 
+
 <button class="active" onclick="openPage('home',this)">
 🏠 Home
 </button>
+
 
 
 <button onclick="openPage('reservations',this)">
@@ -400,14 +427,11 @@ Maintenance
 </button>
 
 
-<button onclick="openPage('rooms',this)">
-🏢 Rooms
-</button>
-
 
 <button onclick="openPage('guests',this)">
-👤 Guests
+👥 Guests
 </button>
+
 
 
 <button onclick="openPage('operations',this)">
@@ -415,23 +439,45 @@ Maintenance
 </button>
 
 
+
+<button onclick="openPage('linen',this)">
+🧺 Linen Control
+</button>
+
+
+
+<button onclick="openPage('bathrooms',this)">
+🚿 Bathrooms
+</button>
+
+
+
 <button onclick="openPage('supplies',this)">
 📦 Supplies
 </button>
 
 
-<button onclick="openPage('schedule',this)">
-📅 Schedule
+
+<button onclick="openPage('extras',this)">
+🎒 Extras
 </button>
 
 
-<button onclick="openPage('team',this)">
-👥 Team
+
+<button onclick="openPage('tours',this)">
+🚐 Tours
 </button>
 
 
-<button onclick="openPage('notifications',this)">
-🔔 Notifications
+
+<button onclick="openPage('analytics',this)">
+📊 Analytics
+</button>
+
+
+
+<button onclick="openPage('audit',this)">
+📋 Audit
 </button>
 
 
@@ -440,7 +486,9 @@ Maintenance
 </button>
 
 
+
 </div>
+
 
 </div>
 
@@ -461,7 +509,13 @@ Maintenance
 
 
 
-<div class="lang">
+<div class="page-title" id="pageTitle">
+Home
+</div>
+
+
+
+<div>
 
 🌐
 
@@ -488,13 +542,14 @@ ES
 
 </div>
 
-<div class="content">
+ <div class="content">
+
 
 
 <section id="home" class="page active">
 
 
-<h1 id="welcome">
+<h1 data-i18n="welcome">
 Good morning, Jorge 👋
 </h1>
 
@@ -503,54 +558,120 @@ Good morning, Jorge 👋
 <div class="cards">
 
 
-<div class="card">
-
-Occupancy
-
-<div class="value">
-18/22
-</div>
-
-</div>
-
-
 
 <div class="card">
 
-Check-ins
+<h2>🏠 Today Control Center</h2>
+
+
+Arrivals:
 
 <div class="value">
 4
 </div>
 
-</div>
 
-
-
-<div class="card">
-
-Check-outs
+Departures:
 
 <div class="value">
 2
 </div>
 
+
+Cleaning:
+
+<div class="value">
+3
 </div>
+
+
+</div>
+
 
 
 
 <div class="card">
 
-Revenue Today
 
-<div class="value">
-$320
+<h2>🚿 Bathrooms</h2>
+
+
+Checked:
+
+5/6
+
+
+<br><br>
+
+
+⚠ Bathroom 3 needs soap
+
+
 </div>
 
+
+
+
+
+<div class="card">
+
+
+<h2>🧺 Laundry</h2>
+
+
+Clean available:
+
+20
+
+
+<br><br>
+
+
+Laundry:
+
+11
+
+
+<br><br>
+
+
+Damaged:
+
+1
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h2>⚠ Alerts</h2>
+
+
+Toilet paper low
+
+
+<br><br>
+
+
+Shower maintenance
+
+
+<br><br>
+
+
+Guest request
+
+
 </div>
 
 
 </div>
+
 
 
 
@@ -564,84 +685,64 @@ $320
 
 <div class="card">
 
+
 <h2>🤖 AI Snapshot</h2>
 
-17 conversations handled
+
+Messages handled:
+
+17
+
 
 <br><br>
 
-4 reservations created
+
+Reservations:
+
+4
+
 
 <br><br>
 
-92% automation
+
+Automation:
+
+92%
+
 
 </div>
-
 
 
 
 
 <div class="card">
 
-<h2>📋 Daily Operations</h2>
 
-4 arrivals
+<h2>📊 Team Performance</h2>
 
-<br><br>
 
-2 departures
+Maria
 
-<br><br>
+92%
 
-3 cleaning tasks
 
 <br><br>
 
-2 maintenance
+
+Jorge
+
+88%
+
+
+<br><br>
+
+
+João
+
+76%
+
 
 </div>
-
-
-
-
-
-<div class="card">
-
-<h2>⚠ Priorities</h2>
-
-🔴 Payment pending
-
-<br><br>
-
-🟡 Cleaning waiting
-
-<br><br>
-
-🔵 Guest request
-
-</div>
-
-
-
-
-
-<div class="card">
-
-<h2>💡 AI Suggestions</h2>
-
-High occupancy weekend
-
-<br><br>
-
-Promote wine tours
-
-<br><br>
-
-Increase private rooms
-
-</div>
-
 
 
 </div>
@@ -660,9 +761,7 @@ Increase private rooms
 <section id="reservations" class="page">
 
 
-<h1 data-i18n="reservations">
-Reservations
-</h1>
+<h1>Reservations</h1>
 
 
 
@@ -673,9 +772,7 @@ Reservations
 <div class="card">
 
 
-<h2>
-New Reservation
-</h2>
+<h2>New Reservation</h2>
 
 
 Maria Silva
@@ -684,7 +781,7 @@ Maria Silva
 <br>
 
 
-Dorm 4 Bed 2
+Dorm 4
 
 
 <br>
@@ -696,198 +793,11 @@ Dorm 4 Bed 2
 <br><br>
 
 
+<span class="status">
+
 Confirmed
 
-</div>
-
-
-
-
-
-<div class="card">
-
-
-<h2>
-Pending Payments
-</h2>
-
-
-Maria $25
-
-
-<br><br>
-
-
-John $40
-
-
-</div>
-
-
-</div>
-
-
-</section>
-
-
-
-
-
-
-
-
-
-<section id="rooms" class="page">
-
-
-<h1>
-Rooms
-</h1>
-
-
-
-<div class="cards">
-
-
-<div class="card">
-
-
-<h2>
-Dorm 1
-</h2>
-
-
-🟢 Bed 1 Available
-
-
-<br><br>
-
-
-🔵 Bed 2 Occupied
-
-
-<br><br>
-
-
-🟡 Bed 3 Cleaning
-
-
-</div>
-
-
-
-
-
-<div class="card">
-
-
-<h2>
-Dorm 4
-</h2>
-
-
-Maria
-
-
-<br><br>
-
-
-Cleaning
-
-
-<br><br>
-
-
-<button class="action" onclick="checkout()">
-
-Checkout Complete
-
-</button>
-
-
-</div>
-
-
-
-
-
-<div class="card">
-
-
-<h2>
-Blocked Beds
-</h2>
-
-
-🔴 Bed 4
-
-
-<br>
-
-
-Broken ladder
-
-
-</div>
-
-
-</div>
-
-
-</section>
-
-
-
-
-
-
-
-
-
-<section id="guests" class="page">
-
-
-<h1>
-Guests CRM
-</h1>
-
-
-
-<div class="cards">
-
-
-
-<div class="card">
-
-
-<h2>
-Maria Silva
-</h2>
-
-
-Brazil
-
-
-<br><br>
-
-
-Dorm 4 Bed 2
-
-
-<br><br>
-
-
-Late arrival note
-
-
-<br><br>
-
-
-<button class="action">
-
-Move Room
-
-</button>
+</span>
 
 
 </div>
@@ -898,18 +808,16 @@ Move Room
 <div class="card">
 
 
-<h2>
-Guest History
-</h2>
+<h2>Check In</h2>
 
 
-Previous stays
+Guest arrival
 
 
 <br><br>
 
 
-Notes
+Room assignment
 
 
 <br><br>
@@ -925,6 +833,86 @@ Documents
 </div>
 
 
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="guests" class="page">
+
+
+<h1>Guests</h1>
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+
+<h2>Maria Silva</h2>
+
+
+Brazil
+
+
+<br><br>
+
+
+Previous stays:
+
+3
+
+
+<br><br>
+
+
+Notes:
+
+Late arrival
+
+
+</div>
+
+
+
+
+<div class="card">
+
+
+<h2>Guest History</h2>
+
+
+Preferences
+
+
+<br><br>
+
+
+Tours purchased
+
+
+<br><br>
+
+
+Requests
+
+
+</div>
+
+
+</div>
+
+
+
 </section>
 
 
@@ -938,9 +926,8 @@ Documents
 <section id="operations" class="page">
 
 
-<h1>
-Operations
-</h1>
+<h1>Operations</h1>
+
 
 
 
@@ -951,22 +938,35 @@ Operations
 <div class="card">
 
 
-<h2>🧹 Housekeeping</h2>
-
-
-Cleaning queue
-
-
-<br><br>
+<h2>🧹 Cleaning Tasks</h2>
 
 
 Dorm 4 Bed 2
 
 
+<br><br>
+
+
+Created:
+
+11:42
+
+
 <br>
 
 
-Assigned Maria
+By:
+
+Jorge
+
+
+<br><br>
+
+
+Status:
+
+Waiting Cleaning
+
 
 
 </div>
@@ -993,7 +993,9 @@ Broken bed
 <br><br>
 
 
-Electrical issue
+Assigned:
+
+Maintenance
 
 
 </div>
@@ -1005,170 +1007,32 @@ Electrical issue
 <div class="card">
 
 
-<h2>📖 Shift Handover</h2>
+<h2>🔄 Shift Handover</h2>
 
 
-Need toilet paper
-
-
-<br><br>
-
-
-Guest requested blanket
-
-
-</div>
-
-
-
-
-
-<div class="card">
-
-
-<h2>🚨 Incidents</h2>
-
-
-Noise complaint
-
-
-<br><br>
-
-
-Lost & Found
-
-
-</div>
-
-
-
-</div>
-
-
-</section>
-
-<section id="supplies" class="page">
-
-
-<h1>Supplies</h1>
-
-
-<div class="cards">
-
-
-<div class="card">
-
-<h2>☕ Breakfast Stock</h2>
-
-
-Coffee 🟢
-
-
-<br><br>
-
-
-Milk 🟡 LOW
-
-
-<br><br>
-
-
-Bread 🔴 CRITICAL
-
-
-</div>
-
-
-
-
-<div class="card">
-
-
-<h2>🧻 Guest Supplies</h2>
-
-
-Toilet Paper 🔴
-
-
-<br><br>
-
-
-Soap 🟢
-
-
-<br><br>
-
-
-Towels 🟢
-
-
-</div>
-
-
-
-
-<div class="card">
-
-
-<h2>🧹 Cleaning</h2>
-
-
-Trash Bags 🟡
-
-
-<br><br>
-
-
-Products 🟢
-
-
-</div>
-
-
-
-</div>
-
+☐ Bathrooms checked
 
 
 <br>
 
 
-
-<div class="card">
-
-
-<h2>🛒 Shopping List</h2>
-
-
-<div id="shopping">
-
-
-☐ Milk
-
-
-<br><br>
-
-
-☐ Bread
-
-
-<br><br>
-
-
-☐ Toilet Paper
-
-
-</div>
+☐ Supplies checked
 
 
 <br>
 
 
-<button class="action" onclick="purchase()">
+☐ Issues reported
 
-Purchased
 
-</button>
+<br>
+
+
+☐ Next shift informed
+
+
+</div>
+
 
 
 </div>
@@ -1184,21 +1048,181 @@ Purchased
 
 
 
-<section id="schedule" class="page">
+<section id="linen" class="page">
 
 
-<h1>Schedule</h1>
+<h1>🧺 Linen Control</h1>
+
 
 
 <div class="cards">
 
 
+
 <div class="card">
 
-<h2>Morning</h2>
+
+<h2>Bedsheets</h2>
 
 
-08:00 - 16:00
+Clean:
+
+20
+
+
+<br><br>
+
+
+In use:
+
+30
+
+
+<br><br>
+
+
+Laundry:
+
+11
+
+
+<br><br>
+
+
+Damaged:
+
+1
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h2>Last Movement</h2>
+
+
+Maria
+
+
+<br>
+
+
+Completed cleaning
+
+
+<br><br>
+
+
+Moved:
+
+1 sheet
+
+1 pillowcase
+
+1 blanket
+
+
+<br><br>
+
+
+12:18
+
+
+</div>
+
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="bathrooms" class="page">
+
+
+<h1>🚿 Bathrooms</h1>
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+
+<h2>Bathroom 1</h2>
+
+
+☑ Floor
+
+
+<br>
+
+☑ Toilet
+
+
+<br>
+
+☑ Sink
+
+
+<br>
+
+☑ Mirror
+
+
+<br>
+
+☑ Paper
+
+
+<br>
+
+☑ Soap
+
+
+<br>
+
+☑ Towels
+
+
+
+</div>
+
+
+
+
+<div class="card">
+
+
+<h2>Bathroom 2</h2>
+
+
+Status:
+
+Ready
+
+
+<br><br>
+
+
+Last clean:
+
+10:30
 
 
 <br><br>
@@ -1207,60 +1231,6 @@ Purchased
 Maria
 
 
-<br><br>
-
-
-Inventory
-
-<br>
-
-Breakfast
-
-</div>
-
-
-
-<div class="card">
-
-
-<h2>Afternoon</h2>
-
-
-16:00 - 00:00
-
-
-<br><br>
-
-
-Jorge
-
-
-<br><br>
-
-
-Check-ins
-
-
-</div>
-
-
-
-
-<div class="card">
-
-
-<h2>Night</h2>
-
-
-00:00 - 08:00
-
-
-<br><br>
-
-
-João
-
-
 </div>
 
 
@@ -1269,213 +1239,13 @@ João
 
 
 </section>
-
-
-
-
-
-
-
-
-
-<section id="team" class="page">
-
-
-<h1>Team</h1>
-
-
-<div class="cards">
-
-
-
-<div class="card">
-
-
-<h2>Jorge</h2>
-
-
-Owner
-
-
-<br><br>
-
-
-🟢 Online
-
-
-</div>
-
-
-
-
-<div class="card">
-
-
-<h2>Maria</h2>
-
-
-Housekeeping
-
-
-<br><br>
-
-
-Tasks: 6
-
-
-<br>
-
-
-Completed: 4
-
-
-</div>
-
-
-
-
-
-<div class="card">
-
-
-<h2>Activity Log</h2>
-
-
-Inventory updated
-
-
-<br><br>
-
-
-Maintenance created
-
-
-</div>
-
-
-
-</div>
-
-
-</section>
-
-
-
-
-
-
-
-
-
-<section id="notifications" class="page">
-
-
-<h1>Notifications</h1>
-
-
-<div class="card">
-
-
-🔔 WhatsApp message
-
-
-<br><br>
-
-
-📦 Low stock alert
-
-
-<br><br>
-
-
-🔧 Maintenance pending
-
-
-<br><br>
-
-
-🧹 Cleaning completed
-
-
-</div>
-
-
-</section>
-
-
-
-
-
-
-
-
-
-<section id="settings" class="page">
-
-
-<h1>Settings</h1>
-
-
-<div class="cards">
-
-
-<div class="card">
-
-
-<h2>Hostel</h2>
-
-
-Hostel Lagares
-
-
-<br><br>
-
-
-Plan Pro
-
-
-</div>
-
-
-
-
-<div class="card">
-
-
-<h2>Users</h2>
-
-
-Employees
-
-
-<br><br>
-
-
-Permissions
-
-
-</div>
-
-
-
-</div>
-
-
-</section>
-
-
-
-
-
-</div>
-
-</div>
-
-
-
-
 
 <script>
+
+
+/* =========================
+   MENU
+========================= */
 
 
 const sidebar =
@@ -1487,13 +1257,14 @@ document.getElementById("overlay");
 
 
 
-
-
 function toggleMenu(){
+
 
 sidebar.classList.toggle("open");
 
+
 overlay.classList.toggle("show");
+
 
 }
 
@@ -1501,36 +1272,62 @@ overlay.classList.toggle("show");
 
 overlay.onclick=function(){
 
+
 sidebar.classList.remove("open");
 
 overlay.classList.remove("show");
 
-}
+
+};
 
 
 
 
 
 
-function openPage(page,button){
+
+/* =========================
+   PAGES
+========================= */
 
 
-document.querySelectorAll(".page")
-.forEach(p=>p.classList.remove("active"));
+function openPage(page,btn){
+
+
+document
+.querySelectorAll(".page")
+.forEach(p=>{
+
+p.classList.remove("active");
+
+});
 
 
 
-document.getElementById(page)
+document
+.getElementById(page)
 .classList.add("active");
 
 
 
-document.querySelectorAll(".menu button")
-.forEach(b=>b.classList.remove("active"));
+document
+.querySelectorAll(".menu button")
+.forEach(b=>{
+
+b.classList.remove("active");
+
+});
 
 
 
-button.classList.add("active");
+btn.classList.add("active");
+
+
+
+document
+.getElementById("pageTitle")
+.innerHTML =
+btn.innerText;
 
 
 
@@ -1546,74 +1343,118 @@ overlay.classList.remove("show");
 
 
 
-function updateClock(){
+
+/* =========================
+   LANGUAGES
+========================= */
 
 
-let now=new Date();
+const translations = {
 
 
-document.title =
-"StayFlow | "+
-now.toLocaleTimeString([],{
-hour:"2-digit",
-minute:"2-digit"
-});
+pt:{
+
+
+welcome:"Bom dia, Jorge 👋",
+
+
+home:"Início",
+
+reservations:"Reservas",
+
+guests:"Hóspedes",
+
+operations:"Operações",
+
+linen:"Controle de Enxoval",
+
+bathrooms:"Banheiros",
+
+supplies:"Insumos",
+
+extras:"Extras",
+
+tours:"Passeios",
+
+analytics:"Análises",
+
+audit:"Auditoria",
+
+settings:"Configurações"
+
+
+},
+
+
+
+en:{
+
+
+welcome:"Good morning, Jorge 👋",
+
+
+home:"Home",
+
+reservations:"Reservations",
+
+guests:"Guests",
+
+operations:"Operations",
+
+linen:"Linen Control",
+
+bathrooms:"Bathrooms",
+
+supplies:"Supplies",
+
+extras:"Extras",
+
+tours:"Tours",
+
+analytics:"Analytics",
+
+audit:"Audit",
+
+settings:"Settings"
+
+
+},
+
+
+
+es:{
+
+
+welcome:"Buenos días, Jorge 👋",
+
+
+home:"Inicio",
+
+reservations:"Reservas",
+
+guests:"Huéspedes",
+
+operations:"Operaciones",
+
+linen:"Control de Ropa",
+
+bathrooms:"Baños",
+
+supplies:"Insumos",
+
+extras:"Extras",
+
+tours:"Excursiones",
+
+analytics:"Análisis",
+
+audit:"Auditoría",
+
+settings:"Configuración"
 
 
 }
 
-
-
-setInterval(updateClock,1000);
-
-updateClock();
-
-
-
-
-
-
-
-function checkout(){
-
-
-alert(
-"Checkout completed ✅\nCleaning task created 🧹"
-);
-
-
-}
-
-
-
-
-
-function purchase(){
-
-
-document.getElementById("shopping")
-.innerHTML =
-"Purchased ✅<br><br>Waiting restock";
-
-
-}
-
-
-
-
-
-
-
-const translations={
-
-
-pt:{welcome:"Bom dia, Jorge 👋"},
-
-
-en:{welcome:"Good morning, Jorge 👋"},
-
-
-es:{welcome:"Buenos días, Jorge 👋"}
 
 
 };
@@ -1627,71 +1468,192 @@ function changeLang(lang){
 
 
 localStorage.setItem(
-"language",
+"stayflow_language",
 lang
 );
 
 
 
-document.getElementById("welcome")
-.innerHTML =
-translations[lang].welcome;
+document
+.querySelectorAll("[data-i18n]")
+.forEach(el=>{
+
+
+let key =
+el.getAttribute("data-i18n");
+
+
+
+if(translations[lang][key]){
+
+
+el.innerHTML =
+translations[lang][key];
 
 
 }
 
 
-
-
-
-let saved =
-localStorage.getItem("language");
-
-
-if(saved){
-
-changeLang(saved);
-
-}
-
-
-
-
-
-
-
-
-let startX=0;
-
-
-document.addEventListener(
-"touchstart",
-e=>{
-
-startX=e.touches[0].clientX;
 
 });
 
 
 
+}
+
+
+
+
+
+let currentLang =
+localStorage.getItem(
+"stayflow_language"
+)
+||
+"en";
+
+
+
+changeLang(currentLang);
+
+
+
+
+
+
+
+
+
+/* =========================
+   CHECKOUT WORKFLOW
+========================= */
+
+
+function checkout(room,user){
+
+
+
+let now =
+new Date()
+.toLocaleTimeString();
+
+
+
+alert(
+
+"Checkout completed\n\n"+
+
+"Room: "+room+
+
+"\nBy: "+user+
+
+"\nTime: "+now+
+
+"\n\nCleaning task created"
+
+);
+
+
+
+}
+
+
+
+
+
+
+
+
+
+/* =========================
+   LIVE TIME
+========================= */
+
+
+function updateTime(){
+
+
+let time =
+new Date()
+.toLocaleTimeString([],{
+
+hour:"2-digit",
+
+minute:"2-digit"
+
+});
+
+
+
+document.title =
+"StayFlow • "+time;
+
+
+}
+
+
+setInterval(updateTime,1000);
+
+updateTime();
+
+
+
+
+
+
+
+
+
+
+/* =========================
+   SWIPE CLOSE MENU
+========================= */
+
+
+let startX=0;
+
+
+
+document.addEventListener(
+"touchstart",
+function(e){
+
+
+startX =
+e.touches[0].clientX;
+
+
+});
+
+
+
+
+
 document.addEventListener(
 "touchmove",
-e=>{
-
-let move=e.touches[0].clientX;
+function(e){
 
 
-if(startX-move>100){
+let endX =
+e.touches[0].clientX;
+
+
+
+if(startX-endX>100){
 
 
 sidebar.classList.remove("open");
+
 
 overlay.classList.remove("show");
 
 
 }
 
+
+
 });
+
 
 
 
@@ -1703,3 +1665,4 @@ overlay.classList.remove("show");
 </body>
 
 </html>
+
