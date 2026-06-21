@@ -32,6 +32,7 @@ font-family:Arial,Helvetica,sans-serif;
 .topbar{
 
 background:#0d0f14;
+
 border-bottom:1px solid #1b2535;
 
 padding:18px 30px;
@@ -42,7 +43,8 @@ justify-content:space-between;
 
 position:sticky;
 top:0;
-z-index:20;
+
+z-index:10;
 
 }
 
@@ -61,9 +63,11 @@ gap:12px;
 
 width:45px;
 height:45px;
+
 object-fit:contain;
 
 }
+
 
 
 .brand-name{
@@ -74,6 +78,7 @@ font-weight:800;
 }
 
 
+
 .brand-name span{
 
 color:#0D6EFD;
@@ -82,13 +87,11 @@ color:#0D6EFD;
 
 
 
-
-
-.right{
+.actions{
 
 display:flex;
-align-items:center;
 gap:15px;
+align-items:center;
 
 }
 
@@ -98,9 +101,8 @@ gap:15px;
 
 color:#00d26a;
 
-font-size:14px;
-
 }
+
 
 
 
@@ -108,8 +110,11 @@ select{
 
 background:#111827;
 color:white;
+
 border:none;
+
 padding:10px 15px;
+
 border-radius:20px;
 
 }
@@ -125,11 +130,10 @@ gap:10px;
 
 padding:20px 30px;
 
-background:#050505;
-
 overflow-x:auto;
 
 }
+
 
 
 
@@ -163,7 +167,6 @@ color:white;
 
 
 
-
 .content{
 
 padding:30px;
@@ -188,25 +191,33 @@ display:block;
 
 
 
+h1{
+
+margin-bottom:10px;
+
+}
+
+
+
 .subtitle{
 
 color:#9ba3b2;
 
-margin:10px 0 25px;
+margin-bottom:25px;
 
 }
+
 
 .cards{
 
 display:grid;
 
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+grid-template-columns:
+repeat(auto-fit,minmax(220px,1fr));
 
 gap:20px;
 
 }
-
-
 
 
 .card{
@@ -223,14 +234,6 @@ padding:25px;
 
 
 
-.card-title{
-
-color:#9ba3b2;
-
-}
-
-
-
 .value{
 
 font-size:30px;
@@ -239,15 +242,9 @@ font-weight:bold;
 
 color:#0D6EFD;
 
-margin-top:12px;
+margin-top:10px;
 
 }
-
-
-
-
-
-
 
 .inbox-layout{
 
@@ -258,7 +255,6 @@ grid-template-columns:320px 1fr;
 gap:20px;
 
 }
-
 
 
 
@@ -277,7 +273,7 @@ border-radius:25px;
 
 .conversation{
 
-padding:20px;
+padding:18px;
 
 border-bottom:1px solid #1b2535;
 
@@ -306,6 +302,7 @@ font-size:12px;
 
 
 
+
 .chat{
 
 min-height:450px;
@@ -329,6 +326,8 @@ display:flex;
 
 justify-content:space-between;
 
+align-items:center;
+
 }
 
 
@@ -339,9 +338,9 @@ justify-content:space-between;
 
 background:#0D6EFD;
 
-border:none;
-
 color:white;
+
+border:none;
 
 padding:10px 18px;
 
@@ -360,6 +359,8 @@ padding:25px;
 flex:1;
 
 }
+
+
 
 
 
@@ -397,6 +398,7 @@ margin-left:auto;
 
 
 
+
 table{
 
 width:100%;
@@ -407,13 +409,11 @@ border-radius:20px;
 
 border-collapse:collapse;
 
-overflow:hidden;
-
 }
 
 
 
-td,th{
+th,td{
 
 padding:16px;
 
@@ -434,6 +434,7 @@ color:#9ba3b2;
 
 
 
+
 @media(max-width:800px){
 
 
@@ -448,13 +449,11 @@ gap:15px;
 }
 
 
-
 .inbox-layout{
 
 grid-template-columns:1fr;
 
 }
-
 
 
 .content{
@@ -501,18 +500,18 @@ Stay<span>Flow</span>
 
 
 
-<div class="right">
+
+<div class="actions">
 
 
-<div class="status" id="statusText">
-
+<div class="status" data-key="online">
 ● AI Online
-
 </div>
 
 
 
 <select id="language" onchange="changeLanguage()">
+
 
 <option value="en">
 English
@@ -539,7 +538,6 @@ Português
 
 
 
-
 </header>
 
 
@@ -553,43 +551,64 @@ Português
 
 
 <button class="active" onclick="openTab('dashboard',this)">
-<span data-en="Dashboard" data-es="Panel" data-pt="Painel">
+
+<span data-key="dashboard">
 Dashboard
 </span>
+
 </button>
+
 
 
 
 
 <button onclick="openTab('inbox',this)">
+
+<span data-key="inbox">
 Inbox
+</span>
+
 </button>
+
 
 
 
 
 <button onclick="openTab('reservations',this)">
+
+<span data-key="reservations">
 Reservations
+</span>
+
 </button>
+
 
 
 
 
 <button onclick="openTab('statistics',this)">
+
+<span data-key="statistics">
 Statistics
+</span>
+
 </button>
+
 
 
 
 
 <button onclick="openTab('settings',this)">
+
+<span data-key="settings">
 Settings
+</span>
+
 </button>
 
 
 
 </nav>
-
 
 
 
@@ -608,15 +627,21 @@ Settings
 
 
 
-<h1 data-en="Dashboard" data-es="Panel" data-pt="Painel">
+<h1 data-key="dashboard">
+
 Dashboard
+
 </h1>
 
 
 
-<p class="subtitle">
+
+<p class="subtitle" data-key="overview">
+
 StayFlow overview
+
 </p>
+
 
 
 
@@ -625,32 +650,46 @@ StayFlow overview
 
 
 
+
+
 <div class="card">
 
-<div class="card-title">
+<div data-key="messages">
+
 Messages
+
 </div>
+
 
 <div class="value">
 24
 </div>
 
+
 </div>
+
+
 
 
 
 
 <div class="card">
 
-<div class="card-title">
+<div data-key="reservations">
+
 Reservations
+
 </div>
+
 
 <div class="value">
 42
 </div>
 
+
 </div>
+
+
 
 
 
@@ -658,15 +697,25 @@ Reservations
 
 <div class="card">
 
-<div class="card-title">
+
+<div data-key="occupancy">
+
 Occupancy
+
 </div>
+
 
 <div class="value">
+
 82%
-</div>
 
 </div>
+
+
+
+</div>
+
+
 
 
 
@@ -685,18 +734,28 @@ Occupancy
 
 
 
-
 <section id="inbox" class="page">
 
 
-<h1>
+
+
+
+<h1 data-key="inbox">
+
 Inbox
+
 </h1>
 
 
-<p class="subtitle">
+
+
+
+<p class="subtitle" data-key="guest">
+
 Guest conversations
+
 </p>
+
 
 
 
@@ -714,23 +773,50 @@ Guest conversations
 
 
 
+
+
 <div class="conversation">
 
-
 <b>
+
 Maria
+
 </b>
 
+
 <br>
+
 
 <small>
+
 Argentina · Dorm 4 Bed 2
+
 </small>
 
+
 <br>
+
+
+<span data-key="availability">
 
 Availability?
+
+</span>
+
+
+
+<span class="badge">
+
+AI
+
+</span>
+
+
+
 </div>
+
+
+
 
 
 
@@ -738,21 +824,36 @@ Availability?
 
 <div class="conversation">
 
-
 <b>
+
 John
+
 </b>
 
+
 <br>
+
 
 <small>
+
 USA · Private Room
+
 </small>
+
 
 <br>
 
+
+<span data-key="transfer">
+
 Transfer?
+
+</span>
+
+
 </div>
+
+
 
 
 
@@ -773,12 +874,16 @@ Transfer?
 
 
 <h3>
+
 Maria
+
 </h3>
 
 
-<button class="takeover">
+<button class="takeover" data-key="takeover">
+
 Take Over
+
 </button>
 
 
@@ -790,8 +895,8 @@ Take Over
 
 
 
-
 <div class="messages">
+
 
 
 <div class="message guest">
@@ -799,6 +904,7 @@ Take Over
 Hi, do you have a bed?
 
 </div>
+
 
 
 
@@ -810,19 +916,23 @@ Yes, I can help you.
 
 
 
-</div>
-
-
-
-
-</div>
-
-
 
 
 
 </div>
 
+
+
+
+
+
+</div>
+
+
+
+
+
+</div>
 
 
 
@@ -831,19 +941,13 @@ Yes, I can help you.
 
 </section>
 
-
-
-
-
-
-
-
 <section id="reservations" class="page">
 
 
-<h1>
+<h1 data-key="reservations">
 Reservations
 </h1>
+
 
 
 <table>
@@ -874,26 +978,21 @@ Payment
 
 <tr>
 
-
 <td>
 Carlos
 </td>
-
 
 <td>
 Dorm 2
 </td>
 
-
 <td>
 Bed 4
 </td>
 
-
-<td>
+<td data-key="card">
 Card
 </td>
-
 
 
 </tr>
@@ -906,18 +1005,19 @@ Card
 
 </section>
 
+
+
+
+
+
+
+
 <section id="statistics" class="page">
 
 
-<h1>
+<h1 data-key="statistics">
 Statistics
 </h1>
-
-
-<p class="subtitle">
-Business intelligence
-</p>
-
 
 
 
@@ -927,55 +1027,79 @@ Business intelligence
 
 <div class="card">
 
-<div class="card-title">
+<div data-key="topcountry">
+
 Top Country
+
 </div>
 
+
 <div class="value">
+
 Argentina
-</div>
 
 </div>
+
+
+</div>
+
+
 
 
 
 
 <div class="card">
 
-<div class="card-title">
+<div data-key="bestmonth">
+
 Best Month
+
 </div>
+
 
 <div class="value">
+
 January
-</div>
 
 </div>
+
+
+</div>
+
+
+
 
 
 
 
 <div class="card">
 
-<div class="card-title">
+<div data-key="revenue">
+
 Revenue
+
 </div>
+
 
 <div class="value">
+
 $0
-</div>
 
 </div>
 
 
+</div>
+
+
+
 
 
 </div>
+
 
 
 
 </section>
-
 
 
 
@@ -987,15 +1111,11 @@ $0
 <section id="settings" class="page">
 
 
-<h1>
+<h1 data-key="settings">
+
 Settings
+
 </h1>
-
-
-<p class="subtitle">
-System configuration
-</p>
-
 
 
 
@@ -1005,41 +1125,59 @@ System configuration
 
 <div class="card">
 
-<div class="card-title">
+
+<div data-key="ai">
+
 AI Assistant
+
 </div>
+
+
 
 <div class="value">
+
 ON
-</div>
 
 </div>
+
+
+
+</div>
+
+
 
 
 
 
 <div class="card">
 
-<div class="card-title">
+
+<div data-key="handoff">
+
 Human Handoff
+
 </div>
+
+
 
 <div class="value">
+
 ON
-</div>
 
 </div>
 
 
 
-
 </div>
 
+
+
+
+</div>
 
 
 
 </section>
-
 
 
 
@@ -1063,43 +1201,115 @@ ON
 
 
 
-function openTab(id,button){
+const translations = {
 
 
-document.querySelectorAll(".page")
-.forEach(page=>{
+en:{
 
-page.classList.remove("active");
+dashboard:"Dashboard",
+inbox:"Inbox",
+reservations:"Reservations",
+statistics:"Statistics",
+settings:"Settings",
 
-});
+overview:"StayFlow overview",
+messages:"Messages",
+occupancy:"Occupancy",
+guest:"Guest conversations",
+
+availability:"Availability?",
+transfer:"Transfer?",
+
+takeover:"Take Over",
+
+topcountry:"Top Country",
+bestmonth:"Best Month",
+revenue:"Revenue",
+
+ai:"AI Assistant",
+handoff:"Human Handoff",
+
+card:"Card",
+
+online:"● AI Online"
+
+},
 
 
 
-const target = document.getElementById(id);
 
 
-if(target){
 
-target.classList.add("active");
+es:{
+
+dashboard:"Panel",
+inbox:"Bandeja",
+reservations:"Reservas",
+statistics:"Estadísticas",
+settings:"Configuración",
+
+overview:"Resumen de StayFlow",
+messages:"Mensajes",
+occupancy:"Ocupación",
+guest:"Conversaciones",
+
+availability:"Disponibilidad?",
+transfer:"Traslado?",
+
+takeover:"Tomar control",
+
+topcountry:"País principal",
+bestmonth:"Mejor mes",
+revenue:"Ingresos",
+
+ai:"Asistente IA",
+handoff:"Transferencia humana",
+
+card:"Tarjeta",
+
+online:"● IA Activa"
+
+},
+
+
+
+
+
+
+pt:{
+
+dashboard:"Painel",
+inbox:"Caixa",
+reservations:"Reservas",
+statistics:"Estatísticas",
+settings:"Configurações",
+
+overview:"Resumo StayFlow",
+messages:"Mensagens",
+occupancy:"Ocupação",
+guest:"Conversas",
+
+availability:"Disponibilidade?",
+transfer:"Transfer?",
+
+takeover:"Assumir",
+
+topcountry:"País principal",
+bestmonth:"Melhor mês",
+revenue:"Receita",
+
+ai:"Assistente IA",
+handoff:"Transferência humana",
+
+card:"Cartão",
+
+online:"● IA Online"
 
 }
 
 
 
-document.querySelectorAll(".menu button")
-.forEach(btn=>{
-
-btn.classList.remove("active");
-
-});
-
-
-
-button.classList.add("active");
-
-
-
-}
+};
 
 
 
@@ -1112,52 +1322,84 @@ button.classList.add("active");
 function changeLanguage(){
 
 
-let lang = document.getElementById("language").value;
+
+let lang =
+document.getElementById("language").value;
 
 
 
 
-document.querySelectorAll("[data-en]")
+document.querySelectorAll("[data-key]")
 .forEach(element=>{
 
 
+let key =
+element.getAttribute("data-key");
+
+
 element.innerText =
-element.getAttribute("data-"+lang);
+translations[lang][key];
+
 
 
 });
 
 
 
-if(lang==="es"){
-
-document.title="StayFlow | Panel";
-
 }
 
 
-if(lang==="pt"){
 
-document.title="StayFlow | Painel";
+
+
+
+
+
+function openTab(id,button){
+
+
+
+document.querySelectorAll(".page")
+.forEach(page=>{
+
+page.classList.remove("active");
+
+});
+
+
+
+
+
+document.getElementById(id)
+.classList.add("active");
+
+
+
+
+
+
+
+document.querySelectorAll(".menu button")
+.forEach(btn=>{
+
+btn.classList.remove("active");
+
+});
+
+
+
+
+
+button.classList.add("active");
+
+
 
 }
-
-
-if(lang==="en"){
-
-document.title="StayFlow";
-
-}
-
-
-}
-
 
 
 
 
 </script>
-
 
 
 
