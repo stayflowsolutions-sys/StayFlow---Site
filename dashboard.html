@@ -19,29 +19,20 @@ box-sizing:border-box;
 
 
 body{
-
 margin:0;
-
 background:#050505;
-
 color:white;
-
 font-family:'Poppins','Segoe UI',sans-serif;
-
 }
-
 
 
 .sidebar{
 
 position:fixed;
-
 left:-300px;
-
 top:0;
 
 width:300px;
-
 height:100vh;
 
 background:#080808;
@@ -60,9 +51,7 @@ overflow:auto;
 
 
 .sidebar.open{
-
 left:0;
-
 }
 
 
@@ -70,7 +59,6 @@ left:0;
 .overlay{
 
 position:fixed;
-
 inset:0;
 
 background:#000b;
@@ -82,12 +70,10 @@ z-index:10;
 }
 
 
-
 .overlay.show{
-
 display:block;
-
 }
+
 
 
 
@@ -127,7 +113,6 @@ color:#1b8cff;
 
 
 
-
 .profile{
 
 background:#0b0b0b;
@@ -141,7 +126,6 @@ padding:15px;
 margin-bottom:20px;
 
 }
-
 
 
 
@@ -186,11 +170,11 @@ height:75px;
 
 display:flex;
 
-align-items:center;
+align-items:flex-start;
 
 justify-content:space-between;
 
-padding:0 25px;
+padding:20px 25px;
 
 border-bottom:1px solid #ffffff15;
 
@@ -271,6 +255,7 @@ color:#1b8cff;
 
 
 
+
 .lang span{
 
 cursor:pointer;
@@ -281,19 +266,21 @@ margin:5px;
 
 
 
+
 .action{
 
 background:#1b8cff;
 
 border:0;
 
+color:white;
+
 border-radius:12px;
 
 padding:10px 15px;
 
-color:white;
-
 }
+
 
 
 </style>
@@ -312,6 +299,7 @@ color:white;
 
 
 
+
 <div id="sidebar" class="sidebar">
 
 
@@ -325,7 +313,6 @@ color:white;
 Stay<span>Flow</span>
 
 </div>
-
 
 
 
@@ -355,7 +342,10 @@ Jorge
 
 
 
+
+
 <div class="menu">
+
 
 
 <button class="active" onclick="openPage('home',this)">
@@ -366,11 +356,14 @@ Jorge
 
 
 
+
+
 <button onclick="openPage('reservations',this)">
 
 🛏 <span data-i18n="reservations"></span>
 
 </button>
+
 
 
 
@@ -384,11 +377,13 @@ Jorge
 
 
 
+
 <button onclick="openPage('linen',this)">
 
 🧺 <span data-i18n="linen"></span>
 
 </button>
+
 
 
 
@@ -402,11 +397,13 @@ Jorge
 
 
 
+
 <button onclick="openPage('supplies',this)">
 
 📦 <span data-i18n="supplies"></span>
 
 </button>
+
 
 
 
@@ -420,6 +417,7 @@ Jorge
 
 
 
+
 <button onclick="openPage('tours',this)">
 
 🚐 <span data-i18n="tours"></span>
@@ -429,11 +427,13 @@ Jorge
 
 
 
+
 <button onclick="openPage('analytics',this)">
 
 📊 <span data-i18n="analytics"></span>
 
 </button>
+
 
 
 
@@ -455,6 +455,8 @@ Jorge
 
 
 
+
+
 <div class="main">
 
 
@@ -468,6 +470,7 @@ Jorge
 ☰
 
 </div>
+
 
 
 
@@ -492,10 +495,9 @@ Jorge
 </div>
 
 
-
 </div>
 
- <div class="content">
+<div class="content">
 
 
 
@@ -521,7 +523,6 @@ Jorge
 
 
 
-
 <div class="card">
 
 <h2 data-i18n="departures"></h2>
@@ -531,7 +532,6 @@ Jorge
 <p data-i18n="today"></p>
 
 </div>
-
 
 
 
@@ -549,7 +549,6 @@ Jorge
 
 
 
-
 <div class="card">
 
 <h2 data-i18n="alerts"></h2>
@@ -561,8 +560,8 @@ Jorge
 </div>
 
 
-
 </div>
+
 
 
 
@@ -573,19 +572,22 @@ Jorge
 
 <div class="card">
 
+
 <h2 data-i18n="ai_summary"></h2>
 
 
 <p>
 
-<span data-i18n="messages"></span>: 18
+<span data-i18n="messages"></span>:
+18
 
 </p>
 
 
 <p>
 
-<span data-i18n="new_bookings"></span>: 5
+<span data-i18n="new_bookings"></span>:
+5
 
 </p>
 
@@ -593,12 +595,14 @@ Jorge
 
 <p>
 
-<span data-i18n="questions_answered"></span>: 22
+<span data-i18n="questions_answered"></span>:
+22
 
 </p>
 
 
 </div>
+
 
 
 
@@ -613,14 +617,16 @@ Jorge
 
 <p>
 
-<span data-i18n="employee"></span>: Maria
+<span data-i18n="employee"></span>:
+Maria
 
 </p>
 
 
 <p>
 
-<span data-i18n="shift"></span>: 08:00-16:00
+<span data-i18n="shift"></span>:
+08:00 - 16:00
 
 </p>
 
@@ -630,6 +636,7 @@ Jorge
 
 
 </div>
+
 
 
 </section>
@@ -662,11 +669,17 @@ Jorge
 <h2 data-i18n="new_reservation"></h2>
 
 
+
+
+
 <p>
 
 👤 Maria Silva
 
 </p>
+
+
+
 
 
 <p>
@@ -676,11 +689,31 @@ Jorge
 </p>
 
 
+
+
+
 <p>
 
-🛏 Dorm 4
+🛏 <span data-i18n="room"></span>:
+
+Dorm 4
 
 </p>
+
+
+
+
+
+<p>
+
+🛌 <span data-i18n="bed"></span>:
+
+Cama 12
+
+</p>
+
+
+
 
 
 <p>
@@ -690,6 +723,9 @@ Jorge
 </p>
 
 
+
+
+
 <p>
 
 🟢 <span data-i18n="confirmed"></span>
@@ -697,7 +733,9 @@ Jorge
 </p>
 
 
+
 </div>
+
 
 
 
@@ -722,12 +760,21 @@ Carlos
 
 <p>
 
-22/06
+Private Room 2
+
+</p>
+
+
+<p>
+
+Cama 1
 
 </p>
 
 
 </div>
+
+
 
 
 
@@ -762,6 +809,8 @@ Ana
 
 
 
+
+
 </div>
 
 
@@ -776,7 +825,6 @@ Ana
 
 
 <section id="operations" class="page">
-
 
 
 <h1 data-i18n="operations"></h1>
@@ -796,11 +844,22 @@ Ana
 <h2 data-i18n="cleaning_board"></h2>
 
 
+
+
 <p>
 
-Room 4 - Bed 2
+Room 4
 
 </p>
+
+
+
+<p>
+
+Bed 2
+
+</p>
+
 
 
 <p>
@@ -810,6 +869,8 @@ Room 4 - Bed 2
 </p>
 
 
+
+
 <p>
 
 👤 Maria
@@ -817,10 +878,14 @@ Room 4 - Bed 2
 </p>
 
 
+
 <p data-i18n="waiting"></p>
 
 
+
 </div>
+
+
 
 
 
@@ -833,11 +898,14 @@ Room 4 - Bed 2
 <h2 data-i18n="maintenance"></h2>
 
 
+
 <p>
 
 🛏 <span data-i18n="broken_bed"></span>
 
 </p>
+
+
 
 
 <p>
@@ -847,7 +915,10 @@ Room 4 - Bed 2
 </p>
 
 
+
+
 </div>
+
 
 
 
@@ -862,11 +933,13 @@ Room 4 - Bed 2
 <h2 data-i18n="handover"></h2>
 
 
+
 <p>
 
 ☑ <span data-i18n="bathroom_check"></span>
 
 </p>
+
 
 
 <p>
@@ -876,6 +949,8 @@ Room 4 - Bed 2
 </p>
 
 
+
+
 <p>
 
 ☐ <span data-i18n="report_problem"></span>
@@ -883,12 +958,14 @@ Room 4 - Bed 2
 </p>
 
 
-</div>
-
-
 
 </div>
 
+
+
+
+
+</div>
 
 
 </section>
@@ -908,57 +985,101 @@ Room 4 - Bed 2
 
 
 
+
 <div class="cards">
 
 
 
+
+
 <div class="card">
+
 
 <h2 data-i18n="clean_available"></h2>
 
-<div class="value">20</div>
+
+<div class="value">
+
+20
+
+</div>
+
 
 </div>
 
 
 
+
+
+
+
 <div class="card">
+
 
 <h2 data-i18n="in_use"></h2>
 
-<div class="value">30</div>
+
+<div class="value">
+
+30
+
+</div>
+
 
 </div>
 
 
 
+
+
+
+
 <div class="card">
+
 
 <h2 data-i18n="laundry"></h2>
 
-<div class="value">10</div>
+
+<div class="value">
+
+10
 
 </div>
+
+
+</div>
+
+
 
 
 
 
 <div class="card">
 
+
 <h2 data-i18n="damaged"></h2>
 
-<div class="value">2</div>
+
+<div class="value">
+
+2
+
+</div>
+
 
 </div>
 
 
 
+
+
 </div>
+
 
 
 </section>
 
-  <section id="bathrooms" class="page">
+ <section id="bathrooms" class="page">
 
 
 <h1 data-i18n="bathrooms"></h1>
@@ -966,6 +1087,8 @@ Room 4 - Bed 2
 
 
 <div class="cards">
+
+
 
 
 
@@ -991,7 +1114,9 @@ Room 4 - Bed 2
 <p>☐ <span data-i18n="towels"></span></p>
 
 
+
 </div>
+
 
 
 
@@ -1003,7 +1128,9 @@ Room 4 - Bed 2
 <h2 data-i18n="bathroom_status"></h2>
 
 
+
 <p data-i18n="ready"></p>
+
 
 
 <p>
@@ -1013,6 +1140,8 @@ Room 4 - Bed 2
 10:30
 
 </p>
+
+
 
 
 <p>
@@ -1028,7 +1157,9 @@ Maria
 </div>
 
 
+
 </div>
+
 
 
 </section>
@@ -1044,7 +1175,9 @@ Maria
 <section id="supplies" class="page">
 
 
+
 <h1 data-i18n="supplies"></h1>
+
 
 
 
@@ -1060,11 +1193,14 @@ Maria
 <h2 data-i18n="breakfast"></h2>
 
 
+
 <p>
 
 ☕ <span data-i18n="coffee"></span>
 
 </p>
+
+
 
 
 <p>
@@ -1074,6 +1210,8 @@ Maria
 </p>
 
 
+
+
 <p>
 
 🍞 <span data-i18n="bread"></span>
@@ -1081,8 +1219,8 @@ Maria
 </p>
 
 
-</div>
 
+</div>
 
 
 
@@ -1096,6 +1234,8 @@ Maria
 <h2 data-i18n="cleaning_products"></h2>
 
 
+
+
 <p>
 
 <span data-i18n="detergent"></span>
@@ -1103,11 +1243,15 @@ Maria
 </p>
 
 
+
+
 <p>
 
 <span data-i18n="disinfectant"></span>
 
 </p>
+
+
 
 
 <p>
@@ -1118,7 +1262,9 @@ Maria
 
 
 
+
 </div>
+
 
 
 
@@ -1133,6 +1279,7 @@ Maria
 <h2 data-i18n="shopping_list"></h2>
 
 
+
 <p>
 
 ☐ <span data-i18n="coffee"></span>
@@ -1140,11 +1287,13 @@ Maria
 </p>
 
 
+
 <p>
 
 ☐ <span data-i18n="paper"></span>
 
 </p>
+
 
 
 <p>
@@ -1155,6 +1304,8 @@ Maria
 
 
 
+
+
 <button class="action">
 
 <span data-i18n="complete"></span>
@@ -1162,11 +1313,14 @@ Maria
 </button>
 
 
-</div>
-
-
 
 </div>
+
+
+
+
+</div>
+
 
 
 </section>
@@ -1182,11 +1336,15 @@ Maria
 <section id="extras" class="page">
 
 
+
 <h1 data-i18n="extras"></h1>
 
 
 
+
+
 <div class="cards">
+
 
 
 
@@ -1198,6 +1356,7 @@ Maria
 <h2 data-i18n="towels"></h2>
 
 
+
 <p>
 
 <span data-i18n="available"></span>:
@@ -1205,6 +1364,8 @@ Maria
 15
 
 </p>
+
+
 
 
 <p>
@@ -1217,7 +1378,9 @@ Maria
 
 
 
+
 </div>
+
 
 
 
@@ -1229,6 +1392,7 @@ Maria
 
 
 <h2 data-i18n="blankets"></h2>
+
 
 
 <p>
@@ -1250,6 +1414,7 @@ Maria
 </div>
 
 
+
 </section>
 
 
@@ -1263,7 +1428,11 @@ Maria
 <section id="tours" class="page">
 
 
+
 <h1 data-i18n="tours"></h1>
+
+
+
 
 
 
@@ -1279,6 +1448,7 @@ Maria
 <h2 data-i18n="wine_tour"></h2>
 
 
+
 <p>
 
 <span data-i18n="bookings"></span>:
@@ -1288,6 +1458,8 @@ Maria
 </p>
 
 
+
+
 <p>
 
 <span data-i18n="revenue"></span>:
@@ -1295,6 +1467,7 @@ Maria
 180
 
 </p>
+
 
 
 
@@ -1312,7 +1485,9 @@ Maria
 <h2 data-i18n="ai_recommendations"></h2>
 
 
+
 <p data-i18n="offer_tours"></p>
+
 
 
 <p data-i18n="increase_sales"></p>
@@ -1323,7 +1498,12 @@ Maria
 
 
 
+
+
 </div>
+
+
+
 
 
 </section>
@@ -1335,11 +1515,13 @@ Maria
 
 
 
-
 <section id="analytics" class="page">
 
 
+
 <h1 data-i18n="analytics"></h1>
+
+
 
 
 
@@ -1355,12 +1537,15 @@ Maria
 <h2 data-i18n="occupancy"></h2>
 
 
-<div class="value">82%</div>
+<div class="value">
 
+82%
 
 </div>
 
 
+
+</div>
 
 
 
@@ -1371,6 +1556,7 @@ Maria
 
 
 <h2 data-i18n="employee_stats"></h2>
+
 
 
 <p>
@@ -1394,11 +1580,17 @@ Joao 76%
 </p>
 
 
+
+</div>
+
+
+
+
+
 </div>
 
 
 
-</div>
 
 
 </section>
@@ -1414,11 +1606,15 @@ Joao 76%
 <section id="audit" class="page">
 
 
+
 <h1 data-i18n="audit"></h1>
 
 
 
+
+
 <div class="card">
+
 
 
 <p>
@@ -1429,23 +1625,32 @@ Joao 76%
 
 
 
+
 <p data-i18n="checkout_registered"></p>
+
 
 
 <p data-i18n="cleaning_completed"></p>
 
 
+
 <p data-i18n="linen_updated"></p>
 
 
+
 <p data-i18n="bathroom_checked"></p>
+
+
 
 
 </div>
 
 
 
+
 </section>
+
+
 
 
 
@@ -1499,16 +1704,22 @@ employee:"Funcionário",
 shift:"Turno",
 
 new_reservation:"Nova reserva",
+room:"Quarto",
+bed:"Cama / Leito",
+
 checkin:"Check-in",
 checkout:"Check-out",
+
 guest_arrival:"Chegada do hóspede",
 confirmed:"Confirmada",
+
 cleaning_created:"Limpeza gerada",
 
 cleaning_board:"Painel de limpeza",
 waiting:"Aguardando",
 
 maintenance:"Manutenção",
+
 broken_bed:"Cama quebrada",
 broken_shower:"Chuveiro com defeito",
 
@@ -1543,6 +1754,7 @@ milk:"Leite",
 bread:"Pão",
 
 cleaning_products:"Produtos limpeza",
+
 detergent:"Detergente",
 disinfectant:"Desinfetante",
 trash_bags:"Sacos de lixo",
@@ -1554,6 +1766,7 @@ blankets:"Cobertas",
 available:"Disponível",
 
 wine_tour:"Tour de vinho",
+
 bookings:"Reservas",
 revenue:"Receita",
 
@@ -1562,6 +1775,7 @@ offer_tours:"Oferecer passeios",
 increase_sales:"Aumentar vendas",
 
 occupancy:"Ocupação",
+
 employee_stats:"Estatísticas funcionários",
 
 checkout_registered:"Checkout registrado",
@@ -1571,6 +1785,8 @@ bathroom_checked:"Banheiro conferido"
 
 
 },
+
+
 
 
 
@@ -1615,16 +1831,22 @@ employee:"Employee",
 shift:"Shift",
 
 new_reservation:"New reservation",
+room:"Room",
+bed:"Bed",
+
 checkin:"Check-in",
 checkout:"Check-out",
+
 guest_arrival:"Guest arrival",
 confirmed:"Confirmed",
+
 cleaning_created:"Cleaning created",
 
 cleaning_board:"Cleaning board",
 waiting:"Waiting",
 
 maintenance:"Maintenance",
+
 broken_bed:"Broken bed",
 broken_shower:"Broken shower",
 
@@ -1659,6 +1881,7 @@ milk:"Milk",
 bread:"Bread",
 
 cleaning_products:"Cleaning products",
+
 detergent:"Detergent",
 disinfectant:"Disinfectant",
 trash_bags:"Trash bags",
@@ -1670,6 +1893,7 @@ blankets:"Blankets",
 available:"Available",
 
 wine_tour:"Wine tour",
+
 bookings:"Bookings",
 revenue:"Revenue",
 
@@ -1678,6 +1902,7 @@ offer_tours:"Offer tours",
 increase_sales:"Increase sales",
 
 occupancy:"Occupancy",
+
 employee_stats:"Employee statistics",
 
 checkout_registered:"Checkout registered",
@@ -1687,7 +1912,6 @@ bathroom_checked:"Bathroom checked"
 
 
 },
-
 
 
 
@@ -1732,16 +1956,22 @@ employee:"Empleado",
 shift:"Turno",
 
 new_reservation:"Nueva reserva",
+room:"Habitación",
+bed:"Cama",
+
 checkin:"Check-in",
 checkout:"Check-out",
+
 guest_arrival:"Llegada huésped",
 confirmed:"Confirmada",
+
 cleaning_created:"Limpieza creada",
 
 cleaning_board:"Panel limpieza",
 waiting:"Esperando",
 
 maintenance:"Mantenimiento",
+
 broken_bed:"Cama rota",
 broken_shower:"Ducha rota",
 
@@ -1776,6 +2006,7 @@ milk:"Leche",
 bread:"Pan",
 
 cleaning_products:"Productos limpieza",
+
 detergent:"Detergente",
 disinfectant:"Desinfectante",
 trash_bags:"Bolsas basura",
@@ -1787,6 +2018,7 @@ blankets:"Mantas",
 available:"Disponible",
 
 wine_tour:"Tour vino",
+
 bookings:"Reservas",
 revenue:"Ingresos",
 
@@ -1795,6 +2027,7 @@ offer_tours:"Ofrecer tours",
 increase_sales:"Aumentar ventas",
 
 occupancy:"Ocupación",
+
 employee_stats:"Estadísticas empleados",
 
 checkout_registered:"Checkout registrado",
@@ -1822,12 +2055,12 @@ lang
 
 
 
-document
-.querySelectorAll("[data-i18n]")
+document.querySelectorAll("[data-i18n]")
 .forEach(el=>{
 
 
 let key = el.dataset.i18n;
+
 
 
 if(translations[lang][key]){
@@ -1838,11 +2071,11 @@ translations[lang][key];
 }
 
 
+
 });
 
 
 }
-
 
 
 
@@ -1859,6 +2092,7 @@ applyLanguage(lang);
 
 
 
+
 function toggleMenu(){
 
 
@@ -1867,14 +2101,12 @@ document
 .classList.toggle("open");
 
 
+
 document
 .getElementById("overlay")
 .classList.toggle("show");
 
-
 }
-
-
 
 
 
@@ -1891,6 +2123,7 @@ document
 
 
 function openPage(id,btn){
+
 
 
 document
@@ -1929,7 +2162,11 @@ localStorage.getItem("stayflow_language") || "pt"
 
 toggleMenu();
 
+
 }
+
+
+
 
 
 
@@ -1941,6 +2178,7 @@ localStorage.getItem("stayflow_language") || "pt"
 
 
 </script>
+
 
 </body>
 
