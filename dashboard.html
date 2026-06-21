@@ -32,60 +32,46 @@ font-family:Arial,Helvetica,sans-serif;
 .topbar{
 
 background:#0d0f14;
-
 border-bottom:1px solid #1b2535;
 
 padding:18px 30px;
 
 display:flex;
-
 align-items:center;
-
 justify-content:space-between;
 
 position:sticky;
-
 top:0;
-
-z-index:10;
+z-index:20;
 
 }
-
 
 
 
 .brand{
 
 display:flex;
-
 align-items:center;
-
 gap:12px;
 
 }
 
 
-
 .brand img{
 
 width:45px;
-
 height:45px;
-
 object-fit:contain;
 
 }
 
 
-
 .brand-name{
 
 font-size:28px;
-
 font-weight:800;
 
 }
-
 
 
 .brand-name span{
@@ -98,16 +84,13 @@ color:#0D6EFD;
 
 
 
-.top-actions{
+.right{
 
 display:flex;
-
 align-items:center;
-
-gap:20px;
+gap:15px;
 
 }
-
 
 
 
@@ -121,16 +104,13 @@ font-size:14px;
 
 
 
-
-.language{
+select{
 
 background:#111827;
-
+color:white;
+border:none;
 padding:10px 15px;
-
 border-radius:20px;
-
-color:#cbd5e1;
 
 }
 
@@ -141,8 +121,11 @@ color:#cbd5e1;
 .menu{
 
 display:flex;
+gap:10px;
 
-gap:8px;
+padding:20px 30px;
+
+background:#050505;
 
 overflow-x:auto;
 
@@ -152,9 +135,9 @@ overflow-x:auto;
 
 .menu button{
 
-background:none;
+background:#0d0f14;
 
-border:none;
+border:1px solid #1b2535;
 
 color:#9ba3b2;
 
@@ -170,16 +153,13 @@ white-space:nowrap;
 
 
 
+.menu button.active{
 
-.menu button.active,
-.menu button:hover{
-
-background:#111827;
+background:#0D6EFD;
 
 color:white;
 
 }
-
 
 
 
@@ -189,8 +169,6 @@ color:white;
 padding:30px;
 
 }
-
-
 
 
 
@@ -210,28 +188,13 @@ display:block;
 
 
 
-
-
-h1{
-
-margin-bottom:8px;
-
-}
-
-
-
-
 .subtitle{
 
 color:#9ba3b2;
 
-margin-bottom:25px;
+margin:10px 0 25px;
 
 }
-
-
-
-
 
 .cards{
 
@@ -242,6 +205,7 @@ grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:20px;
 
 }
+
 
 
 
@@ -259,15 +223,11 @@ padding:25px;
 
 
 
-
-
 .card-title{
 
 color:#9ba3b2;
 
 }
-
-
 
 
 
@@ -283,6 +243,12 @@ margin-top:12px;
 
 }
 
+
+
+
+
+
+
 .inbox-layout{
 
 display:grid;
@@ -296,8 +262,8 @@ gap:20px;
 
 
 
-
-.conversations{
+.conversations,
+.chat{
 
 background:#0d0f14;
 
@@ -305,25 +271,17 @@ border:1px solid #1b2535;
 
 border-radius:25px;
 
-overflow:hidden;
-
 }
-
-
 
 
 
 .conversation{
 
-padding:18px;
+padding:20px;
 
 border-bottom:1px solid #1b2535;
 
 cursor:pointer;
-
-display:flex;
-
-justify-content:space-between;
 
 }
 
@@ -332,14 +290,6 @@ justify-content:space-between;
 .conversation:hover{
 
 background:#111827;
-
-}
-
-
-
-.conversation small{
-
-color:#9ba3b2;
 
 }
 
@@ -356,23 +306,15 @@ font-size:12px;
 
 
 
-
 .chat{
 
-background:#0d0f14;
-
-border:1px solid #1b2535;
-
-border-radius:25px;
+min-height:450px;
 
 display:flex;
 
 flex-direction:column;
 
-min-height:480px;
-
 }
-
 
 
 
@@ -387,9 +329,8 @@ display:flex;
 
 justify-content:space-between;
 
-align-items:center;
-
 }
+
 
 
 
@@ -405,8 +346,6 @@ color:white;
 padding:10px 18px;
 
 border-radius:20px;
-
-cursor:pointer;
 
 }
 
@@ -426,17 +365,15 @@ flex:1;
 
 .message{
 
-max-width:70%;
-
 padding:14px;
 
 border-radius:18px;
 
+max-width:70%;
+
 margin-bottom:15px;
 
 }
-
-
 
 
 
@@ -460,18 +397,15 @@ margin-left:auto;
 
 
 
-
-.reservation-table{
+table{
 
 width:100%;
-
-border-collapse:collapse;
-
-margin-top:20px;
 
 background:#0d0f14;
 
 border-radius:20px;
+
+border-collapse:collapse;
 
 overflow:hidden;
 
@@ -479,10 +413,9 @@ overflow:hidden;
 
 
 
-.reservation-table th,
-.reservation-table td{
+td,th{
 
-padding:18px;
+padding:16px;
 
 border-bottom:1px solid #1b2535;
 
@@ -492,7 +425,7 @@ text-align:left;
 
 
 
-.reservation-table th{
+th{
 
 color:#9ba3b2;
 
@@ -501,59 +434,7 @@ color:#9ba3b2;
 
 
 
-
-.stats-grid{
-
-display:grid;
-
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-
-gap:20px;
-
-}
-
-
-
-
-
-.setting{
-
-background:#0d0f14;
-
-border:1px solid #1b2535;
-
-border-radius:25px;
-
-padding:25px;
-
-}
-
-
-
-
-
-.toggle{
-
-width:50px;
-
-height:25px;
-
-background:#0D6EFD;
-
-border-radius:20px;
-
-margin-top:15px;
-
-}
-
-
-
-
-
-
-
 @media(max-width:800px){
-
 
 
 .topbar{
@@ -583,13 +464,11 @@ padding:20px;
 }
 
 
-
 }
 
 </style>
 
 </head>
-
 
 
 <body>
@@ -602,29 +481,30 @@ padding:20px;
 
 
 
-
-
 <div class="brand">
+
 
 <img src="IMG_3520.png">
 
+
 <div class="brand-name">
+
 Stay<span>Flow</span>
-</div>
-
 
 </div>
 
 
+</div>
 
 
 
 
 
-<div class="top-actions">
+
+<div class="right">
 
 
-<div class="status">
+<div class="status" id="statusText">
 
 ● AI Online
 
@@ -632,15 +512,29 @@ Stay<span>Flow</span>
 
 
 
-<div class="language">
+<select id="language" onchange="changeLanguage()">
 
-EN ▼
+<option value="en">
+English
+</option>
+
+
+<option value="es">
+Español
+</option>
+
+
+<option value="pt">
+Português
+</option>
+
+
+</select>
+
+
 
 </div>
 
-
-
-</div>
 
 
 
@@ -658,15 +552,17 @@ EN ▼
 <nav class="menu">
 
 
-
 <button class="active" onclick="openTab('dashboard',this)">
+<span data-en="Dashboard" data-es="Panel" data-pt="Painel">
 Dashboard
+</span>
 </button>
 
 
 
+
 <button onclick="openTab('inbox',this)">
-Inbox 🔵3
+Inbox
 </button>
 
 
@@ -708,13 +604,14 @@ Settings
 
 
 
-
 <section id="dashboard" class="page active">
 
 
-<h1>
+
+<h1 data-en="Dashboard" data-es="Panel" data-pt="Painel">
 Dashboard
 </h1>
+
 
 
 <p class="subtitle">
@@ -724,8 +621,8 @@ StayFlow overview
 
 
 
-
 <div class="cards">
+
 
 
 <div class="card">
@@ -739,8 +636,6 @@ Messages
 </div>
 
 </div>
-
-
 
 
 
@@ -761,8 +656,6 @@ Reservations
 
 
 
-
-
 <div class="card">
 
 <div class="card-title">
@@ -775,22 +668,6 @@ Occupancy
 
 </div>
 
-
-
-
-
-
-<div class="card">
-
-<div class="card-title">
-Revenue
-</div>
-
-<div class="value">
-$0
-</div>
-
-</div>
 
 
 
@@ -810,7 +687,6 @@ $0
 
 
 <section id="inbox" class="page">
-
 
 
 <h1>
@@ -834,25 +710,16 @@ Guest conversations
 
 
 
-
-
-
 <div class="conversations">
-
-
-
 
 
 
 <div class="conversation">
 
 
-<div>
-
 <b>
 Maria
 </b>
-
 
 <br>
 
@@ -862,24 +729,8 @@ Argentina · Dorm 4 Bed 2
 
 <br>
 
-<small>
-Need availability
-</small>
-
+Availability?
 </div>
-
-
-
-<span class="badge">
-AI
-</span>
-
-
-</div>
-
-
-
-
 
 
 
@@ -888,12 +739,9 @@ AI
 <div class="conversation">
 
 
-<div>
-
 <b>
 John
 </b>
-
 
 <br>
 
@@ -903,68 +751,13 @@ USA · Private Room
 
 <br>
 
-<small>
-Airport transfer?
-</small>
-
-</div>
-
-
-
-<span class="badge">
-AI
-</span>
-
-
+Transfer?
 </div>
 
 
 
 
-
-
-
-<div class="conversation">
-
-
-<div>
-
-<b>
-Sofia
-</b>
-
-
-<br>
-
-<small>
-Brazil · Dorm 2 Bed 1
-</small>
-
-<br>
-
-<small>
-Check in
-</small>
-
 </div>
-
-
-
-<span class="badge">
-Human
-</span>
-
-
-</div>
-
-
-
-
-
-
-</div>
-
-
 
 
 
@@ -979,25 +772,13 @@ Human
 <div class="chat-header">
 
 
-<div>
-
 <h3>
 Maria
 </h3>
 
-<small>
-AI Assistant
-</small>
-
-
-</div>
-
-
 
 <button class="takeover">
-
 Take Over
-
 </button>
 
 
@@ -1015,7 +796,7 @@ Take Over
 
 <div class="message guest">
 
-Hi, do you have a bed available?
+Hi, do you have a bed?
 
 </div>
 
@@ -1023,15 +804,7 @@ Hi, do you have a bed available?
 
 <div class="message ai">
 
-Yes, I can help you with that.
-
-</div>
-
-
-
-<div class="message guest">
-
-For tomorrow.
+Yes, I can help you.
 
 </div>
 
@@ -1042,17 +815,14 @@ For tomorrow.
 
 
 
-
-
-
 </div>
 
 
 
 
 
-
 </div>
+
 
 
 
@@ -1060,3 +830,339 @@ For tomorrow.
 
 
 </section>
+
+
+
+
+
+
+
+
+<section id="reservations" class="page">
+
+
+<h1>
+Reservations
+</h1>
+
+
+<table>
+
+
+<tr>
+
+<th>
+Guest
+</th>
+
+<th>
+Room
+</th>
+
+<th>
+Bed
+</th>
+
+<th>
+Payment
+</th>
+
+
+</tr>
+
+
+
+<tr>
+
+
+<td>
+Carlos
+</td>
+
+
+<td>
+Dorm 2
+</td>
+
+
+<td>
+Bed 4
+</td>
+
+
+<td>
+Card
+</td>
+
+
+
+</tr>
+
+
+
+</table>
+
+
+
+</section>
+
+<section id="statistics" class="page">
+
+
+<h1>
+Statistics
+</h1>
+
+
+<p class="subtitle">
+Business intelligence
+</p>
+
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+<div class="card-title">
+Top Country
+</div>
+
+<div class="value">
+Argentina
+</div>
+
+</div>
+
+
+
+
+<div class="card">
+
+<div class="card-title">
+Best Month
+</div>
+
+<div class="value">
+January
+</div>
+
+</div>
+
+
+
+
+<div class="card">
+
+<div class="card-title">
+Revenue
+</div>
+
+<div class="value">
+$0
+</div>
+
+</div>
+
+
+
+
+</div>
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="settings" class="page">
+
+
+<h1>
+Settings
+</h1>
+
+
+<p class="subtitle">
+System configuration
+</p>
+
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+<div class="card-title">
+AI Assistant
+</div>
+
+<div class="value">
+ON
+</div>
+
+</div>
+
+
+
+
+<div class="card">
+
+<div class="card-title">
+Human Handoff
+</div>
+
+<div class="value">
+ON
+</div>
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+</main>
+
+
+
+
+
+
+
+
+
+<script>
+
+
+
+
+
+function openTab(id,button){
+
+
+document.querySelectorAll(".page")
+.forEach(page=>{
+
+page.classList.remove("active");
+
+});
+
+
+
+const target = document.getElementById(id);
+
+
+if(target){
+
+target.classList.add("active");
+
+}
+
+
+
+document.querySelectorAll(".menu button")
+.forEach(btn=>{
+
+btn.classList.remove("active");
+
+});
+
+
+
+button.classList.add("active");
+
+
+
+}
+
+
+
+
+
+
+
+
+
+function changeLanguage(){
+
+
+let lang = document.getElementById("language").value;
+
+
+
+
+document.querySelectorAll("[data-en]")
+.forEach(element=>{
+
+
+element.innerText =
+element.getAttribute("data-"+lang);
+
+
+});
+
+
+
+if(lang==="es"){
+
+document.title="StayFlow | Panel";
+
+}
+
+
+if(lang==="pt"){
+
+document.title="StayFlow | Painel";
+
+}
+
+
+if(lang==="en"){
+
+document.title="StayFlow";
+
+}
+
+
+}
+
+
+
+
+
+</script>
+
+
+
+
+
+
+</body>
+
+</html>
