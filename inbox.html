@@ -11,19 +11,14 @@
 <title>StayFlow | Inbox</title>
 
 
-
 <style>
 
 
 *{
-
 margin:0;
 padding:0;
 box-sizing:border-box;
-
 }
-
-
 
 
 
@@ -45,7 +40,6 @@ overflow:hidden;
 
 
 
-
 body::before{
 
 content:"";
@@ -58,7 +52,7 @@ border:1px solid rgba(13,110,253,.18);
 
 pointer-events:none;
 
-z-index:999;
+z-index:10;
 
 }
 
@@ -68,9 +62,7 @@ z-index:999;
 
 
 
-
-
-.inbox-layout{
+.inbox-container{
 
 display:grid;
 
@@ -86,13 +78,10 @@ height:100vh;
 
 
 
-
-
-/* SIDEBAR */
+/* MENU */
 
 
 .sidebar{
-
 
 background:#0d0f14;
 
@@ -129,21 +118,24 @@ color:#0D6EFD;
 
 
 
+
 .menu a{
 
 display:block;
 
-padding:14px;
-
-margin-bottom:10px;
-
-border-radius:14px;
+text-decoration:none;
 
 color:#9ba3b2;
 
-text-decoration:none;
+padding:14px;
+
+border-radius:14px;
+
+margin-bottom:10px;
 
 }
+
+
 
 
 
@@ -163,10 +155,10 @@ color:white;
 
 
 
-/* CONVERSATIONS */
+/* LISTA */
 
 
-.conversations{
+.chat-list{
 
 background:#080a0f;
 
@@ -174,15 +166,13 @@ border-right:1px solid #1b2535;
 
 padding:25px;
 
-overflow:auto;
-
 }
 
 
 
 
 
-.conversations h2{
+.chat-list h2{
 
 margin-bottom:25px;
 
@@ -193,8 +183,8 @@ margin-bottom:25px;
 
 
 
-.contact{
 
+.chat-user{
 
 background:#0d0f14;
 
@@ -212,7 +202,7 @@ margin-bottom:15px;
 
 
 
-.contact:hover{
+.chat-user:hover{
 
 border-color:#0D6EFD;
 
@@ -223,7 +213,8 @@ border-color:#0D6EFD;
 
 
 
-.contact-name{
+
+.user-name{
 
 font-weight:bold;
 
@@ -235,11 +226,11 @@ margin-bottom:8px;
 
 
 
-.contact-preview{
-
-font-size:14px;
+.user-preview{
 
 color:#9ba3b2;
+
+font-size:14px;
 
 }
 
@@ -254,14 +245,11 @@ color:#9ba3b2;
 /* CHAT */
 
 
-.chat{
-
+.chat-area{
 
 display:flex;
 
 flex-direction:column;
-
-background:#050505;
 
 }
 
@@ -289,27 +277,13 @@ align-items:center;
 
 
 
-.channel{
-
-color:#9ba3b2;
-
-font-size:14px;
-
-}
-
-
-
-
-
-.ai-status{
+.status{
 
 color:#00d26a;
 
 font-size:14px;
 
 }
-
-
 
 
 
@@ -329,11 +303,12 @@ overflow:auto;
 
 
 
-.message{
+
+.bubble{
 
 max-width:70%;
 
-padding:15px 18px;
+padding:15px;
 
 border-radius:20px;
 
@@ -347,9 +322,7 @@ line-height:1.5;
 
 
 
-
-
-.guest{
+.from-guest{
 
 background:#111827;
 
@@ -358,143 +331,14 @@ background:#111827;
 
 
 
-.ai{
+
+.from-ai{
 
 background:#0D6EFD;
 
 margin-left:auto;
 
 }
-
- 
-/* GUEST PANEL */
-
-.guest-panel{
-
-background:#0d0f14;
-
-border-left:1px solid #1b2535;
-
-padding:30px;
-
-}
-
-
-
-
-
-.guest-panel h2{
-
-margin-bottom:25px;
-
-}
-
-
-
-
-
-.info{
-
-color:#9ba3b2;
-
-line-height:2;
-
-}
-
-
-
-
-
-
-
-.takeover{
-
-
-margin-top:30px;
-
-width:100%;
-
-padding:15px;
-
-border:none;
-
-border-radius:50px;
-
-background:#0D6EFD;
-
-color:white;
-
-font-size:16px;
-
-font-weight:bold;
-
-cursor:pointer;
-
-}
-
-
-
-
-
-
-
-
-@media(max-width:1000px){
-
-
-.inbox-layout{
-
-grid-template-columns:220px 1fr;
-
-}
-
-
-
-
-.guest-panel{
-
-display:none;
-
-}
-
-
-}
-
-
-
-
-
-@media(max-width:700px){
-
-
-.inbox-layout{
-
-grid-template-columns:1fr;
-
-}
-
-
-
-.sidebar,
-
-.conversations{
-
-display:none;
-
-}
-
-
-
-.chat{
-
-height:100vh;
-
-}
-
-
-}
-
-
 
 
 
@@ -509,20 +353,9 @@ height:100vh;
 <body>
 
 
-
-
-
-<div class="inbox-layout">
-
-
-
-
-
-
-
+<div class="inbox-container">
 
 <!-- SIDEBAR -->
-
 
 
 <aside class="sidebar">
@@ -534,7 +367,6 @@ height:100vh;
 Stay<span>Flow</span>
 
 </div>
-
 
 
 
@@ -580,8 +412,9 @@ Guests
 
 
 
-</nav>
 
+
+</nav>
 
 
 
@@ -597,11 +430,12 @@ Guests
 
 
 
-<!-- CONVERSATIONS -->
+<!-- CHAT LIST -->
 
 
+<section class="chat-list">
 
-<section class="conversations">
+
 
 
 
@@ -616,18 +450,17 @@ Inbox
 
 
 
+<div class="chat-user">
 
-<div class="contact">
 
-
-<div class="contact-name">
+<div class="user-name">
 
 Sarah 🇺🇸
 
 </div>
 
 
-<div class="contact-preview">
+<div class="user-preview">
 
 Room availability?
 
@@ -642,18 +475,17 @@ Room availability?
 
 
 
+<div class="chat-user">
 
-<div class="contact">
 
-
-<div class="contact-name">
+<div class="user-name">
 
 João 🇧🇷
 
 </div>
 
 
-<div class="contact-preview">
+<div class="user-preview">
 
 Reservation request
 
@@ -668,25 +500,25 @@ Reservation request
 
 
 
+<div class="chat-user">
 
-<div class="contact">
 
-
-<div class="contact-name">
+<div class="user-name">
 
 Lucas 🇦🇷
 
 </div>
 
 
-<div class="contact-preview">
+<div class="user-preview">
 
-Check-in info
+Check-in question
+
+</div>
+
 
 </div>
 
-
-</div>
 
 
 
@@ -703,11 +535,11 @@ Check-in info
 
 
 
-<!-- CHAT -->
+<!-- CHAT AREA -->
 
 
 
-<section class="chat">
+<section class="chat-area">
 
 
 
@@ -716,7 +548,9 @@ Check-in info
 <div class="chat-header">
 
 
+
 <div>
+
 
 <h2>
 
@@ -725,23 +559,25 @@ Sarah
 </h2>
 
 
-<div class="channel">
+<small>
 
 WhatsApp
 
+</small>
+
+
 </div>
 
-</div>
 
 
 
 
-
-<div class="ai-status">
+<div class="status">
 
 ● AI Active
 
 </div>
+
 
 
 
@@ -762,8 +598,7 @@ WhatsApp
 
 
 
-
-<div class="message guest">
+<div class="bubble from-guest">
 
 Hi, do you have a room available?
 
@@ -775,7 +610,7 @@ Hi, do you have a room available?
 
 
 
-<div class="message ai">
+<div class="bubble from-ai">
 
 Hello 👋 I can help you with availability and prices.
 
@@ -787,7 +622,7 @@ Hello 👋 I can help you with availability and prices.
 
 
 
-<div class="message guest">
+<div class="bubble from-guest">
 
 Two guests next weekend.
 
@@ -799,19 +634,19 @@ Two guests next weekend.
 
 
 
-<div class="message ai">
+<div class="bubble from-ai">
 
-Perfect. I can help organize your reservation.
+Perfect. I can organize the reservation details.
+
+</div>
+
+
+
+
+
 
 </div>
 
-
-
-
-
-
-
-</div>
 
 
 
@@ -833,7 +668,7 @@ Perfect. I can help organize your reservation.
 
 
 
-<aside class="guest-panel">
+<aside class="sidebar">
 
 
 
@@ -841,58 +676,77 @@ Perfect. I can help organize your reservation.
 
 <h2>
 
-Guest
+Guest Info
 
 </h2>
 
+<br>
 
 
 
 
-<div class="info">
 
+<p>
 
 Name: Sarah
 
+</p>
+
 
 <br>
 
+
+<p>
 
 Country: USA
 
+</p>
+
 
 <br>
 
+
+<p>
 
 Guests: 2
 
+</p>
+
 
 <br>
 
+
+<p>
 
 Channel: WhatsApp
 
-
-<br>
-
-
-Status: AI
+</p>
 
 
-</div>
+
+
+<br><br>
 
 
 
 
 
+<button
 
+style="
+width:100%;
+padding:15px;
+border:none;
+border-radius:50px;
+background:#0D6EFD;
+color:white;
+font-weight:bold;
+cursor:pointer;
+">
 
-<button class="takeover">
-
-Take Over Conversation
+Take Over
 
 </button>
-
 
 
 
@@ -908,8 +762,6 @@ Take Over Conversation
 
 
 </div>
-
-
 
 
 
