@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -6,6 +7,7 @@
 <meta charset="UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 
 <title>StayFlow</title>
 
@@ -24,7 +26,6 @@ body{
 
 background:#050505;
 color:white;
-
 font-family:Arial,Helvetica,sans-serif;
 
 }
@@ -33,9 +34,10 @@ font-family:Arial,Helvetica,sans-serif;
 
 
 
-.app{
+/* APP */
 
-display:flex;
+
+.main{
 
 min-height:100vh;
 
@@ -47,28 +49,40 @@ min-height:100vh;
 
 
 
+/* MENU */
+
+
 .sidebar{
 
+position:fixed;
+
+top:0;
+
+left:-270px;
+
 width:260px;
+
+height:100vh;
 
 background:#0b0d12;
 
 border-right:1px solid #1b2535;
 
-padding:25px 18px;
+padding:25px;
 
-display:flex;
+transition:.3s;
 
-flex-direction:column;
-
-justify-content:space-between;
-
-position:fixed;
-
-height:100vh;
+z-index:1000;
 
 }
 
+
+
+.sidebar.open{
+
+left:0;
+
+}
 
 
 
@@ -108,7 +122,6 @@ font-weight:800;
 }
 
 
-
 .logo-text span{
 
 color:#0D6EFD;
@@ -119,18 +132,19 @@ color:#0D6EFD;
 
 
 
-
 .nav button{
 
 width:100%;
 
-background:transparent;
+background:none;
 
 border:none;
 
 color:#9ba3b2;
 
-padding:14px;
+padding:13px;
+
+margin-bottom:5px;
 
 text-align:left;
 
@@ -138,13 +152,7 @@ border-radius:15px;
 
 cursor:pointer;
 
-margin-bottom:5px;
-
-font-size:15px;
-
 }
-
-
 
 
 
@@ -161,66 +169,7 @@ color:white;
 
 
 
-
-
-.user-box{
-
-border:1px solid #1b2535;
-
-background:#050505;
-
-border-radius:20px;
-
-padding:15px;
-
-}
-
-
-
-.user-name{
-
-font-weight:bold;
-
-}
-
-
-
-.user-role{
-
-color:#9ba3b2;
-
-font-size:13px;
-
-}
-
-
-
-
-
-.online{
-
-color:#00d26a;
-
-font-size:13px;
-
-}
-
-
-
-
-
-
-
-.main{
-
-margin-left:260px;
-
-width:calc(100% - 260px);
-
-}
-
-
-
+/* TOP */
 
 
 .topbar{
@@ -237,7 +186,7 @@ align-items:center;
 
 justify-content:space-between;
 
-padding:0 30px;
+padding:0 25px;
 
 position:sticky;
 
@@ -247,6 +196,29 @@ z-index:20;
 
 }
 
+
+
+
+
+.menu-btn{
+
+font-size:26px;
+
+cursor:pointer;
+
+}
+
+
+
+.top-actions{
+
+display:flex;
+
+gap:12px;
+
+align-items:center;
+
+}
 
 
 
@@ -263,38 +235,7 @@ padding:12px 18px;
 
 border-radius:20px;
 
-width:230px;
-
 }
-
-
-
-
-.top-actions{
-
-display:flex;
-
-align-items:center;
-
-gap:15px;
-
-}
-
-
-
-
-.icon{
-
-background:#111827;
-
-padding:12px;
-
-border-radius:50%;
-
-cursor:pointer;
-
-}
-
 
 
 
@@ -321,30 +262,13 @@ font-weight:bold;
 
 
 
-select{
-
-background:#111827;
-
-color:white;
-
-border:none;
-
-padding:10px;
-
-border-radius:15px;
-
-}
-
-
-
-
-
-
 .content{
 
 padding:30px;
 
 }
+
+
 
 
 
@@ -355,12 +279,13 @@ display:none;
 }
 
 
-
 .page.active{
 
 display:block;
 
 }
+
+
 
 
 
@@ -380,7 +305,11 @@ margin-bottom:25px;
 
 }
 
-.cards{
+
+
+
+
+.card-grid{
 
 display:grid;
 
@@ -389,7 +318,6 @@ grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:20px;
 
 }
-
 
 
 
@@ -405,7 +333,6 @@ border-radius:25px;
 padding:25px;
 
 }
-
 
 
 
@@ -425,193 +352,18 @@ margin-top:10px;
 
 
 
-
-.inbox-layout{
-
-display:grid;
-
-grid-template-columns:300px 1fr 260px;
-
-gap:20px;
-
-}
-
-
-
-
-
-.panel{
-
-background:#0b0d12;
-
-border:1px solid #1b2535;
-
-border-radius:25px;
-
-padding:20px;
-
-}
-
-
-
-
-
-.conversation{
-
-padding:15px;
-
-border-bottom:1px solid #1b2535;
-
-cursor:pointer;
-
-}
-
-
-
-
-.conversation:hover{
-
-background:#111827;
-
-}
-
-
-
-
-
-.chat{
-
-background:#0b0d12;
-
-border:1px solid #1b2535;
-
-border-radius:25px;
-
-min-height:500px;
-
-display:flex;
-
-flex-direction:column;
-
-}
-
-
-
-
-
-.chat-header{
-
-padding:20px;
-
-border-bottom:1px solid #1b2535;
-
-display:flex;
-
-justify-content:space-between;
-
-}
-
-
-
-
-
-.message{
-
-padding:14px;
-
-margin:15px;
-
-border-radius:18px;
-
-max-width:70%;
-
-}
-
-
-
-
-
-.guest{
-
-background:#111827;
-
-}
-
-
-
-.ai{
-
-background:#0D6EFD;
-
-margin-left:auto;
-
-}
-
-
-
-
-
-
-.profile-line{
-
-margin:15px 0;
-
-color:#9ba3b2;
-
-}
-
-
-
-.profile-line b{
-
-color:white;
-
-}
-
-
-
-
-.tag{
-
-display:inline-block;
-
-background:#111827;
-
-padding:7px 12px;
-
-border-radius:20px;
-
-margin:5px;
-
-font-size:13px;
-
-}
-
-
-
 </style>
 
+
 </head>
-
-
 
 
 
 <body>
 
 
-<div class="app">
+<div class="sidebar" id="sidebar">
 
-
-
-
-
-
-<aside class="sidebar">
-
-
-
-<div>
 
 
 <div class="logo">
@@ -621,13 +373,14 @@ font-size:13px;
 
 
 <div class="logo-text">
+
 Stay<span>Flow</span>
-</div>
-
-
 
 </div>
 
+
+
+</div>
 
 
 
@@ -637,8 +390,9 @@ Stay<span>Flow</span>
 <div class="nav">
 
 
-<button class="active" onclick="openPage('dashboard',this)">
-🏠 Dashboard
+
+<button class="active" onclick="openPage('home',this)">
+🏠 Home
 </button>
 
 
@@ -647,14 +401,23 @@ Stay<span>Flow</span>
 </button>
 
 
+
+<button onclick="openPage('frontdesk',this)">
+🛎 Front Desk
+</button>
+
+
+
 <button onclick="openPage('reservations',this)">
 🛏 Reservations
 </button>
 
 
-<button onclick="openPage('roommap',this)">
-🗺 Room Map
+
+<button onclick="openPage('rooms',this)">
+🗺 Rooms
 </button>
+
 
 
 <button onclick="openPage('guests',this)">
@@ -662,24 +425,29 @@ Stay<span>Flow</span>
 </button>
 
 
-<button onclick="openPage('tasks',this)">
-✅ Tasks
+
+<button onclick="openPage('operations',this)">
+🧹 Operations
 </button>
+
 
 
 <button onclick="openPage('ai',this)">
-🤖 AI Knowledge
+🤖 AI Center
 </button>
 
 
-<button onclick="openPage('stats',this)">
-📊 BI Analytics
+
+<button onclick="openPage('analytics',this)">
+📊 Analytics
 </button>
+
 
 
 <button onclick="openPage('team',this)">
 👥 Team
 </button>
+
 
 
 <button onclick="openPage('settings',this)">
@@ -691,49 +459,8 @@ Stay<span>Flow</span>
 </div>
 
 
-</div>
-
-
-
-
-
-
-<div class="user-box">
-
-
-<div class="user-name">
-
-Carlos
 
 </div>
-
-
-<div class="user-role">
-
-Reception
-
-</div>
-
-
-<div class="online">
-
-● Online
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-</aside>
-
-
-
-
 
 
 
@@ -743,12 +470,20 @@ Reception
 
 
 
-
-
 <header class="topbar">
 
 
-<input class="search" placeholder="Search...">
+
+<div class="menu-btn" onclick="toggleMenu()">
+
+☰
+
+</div>
+
+
+
+
+<input class="search" placeholder="Search guest, room, reservation">
 
 
 
@@ -757,8 +492,11 @@ Reception
 <div class="top-actions">
 
 
-<div class="icon">
+
+<div>
+
 🔔
+
 </div>
 
 
@@ -771,18 +509,18 @@ Reception
 
 
 
-<select onchange="changeLanguage()" id="language">
+<select>
 
 <option>
-English
+EN
 </option>
 
 <option>
-Español
+ES
 </option>
 
 <option>
-Português
+PT
 </option>
 
 
@@ -800,34 +538,27 @@ Português
 
 
 
-
-
 <main class="content">
 
-
-
-
-
-
-<section id="dashboard" class="page active">
-
+<section id="home" class="page active">
 
 
 <h1>
-Dashboard
+Good morning, Carlos 👋
 </h1>
 
 
-
 <p class="subtitle">
-StayFlow overview
+Today's hostel operations
 </p>
 
 
 
 
 
-<div class="cards">
+<div class="card-grid">
+
+
 
 
 
@@ -839,21 +570,37 @@ Check-ins Today
 4
 </div>
 
-
 </div>
+
+
 
 
 
 <div class="card">
 
-Check-outs
+Check-outs Today
 
 <div class="value">
 2
 </div>
 
+</div>
+
+
+
+
+
+<div class="card">
+
+Pending Messages
+
+<div class="value">
+7
+</div>
 
 </div>
+
+
 
 
 
@@ -865,22 +612,210 @@ Occupancy
 82%
 </div>
 
+</div>
+
+
+
+
 
 </div>
+
+
+
+
+
+
+
+<br>
+
+
 
 
 
 <div class="card">
 
-AI Solved
 
-<div class="value">
-85%
+
+<h2>
+⚡ Quick Actions
+</h2>
+
+
+<br>
+
+
+<button class="new-btn">
+
++ Create Reservation
+
+</button>
+
+
+
+<button class="new-btn">
+
++ Add Guest
+
+</button>
+
+
+
+<button class="new-btn">
+
++ Create Task
+
+</button>
+
+
+
 </div>
 
 
+
+
+
+
+
+
+<br>
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+⚠ Attention Required
+</h2>
+
+
+<br>
+
+
+<p>
+
+🔴 2 guests waiting response
+
+</p>
+
+
+<br>
+
+
+<p>
+
+🟡 Payment pending - Maria
+
+</p>
+
+
+<br>
+
+
+<p>
+
+🟢 Bed available in Dorm 4
+
+</p>
+
+
+
 </div>
 
+
+
+
+
+
+
+
+<br>
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+🤖 AI Insights
+</h2>
+
+
+<br>
+
+
+<p>
+
+AI handled 85% of conversations today.
+
+</p>
+
+
+<br>
+
+
+<p>
+
+Most asked:
+Availability and check-in.
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+<br>
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Recent Activity
+</h2>
+
+
+<br>
+
+
+<p>
+
+14:30 Carlos created reservation
+
+</p>
+
+
+<br>
+
+
+<p>
+
+15:10 AI answered guest
+
+</p>
+
+
+<br>
+
+
+<p>
+
+15:45 Ana changed room
+
+</p>
 
 
 
@@ -897,8 +832,10 @@ AI Solved
 
 
 
-<section id="inbox" class="page">
 
+
+
+<section id="inbox" class="page">
 
 
 <h1>
@@ -907,150 +844,37 @@ Inbox
 
 
 <p class="subtitle">
-Guest conversations
+AI + Human conversations
 </p>
 
 
 
 
 
-<div class="inbox-layout">
+<div class="card-grid">
 
 
 
-<div class="panel">
-
-
-
-<div class="conversation">
-
-<b>Maria 🇦🇷</b>
-
-<br>
-
-Availability?
-
-</div>
-
-
-
-
-<div class="conversation">
-
-<b>John 🇺🇸</b>
-
-<br>
-
-Transfer?
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-<div class="chat">
-
-
-
-<div class="chat-header">
-
-
-<b>Maria</b>
-
-
-<button class="new-btn">
-Take Over
-</button>
-
-
-</div>
-
-
-
-
-
-
-<div class="message guest">
-
-Hi, do you have beds available?
-
-</div>
-
-
-
-<div class="message ai">
-
-Yes, I can help you.
-
-</div>
-
-
-
-
-</div>
-
-
-
-
-
-
-<div class="panel">
-
+<div class="card">
 
 
 <h3>
-Guest
+Maria 🇦🇷
 </h3>
 
 
-
-<div class="profile-line">
-
-Country:
-<b>Argentina</b>
-
-</div>
+<br>
 
 
-
-<div class="profile-line">
-
-Language:
-<b>Spanish</b>
-
-</div>
+Availability?
 
 
-
-<div class="profile-line">
-
-Room:
-<b>Dorm 4</b>
-
-</div>
+<br><br>
 
 
-
-<div class="profile-line">
-
-Bed:
-<b>2</b>
-
-</div>
-
-
-
-
-<div class="tag">
-Returning guest
-</div>
+<span>
+AI
+</span>
 
 
 
@@ -1060,11 +884,158 @@ Returning guest
 
 
 
+<div class="card">
+
+
+<h3>
+John 🇺🇸
+</h3>
+
+
+<br>
+
+
+Transfer?
+
+
+<br><br>
+
+
+<span>
+Human
+</span>
+
+
 
 </div>
 
 
 
+</div>
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Conversation
+</h2>
+
+
+<br>
+
+
+<div>
+
+Guest:
+
+Do you have beds?
+
+
+</div>
+
+
+<br>
+
+
+<div>
+
+🤖 AI:
+
+Yes, we have availability.
+
+</div>
+
+
+
+<br>
+
+
+<button class="new-btn">
+
+Take Over
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+
+<section id="frontdesk" class="page">
+
+
+<h1>
+Front Desk
+</h1>
+
+
+<p class="subtitle">
+Daily reception view
+</p>
+
+
+
+
+
+<div class="card-grid">
+
+
+<div class="card">
+
+Arrivals
+
+<div class="value">
+4
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+Departures
+
+<div class="value">
+2
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+Problems
+
+<div class="value">
+1
+</div>
+
+</div>
+
+
+
+</div>
 
 
 
@@ -1087,7 +1058,7 @@ Booking management
 
 
 
-<div class="cards">
+<div class="card-grid">
 
 
 
@@ -1120,7 +1091,7 @@ Pending
 Revenue
 
 <div class="value">
-$4.850
+$4850
 </div>
 
 </div>
@@ -1133,20 +1104,35 @@ $4.850
 
 
 
-<table style="width:100%;margin-top:25px;background:#0b0d12;border-radius:20px;padding:20px;">
+<br>
 
+
+
+
+
+<div class="card">
+
+
+<h2>
+Reservations Table
+</h2>
+
+
+<br>
+
+
+<table style="width:100%;">
 
 <tr>
 
 <th>Guest</th>
 <th>Room</th>
 <th>Bed</th>
+<th>Source</th>
 <th>Status</th>
-<th>Action</th>
 
 
 </tr>
-
 
 
 
@@ -1158,17 +1144,12 @@ $4.850
 
 <td>Bed 2</td>
 
-<td class="online">
-Confirmed
-</td>
+<td>WhatsApp</td>
 
-<td>
-✏️
-</td>
+<td>Confirmed</td>
 
 
 </tr>
-
 
 
 
@@ -1180,18 +1161,21 @@ Confirmed
 
 <td>-</td>
 
-<td>
-Pending
-</td>
+<td>Booking</td>
 
-<td>
-✏️
-</td>
+<td>Pending</td>
+
 
 </tr>
 
 
 </table>
+
+
+
+
+</div>
+
 
 
 
@@ -1206,16 +1190,16 @@ Pending
 
 
 
-<section id="roommap" class="page">
+<section id="rooms" class="page">
 
 
 <h1>
-Room Map
+Rooms
 </h1>
 
 
 <p class="subtitle">
-Bed availability
+Room map and beds
 </p>
 
 
@@ -1223,16 +1207,17 @@ Bed availability
 
 
 
-<div class="cards">
+
+<div class="card-grid">
 
 
 
 <div class="card">
 
 
-<h3>
+<h2>
 Dorm 4
-</h3>
+</h2>
 
 
 <br>
@@ -1248,8 +1233,15 @@ Dorm 4
 
 🟢 Bed 3 Available
 
+<br><br>
+
+🟡 Bed 4 Cleaning
+
+
 
 </div>
+
+
 
 
 
@@ -1258,29 +1250,29 @@ Dorm 4
 <div class="card">
 
 
-<h3>
-Dorm 5
-</h3>
+<h2>
+Private Rooms
+</h2>
 
 
 <br>
 
 
-🔴 Bed 1 Carlos
-
+🔴 Room 1 John
 
 <br><br>
 
-🟢 Bed 2 Available
-
-
-</div>
-
-
+🟢 Room 2 Available
 
 
 
 </div>
+
+
+
+
+</div>
+
 
 
 
@@ -1299,14 +1291,13 @@ Dorm 5
 <section id="guests" class="page">
 
 
-
 <h1>
 Guests
 </h1>
 
 
 <p class="subtitle">
-Guest management
+Guest CRM
 </p>
 
 
@@ -1314,41 +1305,55 @@ Guest management
 
 
 
-<div class="panel">
+
+<div class="card">
 
 
-
-<h3>
+<h2>
 Maria Silva
-</h3>
+</h2>
 
 
 
-<div class="profile-line">
+<br>
+
+
 
 Country:
-<b>Argentina</b>
-
-</div>
+Argentina
 
 
 
-<div class="profile-line">
-
-Stays:
-<b>3</b>
-
-</div>
+<br><br>
 
 
 
-<div class="profile-line">
+Language:
+Spanish
 
-Total spent:
-<b>$450</b>
 
-</div>
 
+<br><br>
+
+
+
+Current stay:
+
+Dorm 4 - Bed 2
+
+
+
+<br><br>
+
+
+
+Notes:
+
+Late arrival
+
+
+
+<br><br>
 
 
 
@@ -1360,7 +1365,9 @@ Edit Stay
 
 
 
+
 </div>
+
 
 
 
@@ -1376,38 +1383,99 @@ Edit Stay
 
 
 
-<section id="tasks" class="page">
+<section id="operations" class="page">
 
 
 <h1>
-Tasks
+Operations
 </h1>
 
 
 <p class="subtitle">
-Reception tasks
+Tasks and housekeeping
 </p>
 
 
 
 
 
-<div class="panel">
 
 
-☐ Confirm payment Maria
+<div class="card">
+
+
+
+<h2>
+Tasks
+</h2>
+
+
+
+<br>
+
+
+
+☐ Confirm Maria payment
 
 
 <br><br>
 
 
-☐ Prepare check-in John
+☐ Prepare Room 4
 
 
 <br><br>
 
 
-☐ Check room 5
+☐ Check late arrival
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+<br>
+
+
+
+
+
+
+<div class="card">
+
+
+
+<h2>
+Housekeeping
+
+</h2>
+
+
+
+<br>
+
+
+Room 1 🟢 Clean
+
+
+<br><br>
+
+
+Room 2 🟡 Cleaning
+
+
+<br><br>
+
+
+Dorm 4 🔴 Occupied
+
 
 
 
@@ -1419,6 +1487,17 @@ Reception tasks
 
 </section>
 
+<section id="ai" class="page">
+
+
+<h1>
+AI Center
+</h1>
+
+
+<p class="subtitle">
+Your intelligent front desk
+</p>
 
 
 
@@ -1426,99 +1505,133 @@ Reception tasks
 
 
 
+<div class="card-grid">
 
-<div id="reservationModal" class="modal">
 
 
-<div class="panel">
+<div class="card">
 
 
 <h2>
-New Reservation
+AI Status
 </h2>
 
 
 <br>
 
 
-<input class="search" placeholder="Guest name">
-
-
-<input class="search" placeholder="Country">
-
-
-<input class="search" placeholder="Room">
-
-
-<input class="search" placeholder="Dates">
-
-
-
-<button class="new-btn">
-
-Save Reservation
-
-</button>
-
-
-
-</div>
-
-
-
-</div>
-
-<section id="ai" class="page">
-
-
-<h1>
-AI Knowledge
-</h1>
-
-
-<p class="subtitle">
-Train your assistant
-</p>
-
-
-
-
-<div class="cards">
-
-
-<div class="card">
-
-Rooms
-
-<div class="value">
-12
-</div>
-
-</div>
-
-
-
-<div class="card">
-
-FAQ
-
-<div class="value">
-48
-</div>
-
-</div>
-
-
-
-<div class="card">
-
-AI Status
-
 <div class="value">
 ON
 </div>
 
+
 </div>
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Languages
+</h2>
+
+
+<br>
+
+
+English
+
+<br>
+
+Spanish
+
+<br>
+
+Portuguese
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Automations
+</h2>
+
+
+<br>
+
+
+Booking confirmation
+
+<br>
+
+Check-in reminder
+
+<br>
+
+Review request
+
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+<br>
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Knowledge Base
+</h2>
+
+
+<br>
+
+
+Rules
+
+<br>
+
+Rooms
+
+<br>
+
+Prices
+
+<br>
+
+Services
+
+<br>
+
+FAQ
 
 
 
@@ -1537,28 +1650,30 @@ ON
 
 
 
-<section id="stats" class="page">
+<section id="analytics" class="page">
 
 
 <h1>
-BI Analytics
+Analytics
 </h1>
 
 
 <p class="subtitle">
-Business intelligence
+Performance and insights
 </p>
 
 
 
 
-<div class="cards">
+
+
+<div class="card-grid">
 
 
 
 <div class="card">
 
-Bookings this month
+Reservations
 
 <div class="value">
 120
@@ -1570,26 +1685,13 @@ Bookings this month
 
 
 
-<div class="card">
-
-WhatsApp conversion
-
-<div class="value">
-35%
-</div>
-
-
-</div>
-
-
-
 
 <div class="card">
 
-Top Country
+AI Resolution
 
 <div class="value">
-Brazil
+85%
 </div>
 
 
@@ -1598,8 +1700,61 @@ Brazil
 
 
 
+
+<div class="card">
+
+Revenue
+
+<div class="value">
+$4850
 </div>
 
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+<br>
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Top Insights
+</h2>
+
+
+<br>
+
+
+Most requested:
+
+Availability
+
+
+
+<br><br>
+
+
+Peak hours:
+
+18:00 - 22:00
+
+
+
+</div>
 
 
 
@@ -1623,45 +1778,78 @@ Team
 
 
 <p class="subtitle">
-Users, roles and activity
+Users, permissions and shifts
 </p>
 
 
 
 
-<div class="cards">
+
+
+<div class="card-grid">
 
 
 
 <div class="card">
 
+
+<h2>
 Carlos
 
-<div class="value">
+</h2>
+
+
 Reception
-</div>
 
 
+<br><br>
+
+
+Permissions:
+
+Reservations
+
+Inbox
+
+
+
 </div>
+
 
 
 
 
 <div class="card">
 
+
+<h2>
 Ana
 
-<div class="value">
+</h2>
+
+
 Manager
+
+
+<br><br>
+
+
+Permissions:
+
+All access
+
+
+
 </div>
 
 
+
+
+
 </div>
 
 
 
-
-</div>
 
 
 
@@ -1672,12 +1860,15 @@ Manager
 
 
 
-<div class="panel">
 
 
-<h3>
+
+<div class="card">
+
+
+<h2>
 Activity Log
-</h3>
+</h2>
 
 
 <br>
@@ -1700,6 +1891,8 @@ Activity Log
 
 
 </div>
+
+
 
 
 
@@ -1731,34 +1924,8 @@ System configuration
 
 
 
-<div class="cards">
 
-
-
-<div class="card">
-
-Language
-
-<div class="value">
-🌎
-</div>
-
-
-</div>
-
-
-
-
-<div class="card">
-
-Automation
-
-<div class="value">
-ON
-</div>
-
-
-</div>
+<div class="card-grid">
 
 
 
@@ -1766,42 +1933,136 @@ ON
 
 <div class="card">
 
-Notifications
 
-<div class="value">
-ON
+<h2>
+Current Plan
+</h2>
+
+
+
+<br>
+
+
+StayFlow Pro
+
+
+
 </div>
 
 
+
+
+
+
+<div class="card">
+
+
+<h2>
+Modules
+
+</h2>
+
+
+<br>
+
+
+AI Inbox ✅
+
+<br>
+
+Reservations ✅
+
+<br>
+
+Room Map ✅
+
+<br>
+
+Analytics ✅
+
+
+
 </div>
 
 
 
 
 
+
+
 </div>
+
+
+
+
+
+
+
+
+<br>
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Plans
+
+</h2>
+
+
+<br>
+
+
+
+<b>Simple</b>
+
+<br>
+
+AI + Reservations
+
+
+
+<br><br>
+
+
+
+<b>Pro</b>
+
+<br>
+
+Full Operations
+
+
+
+<br><br>
+
+
+
+<b>Enterprise</b>
+
+<br>
+
+Multi property + integrations
+
+
+
+</div>
+
+
 
 
 
 </section>
 
-
-
-
-
-
-
-
 </main>
 
-</div>
 
 </div>
-
-
-
-
-
 
 
 
@@ -1813,10 +2074,37 @@ ON
 
 
 
-function openPage(id,btn){
+// MENU MOBILE / SIDEBAR
 
 
-document.querySelectorAll(".page")
+function toggleMenu(){
+
+
+document
+.getElementById("sidebar")
+.classList.toggle("open");
+
+
+}
+
+
+
+
+
+
+
+// NAVEGAÇÃO
+
+
+
+
+
+function openPage(id,button){
+
+
+
+document
+.querySelectorAll(".page")
 .forEach(page=>{
 
 page.classList.remove("active");
@@ -1826,23 +2114,47 @@ page.classList.remove("active");
 
 
 
-document.getElementById(id)
+
+document
+.getElementById(id)
 .classList.add("active");
 
 
 
 
 
-document.querySelectorAll(".nav button")
-.forEach(button=>{
 
-button.classList.remove("active");
+
+document
+.querySelectorAll(".nav button")
+.forEach(btn=>{
+
+btn.classList.remove("active");
 
 });
 
 
 
-btn.classList.add("active");
+
+
+
+if(button){
+
+button.classList.add("active");
+
+}
+
+
+
+
+
+
+// fecha menu depois de escolher
+
+
+document
+.getElementById("sidebar")
+.classList.remove("open");
 
 
 
@@ -1855,48 +2167,138 @@ btn.classList.add("active");
 
 
 
-function changeLanguage(){
+// PLANO / MÓDULOS
 
 
-let lang =
-document.getElementById("language").value;
+const hostelPlan = {
+
+
+plan:"Pro",
 
 
 
-if(lang==="Español"){
+modules:{
 
 
-document.title="StayFlow | Panel";
+ai:true,
+
+reservations:true,
+
+rooms:true,
+
+analytics:true,
+
+team:true
+
+}
+
+
+
+};
+
+
+
+
+
+
+
+function moduleEnabled(module){
+
+
+return hostelPlan.modules[module];
+
+}
+
+
+
+
+
+// IDIOMA BASE
+
+
+
+const translations={
+
+
+en:{
+
+
+home:"Home",
+
+inbox:"Inbox",
+
+reservations:"Reservations"
+
+
+},
+
+
+
+
+es:{
+
+
+home:"Inicio",
+
+inbox:"Bandeja",
+
+reservations:"Reservas"
+
+
+},
+
+
+
+
+pt:{
+
+
+home:"Início",
+
+inbox:"Caixa de entrada",
+
+reservations:"Reservas"
 
 
 }
 
 
 
-else if(lang==="Português"){
+};
 
 
-document.title="StayFlow | Painel";
+
+
+
+
+
+function changeLanguage(lang){
+
+
+
+console.log(
+"Language:",
+lang
+);
+
 
 
 }
 
 
 
-else{
-
-
-document.title="StayFlow";
-
-
-}
-
-
-}
 
 
 
 
+
+
+// FUTURE:
+// WhatsApp API
+// Database
+// Authentication
+// Payments
+// Multi Hostel
 
 
 
