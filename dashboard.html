@@ -8,16 +8,22 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>StayFlow Demo</title>
+
+<title>StayFlow</title>
 
 
 <style>
 
 
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');
+
+
 *{
+
 margin:0;
 padding:0;
 box-sizing:border-box;
+
 }
 
 
@@ -28,7 +34,9 @@ background:#050505;
 
 color:white;
 
-font-family:Arial,Helvetica,sans-serif;
+font-family:'Manrope',Arial,sans-serif;
+
+overflow-x:hidden;
 
 }
 
@@ -40,15 +48,15 @@ font-family:Arial,Helvetica,sans-serif;
 
 position:fixed;
 
-left:-270px;
-
 top:0;
 
-width:260px;
+left:-280px;
+
+width:270px;
 
 height:100vh;
 
-background:#0b0d12;
+background:#090b10;
 
 border-right:1px solid #1b2535;
 
@@ -56,7 +64,7 @@ padding:25px;
 
 transition:.3s;
 
-z-index:1000;
+z-index:1001;
 
 }
 
@@ -82,7 +90,7 @@ background:rgba(0,0,0,.7);
 
 display:none;
 
-z-index:900;
+z-index:1000;
 
 }
 
@@ -98,11 +106,18 @@ display:block;
 
 
 
+
+
 .logo{
 
-font-size:30px;
+
+font-size:32px;
 
 font-weight:800;
+
+letter-spacing:-1px;
+
+margin-bottom:10px;
 
 }
 
@@ -118,25 +133,13 @@ color:#0D6EFD;
 
 
 
+.tagline{
 
+color:#8b95a7;
 
-.demo{
+font-size:13px;
 
-margin-top:15px;
-
-margin-bottom:20px;
-
-background:#050505;
-
-border:1px solid #1b2535;
-
-border-radius:15px;
-
-padding:12px;
-
-color:#9ba3b2;
-
-font-size:14px;
+margin-bottom:25px;
 
 }
 
@@ -144,7 +147,30 @@ font-size:14px;
 
 
 
+.demo{
+
+background:#050505;
+
+border:1px solid #1b2535;
+
+border-radius:18px;
+
+padding:15px;
+
+margin-bottom:20px;
+
+color:#9ba3b2;
+
+}
+
+
+
+
+
+
+
 .profile{
+
 
 background:#050505;
 
@@ -154,9 +180,28 @@ border-radius:20px;
 
 padding:15px;
 
-margin-bottom:20px;
+margin-bottom:25px;
+
 
 }
+
+
+
+.profile strong{
+
+font-size:17px;
+
+}
+
+
+
+.profile small{
+
+color:#9ba3b2;
+
+}
+
+
 
 
 
@@ -169,21 +214,24 @@ width:100%;
 
 padding:13px;
 
-border:0;
-
 background:none;
+
+border:none;
 
 color:#9ba3b2;
 
-text-align:left;
-
 border-radius:15px;
 
-margin-bottom:6px;
+text-align:left;
+
+margin-bottom:7px;
 
 cursor:pointer;
 
+font-family:inherit;
+
 }
+
 
 
 
@@ -191,11 +239,15 @@ cursor:pointer;
 .menu button:hover,
 .menu button.active{
 
+
 background:#0D6EFD;
 
 color:white;
 
 }
+
+
+
 
 
 
@@ -213,9 +265,10 @@ min-height:100vh;
 
 .topbar{
 
+
 height:75px;
 
-background:#0b0d12;
+background:#090b10;
 
 border-bottom:1px solid #1b2535;
 
@@ -231,9 +284,10 @@ position:sticky;
 
 top:0;
 
-z-index:10;
+z-index:20;
 
 }
+
 
 
 
@@ -247,8 +301,8 @@ cursor:pointer;
 
 
 
-
 .actions{
+
 
 display:flex;
 
@@ -267,17 +321,18 @@ background:#050505;
 
 border:1px solid #1b2535;
 
-padding:12px;
+color:white;
+
+padding:12px 16px;
 
 border-radius:20px;
-
-color:white;
 
 }
 
 
 
 .new-btn{
+
 
 background:#0D6EFD;
 
@@ -291,9 +346,15 @@ border-radius:22px;
 
 cursor:pointer;
 
-font-weight:bold;
+font-weight:700;
+
+font-family:inherit;
+
 
 }
+
+
+
 
 
 
@@ -333,13 +394,16 @@ grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 
 gap:20px;
 
+
 }
+
 
 
 
 .card{
 
-background:#0b0d12;
+
+background:#090b10;
 
 border:1px solid #1b2535;
 
@@ -351,19 +415,19 @@ padding:25px;
 
 
 
+
+
 .value{
 
 font-size:32px;
 
-color:#0D6EFD;
+font-weight:800;
 
-font-weight:bold;
+color:#0D6EFD;
 
 margin-top:10px;
 
 }
-
-
 
 
 
@@ -374,12 +438,7 @@ margin-top:10px;
 <body>
 
 
-
-
 <div class="overlay" id="overlay"></div>
-
-
-
 
 
 <div class="sidebar" id="sidebar">
@@ -393,18 +452,23 @@ Stay<span>Flow</span>
 </div>
 
 
+<div class="tagline">
+
+AI Hospitality Platform
+
+</div>
+
 
 
 <div class="demo">
 
 🟦 Demo Mode
 
-<br>
+<br><br>
 
 Hostel Lagares
 
 </div>
-
 
 
 
@@ -416,16 +480,24 @@ Hostel Lagares
 
 <br><br>
 
-Carlos
+<strong>
+
+Jorge
+
+</strong>
+
 
 <br>
 
+
+<small>
+
 Owner
 
+</small>
+
+
 </div>
-
-
-
 
 
 
@@ -443,11 +515,9 @@ Owner
 </button>
 
 
-
 <button onclick="openPage('rooms',this)">
 🗺 Rooms
 </button>
-
 
 
 <button onclick="openPage('guests',this)">
@@ -455,11 +525,9 @@ Owner
 </button>
 
 
-
 <button onclick="openPage('operations',this)">
 🧹 Operations
 </button>
-
 
 
 <button onclick="openPage('schedule',this)">
@@ -467,30 +535,23 @@ Owner
 </button>
 
 
-
 <button onclick="openPage('team',this)">
 👥 Team
 </button>
 
 
-
-</div>
-
-
 </div>
 
 
 
-
-
-
-
+</div>
 
 <div class="main">
 
 
 
 <div class="topbar">
+
 
 
 <div class="menu-icon" onclick="toggleMenu()">
@@ -508,7 +569,10 @@ Owner
 <input class="search" placeholder="Search guest">
 
 
+<div>
 🔔
+</div>
+
 
 
 <button class="new-btn">
@@ -533,6 +597,7 @@ Owner
 
 
 
+
 <div class="content">
 
 
@@ -547,12 +612,15 @@ Owner
 
 
 <h1>
-Good morning, Carlos 👋
+
+Good morning, Jorge 👋
+
 </h1>
 
 
 
 <br>
+
 
 
 
@@ -592,9 +660,11 @@ Check-outs
 
 
 
+
+
 <div class="card">
 
-Pending Tasks
+Tasks
 
 <div class="value">
 
@@ -603,6 +673,8 @@ Pending Tasks
 </div>
 
 </div>
+
+
 
 
 
@@ -621,7 +693,10 @@ Occupancy
 
 
 
+
+
 </div>
+
 
 
 
@@ -635,12 +710,16 @@ Occupancy
 
 
 
+
 <div class="card">
 
 
 <h2>
+
 ⚠ Needs Attention
+
 </h2>
+
 
 
 <br>
@@ -658,7 +737,7 @@ Occupancy
 <br><br>
 
 
-🔵 Guest asking transfer
+🔵 Guest requesting transfer
 
 
 
@@ -668,17 +747,30 @@ Occupancy
 
 
 
+
 </section>
+
+
+
+
+
+
+
+
 
 <section id="reservations" class="page">
 
 
 <h1>
+
 Reservations
+
 </h1>
 
 
+
 <br>
+
 
 
 
@@ -693,6 +785,7 @@ Reservations
 </button>
 
 
+
 </div>
 
 
@@ -700,7 +793,9 @@ Reservations
 
 
 
+
 <br>
+
 
 
 
@@ -710,11 +805,15 @@ Reservations
 
 
 
+
+
 <div class="card">
 
 
 <h2>
+
 #1024
+
 </h2>
 
 
@@ -722,6 +821,7 @@ Reservations
 
 
 Maria Silva 🇦🇷
+
 
 
 <br><br>
@@ -760,11 +860,14 @@ Status:
 
 
 
+
 <div class="card">
 
 
 <h2>
+
 #1025
+
 </h2>
 
 
@@ -795,8 +898,10 @@ Payment:
 
 
 
-
 </div>
+
+
+
 
 
 
@@ -811,18 +916,21 @@ Payment:
 
 
 
-
-
-
 <section id="rooms" class="page">
 
 
+
 <h1>
+
 Rooms
+
 </h1>
 
 
+
+
 <br>
+
 
 
 
@@ -831,8 +939,11 @@ Rooms
 
 
 <h2>
+
 Dorm 4
+
 </h2>
+
 
 
 <br>
@@ -844,7 +955,9 @@ Bed 1
 🟢 Available
 
 
+
 <br><br>
+
 
 
 Bed 2
@@ -852,7 +965,9 @@ Bed 2
 🔴 Maria
 
 
+
 <br><br>
+
 
 
 Bed 3
@@ -860,7 +975,9 @@ Bed 3
 🟡 Cleaning
 
 
+
 <br><br>
+
 
 
 Bed 4
@@ -875,7 +992,10 @@ Bed 4
 
 
 
+
+
 <br>
+
 
 
 
@@ -885,7 +1005,9 @@ Bed 4
 
 
 <h2>
+
 Private Rooms
+
 </h2>
 
 
@@ -912,6 +1034,7 @@ Room 2
 
 
 
+
 </section>
 
 
@@ -925,12 +1048,20 @@ Room 2
 <section id="guests" class="page">
 
 
+
 <h1>
+
 Guests CRM
+
 </h1>
 
 
+
+
+
+
 <br>
+
 
 
 
@@ -940,7 +1071,9 @@ Guests CRM
 
 
 <h2>
+
 Maria Silva
+
 </h2>
 
 
@@ -948,12 +1081,15 @@ Maria Silva
 <br>
 
 
+
 Country:
 
 Argentina 🇦🇷
 
 
+
 <br><br>
+
 
 
 Previous stays:
@@ -961,7 +1097,9 @@ Previous stays:
 3
 
 
+
 <br><br>
+
 
 
 Current:
@@ -969,12 +1107,15 @@ Current:
 Dorm 4 Bed 2
 
 
+
 <br><br>
+
 
 
 Notes:
 
 Late arrival
+
 
 
 <br><br>
@@ -989,7 +1130,6 @@ Edit Guest
 
 
 
-
 </div>
 
 
@@ -997,7 +1137,10 @@ Edit Guest
 
 
 
+
 <br>
+
+
 
 
 
@@ -1008,17 +1151,24 @@ Edit Guest
 
 
 <h2>
+
 Guest History
+
 </h2>
+
+
 
 
 <br>
 
 
+
 ⭐ Loyal guest
 
 
+
 <br><br>
+
 
 
 Average stay:
@@ -1035,20 +1185,15 @@ Average stay:
 
 </section>
 
-
-
-
-
-
-
-
-
 <section id="operations" class="page">
 
 
 <h1>
+
 Operations
+
 </h1>
+
 
 
 <br>
@@ -1062,23 +1207,29 @@ Operations
 
 
 <h2>
+
 🧹 Housekeeping
 
 </h2>
 
 
+
 <br>
 
 
-New task:
+
+New Task
+
 
 
 <br><br>
 
 
+
 Dorm 4
 
 Bed 2
+
 
 
 <br>
@@ -1087,7 +1238,9 @@ Bed 2
 Clean sheets
 
 
+
 <br><br>
+
 
 
 Assigned:
@@ -1097,6 +1250,7 @@ Maria
 
 
 <br><br>
+
 
 
 Status:
@@ -1113,6 +1267,8 @@ Status:
 
 
 
+
+
 <br>
 
 
@@ -1124,11 +1280,15 @@ Status:
 
 
 <h2>
+
 Workflow
+
 </h2>
 
 
+
 <br>
+
 
 
 Checkout
@@ -1163,15 +1323,25 @@ Bed Available
 
 
 
-
 </section>
+
+
+
+
+
+
+
+
 
 <section id="schedule" class="page">
 
 
 <h1>
+
 Schedule
+
 </h1>
+
 
 
 <br>
@@ -1183,9 +1353,13 @@ Schedule
 <div class="card">
 
 
+
 <h2>
+
 Weekly Shifts
+
 </h2>
+
 
 
 <br>
@@ -1200,9 +1374,10 @@ Monday
 
 08:00 - 16:00
 
+
 <br>
 
-Carlos
+Jorge
 
 Reception
 
@@ -1210,7 +1385,9 @@ Reception
 <br><br>
 
 
+
 08:00 - 16:00
+
 
 <br>
 
@@ -1220,12 +1397,11 @@ Housekeeping
 
 
 
-
 <br><br>
 
 
-
 16:00 - 00:00
+
 
 <br>
 
@@ -1235,13 +1411,17 @@ Night Shift
 
 
 
+
 </div>
 
 
 
 
 
+
+
 <br>
+
 
 
 
@@ -1252,26 +1432,35 @@ Night Shift
 
 
 <h2>
+
 Create Shift
+
 </h2>
 
 
+
 <br>
+
 
 
 Employee
 
+
 <br>
+
 
 Role
 
+
 <br>
+
 
 Time
 
 
 
 <br><br>
+
 
 
 <button class="new-btn">
@@ -1281,7 +1470,9 @@ Add Shift
 </button>
 
 
+
 </div>
+
 
 
 
@@ -1300,9 +1491,14 @@ Add Shift
 <section id="team" class="page">
 
 
+
 <h1>
+
 Team
+
 </h1>
+
+
 
 
 <br>
@@ -1315,21 +1511,29 @@ Team
 
 
 
+
+
 <div class="card">
 
 
 <h2>
-Carlos
+
+Jorge
+
 </h2>
+
 
 
 Owner
 
 
+
 <br><br>
 
 
+
 🟢 Online
+
 
 
 </div>
@@ -1338,18 +1542,25 @@ Owner
 
 
 
+
+
 <div class="card">
 
 
 <h2>
+
 Maria
+
 </h2>
+
 
 
 Housekeeping
 
 
+
 <br><br>
+
 
 
 Shift:
@@ -1357,8 +1568,8 @@ Shift:
 08-16
 
 
-</div>
 
+</div>
 
 
 
@@ -1369,14 +1580,19 @@ Shift:
 
 
 <h2>
+
 João
+
 </h2>
+
 
 
 Reception
 
 
+
 <br><br>
+
 
 
 Shift:
@@ -1384,13 +1600,16 @@ Shift:
 16-00
 
 
-</div>
-
-
-
-
 
 </div>
+
+
+
+
+
+
+</div>
+
 
 
 
@@ -1410,31 +1629,46 @@ Shift:
 
 
 <h2>
+
 Activity Log
+
 </h2>
+
 
 
 
 <br>
 
 
-Carlos created reservation #1024
 
 
-<br><br>
+Jorge created reservation #1024
 
-
-Maria completed cleaning
 
 
 <br><br>
 
 
-João updated guest info
+
+
+Maria completed cleaning task
+
+
+
+<br><br>
+
+
+
+
+João updated guest information
+
+
 
 
 
 </div>
+
+
 
 
 
@@ -1449,12 +1683,9 @@ João updated guest info
 
 
 
-
 </div>
 
-
 </div>
-
 
 
 
@@ -1468,13 +1699,13 @@ João updated guest info
 
 
 
-
 const sidebar =
 document.getElementById("sidebar");
 
 
 const overlay =
 document.getElementById("overlay");
+
 
 
 
@@ -1496,6 +1727,7 @@ overlay.classList.toggle("show");
 
 
 
+
 function closeMenu(){
 
 
@@ -1511,6 +1743,7 @@ overlay.classList.remove("show");
 
 
 
+
 overlay.onclick = closeMenu;
 
 
@@ -1518,7 +1751,9 @@ overlay.onclick = closeMenu;
 
 
 
+
 function openPage(id,btn){
+
 
 
 document
@@ -1530,6 +1765,7 @@ page.classList.remove("active");
 
 
 });
+
 
 
 
@@ -1553,6 +1789,7 @@ button.classList.remove("active");
 
 
 
+
 btn.classList.add("active");
 
 
@@ -1568,7 +1805,9 @@ closeMenu();
 
 
 
+
 let startX = 0;
+
 
 
 
@@ -1578,11 +1817,12 @@ sidebar.addEventListener(
 function(e){
 
 
-startX =
-e.touches[0].clientX;
+startX = e.touches[0].clientX;
 
 
 });
+
+
 
 
 
@@ -1598,7 +1838,7 @@ e.changedTouches[0].clientX;
 
 
 
-if(startX-endX>80){
+if(startX-endX > 80){
 
 
 closeMenu();
@@ -1616,6 +1856,7 @@ closeMenu();
 
 
 </script>
+
 
 
 
