@@ -7,7 +7,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>StayFlow Dashboard</title>
+<title>StayFlow</title>
 
 
 <style>
@@ -23,16 +23,7 @@ body{
 
 background:#050505;
 color:white;
-font-family:Inter,Arial,sans-serif;
-min-height:100vh;
-
-}
-
-
-
-.app{
-
-min-height:100vh;
+font-family:Arial,Helvetica,sans-serif;
 
 }
 
@@ -41,16 +32,21 @@ min-height:100vh;
 .topbar{
 
 background:#0d0f14;
-border-bottom:1px solid #1b2535;
 
-display:flex;
-align-items:center;
-justify-content:space-between;
+border-bottom:1px solid #1b2535;
 
 padding:18px 30px;
 
+display:flex;
+
+align-items:center;
+
+justify-content:space-between;
+
 position:sticky;
+
 top:0;
+
 z-index:10;
 
 }
@@ -61,7 +57,9 @@ z-index:10;
 .brand{
 
 display:flex;
+
 align-items:center;
+
 gap:12px;
 
 }
@@ -70,8 +68,10 @@ gap:12px;
 
 .brand img{
 
-width:48px;
-height:48px;
+width:45px;
+
+height:45px;
+
 object-fit:contain;
 
 }
@@ -81,6 +81,7 @@ object-fit:contain;
 .brand-name{
 
 font-size:28px;
+
 font-weight:800;
 
 }
@@ -97,22 +98,62 @@ color:#0D6EFD;
 
 
 
-
-
-.menu{
+.top-actions{
 
 display:flex;
-gap:8px;
-overflow-x:auto;
+
+align-items:center;
+
+gap:20px;
 
 }
 
 
 
 
+.status{
+
+color:#00d26a;
+
+font-size:14px;
+
+}
+
+
+
+
+.language{
+
+background:#111827;
+
+padding:10px 15px;
+
+border-radius:20px;
+
+color:#cbd5e1;
+
+}
+
+
+
+
+
+.menu{
+
+display:flex;
+
+gap:8px;
+
+overflow-x:auto;
+
+}
+
+
+
 .menu button{
 
 background:none;
+
 border:none;
 
 color:#9ba3b2;
@@ -129,10 +170,12 @@ white-space:nowrap;
 
 
 
-.menu button:hover,
-.menu button.active{
+
+.menu button.active,
+.menu button:hover{
 
 background:#111827;
+
 color:white;
 
 }
@@ -143,9 +186,10 @@ color:white;
 
 .content{
 
-padding:35px;
+padding:30px;
 
 }
+
 
 
 
@@ -167,9 +211,10 @@ display:block;
 
 
 
+
 h1{
 
-margin-bottom:10px;
+margin-bottom:8px;
 
 }
 
@@ -179,12 +224,10 @@ margin-bottom:10px;
 .subtitle{
 
 color:#9ba3b2;
-margin-bottom:30px;
+
+margin-bottom:25px;
 
 }
-
-
-
 
 
 
@@ -194,14 +237,11 @@ margin-bottom:30px;
 
 display:grid;
 
-grid-template-columns:
-repeat(auto-fit,minmax(220px,1fr));
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 
 gap:20px;
 
 }
-
-
 
 
 
@@ -224,7 +264,6 @@ padding:25px;
 .card-title{
 
 color:#9ba3b2;
-margin-bottom:15px;
 
 }
 
@@ -232,32 +271,17 @@ margin-bottom:15px;
 
 
 
-.card-value{
+.value{
 
 font-size:30px;
+
 font-weight:bold;
+
 color:#0D6EFD;
 
-}
-
-.activity{
-
-margin-top:30px;
-
-background:#0d0f14;
-
-border:1px solid #1b2535;
-
-border-radius:25px;
-
-padding:25px;
+margin-top:12px;
 
 }
-
-
-
-
-
 
 .inbox-layout{
 
@@ -273,8 +297,7 @@ gap:20px;
 
 
 
-
-.conversation-list{
+.conversations{
 
 background:#0d0f14;
 
@@ -292,26 +315,21 @@ overflow:hidden;
 
 .conversation{
 
-padding:20px;
+padding:18px;
 
 border-bottom:1px solid #1b2535;
+
+cursor:pointer;
 
 display:flex;
 
 justify-content:space-between;
 
-gap:15px;
-
-cursor:pointer;
-
 }
 
 
 
-
-
-.conversation:hover,
-.conversation.active{
+.conversation:hover{
 
 background:#111827;
 
@@ -319,19 +337,11 @@ background:#111827;
 
 
 
-
-
-.conversation p{
+.conversation small{
 
 color:#9ba3b2;
 
-margin-top:6px;
-
-font-size:14px;
-
 }
-
-
 
 
 
@@ -347,7 +357,7 @@ font-size:12px;
 
 
 
-.chat-box{
+.chat{
 
 background:#0d0f14;
 
@@ -355,11 +365,11 @@ border:1px solid #1b2535;
 
 border-radius:25px;
 
-min-height:500px;
-
 display:flex;
 
 flex-direction:column;
+
+min-height:480px;
 
 }
 
@@ -406,31 +416,23 @@ cursor:pointer;
 
 .messages{
 
-flex:1;
-
 padding:25px;
 
-display:flex;
-
-flex-direction:column;
-
-gap:15px;
+flex:1;
 
 }
 
 
 
-
-
 .message{
 
-padding:14px 18px;
+max-width:70%;
 
-border-radius:20px;
+padding:14px;
 
-max-width:75%;
+border-radius:18px;
 
-line-height:1.4;
+margin-bottom:15px;
 
 }
 
@@ -442,11 +444,7 @@ line-height:1.4;
 
 background:#111827;
 
-align-self:flex-start;
-
 }
-
-
 
 
 
@@ -454,7 +452,7 @@ align-self:flex-start;
 
 background:#0D6EFD;
 
-align-self:flex-end;
+margin-left:auto;
 
 }
 
@@ -462,64 +460,53 @@ align-self:flex-end;
 
 
 
-.input-area{
 
-display:flex;
+.reservation-table{
 
-gap:10px;
+width:100%;
 
-padding:20px;
+border-collapse:collapse;
 
-}
+margin-top:20px;
 
-
-
-
-
-.input-area input{
-
-flex:1;
-
-background:#050505;
-
-border:1px solid #1b2535;
-
-color:white;
-
-padding:14px;
+background:#0d0f14;
 
 border-radius:20px;
 
+overflow:hidden;
+
+}
+
+
+
+.reservation-table th,
+.reservation-table td{
+
+padding:18px;
+
+border-bottom:1px solid #1b2535;
+
+text-align:left;
+
+}
+
+
+
+.reservation-table th{
+
+color:#9ba3b2;
+
 }
 
 
 
 
 
-.send{
-
-background:#0D6EFD;
-
-border:none;
-
-color:white;
-
-padding:0 25px;
-
-border-radius:20px;
-
-}
-
-
-
-
-
-.settings-box{
+.stats-grid{
 
 display:grid;
 
-grid-template-columns:
-repeat(auto-fit,minmax(250px,1fr));
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 
 gap:20px;
 
@@ -547,13 +534,13 @@ padding:25px;
 
 .toggle{
 
-width:48px;
+width:50px;
 
-height:24px;
+height:25px;
 
 background:#0D6EFD;
 
-border-radius:30px;
+border-radius:20px;
 
 margin-top:15px;
 
@@ -562,7 +549,11 @@ margin-top:15px;
 
 
 
+
+
+
 @media(max-width:800px){
+
 
 
 .topbar{
@@ -571,7 +562,15 @@ flex-direction:column;
 
 align-items:flex-start;
 
-gap:20px;
+gap:15px;
+
+}
+
+
+
+.inbox-layout{
+
+grid-template-columns:1fr;
 
 }
 
@@ -585,24 +584,6 @@ padding:20px;
 
 
 
-
-.inbox-layout{
-
-grid-template-columns:1fr;
-
-}
-
-
-
-
-.menu{
-
-width:100%;
-
-}
-
-
-
 }
 
 </style>
@@ -610,12 +591,8 @@ width:100%;
 </head>
 
 
+
 <body>
-
-
-
-<div class="app">
-
 
 
 
@@ -629,19 +606,47 @@ width:100%;
 
 <div class="brand">
 
-
 <img src="IMG_3520.png">
 
-
 <div class="brand-name">
-
 Stay<span>Flow</span>
-
 </div>
 
 
 </div>
 
+
+
+
+
+
+
+<div class="top-actions">
+
+
+<div class="status">
+
+● AI Online
+
+</div>
+
+
+
+<div class="language">
+
+EN ▼
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+</header>
 
 
 
@@ -654,42 +659,40 @@ Stay<span>Flow</span>
 
 
 
-<button class="active" onclick="showPage('dashboard',this)">
+<button class="active" onclick="openTab('dashboard',this)">
 Dashboard
 </button>
 
 
-<button onclick="showPage('inbox',this)">
-Inbox
+
+<button onclick="openTab('inbox',this)">
+Inbox 🔵3
 </button>
 
 
-<button onclick="showPage('reservations',this)">
+
+
+<button onclick="openTab('reservations',this)">
 Reservations
 </button>
 
 
-<button onclick="showPage('statistics',this)">
+
+
+<button onclick="openTab('statistics',this)">
 Statistics
 </button>
 
 
-<button onclick="showPage('settings',this)">
+
+
+<button onclick="openTab('settings',this)">
 Settings
 </button>
 
 
 
 </nav>
-
-
-
-
-
-
-</header>
-
-
 
 
 
@@ -709,7 +712,6 @@ Settings
 <section id="dashboard" class="page active">
 
 
-
 <h1>
 Dashboard
 </h1>
@@ -722,8 +724,8 @@ StayFlow overview
 
 
 
-<div class="cards">
 
+<div class="cards">
 
 
 <div class="card">
@@ -732,12 +734,12 @@ StayFlow overview
 Messages
 </div>
 
-<div class="card-value">
-12
+<div class="value">
+24
 </div>
 
-
 </div>
+
 
 
 
@@ -749,12 +751,13 @@ Messages
 Reservations
 </div>
 
-<div class="card-value">
-28
+<div class="value">
+42
+</div>
+
 </div>
 
 
-</div>
 
 
 
@@ -766,15 +769,9 @@ Reservations
 Occupancy
 </div>
 
-<div class="card-value">
-78%
+<div class="value">
+82%
 </div>
-
-
-</div>
-
-
-
 
 </div>
 
@@ -782,19 +779,23 @@ Occupancy
 
 
 
-<div class="activity">
 
-<h2>
-Recent Activity
-</h2>
+<div class="card">
 
+<div class="card-title">
+Revenue
+</div>
 
-<p>
-AI conversations and reservations will appear here.
-</p>
+<div class="value">
+$0
+</div>
+
+</div>
+
 
 
 </div>
+
 
 
 
@@ -825,6 +826,8 @@ Guest conversations
 
 
 
+
+
 <div class="inbox-layout">
 
 
@@ -832,11 +835,16 @@ Guest conversations
 
 
 
-<div class="conversation-list">
+
+
+<div class="conversations">
 
 
 
-<div class="conversation active">
+
+
+
+<div class="conversation">
 
 
 <div>
@@ -846,11 +854,20 @@ Maria
 </b>
 
 
-<p>
-Availability?
-</p>
+<br>
+
+<small>
+Argentina · Dorm 4 Bed 2
+</small>
+
+<br>
+
+<small>
+Need availability
+</small>
 
 </div>
+
 
 
 <span class="badge">
@@ -859,6 +876,8 @@ AI
 
 
 </div>
+
+
 
 
 
@@ -876,11 +895,20 @@ John
 </b>
 
 
-<p>
-Airport transfer
-</p>
+<br>
+
+<small>
+USA · Private Room
+</small>
+
+<br>
+
+<small>
+Airport transfer?
+</small>
 
 </div>
+
 
 
 <span class="badge">
@@ -889,7 +917,6 @@ AI
 
 
 </div>
-
 
 
 
@@ -907,11 +934,20 @@ Sofia
 </b>
 
 
-<p>
+<br>
+
+<small>
+Brazil · Dorm 2 Bed 1
+</small>
+
+<br>
+
+<small>
 Check in
-</p>
+</small>
 
 </div>
+
 
 
 <span class="badge">
@@ -924,6 +960,8 @@ Human
 
 
 
+
+
 </div>
 
 
@@ -934,22 +972,34 @@ Human
 
 
 
-<div class="chat-box">
+<div class="chat">
 
 
 
 <div class="chat-header">
 
 
+<div>
+
 <h3>
 Maria
 </h3>
 
+<small>
+AI Assistant
+</small>
+
+
+</div>
+
 
 
 <button class="takeover">
+
 Take Over
+
 </button>
+
 
 
 </div>
@@ -965,7 +1015,7 @@ Take Over
 
 <div class="message guest">
 
-Hi, do you have beds available?
+Hi, do you have a bed available?
 
 </div>
 
@@ -973,7 +1023,7 @@ Hi, do you have beds available?
 
 <div class="message ai">
 
-Yes! I can help you with availability.
+Yes, I can help you with that.
 
 </div>
 
@@ -995,26 +1045,7 @@ For tomorrow.
 
 
 
-<div class="input-area">
-
-
-<input placeholder="Type message...">
-
-
-<button class="send">
-
-Send
-
-</button>
-
-
 </div>
-
-
-
-
-</div>
-
 
 
 
@@ -1029,106 +1060,3 @@ Send
 
 
 </section>
-
-
-
-
-
-
-
-
-
-<section id="reservations" class="page">
-
-
-
-<h1>
-Reservations
-</h1>
-
-
-<p class="subtitle">
-Bookings management
-</p>
-
-
-
-
-
-<div class="activity">
-
-<div class="conversation">
-
-Guest
-
-<span>
-Room / Bed
-</span>
-
-</div>
-
-
-<div class="conversation">
-
-Carlos
-
-<span>
-Dorm 2 - Bed 4
-</span>
-
-</div>
-
-
-
-</div>
-
-
-
-</section>
-
-
-
-
-
-
-
-
-<section id="statistics" class="page">
-
-
-
-<h1>
-Statistics
-</h1>
-
-
-<p class="subtitle">
-Business intelligence
-</p>
-
-
-
-
-<div class="cards">
-
-
-
-<div class="card">
-
-<div class="card-title">
-Top Country
-</div>
-
-<div class="card-value">
-Argentina
-</div>
-
-
-</div>
-
-
-
-
-<div class="card">
-
-<div class="card-title">
