@@ -8,11 +8,11 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
-<title>StayFlow</title>
+<title>StayFlow Demo</title>
 
 
 <style>
+
 
 *{
 margin:0;
@@ -21,13 +21,14 @@ box-sizing:border-box;
 }
 
 
+
 body{
 
 background:#050505;
-color:white;
-font-family:Arial,Helvetica,sans-serif;
 
-overflow-x:hidden;
+color:white;
+
+font-family:Arial,Helvetica,sans-serif;
 
 }
 
@@ -35,16 +36,13 @@ overflow-x:hidden;
 
 
 
-/* MENU */
-
-
 .sidebar{
 
 position:fixed;
 
-top:0;
-
 left:-270px;
+
+top:0;
 
 width:260px;
 
@@ -58,7 +56,7 @@ padding:25px;
 
 transition:.3s;
 
-z-index:1001;
+z-index:1000;
 
 }
 
@@ -74,18 +72,17 @@ left:0;
 
 
 
-
 .overlay{
 
 position:fixed;
 
 inset:0;
 
-background:rgba(0,0,0,.65);
+background:rgba(0,0,0,.7);
 
 display:none;
 
-z-index:1000;
+z-index:900;
 
 }
 
@@ -107,9 +104,8 @@ font-size:30px;
 
 font-weight:800;
 
-margin-bottom:20px;
-
 }
+
 
 
 .logo span{
@@ -121,7 +117,34 @@ color:#0D6EFD;
 
 
 
-.profile-box{
+
+
+
+.demo{
+
+margin-top:15px;
+
+margin-bottom:20px;
+
+background:#050505;
+
+border:1px solid #1b2535;
+
+border-radius:15px;
+
+padding:12px;
+
+color:#9ba3b2;
+
+font-size:14px;
+
+}
+
+
+
+
+
+.profile{
 
 background:#050505;
 
@@ -131,20 +154,9 @@ border-radius:20px;
 
 padding:15px;
 
-margin-bottom:25px;
+margin-bottom:20px;
 
 }
-
-
-
-
-.profile-box small{
-
-color:#9ba3b2;
-
-}
-
-
 
 
 
@@ -157,21 +169,22 @@ width:100%;
 
 padding:13px;
 
-margin-bottom:7px;
+border:0;
 
 background:none;
 
-border:none;
-
 color:#9ba3b2;
+
+text-align:left;
 
 border-radius:15px;
 
-text-align:left;
+margin-bottom:6px;
 
 cursor:pointer;
 
 }
+
 
 
 
@@ -188,18 +201,12 @@ color:white;
 
 
 
-
-
-
-
-/* MAIN */
-
-
 .main{
 
 min-height:100vh;
 
 }
+
 
 
 
@@ -224,25 +231,9 @@ position:sticky;
 
 top:0;
 
-z-index:20;
+z-index:10;
 
 }
-
-
-
-
-
-.left-top{
-
-display:flex;
-
-align-items:center;
-
-gap:20px;
-
-}
-
-
 
 
 
@@ -257,18 +248,15 @@ cursor:pointer;
 
 
 
-
-
 .actions{
 
 display:flex;
 
 align-items:center;
 
-gap:12px;
+gap:15px;
 
 }
-
 
 
 
@@ -279,11 +267,11 @@ background:#050505;
 
 border:1px solid #1b2535;
 
-color:white;
-
-padding:12px 15px;
+padding:12px;
 
 border-radius:20px;
+
+color:white;
 
 }
 
@@ -297,9 +285,9 @@ border:none;
 
 color:white;
 
-padding:13px 18px;
+padding:13px 20px;
 
-border-radius:20px;
+border-radius:22px;
 
 cursor:pointer;
 
@@ -310,13 +298,11 @@ font-weight:bold;
 
 
 
-
 .content{
 
 padding:30px;
 
 }
-
 
 
 
@@ -339,8 +325,7 @@ display:block;
 
 
 
-
-.card-grid{
+.cards{
 
 display:grid;
 
@@ -349,9 +334,6 @@ grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:20px;
 
 }
-
-
-
 
 
 
@@ -369,14 +351,13 @@ padding:25px;
 
 
 
-
 .value{
 
 font-size:32px;
 
-font-weight:bold;
-
 color:#0D6EFD;
+
+font-weight:bold;
 
 margin-top:10px;
 
@@ -385,18 +366,12 @@ margin-top:10px;
 
 
 
+
 </style>
 
 </head>
 
-
-
-
-
-
 <body>
-
-
 
 
 
@@ -420,29 +395,32 @@ Stay<span>Flow</span>
 
 
 
+<div class="demo">
+
+🟦 Demo Mode
+
+<br>
+
+Hostel Lagares
+
+</div>
 
 
-<div class="profile-box">
 
 
-<div style="font-size:35px">
+
+
+<div class="profile">
 
 👤
 
-</div>
+<br><br>
 
+Carlos
 
-<div id="sidebarUser">
+<br>
 
-Loading...
-
-</div>
-
-
-<small>
-Account
-</small>
-
+Owner
 
 </div>
 
@@ -455,17 +433,9 @@ Account
 <div class="menu">
 
 
-
 <button class="active" onclick="openPage('home',this)">
 🏠 Home
 </button>
-
-
-
-<button onclick="openPage('inbox',this)">
-💬 Inbox
-</button>
-
 
 
 <button onclick="openPage('reservations',this)">
@@ -504,21 +474,10 @@ Account
 
 
 
-<button onclick="openPage('settings',this)">
-⚙ Settings
-</button>
-
-
-
 </div>
 
 
-
-
-
 </div>
-
-
 
 
 
@@ -531,13 +490,7 @@ Account
 
 
 
-
-
 <div class="topbar">
-
-
-
-<div class="left-top">
 
 
 <div class="menu-icon" onclick="toggleMenu()">
@@ -548,36 +501,14 @@ Account
 
 
 
-<div>
-
-StayFlow
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
 
 <div class="actions">
-
 
 
 <input class="search" placeholder="Search guest">
 
 
-
-<div>
 🔔
-</div>
-
-
 
 
 <button class="new-btn">
@@ -589,8 +520,6 @@ StayFlow
 
 
 </div>
-
-
 
 
 
@@ -612,30 +541,38 @@ StayFlow
 
 
 
+
 <section id="home" class="page active">
 
 
+
 <h1>
-Dashboard
+Good morning, Carlos 👋
 </h1>
+
 
 
 <br>
 
 
 
-<div class="card-grid">
+
+<div class="cards">
+
 
 
 <div class="card">
 
-Check-ins
+Check-ins Today
 
 <div class="value">
+
 4
+
 </div>
 
 </div>
+
 
 
 
@@ -645,25 +582,27 @@ Check-ins
 Check-outs
 
 <div class="value">
+
 2
-</div>
 
 </div>
 
+</div>
 
 
 
 
 <div class="card">
 
-Cleaning
+Pending Tasks
 
 <div class="value">
+
 6
-</div>
 
 </div>
 
+</div>
 
 
 
@@ -673,15 +612,16 @@ Cleaning
 Occupancy
 
 <div class="value">
+
 82%
-</div>
 
 </div>
 
+</div>
+
 
 
 </div>
-
 
 
 
@@ -689,6 +629,7 @@ Occupancy
 
 
 <br>
+
 
 
 
@@ -698,28 +639,26 @@ Occupancy
 
 
 <h2>
-
-Today Operations
-
+⚠ Needs Attention
 </h2>
 
 
 <br>
 
 
-🟢 Reservation confirmed
+🟡 Dorm 4 waiting cleaning
 
 
 <br><br>
 
 
-🟡 Bed waiting cleaning
+🔴 Payment pending Maria
 
 
 <br><br>
 
 
-🔵 AI answered guest
+🔵 Guest asking transfer
 
 
 
@@ -727,46 +666,9 @@ Today Operations
 
 
 
-</section>
-
-
-
-
-
-
-
-
-
-
-<section id="inbox" class="page">
-
-
-<h1>
-Inbox
-</h1>
-
-
-<br>
-
-
-<div class="card">
-
-
-WhatsApp + AI + Human takeover
-
-
-</div>
-
 
 
 </section>
-
-
-
-
-
-
-
 
 <section id="reservations" class="page">
 
@@ -779,6 +681,8 @@ Reservations
 <br>
 
 
+
+
 <div class="card">
 
 
@@ -789,18 +693,119 @@ Reservations
 </button>
 
 
+</div>
+
+
+
+
+
+
+<br>
+
+
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+
+<h2>
+#1024
+</h2>
+
+
+<br>
+
+
+Maria Silva 🇦🇷
+
 
 <br><br>
 
 
-Maria — Dorm 4 Bed 2
+Dorm 4
+
+<br>
+
+Bed 2
+
+
+<br><br>
+
+
+Check-in:
+
+Today 14:00
+
+
+<br><br>
+
+
+Status:
+
+🟢 Confirmed
 
 
 
 </div>
 
 
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+#1025
+</h2>
+
+
+<br>
+
+
+John Smith 🇺🇸
+
+
+<br><br>
+
+
+Private Room
+
+
+<br><br>
+
+
+Payment:
+
+🟡 Pending
+
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
+
 </section>
+
+
+
+
 
 
 
@@ -820,35 +825,95 @@ Rooms
 <br>
 
 
+
+
 <div class="card">
 
 
+<h2>
 Dorm 4
+</h2>
+
+
+<br>
+
+
+
+Bed 1
+
+🟢 Available
 
 
 <br><br>
 
 
-Bed 1 🟢
+Bed 2
+
+🔴 Maria
 
 
-<br>
+<br><br>
 
 
-Bed 2 🔴
+Bed 3
+
+🟡 Cleaning
 
 
-<br>
+<br><br>
 
 
-Bed 3 🟡
+Bed 4
+
+⚫ Maintenance
 
 
 
 </div>
 
 
+
+
+
+<br>
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Private Rooms
+</h2>
+
+
+<br>
+
+
+Room 1
+
+🟢 Available
+
+
+<br><br>
+
+
+Room 2
+
+🔴 John
+
+
+
+</div>
+
+
+
+
+
 </section>
+
 
 
 
@@ -861,21 +926,45 @@ Bed 3 🟡
 
 
 <h1>
-Guests
+Guests CRM
 </h1>
 
 
 <br>
 
 
+
+
 <div class="card">
 
 
-Maria
+
+<h2>
+Maria Silva
+</h2>
+
+
+
+<br>
+
+
+Country:
+
+Argentina 🇦🇷
 
 
 <br><br>
 
+
+Previous stays:
+
+3
+
+
+<br><br>
+
+
+Current:
 
 Dorm 4 Bed 2
 
@@ -883,14 +972,69 @@ Dorm 4 Bed 2
 <br><br>
 
 
+Notes:
+
+Late arrival
+
+
+<br><br>
+
+
+
+<button class="new-btn">
+
 Edit Guest
+
+</button>
+
 
 
 
 </div>
 
 
+
+
+
+
+<br>
+
+
+
+
+
+<div class="card">
+
+
+
+<h2>
+Guest History
+</h2>
+
+
+<br>
+
+
+⭐ Loyal guest
+
+
+<br><br>
+
+
+Average stay:
+
+5 nights
+
+
+
+</div>
+
+
+
+
+
 </section>
+
 
 
 
@@ -910,22 +1054,54 @@ Operations
 <br>
 
 
+
+
+
+
 <div class="card">
 
 
+<h2>
 🧹 Housekeeping
 
-
-<br><br>
-
-
-Dorm 4 Bed 2
+</h2>
 
 
 <br>
 
 
-Assigned: Maria
+New task:
+
+
+<br><br>
+
+
+Dorm 4
+
+Bed 2
+
+
+<br>
+
+
+Clean sheets
+
+
+<br><br>
+
+
+Assigned:
+
+Maria
+
+
+
+<br><br>
+
+
+Status:
+
+🟡 Waiting
 
 
 
@@ -933,14 +1109,62 @@ Assigned: Maria
 
 
 
+
+
+
+
+<br>
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Workflow
+</h2>
+
+
+<br>
+
+
+Checkout
+
+
+<br>
+
+↓
+
+
+<br>
+
+
+Cleaning Task Created
+
+
+<br>
+
+↓
+
+
+<br>
+
+
+Bed Available
+
+
+
+</div>
+
+
+
+
+
+
 </section>
-
-
-
-
-
-
-
 
 <section id="schedule" class="page">
 
@@ -953,7 +1177,19 @@ Schedule
 <br>
 
 
+
+
+
 <div class="card">
+
+
+<h2>
+Weekly Shifts
+</h2>
+
+
+<br>
+
 
 
 Monday
@@ -962,13 +1198,40 @@ Monday
 <br><br>
 
 
-08-16 Carlos
+08:00 - 16:00
+
+<br>
+
+Carlos
+
+Reception
 
 
 <br><br>
 
 
-16-00 Maria
+08:00 - 16:00
+
+<br>
+
+Maria
+
+Housekeeping
+
+
+
+
+<br><br>
+
+
+
+16:00 - 00:00
+
+<br>
+
+João
+
+Night Shift
 
 
 
@@ -976,7 +1239,56 @@ Monday
 
 
 
+
+
+<br>
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Create Shift
+</h2>
+
+
+<br>
+
+
+Employee
+
+<br>
+
+Role
+
+<br>
+
+Time
+
+
+
+<br><br>
+
+
+<button class="new-btn">
+
+Add Shift
+
+</button>
+
+
+</div>
+
+
+
+
+
 </section>
+
 
 
 
@@ -990,58 +1302,141 @@ Monday
 
 <h1>
 Team
-
 </h1>
 
 
 <br>
 
 
+
+
+
+<div class="cards">
+
+
+
 <div class="card">
 
 
-Carlos — Owner
+<h2>
+Carlos
+</h2>
+
+
+Owner
 
 
 <br><br>
 
 
-Maria — Housekeeping
-
+🟢 Online
 
 
 </div>
 
 
 
-</section>
-
-
-
-
-
-
-
-<section id="settings" class="page">
-
-
-<h1>
-Settings
-
-</h1>
-
-
-<br>
 
 
 <div class="card">
 
 
-Plan: Pro
+<h2>
+Maria
+</h2>
+
+
+Housekeeping
+
+
+<br><br>
+
+
+Shift:
+
+08-16
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+João
+</h2>
+
+
+Reception
+
+
+<br><br>
+
+
+Shift:
+
+16-00
+
+
+</div>
+
+
 
 
 
 </div>
+
+
+
+
+
+
+
+<br>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Activity Log
+</h2>
+
+
+
+<br>
+
+
+Carlos created reservation #1024
+
+
+<br><br>
+
+
+Maria completed cleaning
+
+
+<br><br>
+
+
+João updated guest info
+
+
+
+</div>
+
+
 
 
 
@@ -1058,10 +1453,8 @@ Plan: Pro
 </div>
 
 
-
-
-
 </div>
+
 
 
 
@@ -1072,6 +1465,7 @@ Plan: Pro
 
 
 <script>
+
 
 
 
@@ -1087,11 +1481,11 @@ document.getElementById("overlay");
 
 
 
-
 function toggleMenu(){
 
 
 sidebar.classList.toggle("open");
+
 
 overlay.classList.toggle("show");
 
@@ -1102,12 +1496,11 @@ overlay.classList.toggle("show");
 
 
 
-
-
 function closeMenu(){
 
 
 sidebar.classList.remove("open");
+
 
 overlay.classList.remove("show");
 
@@ -1125,14 +1518,18 @@ overlay.onclick = closeMenu;
 
 
 
-
-
 function openPage(id,btn){
 
 
 document
 .querySelectorAll(".page")
-.forEach(p=>p.classList.remove("active"));
+.forEach(page=>{
+
+
+page.classList.remove("active");
+
+
+});
 
 
 
@@ -1142,9 +1539,17 @@ document
 
 
 
+
+
 document
 .querySelectorAll(".menu button")
-.forEach(b=>b.classList.remove("active"));
+.forEach(button=>{
+
+
+button.classList.remove("active");
+
+
+});
 
 
 
@@ -1163,17 +1568,19 @@ closeMenu();
 
 
 
+let startX = 0;
 
 
-
-let startX=0;
 
 
 sidebar.addEventListener(
 "touchstart",
-e=>{
+function(e){
 
-startX=e.touches[0].clientX;
+
+startX =
+e.touches[0].clientX;
+
 
 });
 
@@ -1183,15 +1590,19 @@ startX=e.touches[0].clientX;
 
 sidebar.addEventListener(
 "touchend",
-e=>{
+function(e){
 
 
-let endX=e.changedTouches[0].clientX;
+let endX =
+e.changedTouches[0].clientX;
+
 
 
 if(startX-endX>80){
 
+
 closeMenu();
+
 
 }
 
@@ -1204,41 +1615,7 @@ closeMenu();
 
 
 
-
-
-const user =
-JSON.parse(
-localStorage.getItem("stayflowUser")
-);
-
-
-
-if(user){
-
-
-document
-.getElementById("sidebarUser")
-.innerHTML =
-
-user.name
-+
-"<br>"
-+
-user.role
-+
-"<br><small>"
-+
-user.hostel
-+
-"</small>";
-
-
-}
-
-
-
 </script>
-
 
 
 
