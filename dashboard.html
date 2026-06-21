@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
 <title>StayFlow Dashboard</title>
@@ -9,7 +10,6 @@
 
 <style>
 
-
 *{
 box-sizing:border-box;
 }
@@ -17,21 +17,21 @@ box-sizing:border-box;
 
 body{
 margin:0;
-font-family:Arial, sans-serif;
 background:#050505;
 color:white;
+font-family:"Segoe UI",Arial,sans-serif;
 overflow-x:hidden;
 }
-
 
 
 .sidebar{
 
 position:fixed;
-left:-270px;
 top:0;
-height:100%;
-width:270px;
+left:-280px;
+
+width:280px;
+height:100vh;
 
 background:#080808;
 
@@ -41,12 +41,11 @@ padding:25px;
 
 transition:.3s;
 
-z-index:10;
+z-index:20;
 
 overflow-y:auto;
 
 }
-
 
 
 .sidebar.open{
@@ -56,14 +55,37 @@ left:0;
 }
 
 
+.overlay{
+
+position:fixed;
+inset:0;
+
+background:#000a;
+
+display:none;
+
+z-index:15;
+
+}
+
+
+.overlay.show{
+
+display:block;
+
+}
+
+
 
 .logo{
 
-font-size:28px;
-font-weight:bold;
-letter-spacing:1px;
+font-size:34px;
 
-margin-bottom:30px;
+font-weight:800;
+
+letter-spacing:-1.5px;
+
+margin-bottom:25px;
 
 }
 
@@ -78,19 +100,19 @@ color:#1b8cff;
 
 
 
-
 .profile{
 
 border:1px solid #1b8cff44;
-border-radius:15px;
+
+border-radius:18px;
 
 padding:15px;
 
-margin-bottom:25px;
+margin-bottom:20px;
+
+background:#0b0b0b;
 
 }
-
-
 
 
 
@@ -98,26 +120,25 @@ margin-bottom:25px;
 
 width:100%;
 
-background:none;
+padding:13px;
 
-border:none;
+margin-bottom:5px;
+
+border:0;
+
+background:none;
 
 color:white;
 
-padding:14px;
-
 text-align:left;
 
-border-radius:10px;
+border-radius:12px;
 
 cursor:pointer;
 
 font-size:15px;
 
-margin-bottom:5px;
-
 }
-
 
 
 
@@ -131,47 +152,9 @@ background:#1b8cff22;
 
 
 
-
-.overlay{
-
-position:fixed;
-
-inset:0;
-
-background:#0008;
-
-display:none;
-
-z-index:5;
-
-}
-
-
-
-
-.overlay.show{
-
-display:block;
-
-}
-
-
-
-
-
-.main{
-
-min-height:100vh;
-
-}
-
-
-
-
-
 .topbar{
 
-height:75px;
+height:80px;
 
 display:flex;
 
@@ -181,48 +164,19 @@ justify-content:space-between;
 
 padding:0 25px;
 
-border-bottom:1px solid #ffffff10;
+border-bottom:1px solid #ffffff12;
 
 }
-
-
 
 
 
 .menu-icon{
 
-font-size:28px;
+font-size:30px;
 
 cursor:pointer;
 
 }
-
-
-
-
-
-.left{
-
-display:flex;
-
-gap:20px;
-
-align-items:center;
-
-}
-
-
-
-
-.time{
-
-color:#aaa;
-
-font-size:14px;
-
-}
-
-
 
 
 
@@ -234,19 +188,15 @@ padding:25px;
 
 
 
-
-
 .cards{
 
 display:grid;
 
-grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 
-gap:20px;
+gap:18px;
 
 }
-
-
 
 
 
@@ -278,14 +228,11 @@ margin-top:10px;
 
 
 
-
-
 .page{
 
 display:none;
 
 }
-
 
 
 .page.active{
@@ -296,24 +243,9 @@ display:block;
 
 
 
-
-.lang{
-
-margin-left:auto;
-
-font-size:13px;
-
-color:#aaa;
-
-}
-
-
-
 .lang span{
 
 cursor:pointer;
-
-color:white;
 
 margin:0 5px;
 
@@ -321,22 +253,32 @@ margin:0 5px;
 
 
 
+button.action{
 
-select{
+background:#1b8cff;
 
-background:#111;
+border:0;
+
+padding:10px 15px;
+
+border-radius:12px;
 
 color:white;
 
-border:1px solid #1b8cff55;
-
-border-radius:10px;
-
-padding:8px;
+cursor:pointer;
 
 }
 
 
+.badge{
+
+padding:5px 10px;
+
+border-radius:20px;
+
+background:#1b8cff22;
+
+}
 
 
 </style>
@@ -344,42 +286,38 @@ padding:8px;
 </head>
 
 
-
 <body>
-
 
 
 <div class="overlay" id="overlay"></div>
 
 
-
 <div class="sidebar" id="sidebar">
 
 
-
 <div class="logo">
-
 Stay<span>Flow</span>
-
 </div>
-
 
 
 
 <div class="profile">
 
-
-<b>Hostel Lagares</b>
-
-<br>
-
-Demo Mode
-
+<b id="hostel">
+Hostel Lagares
+</b>
 
 <br><br>
 
+<span id="today">
+Today
+</span>
 
-Today • <span id="sideTime"></span>
+<br>
+
+<span id="clock">
+00:00
+</span>
 
 
 <br><br>
@@ -393,27 +331,23 @@ Owner
 
 
 
-
 <br><br>
 
 
+<select id="role">
 
-<select>
+<option>Owner</option>
 
-<option>Owner View</option>
+<option>Reception</option>
 
-<option>Reception View</option>
+<option>Housekeeping</option>
 
-<option>Housekeeping View</option>
-
-<option>Maintenance View</option>
+<option>Maintenance</option>
 
 </select>
 
 
-
 </div>
-
 
 
 
@@ -423,9 +357,8 @@ Owner
 
 
 <button class="active" onclick="openPage('home',this)">
-🏠 Home
+🏠 <span data="home">Home</span>
 </button>
-
 
 
 <button onclick="openPage('reservations',this)">
@@ -433,11 +366,9 @@ Owner
 </button>
 
 
-
 <button onclick="openPage('rooms',this)">
 🏢 Rooms
 </button>
-
 
 
 <button onclick="openPage('guests',this)">
@@ -445,11 +376,9 @@ Owner
 </button>
 
 
-
 <button onclick="openPage('operations',this)">
 🧹 Operations
 </button>
-
 
 
 <button onclick="openPage('supplies',this)">
@@ -457,11 +386,9 @@ Owner
 </button>
 
 
-
 <button onclick="openPage('schedule',this)">
 📅 Schedule
 </button>
-
 
 
 <button onclick="openPage('team',this)">
@@ -469,11 +396,9 @@ Owner
 </button>
 
 
-
 <button onclick="openPage('notifications',this)">
 🔔 Notifications
 </button>
-
 
 
 <button onclick="openPage('settings',this)">
@@ -481,10 +406,7 @@ Owner
 </button>
 
 
-
 </div>
-
-
 
 </div>
 
@@ -495,30 +417,11 @@ Owner
 <div class="main">
 
 
-
 <div class="topbar">
 
 
-<div class="left">
-
 <div class="menu-icon" onclick="toggleMenu()">
 ☰
-</div>
-
-
-
-<div class="time">
-
-StayFlow AI
-
-<br>
-
-<span id="topTime"></span>
-
-</div>
-
-
-
 </div>
 
 
@@ -527,34 +430,30 @@ StayFlow AI
 
 🌐
 
-<span>PT</span>
+<span onclick="changeLang('pt')">PT</span>
 
 |
 
-<span>EN</span>
+<span onclick="changeLang('en')">EN</span>
 
 |
 
-<span>ES</span>
+<span onclick="changeLang('es')">ES</span>
 
 
 </div>
 
 
-
 </div>
 
+  <div class="content">
 
-
-
-
-<div class="content">
 
 
 <section id="home" class="page active">
 
 
-<h1>
+<h1 id="welcome">
 Good morning, Jorge 👋
 </h1>
 
@@ -563,13 +462,12 @@ Good morning, Jorge 👋
 <div class="cards">
 
 
-
 <div class="card">
 
 Occupancy
 
 <div class="value">
-18/22
+18 / 22
 </div>
 
 </div>
@@ -614,9 +512,7 @@ $320
 </div>
 
 
-
 </div>
-
 
 
 
@@ -631,6 +527,7 @@ $320
 
 <div class="card">
 
+
 <h2>🤖 AI Snapshot</h2>
 
 17 conversations handled
@@ -643,72 +540,97 @@ $320
 
 92% automation
 
+
 </div>
+
 
 
 
 
 <div class="card">
 
-<h2>Today's Priorities</h2>
+
+<h2>📋 Daily Operations</h2>
+
+
+4 arrivals
+
+<br><br>
+
+2 departures
+
+<br><br>
+
+3 cleaning tasks
+
+<br><br>
+
+2 maintenance
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h2>⚠ Priorities</h2>
 
 
 🔴 Payment pending
 
 <br><br>
 
-🟡 2 beds cleaning
+🟡 Cleaning waiting
 
 <br><br>
 
 🔵 Guest request
 
+
 </div>
+
 
 
 
 
 <div class="card">
 
-<h2>Supply Alerts</h2>
+
+<h2>💡 AI Suggestions</h2>
 
 
-🔴 Toilet Paper
-
-<br><br>
-
-🟡 Milk
-
-</div>
-
-
-
-
-<div class="card">
-
-<h2>Live Status</h2>
-
-
-🟢 AI Online
+High occupancy weekend
 
 <br><br>
 
-🟢 WhatsApp Connected
+Promote wine tour
 
 <br><br>
 
-🟢 Staff Online
+Increase private rooms
+
 
 </div>
 
 
 
 </div>
-
 
 
 
 </section>
+
+
+
+
+
+
+
+
 
 <section id="reservations" class="page">
 
@@ -723,44 +645,23 @@ $320
 
 <h2>New Reservation</h2>
 
-Guest:
 
 Maria Silva
 
+<br>
+
+Dorm 4 Bed 2
+
+<br>
+
+3 nights
+
 <br><br>
 
-Room:
+<span class="badge">
+Confirmed
+</span>
 
-Dorm 4 - Bed 2
-
-<br><br>
-
-Status:
-
-🟢 Confirmed
-
-</div>
-
-
-
-
-<div class="card">
-
-<h2>Upcoming</h2>
-
-John Smith
-
-<br>
-
-Check-in Today
-
-<br>
-
-Private Room
-
-<br>
-
-💰 Paid
 
 </div>
 
@@ -770,61 +671,28 @@ Private Room
 
 <h2>Pending Payments</h2>
 
-Maria Silva
 
-<br>
+Maria
 
 $25
 
+
 <br><br>
 
-Carlos
 
-<br>
+John
 
 $40
 
-</div>
-
 
 </div>
 
-
-<br>
-
-
-<div class="card">
-
-<h2>Reservation List</h2>
-
-<br>
-
-
-#1024
-
-Maria Silva
-
-Dorm 4 Bed 2
-
-3 nights
-
-<br><br>
-
-
-#1025
-
-John Smith
-
-Private Room
-
-2 nights
 
 
 </div>
 
 
 </section>
-
 
 
 
@@ -840,10 +708,12 @@ Private Room
 <h1>Rooms</h1>
 
 
+
 <div class="cards">
 
 
 <div class="card">
+
 
 <h2>Dorm 1</h2>
 
@@ -858,12 +728,9 @@ Private Room
 
 🟡 Bed 3 Cleaning
 
-<br><br>
-
-🔴 Bed 4 Blocked
-
 
 </div>
+
 
 
 
@@ -873,15 +740,21 @@ Private Room
 <h2>Dorm 4</h2>
 
 
-🔵 Bed 1 Maria
+🔵 Maria
 
 <br><br>
 
-🟡 Bed 2 Cleaning
+🟡 Cleaning
+
 
 <br><br>
 
-🟢 Bed 3 Available
+
+<button class="action" onclick="checkout()">
+
+Checkout Complete
+
+</button>
 
 
 </div>
@@ -891,66 +764,17 @@ Private Room
 <div class="card">
 
 
-<h2>Private Rooms</h2>
+<h2>Blocked Beds</h2>
 
 
-Room 1
+🔴 Bed 4
 
-🟢 Ready
+<br>
 
-
-<br><br>
-
-
-Room 2
-
-🔧 Maintenance
-
+Broken ladder
 
 
 </div>
-
-
-
-</div>
-
-
-
-
-<br>
-
-
-
-
-<div class="card">
-
-
-<h2>Room Actions</h2>
-
-
-Checkout completed
-
-
-<br>
-
-
-↓
-
-<br>
-
-
-Cleaning task created
-
-
-<br>
-
-
-↓
-
-<br>
-
-
-Room available
 
 
 
@@ -974,8 +798,8 @@ Room available
 <h1>Guests CRM</h1>
 
 
-<div class="cards">
 
+<div class="cards">
 
 
 <div class="card">
@@ -984,13 +808,11 @@ Room available
 <h2>Maria Silva</h2>
 
 
-Country: Brazil
+Brazil
 
 
 <br><br>
 
-
-Room:
 
 Dorm 4 Bed 2
 
@@ -1007,19 +829,15 @@ Late arrival
 <br><br>
 
 
-<button>
+<button class="action">
+
 Move Room
-</button>
 
-
-<button>
-Checkout
 </button>
 
 
 
 </div>
-
 
 
 
@@ -1027,34 +845,24 @@ Checkout
 <div class="card">
 
 
-<h2>Guest Actions</h2>
+<h2>Guest History</h2>
 
 
-Move Bed
-
-<br><br>
-
-
-Move Room
+Previous stays
 
 <br><br>
 
-
-Add Note
+Notes
 
 <br><br>
 
-
-View History
-
+Documents
 
 
 </div>
 
 
-
 </div>
-
 
 
 </section>
@@ -1084,27 +892,20 @@ View History
 <h2>🧹 Housekeeping</h2>
 
 
-Cleaning Queue:
-
-
-<br><br>
-
-
 Dorm 4 Bed 2
 
 
 <br>
 
-Assigned: Maria
+Waiting cleaning
 
 
 <br><br>
 
 
-Status:
+Assigned:
 
-🟡 Waiting
-
+Maria
 
 
 </div>
@@ -1121,19 +922,16 @@ Status:
 
 Broken shower
 
-<br>
-
-Room 3
-
-
 <br><br>
 
 
 Broken bed
 
-<br>
 
-Dorm 2
+<br><br>
+
+
+Electrical issue
 
 
 </div>
@@ -1148,15 +946,10 @@ Dorm 2
 <h2>📖 Shift Handover</h2>
 
 
-Previous shift:
-
+Need toilet paper
 
 <br><br>
 
-
-Need toilet paper
-
-<br>
 
 Guest requested blanket
 
@@ -1179,9 +972,7 @@ Noise complaint
 <br><br>
 
 
-Lost & Found
-
-Phone charger
+Lost phone charger
 
 
 </div>
@@ -1204,34 +995,7 @@ Phone charger
 
 <div class="card">
 
-
-<h2>📦 Morning Inventory Check</h2>
-
-
-Deadline:
-
-<br>
-
-⏰ Before 12:00
-
-
-<br><br>
-
-
-Updated by:
-
-Maria
-
-
-</div>
-
-
-
-
-<div class="card">
-
-
-<h2>☕ Breakfast Stock</h2>
+<h2>☕ Breakfast Inventory</h2>
 
 
 Coffee 🟢
@@ -1256,8 +1020,7 @@ Sugar 🟢
 
 <div class="card">
 
-
-<h2>🧹 Cleaning Supplies</h2>
+<h2>🧻 Guest Supplies</h2>
 
 
 Toilet Paper 🔴
@@ -1268,7 +1031,7 @@ Soap 🟢
 
 <br><br>
 
-Trash Bags 🟡
+Towels 🟢
 
 
 </div>
@@ -1278,34 +1041,24 @@ Trash Bags 🟡
 
 <div class="card">
 
+<h2>🧹 Cleaning</h2>
 
-<h2>🧴 Guest Supplies</h2>
 
-
-Towels 🟢
-
-<br><br>
-
-Shampoo 🟡
+Trash Bags 🟡
 
 <br><br>
 
-Blankets 🟢
+Floor Cleaner 🟢
 
 
 </div>
 
 
-
 </div>
-
-
 
 
 
 <br>
-
-
 
 
 
@@ -1315,35 +1068,31 @@ Blankets 🟢
 <h2>🛒 Shopping List</h2>
 
 
+<div id="shopping">
+
+
 ☐ Milk
 
-
 <br><br>
-
 
 ☐ Bread
 
-
 <br><br>
-
 
 ☐ Toilet Paper
 
 
-<br><br>
+</div>
 
 
-☐ Cleaning Product
+<br>
 
 
+<button class="action" onclick="purchase()">
 
-<br><br>
+Mark Purchased
 
-
-Status:
-
-Waiting Purchase
-
+</button>
 
 
 </div>
@@ -1366,38 +1115,63 @@ Waiting Purchase
 <h1>Schedule</h1>
 
 
-
 <div class="cards">
 
 
-
 <div class="card">
 
 
-<h2>Monday</h2>
+<h2>Morning Shift</h2>
 
 
 08:00 - 16:00
 
 
-<br>
+<br><br>
+
 
 Maria
-
-Housekeeping
 
 
 <br><br>
 
 
+☑ Inventory
+
+<br>
+
+☑ Breakfast
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h2>Afternoon Shift</h2>
+
+
 16:00 - 00:00
 
 
-<br>
+<br><br>
+
 
 Jorge
 
-Reception
+
+<br><br>
+
+
+☑ Check-ins
+
+<br>
+
+☐ Handover
 
 
 </div>
@@ -1409,60 +1183,16 @@ Reception
 <div class="card">
 
 
-<h2>Tuesday</h2>
+<h2>Night Shift</h2>
 
 
-08:00 - 16:00
-
-
-<br>
-
-Maria
+00:00 - 08:00
 
 
 <br><br>
 
 
-16:00 - 00:00
-
-
-<br>
-
-John
-
-
-</div>
-
-
-
-
-
-<div class="card">
-
-
-<h2>Shift Checklist</h2>
-
-
-☐ Inventory check
-
-
-<br>
-
-
-☐ Breakfast review
-
-
-<br>
-
-
-☐ Arrivals checked
-
-
-<br>
-
-
-☐ Handover completed
-
+João
 
 
 </div>
@@ -1491,14 +1221,11 @@ John
 <div class="cards">
 
 
-
 <div class="card">
 
 
-<h2>👤 Jorge</h2>
+<h2>Jorge</h2>
 
-
-Role:
 
 Owner
 
@@ -1506,18 +1233,7 @@ Owner
 <br><br>
 
 
-Status:
-
 🟢 Online
-
-
-<br><br>
-
-
-Access:
-
-Full
-
 
 
 </div>
@@ -1525,14 +1241,11 @@ Full
 
 
 
-
 <div class="card">
 
 
-<h2>👩 Maria</h2>
+<h2>Maria</h2>
 
-
-Role:
 
 Housekeeping
 
@@ -1545,43 +1258,14 @@ Tasks:
 6
 
 
-<br><br>
-
+<br>
 
 Completed:
 
 4
 
 
-
 </div>
-
-
-
-
-
-<div class="card">
-
-
-<h2>👨 João</h2>
-
-
-Role:
-
-Reception
-
-
-<br><br>
-
-
-Shift:
-
-16:00-00:00
-
-
-
-</div>
-
 
 
 
@@ -1594,11 +1278,9 @@ Shift:
 
 11:22
 
-
 <br>
 
-
-Maria updated inventory
+Inventory updated
 
 
 <br><br>
@@ -1606,16 +1288,12 @@ Maria updated inventory
 
 10:50
 
-
 <br>
 
-
-Room 3 maintenance created
-
+Maintenance created
 
 
 </div>
-
 
 
 </div>
@@ -1647,13 +1325,13 @@ Room 3 maintenance created
 <br><br>
 
 
-🔧 Maintenance pending
+📦 Low stock alert
 
 
 <br><br>
 
 
-📦 Supply alert
+🔧 Maintenance pending
 
 
 <br><br>
@@ -1682,9 +1360,7 @@ Room 3 maintenance created
 <h1>Settings</h1>
 
 
-
 <div class="cards">
-
 
 
 <div class="card">
@@ -1708,19 +1384,15 @@ Pro
 
 
 
-
-
 <div class="card">
 
 
 <h2>Users</h2>
 
 
-Manage employees
-
+Create employees
 
 <br><br>
-
 
 Permissions
 
@@ -1728,42 +1400,33 @@ Permissions
 </div>
 
 
-
-
-
-<div class="card">
-
-
-<h2>Language</h2>
-
-
-PT
-
-
-<br>
-
-EN
-
-
-<br>
-
-ES
-
-
-
 </div>
 
-
-</div>
 
 
 </section>
 
+
+
+
+
+</div>
+
+</div>
+
+
+
+
+
 <script>
 
 
-const sidebar = document.getElementById("sidebar");
-const overlay = document.getElementById("overlay");
+const sidebar =
+document.getElementById("sidebar");
+
+
+const overlay =
+document.getElementById("overlay");
 
 
 
@@ -1778,7 +1441,7 @@ overlay.classList.toggle("show");
 
 
 
-overlay.onclick = function(){
+overlay.onclick=function(){
 
 sidebar.classList.remove("open");
 
@@ -1790,36 +1453,26 @@ overlay.classList.remove("show");
 
 
 
-function openPage(page, button){
+
+function openPage(page,btn){
 
 
-let pages = document.querySelectorAll(".page");
-
-
-pages.forEach(p=>{
-
-p.classList.remove("active");
-
-});
+document.querySelectorAll(".page")
+.forEach(p=>p.classList.remove("active"));
 
 
 
-document.getElementById(page).classList.add("active");
+document.getElementById(page)
+.classList.add("active");
 
 
 
-let buttons = document.querySelectorAll(".menu button");
-
-
-buttons.forEach(b=>{
-
-b.classList.remove("active");
-
-});
+document.querySelectorAll(".menu button")
+.forEach(b=>b.classList.remove("active"));
 
 
 
-button.classList.add("active");
+btn.classList.add("active");
 
 
 
@@ -1835,39 +1488,59 @@ overlay.classList.remove("show");
 
 
 
-function updateTime(){
+
+function updateClock(){
 
 
-let now = new Date();
+let now=new Date();
 
 
-let time =
+document.getElementById("clock")
+.innerHTML=
 
-now.toLocaleTimeString([], {
-
+now.toLocaleTimeString([],{
 hour:"2-digit",
-
 minute:"2-digit"
-
 });
 
 
+}
 
-document.getElementById("topTime").innerHTML=time;
 
-document.getElementById("sideTime").innerHTML=time;
+setInterval(updateClock,1000);
 
+updateClock();
+
+
+
+
+
+
+
+function checkout(){
+
+
+alert(
+"Checkout completed ✅\nCleaning task created 🧹"
+);
 
 
 }
 
 
 
-setInterval(updateTime,1000);
-
-updateTime();
 
 
+function purchase(){
+
+
+document.getElementById("shopping")
+.innerHTML=
+
+"Purchased ✅<br><br>Waiting restock";
+
+
+}
 
 
 
@@ -1875,31 +1548,73 @@ updateTime();
 
 
 
-// Swipe close menu
+const translations={
 
 
-let startX = 0;
+pt:{
+
+welcome:"Bom dia, Jorge 👋"
+
+},
 
 
-document.addEventListener("touchstart", e=>{
+en:{
+
+welcome:"Good morning, Jorge 👋"
+
+},
 
 
-startX = e.touches[0].clientX;
+es:{
 
+welcome:"Buenos días, Jorge 👋"
+
+}
+
+
+};
+
+
+
+
+
+function changeLang(lang){
+
+
+document.getElementById("welcome")
+.innerHTML=
+
+translations[lang].welcome;
+
+
+}
+
+
+
+
+
+let startX=0;
+
+
+
+document.addEventListener(
+"touchstart",
+e=>{
+
+startX=e.touches[0].clientX;
 
 });
 
 
 
+document.addEventListener(
+"touchmove",
+e=>{
 
-document.addEventListener("touchmove", e=>{
+let move=e.touches[0].clientX;
 
 
-let moveX = e.touches[0].clientX;
-
-
-if(startX - moveX > 100){
-
+if(startX-move>100){
 
 sidebar.classList.remove("open");
 
@@ -1909,46 +1624,12 @@ overlay.classList.remove("show");
 }
 
 
-
 });
-
-
-
-
-
-
-
-
-
-// Demo language switch
-
-
-document.querySelectorAll(".lang span").forEach(item=>{
-
-
-item.onclick=function(){
-
-
-let lang=item.innerHTML;
-
-
-alert("Language changed to: "+lang);
-
-
-}
-
-
-});
-
-
-
-
 
 
 
 
 </script>
-
 
 
 </body>
