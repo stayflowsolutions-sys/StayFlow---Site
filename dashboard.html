@@ -12,6 +12,7 @@
 
 <style>
 
+
 *{
 margin:0;
 padding:0;
@@ -32,25 +33,11 @@ font-family:Arial,Helvetica,sans-serif;
 
 
 
-.topbar{
-
-background:#0d0f14;
-
-border-bottom:1px solid #1b2535;
-
-padding:16px 30px;
+.app{
 
 display:flex;
 
-justify-content:space-between;
-
-align-items:center;
-
-position:sticky;
-
-top:0;
-
-z-index:50;
+min-height:100vh;
 
 }
 
@@ -58,7 +45,35 @@ z-index:50;
 
 
 
-.brand{
+
+
+.sidebar{
+
+width:260px;
+
+background:#0b0d12;
+
+border-right:1px solid #1b2535;
+
+padding:25px 18px;
+
+display:flex;
+
+flex-direction:column;
+
+justify-content:space-between;
+
+position:fixed;
+
+height:100vh;
+
+}
+
+
+
+
+
+.logo{
 
 display:flex;
 
@@ -66,15 +81,17 @@ align-items:center;
 
 gap:12px;
 
+margin-bottom:35px;
+
 }
 
 
 
-.brand img{
+.logo img{
 
-width:46px;
+width:45px;
 
-height:46px;
+height:45px;
 
 object-fit:contain;
 
@@ -82,11 +99,9 @@ object-fit:contain;
 
 
 
+.logo-text{
 
-
-.brand-name{
-
-font-size:28px;
+font-size:26px;
 
 font-weight:800;
 
@@ -94,7 +109,7 @@ font-weight:800;
 
 
 
-.brand-name span{
+.logo-text span{
 
 color:#0D6EFD;
 
@@ -104,13 +119,131 @@ color:#0D6EFD;
 
 
 
-.top-actions{
+
+.nav button{
+
+width:100%;
+
+background:transparent;
+
+border:none;
+
+color:#9ba3b2;
+
+padding:14px;
+
+text-align:left;
+
+border-radius:15px;
+
+cursor:pointer;
+
+margin-bottom:5px;
+
+font-size:15px;
+
+}
+
+
+
+
+
+.nav button:hover,
+.nav button.active{
+
+background:#0D6EFD;
+
+color:white;
+
+}
+
+
+
+
+
+
+
+.user-box{
+
+border:1px solid #1b2535;
+
+background:#050505;
+
+border-radius:20px;
+
+padding:15px;
+
+}
+
+
+
+.user-name{
+
+font-weight:bold;
+
+}
+
+
+
+.user-role{
+
+color:#9ba3b2;
+
+font-size:13px;
+
+}
+
+
+
+
+
+.online{
+
+color:#00d26a;
+
+font-size:13px;
+
+}
+
+
+
+
+
+
+
+.main{
+
+margin-left:260px;
+
+width:calc(100% - 260px);
+
+}
+
+
+
+
+
+.topbar{
+
+height:75px;
+
+background:#0b0d12;
+
+border-bottom:1px solid #1b2535;
 
 display:flex;
 
 align-items:center;
 
-gap:12px;
+justify-content:space-between;
+
+padding:0 30px;
+
+position:sticky;
+
+top:0;
+
+z-index:20;
 
 }
 
@@ -126,63 +259,41 @@ border:1px solid #1b2535;
 
 color:white;
 
-padding:11px 15px;
+padding:12px 18px;
 
 border-radius:20px;
 
-outline:none;
-
-width:180px;
+width:230px;
 
 }
 
 
 
 
+.top-actions{
+
+display:flex;
+
+align-items:center;
+
+gap:15px;
+
+}
 
 
-.notification{
+
+
+.icon{
 
 background:#111827;
 
-padding:10px 14px;
+padding:12px;
 
-border-radius:20px;
+border-radius:50%;
 
 cursor:pointer;
 
 }
-
-
-
-
-.count{
-
-background:#0D6EFD;
-
-border-radius:50%;
-
-padding:2px 7px;
-
-font-size:12px;
-
-}
-
-
-
-
-
-
-
-.status{
-
-color:#00d26a;
-
-font-size:14px;
-
-}
-
-
 
 
 
@@ -192,11 +303,11 @@ font-size:14px;
 
 background:#0D6EFD;
 
-color:white;
-
 border:none;
 
-padding:12px 20px;
+color:white;
+
+padding:13px 20px;
 
 border-radius:22px;
 
@@ -218,62 +329,12 @@ color:white;
 
 border:none;
 
-padding:10px 15px;
-
-border-radius:20px;
-
-}
-
-
-
-
-
-.menu{
-
-display:flex;
-
-gap:10px;
-
-padding:20px 30px;
-
-background:#050505;
-
-overflow-x:auto;
-
-}
-
-
-
-
-
-.menu button{
-
-background:#0d0f14;
-
-border:1px solid #1b2535;
-
-color:#9ba3b2;
-
-padding:12px 18px;
+padding:10px;
 
 border-radius:15px;
 
-cursor:pointer;
-
-white-space:nowrap;
-
 }
 
-
-
-
-.menu button.active{
-
-background:#0D6EFD;
-
-color:white;
-
-}
 
 
 
@@ -303,8 +364,6 @@ display:block;
 
 
 
-
-
 h1{
 
 margin-bottom:10px;
@@ -320,10 +379,6 @@ color:#9ba3b2;
 margin-bottom:25px;
 
 }
-
-
-
-
 
 .cards{
 
@@ -341,7 +396,7 @@ gap:20px;
 
 .card{
 
-background:#0d0f14;
+background:#0b0d12;
 
 border:1px solid #1b2535;
 
@@ -350,6 +405,7 @@ border-radius:25px;
 padding:25px;
 
 }
+
 
 
 
@@ -365,11 +421,16 @@ margin-top:10px;
 
 }
 
+
+
+
+
+
 .inbox-layout{
 
 display:grid;
 
-grid-template-columns:320px 1fr;
+grid-template-columns:300px 1fr 260px;
 
 gap:20px;
 
@@ -381,7 +442,7 @@ gap:20px;
 
 .panel{
 
-background:#0d0f14;
+background:#0b0d12;
 
 border:1px solid #1b2535;
 
@@ -397,13 +458,14 @@ padding:20px;
 
 .conversation{
 
-padding:18px;
+padding:15px;
 
 border-bottom:1px solid #1b2535;
 
 cursor:pointer;
 
 }
+
 
 
 
@@ -415,33 +477,25 @@ background:#111827;
 
 
 
-.badge{
-
-color:#00d26a;
-
-font-size:12px;
-
-}
-
-
-
 
 
 .chat{
 
-background:#0d0f14;
+background:#0b0d12;
 
 border:1px solid #1b2535;
 
 border-radius:25px;
 
-min-height:450px;
+min-height:500px;
 
 display:flex;
 
 flex-direction:column;
 
 }
+
+
 
 
 
@@ -455,26 +509,8 @@ display:flex;
 
 justify-content:space-between;
 
-align-items:center;
-
 }
 
-
-
-
-.takeover{
-
-background:#0D6EFD;
-
-border:none;
-
-color:white;
-
-padding:10px 18px;
-
-border-radius:20px;
-
-}
 
 
 
@@ -483,13 +519,15 @@ border-radius:20px;
 
 padding:14px;
 
+margin:15px;
+
 border-radius:18px;
 
 max-width:70%;
 
-margin:15px;
-
 }
+
+
 
 
 
@@ -514,71 +552,9 @@ margin-left:auto;
 
 
 
-.reservation-tools{
+.profile-line{
 
-display:flex;
-
-gap:12px;
-
-flex-wrap:wrap;
-
-margin-bottom:20px;
-
-}
-
-
-
-
-.reservation-tools input,
-.reservation-tools select{
-
-background:#0d0f14;
-
-border:1px solid #1b2535;
-
-color:white;
-
-padding:12px;
-
-border-radius:15px;
-
-}
-
-
-
-
-
-table{
-
-width:100%;
-
-background:#0d0f14;
-
-border-radius:20px;
-
-border-collapse:collapse;
-
-overflow:hidden;
-
-}
-
-
-
-
-th,
-td{
-
-padding:16px;
-
-border-bottom:1px solid #1b2535;
-
-text-align:left;
-
-}
-
-
-
-th{
+margin:15px 0;
 
 color:#9ba3b2;
 
@@ -586,181 +562,193 @@ color:#9ba3b2;
 
 
 
-
-
-.confirmed{
-
-color:#00d26a;
-
-}
-
-
-
-.pending{
-
-color:#ffd166;
-
-}
-
-
-
-
-
-
-
-.modal{
-
-display:none;
-
-position:fixed;
-
-inset:0;
-
-background:rgba(0,0,0,.75);
-
-align-items:center;
-
-justify-content:center;
-
-z-index:100;
-
-}
-
-
-
-
-
-.modal-box{
-
-background:#0d0f14;
-
-border:1px solid #1b2535;
-
-border-radius:25px;
-
-padding:30px;
-
-width:380px;
-
-display:flex;
-
-flex-direction:column;
-
-gap:14px;
-
-}
-
-
-
-
-
-.modal-box input,
-.modal-box select{
-
-background:#050505;
+.profile-line b{
 
 color:white;
 
-border:1px solid #1b2535;
-
-padding:12px;
-
-border-radius:15px;
-
 }
 
 
 
 
+.tag{
 
-.modal-actions{
-
-display:flex;
-
-gap:10px;
-
-}
-
-
-
-.cancel-btn{
+display:inline-block;
 
 background:#111827;
 
-color:white;
-
-border:1px solid #1b2535;
-
-padding:12px 18px;
+padding:7px 12px;
 
 border-radius:20px;
 
-}
+margin:5px;
 
-
-
-
-
-
-@media(max-width:800px){
-
-
-.topbar{
-
-flex-direction:column;
-
-gap:15px;
-
-align-items:flex-start;
+font-size:13px;
 
 }
 
 
-
-.inbox-layout{
-
-grid-template-columns:1fr;
-
-}
-
-
-.content{
-
-padding:20px;
-
-}
-
-
-
-.search{
-
-width:140px;
-
-}
-
-
-}
 
 </style>
 
 </head>
 
 
+
+
+
 <body>
+
+
+<div class="app">
+
+
+
+
+
+
+<aside class="sidebar">
+
+
+
+<div>
+
+
+<div class="logo">
+
+
+<img src="IMG_3520.png">
+
+
+<div class="logo-text">
+Stay<span>Flow</span>
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="nav">
+
+
+<button class="active" onclick="openPage('dashboard',this)">
+🏠 Dashboard
+</button>
+
+
+<button onclick="openPage('inbox',this)">
+💬 Inbox
+</button>
+
+
+<button onclick="openPage('reservations',this)">
+🛏 Reservations
+</button>
+
+
+<button onclick="openPage('roommap',this)">
+🗺 Room Map
+</button>
+
+
+<button onclick="openPage('guests',this)">
+👤 Guests
+</button>
+
+
+<button onclick="openPage('tasks',this)">
+✅ Tasks
+</button>
+
+
+<button onclick="openPage('ai',this)">
+🤖 AI Knowledge
+</button>
+
+
+<button onclick="openPage('stats',this)">
+📊 BI Analytics
+</button>
+
+
+<button onclick="openPage('team',this)">
+👥 Team
+</button>
+
+
+<button onclick="openPage('settings',this)">
+⚙ Settings
+</button>
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+<div class="user-box">
+
+
+<div class="user-name">
+
+Carlos
+
+</div>
+
+
+<div class="user-role">
+
+Reception
+
+</div>
+
+
+<div class="online">
+
+● Online
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+</aside>
+
+
+
+
+
+
+
+
+
+<div class="main">
+
+
+
+
 
 <header class="topbar">
 
 
-
-<div class="brand">
-
-<img src="IMG_3520.png">
-
-<div class="brand-name">
-Stay<span>Flow</span>
-</div>
-
-</div>
+<input class="search" placeholder="Search...">
 
 
 
@@ -769,21 +757,13 @@ Stay<span>Flow</span>
 <div class="top-actions">
 
 
-<input class="search" placeholder="Search...">
-
-
-
-<div class="notification">
-
-🔔 <span class="count">3</span>
-
+<div class="icon">
+🔔
 </div>
 
 
 
-
-
-<button class="new-btn" onclick="openReservation()">
+<button class="new-btn">
 
 + New Reservation
 
@@ -791,17 +771,7 @@ Stay<span>Flow</span>
 
 
 
-
-<div class="status">
-
-● AI Online
-
-</div>
-
-
-
-
-<select id="language" onchange="changeLanguage()">
+<select onchange="changeLanguage()" id="language">
 
 <option>
 English
@@ -824,48 +794,7 @@ Português
 
 
 
-
-
-
 </header>
-
-
-
-
-
-
-
-<nav class="menu">
-
-
-
-<button class="active" onclick="openTab('dashboard',this)">
-Dashboard
-</button>
-
-
-<button onclick="openTab('inbox',this)">
-Inbox
-</button>
-
-
-<button onclick="openTab('reservations',this)">
-Reservations
-</button>
-
-
-<button onclick="openTab('statistics',this)">
-Statistics
-</button>
-
-
-<button onclick="openTab('settings',this)">
-Settings
-</button>
-
-
-
-</nav>
 
 
 
@@ -879,12 +808,16 @@ Settings
 
 
 
+
 <section id="dashboard" class="page active">
+
 
 
 <h1>
 Dashboard
 </h1>
+
+
 
 <p class="subtitle">
 StayFlow overview
@@ -892,28 +825,33 @@ StayFlow overview
 
 
 
+
+
 <div class="cards">
 
 
-<div class="card">
-
-Messages
-
-<div class="value">
-24
-</div>
-
-</div>
-
-
 
 <div class="card">
 
-Reservations
+Check-ins Today
 
 <div class="value">
-42
+4
 </div>
+
+
+</div>
+
+
+
+<div class="card">
+
+Check-outs
+
+<div class="value">
+2
+</div>
+
 
 </div>
 
@@ -927,11 +865,29 @@ Occupancy
 82%
 </div>
 
+
+</div>
+
+
+
+<div class="card">
+
+AI Solved
+
+<div class="value">
+85%
+</div>
+
+
 </div>
 
 
 
+
 </div>
+
+
+
 
 
 </section>
@@ -941,10 +897,8 @@ Occupancy
 
 
 
-
-
-
 <section id="inbox" class="page">
+
 
 
 <h1>
@@ -959,6 +913,7 @@ Guest conversations
 
 
 
+
 <div class="inbox-layout">
 
 
@@ -966,43 +921,27 @@ Guest conversations
 <div class="panel">
 
 
+
 <div class="conversation">
 
-<b>Maria</b>
-
-<br>
-
-Argentina · Dorm 4 Bed 2
+<b>Maria 🇦🇷</b>
 
 <br>
 
 Availability?
-
-<span class="badge">
-AI
-</span>
 
 </div>
 
 
 
 
-
 <div class="conversation">
 
-<b>John</b>
-
-<br>
-
-USA · Private Room
+<b>John 🇺🇸</b>
 
 <br>
 
 Transfer?
-
-<span class="badge">
-AI
-</span>
 
 </div>
 
@@ -1019,15 +958,14 @@ AI
 <div class="chat">
 
 
+
 <div class="chat-header">
 
 
-<h3>
-Maria
-</h3>
+<b>Maria</b>
 
 
-<button class="takeover">
+<button class="new-btn">
 Take Over
 </button>
 
@@ -1037,16 +975,81 @@ Take Over
 
 
 
-<div>
 
 
 <div class="message guest">
-Hi, do you have a bed?
+
+Hi, do you have beds available?
+
 </div>
+
 
 
 <div class="message ai">
+
 Yes, I can help you.
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+
+<div class="panel">
+
+
+
+<h3>
+Guest
+</h3>
+
+
+
+<div class="profile-line">
+
+Country:
+<b>Argentina</b>
+
+</div>
+
+
+
+<div class="profile-line">
+
+Language:
+<b>Spanish</b>
+
+</div>
+
+
+
+<div class="profile-line">
+
+Room:
+<b>Dorm 4</b>
+
+</div>
+
+
+
+<div class="profile-line">
+
+Bed:
+<b>2</b>
+
+</div>
+
+
+
+
+<div class="tag">
+Returning guest
 </div>
 
 
@@ -1054,27 +1057,21 @@ Yes, I can help you.
 </div>
 
 
+
+
+
+
 </div>
 
 
 
 
-
-</div>
 
 
 
 </section>
 
-
-
-
-
-
-
-
 <section id="reservations" class="page">
-
 
 
 <h1>
@@ -1090,46 +1087,43 @@ Booking management
 
 
 
-<div class="reservation-tools">
+<div class="cards">
 
 
-<input placeholder="Search guest">
 
+<div class="card">
 
-<select>
-
-<option>
-All Status
-</option>
-
-<option>
 Confirmed
-</option>
 
-<option>
+<div class="value">
+38
+</div>
+
+</div>
+
+
+
+<div class="card">
+
 Pending
-</option>
 
-</select>
+<div class="value">
+4
+</div>
 
-
-
-<select>
-
-<option>
-Payment
-</option>
-
-<option>
-Card
-</option>
-
-<option>
-Cash
-</option>
+</div>
 
 
-</select>
+
+<div class="card">
+
+Revenue
+
+<div class="value">
+$4.850
+</div>
+
+</div>
 
 
 
@@ -1139,19 +1133,16 @@ Cash
 
 
 
-
-
-<table>
+<table style="width:100%;margin-top:25px;background:#0b0d12;border-radius:20px;padding:20px;">
 
 
 <tr>
 
 <th>Guest</th>
-<th>Country</th>
 <th>Room</th>
-<th>Dates</th>
-<th>Payment</th>
+<th>Bed</th>
 <th>Status</th>
+<th>Action</th>
 
 
 </tr>
@@ -1161,24 +1152,43 @@ Cash
 
 <tr>
 
-<td>Carlos</td>
+<td>Maria</td>
 
-<td>Argentina</td>
+<td>Dorm 4</td>
 
-<td>Dorm 2</td>
+<td>Bed 2</td>
 
-<td>21-25 Jun</td>
-
-<td>Card</td>
-
-<td class="confirmed">
+<td class="online">
 Confirmed
+</td>
+
+<td>
+✏️
 </td>
 
 
 </tr>
 
 
+
+
+<tr>
+
+<td>John</td>
+
+<td>Private</td>
+
+<td>-</td>
+
+<td>
+Pending
+</td>
+
+<td>
+✏️
+</td>
+
+</tr>
 
 
 </table>
@@ -1196,12 +1206,281 @@ Confirmed
 
 
 
-<section id="statistics" class="page">
+<section id="roommap" class="page">
 
 
 <h1>
-Statistics
+Room Map
 </h1>
+
+
+<p class="subtitle">
+Bed availability
+</p>
+
+
+
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+
+<h3>
+Dorm 4
+</h3>
+
+
+<br>
+
+
+🟢 Bed 1 Available
+
+<br><br>
+
+🔴 Bed 2 Maria
+
+<br><br>
+
+🟢 Bed 3 Available
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h3>
+Dorm 5
+</h3>
+
+
+<br>
+
+
+🔴 Bed 1 Carlos
+
+
+<br><br>
+
+🟢 Bed 2 Available
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="guests" class="page">
+
+
+
+<h1>
+Guests
+</h1>
+
+
+<p class="subtitle">
+Guest management
+</p>
+
+
+
+
+
+
+<div class="panel">
+
+
+
+<h3>
+Maria Silva
+</h3>
+
+
+
+<div class="profile-line">
+
+Country:
+<b>Argentina</b>
+
+</div>
+
+
+
+<div class="profile-line">
+
+Stays:
+<b>3</b>
+
+</div>
+
+
+
+<div class="profile-line">
+
+Total spent:
+<b>$450</b>
+
+</div>
+
+
+
+
+<button class="new-btn">
+
+Edit Stay
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="tasks" class="page">
+
+
+<h1>
+Tasks
+</h1>
+
+
+<p class="subtitle">
+Reception tasks
+</p>
+
+
+
+
+
+<div class="panel">
+
+
+☐ Confirm payment Maria
+
+
+<br><br>
+
+
+☐ Prepare check-in John
+
+
+<br><br>
+
+
+☐ Check room 5
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<div id="reservationModal" class="modal">
+
+
+<div class="panel">
+
+
+<h2>
+New Reservation
+</h2>
+
+
+<br>
+
+
+<input class="search" placeholder="Guest name">
+
+
+<input class="search" placeholder="Country">
+
+
+<input class="search" placeholder="Room">
+
+
+<input class="search" placeholder="Dates">
+
+
+
+<button class="new-btn">
+
+Save Reservation
+
+</button>
+
+
+
+</div>
+
+
+
+</div>
+
+<section id="ai" class="page">
+
+
+<h1>
+AI Knowledge
+</h1>
+
+
+<p class="subtitle">
+Train your assistant
+</p>
+
+
 
 
 <div class="cards">
@@ -1209,10 +1488,10 @@ Statistics
 
 <div class="card">
 
-Top Country
+Rooms
 
 <div class="value">
-Argentina
+12
 </div>
 
 </div>
@@ -1221,10 +1500,10 @@ Argentina
 
 <div class="card">
 
-Best Month
+FAQ
 
 <div class="value">
-January
+48
 </div>
 
 </div>
@@ -1233,20 +1512,201 @@ January
 
 <div class="card">
 
-Revenue
+AI Status
 
 <div class="value">
-$0
+ON
 </div>
 
 </div>
 
 
+
 </div>
+
 
 
 
 </section>
+
+
+
+
+
+
+
+
+
+<section id="stats" class="page">
+
+
+<h1>
+BI Analytics
+</h1>
+
+
+<p class="subtitle">
+Business intelligence
+</p>
+
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+Bookings this month
+
+<div class="value">
+120
+</div>
+
+
+</div>
+
+
+
+
+<div class="card">
+
+WhatsApp conversion
+
+<div class="value">
+35%
+</div>
+
+
+</div>
+
+
+
+
+<div class="card">
+
+Top Country
+
+<div class="value">
+Brazil
+</div>
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="team" class="page">
+
+
+<h1>
+Team
+</h1>
+
+
+<p class="subtitle">
+Users, roles and activity
+</p>
+
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+Carlos
+
+<div class="value">
+Reception
+</div>
+
+
+</div>
+
+
+
+
+<div class="card">
+
+Ana
+
+<div class="value">
+Manager
+</div>
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+<br>
+
+
+
+
+<div class="panel">
+
+
+<h3>
+Activity Log
+</h3>
+
+
+<br>
+
+
+14:30 Carlos created reservation Maria
+
+
+<br><br>
+
+
+15:10 Ana changed room
+
+
+<br><br>
+
+
+22:00 Carlos ended shift
+
+
+
+</div>
+
+
+
+
+
+</section>
+
 
 
 
@@ -1263,33 +1723,64 @@ Settings
 </h1>
 
 
+<p class="subtitle">
+System configuration
+</p>
+
+
+
+
+
 <div class="cards">
 
 
+
 <div class="card">
 
-AI Assistant
+Language
+
+<div class="value">
+🌎
+</div>
+
+
+</div>
+
+
+
+
+<div class="card">
+
+Automation
 
 <div class="value">
 ON
 </div>
 
+
 </div>
+
+
 
 
 
 <div class="card">
 
-Human Handoff
+Notifications
 
 <div class="value">
 ON
 </div>
 
+
 </div>
 
 
+
+
+
 </div>
+
 
 
 </section>
@@ -1300,83 +1791,13 @@ ON
 
 
 
+
 </main>
 
-
-
-
-
-
-
-
-<div id="reservationModal" class="modal">
-
-
-
-<div class="modal-box">
-
-
-<h2>
-New Reservation
-</h2>
-
-
-
-<input placeholder="Guest name">
-
-
-<input placeholder="Country">
-
-
-<input placeholder="Room">
-
-
-<input placeholder="Dates">
-
-
-
-<select>
-
-<option>
-Card
-</option>
-
-<option>
-Cash
-</option>
-
-</select>
-
-
-
-
-
-<div class="modal-actions">
-
-
-<button class="new-btn">
-Save
-</button>
-
-
-
-<button class="cancel-btn"
-onclick="closeReservation()">
-
-Cancel
-
-</button>
-
+</div>
 
 </div>
 
-
-
-</div>
-
-
-
-</div>
 
 
 
@@ -1390,11 +1811,18 @@ Cancel
 
 
 
-function openTab(id,btn){
+
+
+function openPage(id,btn){
 
 
 document.querySelectorAll(".page")
-.forEach(p=>p.classList.remove("active"));
+.forEach(page=>{
+
+page.classList.remove("active");
+
+});
+
 
 
 
@@ -1404,34 +1832,24 @@ document.getElementById(id)
 
 
 
-document.querySelectorAll(".menu button")
-.forEach(b=>b.classList.remove("active"));
+
+document.querySelectorAll(".nav button")
+.forEach(button=>{
+
+button.classList.remove("active");
+
+});
 
 
 
 btn.classList.add("active");
 
-}
 
-
-
-
-function openReservation(){
-
-document.getElementById("reservationModal")
-.style.display="flex";
 
 }
 
 
 
-
-function closeReservation(){
-
-document.getElementById("reservationModal")
-.style.display="none";
-
-}
 
 
 
@@ -1439,30 +1857,53 @@ document.getElementById("reservationModal")
 
 function changeLanguage(){
 
+
 let lang =
 document.getElementById("language").value;
 
 
+
 if(lang==="Español"){
+
 
 document.title="StayFlow | Panel";
 
+
 }
 
 
-if(lang==="Português"){
+
+else if(lang==="Português"){
+
 
 document.title="StayFlow | Painel";
 
+
+}
+
+
+
+else{
+
+
+document.title="StayFlow";
+
+
 }
 
 
 }
+
+
+
 
 
 
 
 </script>
+
+
+
 
 
 
