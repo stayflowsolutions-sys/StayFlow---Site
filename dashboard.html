@@ -15,26 +15,22 @@
 
 
 *{
-
 margin:0;
 padding:0;
 box-sizing:border-box;
-
 }
 
 
 
-
-
 body{
-
-min-height:100vh;
 
 background:#050505;
 
 color:white;
 
 font-family:Arial, Helvetica, sans-serif;
+
+min-height:100vh;
 
 }
 
@@ -56,7 +52,6 @@ min-height:100vh;
 
 
 
-
 .sidebar{
 
 background:#0d0f14;
@@ -66,8 +61,6 @@ border-right:1px solid #1b2535;
 padding:30px 20px;
 
 }
-
-
 
 
 
@@ -97,7 +90,6 @@ color:#0D6EFD;
 
 
 
-
 .menu a{
 
 display:block;
@@ -113,8 +105,6 @@ border-radius:14px;
 margin-bottom:10px;
 
 }
-
-
 
 
 
@@ -137,8 +127,6 @@ color:white;
 padding:35px;
 
 }
-
-
 
 
 
@@ -172,17 +160,13 @@ margin-top:8px;
 
 
 
-.ai-status{
+.system-status{
 
 color:#00d26a;
 
 font-size:14px;
 
 }
-
-
-
-
 
 
 
@@ -226,11 +210,12 @@ transition:.2s;
 
 
 
+
 .card:hover{
 
 border-color:#0D6EFD;
 
-transform:translateY(-5px);
+transform:translateY(-4px);
 
 }
 
@@ -260,68 +245,6 @@ color:#0D6EFD;
 
 }
 
- .analytics{
-
-margin-top:40px;
-
-display:grid;
-
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-
-gap:20px;
-
-}
-
-
-
-
-
-
-.analytics-card{
-
-background:#0d0f14;
-
-border:1px solid #1b2535;
-
-border-radius:25px;
-
-padding:25px;
-
-}
-
-
-
-
-
-
-.analytics-title{
-
-color:#9ba3b2;
-
-font-size:14px;
-
-margin-bottom:15px;
-
-}
-
-
-
-
-
-.analytics-value{
-
-font-size:26px;
-
-font-weight:bold;
-
-color:#0D6EFD;
-
-}
-
-
-
-
-
 .activity{
 
 margin-top:40px;
@@ -349,6 +272,7 @@ margin-bottom:20px;
 
 
 
+
 .activity p{
 
 color:#9ba3b2;
@@ -363,7 +287,6 @@ line-height:2;
 
 
 @media(max-width:800px){
-
 
 
 .dashboard-layout{
@@ -382,11 +305,14 @@ display:none;
 
 
 
+
+
 .main{
 
 padding:20px;
 
 }
+
 
 
 
@@ -410,11 +336,12 @@ gap:15px;
 
 </style>
 
-
 </head>
 
 
+
 <body>
+
 
 
 
@@ -425,10 +352,6 @@ gap:15px;
 
 
 
-
-
-
-<!-- SIDEBAR -->
 
 
 
@@ -460,11 +383,13 @@ Dashboard
 
 
 
+
 <a href="inbox.html">
 
 Inbox
 
 </a>
+
 
 
 
@@ -479,9 +404,9 @@ Reservations
 
 
 
-<a href="#">
+<a href="statistics.html">
 
-Guests
+Statistics
 
 </a>
 
@@ -494,7 +419,6 @@ Guests
 Settings
 
 </a>
-
 
 
 
@@ -518,10 +442,6 @@ Settings
 
 
 
-<!-- MAIN -->
-
-
-
 <main class="main">
 
 
@@ -536,21 +456,18 @@ Settings
 <div>
 
 
-
 <h1>
 
-Hostel Dashboard
+Dashboard
 
 </h1>
 
 
-
 <p>
 
-Your StayFlow operations center
+StayFlow hostel overview
 
 </p>
-
 
 
 
@@ -560,7 +477,8 @@ Your StayFlow operations center
 
 
 
-<div class="ai-status">
+
+<div class="system-status">
 
 ● AI Assistant Ready
 
@@ -570,7 +488,10 @@ Your StayFlow operations center
 
 
 
+
+
 </div>
+
 
 
 
@@ -589,7 +510,6 @@ Your StayFlow operations center
 <a class="card" href="inbox.html">
 
 
-
 <div class="card-title">
 
 Messages
@@ -597,16 +517,17 @@ Messages
 </div>
 
 
-
 <div class="card-value">
 
-Inbox
+12
 
 </div>
 
 
 
 </a>
+
+
 
 
 
@@ -618,7 +539,6 @@ Inbox
 <a class="card" href="reservations.html">
 
 
-
 <div class="card-title">
 
 Reservations
@@ -626,10 +546,38 @@ Reservations
 </div>
 
 
+<div class="card-value">
+
+28
+
+</div>
+
+
+
+</a>
+
+
+
+
+
+
+
+
+
+
+<a class="card" href="statistics.html">
+
+
+<div class="card-title">
+
+Statistics
+
+</div>
+
 
 <div class="card-value">
 
-Manage
+View
 
 </div>
 
@@ -648,18 +596,16 @@ Manage
 <div class="card">
 
 
-
 <div class="card-title">
 
-Guests
+Occupancy
 
 </div>
-
 
 
 <div class="card-value">
 
-Soon
+78%
 
 </div>
 
@@ -674,176 +620,7 @@ Soon
 
 
 
-
-<div class="card">
-
-
-
-<div class="card-title">
-
-AI Status
-
 </div>
-
-
-
-<div class="card-value">
-
-Online
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<!-- ANALYTICS -->
-
-
-
-<section class="analytics">
-
-
-
-
-
-
-<div class="analytics-card">
-
-
-
-<div class="analytics-title">
-
-Best Month
-
-</div>
-
-
-
-<div class="analytics-value">
-
-January
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<div class="analytics-card">
-
-
-
-<div class="analytics-title">
-
-Revenue
-
-</div>
-
-
-
-<div class="analytics-value">
-
-$12,450
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<div class="analytics-card">
-
-
-
-<div class="analytics-title">
-
-Top Source
-
-</div>
-
-
-
-<div class="analytics-value">
-
-WhatsApp
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<div class="analytics-card">
-
-
-
-<div class="analytics-title">
-
-Payment
-
-</div>
-
-
-
-<div class="analytics-value">
-
-Card
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-</section>
 
 
 
@@ -869,15 +646,15 @@ Recent Activity
 
 <p>
 
-Reservations and AI conversations will appear here.
+New reservations will appear here.
 
 <br>
 
-Analytics will update from real bookings.
+AI conversations and updates will be tracked here.
 
 <br>
 
-Future: WhatsApp, Booking and Airbnb sync.
+Analytics available in Statistics.
 
 </p>
 
@@ -895,8 +672,8 @@ Future: WhatsApp, Booking and Airbnb sync.
 
 
 
-</main>
 
+</main>
 
 
 
@@ -911,8 +688,6 @@ Future: WhatsApp, Booking and Airbnb sync.
 
 
 
-
 </body>
 
 </html>
-
