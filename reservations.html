@@ -11,6 +11,7 @@
 <title>StayFlow | Reservations</title>
 
 
+
 <style>
 
 
@@ -37,6 +38,7 @@ color:white;
 font-family:Arial, Helvetica, sans-serif;
 
 }
+
 
 
 
@@ -77,7 +79,7 @@ padding:30px 20px;
 
 .logo{
 
-font-size:30px;
+font-size:32px;
 
 font-weight:bold;
 
@@ -100,7 +102,6 @@ color:#0D6EFD;
 
 
 
-
 .menu a{
 
 display:block;
@@ -111,13 +112,11 @@ color:#9ba3b2;
 
 padding:14px;
 
-border-radius:15px;
+border-radius:14px;
 
 margin-bottom:10px;
 
 }
-
-
 
 
 
@@ -136,14 +135,11 @@ color:white;
 
 
 
-
 .main{
 
 padding:35px;
 
 }
-
-
 
 
 
@@ -177,6 +173,8 @@ margin-top:8px;
 
 
 
+
+
 .ai-status{
 
 color:#00d26a;
@@ -184,8 +182,6 @@ color:#00d26a;
 font-size:14px;
 
 }
-
-
 
 
 
@@ -210,13 +206,11 @@ margin-bottom:20px;
 
 display:grid;
 
-grid-template-columns:repeat(6,1fr);
+grid-template-columns:repeat(5,1fr);
 
 gap:20px;
 
 }
-
-
 
 
 
@@ -248,9 +242,10 @@ font-weight:bold;
 
 
 
-.status{
 
-background:#0D6EFD;
+.badge{
+
+display:inline-block;
 
 padding:8px 14px;
 
@@ -258,15 +253,9 @@ border-radius:50px;
 
 font-size:13px;
 
-display:inline-block;
+background:#0D6EFD;
 
 }
-
-
-
-
-
-
 
 @media(max-width:900px){
 
@@ -320,12 +309,22 @@ gap:15px;
 <body>
 
 
+
+
+
 <div class="reservation-layout">
+
+
+
+
+
+
 
 <!-- SIDEBAR -->
 
 
 <aside class="sidebar">
+
 
 
 <div class="logo">
@@ -338,7 +337,10 @@ Stay<span>Flow</span>
 
 
 
+
+
 <nav class="menu">
+
 
 
 <a href="dashboard.html">
@@ -350,11 +352,13 @@ Dashboard
 
 
 
+
 <a href="inbox.html">
 
 Inbox
 
 </a>
+
 
 
 
@@ -380,7 +384,12 @@ Guests
 
 
 
+
 </nav>
+
+
+
+
 
 
 
@@ -397,6 +406,7 @@ Guests
 <!-- MAIN -->
 
 
+
 <main class="main">
 
 
@@ -409,6 +419,8 @@ Guests
 
 <div>
 
+
+
 <h1>
 
 Reservations
@@ -416,11 +428,15 @@ Reservations
 </h1>
 
 
+
+
 <p>
 
-Manage hostel bookings and availability
+Bookings, guests and payments
 
 </p>
+
+
 
 
 </div>
@@ -450,10 +466,12 @@ Manage hostel bookings and availability
 
 
 
-<!-- RESERVATION 1 -->
+<!-- RESERVATION -->
+
 
 
 <div class="reservation-card">
+
 
 
 
@@ -476,6 +494,7 @@ Sarah 🇺🇸
 
 
 </div>
+
 
 
 
@@ -509,6 +528,7 @@ Dorm 6 Beds
 
 
 
+
 <div>
 
 <div class="field-title">
@@ -520,7 +540,7 @@ Bed
 
 <div class="field-value">
 
-Bunk A - Upper
+Bunk A Upper
 
 </div>
 
@@ -538,14 +558,14 @@ Bunk A - Upper
 
 <div class="field-title">
 
-Check-in
+Dates
 
 </div>
 
 
 <div class="field-value">
 
-12 Aug
+12-15 Aug
 
 </div>
 
@@ -563,20 +583,70 @@ Check-in
 
 <div class="field-title">
 
-Check-out
+Source
 
 </div>
 
 
 <div class="field-value">
 
-15 Aug
+WhatsApp
 
 </div>
 
 
 </div>
 
+
+
+
+
+
+
+
+<div>
+
+<div class="field-title">
+
+Payment
+
+</div>
+
+
+<div class="badge">
+
+Paid Card
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div>
+
+<div class="field-title">
+
+Amount
+
+</div>
+
+
+<div class="field-value">
+
+$120
+
+</div>
+
+
+</div>
 
 
 
@@ -593,7 +663,7 @@ Status
 </div>
 
 
-<div class="status">
+<div class="badge">
 
 Confirmed
 
@@ -601,8 +671,6 @@ Confirmed
 
 
 </div>
-
-
 
 
 
@@ -620,6 +688,7 @@ Confirmed
 
 
 <!-- RESERVATION 2 -->
+
 
 
 <div class="reservation-card">
@@ -707,14 +776,14 @@ N/A
 
 <div class="field-title">
 
-Check-in
+Dates
 
 </div>
 
 
 <div class="field-value">
 
-20 Aug
+20-23 Aug
 
 </div>
 
@@ -732,20 +801,69 @@ Check-in
 
 <div class="field-title">
 
-Check-out
+Source
 
 </div>
 
 
 <div class="field-value">
 
-23 Aug
+Booking
 
 </div>
 
 
 </div>
 
+
+
+
+
+
+
+
+<div>
+
+<div class="field-title">
+
+Payment
+
+</div>
+
+
+<div class="badge">
+
+Pending
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+<div>
+
+<div class="field-title">
+
+Amount
+
+</div>
+
+
+<div class="field-value">
+
+$250
+
+</div>
+
+
+</div>
 
 
 
@@ -762,7 +880,7 @@ Status
 </div>
 
 
-<div class="status">
+<div class="badge">
 
 Pending
 
@@ -777,9 +895,7 @@ Pending
 
 
 
-
 </div>
-
 
 
 
@@ -795,11 +911,7 @@ Pending
 
 
 
-
-
 </div>
-
-
 
 
 
