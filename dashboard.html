@@ -8,7 +8,6 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
 <title>StayFlow</title>
 
 
@@ -19,11 +18,9 @@
 
 
 *{
-
 margin:0;
 padding:0;
 box-sizing:border-box;
-
 }
 
 
@@ -60,11 +57,13 @@ background:#090b10;
 
 border-right:1px solid #1b2535;
 
-padding:25px;
-
 transition:.3s;
 
 z-index:1001;
+
+display:flex;
+
+flex-direction:column;
 
 }
 
@@ -75,6 +74,32 @@ z-index:1001;
 left:0;
 
 }
+
+
+
+
+
+
+.sidebar-top{
+
+padding:25px;
+
+}
+
+
+
+.sidebar-menu{
+
+padding:0 25px 30px;
+
+overflow-y:auto;
+
+flex:1;
+
+-webkit-overflow-scrolling:touch;
+
+}
+
 
 
 
@@ -106,18 +131,13 @@ display:block;
 
 
 
-
-
 .logo{
-
 
 font-size:32px;
 
 font-weight:800;
 
 letter-spacing:-1px;
-
-margin-bottom:10px;
 
 }
 
@@ -139,7 +159,7 @@ color:#8b95a7;
 
 font-size:13px;
 
-margin-bottom:25px;
+margin-top:5px;
 
 }
 
@@ -149,6 +169,8 @@ margin-bottom:25px;
 
 .demo{
 
+margin-top:20px;
+
 background:#050505;
 
 border:1px solid #1b2535;
@@ -156,8 +178,6 @@ border:1px solid #1b2535;
 border-radius:18px;
 
 padding:15px;
-
-margin-bottom:20px;
 
 color:#9ba3b2;
 
@@ -168,9 +188,9 @@ color:#9ba3b2;
 
 
 
-
 .profile{
 
+margin-top:15px;
 
 background:#050505;
 
@@ -179,17 +199,6 @@ border:1px solid #1b2535;
 border-radius:20px;
 
 padding:15px;
-
-margin-bottom:25px;
-
-
-}
-
-
-
-.profile strong{
-
-font-size:17px;
 
 }
 
@@ -209,14 +218,13 @@ color:#9ba3b2;
 
 .menu button{
 
-
 width:100%;
 
 padding:13px;
 
-background:none;
+border:0;
 
-border:none;
+background:none;
 
 color:#9ba3b2;
 
@@ -235,10 +243,8 @@ font-family:inherit;
 
 
 
-
 .menu button:hover,
 .menu button.active{
-
 
 background:#0D6EFD;
 
@@ -248,6 +254,20 @@ color:white;
 
 
 
+
+
+
+.sidebar-footer{
+
+padding:20px 25px;
+
+border-top:1px solid #1b2535;
+
+color:#667085;
+
+font-size:12px;
+
+}
 
 
 
@@ -291,6 +311,19 @@ z-index:20;
 
 
 
+.left{
+
+display:flex;
+
+gap:20px;
+
+align-items:center;
+
+}
+
+
+
+
 .menu-icon{
 
 font-size:26px;
@@ -301,14 +334,31 @@ cursor:pointer;
 
 
 
-.actions{
 
+
+
+.date-time{
+
+color:#9ba3b2;
+
+font-size:13px;
+
+line-height:18px;
+
+}
+
+
+
+
+
+
+.actions{
 
 display:flex;
 
-align-items:center;
-
 gap:15px;
+
+align-items:center;
 
 }
 
@@ -323,7 +373,7 @@ border:1px solid #1b2535;
 
 color:white;
 
-padding:12px 16px;
+padding:12px;
 
 border-radius:20px;
 
@@ -331,8 +381,8 @@ border-radius:20px;
 
 
 
-.new-btn{
 
+.new-btn{
 
 background:#0D6EFD;
 
@@ -340,21 +390,15 @@ border:none;
 
 color:white;
 
-padding:13px 20px;
+padding:13px 18px;
 
 border-radius:22px;
 
 cursor:pointer;
 
-font-weight:700;
-
-font-family:inherit;
-
+font-weight:bold;
 
 }
-
-
-
 
 
 
@@ -364,7 +408,6 @@ font-family:inherit;
 padding:30px;
 
 }
-
 
 
 
@@ -394,14 +437,12 @@ grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 
 gap:20px;
 
-
 }
 
 
 
 
 .card{
-
 
 background:#090b10;
 
@@ -416,22 +457,21 @@ padding:25px;
 
 
 
-
 .value{
 
-font-size:32px;
+font-size:30px;
 
 font-weight:800;
 
 color:#0D6EFD;
 
-margin-top:10px;
-
 }
 
 
 
+
 </style>
+
 
 </head>
 
@@ -441,7 +481,14 @@ margin-top:10px;
 <div class="overlay" id="overlay"></div>
 
 
+
+
+
 <div class="sidebar" id="sidebar">
+
+
+
+<div class="sidebar-top">
 
 
 
@@ -460,6 +507,8 @@ AI Hospitality Platform
 
 
 
+
+
 <div class="demo">
 
 🟦 Demo Mode
@@ -473,12 +522,12 @@ Hostel Lagares
 
 
 
-
 <div class="profile">
 
 👤
 
-<br><br>
+<br>
+
 
 <strong>
 
@@ -500,10 +549,17 @@ Owner
 </div>
 
 
+</div>
+
+
+
+
+
+
+<div class="sidebar-menu">
 
 
 <div class="menu">
-
 
 <button class="active" onclick="openPage('home',this)">
 🏠 Home
@@ -543,14 +599,30 @@ Owner
 </div>
 
 
+</div>
+
+
+
+
+<div class="sidebar-footer">
+
+Powered by StayFlow AI
 
 </div>
 
-<div class="main">
+
+
+</div>
+
+  <div class="main">
 
 
 
 <div class="topbar">
+
+
+
+<div class="left">
 
 
 
@@ -563,15 +635,43 @@ Owner
 
 
 
+
+<div class="date-time">
+
+
+Hostel Lagares
+
+
+<br>
+
+
+<span id="liveTime"></span>
+
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
 <div class="actions">
 
 
 <input class="search" placeholder="Search guest">
 
 
-<div>
+
 🔔
-</div>
+
 
 
 
@@ -587,8 +687,9 @@ Owner
 
 
 
-</div>
 
+
+</div>
 
 
 
@@ -625,13 +726,19 @@ Good morning, Jorge 👋
 
 
 
+
+
 <div class="cards">
+
+
 
 
 
 <div class="card">
 
+
 Check-ins Today
+
 
 <div class="value">
 
@@ -639,7 +746,11 @@ Check-ins Today
 
 </div>
 
+
+
 </div>
+
+
 
 
 
@@ -647,7 +758,9 @@ Check-ins Today
 
 <div class="card">
 
+
 Check-outs
+
 
 <div class="value">
 
@@ -655,7 +768,10 @@ Check-outs
 
 </div>
 
+
+
 </div>
+
 
 
 
@@ -664,7 +780,33 @@ Check-outs
 
 <div class="card">
 
+
+Occupancy
+
+
+<div class="value">
+
+18/22
+
+</div>
+
+
+82% occupied
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
 Tasks
+
 
 <div class="value">
 
@@ -672,7 +814,26 @@ Tasks
 
 </div>
 
+
+
 </div>
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<br>
+
+
 
 
 
@@ -681,21 +842,39 @@ Tasks
 
 <div class="card">
 
-Occupancy
 
-<div class="value">
 
-82%
+<h2>
+
+🟢 Live Status
+
+</h2>
+
+
+
+<br>
+
+
+
+🟢 AI Online
+
+
+<br><br>
+
+
+🟢 WhatsApp Connected
+
+
+<br><br>
+
+
+🟢 Staff Online: 3
+
+
 
 </div>
 
-</div>
 
-
-
-
-
-</div>
 
 
 
@@ -712,6 +891,7 @@ Occupancy
 
 
 <div class="card">
+
 
 
 <h2>
@@ -723,6 +903,8 @@ Occupancy
 
 
 <br>
+
+
 
 
 🟡 Dorm 4 waiting cleaning
@@ -748,6 +930,7 @@ Occupancy
 
 
 
+
 </section>
 
 
@@ -761,11 +944,13 @@ Occupancy
 <section id="reservations" class="page">
 
 
+
 <h1>
 
 Reservations
 
 </h1>
+
 
 
 
@@ -775,7 +960,9 @@ Reservations
 
 
 
+
 <div class="card">
+
 
 
 <button class="new-btn">
@@ -810,6 +997,7 @@ Reservations
 <div class="card">
 
 
+
 <h2>
 
 #1024
@@ -817,11 +1005,12 @@ Reservations
 </h2>
 
 
+
 <br>
 
 
-Maria Silva 🇦🇷
 
+Maria Silva 🇦🇷
 
 
 <br><br>
@@ -829,9 +1018,12 @@ Maria Silva 🇦🇷
 
 Dorm 4
 
+
 <br>
 
+
 Bed 2
+
 
 
 <br><br>
@@ -842,10 +1034,9 @@ Check-in:
 Today 14:00
 
 
+
 <br><br>
 
-
-Status:
 
 🟢 Confirmed
 
@@ -860,8 +1051,8 @@ Status:
 
 
 
-
 <div class="card">
+
 
 
 <h2>
@@ -871,7 +1062,9 @@ Status:
 </h2>
 
 
+
 <br>
+
 
 
 John Smith 🇺🇸
@@ -883,18 +1076,62 @@ John Smith 🇺🇸
 Private Room
 
 
+
 <br><br>
 
 
-Payment:
-
-🟡 Pending
+🟡 Payment Pending
 
 
 
 </div>
 
 
+
+
+
+</div>
+
+
+
+
+
+
+<br>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+
+Quick Reservation
+
+</h2>
+
+
+<br>
+
+
+
+• Walk-in guest
+
+
+<br>
+
+
+• WhatsApp booking
+
+
+<br>
+
+
+• Manual booking
 
 
 
@@ -929,6 +1166,7 @@ Rooms
 
 
 
+
 <br>
 
 
@@ -950,19 +1188,9 @@ Dorm 4
 
 
 
-Bed 1
+🟢 Bed 1
 
-🟢 Available
-
-
-
-<br><br>
-
-
-
-Bed 2
-
-🔴 Maria
+Available
 
 
 
@@ -970,9 +1198,9 @@ Bed 2
 
 
 
-Bed 3
+🔴 Bed 2
 
-🟡 Cleaning
+Maria
 
 
 
@@ -980,9 +1208,19 @@ Bed 3
 
 
 
-Bed 4
+🟡 Bed 3
 
-⚫ Maintenance
+Cleaning
+
+
+
+<br><br>
+
+
+
+⚫ Bed 4
+
+Maintenance
 
 
 
@@ -993,9 +1231,7 @@ Bed 4
 
 
 
-
 <br>
-
 
 
 
@@ -1011,7 +1247,9 @@ Private Rooms
 </h2>
 
 
+
 <br>
+
 
 
 Room 1
@@ -1019,7 +1257,9 @@ Room 1
 🟢 Available
 
 
+
 <br><br>
+
 
 
 Room 2
@@ -1058,16 +1298,14 @@ Guests CRM
 
 
 
-
-
 <br>
 
 
 
 
 
-<div class="card">
 
+<div class="card">
 
 
 <h2>
@@ -1078,18 +1316,15 @@ Maria Silva
 
 
 
+
 <br>
 
 
 
-Country:
-
 Argentina 🇦🇷
 
 
-
 <br><br>
-
 
 
 Previous stays:
@@ -1101,7 +1336,6 @@ Previous stays:
 <br><br>
 
 
-
 Current:
 
 Dorm 4 Bed 2
@@ -1109,7 +1343,6 @@ Dorm 4 Bed 2
 
 
 <br><br>
-
 
 
 Notes:
@@ -1124,7 +1357,7 @@ Late arrival
 
 <button class="new-btn">
 
-Edit Guest
+Edit / Move
 
 </button>
 
@@ -1132,52 +1365,6 @@ Edit Guest
 
 </div>
 
-
-
-
-
-
-
-<br>
-
-
-
-
-
-
-
-<div class="card">
-
-
-
-<h2>
-
-Guest History
-
-</h2>
-
-
-
-
-<br>
-
-
-
-⭐ Loyal guest
-
-
-
-<br><br>
-
-
-
-Average stay:
-
-5 nights
-
-
-
-</div>
 
 
 
@@ -1195,9 +1382,7 @@ Operations
 </h1>
 
 
-
 <br>
-
 
 
 
@@ -1213,34 +1398,37 @@ Operations
 </h2>
 
 
+<br>
+
+
+Checkout detected
+
+
+<br>
+
+↓
+
 
 <br>
 
 
-
-New Task
-
+Cleaning task created
 
 
 <br><br>
 
 
 
-Dorm 4
-
-Bed 2
-
+Dorm 4 Bed 2
 
 
 <br>
 
 
-Clean sheets
-
+Sheets + Bathroom
 
 
 <br><br>
-
 
 
 Assigned:
@@ -1248,9 +1436,7 @@ Assigned:
 Maria
 
 
-
 <br><br>
-
 
 
 Status:
@@ -1267,8 +1453,6 @@ Status:
 
 
 
-
-
 <br>
 
 
@@ -1281,7 +1465,7 @@ Status:
 
 <h2>
 
-Workflow
+Tasks Today
 
 </h2>
 
@@ -1290,30 +1474,19 @@ Workflow
 <br>
 
 
+10:30
 
-Checkout
-
-
-<br>
-
-↓
+Maria completed room cleaning
 
 
-<br>
+
+<br><br>
 
 
-Cleaning Task Created
 
+11:00
 
-<br>
-
-↓
-
-
-<br>
-
-
-Bed Available
+Dorm 4 inspection
 
 
 
@@ -1334,6 +1507,7 @@ Bed Available
 
 
 <section id="schedule" class="page">
+
 
 
 <h1>
@@ -1369,6 +1543,7 @@ Weekly Shifts
 Monday
 
 
+
 <br><br>
 
 
@@ -1376,12 +1551,14 @@ Monday
 
 
 <br>
+
 
 Jorge
 
 Reception
 
 
+
 <br><br>
 
 
@@ -1390,6 +1567,7 @@ Reception
 
 
 <br>
+
 
 Maria
 
@@ -1400,74 +1578,17 @@ Housekeeping
 <br><br>
 
 
+
 16:00 - 00:00
 
 
 <br>
 
+
 João
 
 Night Shift
 
-
-
-
-</div>
-
-
-
-
-
-
-
-<br>
-
-
-
-
-
-
-
-<div class="card">
-
-
-<h2>
-
-Create Shift
-
-</h2>
-
-
-
-<br>
-
-
-
-Employee
-
-
-<br>
-
-
-Role
-
-
-<br>
-
-
-Time
-
-
-
-<br><br>
-
-
-
-<button class="new-btn">
-
-Add Shift
-
-</button>
 
 
 
@@ -1500,14 +1621,15 @@ Team
 
 
 
-
 <br>
 
 
 
 
 
+
 <div class="cards">
+
 
 
 
@@ -1531,13 +1653,11 @@ Owner
 <br><br>
 
 
-
 🟢 Online
 
 
 
 </div>
-
 
 
 
@@ -1558,12 +1678,8 @@ Maria
 Housekeeping
 
 
-
 <br><br>
 
-
-
-Shift:
 
 08-16
 
@@ -1590,12 +1706,8 @@ João
 Reception
 
 
-
 <br><br>
 
-
-
-Shift:
 
 16-00
 
@@ -1625,6 +1737,8 @@ Shift:
 
 
 
+
+
 <div class="card">
 
 
@@ -1636,10 +1750,14 @@ Activity Log
 
 
 
-
 <br>
 
 
+
+10:42
+
+
+<br>
 
 
 Jorge created reservation #1024
@@ -1651,7 +1769,13 @@ Jorge created reservation #1024
 
 
 
-Maria completed cleaning task
+10:38
+
+
+<br>
+
+
+Maria completed cleaning
 
 
 
@@ -1660,9 +1784,13 @@ Maria completed cleaning task
 
 
 
+10:30
+
+
+<br>
+
+
 João updated guest information
-
-
 
 
 
@@ -1674,9 +1802,8 @@ João updated guest information
 
 
 
+
 </section>
-
-
 
 
 
@@ -1743,8 +1870,8 @@ overlay.classList.remove("show");
 
 
 
-
 overlay.onclick = closeMenu;
+
 
 
 
@@ -1765,6 +1892,7 @@ page.classList.remove("active");
 
 
 });
+
 
 
 
@@ -1790,6 +1918,7 @@ button.classList.remove("active");
 
 
 
+
 btn.classList.add("active");
 
 
@@ -1806,7 +1935,9 @@ closeMenu();
 
 
 
-let startX = 0;
+
+let startX=0;
+
 
 
 
@@ -1817,7 +1948,7 @@ sidebar.addEventListener(
 function(e){
 
 
-startX = e.touches[0].clientX;
+startX=e.touches[0].clientX;
 
 
 });
@@ -1833,18 +1964,19 @@ sidebar.addEventListener(
 function(e){
 
 
-let endX =
-e.changedTouches[0].clientX;
+
+let endX=e.changedTouches[0].clientX;
 
 
 
-if(startX-endX > 80){
+if(startX-endX>80){
 
 
 closeMenu();
 
 
 }
+
 
 
 });
@@ -1855,8 +1987,42 @@ closeMenu();
 
 
 
-</script>
 
+function updateTime(){
+
+
+let now = new Date();
+
+
+
+let time =
+now.toLocaleTimeString([],{
+hour:"2-digit",
+minute:"2-digit"
+});
+
+
+
+document.getElementById("liveTime").innerHTML =
+
+"Today • " + time;
+
+
+}
+
+
+
+updateTime();
+
+
+setInterval(updateTime,1000);
+
+
+
+
+
+
+</script>
 
 
 
