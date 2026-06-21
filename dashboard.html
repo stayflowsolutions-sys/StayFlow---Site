@@ -8,6 +8,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+
 <title>StayFlow</title>
 
 
@@ -26,8 +27,15 @@ background:#050505;
 color:white;
 font-family:Arial,Helvetica,sans-serif;
 
+overflow-x:hidden;
+
 }
 
+
+
+
+
+/* MENU */
 
 
 .sidebar{
@@ -35,6 +43,7 @@ font-family:Arial,Helvetica,sans-serif;
 position:fixed;
 
 top:0;
+
 left:-270px;
 
 width:260px;
@@ -49,7 +58,7 @@ padding:25px;
 
 transition:.3s;
 
-z-index:1000;
+z-index:1001;
 
 }
 
@@ -60,6 +69,35 @@ z-index:1000;
 left:0;
 
 }
+
+
+
+
+
+
+.overlay{
+
+position:fixed;
+
+inset:0;
+
+background:rgba(0,0,0,.65);
+
+display:none;
+
+z-index:1000;
+
+}
+
+
+
+.overlay.show{
+
+display:block;
+
+}
+
+
 
 
 
@@ -74,12 +112,12 @@ margin-bottom:20px;
 }
 
 
-
 .logo span{
 
 color:#0D6EFD;
 
 }
+
 
 
 
@@ -99,6 +137,7 @@ margin-bottom:25px;
 
 
 
+
 .profile-box small{
 
 color:#9ba3b2;
@@ -108,7 +147,11 @@ color:#9ba3b2;
 
 
 
+
+
+
 .menu button{
+
 
 width:100%;
 
@@ -145,11 +188,19 @@ color:white;
 
 
 
+
+
+
+
+/* MAIN */
+
+
 .main{
 
 min-height:100vh;
 
 }
+
 
 
 
@@ -179,6 +230,8 @@ z-index:20;
 
 
 
+
+
 .left-top{
 
 display:flex;
@@ -188,6 +241,8 @@ align-items:center;
 gap:20px;
 
 }
+
+
 
 
 
@@ -202,15 +257,18 @@ cursor:pointer;
 
 
 
+
+
 .actions{
 
 display:flex;
 
 align-items:center;
 
-gap:15px;
+gap:12px;
 
 }
+
 
 
 
@@ -223,7 +281,7 @@ border:1px solid #1b2535;
 
 color:white;
 
-padding:12px;
+padding:12px 15px;
 
 border-radius:20px;
 
@@ -251,11 +309,15 @@ font-weight:bold;
 
 
 
+
+
 .content{
 
 padding:30px;
 
 }
+
+
 
 
 
@@ -266,11 +328,14 @@ display:none;
 }
 
 
+
 .page.active{
 
 display:block;
 
 }
+
+
 
 
 
@@ -284,6 +349,9 @@ grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:20px;
 
 }
+
+
+
 
 
 
@@ -301,21 +369,27 @@ padding:25px;
 
 
 
+
 .value{
 
 font-size:32px;
 
+font-weight:bold;
+
 color:#0D6EFD;
 
-font-weight:bold;
+margin-top:10px;
 
 }
 
 
+
+
 </style>
 
-
 </head>
+
+
 
 
 
@@ -325,7 +399,16 @@ font-weight:bold;
 
 
 
+
+
+<div class="overlay" id="overlay"></div>
+
+
+
+
+
 <div class="sidebar" id="sidebar">
+
 
 
 <div class="logo">
@@ -333,6 +416,7 @@ font-weight:bold;
 Stay<span>Flow</span>
 
 </div>
+
 
 
 
@@ -366,7 +450,10 @@ Account
 
 
 
+
+
 <div class="menu">
+
 
 
 <button class="active" onclick="openPage('home',this)">
@@ -374,9 +461,11 @@ Account
 </button>
 
 
+
 <button onclick="openPage('inbox',this)">
 💬 Inbox
 </button>
+
 
 
 <button onclick="openPage('reservations',this)">
@@ -384,9 +473,11 @@ Account
 </button>
 
 
+
 <button onclick="openPage('rooms',this)">
 🗺 Rooms
 </button>
+
 
 
 <button onclick="openPage('guests',this)">
@@ -394,9 +485,11 @@ Account
 </button>
 
 
+
 <button onclick="openPage('operations',this)">
 🧹 Operations
 </button>
+
 
 
 <button onclick="openPage('schedule',this)">
@@ -404,9 +497,11 @@ Account
 </button>
 
 
+
 <button onclick="openPage('team',this)">
 👥 Team
 </button>
+
 
 
 <button onclick="openPage('settings',this)">
@@ -418,6 +513,9 @@ Account
 </div>
 
 
+
+
+
 </div>
 
 
@@ -428,7 +526,10 @@ Account
 
 
 
+
 <div class="main">
+
+
 
 
 
@@ -463,17 +564,19 @@ StayFlow
 
 
 
+
 <div class="actions">
+
 
 
 <input class="search" placeholder="Search guest">
 
 
+
 <div>
-
 🔔
-
 </div>
+
 
 
 
@@ -484,30 +587,14 @@ StayFlow
 </button>
 
 
-<select>
-
-<option>
-EN
-</option>
-
-<option>
-ES
-</option>
-
-<option>
-PT
-</option>
-
-
-</select>
-
-
 
 </div>
 
 
-</div>
 
+
+
+</div>
 
 
 
@@ -518,6 +605,8 @@ PT
 
 
 <div class="content">
+
+
 
 
 
@@ -534,6 +623,7 @@ Dashboard
 <br>
 
 
+
 <div class="card-grid">
 
 
@@ -548,6 +638,8 @@ Check-ins
 </div>
 
 
+
+
 <div class="card">
 
 Check-outs
@@ -560,15 +652,19 @@ Check-outs
 
 
 
+
+
 <div class="card">
 
-Tasks
+Cleaning
 
 <div class="value">
 6
 </div>
 
 </div>
+
+
 
 
 
@@ -590,14 +686,21 @@ Occupancy
 
 
 
+
+
 <br>
+
+
+
 
 
 <div class="card">
 
 
 <h2>
+
 Today Operations
+
 </h2>
 
 
@@ -606,11 +709,15 @@ Today Operations
 
 🟢 Reservation confirmed
 
+
 <br><br>
+
 
 🟡 Bed waiting cleaning
 
+
 <br><br>
+
 
 🔵 AI answered guest
 
@@ -629,17 +736,28 @@ Today Operations
 
 
 
+
+
 <section id="inbox" class="page">
 
-<h1>Inbox</h1>
+
+<h1>
+Inbox
+</h1>
+
 
 <br>
 
+
 <div class="card">
+
 
 WhatsApp + AI + Human takeover
 
+
 </div>
+
+
 
 </section>
 
@@ -652,26 +770,35 @@ WhatsApp + AI + Human takeover
 
 <section id="reservations" class="page">
 
-<h1>Reservations</h1>
+
+<h1>
+Reservations
+</h1>
+
 
 <br>
 
+
 <div class="card">
 
+
 <button class="new-btn">
+
 + New Reservation
+
 </button>
 
+
+
 <br><br>
+
 
 Maria — Dorm 4 Bed 2
 
-<br><br>
-
-John — Private Room
 
 
 </div>
+
 
 </section>
 
@@ -684,28 +811,42 @@ John — Private Room
 
 <section id="rooms" class="page">
 
-<h1>Rooms</h1>
+
+<h1>
+Rooms
+</h1>
+
 
 <br>
+
 
 <div class="card">
 
+
 Dorm 4
+
 
 <br><br>
 
+
 Bed 1 🟢
 
+
 <br>
+
 
 Bed 2 🔴
 
+
 <br>
 
-Bed 3 🟡 Cleaning
+
+Bed 3 🟡
+
 
 
 </div>
+
 
 </section>
 
@@ -718,24 +859,36 @@ Bed 3 🟡 Cleaning
 
 <section id="guests" class="page">
 
-<h1>Guests</h1>
+
+<h1>
+Guests
+</h1>
+
 
 <br>
 
+
 <div class="card">
+
 
 Maria
 
+
 <br><br>
+
 
 Dorm 4 Bed 2
 
+
 <br><br>
+
 
 Edit Guest
 
 
+
 </div>
+
 
 </section>
 
@@ -748,24 +901,36 @@ Edit Guest
 
 <section id="operations" class="page">
 
-<h1>Operations</h1>
+
+<h1>
+Operations
+</h1>
+
 
 <br>
+
 
 <div class="card">
 
+
 🧹 Housekeeping
+
 
 <br><br>
 
+
 Dorm 4 Bed 2
 
+
 <br>
+
 
 Assigned: Maria
 
 
+
 </div>
+
 
 
 </section>
@@ -777,27 +942,39 @@ Assigned: Maria
 
 
 
-
 <section id="schedule" class="page">
 
-<h1>Schedule</h1>
+
+<h1>
+Schedule
+</h1>
+
 
 <br>
 
+
 <div class="card">
+
 
 Monday
 
-<br><br>
-
-08-16 Carlos Reception
 
 <br><br>
 
-16-00 Maria Housekeeping
+
+08-16 Carlos
+
+
+<br><br>
+
+
+16-00 Maria
+
 
 
 </div>
+
+
 
 </section>
 
@@ -811,21 +988,30 @@ Monday
 <section id="team" class="page">
 
 
-<h1>Team</h1>
+<h1>
+Team
+
+</h1>
+
 
 <br>
 
 
 <div class="card">
 
+
 Carlos — Owner
 
+
 <br><br>
+
 
 Maria — Housekeeping
 
 
+
 </div>
+
 
 
 </section>
@@ -839,7 +1025,11 @@ Maria — Housekeeping
 <section id="settings" class="page">
 
 
-<h1>Settings</h1>
+<h1>
+Settings
+
+</h1>
+
 
 <br>
 
@@ -850,10 +1040,14 @@ Maria — Housekeeping
 Plan: Pro
 
 
+
 </div>
 
 
+
 </section>
+
+
 
 
 
@@ -880,15 +1074,55 @@ Plan: Pro
 <script>
 
 
+
+const sidebar =
+document.getElementById("sidebar");
+
+
+const overlay =
+document.getElementById("overlay");
+
+
+
+
+
+
+
 function toggleMenu(){
 
 
-document
-.getElementById("sidebar")
-.classList.toggle("open");
+sidebar.classList.toggle("open");
+
+overlay.classList.toggle("show");
 
 
 }
+
+
+
+
+
+
+
+function closeMenu(){
+
+
+sidebar.classList.remove("open");
+
+overlay.classList.remove("show");
+
+
+}
+
+
+
+
+
+overlay.onclick = closeMenu;
+
+
+
+
 
 
 
@@ -899,6 +1133,7 @@ function openPage(id,btn){
 document
 .querySelectorAll(".page")
 .forEach(p=>p.classList.remove("active"));
+
 
 
 document
@@ -916,7 +1151,55 @@ document
 btn.classList.add("active");
 
 
+
+closeMenu();
+
+
+
 }
+
+
+
+
+
+
+
+
+
+let startX=0;
+
+
+sidebar.addEventListener(
+"touchstart",
+e=>{
+
+startX=e.touches[0].clientX;
+
+});
+
+
+
+
+
+sidebar.addEventListener(
+"touchend",
+e=>{
+
+
+let endX=e.changedTouches[0].clientX;
+
+
+if(startX-endX>80){
+
+closeMenu();
+
+}
+
+
+});
+
+
+
 
 
 
@@ -951,8 +1234,6 @@ user.hostel
 
 
 }
-
-
 
 
 
