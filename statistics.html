@@ -25,6 +25,7 @@ box-sizing:border-box;
 
 
 
+
 body{
 
 min-height:100vh;
@@ -36,8 +37,6 @@ color:white;
 font-family:Arial, Helvetica, sans-serif;
 
 }
-
-
 
 
 
@@ -57,9 +56,6 @@ min-height:100vh;
 
 
 
-
-
-
 .sidebar{
 
 background:#0d0f14;
@@ -74,8 +70,6 @@ padding:30px 20px;
 
 
 
-
-
 .logo{
 
 font-size:32px;
@@ -85,6 +79,7 @@ font-weight:bold;
 margin-bottom:45px;
 
 }
+
 
 
 
@@ -120,6 +115,7 @@ margin-bottom:10px;
 
 
 
+
 .menu a:hover{
 
 background:#111827;
@@ -134,14 +130,11 @@ color:white;
 
 
 
-
 .main{
 
 padding:35px;
 
 }
-
-
 
 
 
@@ -164,6 +157,8 @@ margin-bottom:35px;
 
 
 
+
+
 .header p{
 
 color:#9ba3b2;
@@ -171,6 +166,8 @@ color:#9ba3b2;
 margin-top:8px;
 
 }
+
+
 
 
 
@@ -206,9 +203,6 @@ gap:20px;
 
 
 
-
-
-
 .stat-card{
 
 background:#0d0f14;
@@ -220,9 +214,6 @@ border-radius:25px;
 padding:25px;
 
 }
-
-
-
 
 
 
@@ -242,8 +233,6 @@ margin-bottom:15px;
 
 
 
-
-
 .stat-value{
 
 font-size:28px;
@@ -253,6 +242,12 @@ font-weight:bold;
 color:#0D6EFD;
 
 }
+
+
+
+
+
+
 
 .section{
 
@@ -270,6 +265,8 @@ padding:25px;
 
 
 
+
+
 .section h2{
 
 margin-bottom:20px;
@@ -280,7 +277,33 @@ margin-bottom:20px;
 
 
 
+.insight{
 
+background:#111827;
+
+border-radius:18px;
+
+padding:18px;
+
+margin-bottom:15px;
+
+color:#dbeafe;
+
+line-height:1.5;
+
+}
+
+
+
+
+
+
+
+.insight strong{
+
+color:#0D6EFD;
+
+}
 
 .progress-row{
 
@@ -343,12 +366,12 @@ border-radius:50px;
 @media(max-width:800px){
 
 
-
 .statistics-layout{
 
 grid-template-columns:1fr;
 
 }
+
 
 
 
@@ -361,12 +384,12 @@ display:none;
 
 
 
+
 .main{
 
 padding:20px;
 
 }
-
 
 
 
@@ -388,6 +411,7 @@ gap:15px;
 
 
 
+
 </style>
 
 
@@ -395,7 +419,10 @@ gap:15px;
 
 
 
+
+
 <body>
+
 
 
 
@@ -409,9 +436,6 @@ gap:15px;
 
 
 
-<!-- SIDEBAR -->
-
-
 
 <aside class="sidebar">
 
@@ -422,6 +446,7 @@ gap:15px;
 Stay<span>Flow</span>
 
 </div>
+
 
 
 
@@ -490,7 +515,6 @@ Settings
 
 
 
-
 </aside>
 
 
@@ -501,11 +525,8 @@ Settings
 
 
 
-<!-- MAIN -->
-
-
-
 <main class="main">
+
 
 
 
@@ -530,7 +551,7 @@ Statistics
 
 <p>
 
-Hostel performance overview
+Hostel performance and AI analysis
 
 </p>
 
@@ -543,10 +564,9 @@ Hostel performance overview
 
 
 
-
 <div class="system-status">
 
-● Data Ready
+● AI Ready
 
 </div>
 
@@ -562,10 +582,6 @@ Hostel performance overview
 
 
 
-
-
-
-<!-- SUMMARY -->
 
 
 
@@ -577,13 +593,11 @@ Hostel performance overview
 
 <div class="stat-card">
 
-
 <div class="stat-title">
 
 Total Reservations
 
 </div>
-
 
 <div class="stat-value">
 
@@ -591,7 +605,6 @@ Total Reservations
 
 </div>
 
-
 </div>
 
 
@@ -600,8 +613,8 @@ Total Reservations
 
 
 
-<div class="stat-card">
 
+<div class="stat-card">
 
 <div class="stat-title">
 
@@ -609,15 +622,14 @@ Revenue
 
 </div>
 
-
 <div class="stat-value">
 
-$12.450
+$12,450
 
 </div>
 
-
 </div>
+
 
 
 
@@ -626,7 +638,6 @@ $12.450
 
 
 <div class="stat-card">
-
 
 <div class="stat-title">
 
@@ -634,13 +645,11 @@ Best Month
 
 </div>
 
-
 <div class="stat-value">
 
 January
 
 </div>
-
 
 </div>
 
@@ -653,13 +662,11 @@ January
 
 <div class="stat-card">
 
-
 <div class="stat-title">
 
 Occupancy
 
 </div>
-
 
 <div class="stat-value">
 
@@ -667,14 +674,6 @@ Occupancy
 
 </div>
 
-
-</div>
-
-
-
-
-
-
 </div>
 
 
@@ -683,14 +682,17 @@ Occupancy
 
 
 
+</div>
 
 
-<!-- COUNTRIES -->
+
+
+
+
 
 
 
 <section class="section">
-
 
 
 <h2>
@@ -703,24 +705,15 @@ Top Countries
 
 
 
+
 <div class="progress-row">
 
 
 <div class="progress-label">
 
-<span>
+<span>Argentina</span>
 
-Argentina
-
-</span>
-
-
-<span>
-
-35%
-
-</span>
-
+<span>35%</span>
 
 </div>
 
@@ -742,24 +735,15 @@ Argentina
 
 
 
+
 <div class="progress-row">
 
 
 <div class="progress-label">
 
-<span>
+<span>Brazil</span>
 
-Brazil
-
-</span>
-
-
-<span>
-
-25%
-
-</span>
-
+<span>25%</span>
 
 </div>
 
@@ -782,25 +766,14 @@ Brazil
 
 
 
-
 <div class="progress-row">
 
 
 <div class="progress-label">
 
-<span>
+<span>USA</span>
 
-USA
-
-</span>
-
-
-<span>
-
-18%
-
-</span>
-
+<span>18%</span>
 
 </div>
 
@@ -832,12 +805,7 @@ USA
 
 
 
-<!-- SOURCES -->
-
-
-
 <section class="section">
-
 
 
 <h2>
@@ -850,24 +818,15 @@ Booking Sources
 
 
 
+
 <div class="progress-row">
 
 
 <div class="progress-label">
 
-<span>
+<span>WhatsApp</span>
 
-WhatsApp
-
-</span>
-
-
-<span>
-
-45%
-
-</span>
-
+<span>45%</span>
 
 </div>
 
@@ -887,24 +846,15 @@ WhatsApp
 
 
 
+
 <div class="progress-row">
 
 
 <div class="progress-label">
 
-<span>
+<span>Booking</span>
 
-Booking
-
-</span>
-
-
-<span>
-
-35%
-
-</span>
-
+<span>35%</span>
 
 </div>
 
@@ -925,25 +875,14 @@ Booking
 
 
 
-
 <div class="progress-row">
 
 
 <div class="progress-label">
 
-<span>
+<span>Airbnb</span>
 
-Airbnb
-
-</span>
-
-
-<span>
-
-20%
-
-</span>
-
+<span>20%</span>
 
 </div>
 
@@ -964,6 +903,7 @@ Airbnb
 
 
 
+
 </section>
 
 
@@ -974,12 +914,7 @@ Airbnb
 
 
 
-<!-- PAYMENT -->
-
-
-
 <section class="section">
-
 
 
 <h2>
@@ -991,24 +926,17 @@ Payment Methods
 
 
 
+
+
+
 <div class="progress-row">
 
 
 <div class="progress-label">
 
-<span>
+<span>Card</span>
 
-Card
-
-</span>
-
-
-<span>
-
-60%
-
-</span>
-
+<span>60%</span>
 
 </div>
 
@@ -1034,19 +962,9 @@ Card
 
 <div class="progress-label">
 
-<span>
+<span>Cash</span>
 
-Cash
-
-</span>
-
-
-<span>
-
-25%
-
-</span>
-
+<span>25%</span>
 
 </div>
 
@@ -1067,39 +985,68 @@ Cash
 
 
 
-<div class="progress-row">
+
+</section>
 
 
-<div class="progress-label">
-
-<span>
-
-Transfer
-
-</span>
 
 
-<span>
 
-15%
 
-</span>
 
+
+
+<section class="section">
+
+
+
+<h2>
+
+AI Insights
+
+</h2>
+
+
+
+
+
+
+
+<div class="insight">
+
+<strong>💡 Opportunity:</strong>
+
+WhatsApp is your strongest direct booking channel.
 
 </div>
 
 
 
-<div class="progress">
 
-<div class="progress-fill" style="width:15%"></div>
+
+
+
+<div class="insight">
+
+<strong>🌎 Audience:</strong>
+
+International guests represent the majority of reservations.
 
 </div>
 
 
 
-</div>
 
+
+
+
+<div class="insight">
+
+<strong>📈 Recommendation:</strong>
+
+Increase direct bookings to reduce platform fees.
+
+</div>
 
 
 
@@ -1107,6 +1054,7 @@ Transfer
 
 
 </section>
+
 
 
 
