@@ -25,7 +25,11 @@ box-sizing:border-box;
 
 
 
+
+
 body{
+
+min-height:100vh;
 
 background:#050505;
 
@@ -33,35 +37,7 @@ color:white;
 
 font-family:Arial, Helvetica, sans-serif;
 
-min-height:100vh;
-
 }
-
-
-
-
-
-body::before{
-
-content:"";
-
-position:fixed;
-
-inset:0;
-
-border:1px solid rgba(13,110,253,.18);
-
-box-shadow:
-inset 0 0 18px rgba(13,110,253,.06);
-
-pointer-events:none;
-
-z-index:999;
-
-}
-
-
-
 
 
 
@@ -71,7 +47,7 @@ z-index:999;
 
 display:grid;
 
-grid-template-columns:260px 1fr;
+grid-template-columns:240px 1fr;
 
 min-height:100vh;
 
@@ -83,8 +59,9 @@ min-height:100vh;
 
 
 
-.sidebar{
 
+
+.sidebar{
 
 background:#0d0f14;
 
@@ -92,8 +69,9 @@ border-right:1px solid #1b2535;
 
 padding:30px 20px;
 
-
 }
+
+
 
 
 
@@ -108,6 +86,8 @@ font-weight:bold;
 margin-bottom:50px;
 
 }
+
+
 
 
 
@@ -127,9 +107,9 @@ color:#0D6EFD;
 
 display:block;
 
-padding:15px;
+padding:14px;
 
-border-radius:15px;
+border-radius:14px;
 
 margin-bottom:10px;
 
@@ -137,9 +117,8 @@ text-decoration:none;
 
 color:#9ba3b2;
 
-transition:.2s;
-
 }
+
 
 
 
@@ -151,6 +130,9 @@ background:#111827;
 color:white;
 
 }
+
+
+
 
 
 
@@ -169,7 +151,7 @@ padding:35px;
 
 
 
-.topbar{
+.header{
 
 display:flex;
 
@@ -177,9 +159,23 @@ justify-content:space-between;
 
 align-items:center;
 
-margin-bottom:40px;
+margin-bottom:35px;
 
 }
+
+
+
+
+
+.header p{
+
+color:#9ba3b2;
+
+margin-top:8px;
+
+}
+
+
 
 
 
@@ -192,6 +188,8 @@ color:#00d26a;
 font-size:14px;
 
 }
+
+
 
 
 
@@ -216,8 +214,8 @@ gap:20px;
 
 
 
-.card{
 
+.card{
 
 background:#0d0f14;
 
@@ -227,8 +225,27 @@ border-radius:25px;
 
 padding:30px;
 
+text-decoration:none;
+
+color:white;
+
+transition:.2s;
 
 }
+
+
+
+
+
+.card:hover{
+
+border-color:#0D6EFD;
+
+transform:translateY(-5px);
+
+}
+
+
 
 
 
@@ -238,11 +255,11 @@ padding:30px;
 
 color:#9ba3b2;
 
-font-size:14px;
-
 margin-bottom:15px;
 
 }
+
+
 
 
 
@@ -265,11 +282,48 @@ color:#0D6EFD;
 
 
 
+.quick-actions{
 
-.panel{
+margin-top:40px;
+
+display:flex;
+
+gap:20px;
+
+flex-wrap:wrap;
+
+}
 
 
-margin-top:35px;
+
+
+
+
+.action-btn{
+
+background:#0D6EFD;
+
+color:white;
+
+text-decoration:none;
+
+padding:16px 28px;
+
+border-radius:50px;
+
+font-weight:bold;
+
+}
+
+
+
+
+
+
+
+.activity{
+
+margin-top:40px;
 
 background:#0d0f14;
 
@@ -285,9 +339,10 @@ padding:30px;
 
 
 
-.panel h2{
 
-margin-bottom:25px;
+.activity h2{
+
+margin-bottom:20px;
 
 }
 
@@ -295,36 +350,13 @@ margin-bottom:25px;
 
 
 
-
-
-.item{
-
-
-padding:18px 0;
-
-border-bottom:1px solid #1b2535;
+.activity p{
 
 color:#9ba3b2;
 
-}
-
-
-
-
-
-.item:last-child{
-
-border:none;
+line-height:2;
 
 }
-
-
-
-
-
-
-
-
 
 @media(max-width:800px){
 
@@ -339,11 +371,10 @@ grid-template-columns:1fr;
 
 .sidebar{
 
-border-right:none;
-
-border-bottom:1px solid #1b2535;
+display:none;
 
 }
+
 
 
 
@@ -355,7 +386,8 @@ padding:20px;
 
 
 
-.topbar{
+
+.header{
 
 flex-direction:column;
 
@@ -366,7 +398,9 @@ gap:15px;
 }
 
 
+
 }
+
 
 
 
@@ -384,9 +418,18 @@ gap:15px;
 
 
 
+
+
 <div class="dashboard-layout">
 
+
+
+
+
+
+
 <!-- SIDEBAR -->
+
 
 
 <aside class="sidebar">
@@ -404,19 +447,22 @@ Stay<span>Flow</span>
 
 
 
+
 <nav class="menu">
 
 
 
-<a href="#">
+<a href="dashboard.html">
 
-Overview
+Dashboard
 
 </a>
 
 
 
-<a href="#">
+
+
+<a href="inbox.html">
 
 Inbox
 
@@ -425,11 +471,13 @@ Inbox
 
 
 
-<a href="#">
+
+<a href="reservations.html">
 
 Reservations
 
 </a>
+
 
 
 
@@ -439,6 +487,7 @@ Reservations
 Guests
 
 </a>
+
 
 
 
@@ -453,7 +502,9 @@ Settings
 
 
 
+
 </nav>
+
 
 
 
@@ -469,9 +520,8 @@ Settings
 
 
 
+<!-- MAIN -->
 
-
-<!-- MAIN AREA -->
 
 
 <main class="main">
@@ -482,8 +532,13 @@ Settings
 
 
 
-<div class="topbar">
+<div class="header">
 
+
+
+
+
+<div>
 
 
 <h1>
@@ -491,6 +546,18 @@ Settings
 Hostel Dashboard
 
 </h1>
+
+
+<p>
+
+Your StayFlow operations center
+
+</p>
+
+
+
+</div>
+
 
 
 
@@ -506,6 +573,7 @@ Hostel Dashboard
 
 
 
+
 </div>
 
 
@@ -516,7 +584,7 @@ Hostel Dashboard
 
 
 
-<!-- SUMMARY CARDS -->
+<!-- CARDS -->
 
 
 
@@ -526,7 +594,10 @@ Hostel Dashboard
 
 
 
-<div class="card">
+
+
+<a class="card" href="inbox.html">
+
 
 
 <div class="card-title">
@@ -545,7 +616,7 @@ Inbox
 
 
 
-</div>
+</a>
 
 
 
@@ -553,12 +624,15 @@ Inbox
 
 
 
-<div class="card">
+
+
+<a class="card" href="reservations.html">
+
 
 
 <div class="card-title">
 
-Bookings
+Reservations
 
 </div>
 
@@ -566,13 +640,13 @@ Bookings
 
 <div class="card-value">
 
-Active
+Manage
 
 </div>
 
 
 
-</div>
+</a>
 
 
 
@@ -580,12 +654,15 @@ Active
 
 
 
-<div class="card">
+
+
+<a class="card" href="#">
+
 
 
 <div class="card-title">
 
-Response
+Guests
 
 </div>
 
@@ -593,13 +670,13 @@ Response
 
 <div class="card-value">
 
-Fast
+View
 
 </div>
 
 
 
-</div>
+</a>
 
 
 
@@ -607,12 +684,14 @@ Fast
 
 
 
-<div class="card">
+
+<a class="card" href="#">
+
 
 
 <div class="card-title">
 
-AI
+AI Status
 
 </div>
 
@@ -626,6 +705,15 @@ Online
 
 
 
+</a>
+
+
+
+
+
+
+
+
 </div>
 
 
@@ -633,6 +721,41 @@ Online
 
 
 
+
+
+
+<!-- ACTIONS -->
+
+
+
+<div class="quick-actions">
+
+
+
+
+
+<a class="action-btn" href="inbox.html">
+
+Open Inbox
+
+</a>
+
+
+
+
+
+
+<a class="action-btn" href="reservations.html">
+
+Reservations
+
+</a>
+
+
+
+
+
+
 </div>
 
 
@@ -643,11 +766,11 @@ Online
 
 
 
-<!-- INBOX PANEL -->
+<!-- ACTIVITY -->
 
 
 
-<section class="panel">
+<section class="activity">
 
 
 
@@ -655,7 +778,7 @@ Online
 
 <h2>
 
-Recent Conversations
+Recent Activity
 
 </h2>
 
@@ -663,35 +786,19 @@ Recent Conversations
 
 
 
+<p>
 
-<div class="item">
+AI conversations will appear here
 
-🇺🇸 Sarah — Asked about room availability
+<br>
 
-</div>
+New reservations will be tracked here
 
+<br>
 
+Future integrations: WhatsApp, Booking, Airbnb
 
-
-
-
-<div class="item">
-
-🇧🇷 João — Wants to make a reservation
-
-</div>
-
-
-
-
-
-
-
-<div class="item">
-
-🇦🇷 Lucas — Needs check-in information
-
-</div>
+</p>
 
 
 
@@ -702,67 +809,6 @@ Recent Conversations
 </section>
 
 
-
-
-
-
-
-
-
-<!-- RESERVATIONS PANEL -->
-
-
-
-<section class="panel">
-
-
-
-
-
-<h2>
-
-Reservation Activity
-
-</h2>
-
-
-
-
-
-
-<div class="item">
-
-Guest requests collected by StayFlow AI
-
-</div>
-
-
-
-
-
-<div class="item">
-
-Reservation status will appear here
-
-</div>
-
-
-
-
-
-
-<div class="item">
-
-Future PMS integrations will sync data here
-
-</div>
-
-
-
-
-
-
-</section>
 
 
 
@@ -778,7 +824,9 @@ Future PMS integrations will sync data here
 
 
 
+
 </div>
+
 
 
 
