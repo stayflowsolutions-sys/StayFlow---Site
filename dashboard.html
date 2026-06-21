@@ -12,7 +12,6 @@
 
 <style>
 
-
 *{
 margin:0;
 padding:0;
@@ -31,7 +30,6 @@ min-height:100vh;
 
 
 
-
 .app{
 
 min-height:100vh;
@@ -40,29 +38,19 @@ min-height:100vh;
 
 
 
-
-
-
 .topbar{
 
-height:80px;
-
 background:#0d0f14;
-
 border-bottom:1px solid #1b2535;
 
 display:flex;
-
 align-items:center;
-
 justify-content:space-between;
 
-padding:0 30px;
+padding:18px 30px;
 
 position:sticky;
-
 top:0;
-
 z-index:10;
 
 }
@@ -70,46 +58,32 @@ z-index:10;
 
 
 
-
-
-
 .brand{
 
 display:flex;
-
 align-items:center;
-
 gap:12px;
 
 }
 
 
 
-
-
 .brand img{
 
-width:45px;
-
-height:45px;
-
+width:48px;
+height:48px;
 object-fit:contain;
 
 }
 
 
 
-
-
 .brand-name{
 
 font-size:28px;
-
 font-weight:800;
 
 }
-
-
 
 
 
@@ -125,13 +99,10 @@ color:#0D6EFD;
 
 
 
-
 .menu{
 
 display:flex;
-
-gap:10px;
-
+gap:8px;
 overflow-x:auto;
 
 }
@@ -139,26 +110,22 @@ overflow-x:auto;
 
 
 
-
 .menu button{
 
 background:none;
-
 border:none;
 
 color:#9ba3b2;
 
 padding:12px 18px;
 
-border-radius:14px;
+border-radius:15px;
 
 cursor:pointer;
 
-font-size:15px;
+white-space:nowrap;
 
 }
-
-
 
 
 
@@ -166,12 +133,9 @@ font-size:15px;
 .menu button.active{
 
 background:#111827;
-
 color:white;
 
 }
-
-
 
 
 
@@ -186,14 +150,11 @@ padding:35px;
 
 
 
-
 .page{
 
 display:none;
 
 }
-
-
 
 
 
@@ -206,7 +167,6 @@ display:block;
 
 
 
-
 h1{
 
 margin-bottom:10px;
@@ -215,13 +175,20 @@ margin-bottom:10px;
 
 
 
+
 .subtitle{
 
 color:#9ba3b2;
-
 margin-bottom:30px;
 
 }
+
+
+
+
+
+
+
 
 .cards{
 
@@ -257,7 +224,6 @@ padding:25px;
 .card-title{
 
 color:#9ba3b2;
-
 margin-bottom:15px;
 
 }
@@ -269,21 +235,14 @@ margin-bottom:15px;
 .card-value{
 
 font-size:30px;
-
 font-weight:bold;
-
 color:#0D6EFD;
 
 }
 
+.activity{
 
-
-
-
-
-
-
-.table-box{
+margin-top:30px;
 
 background:#0d0f14;
 
@@ -293,28 +252,263 @@ border-radius:25px;
 
 padding:25px;
 
-margin-top:25px;
+}
+
+
+
+
+
+
+.inbox-layout{
+
+display:grid;
+
+grid-template-columns:320px 1fr;
+
+gap:20px;
 
 }
 
 
 
 
-.row{
+
+
+.conversation-list{
+
+background:#0d0f14;
+
+border:1px solid #1b2535;
+
+border-radius:25px;
+
+overflow:hidden;
+
+}
+
+
+
+
+
+.conversation{
+
+padding:20px;
+
+border-bottom:1px solid #1b2535;
 
 display:flex;
 
 justify-content:space-between;
 
-padding:15px 0;
+gap:15px;
 
-border-bottom:1px solid #1b2535;
-
-color:#cbd5e1;
+cursor:pointer;
 
 }
 
 
+
+
+
+.conversation:hover,
+.conversation.active{
+
+background:#111827;
+
+}
+
+
+
+
+
+.conversation p{
+
+color:#9ba3b2;
+
+margin-top:6px;
+
+font-size:14px;
+
+}
+
+
+
+
+
+.badge{
+
+color:#00d26a;
+
+font-size:12px;
+
+}
+
+
+
+
+
+.chat-box{
+
+background:#0d0f14;
+
+border:1px solid #1b2535;
+
+border-radius:25px;
+
+min-height:500px;
+
+display:flex;
+
+flex-direction:column;
+
+}
+
+
+
+
+
+.chat-header{
+
+padding:20px;
+
+border-bottom:1px solid #1b2535;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+}
+
+
+
+
+.takeover{
+
+background:#0D6EFD;
+
+border:none;
+
+color:white;
+
+padding:10px 18px;
+
+border-radius:20px;
+
+cursor:pointer;
+
+}
+
+
+
+
+
+.messages{
+
+flex:1;
+
+padding:25px;
+
+display:flex;
+
+flex-direction:column;
+
+gap:15px;
+
+}
+
+
+
+
+
+.message{
+
+padding:14px 18px;
+
+border-radius:20px;
+
+max-width:75%;
+
+line-height:1.4;
+
+}
+
+
+
+
+
+.guest{
+
+background:#111827;
+
+align-self:flex-start;
+
+}
+
+
+
+
+
+.ai{
+
+background:#0D6EFD;
+
+align-self:flex-end;
+
+}
+
+
+
+
+
+.input-area{
+
+display:flex;
+
+gap:10px;
+
+padding:20px;
+
+}
+
+
+
+
+
+.input-area input{
+
+flex:1;
+
+background:#050505;
+
+border:1px solid #1b2535;
+
+color:white;
+
+padding:14px;
+
+border-radius:20px;
+
+}
+
+
+
+
+
+.send{
+
+background:#0D6EFD;
+
+border:none;
+
+color:white;
+
+padding:0 25px;
+
+border-radius:20px;
+
+}
 
 
 
@@ -330,8 +524,6 @@ repeat(auto-fit,minmax(250px,1fr));
 gap:20px;
 
 }
-
-
 
 
 
@@ -370,22 +562,16 @@ margin-top:15px;
 
 
 
-
-
 @media(max-width:800px){
 
 
 .topbar{
-
-height:auto;
 
 flex-direction:column;
 
 align-items:flex-start;
 
 gap:20px;
-
-padding:20px;
 
 }
 
@@ -399,6 +585,16 @@ padding:20px;
 
 
 
+
+.inbox-layout{
+
+grid-template-columns:1fr;
+
+}
+
+
+
+
 .menu{
 
 width:100%;
@@ -407,31 +603,14 @@ width:100%;
 
 
 
-.menu button{
-
-white-space:nowrap;
-
 }
-
-
-
-}
-
-
-
 
 </style>
 
 </head>
 
 
-
-
-
 <body>
-
-
-
 
 
 
@@ -443,7 +622,6 @@ white-space:nowrap;
 
 
 <header class="topbar">
-
 
 
 
@@ -477,56 +655,32 @@ Stay<span>Flow</span>
 
 
 <button class="active" onclick="showPage('dashboard',this)">
-
 Dashboard
-
 </button>
-
-
 
 
 <button onclick="showPage('inbox',this)">
-
 Inbox
-
 </button>
-
-
-
 
 
 <button onclick="showPage('reservations',this)">
-
 Reservations
-
 </button>
-
-
-
 
 
 <button onclick="showPage('statistics',this)">
-
 Statistics
-
 </button>
-
-
-
 
 
 <button onclick="showPage('settings',this)">
-
 Settings
-
 </button>
-
-
 
 
 
 </nav>
-
 
 
 
@@ -541,14 +695,25 @@ Settings
 
 
 
+
+
+
 <main class="content">
 
+
+
+
+
+
+
 <section id="dashboard" class="page active">
+
 
 
 <h1>
 Dashboard
 </h1>
+
 
 <p class="subtitle">
 StayFlow overview
@@ -571,6 +736,7 @@ Messages
 12
 </div>
 
+
 </div>
 
 
@@ -586,6 +752,7 @@ Reservations
 <div class="card-value">
 28
 </div>
+
 
 </div>
 
@@ -603,23 +770,9 @@ Occupancy
 78%
 </div>
 
-</div>
-
-
-
-
-
-<div class="card">
-
-<div class="card-title">
-AI Status
-</div>
-
-<div class="card-value">
-ON
-</div>
 
 </div>
+
 
 
 
@@ -629,35 +782,16 @@ ON
 
 
 
-
-
-<div class="table-box">
+<div class="activity">
 
 <h2>
 Recent Activity
 </h2>
 
 
-<div class="row">
-
-New reservation
-
-<span>
-Today
-</span>
-
-</div>
-
-
-<div class="row">
-
-AI answered guest
-
-<span>
-10 min
-</span>
-
-</div>
+<p>
+AI conversations and reservations will appear here.
+</p>
 
 
 </div>
@@ -665,7 +799,6 @@ AI answered guest
 
 
 </section>
-
 
 
 
@@ -692,35 +825,206 @@ Guest conversations
 
 
 
-<div class="table-box">
+<div class="inbox-layout">
 
 
-<div class="row">
 
-Guest #1024
 
-<span>
+
+
+<div class="conversation-list">
+
+
+
+<div class="conversation active">
+
+
+<div>
+
+<b>
+Maria
+</b>
+
+
+<p>
+Availability?
+</p>
+
+</div>
+
+
+<span class="badge">
 AI
 </span>
 
+
 </div>
 
 
 
-<div class="row">
 
-Guest #1025
 
-<span>
+
+
+<div class="conversation">
+
+
+<div>
+
+<b>
+John
+</b>
+
+
+<p>
+Airport transfer
+</p>
+
+</div>
+
+
+<span class="badge">
+AI
+</span>
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="conversation">
+
+
+<div>
+
+<b>
+Sofia
+</b>
+
+
+<p>
+Check in
+</p>
+
+</div>
+
+
+<span class="badge">
 Human
 </span>
 
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="chat-box">
+
+
+
+<div class="chat-header">
+
+
+<h3>
+Maria
+</h3>
+
+
+
+<button class="takeover">
+Take Over
+</button>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="messages">
+
+
+<div class="message guest">
+
+Hi, do you have beds available?
+
+</div>
+
+
+
+<div class="message ai">
+
+Yes! I can help you with availability.
+
+</div>
+
+
+
+<div class="message guest">
+
+For tomorrow.
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="input-area">
+
+
+<input placeholder="Type message...">
+
+
+<button class="send">
+
+Send
+
+</button>
+
+
 </div>
 
 
 
 
 </div>
+
+
+
+
+
+
+
+</div>
+
+
+
 
 
 
@@ -744,49 +1048,43 @@ Reservations
 
 
 <p class="subtitle">
-Manage bookings
+Bookings management
 </p>
 
 
 
 
 
-<div class="table-box">
+<div class="activity">
 
+<div class="conversation">
 
-<div class="row">
-
-Room + Bed
+Guest
 
 <span>
-Payment
+Room / Bed
+</span>
+
+</div>
+
+
+<div class="conversation">
+
+Carlos
+
+<span>
+Dorm 2 - Bed 4
 </span>
 
 </div>
 
 
 
-
-<div class="row">
-
-Dorm 4 - Bed 2
-
-<span>
-Card
-</span>
-
 </div>
-
-
-
-
-</div>
-
 
 
 
 </section>
-
 
 
 
@@ -811,25 +1109,7 @@ Business intelligence
 
 
 
-
-
 <div class="cards">
-
-
-
-<div class="card">
-
-<div class="card-title">
-Best Month
-</div>
-
-<div class="card-value">
-January
-</div>
-
-</div>
-
-
 
 
 
@@ -843,8 +1123,8 @@ Top Country
 Argentina
 </div>
 
-</div>
 
+</div>
 
 
 
@@ -852,161 +1132,3 @@ Argentina
 <div class="card">
 
 <div class="card-title">
-Revenue
-</div>
-
-<div class="card-value">
-$0
-</div>
-
-</div>
-
-
-
-
-</div>
-
-
-
-</section>
-
-
-
-
-
-
-
-
-
-<section id="settings" class="page">
-
-
-
-<h1>
-Settings
-</h1>
-
-
-<p class="subtitle">
-Hostel configuration
-</p>
-
-
-
-
-
-<div class="settings-box">
-
-
-
-<div class="setting">
-
-<h3>
-AI Assistant
-</h3>
-
-<div class="toggle"></div>
-
-</div>
-
-
-
-
-
-<div class="setting">
-
-<h3>
-Human Handoff
-</h3>
-
-<div class="toggle"></div>
-
-</div>
-
-
-
-
-
-<div class="setting">
-
-<h3>
-Notifications
-</h3>
-
-<div class="toggle"></div>
-
-</div>
-
-
-
-
-
-
-</div>
-
-
-
-
-
-</section>
-
-
-
-
-
-
-</main>
-
-
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-
-<script>
-
-
-function showPage(page,button){
-
-
-document.querySelectorAll(".page")
-.forEach(p=>p.classList.remove("active"));
-
-
-
-document.getElementById(page)
-.classList.add("active");
-
-
-
-
-document.querySelectorAll(".menu button")
-.forEach(b=>b.classList.remove("active"));
-
-
-
-button.classList.add("active");
-
-}
-
-
-
-</script>
-
-
-
-
-
-</body>
-
-</html>
