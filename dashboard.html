@@ -1,69 +1,49 @@
 <!DOCTYPE html>
-
-<html lang="en">
-
+<html>
 <head>
 
-<meta charset="UTF-8">
+<title>StayFlow Dashboard</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>StayFlow</title>
 
 
 <style>
 
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');
-
-
 *{
-margin:0;
-padding:0;
 box-sizing:border-box;
 }
 
 
-
 body{
-
+margin:0;
+font-family:Arial, sans-serif;
 background:#050505;
-
 color:white;
-
-font-family:'Manrope',Arial,sans-serif;
-
 overflow-x:hidden;
-
 }
-
-
 
 
 
 .sidebar{
 
 position:fixed;
-
+left:-270px;
 top:0;
-
-left:-280px;
-
+height:100%;
 width:270px;
 
-height:100vh;
+background:#080808;
 
-background:#090b10;
+border-right:1px solid #1b8cff55;
 
-border-right:1px solid #1b2535;
+padding:25px;
 
 transition:.3s;
 
-z-index:1001;
+z-index:10;
 
-display:flex;
-
-flex-direction:column;
+overflow-y:auto;
 
 }
 
@@ -77,29 +57,76 @@ left:0;
 
 
 
+.logo{
+
+font-size:28px;
+font-weight:bold;
+letter-spacing:1px;
+
+margin-bottom:30px;
+
+}
 
 
 
-.sidebar-top{
+.logo span{
 
-padding:25px;
+color:#1b8cff;
 
 }
 
 
 
-.sidebar-menu{
 
-padding:0 25px 30px;
 
-overflow-y:auto;
+.profile{
 
-flex:1;
+border:1px solid #1b8cff44;
+border-radius:15px;
 
--webkit-overflow-scrolling:touch;
+padding:15px;
+
+margin-bottom:25px;
 
 }
 
+
+
+
+
+.menu button{
+
+width:100%;
+
+background:none;
+
+border:none;
+
+color:white;
+
+padding:14px;
+
+text-align:left;
+
+border-radius:10px;
+
+cursor:pointer;
+
+font-size:15px;
+
+margin-bottom:5px;
+
+}
+
+
+
+
+.menu button:hover,
+.menu button.active{
+
+background:#1b8cff22;
+
+}
 
 
 
@@ -111,161 +138,20 @@ position:fixed;
 
 inset:0;
 
-background:rgba(0,0,0,.7);
+background:#0008;
 
 display:none;
 
-z-index:1000;
+z-index:5;
 
 }
+
 
 
 
 .overlay.show{
 
 display:block;
-
-}
-
-
-
-
-
-.logo{
-
-font-size:32px;
-
-font-weight:800;
-
-letter-spacing:-1px;
-
-}
-
-
-
-.logo span{
-
-color:#0D6EFD;
-
-}
-
-
-
-
-
-.tagline{
-
-color:#8b95a7;
-
-font-size:13px;
-
-margin-top:5px;
-
-}
-
-
-
-
-
-.demo{
-
-margin-top:20px;
-
-background:#050505;
-
-border:1px solid #1b2535;
-
-border-radius:18px;
-
-padding:15px;
-
-color:#9ba3b2;
-
-}
-
-
-
-
-
-
-.profile{
-
-margin-top:15px;
-
-background:#050505;
-
-border:1px solid #1b2535;
-
-border-radius:20px;
-
-padding:15px;
-
-}
-
-
-
-.profile small{
-
-color:#9ba3b2;
-
-}
-
-
-
-
-
-
-
-.menu button{
-
-width:100%;
-
-padding:13px;
-
-border:0;
-
-background:none;
-
-color:#9ba3b2;
-
-border-radius:15px;
-
-text-align:left;
-
-margin-bottom:7px;
-
-cursor:pointer;
-
-font-family:inherit;
-
-}
-
-
-
-
-.menu button:hover,
-.menu button.active{
-
-background:#0D6EFD;
-
-color:white;
-
-}
-
-
-
-
-
-
-.sidebar-footer{
-
-padding:20px 25px;
-
-border-top:1px solid #1b2535;
-
-color:#667085;
-
-font-size:12px;
 
 }
 
@@ -285,12 +171,7 @@ min-height:100vh;
 
 .topbar{
 
-
 height:75px;
-
-background:#090b10;
-
-border-bottom:1px solid #1b2535;
 
 display:flex;
 
@@ -300,13 +181,22 @@ justify-content:space-between;
 
 padding:0 25px;
 
-position:sticky;
-
-top:0;
-
-z-index:20;
+border-bottom:1px solid #ffffff10;
 
 }
+
+
+
+
+
+.menu-icon{
+
+font-size:28px;
+
+cursor:pointer;
+
+}
+
 
 
 
@@ -324,90 +214,69 @@ align-items:center;
 
 
 
-.menu-icon{
+.time{
 
-font-size:26px;
+color:#aaa;
 
-cursor:pointer;
-
-}
-
-
-
-
-
-
-.date-time{
-
-color:#9ba3b2;
-
-font-size:13px;
-
-line-height:18px;
+font-size:14px;
 
 }
 
-
-
-
-
-
-.actions{
-
-display:flex;
-
-gap:15px;
-
-align-items:center;
-
-}
-
-
-
-
-.search{
-
-background:#050505;
-
-border:1px solid #1b2535;
-
-color:white;
-
-padding:12px;
-
-border-radius:20px;
-
-}
-
-
-
-
-.new-btn{
-
-background:#0D6EFD;
-
-border:none;
-
-color:white;
-
-padding:13px 18px;
-
-border-radius:22px;
-
-cursor:pointer;
-
-font-weight:bold;
-
-}
 
 
 
 
 .content{
 
-padding:30px;
+padding:25px;
 
 }
+
+
+
+
+
+.cards{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+
+gap:20px;
+
+}
+
+
+
+
+
+.card{
+
+background:#0b0b0b;
+
+border:1px solid #1b8cff33;
+
+border-radius:20px;
+
+padding:20px;
+
+}
+
+
+
+.value{
+
+font-size:32px;
+
+font-weight:bold;
+
+color:#1b8cff;
+
+margin-top:10px;
+
+}
+
+
 
 
 
@@ -428,42 +297,42 @@ display:block;
 
 
 
+.lang{
 
-.cards{
+margin-left:auto;
 
-display:grid;
+font-size:13px;
 
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+color:#aaa;
 
-gap:20px;
+}
+
+
+
+.lang span{
+
+cursor:pointer;
+
+color:white;
+
+margin:0 5px;
 
 }
 
 
 
 
-.card{
+select{
 
-background:#090b10;
+background:#111;
 
-border:1px solid #1b2535;
+color:white;
 
-border-radius:25px;
+border:1px solid #1b8cff55;
 
-padding:25px;
+border-radius:10px;
 
-}
-
-
-
-
-.value{
-
-font-size:30px;
-
-font-weight:800;
-
-color:#0D6EFD;
+padding:8px;
 
 }
 
@@ -472,23 +341,19 @@ color:#0D6EFD;
 
 </style>
 
-
 </head>
 
+
+
 <body>
+
 
 
 <div class="overlay" id="overlay"></div>
 
 
 
-
-
 <div class="sidebar" id="sidebar">
-
-
-
-<div class="sidebar-top">
 
 
 
@@ -499,71 +364,68 @@ Stay<span>Flow</span>
 </div>
 
 
-<div class="tagline">
-
-AI Hospitality Platform
-
-</div>
-
-
-
-
-
-<div class="demo">
-
-🟦 Demo Mode
-
-<br><br>
-
-Hostel Lagares
-
-</div>
-
-
 
 
 <div class="profile">
 
-👤
+
+<b>Hostel Lagares</b>
 
 <br>
 
+Demo Mode
 
-<strong>
 
-Jorge
+<br><br>
 
-</strong>
 
+Today • <span id="sideTime"></span>
+
+
+<br><br>
+
+
+👤 Jorge
 
 <br>
-
-
-<small>
 
 Owner
 
-</small>
+
+
+
+<br><br>
+
+
+
+<select>
+
+<option>Owner View</option>
+
+<option>Reception View</option>
+
+<option>Housekeeping View</option>
+
+<option>Maintenance View</option>
+
+</select>
+
 
 
 </div>
 
 
-</div>
 
 
-
-
-
-
-<div class="sidebar-menu">
 
 
 <div class="menu">
 
+
 <button class="active" onclick="openPage('home',this)">
 🏠 Home
 </button>
+
 
 
 <button onclick="openPage('reservations',this)">
@@ -571,9 +433,11 @@ Owner
 </button>
 
 
+
 <button onclick="openPage('rooms',this)">
-🗺 Rooms
+🏢 Rooms
 </button>
+
 
 
 <button onclick="openPage('guests',this)">
@@ -581,9 +445,17 @@ Owner
 </button>
 
 
+
 <button onclick="openPage('operations',this)">
 🧹 Operations
 </button>
+
+
+
+<button onclick="openPage('supplies',this)">
+📦 Supplies
+</button>
+
 
 
 <button onclick="openPage('schedule',this)">
@@ -591,61 +463,59 @@ Owner
 </button>
 
 
+
 <button onclick="openPage('team',this)">
 👥 Team
 </button>
 
 
-</div>
+
+<button onclick="openPage('notifications',this)">
+🔔 Notifications
+</button>
 
 
-</div>
 
-
-
-
-<div class="sidebar-footer">
-
-Powered by StayFlow AI
-
-</div>
+<button onclick="openPage('settings',this)">
+⚙ Settings
+</button>
 
 
 
 </div>
 
-  <div class="main">
+
+
+</div>
+
+
+
+
+
+<div class="main">
 
 
 
 <div class="topbar">
 
 
-
 <div class="left">
 
-
-
 <div class="menu-icon" onclick="toggleMenu()">
-
 ☰
-
 </div>
 
 
 
+<div class="time">
 
-
-<div class="date-time">
-
-
-Hostel Lagares
-
+StayFlow AI
 
 <br>
 
+<span id="topTime"></span>
 
-<span id="liveTime"></span>
+</div>
 
 
 
@@ -653,47 +523,26 @@ Hostel Lagares
 
 
 
+<div class="lang">
 
-</div>
+🌐
 
+<span>PT</span>
 
+|
 
+<span>EN</span>
 
+|
 
-
-
-
-<div class="actions">
-
-
-<input class="search" placeholder="Search guest">
-
-
-
-🔔
-
-
-
-
-<button class="new-btn">
-
-+ New Reservation
-
-</button>
-
+<span>ES</span>
 
 
 </div>
 
 
 
-
-
 </div>
-
-
-
-
 
 
 
@@ -702,29 +551,12 @@ Hostel Lagares
 <div class="content">
 
 
-
-
-
-
-
-
 <section id="home" class="page active">
 
 
-
 <h1>
-
 Good morning, Jorge 👋
-
 </h1>
-
-
-
-<br>
-
-
-
-
 
 
 
@@ -732,418 +564,267 @@ Good morning, Jorge 👋
 
 
 
-
-
 <div class="card">
-
-
-Check-ins Today
-
-
-<div class="value">
-
-4
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-<div class="card">
-
-
-Check-outs
-
-
-<div class="value">
-
-2
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-<div class="card">
-
 
 Occupancy
 
-
 <div class="value">
-
 18/22
-
 </div>
 
-
-82% occupied
-
-
 </div>
-
-
-
 
 
 
 
 <div class="card">
 
-
-Tasks
-
+Check-ins
 
 <div class="value">
-
-6
-
+4
 </div>
 
-
-
 </div>
-
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<br>
-
-
-
-
 
 
 
 
 <div class="card">
 
+Check-outs
+
+<div class="value">
+2
+</div>
+
+</div>
 
 
-<h2>
 
-🟢 Live Status
 
-</h2>
+<div class="card">
+
+Revenue Today
+
+<div class="value">
+$320
+</div>
+
+</div>
+
+
+
+</div>
+
+
 
 
 
 <br>
 
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+<h2>🤖 AI Snapshot</h2>
+
+17 conversations handled
+
+<br><br>
+
+4 reservations created
+
+<br><br>
+
+92% automation
+
+</div>
+
+
+
+
+<div class="card">
+
+<h2>Today's Priorities</h2>
+
+
+🔴 Payment pending
+
+<br><br>
+
+🟡 2 beds cleaning
+
+<br><br>
+
+🔵 Guest request
+
+</div>
+
+
+
+
+<div class="card">
+
+<h2>Supply Alerts</h2>
+
+
+🔴 Toilet Paper
+
+<br><br>
+
+🟡 Milk
+
+</div>
+
+
+
+
+<div class="card">
+
+<h2>Live Status</h2>
 
 
 🟢 AI Online
 
-
 <br><br>
-
 
 🟢 WhatsApp Connected
 
-
 <br><br>
 
-
-🟢 Staff Online: 3
-
-
+🟢 Staff Online
 
 </div>
 
 
 
-
-
-
-
-
-
-<br>
-
-
-
-
-
-
-
-<div class="card">
-
-
-
-<h2>
-
-⚠ Needs Attention
-
-</h2>
-
-
-
-<br>
-
-
-
-
-🟡 Dorm 4 waiting cleaning
-
-
-<br><br>
-
-
-🔴 Payment pending Maria
-
-
-<br><br>
-
-
-🔵 Guest requesting transfer
-
-
-
 </div>
-
-
-
 
 
 
 
 </section>
 
-
-
-
-
-
-
-
-
 <section id="reservations" class="page">
 
 
-
-<h1>
-
-Reservations
-
-</h1>
-
-
-
-
-<br>
-
-
-
-
-
-
-<div class="card">
-
-
-
-<button class="new-btn">
-
-+ New Reservation
-
-</button>
-
-
-
-</div>
-
-
-
-
-
-
-
-<br>
-
-
-
-
+<h1>Reservations</h1>
 
 
 <div class="cards">
 
 
-
-
-
 <div class="card">
 
+<h2>New Reservation</h2>
 
+Guest:
 
-<h2>
-
-#1024
-
-</h2>
-
-
-
-<br>
-
-
-
-Maria Silva 🇦🇷
-
+Maria Silva
 
 <br><br>
 
+Room:
 
-Dorm 4
-
-
-<br>
-
-
-Bed 2
-
-
+Dorm 4 - Bed 2
 
 <br><br>
 
-
-Check-in:
-
-Today 14:00
-
-
-
-<br><br>
-
+Status:
 
 🟢 Confirmed
 
-
-
 </div>
-
-
-
-
 
 
 
 
 <div class="card">
 
+<h2>Upcoming</h2>
 
-
-<h2>
-
-#1025
-
-</h2>
-
-
+John Smith
 
 <br>
 
+Check-in Today
 
-
-John Smith 🇺🇸
-
-
-<br><br>
-
+<br>
 
 Private Room
 
-
-
-<br><br>
-
-
-🟡 Payment Pending
-
-
-
-</div>
-
-
-
-
-
-</div>
-
-
-
-
-
-
 <br>
 
+💰 Paid
 
-
-
+</div>
 
 
 
 <div class="card">
 
+<h2>Pending Payments</h2>
 
-<h2>
-
-Quick Reservation
-
-</h2>
-
+Maria Silva
 
 <br>
 
+$25
 
+<br><br>
 
-• Walk-in guest
-
-
-<br>
-
-
-• WhatsApp booking
-
+Carlos
 
 <br>
 
+$40
 
-• Manual booking
-
+</div>
 
 
 </div>
 
 
+<br>
 
 
+<div class="card">
 
+<h2>Reservation List</h2>
+
+<br>
+
+
+#1024
+
+Maria Silva
+
+Dorm 4 Bed 2
+
+3 nights
+
+<br><br>
+
+
+#1025
+
+John Smith
+
+Private Room
+
+2 nights
+
+
+</div>
 
 
 </section>
+
 
 
 
@@ -1156,115 +837,74 @@ Quick Reservation
 <section id="rooms" class="page">
 
 
-
-<h1>
-
-Rooms
-
-</h1>
+<h1>Rooms</h1>
 
 
-
-
-
-<br>
-
-
-
+<div class="cards">
 
 
 <div class="card">
 
-
-<h2>
-
-Dorm 4
-
-</h2>
+<h2>Dorm 1</h2>
 
 
-
-<br>
-
-
-
-🟢 Bed 1
-
-Available
-
-
+🟢 Bed 1 Available
 
 <br><br>
 
-
-
-🔴 Bed 2
-
-Maria
-
-
+🔵 Bed 2 Occupied
 
 <br><br>
 
-
-
-🟡 Bed 3
-
-Cleaning
-
-
+🟡 Bed 3 Cleaning
 
 <br><br>
 
-
-
-⚫ Bed 4
-
-Maintenance
-
+🔴 Bed 4 Blocked
 
 
 </div>
 
 
 
+<div class="card">
 
 
+<h2>Dorm 4</h2>
 
-<br>
+
+🔵 Bed 1 Maria
+
+<br><br>
+
+🟡 Bed 2 Cleaning
+
+<br><br>
+
+🟢 Bed 3 Available
 
 
+</div>
 
 
 
 <div class="card">
 
 
-<h2>
-
-Private Rooms
-
-</h2>
-
-
-
-<br>
-
+<h2>Private Rooms</h2>
 
 
 Room 1
 
-🟢 Available
-
+🟢 Ready
 
 
 <br><br>
 
 
-
 Room 2
 
-🔴 John
+🔧 Maintenance
 
 
 
@@ -1272,6 +912,49 @@ Room 2
 
 
 
+</div>
+
+
+
+
+<br>
+
+
+
+
+<div class="card">
+
+
+<h2>Room Actions</h2>
+
+
+Checkout completed
+
+
+<br>
+
+
+↓
+
+<br>
+
+
+Cleaning task created
+
+
+<br>
+
+
+↓
+
+<br>
+
+
+Room available
+
+
+
+</div>
 
 
 
@@ -1288,58 +971,28 @@ Room 2
 <section id="guests" class="page">
 
 
-
-<h1>
-
-Guests CRM
-
-</h1>
+<h1>Guests CRM</h1>
 
 
-
-
-<br>
-
-
-
+<div class="cards">
 
 
 
 <div class="card">
 
 
-<h2>
-
-Maria Silva
-
-</h2>
+<h2>Maria Silva</h2>
 
 
-
-
-<br>
-
-
-
-Argentina 🇦🇷
+Country: Brazil
 
 
 <br><br>
 
 
-Previous stays:
-
-3
-
-
-
-<br><br>
-
-
-Current:
+Room:
 
 Dorm 4 Bed 2
-
 
 
 <br><br>
@@ -1354,11 +1007,13 @@ Late arrival
 <br><br>
 
 
+<button>
+Move Room
+</button>
 
-<button class="new-btn">
 
-Edit / Move
-
+<button>
+Checkout
 </button>
 
 
@@ -1369,54 +1024,70 @@ Edit / Move
 
 
 
+<div class="card">
+
+
+<h2>Guest Actions</h2>
+
+
+Move Bed
+
+<br><br>
+
+
+Move Room
+
+<br><br>
+
+
+Add Note
+
+<br><br>
+
+
+View History
+
+
+
+</div>
+
+
+
+</div>
+
+
 
 </section>
+
+
+
+
+
+
+
+
 
 <section id="operations" class="page">
 
 
-<h1>
-
-Operations
-
-</h1>
+<h1>Operations</h1>
 
 
-<br>
 
-
+<div class="cards">
 
 
 
 <div class="card">
 
 
-<h2>
-
-🧹 Housekeeping
-
-</h2>
+<h2>🧹 Housekeeping</h2>
 
 
-<br>
-
-
-Checkout detected
-
-
-<br>
-
-↓
-
-
-<br>
-
-
-Cleaning task created
+Cleaning Queue:
 
 
 <br><br>
-
 
 
 Dorm 4 Bed 2
@@ -1424,16 +1095,7 @@ Dorm 4 Bed 2
 
 <br>
 
-
-Sheets + Bathroom
-
-
-<br><br>
-
-
-Assigned:
-
-Maria
+Assigned: Maria
 
 
 <br><br>
@@ -1451,10 +1113,30 @@ Status:
 
 
 
+<div class="card">
 
+
+<h2>🔧 Maintenance</h2>
+
+
+Broken shower
 
 <br>
 
+Room 3
+
+
+<br><br>
+
+
+Broken bed
+
+<br>
+
+Dorm 2
+
+
+</div>
 
 
 
@@ -1463,36 +1145,208 @@ Status:
 <div class="card">
 
 
-<h2>
-
-Tasks Today
-
-</h2>
+<h2>📖 Shift Handover</h2>
 
 
-
-<br>
-
-
-10:30
-
-Maria completed room cleaning
-
+Previous shift:
 
 
 <br><br>
 
 
+Need toilet paper
 
-11:00
+<br>
 
-Dorm 4 inspection
+Guest requested blanket
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h2>🚨 Incidents</h2>
+
+
+Noise complaint
+
+
+<br><br>
+
+
+Lost & Found
+
+Phone charger
+
+
+</div>
 
 
 
 </div>
 
 
+</section>
+
+<section id="supplies" class="page">
+
+
+<h1>Supplies</h1>
+
+
+<div class="cards">
+
+
+<div class="card">
+
+
+<h2>📦 Morning Inventory Check</h2>
+
+
+Deadline:
+
+<br>
+
+⏰ Before 12:00
+
+
+<br><br>
+
+
+Updated by:
+
+Maria
+
+
+</div>
+
+
+
+
+<div class="card">
+
+
+<h2>☕ Breakfast Stock</h2>
+
+
+Coffee 🟢
+
+<br><br>
+
+Milk 🟡 LOW
+
+<br><br>
+
+Bread 🔴 CRITICAL
+
+<br><br>
+
+Sugar 🟢
+
+
+</div>
+
+
+
+
+<div class="card">
+
+
+<h2>🧹 Cleaning Supplies</h2>
+
+
+Toilet Paper 🔴
+
+<br><br>
+
+Soap 🟢
+
+<br><br>
+
+Trash Bags 🟡
+
+
+</div>
+
+
+
+
+<div class="card">
+
+
+<h2>🧴 Guest Supplies</h2>
+
+
+Towels 🟢
+
+<br><br>
+
+Shampoo 🟡
+
+<br><br>
+
+Blankets 🟢
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+<br>
+
+
+
+
+
+<div class="card">
+
+
+<h2>🛒 Shopping List</h2>
+
+
+☐ Milk
+
+
+<br><br>
+
+
+☐ Bread
+
+
+<br><br>
+
+
+☐ Toilet Paper
+
+
+<br><br>
+
+
+☐ Cleaning Product
+
+
+
+<br><br>
+
+
+Status:
+
+Waiting Purchase
+
+
+
+</div>
 
 
 
@@ -1509,16 +1363,44 @@ Dorm 4 inspection
 <section id="schedule" class="page">
 
 
+<h1>Schedule</h1>
 
-<h1>
 
-Schedule
 
-</h1>
+<div class="cards">
 
+
+
+<div class="card">
+
+
+<h2>Monday</h2>
+
+
+08:00 - 16:00
 
 
 <br>
+
+Maria
+
+Housekeeping
+
+
+<br><br>
+
+
+16:00 - 00:00
+
+
+<br>
+
+Jorge
+
+Reception
+
+
+</div>
 
 
 
@@ -1527,56 +1409,18 @@ Schedule
 <div class="card">
 
 
-
-<h2>
-
-Weekly Shifts
-
-</h2>
-
-
-
-<br>
-
-
-
-Monday
-
-
-
-<br><br>
+<h2>Tuesday</h2>
 
 
 08:00 - 16:00
 
 
 <br>
-
-
-Jorge
-
-Reception
-
-
-
-<br><br>
-
-
-
-08:00 - 16:00
-
-
-<br>
-
 
 Maria
 
-Housekeeping
-
-
 
 <br><br>
-
 
 
 16:00 - 00:00
@@ -1584,12 +1428,7 @@ Housekeeping
 
 <br>
 
-
-João
-
-Night Shift
-
-
+John
 
 
 </div>
@@ -1597,6 +1436,39 @@ Night Shift
 
 
 
+
+<div class="card">
+
+
+<h2>Shift Checklist</h2>
+
+
+☐ Inventory check
+
+
+<br>
+
+
+☐ Breakfast review
+
+
+<br>
+
+
+☐ Arrivals checked
+
+
+<br>
+
+
+☐ Handover completed
+
+
+
+</div>
+
+
+</div>
 
 
 </section>
@@ -1612,19 +1484,7 @@ Night Shift
 <section id="team" class="page">
 
 
-
-<h1>
-
-Team
-
-</h1>
-
-
-
-<br>
-
-
-
+<h1>Team</h1>
 
 
 
@@ -1632,28 +1492,31 @@ Team
 
 
 
-
-
-
 <div class="card">
 
 
-<h2>
-
-Jorge
-
-</h2>
+<h2>👤 Jorge</h2>
 
 
+Role:
 
 Owner
-
 
 
 <br><br>
 
 
+Status:
+
 🟢 Online
+
+
+<br><br>
+
+
+Access:
+
+Full
 
 
 
@@ -1663,17 +1526,13 @@ Owner
 
 
 
-
 <div class="card">
 
 
-<h2>
-
-Maria
-
-</h2>
+<h2>👩 Maria</h2>
 
 
+Role:
 
 Housekeeping
 
@@ -1681,7 +1540,17 @@ Housekeeping
 <br><br>
 
 
-08-16
+Tasks:
+
+6
+
+
+<br><br>
+
+
+Completed:
+
+4
 
 
 
@@ -1691,17 +1560,13 @@ Housekeeping
 
 
 
-
 <div class="card">
 
 
-<h2>
-
-João
-
-</h2>
+<h2>👨 João</h2>
 
 
+Role:
 
 Reception
 
@@ -1709,31 +1574,13 @@ Reception
 <br><br>
 
 
-16-00
+Shift:
+
+16:00-00:00
 
 
 
 </div>
-
-
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<br>
-
-
-
-
 
 
 
@@ -1742,55 +1589,28 @@ Reception
 <div class="card">
 
 
-<h2>
+<h2>Activity Log</h2>
 
-Activity Log
 
-</h2>
-
+11:22
 
 
 <br>
 
 
-
-10:42
-
-
-<br>
-
-
-Jorge created reservation #1024
-
+Maria updated inventory
 
 
 <br><br>
 
 
-
-
-10:38
-
-
-<br>
-
-
-Maria completed cleaning
-
-
-
-<br><br>
-
-
-
-
-10:30
+10:50
 
 
 <br>
 
 
-João updated guest information
+Room 3 maintenance created
 
 
 
@@ -1798,9 +1618,7 @@ João updated guest information
 
 
 
-
-
-
+</div>
 
 
 </section>
@@ -1810,43 +1628,161 @@ João updated guest information
 
 
 
-</div>
+
+
+
+<section id="notifications" class="page">
+
+
+<h1>Notifications</h1>
+
+
+
+<div class="card">
+
+
+🔔 New WhatsApp message
+
+
+<br><br>
+
+
+🔧 Maintenance pending
+
+
+<br><br>
+
+
+📦 Supply alert
+
+
+<br><br>
+
+
+🧹 Cleaning completed
+
+
 
 </div>
 
 
+</section>
 
 
 
 
 
 
+
+
+
+<section id="settings" class="page">
+
+
+<h1>Settings</h1>
+
+
+
+<div class="cards">
+
+
+
+<div class="card">
+
+
+<h2>Hostel</h2>
+
+
+Hostel Lagares
+
+
+<br><br>
+
+
+Plan:
+
+Pro
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h2>Users</h2>
+
+
+Manage employees
+
+
+<br><br>
+
+
+Permissions
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h2>Language</h2>
+
+
+PT
+
+
+<br>
+
+EN
+
+
+<br>
+
+ES
+
+
+
+</div>
+
+
+</div>
+
+
+</section>
 
 <script>
 
 
-
-const sidebar =
-document.getElementById("sidebar");
-
-
-const overlay =
-document.getElementById("overlay");
-
-
-
-
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("overlay");
 
 
 
 function toggleMenu(){
 
-
 sidebar.classList.toggle("open");
-
 
 overlay.classList.toggle("show");
 
+}
+
+
+
+
+overlay.onclick = function(){
+
+sidebar.classList.remove("open");
+
+overlay.classList.remove("show");
 
 }
 
@@ -1854,134 +1790,45 @@ overlay.classList.toggle("show");
 
 
 
+function openPage(page, button){
 
-function closeMenu(){
+
+let pages = document.querySelectorAll(".page");
+
+
+pages.forEach(p=>{
+
+p.classList.remove("active");
+
+});
+
+
+
+document.getElementById(page).classList.add("active");
+
+
+
+let buttons = document.querySelectorAll(".menu button");
+
+
+buttons.forEach(b=>{
+
+b.classList.remove("active");
+
+});
+
+
+
+button.classList.add("active");
+
 
 
 sidebar.classList.remove("open");
-
 
 overlay.classList.remove("show");
 
 
 }
-
-
-
-
-
-overlay.onclick = closeMenu;
-
-
-
-
-
-
-
-
-function openPage(id,btn){
-
-
-
-document
-.querySelectorAll(".page")
-.forEach(page=>{
-
-
-page.classList.remove("active");
-
-
-});
-
-
-
-
-
-document
-.getElementById(id)
-.classList.add("active");
-
-
-
-
-
-document
-.querySelectorAll(".menu button")
-.forEach(button=>{
-
-
-button.classList.remove("active");
-
-
-});
-
-
-
-
-
-btn.classList.add("active");
-
-
-
-closeMenu();
-
-
-
-}
-
-
-
-
-
-
-
-
-let startX=0;
-
-
-
-
-
-
-sidebar.addEventListener(
-"touchstart",
-function(e){
-
-
-startX=e.touches[0].clientX;
-
-
-});
-
-
-
-
-
-
-
-sidebar.addEventListener(
-"touchend",
-function(e){
-
-
-
-let endX=e.changedTouches[0].clientX;
-
-
-
-if(startX-endX>80){
-
-
-closeMenu();
-
-
-}
-
-
-
-});
-
-
 
 
 
@@ -1994,28 +1841,106 @@ function updateTime(){
 let now = new Date();
 
 
-
 let time =
-now.toLocaleTimeString([],{
+
+now.toLocaleTimeString([], {
+
 hour:"2-digit",
+
 minute:"2-digit"
+
 });
 
 
 
-document.getElementById("liveTime").innerHTML =
+document.getElementById("topTime").innerHTML=time;
 
-"Today • " + time;
+document.getElementById("sideTime").innerHTML=time;
+
 
 
 }
 
 
 
+setInterval(updateTime,1000);
+
 updateTime();
 
 
-setInterval(updateTime,1000);
+
+
+
+
+
+
+
+// Swipe close menu
+
+
+let startX = 0;
+
+
+document.addEventListener("touchstart", e=>{
+
+
+startX = e.touches[0].clientX;
+
+
+});
+
+
+
+
+document.addEventListener("touchmove", e=>{
+
+
+let moveX = e.touches[0].clientX;
+
+
+if(startX - moveX > 100){
+
+
+sidebar.classList.remove("open");
+
+overlay.classList.remove("show");
+
+
+}
+
+
+
+});
+
+
+
+
+
+
+
+
+
+// Demo language switch
+
+
+document.querySelectorAll(".lang span").forEach(item=>{
+
+
+item.onclick=function(){
+
+
+let lang=item.innerHTML;
+
+
+alert("Language changed to: "+lang);
+
+
+}
+
+
+});
+
+
 
 
 
@@ -2023,8 +1948,6 @@ setInterval(updateTime,1000);
 
 
 </script>
-
-
 
 
 
