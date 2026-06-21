@@ -21,10 +21,9 @@ box-sizing:border-box;
 }
 
 
-
 body{
 
-height:100vh;
+min-height:100vh;
 
 background:#050505;
 
@@ -32,31 +31,7 @@ color:white;
 
 font-family:Arial, Helvetica, sans-serif;
 
-overflow:hidden;
-
 }
-
-
-
-
-
-body::before{
-
-content:"";
-
-position:fixed;
-
-inset:0;
-
-border:1px solid rgba(13,110,253,.18);
-
-pointer-events:none;
-
-z-index:10;
-
-}
-
-
 
 
 
@@ -66,9 +41,9 @@ z-index:10;
 
 display:grid;
 
-grid-template-columns:240px 300px 1fr 280px;
+grid-template-columns:220px 280px 1fr 260px;
 
-height:100vh;
+min-height:100vh;
 
 }
 
@@ -76,9 +51,7 @@ height:100vh;
 
 
 
-
-
-/* MENU */
+/* SIDEBAR */
 
 
 .sidebar{
@@ -106,14 +79,11 @@ margin-bottom:45px;
 }
 
 
-
 .logo span{
 
 color:#0D6EFD;
 
 }
-
-
 
 
 
@@ -138,7 +108,6 @@ margin-bottom:10px;
 
 
 
-
 .menu a:hover{
 
 background:#111827;
@@ -155,16 +124,16 @@ color:white;
 
 
 
-/* LISTA */
+/* CHAT LIST */
 
 
 .chat-list{
 
 background:#080a0f;
 
-border-right:1px solid #1b2535;
-
 padding:25px;
+
+border-right:1px solid #1b2535;
 
 }
 
@@ -177,8 +146,6 @@ padding:25px;
 margin-bottom:25px;
 
 }
-
-
 
 
 
@@ -201,15 +168,11 @@ margin-bottom:15px;
 
 
 
-
 .chat-user:hover{
 
 border-color:#0D6EFD;
 
 }
-
-
-
 
 
 
@@ -228,9 +191,9 @@ margin-bottom:8px;
 
 .user-preview{
 
-color:#9ba3b2;
-
 font-size:14px;
+
+color:#9ba3b2;
 
 }
 
@@ -251,6 +214,8 @@ display:flex;
 
 flex-direction:column;
 
+min-height:100vh;
+
 }
 
 
@@ -258,8 +223,6 @@ flex-direction:column;
 
 
 .chat-header{
-
-height:80px;
 
 padding:25px;
 
@@ -295,11 +258,7 @@ flex:1;
 
 padding:30px;
 
-overflow:auto;
-
 }
-
-
 
 
 
@@ -321,8 +280,7 @@ line-height:1.5;
 
 
 
-
-.from-guest{
+.guest-msg{
 
 background:#111827;
 
@@ -331,14 +289,132 @@ background:#111827;
 
 
 
-
-.from-ai{
+.ai-msg{
 
 background:#0D6EFD;
 
 margin-left:auto;
 
 }
+
+
+
+
+
+
+
+/* GUEST PANEL */
+
+
+.guest-panel{
+
+background:#0d0f14;
+
+padding:30px;
+
+border-left:1px solid #1b2535;
+
+}
+
+
+
+
+
+.guest-panel p{
+
+color:#9ba3b2;
+
+line-height:2;
+
+}
+
+
+
+
+
+.takeover{
+
+margin-top:30px;
+
+width:100%;
+
+padding:15px;
+
+border:none;
+
+border-radius:50px;
+
+background:#0D6EFD;
+
+color:white;
+
+font-weight:bold;
+
+cursor:pointer;
+
+}
+
+@media(max-width:900px){
+
+
+.inbox-container{
+
+grid-template-columns:1fr;
+
+}
+
+
+
+.sidebar{
+
+display:none;
+
+}
+
+
+
+
+.guest-panel{
+
+display:none;
+
+}
+
+
+
+
+
+.chat-list{
+
+border-right:none;
+
+border-bottom:1px solid #1b2535;
+
+}
+
+
+
+
+.chat-area{
+
+min-height:100vh;
+
+}
+
+
+
+
+
+.bubble{
+
+max-width:90%;
+
+}
+
+
+
+}
+
 
 
 
@@ -353,9 +429,19 @@ margin-left:auto;
 <body>
 
 
+
+
+
 <div class="inbox-container">
 
+
+
+
+
+
+
 <!-- SIDEBAR -->
+
 
 
 <aside class="sidebar">
@@ -381,7 +467,6 @@ Stay<span>Flow</span>
 Dashboard
 
 </a>
-
 
 
 
@@ -433,9 +518,8 @@ Guests
 <!-- CHAT LIST -->
 
 
+
 <section class="chat-list">
-
-
 
 
 
@@ -444,6 +528,8 @@ Guests
 Inbox
 
 </h2>
+
+
 
 
 
@@ -468,7 +554,6 @@ Room availability?
 
 
 </div>
-
 
 
 
@@ -524,7 +609,6 @@ Check-in question
 
 
 
-
 </section>
 
 
@@ -535,7 +619,7 @@ Check-in question
 
 
 
-<!-- CHAT AREA -->
+<!-- CHAT -->
 
 
 
@@ -550,7 +634,6 @@ Check-in question
 
 
 <div>
-
 
 <h2>
 
@@ -582,9 +665,7 @@ WhatsApp
 
 
 
-
 </div>
-
 
 
 
@@ -598,7 +679,7 @@ WhatsApp
 
 
 
-<div class="bubble from-guest">
+<div class="bubble guest-msg">
 
 Hi, do you have a room available?
 
@@ -609,10 +690,9 @@ Hi, do you have a room available?
 
 
 
+<div class="bubble ai-msg">
 
-<div class="bubble from-ai">
-
-Hello 👋 I can help you with availability and prices.
+Hello 👋 I can help with availability and prices.
 
 </div>
 
@@ -622,7 +702,7 @@ Hello 👋 I can help you with availability and prices.
 
 
 
-<div class="bubble from-guest">
+<div class="bubble guest-msg">
 
 Two guests next weekend.
 
@@ -634,20 +714,19 @@ Two guests next weekend.
 
 
 
-<div class="bubble from-ai">
+<div class="bubble ai-msg">
 
-Perfect. I can organize the reservation details.
-
-</div>
-
-
-
-
-
+Perfect. I can help organize your reservation.
 
 </div>
 
 
+
+
+
+
+
+</div>
 
 
 
@@ -668,9 +747,7 @@ Perfect. I can organize the reservation details.
 
 
 
-<aside class="sidebar">
-
-
+<aside class="guest-panel">
 
 
 
@@ -680,9 +757,9 @@ Guest Info
 
 </h2>
 
+
+
 <br>
-
-
 
 
 
@@ -693,8 +770,6 @@ Name: Sarah
 </p>
 
 
-<br>
-
 
 <p>
 
@@ -703,8 +778,6 @@ Country: USA
 </p>
 
 
-<br>
-
 
 <p>
 
@@ -712,8 +785,6 @@ Guests: 2
 
 </p>
 
-
-<br>
 
 
 <p>
@@ -725,29 +796,13 @@ Channel: WhatsApp
 
 
 
-<br><br>
 
 
-
-
-
-<button
-
-style="
-width:100%;
-padding:15px;
-border:none;
-border-radius:50px;
-background:#0D6EFD;
-color:white;
-font-weight:bold;
-cursor:pointer;
-">
+<button class="takeover">
 
 Take Over
 
 </button>
-
 
 
 
@@ -762,7 +817,6 @@ Take Over
 
 
 </div>
-
 
 
 
