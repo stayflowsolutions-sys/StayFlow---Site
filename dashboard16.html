@@ -102,47 +102,6 @@ button{transition:transform .18s ease,background .18s ease,border-color .18s eas
 .card.sf-clickable::after,.recommendation.sf-clickable::after,.timeline-item.sf-clickable::before,.profile-row.sf-clickable::before{pointer-events:none}
 @media(max-width:1100px){.app{grid-template-columns:1fr}.sidebar{position:fixed;left:-430px;z-index:10;transition:.25s}.sidebar.open{left:0}.mobile-menu{display:block}.chat-layout{grid-template-columns:1fr}.brief-header{display:block}.brief-metrics{grid-template-columns:1fr 1fr}.brief-metrics div:nth-child(2){border-right:0}.guest-profile,.chat-list,.chat-window{min-height:auto}.kpi,.span-4,.span-5,.span-6,.span-7,.span-8,.span-12{grid-column:span 12}.main{padding:22px}.topbar h1{font-size:34px}.ask-floating{width:130px;height:130px}.ask-floating .brand-logo{width:124px;height:124px}}
 
-
-/* ==============================
-   StayFlow final resize pass
-   Apenas proporção/escala. Estrutura e funções preservadas.
-   ============================== */
-:root{--radius:22px;--shadow:0 18px 58px #00000052;--soft-shadow:0 14px 42px #00000036}
-.app{grid-template-columns:360px 1fr}
-.sidebar{padding:22px 16px 20px;box-shadow:22px 0 70px #0000003d}
-.brand-block{min-height:232px;padding:0 8px 18px;margin-bottom:14px}
-.brand-block::before{top:22px;width:172px;height:132px;filter:blur(38px);opacity:.8}
-.logo-mark{width:224px;height:148px;margin:0 auto 8px;overflow:visible}
-.logo-mark .brand-logo{width:248px;height:248px;max-width:none;transform:none;filter:drop-shadow(0 14px 34px #0b84ff46)}
-.brand-word{margin:0 0 5px;font-size:26px;font-weight:820;letter-spacing:-1.15px;line-height:.96}
-.tagline{font-size:9px;font-weight:760;letter-spacing:.16em}
-.sidebar-profile{border-radius:22px;padding:8px;margin-bottom:17px}
-.hostel-mini{padding:7px 7px 11px;margin-bottom:7px}.user-mini{padding:7px}
-.hostel-avatar{width:44px;height:44px;border-radius:15px}.user-avatar{width:37px;height:37px}
-.hostel-name,.user-name{font-size:13.5px;font-weight:780}.hostel-meta,.user-role{font-size:11px;margin-top:3px}
-.menu{gap:4px;margin-top:6px}.menu::before{font-size:10px;padding:0 12px 5px}
-.menu button{padding:10px 12px;border-radius:14px;font-size:13px;font-weight:680;gap:10px}
-.nav-ico{width:17px;height:17px;flex:0 0 17px}.nav-ico svg{width:15.5px;height:15.5px;stroke-width:1.9}
-.menu button.active::after{right:11px;width:4px;height:4px}.collapse-menu{margin-top:14px;padding-top:14px!important}
-.main{padding:30px 38px 34px}.topbar{margin-bottom:22px;padding-bottom:18px}
-.topbar h1{font-size:36px;letter-spacing:-1.85px;font-weight:840}.topbar p{margin-top:8px;font-size:13px}
-.actions{gap:9px}.btn{border-radius:13px;padding:10px 14px;font-size:13px;font-weight:760}
-.grid,.dashboard-grid{gap:16px}.card{border-radius:22px;padding:20px}.card h2{margin-bottom:12px;font-size:16px;font-weight:760;letter-spacing:-.35px}.card p{font-size:14px;line-height:1.48}
-.kpi{min-height:112px;padding:17px 17px 15px}.kpi-top{gap:10px}.kpi-icon{width:34px;height:34px;border-radius:13px}.kpi-icon svg{width:17.5px;height:17.5px;stroke-width:1.9}.kpi-arrow{font-size:20px;opacity:.72}
-.kpi .label{font-size:12.5px;font-weight:720}.kpi .value{font-size:25px;font-weight:820;margin:6px 0 3px;letter-spacing:-.75px}.kpi .note{font-size:12px}
-.ai-brief h2{font-size:18px;font-weight:780;letter-spacing:-.5px}.inline-logo{width:25px;height:25px;margin-right:7px}.inline-logo .brand-logo{width:25px;height:25px}
-.brief-header{gap:16px}.brief-header p{margin-top:7px}.brief-metrics{margin:16px 0 6px;border-radius:18px}.brief-metrics div{padding:14px 16px}.brief-metrics strong{font-size:24px;font-weight:820;margin-bottom:4px}.brief-metrics span{font-size:11.5px}
-.recommendation{gap:11px;padding:13px 0}.recommendation.sf-clickable{border-radius:16px;padding-left:9px;padding-right:9px}
-.rec-icon{width:36px;height:36px;border-radius:13px;font-size:16px;flex:0 0 36px}.rec-title{font-size:14px;font-weight:780}.rec-text{font-size:12.8px;margin-top:3px;line-height:1.42}
-.ops-health{grid-template-columns:88px 1fr;gap:16px}.health-ring{width:86px;height:86px}.health-ring::before{inset:8px}.health-ring strong{font-size:23px}.mini-progress{height:6px;margin:10px 0 3px}
-.timeline-item{grid-template-columns:58px 1fr;gap:11px;padding-bottom:14px}.timeline-item:not(:last-child)::after{left:66px;top:18px}.timeline-text{font-size:12.8px;line-height:1.42}.timeline-text strong{font-size:13.2px;margin-bottom:2px}.time{font-size:12px}
-.status-pill{padding:5px 9px;font-size:11px;font-weight:760}.table th,.table td{padding:12px 12px;font-size:13px}.table th{font-size:10px}
-.chat-layout{grid-template-columns:310px 1fr 330px;gap:16px}.chat-list,.chat-window,.guest-profile{min-height:640px}.chat-item{padding:12px;border-radius:16px;margin-bottom:8px}.chat-name{font-size:13.5px;font-weight:760}.chat-preview{font-size:12px;margin-top:6px}
-.msg{padding:10px 12px;border-radius:15px;font-size:13px}.profile-row{padding:9px 0;font-size:13px}.bar-row{grid-template-columns:106px 1fr 56px;gap:10px;font-size:13px}.bar{height:10px}
-.ask-floating{width:136px;height:136px;right:24px;bottom:20px}.ask-floating .brand-logo{width:130px;height:130px;filter:drop-shadow(0 14px 31px #0b84ff64)}.ask-floating:hover{transform:translateY(-4px) scale(1.04)}
-.ask-panel{width:400px}.ask-head{padding:19px}.ask-body{padding:18px}.ask-message,.ask-suggestion{font-size:13px;border-radius:14px}.ask-input{padding:16px}.chat-input input,.ask-input input{padding:11px 12px;border-radius:13px;font-size:13px}
-@media(max-width:1100px){.app{grid-template-columns:1fr}.sidebar{left:-360px;width:360px}.topbar h1{font-size:32px}.main{padding:22px}.ask-floating{width:112px;height:112px}.ask-floating .brand-logo{width:106px;height:106px}}
-
 </style>
 </head>
 

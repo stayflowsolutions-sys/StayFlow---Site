@@ -1,0 +1,3058 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<title>StayFlow</title>
+
+
+<style>
+
+
+*{
+box-sizing:border-box;
+}
+
+
+
+body{
+
+margin:0;
+
+background:#050505;
+
+color:white;
+
+font-family:Arial, Helvetica, sans-serif;
+
+}
+
+
+
+.sidebar{
+
+position:fixed;
+
+top:0;
+
+left:-300px;
+
+width:300px;
+
+height:100vh;
+
+background:#080808;
+
+border-right:1px solid #168cff44;
+
+padding:20px;
+
+transition:.3s;
+
+z-index:100;
+
+overflow-y:auto;
+
+}
+
+
+
+.sidebar.open{
+
+left:0;
+
+}
+
+
+
+.overlay{
+
+position:fixed;
+
+inset:0;
+
+background:#000b;
+
+display:none;
+
+z-index:90;
+
+}
+
+
+
+.overlay.show{
+
+display:block;
+
+}
+
+
+
+
+
+.logo{
+
+text-align:center;
+
+font-size:38px;
+
+font-weight:800;
+
+margin-bottom:25px;
+
+}
+
+
+
+.logo span{
+
+color:#168cff;
+
+}
+
+
+
+
+
+
+
+.menu button{
+
+
+width:100%;
+
+border:0;
+
+background:none;
+
+color:white;
+
+padding:13px;
+
+border-radius:14px;
+
+margin-bottom:5px;
+
+text-align:left;
+
+cursor:pointer;
+
+font-size:15px;
+
+}
+
+
+
+.menu button:hover,
+.menu button.active{
+
+background:#168cff22;
+
+}
+
+
+
+
+
+.main{
+
+min-height:100vh;
+
+}
+
+
+
+
+
+.topbar{
+
+height:75px;
+
+display:flex;
+
+align-items:center;
+
+justify-content:space-between;
+
+padding:20px;
+
+border-bottom:1px solid #ffffff15;
+
+}
+
+
+
+
+
+.menu-icon{
+
+font-size:28px;
+
+cursor:pointer;
+
+}
+
+
+
+
+
+.content{
+
+padding:25px;
+
+}
+
+
+
+
+
+.page{
+
+display:none;
+
+}
+
+
+
+.page.active{
+
+display:block;
+
+}
+
+
+
+
+
+.grid{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+
+gap:18px;
+
+}
+
+
+
+
+
+.card{
+
+background:#0b0b0b;
+
+border:1px solid #168cff33;
+
+border-radius:22px;
+
+padding:20px;
+
+overflow:hidden;
+
+}
+
+
+
+
+.card h2{
+
+margin-top:0;
+
+}
+
+
+
+
+.value{
+
+font-size:35px;
+
+font-weight:bold;
+
+color:#168cff;
+
+}
+
+
+
+
+
+.badge{
+
+display:inline-block;
+
+padding:6px 12px;
+
+border-radius:20px;
+
+background:#168cff22;
+
+}
+
+
+
+
+
+.audit-list{
+
+display:grid;
+
+gap:15px;
+
+}
+
+
+
+.audit-item{
+
+background:#111;
+
+border:1px solid #168cff33;
+
+border-radius:18px;
+
+padding:18px;
+
+}
+
+
+
+
+.table-box{
+
+overflow-x:auto;
+
+}
+
+
+
+table{
+
+width:100%;
+
+border-collapse:collapse;
+
+}
+
+
+
+th,td{
+
+padding:12px;
+
+border-bottom:1px solid #ffffff15;
+
+text-align:center;
+
+}
+
+
+
+
+
+@media(max-width:700px){
+
+.content{
+
+padding:15px;
+
+}
+
+
+}
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+
+<div id="overlay" class="overlay"></div>
+
+
+
+
+
+<div id="sidebar" class="sidebar">
+
+
+
+<div class="logo">
+
+Stay<span>Flow</span>
+
+</div>
+
+
+
+
+
+<div class="menu">
+
+
+
+<button class="active" onclick="openPage('home',this)">
+
+🏠 <span data-i18n="home"></span>
+
+</button>
+
+
+
+
+<button onclick="openPage('reservations',this)">
+
+🛏 <span data-i18n="reservations"></span>
+
+</button>
+
+
+
+
+<button onclick="openPage('operations',this)">
+
+🧹 <span data-i18n="operations"></span>
+
+</button>
+
+
+
+
+<button onclick="openPage('linen',this)">
+
+🧺 <span data-i18n="linen"></span>
+
+</button>
+
+
+
+
+<button onclick="openPage('bathrooms',this)">
+
+🚿 <span data-i18n="bathrooms"></span>
+
+</button>
+
+
+
+
+<button onclick="openPage('inventory',this)">
+
+📦 <span data-i18n="inventory"></span>
+
+</button>
+
+
+
+
+<button onclick="openPage('extras',this)">
+
+🎒 <span data-i18n="extras"></span>
+
+</button>
+
+
+
+
+<button onclick="openPage('tours',this)">
+
+🚐 <span data-i18n="tours"></span>
+
+</button>
+
+
+
+
+<button onclick="openPage('analytics',this)">
+
+📊 <span data-i18n="analytics"></span>
+
+</button>
+
+
+
+
+<button onclick="openPage('audit',this)">
+
+📋 <span data-i18n="audit"></span>
+
+</button>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+<div class="main">
+
+
+<div class="topbar">
+
+
+<div class="menu-icon" onclick="toggleMenu()">
+
+☰
+
+</div>
+
+
+
+<h2 id="pageTitle" data-i18n="home"></h2>
+
+
+
+
+<div>
+
+🌐
+
+<span onclick="changeLang('pt')">PT</span>
+
+<span onclick="changeLang('en')">EN</span>
+
+<span onclick="changeLang('es')">ES</span>
+
+
+</div>
+
+
+</div>
+
+<div class="content">
+
+
+
+<section id="home" class="page active">
+
+
+<h1 data-i18n="welcome"></h1>
+
+
+
+<div class="grid">
+
+
+
+<div class="card">
+
+<h2 data-i18n="occupancy"></h2>
+
+<div class="value">82%</div>
+
+
+<p>30 <span data-i18n="beds_total"></span></p>
+
+<p>25 <span data-i18n="beds_occupied"></span></p>
+
+<p>5 <span data-i18n="beds_available"></span></p>
+
+
+</div>
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="arrivals"></h2>
+
+<div class="value">4</div>
+
+<p data-i18n="today"></p>
+
+
+</div>
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="departures"></h2>
+
+<div class="value">3</div>
+
+<p data-i18n="today"></p>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="cleaning"></h2>
+
+<div class="value">5</div>
+
+<p data-i18n="pending_tasks"></p>
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="grid">
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="ai_summary"></h2>
+
+
+<p>💬 <span data-i18n="messages"></span>: 320</p>
+
+<p>🤖 <span data-i18n="questions_answered"></span>: 95%</p>
+
+<p>📥 <span data-i18n="new_bookings"></span>: 45</p>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="team"></h2>
+
+
+<p>Maria</p>
+
+<p>08:00 - 16:00</p>
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="reservations" class="page">
+
+
+<h1 data-i18n="reservations"></h1>
+
+
+
+
+
+<div class="grid">
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="new_reservation"></h2>
+
+
+<p>👤 Maria Silva</p>
+
+<p>🌎 Brasil</p>
+
+
+<p>
+
+🛏 <span data-i18n="room"></span>:
+
+Dorm 4
+
+</p>
+
+
+
+<p>
+
+🛌 <span data-i18n="bed"></span>:
+
+Cama 12
+
+</p>
+
+
+
+
+<p>
+
+📅 21/06 - 24/06
+
+</p>
+
+
+
+<span class="badge">
+
+<span data-i18n="confirmed"></span>
+
+</span>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="checkin"></h2>
+
+
+<p>Carlos</p>
+
+<p>Private Room 2</p>
+
+<p>Cama 1</p>
+
+<p>22/06</p>
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="checkout"></h2>
+
+
+<p>Ana</p>
+
+<p>11:00</p>
+
+<p data-i18n="cleaning_created"></p>
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="operations" class="page">
+
+
+<h1 data-i18n="operations"></h1>
+
+
+
+
+
+<div class="grid">
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="cleaning_board"></h2>
+
+
+
+<p>
+
+Quarto 4
+
+</p>
+
+
+<p>
+
+Cama 12
+
+</p>
+
+
+<p>
+
+🕒 11:15
+
+</p>
+
+
+
+<p>
+
+Maria
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="cleaning_flow"></h2>
+
+
+
+<p>
+
+1️⃣ <span data-i18n="checkout_registered"></span>
+
+</p>
+
+
+
+<p>
+
+2️⃣ <span data-i18n="linen_sent"></span>
+
+</p>
+
+
+
+<p>
+
+3️⃣ <span data-i18n="cleaning_completed"></span>
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="handover"></h2>
+
+
+
+<p>
+
+☑ <span data-i18n="bathroom_check"></span>
+
+</p>
+
+
+
+<p>
+
+☑ <span data-i18n="supplies_check"></span>
+
+</p>
+
+
+
+<p>
+
+☐ <span data-i18n="report_problem"></span>
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+ 
+<section id="linen" class="page">
+
+
+<h1 data-i18n="linen"></h1>
+
+
+
+
+<div class="grid">
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="clean_available"></h2>
+
+
+<div class="value">20</div>
+
+
+<p data-i18n="ready"></p>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="in_use"></h2>
+
+
+<div class="value">30</div>
+
+
+<p data-i18n="occupied"></p>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="laundry"></h2>
+
+
+<div class="value">10</div>
+
+
+<p data-i18n="dirty_items"></p>
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="damaged"></h2>
+
+
+<div class="value">2</div>
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="linen_flow"></h2>
+
+
+<div class="audit-list">
+
+
+
+<div class="audit-item">
+
+
+<b>Check-out</b>
+
+<br>
+
+Quarto 4 - Cama 12
+
+<br>
+
+<span data-i18n="sent_to_laundry"></span>
+
+
+</div>
+
+
+
+
+
+<div class="audit-item">
+
+
+<b>Limpeza concluída</b>
+
+<br>
+
+2 lençóis adicionados à lavanderia
+
+<br>
+
+Maria - 11:40
+
+
+</div>
+
+
+
+
+
+<div class="audit-item">
+
+
+<b>Lavanderia</b>
+
+<br>
+
+Itens lavados e liberados
+
+</div>
+
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="bathrooms" class="page">
+
+
+<h1 data-i18n="bathrooms"></h1>
+
+
+
+
+
+<div class="grid">
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="bathroom_checklist"></h2>
+
+
+
+<p>☐ <span data-i18n="floor"></span></p>
+
+<p>☐ <span data-i18n="toilet"></span></p>
+
+<p>☐ <span data-i18n="sink"></span></p>
+
+<p>☐ <span data-i18n="mirror"></span></p>
+
+<p>☐ <span data-i18n="paper"></span></p>
+
+<p>☐ <span data-i18n="soap"></span></p>
+
+<p>☐ <span data-i18n="towels"></span></p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="bathroom_status"></h2>
+
+
+<p>
+
+🚿 Banheiros cadastrados: 4
+
+</p>
+
+
+
+<p>
+
+🟢 <span data-i18n="ready"></span>
+
+</p>
+
+
+
+
+<p>
+
+🕒 10:30
+
+</p>
+
+
+
+<p>
+
+Responsável: Maria
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="handover"></h2>
+
+
+
+<p>
+
+☑ Reposição papel
+
+</p>
+
+
+<p>
+
+☑ Sabão
+
+</p>
+
+
+<p>
+
+☑ Toalhas
+
+</p>
+
+
+
+<p>
+
+Turno encerrado
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="inventory" class="page">
+
+
+<h1 data-i18n="inventory"></h1>
+
+
+
+
+
+<div class="grid">
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="linen_stock"></h2>
+
+
+<p>
+
+🛏 <span data-i18n="sheets"></span>: 30
+
+</p>
+
+
+<p>
+
+🛌 <span data-i18n="pillowcases"></span>: 30
+
+</p>
+
+
+
+<p>
+
+🧺 <span data-i18n="blankets"></span>: 20
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="inventory_flow"></h2>
+
+
+
+<p>
+
+Disponível → Uso
+
+</p>
+
+
+
+<p>
+
+Uso → Sujo
+
+</p>
+
+
+
+<p>
+
+Sujo → Lavanderia
+
+</p>
+
+
+
+<p>
+
+Limpo → Disponível
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="audit"></h2>
+
+
+<p>
+
+Alteração registrada
+
+</p>
+
+
+<p>
+
+Usuário + hora + ação
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+<section id="extras" class="page">
+
+
+<h1 data-i18n="extras"></h1>
+
+
+
+
+<div class="grid">
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="extra_stock"></h2>
+
+
+
+<p>
+
+🧺 <span data-i18n="towels"></span>: 15
+
+</p>
+
+
+<p>
+
+🛌 <span data-i18n="blankets"></span>: 12
+
+</p>
+
+
+
+<p>
+
+🪶 <span data-i18n="pillows"></span>: 8
+
+</p>
+
+
+
+<p>
+
+🔒 <span data-i18n="locks"></span>: 20
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="guest_requests"></h2>
+
+
+
+<p>
+
+Maria Silva
+
+</p>
+
+
+
+<p>
+
+Toalha extra
+
+</p>
+
+
+
+<span class="badge">
+
+<span data-i18n="delivered"></span>
+
+</span>
+
+
+
+<p>
+
+Responsável: João
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="extras_revenue"></h2>
+
+
+<div class="value">
+
+$120
+
+</div>
+
+
+
+<p>
+
+Toalhas: $40
+
+</p>
+
+
+<p>
+
+Cobertas: $30
+
+</p>
+
+
+
+<p>
+
+Outros: $50
+
+</p>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="delivery_history"></h2>
+
+
+
+<div class="audit-list">
+
+
+
+<div class="audit-item">
+
+11:20
+
+<br>
+
+Maria recebeu toalha extra
+
+<br>
+
+João entregou
+
+</div>
+
+
+
+
+
+<div class="audit-item">
+
+14:05
+
+<br>
+
+Coberta devolvida
+
+<br>
+
+Estoque atualizado
+
+</div>
+
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="tours" class="page">
+
+
+<h1 data-i18n="tours"></h1>
+
+
+
+
+
+
+<div class="grid">
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="tour_catalog"></h2>
+
+
+
+
+<h3>
+
+🍷 Tour de Vinhos
+
+</h3>
+
+
+<p>
+
+💰 US$50 / pessoa
+
+</p>
+
+
+<p>
+
+🕒 09:00 - 17:00
+
+</p>
+
+
+<p>
+
+⏱ 8 horas
+
+</p>
+
+
+
+<p>
+
+🚐 Transporte incluído
+
+</p>
+
+
+</div>
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="tour_details"></h2>
+
+
+
+<p>
+
+📍 Vinícolas de Mendoza
+
+</p>
+
+
+
+<p>
+
+🍇 Degustação
+
+</p>
+
+
+
+<p>
+
+📚 Explicação do processo
+
+</p>
+
+
+
+<p>
+
+📸 Tempo para fotos
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="includes"></h2>
+
+
+
+<p>
+
+✓ Guia
+
+</p>
+
+
+<p>
+
+✓ Transporte
+
+</p>
+
+
+<p>
+
+✓ Degustações
+
+</p>
+
+
+
+<h3 data-i18n="not_included"></h3>
+
+
+
+<p>
+
+✗ Almoço
+
+</p>
+
+
+<p>
+
+✗ Compras pessoais
+
+</p>
+
+
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="grid">
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="tour_sales"></h2>
+
+
+
+<div class="value">
+
+$300
+
+</div>
+
+
+
+<p>
+
+6 reservas
+
+</p>
+
+
+
+<p>
+
+Ticket médio: $50
+
+</p>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="tour_conversion"></h2>
+
+
+
+<p>
+
+Consultaram: 42
+
+</p>
+
+
+
+<p>
+
+Compraram: 18
+
+</p>
+
+
+
+<p>
+
+Conversão: 42%
+
+</p>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="lost_sales"></h2>
+
+
+
+<p>
+
+💰 Preço melhor: 10
+
+</p>
+
+
+
+<p>
+
+🤔 Sem interesse: 8
+
+</p>
+
+
+
+<p>
+
+📅 Horário: 6
+
+</p>
+
+
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="ai_recommendation"></h2>
+
+
+
+<p>
+
+Hóspede perguntou sobre Mendoza.
+
+</p>
+
+
+
+<p>
+
+IA sugeriu Tour de Vinhos.
+
+</p>
+
+
+
+<p>
+
+Se não comprar, perguntar motivo.
+
+</p>
+
+
+
+
+</div>
+
+
+
+
+
+
+</section>
+
+ <section id="analytics" class="page">
+
+
+<h1 data-i18n="analytics"></h1>
+
+
+
+
+<div class="grid">
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="reservation_performance"></h2>
+
+
+
+<div class="value">
+
+45
+
+</div>
+
+
+
+<p>
+
+📥 <span data-i18n="new_bookings"></span>
+
+</p>
+
+
+
+<p>
+
+❌ <span data-i18n="cancelations"></span>: 3
+
+</p>
+
+
+
+<p>
+
+🚫 <span data-i18n="noshow"></span>: 1
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="operation_stats"></h2>
+
+
+
+
+<p>
+
+🚪 <span data-i18n="checkouts_today"></span>: 12
+
+</p>
+
+
+
+<p>
+
+🧹 Tempo médio limpeza: 18 min
+
+</p>
+
+
+
+<p>
+
+⚠️ <span data-i18n="late_cleaning"></span>: 2
+
+</p>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="financial"></h2>
+
+
+
+<p>
+
+🏨 <span data-i18n="hosting_revenue"></span>
+
+</p>
+
+
+<h3>
+
+$850
+
+</h3>
+
+
+
+
+<p>
+
+🎒 <span data-i18n="extras_revenue"></span>
+
+</p>
+
+
+<h3>
+
+$120
+
+</h3>
+
+
+
+
+
+<p>
+
+🚐 <span data-i18n="tour_revenue"></span>
+
+</p>
+
+
+<h3>
+
+$300
+
+</h3>
+
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="grid">
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="employee_stats"></h2>
+
+
+
+<div class="table-box">
+
+
+<table>
+
+
+<tr>
+
+<th data-i18n="employee"></th>
+
+<th data-i18n="productivity"></th>
+
+<th data-i18n="tasks_completed"></th>
+
+
+</tr>
+
+
+
+
+
+<tr>
+
+<td>Maria</td>
+
+<td>92%</td>
+
+<td>38</td>
+
+</tr>
+
+
+
+
+
+<tr>
+
+<td>João</td>
+
+<td>88%</td>
+
+<td>31</td>
+
+</tr>
+
+
+
+
+
+<tr>
+
+<td>Carlos</td>
+
+<td>76%</td>
+
+<td>17</td>
+
+</tr>
+
+
+
+</table>
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2 data-i18n="tour_statistics"></h2>
+
+
+
+<p>
+
+Consultas: 42
+
+</p>
+
+
+
+<p>
+
+Reservas: 18
+
+</p>
+
+
+
+<p>
+
+Perdidas: 24
+
+</p>
+
+
+
+<p>
+
+Motivo principal:
+
+Preço
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<section id="audit" class="page">
+
+
+<h1 data-i18n="audit"></h1>
+
+
+
+
+
+
+
+<div class="card">
+
+
+
+<h2 data-i18n="activity_log"></h2>
+
+
+
+
+
+<div class="audit-list">
+
+
+
+
+
+<div class="audit-item">
+
+
+<h3>
+
+🚪 Check-out
+
+</h3>
+
+
+
+<p>
+
+👤 Recepção
+
+</p>
+
+
+<p>
+
+🕒 11:05
+
+</p>
+
+
+<p>
+
+Quarto 4 - Cama 12 liberada
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="audit-item">
+
+
+<h3>
+
+🧹 Limpeza concluída
+
+</h3>
+
+
+
+<p>
+
+👤 Maria
+
+</p>
+
+
+<p>
+
+🕒 11:40
+
+</p>
+
+
+<p>
+
+Enxoval enviado para lavanderia
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="audit-item">
+
+
+<h3>
+
+🚐 Tour consultado
+
+</h3>
+
+
+
+<p>
+
+👤 Sistema IA
+
+</p>
+
+
+<p>
+
+🕒 12:10
+
+</p>
+
+
+<p>
+
+Cliente não comprou - motivo registrado
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="audit-item">
+
+
+<h3>
+
+📦 Estoque alterado
+
+</h3>
+
+
+
+<p>
+
+👤 João
+
+</p>
+
+
+
+<p>
+
+🕒 14:00
+
+</p>
+
+
+
+<p>
+
+2 toalhas entregues
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+</section>
+
+ <script>
+
+
+const translations={
+
+
+pt:{
+
+
+home:"Início",
+welcome:"Bom dia Jorge 👋",
+
+reservations:"Reservas",
+operations:"Operações",
+linen:"Enxoval",
+bathrooms:"Banheiros",
+inventory:"Inventário",
+extras:"Extras",
+tours:"Passeios",
+analytics:"Análises",
+audit:"Auditoria",
+
+occupancy:"Ocupação",
+beds_total:"camas totais",
+beds_occupied:"camas ocupadas",
+beds_available:"camas disponíveis",
+
+arrivals:"Chegadas",
+departures:"Saídas",
+today:"Hoje",
+pending_tasks:"Tarefas pendentes",
+
+cleaning:"Limpeza",
+
+messages:"Mensagens",
+questions_answered:"Perguntas respondidas",
+new_bookings:"Novas reservas",
+
+ai_summary:"Resumo IA",
+
+team:"Equipe",
+employee:"Funcionário",
+productivity:"Produtividade",
+
+room:"Quarto",
+bed:"Cama / Leito",
+
+new_reservation:"Nova reserva",
+
+checkin:"Check-in",
+checkout:"Check-out",
+
+confirmed:"Confirmada",
+
+cleaning_board:"Painel de limpeza",
+cleaning_flow:"Fluxo de limpeza",
+
+checkout_registered:"Check-out registrado",
+cleaning_created:"Limpeza criada",
+cleaning_completed:"Limpeza concluída",
+
+linen_sent:"Enxoval enviado",
+
+handover:"Repasse de turno",
+
+bathroom_check:"Conferir banheiros",
+supplies_check:"Conferir insumos",
+report_problem:"Registrar problema",
+
+linen_flow:"Fluxo do enxoval",
+sent_to_laundry:"Enviado para lavanderia",
+
+clean_available:"Limpo disponível",
+in_use:"Em uso",
+laundry:"Lavanderia",
+damaged:"Danificado",
+
+ready:"Pronto",
+dirty_items:"Itens sujos",
+
+bathroom_checklist:"Checklist banheiro",
+bathroom_status:"Status banheiro",
+
+floor:"Piso",
+toilet:"Vaso",
+sink:"Pia",
+mirror:"Espelho",
+paper:"Papel higiênico",
+soap:"Sabão",
+towels:"Toalhas",
+
+linen_stock:"Estoque enxoval",
+sheets:"Lençóis",
+pillowcases:"Fronhas",
+blankets:"Cobertas",
+
+inventory_flow:"Fluxo estoque",
+
+extra_stock:"Estoque extras",
+guest_requests:"Pedidos hóspedes",
+delivered:"Entregue",
+delivery_history:"Histórico entregas",
+
+pillows:"Travesseiros",
+locks:"Cadeados",
+
+extras_revenue:"Receita extras",
+
+tour_catalog:"Catálogo de passeios",
+tour_details:"Detalhes do passeio",
+includes:"Inclui",
+not_included:"Não inclui",
+
+tour_sales:"Vendas de tours",
+tour_conversion:"Conversão tours",
+lost_sales:"Vendas perdidas",
+
+ai_recommendation:"Recomendação IA",
+
+tour_revenue:"Receita tours",
+tour_statistics:"Estatísticas tours",
+
+reservation_performance:"Desempenho reservas",
+operation_stats:"Operação",
+financial:"Financeiro",
+
+hosting_revenue:"Receita hospedagem",
+
+cancelations:"Cancelamentos",
+noshow:"No-show",
+late_cleaning:"Limpezas atrasadas",
+
+employee_stats:"Funcionários",
+
+tasks_completed:"Tarefas concluídas",
+
+activity_log:"Registro de atividades"
+
+},
+
+
+
+
+
+
+
+
+
+en:{
+
+
+home:"Home",
+welcome:"Good morning Jorge 👋",
+
+reservations:"Reservations",
+operations:"Operations",
+linen:"Linen",
+bathrooms:"Bathrooms",
+inventory:"Inventory",
+extras:"Extras",
+tours:"Tours",
+analytics:"Analytics",
+audit:"Audit",
+
+occupancy:"Occupancy",
+
+beds_total:"total beds",
+beds_occupied:"occupied beds",
+beds_available:"available beds",
+
+arrivals:"Arrivals",
+departures:"Departures",
+today:"Today",
+pending_tasks:"Pending tasks",
+
+cleaning:"Cleaning",
+
+messages:"Messages",
+questions_answered:"Answered questions",
+new_bookings:"New bookings",
+
+ai_summary:"AI Summary",
+
+team:"Team",
+employee:"Employee",
+productivity:"Productivity",
+
+room:"Room",
+bed:"Bed",
+
+new_reservation:"New reservation",
+
+checkin:"Check-in",
+checkout:"Check-out",
+
+confirmed:"Confirmed",
+
+cleaning_board:"Cleaning board",
+cleaning_flow:"Cleaning flow",
+
+checkout_registered:"Checkout registered",
+cleaning_created:"Cleaning created",
+cleaning_completed:"Cleaning completed",
+
+linen_sent:"Linen sent",
+
+handover:"Shift handover",
+
+bathroom_check:"Check bathrooms",
+supplies_check:"Check supplies",
+report_problem:"Report problem",
+
+clean_available:"Clean available",
+in_use:"In use",
+laundry:"Laundry",
+damaged:"Damaged",
+
+ready:"Ready",
+
+towels:"Towels",
+soap:"Soap",
+paper:"Toilet paper",
+
+tour_catalog:"Tour catalog",
+tour_details:"Tour details",
+includes:"Includes",
+not_included:"Not included",
+
+tour_sales:"Tour sales",
+tour_conversion:"Tour conversion",
+lost_sales:"Lost sales",
+
+ai_recommendation:"AI recommendation",
+
+financial:"Financial",
+hosting_revenue:"Hosting revenue",
+
+activity_log:"Activity log"
+
+},
+
+
+
+
+
+
+
+es:{
+
+
+home:"Inicio",
+welcome:"Buenos días Jorge 👋",
+
+reservations:"Reservas",
+operations:"Operaciones",
+linen:"Ropa de cama",
+bathrooms:"Baños",
+inventory:"Inventario",
+extras:"Extras",
+tours:"Tours",
+analytics:"Análisis",
+audit:"Auditoría",
+
+occupancy:"Ocupación",
+
+arrivals:"Llegadas",
+departures:"Salidas",
+today:"Hoy",
+
+cleaning:"Limpieza",
+
+employee:"Empleado",
+
+room:"Habitación",
+bed:"Cama",
+
+checkin:"Check-in",
+checkout:"Check-out",
+
+confirmed:"Confirmada",
+
+laundry:"Lavandería",
+
+towels:"Toallas",
+soap:"Jabón",
+paper:"Papel higiénico",
+
+tour_catalog:"Catálogo de tours",
+tour_details:"Detalles del tour",
+
+includes:"Incluye",
+not_included:"No incluye",
+
+tour_sales:"Ventas de tours",
+tour_conversion:"Conversión de tours",
+
+financial:"Finanzas",
+
+activity_log:"Registro de actividad"
+
+
+}
+
+
+};
+
+ function applyLanguage(lang){
+
+
+document
+.querySelectorAll("[data-i18n]")
+.forEach(el=>{
+
+
+let key=el.dataset.i18n;
+
+
+
+if(translations[lang][key]){
+
+el.innerHTML=translations[lang][key];
+
+}
+
+
+});
+
+
+
+localStorage.setItem(
+"stayflow_language",
+lang
+);
+
+
+}
+
+
+
+
+
+
+
+function changeLang(lang){
+
+
+applyLanguage(lang);
+
+
+}
+
+
+
+
+
+
+
+function toggleMenu(){
+
+
+document
+.getElementById("sidebar")
+.classList.toggle("open");
+
+
+
+document
+.getElementById("overlay")
+.classList.toggle("show");
+
+
+}
+
+
+
+
+
+
+document
+.getElementById("overlay")
+.onclick=toggleMenu;
+
+
+
+
+
+
+
+
+
+
+function openPage(id,button){
+
+
+
+document
+.querySelectorAll(".page")
+.forEach(page=>{
+
+page.classList.remove("active");
+
+});
+
+
+
+
+document
+.getElementById(id)
+.classList.add("active");
+
+
+
+
+
+document
+.querySelectorAll(".menu button")
+.forEach(btn=>{
+
+btn.classList.remove("active");
+
+});
+
+
+
+
+
+button.classList.add("active");
+
+
+
+
+
+document
+.getElementById("pageTitle")
+.dataset.i18n=id;
+
+
+
+applyLanguage(
+localStorage.getItem("stayflow_language") || "pt"
+);
+
+
+
+if(
+document
+.getElementById("sidebar")
+.classList.contains("open")
+){
+
+toggleMenu();
+
+}
+
+
+
+}
+
+
+
+
+
+
+
+applyLanguage(
+localStorage.getItem("stayflow_language") || "pt"
+);
+
+
+
+
+
+</script>
+
+
+</body>
+
+</html> 
+
+ 
+
+
+ 
