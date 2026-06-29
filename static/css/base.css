@@ -1,0 +1,37 @@
+:root{
+  --bg:#03070d;
+  --bg2:#06101b;
+  --panel:#07111d;
+  --panel2:#0a1726;
+  --panel3:#0d2034;
+  --line:#162842;
+  --line2:#27466d;
+  --text:#f7fbff;
+  --muted:#9aa8bb;
+  --muted2:#65758b;
+  --blue:#0b84ff;
+  --blue2:#23d2ff;
+  --green:#26e0a0;
+  --yellow:#ffbd4a;
+  --red:#ff5d76;
+  --purple:#8b5cf6;
+  --radius:24px;
+  --shadow:0 24px 80px #00000066;
+  --soft-shadow:0 18px 50px #00000040;
+}
+:root{--radius:22px;--shadow:0 18px 58px #00000052;--soft-shadow:0 14px 42px #00000036}
+:root{
+  --sf-sidebar-w:320px;
+  --sf-app-pad-x:34px;
+  --sf-app-pad-y:26px;
+  --sf-topbar-h:86px;
+  --sf-workspace-h:calc(100vh - 112px);
+}
+  :root{--sf-sidebar-w:304px;--sf-app-pad-x:28px}
+:root{--sf-sidebar-w:340px!important}
+:root{
+  --sf-gap:24px!important;
+  --sf-card-pad:24px!important;
+  --sf-card-radius:24px!important;
+  --sf-topbar-h-fixed:134px!important;
+}
