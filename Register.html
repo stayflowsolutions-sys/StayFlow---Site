@@ -1,0 +1,28 @@
+<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>StayFlow | Criar Conta</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;height:100vh;display:flex;align-items:center;justify-content:center;background:#06101b;color:#fff;overflow:hidden}
+body:before{content:'';position:fixed;inset:0;opacity:.22;background:url('https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg') center/cover no-repeat}
+.card{position:relative;z-index:1;width:500px;background:rgba(8,12,20,.9);padding:42px;border-radius:28px;border:1px solid #233652}
+.brand{text-align:center;margin-bottom:22px}.brand img{width:128px}
+input{width:100%;padding:15px;margin:8px 0 16px;background:#0d1421;border:1px solid #233652;border-radius:15px;color:#fff}
+button{width:100%;padding:16px;background:#2f7dff;border:none;border-radius:16px;color:#fff;font-weight:700}
+a{color:#8fb4ff;text-decoration:none}
+</style></head><body><div class='card'>
+<div class='brand' style='display:flex;justify-content:center;align-items:center;gap:0px'><img src='assets/images/logo2.png' style='width:128px;margin-right:-28px'><h1 style='font-size:34px;margin:0'>STAY<span style='color:#2f7dff'>FLOW</span></h1></div>
+<h2>Criar conta</h2><br>
+<label>Nome do hostel</label><input id='hostel_name' placeholder='Digite o nome do hostel'>
+<label>Seu nome</label><input id='admin_name' placeholder='Digite seu nome'>
+<label>E-mail</label><input id='email' placeholder='Digite seu e-mail'>
+<label>Senha</label><input id='password' type='password' placeholder='Crie uma senha'>
+<button onclick='reg()'>Criar conta</button><p id='m'></p><br>
+<a href='Login.html'>Já possui uma conta? Entrar</a>
+</div>
+<script>
+async function reg(){
+const p={hostel_name:hostel_name.value.trim(),admin_name:admin_name.value.trim(),email:email.value.trim(),password:password.value};
+const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+const d=await r.json();
+if(!r.ok||!d.success){m.textContent=d.message||'Erro';return;}
+location.href='Login.html';
+}
+</script></body></html>
