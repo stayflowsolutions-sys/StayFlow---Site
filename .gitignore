@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+stayflow.db
+*.db
+conversations.json
+conversations.json.backup
+backups_old/
+.env
+arvore.txt
+estrutura.txt
