@@ -46,9 +46,15 @@ def receive_message():
         phone_number_id = value.get("metadata", {}).get("phone_number_id")
         messages = value.get("messages")
 
-        # A Meta também manda notificações de status (entregue, lido),
-        # sem "messages" — ignoramos, não são mensagens novas de hóspede.
+        # A Meta também manda notificações de status (entregue, lido,
+        # falhou), sem "messages" — antes isso era ignorado sem logar
+        # nada. Agora imprimimos o conteúdo pra debug.
         if not messages:
+            statuses = value.get("statuses")
+            if statuses:
+                print("STATUS UPDATE DO WHATSAPP:", statuses)
+            else:
+                print("WEBHOOK SEM MESSAGES NEM STATUSES:", payload)
             return jsonify({"status": "ignored"}), 200
 
         incoming = messages[0]
