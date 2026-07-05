@@ -1,6 +1,7 @@
+import os
 import sqlite3
 
-DATABASE = "stayflow.db"
+DATABASE = os.path.join(os.getenv("STAYFLOW_DATA_DIR", "."), "stayflow.db")
 
 
 def get_connection():
