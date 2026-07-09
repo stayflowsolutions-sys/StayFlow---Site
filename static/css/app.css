@@ -714,12 +714,26 @@ body::before{
   grid-template-columns:280px minmax(0,1fr) 260px;
   gap:var(--gap);
   align-items:stretch;
+  /* Fix: sem altura própria, height:100% dos filhos (abaixo) não tinha
+     contra o que resolver — cada painel só crescia com o conteúdo, e
+     quem acabava rolando era a página inteira (.page), não as
+     mensagens isoladamente. .page já tem altura definida (flex:1 1 auto
+     dentro de .main, que é height:100vh), então height:100% aqui
+     resolve contra isso corretamente. */
+  height:100%;
+  min-height:0;
 }
 .chat-list,
 .chat-window,
 .guest-profile{
   height:100%;
   min-height:0;
+}
+.chat-list,
+.guest-profile{
+  /* Cada painel rola internamente se o próprio conteúdo (lista de
+     conversas / perfil do hóspede) for maior que o espaço disponível. */
+  overflow-y:auto;
 }
 
 .chat-item{
@@ -784,6 +798,24 @@ body::before{
   background:#0b84ff20;
   border:1px solid #0b84ff16;
   margin-left:auto;
+}
+
+/* Divisor de data entre mensagens, estilo WhatsApp */
+.date-divider{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:14px 0;
+}
+.date-divider span{
+  background:#ffffff0d;
+  border:1px solid #ffffff14;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.03em;
+  padding:5px 12px;
+  border-radius:999px;
 }
 
 .chat-input{
