@@ -132,3 +132,10 @@ input:focus{
   color:var(--muted);
   text-align:center;
 }
+.small a{
+  color:var(--blue);
+  font-weight:700;
+}
+.small a:hover{
+  text-decoration:underline;
+}
