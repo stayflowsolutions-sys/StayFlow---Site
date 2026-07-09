@@ -824,3 +824,168 @@ nav{
     margin:0 auto 24px!important;
   }
 }
+
+
+/* ==============================
+   Fix: navbar piscando/recompondo errado durante scroll no Safari iOS.
+
+   Diagnóstico: o bloco "stayflow-premium-refine" (acima) já sobrescreve
+   o blur do "stayflow-official-final" para backdrop-filter:none e
+   background:transparent — ou seja, hoje NÃO existe blur ativo no
+   navbar. A causa do bug não é o blur (já está desligado); é o padrão
+   clássico do WebKit em iOS: elemento position:fixed totalmente
+   transparente sobre conteúdo que rola por baixo. O Safari às vezes
+   falha em recompor essa camada a tempo durante scroll com momentum
+   (rubber-banding), e como não há nenhum fundo sólido "escondendo" o
+   glitch, o piscar fica visível.
+
+   Fix: (1) devolve um fundo semi-opaco sólido (sem blur, pra não
+   reintroduzir a variável suspeita) — um fixed totalmente transparente
+   é o cenário que mais reproduz esse bug; (2) promove o navbar pra sua
+   própria camada de composição via GPU (transform:translateZ(0) +
+   will-change:transform), que é a correção padrão documentada pra esse
+   bug específico do WebKit — força o Safari a tratar o elemento como
+   uma camada isolada, em vez de recompor contra o restante da página
+   a cada frame de scroll.
+   ============================== */
+.navbar{
+  background:linear-gradient(180deg,rgba(8,18,31,.82),rgba(8,18,31,.68))!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  transform:translateZ(0);
+  -webkit-transform:translateZ(0);
+  will-change:transform;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+
+/* ==============================
+   Header compacto — SÓ mobile (≤820px). Desktop não é tocado por
+   este bloco (tudo aqui dentro de @media, então acima de 820px
+   nenhuma destas regras se aplica).
+
+   Problema relatado: no mobile o menu de navegação (Recursos/
+   Plataforma/Como funciona/Futuro) ficava solto/empilhado no meio
+   da tela, embaixo de uma marca que herdava tamanhos de várias
+   camadas antigas do arquivo (a .brand nunca teve uma regra
+   definitiva só pra mobile). Reorganizado pra um padrão de app:
+   barra fina fixa no topo, logo pequena à esquerda, ações à
+   direita. O menu de âncoras (#features etc.) some do header nesse
+   breakpoint — não tinha espaço pra caber junto com logo + idioma +
+   login + CTA numa barra fina de verdade; as seções continuam
+   acessíveis normalmente rolando a página.
+   ============================== */
+@media(max-width:820px){
+  .navbar{
+    position:fixed!important;
+    top:0!important;
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    transform:none!important;
+    margin-top:0!important;
+    min-height:0!important;
+    padding:10px 16px!important;
+    border:none!important;
+    border-bottom:1px solid rgba(255,255,255,.08)!important;
+    border-radius:0!important;
+    display:flex!important;
+    /* wrap (não nowrap): tentei deixar .nav-actions dividir a mesma
+       linha da logo com wrap só nos filhos dela, mas a linha externa
+       em nowrap nunca dava a ela largura suficiente pra decidir
+       quebrar — o conjunto todo só estourava a tela em vez de
+       quebrar. Com a linha externa em wrap + nav-actions em
+       width:100% (abaixo), ela sempre ganha a linha inteira pra si,
+       o que garante caber os 3 itens (idioma/login/CTA) de forma
+       previsível em qualquer largura de mobile. */
+    flex-wrap:wrap!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:6px!important;
+  }
+  .brand{
+    gap:6px!important;
+    min-width:0!important;
+  }
+  .brand img{
+    width:26px!important;
+    height:26px!important;
+    margin:0!important;
+    transform:none!important;
+  }
+  .brand-word{
+    font-size:16px!important;
+    letter-spacing:-.3px!important;
+  }
+  .nav-links{
+    display:none!important;
+  }
+  .nav-actions{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    align-items:center!important;
+    /* Sem justify-content:flex-end/margin-auto aqui de propósito:
+       testado isoladamente, a combinação de width:100% num flex-wrap
+       com alinhamento à direita (flex-end OU margin-left:auto) faz
+       o Edge headless "perder" o último item em vez de quebrar linha
+       ou encolher — reproduzido num teste mínimo, sem nenhuma outra
+       regra do arquivo envolvida. Alinhamento à esquerda (padrão)
+       não tem esse problema e já ocupa a linha inteira. */
+    justify-content:flex-start!important;
+    gap:6px!important;
+    /* Fica em 100% da largura, na própria linha (abaixo da logo) —
+       garante espaço suficiente pra idioma + login + CTA caberem
+       numa linha só, em vez de disputar espaço com a marca. */
+    width:100%!important;
+    min-width:0!important;
+    row-gap:6px!important;
+  }
+  .lang-current{
+    min-height:28px!important;
+    padding:0 7px!important;
+    font-size:11px!important;
+    gap:4px!important;
+  }
+  .login-btn,
+  .demo-btn{
+    min-height:28px!important;
+    padding:0 9px!important;
+    font-size:10.5px!important;
+    font-weight:800!important;
+    white-space:nowrap!important;
+  }
+
+  /* A barra agora é sempre 2 linhas (logo + ações, ver acima), então
+     tem altura mais previsível: ~46px (logo) + ~40px (ações) + 20px
+     de padding vertical ≈ 106px. Uso 130px de folga. */
+  .hero{
+    padding-top:130px!important;
+  }
+
+  /* Causa raiz do título colando na barra: h1 tem margin-top:-110px
+     herdado do bloco "hero-logo-final-large" (mais acima no arquivo)
+     — servia pra puxar o título pra cima, compensando a logo gigante
+     empurrando tudo pra baixo. Como a logo some no mobile (regra
+     abaixo), essa margem negativa ficou órfã e cancelava exatamente
+     o padding-top acima (110px - 110px = 0, título colado na barra).
+     Resetada aqui. */
+  h1{
+    margin-top:0!important;
+  }
+
+  /* A logo grande ("ondas") solta no meio do hero ficava
+     desproporcional pro tamanho da tela — removida no mobile.
+     A marca já aparece pequena e legível na barra fixa acima. */
+  .hero-logo{
+    display:none!important;
+  }
+
+  /* Badge "IA ativa" (fixed, canto superior direito) colidia com os
+     botões da barra nova — desce pra abaixo dela (barra agora tem
+     2 linhas, ~106px). */
+  .hero-ai-status{
+    top:100px!important;
+    right:16px!important;
+  }
+}
