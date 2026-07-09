@@ -1,0 +1,134 @@
+/* ==============================
+   StayFlow — Auth (Login.html)
+   Extraído do <style> inline de Login.html.
+   Requer tokens.css e reset.css carregados antes deste arquivo.
+   .card/.btn renomeados para .auth-card/.auth-btn para não colidir
+   com os mesmos nomes de classe em app.css e landing.css (cada um
+   com um significado visual diferente).
+   ============================== */
+
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  /* Fix: sem essa margem lateral, o card (width:100%) encostava
+     nas duas bordas e qualquer sub-pixel de folga fazia inputs e
+     botão serem cortados no mobile — bug pré-existente, reproduzido
+     também na versão anterior de Login.html. */
+  padding:16px;
+  background:
+    radial-gradient(circle at 78% -14%, #0b84ff24 0, transparent 31%),
+    radial-gradient(circle at 92% 72%, #23d2ff14 0, transparent 28%),
+    radial-gradient(circle at 12% 96%, #0b84ff18 0, transparent 34%),
+    linear-gradient(135deg,#02050a 0%,#06101b 48%,#03070d 100%);
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:var(--text);
+}
+.auth-card{
+  width:100%;
+  max-width:420px;
+  padding:26px 24px 22px;
+  border-radius:20px;
+  background:linear-gradient(180deg,#0c1828ee,#06101bee);
+  border:1px solid #17304d95;
+  box-shadow:0 24px 80px #00000066;
+}
+.logo{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin-bottom:18px;
+}
+.logo img{
+  width:120px;
+  height:120px;
+  object-fit:contain;
+  filter:drop-shadow(0 12px 28px #0b84ff55);
+}
+.logo h1{
+  margin:6px 0 0;
+  font-size:24px;
+  font-weight:800;
+  letter-spacing:-0.6px;
+}
+.logo h1 span{
+  background:linear-gradient(100deg,#0b84ff,#23d2ff);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+.logo p{
+  margin:4px 0 0;
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+h2{
+  margin:0 0 10px;
+  font-size:18px;
+  font-weight:800;
+}
+p{
+  margin:0 0 16px;
+  font-size:14px;
+  color:var(--muted);
+}
+label{
+  display:block;
+  font-size:13px;
+  margin-bottom:4px;
+}
+input{
+  width:100%;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:#02070d;
+  color:var(--text);
+  padding:10px 12px;
+  font-size:14px;
+  outline:none;
+  margin-bottom:12px;
+}
+input:focus{
+  border-color:#0b84ff70;
+  box-shadow:0 0 0 3px #0b84ff22;
+}
+.auth-btn{
+  width:100%;
+  margin-top:4px;
+  border-radius:15px;
+  padding:10px 16px;
+  border:1px solid transparent;
+  background:linear-gradient(180deg,#0f8bff,#056ee7);
+  color:white;
+  font-weight:800;
+  font-size:14px;
+  cursor:pointer;
+  box-shadow:0 16px 34px #0b84ff24;
+  transition:filter .18s,transform .18s,box-shadow .18s;
+}
+.auth-btn:hover{
+  filter:brightness(1.06);
+  transform:translateY(-1px);
+  box-shadow:0 20px 40px #0b84ff30;
+}
+.error{
+  margin-top:8px;
+  font-size:13px;
+  color:var(--red);
+  min-height:18px;
+}
+.success{
+  margin-top:8px;
+  font-size:13px;
+  color:#26e0a0;
+  min-height:18px;
+}
+.small{
+  margin-top:12px;
+  font-size:12px;
+  color:var(--muted);
+  text-align:center;
+}

@@ -1,0 +1,39 @@
+/* ==============================
+   StayFlow — Design tokens
+   Fonte única de verdade para cores, espaçamento e raios de borda.
+   Usado por app.css, landing.css e auth.css.
+
+   Breakpoints (documentação — @media não aceita var(), use os
+   valores literais abaixo nas media queries de cada arquivo):
+     560px   ações/nav empilham em telas muito pequenas (landing)
+     820px   tablet / hero da landing empilha (landing)
+     1100px  sidebar do app vira overlay, grid do app empilha (app)
+     1360px  ajuste fino de padding em telas grandes (app)
+   ============================== */
+:root{
+  --bg:#03070d;
+  --bg2:#06101b;
+  --panel:#07111d;
+  --panel2:#0a1726;
+  --panel3:#0d2034;
+  --line:#162842;
+  --line2:#27466d;
+  --text:#f7fbff;
+  --muted:#9aa8bb;
+  --muted2:#65758b;
+  --blue:#0b84ff;
+  --blue2:#23d2ff;
+  --green:#26e0a0;
+  --yellow:#ffbd4a;
+  --red:#ff5d76;
+  --purple:#8b5cf6;
+
+  --radius:24px;
+  --shadow:0 24px 80px #00000066;
+  --soft-shadow:0 18px 50px #00000040;
+
+  --sidebar-w:340px;
+  --gap:24px;
+  --card-pad:24px;
+  --card-radius:24px;
+}
