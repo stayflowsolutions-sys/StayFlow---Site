@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.2.0
+\*\*Versão:\*\* 1.3.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 05/07/2026
+\*\*Última atualização:\*\* 09/07/2026
 
 
 
@@ -45,6 +45,8 @@
 | 1.1.0 | 01/07/2026 | Oficial | Consolidação do posicionamento do produto, atualização da arquitetura do frontend, refinamento do Dashboard Inteligente, atualização do roadmap e registro das decisões permanentes. |
 
 | 1.2.0 | 05/07/2026 | Oficial | Publicação em produção com domínio oficial e disco persistente; conclusão e validação de ponta a ponta da integração com WhatsApp Business; registro de limitação de plataforma (restrição de mensagens cross-country Brasil/Indonésia); atualização do roadmap com dívidas técnicas de UX identificadas. |
+
+| 1.3.0 | 09/07/2026 | Oficial | Refatoração completa da arquitetura de CSS do Frontend (tokens/reset/app/landing/auth); correção de múltiplas dívidas técnicas de UX em mobile identificadas na versão anterior; adoção do Claude Code como ferramenta de desenvolvimento assistido, incluindo criação de skill de contexto automático; novas funcionalidades no módulo de Chats (divisores de data, identificação de país por telefone); criação do processo formal de Checklist Ativo para controle de escopo. |
 
 
 
@@ -2502,15 +2504,39 @@ C:\\StayFlow
 
 │
 
-├── StayFlow---Site
+└── StayFlow---Site
 
-│
+    │
 
-└── docs
+    ├── (arquivos e pastas do Frontend — ver Capítulo 11)
 
-&#x20;   └── STAYFLOW\_MASTER\_CONTEXT.md
+    │
+
+    └── docs
+
+        ├── STAYFLOW\_MASTER\_CONTEXT.md
+
+        ├── DIARIO\_DE\_ENGENHARIA.md
+
+        └── CHECKLIST\_ATIVO.md
 
 ```
+
+
+
+Nota (atualizada em 09/07/2026, versão 1.3.0): a pasta `docs/` não é mais
+
+uma pasta irmã de `HostelBot`/`StayFlow---Site` — ela vive dentro de
+
+`StayFlow---Site/docs/`. Essa decisão foi tomada para permitir que o
+
+skill de contexto automático do Claude Code (`.claude/skills/`) localize
+
+e carregue este documento e o Diário de Engenharia no início de cada
+
+sessão de desenvolvimento, já que a ferramenta opera a partir da raiz do
+
+repositório Frontend.
 
 
 
@@ -2602,7 +2628,9 @@ O Frontend não implementa regras de negócio.
 
 
 
-A pasta \*\*docs\*\* concentra toda a documentação oficial da StayFlow.
+A pasta \*\*docs\*\* concentra toda a documentação oficial da StayFlow, e
+
+está localizada dentro de `StayFlow---Site/docs/` (ver nota na seção 9.1).
 
 
 
@@ -2610,7 +2638,19 @@ Atualmente contém:
 
 
 
-\- STAYFLOW\_MASTER\_CONTEXT.md
+\- STAYFLOW\_MASTER\_CONTEXT.md — este documento, a principal fonte de
+
+  verdade;
+
+\- DIARIO\_DE\_ENGENHARIA.md — histórico detalhado sessão a sessão, com
+
+  decisões, descobertas e pendências registradas cronologicamente;
+
+\- CHECKLIST\_ATIVO.md — fonte única de prioridades de trabalho em
+
+  andamento, com regra de não iniciar escopo novo antes de concluir o que
+
+  já está registrado.
 
 
 
@@ -2618,7 +2658,9 @@ No futuro poderão existir documentos complementares.
 
 
 
-Entretanto, o Documento Mestre permanecerá como a principal referência técnica da empresa.
+Entretanto, o Documento Mestre permanecerá como a principal referência
+
+técnica da empresa.
 
 
 
@@ -3104,7 +3146,8 @@ Novas tecnologias poderão ser incorporadas futuramente quando representarem ben
 
 
 
-A estrutura atual do Frontend segue o modelo abaixo:
+A estrutura atual do Frontend segue o modelo abaixo (atualizada em 09/07/2026,
+versão 1.3.0, após a refatoração de CSS):
 
 
 
@@ -3114,25 +3157,43 @@ StayFlow---Site/
 
 
 
-├── index.html
+├── index.html          (landing page pública)
 
-├── dashboard.html
+├── dashboard.html      (aplicação principal — single-page, abas internas:
 
-├── settings.html
+│                         dashboard, chats, configurações, reservas,
 
-├── statistics.html
+│                         financeiro, estoque, operações, receitas)
 
-├── reservations.html
+├── Login.html
 
-├── inbox.html
+├── Register.html
+
+│
+
+├── static/css/
+
+│   ├── tokens.css       (fonte única de cores, radius, shadow, breakpoints —
+
+│   │                      #0b84ff é o token de cor oficial)
+
+│   ├── reset.css         (reset universal compartilhado)
+
+│   ├── app.css           (estilos da aplicação/dashboard)
+
+│   ├── landing.css       (estilos da landing page)
+
+│   ├── auth.css          (estilos de Login/Register)
+
+│   └── legacy.css        (entry-point opcional via @import, não usado
+
+│                           por nenhuma página em produção)
 
 │
 
 ├── assets/
 
-│   ├── css/
-
-│   ├── js/
+│   ├── js/               (scripts JS, ex.: chats-live.js, stayflow-live.js)
 
 │   ├── images/
 
@@ -3142,9 +3203,47 @@ StayFlow---Site/
 
 │
 
+├── docs/
+
+│   ├── DIARIO_DE_ENGENHARIA.md    (histórico detalhado sessão a sessão)
+
+│   ├── STAYFLOW_MASTER_CONTEXT.md (este documento)
+
+│   └── CHECKLIST_ATIVO.md         (fonte única de prioridades de trabalho)
+
+│
+
+├── .claude/skills/stayflow-context/  (skill que carrega o histórico do
+
+│                                       projeto automaticamente em sessões
+
+│                                       do Claude Code)
+
+│
+
+├── _backup_antigo/       (arquivos órfãos preservados por segurança,
+
+│                           fora do caminho de execução)
+
+│
+
 └── futuras páginas
 
 ```
+
+
+
+Nota de arquitetura (versão 1.3.0): antes da refatoração de 09/07/2026, cada
+
+página tinha seu próprio bloco `<style>` inline, com blocos cronológicos
+
+acumulados e uso extensivo de `!important`, causando bugs reais de UX em
+
+telas mobile. A extração para `static/css/` com tokens compartilhados
+
+resolveu essa dívida técnica, mantendo isolamento por página (evitando
+
+colisão de nomes de classe entre app/landing/auth).
 
 
 
@@ -3420,11 +3519,33 @@ Atualmente, o banco de dados é composto pelas seguintes entidades principais:
 
 
 
+\### Hostels
+
+
+
+Armazena os dados de cada hostel/hotel/pousada cliente da plataforma —
+
+incluindo credenciais do WhatsApp Business (Phone Number ID, Access
+
+Token) por unidade, preparando a base para múltiplos hostels com números
+
+próprios. É a entidade-raiz do isolamento multi-tenant: toda consulta em
+
+outras tabelas é escopada por `hostel_id`.
+
+
+
+\---
+
+
+
 \### Guests
 
 
 
-Armazena informações dos hóspedes.
+Armazena informações dos hóspedes. Escopado por `hostel_id` — o mesmo
+
+telefone pode existir em hostels diferentes sem conflito.
 
 
 
@@ -3436,7 +3557,11 @@ Armazena informações dos hóspedes.
 
 
 
-Armazena todo o histórico de comunicação.
+Armazena todo o histórico de comunicação, com timestamp (`created_at`) por
+
+mensagem — base que sustenta a linha do tempo da conversa exibida no
+
+Frontend.
 
 
 
@@ -3449,6 +3574,64 @@ Armazena todo o histórico de comunicação.
 
 
 Armazena oportunidades identificadas pelos motores de inteligência.
+
+
+
+\---
+
+
+
+\### Reservations
+
+
+
+Armazena as reservas dos hóspedes, com status atualizável (pendente,
+
+confirmada, check-in, check-out, cancelada).
+
+
+
+\---
+
+
+
+\### Settings
+
+
+
+Armazena as configurações de cada hostel (nome, tipo de propriedade,
+
+horários de check-in/check-out).
+
+
+
+\---
+
+
+
+\### Suppliers e Inventory Items
+
+
+
+Armazenam, respectivamente, os fornecedores cadastrados e os itens de
+
+estoque (com categoria, quantidade, quantidade mínima e fornecedor
+
+vinculado), sustentando os alertas de reposição do módulo de Estoque.
+
+
+
+\---
+
+
+
+\### Offerings
+
+
+
+Armazena o catálogo de experiências, passeios e upsells oferecidos pelo
+
+hostel, usado pelo módulo de Receitas.
 
 
 
@@ -3704,6 +3887,8 @@ Exemplos:
 
 
 
+\- Autenticação (login, sessão via `/me`, logout)
+
 \- Dashboard
 
 \- Chats
@@ -3715,6 +3900,22 @@ Exemplos:
 \- Activity
 
 \- Executive Summary
+
+\- Reservations
+
+\- Finance
+
+\- Reports
+
+\- Inventory (fornecedores e itens de estoque)
+
+\- Operations
+
+\- Revenue (catálogo de upsells)
+
+\- Settings
+
+\- WhatsApp Webhook (integração com a Meta Cloud API)
 
 
 
@@ -4314,6 +4515,20 @@ Na versão atual, os principais módulos são:
 
 \- Recent Activity;
 
+\- Reservas;
+
+\- Financeiro;
+
+\- Relatórios;
+
+\- Estoque;
+
+\- Operações;
+
+\- Receitas (catálogo de upsells);
+
+\- Configurações;
+
 \- Navegação Principal.
 
 
@@ -4392,13 +4607,13 @@ Entre as evoluções previstas estão:
 
 
 
-\- Revenue Management;
+\- Revenue Management avançado (o catálogo básico de upsells já está
+
+  implementado, ver Capítulo 16);
 
 \- Ocupação em tempo real;
 
-\- Financeiro;
-
-\- Housekeeping;
+\- Housekeeping (Mapa de Camas);
 
 \- Calendário Operacional;
 
@@ -4682,11 +4897,21 @@ Persistência de:
 
 
 
+\- hostels (multi-tenant, com credenciais de WhatsApp por unidade);
+
 \- hóspedes;
 
-\- mensagens;
+\- mensagens (com timestamp por mensagem);
 
-\- oportunidades.
+\- oportunidades;
+
+\- reservas;
+
+\- configurações do hostel;
+
+\- fornecedores e itens de estoque;
+
+\- catálogo de experiências/upsells (offerings).
 
 
 
@@ -4710,6 +4935,8 @@ O banco representa a memória operacional da plataforma.
 
 
 
+\- Autenticação (login, sessão, logout);
+
 \- Dashboard;
 
 \- Chats;
@@ -4720,7 +4947,23 @@ O banco representa a memória operacional da plataforma.
 
 \- Activity;
 
-\- Executive Summary.
+\- Executive Summary;
+
+\- Reservations;
+
+\- Finance;
+
+\- Reports;
+
+\- Inventory (fornecedores e estoque);
+
+\- Operations;
+
+\- Revenue;
+
+\- Settings;
+
+\- WhatsApp Webhook.
 
 
 
@@ -4826,7 +5069,297 @@ Essa limitação é relevante para o produto por afetar hóspedes brasileiros de
 
 
 
-\## 16.10 Critério para atualização
+\## 16.10 Módulo de Reservas
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Gerenciar as reservas dos hóspedes de cada hostel.
+
+
+
+\### Capacidades atuais
+
+
+
+\- listagem e criação de reservas;
+
+\- atualização de status (pendente, confirmada, check-in, check-out,
+
+  cancelada) diretamente na tabela;
+
+\- vínculo com o hóspede correspondente.
+
+
+
+\---
+
+
+
+\## 16.11 Módulo Financeiro
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Consolidar a visão financeira da operação a partir de dados já existentes
+
+na plataforma.
+
+
+
+\### Capacidades atuais
+
+
+
+\- reaproveita dados de Reservas e Opportunities, sem duplicar informação
+
+  em tabela própria.
+
+
+
+\---
+
+
+
+\## 16.12 Módulo de Relatórios
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Apresentar indicadores agregados da operação.
+
+
+
+\### Capacidades atuais
+
+
+
+\- receita por canal;
+
+\- funil de conversão.
+
+
+
+\---
+
+
+
+\## 16.13 Módulo de Estoque
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Controlar fornecedores e itens de estoque, antecipando a necessidade de
+
+reposição.
+
+
+
+\### Capacidades atuais
+
+
+
+\- cadastro de fornecedores e itens (categoria, quantidade, quantidade
+
+  mínima, fornecedor vinculado);
+
+\- alertas automáticos de estoque baixo;
+
+\- geração de mensagem sugerida, pronta para copiar e enviar ao
+
+  fornecedor, quando um item atinge o nível mínimo;
+
+\- edição, exclusão e marcação de item como esgotado.
+
+
+
+\---
+
+
+
+\## 16.14 Módulo de Operações
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Agregar alertas operacionais do dia a dia em um único lugar.
+
+
+
+\### Capacidades atuais
+
+
+
+\- alertas de check-in/check-out pendente;
+
+\- alertas de oportunidade urgente sem resposta;
+
+\- alertas de estoque baixo.
+
+
+
+Tarefas de limpeza (housekeeping) permanecem vazias intencionalmente —
+
+dependem do Mapa de Camas, ainda não implementado (ver Roadmap Oficial).
+
+
+
+\---
+
+
+
+\## 16.15 Módulo de Receitas (Upsell)
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Apresentar o catálogo de experiências/upsells do hostel e as oportunidades
+
+de venda adicional identificadas pela IA.
+
+
+
+\### Capacidades atuais
+
+
+
+\- catálogo de experiências/upsells (tabela `offerings`);
+
+\- oportunidades já classificadas pela IA como `tour`/`upsell`
+
+  (reaproveitadas do Decision Engine).
+
+
+
+\---
+
+
+
+\## 16.16 Autenticação e Sessão
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Garantir que o acesso ao Dashboard dependa de uma sessão real e
+
+verificável, não apenas de um indicador local no navegador.
+
+
+
+\### Capacidades atuais
+
+
+
+\- verificação de sessão real via endpoint dedicado, substituindo checagem
+
+  baseada apenas em armazenamento local do navegador;
+
+\- logout funcional;
+
+\- link de cadastro (Register.html) disponível na tela de Login para novos
+
+  hostels.
+
+
+
+\---
+
+
+
+\## 16.17 Arquitetura de CSS / Design System
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Sustentar consistência visual entre as páginas da plataforma através de
+
+uma fonte única de tokens de design, eliminando a duplicação de estilo
+
+que causava bugs reais de experiência do usuário.
+
+
+
+\### Capacidades atuais
+
+
+
+\- tokens de design centralizados (cores, raio de borda, sombra,
+
+  breakpoints), com `#0b84ff` como cor oficial da marca;
+
+\- reset universal compartilhado entre páginas;
+
+\- arquivos de estilo separados por responsabilidade (aplicação, landing
+
+  page, autenticação), evitando colisão de nomes de classe entre eles;
+
+\- correção das principais dívidas de responsividade mobile identificadas
+
+  no Roadmap Oficial (ver Capítulo 17).
+
+
+
+\---
+
+
+
+\## 16.18 Critério para atualização
 
 
 
@@ -4952,13 +5485,37 @@ Prioridades atuais:
 
 
 
-\- corrigir a responsividade da plataforma para dispositivos móveis (identificado como urgente — a experiência atual em celular não atende ao padrão de qualidade da plataforma);
+\- corrigir a responsividade da plataforma para dispositivos móveis —
 
-\- implementar de fato as ações do menu de Configurações (Geral, Empresa, IA, Comunicação, Integrações, Equipe, Segurança), hoje apenas visuais;
+  \*\*em andamento, com progresso significativo em 09/07/2026\*\*: refatoração
 
-\- cadastrar o primeiro hostel real de produção, encerrando o uso de dados de teste;
+  completa da arquitetura de CSS concluída, com correção de múltiplos bugs
 
-\- avaliar estratégia de atendimento para hóspedes localizados no Brasil, dada a limitação de mensageria descrita no Capítulo 16;
+  reais (grid de KPIs cortado, logo estourando a tela, botões cortados,
+
+  card de login sem margem, navbar piscando durante scroll em iOS, scroll
+
+  da aba Chats). Pendente: confirmação visual em dispositivo iOS real
+
+  (correções aplicadas via ferramenta de teste headless), e verificação
+
+  final de um menu de navegação compacto para mobile na landing page;
+
+\- implementar de fato as ações do menu de Configurações (Geral, Empresa,
+
+  IA, Comunicação, Integrações, Equipe, Segurança), hoje apenas visuais;
+
+\- cadastrar o primeiro hostel real de produção, encerrando o uso de dados
+
+  de teste;
+
+\- avaliar estratégia de atendimento para hóspedes localizados no Brasil,
+
+  dada a limitação de mensageria descrita no Capítulo 16 — decisão já
+
+  tomada de registrar uma segunda conta de WhatsApp Business localizada
+
+  no Brasil, implementação pendente;
 
 \- concluir a experiência completa do frontend;
 
@@ -4988,21 +5545,31 @@ Entre elas:
 
 
 
-\- Revenue Management;
+\- Revenue Management avançado (precificação dinâmica, previsão de
+
+  demanda — o catálogo básico de upsells já está implementado, ver
+
+  Capítulo 16);
 
 \- CRM Inteligente;
 
 \- Agenda Operacional;
 
-\- Housekeeping;
+\- Housekeeping (Mapa de Camas e fluxo de limpeza);
 
-\- Gestão Financeira;
+\- Gestão Financeira avançada (fluxo de caixa, projeções — a consolidação
+
+  básica já está implementada, ver Capítulo 16);
 
 \- Gestão de Equipe;
 
-\- Motor de Reservas;
+\- Motor de Reservas avançado (integração com PMS/Channel Managers — o
 
-\- Relatórios Inteligentes;
+  módulo básico de reservas já está implementado, ver Capítulo 16);
+
+\- Relatórios Inteligentes avançados (a versão básica de receita por
+
+  canal e funil de conversão já está implementada, ver Capítulo 16);
 
 \- Notificações Inteligentes;
 
@@ -5418,6 +5985,154 @@ O canal de comunicação via WhatsApp passa de "implementado em código" para "v
 
 
 
+\### Versão 1.3.0
+
+
+
+\*\*Data\*\*
+
+
+
+09/07/2026
+
+
+
+\*\*Área\*\*
+
+
+
+Frontend, Engenharia de Desenvolvimento, Chats, Documentação Oficial
+
+(auditoria e correção dos Capítulos 12, 13, 15, 16 e 17)
+
+
+
+\*\*Descrição\*\*
+
+
+
+Refatoração completa da arquitetura de CSS do Frontend: extração dos blocos
+
+`<style>` inline (acumulados cronologicamente, com uso extensivo de
+
+`!important`) de `dashboard.html`, `index.html` e `Login.html` para arquivos
+
+CSS organizados por responsabilidade (`tokens.css`, `reset.css`, `app.css`,
+
+`landing.css`, `auth.css`), com `#0b84ff` estabelecido como token de cor
+
+oficial. Correção de múltiplas dívidas técnicas de UX em mobile: grid de
+
+KPIs cortado, logo do hero estourando a tela, botões do topbar cortados,
+
+card de login sem margem de segurança, navbar da landing piscando durante
+
+o scroll em Safari iOS (bug conhecido do WebKit), scroll da aba Chats
+
+rolando a página inteira em vez de isolar internamente as mensagens.
+
+Redesenho do cabeçalho mobile da landing page para padrão de barra fixa
+
+compacta. Novas funcionalidades no módulo de Chats: divisores de data
+
+entre mensagens (estilo WhatsApp) e identificação de bandeira de país por
+
+código de telefone no título da conversa. Adoção formal do Claude Code
+
+como ferramenta de desenvolvimento assistido dentro do fluxo de trabalho,
+
+incluindo a criação de um skill de contexto automático
+
+(`.claude/skills/stayflow-context/`) que carrega este documento e o Diário
+
+de Engenharia no início de cada sessão. Criação do processo formal de
+
+Checklist Ativo (`docs/CHECKLIST_ATIVO.md`) como fonte única de
+
+prioridades, com regra explícita de não iniciar trabalho novo antes de
+
+concluir o que já está registrado.
+
+
+
+Adicionalmente, esta versão inclui uma auditoria retroativa do próprio
+
+Documento Mestre: os Capítulos 12 (Banco de Dados), 13 (APIs), 15
+
+(Dashboard) e 16 (Funcionalidades Implementadas) estavam desatualizados
+
+desde a sessão de 05/07/2026 — seis módulos completos (Reservas,
+
+Financeiro, Relatórios, Estoque, Operações, Receitas/Upsell), além de
+
+autenticação por sessão real, foram construídos naquela sessão mas nunca
+
+haviam sido registrados oficialmente neste documento, mesmo a versão
+
+1.2.0 tendo sido publicada no mesmo dia. O Capítulo 17 (Roadmap) também
+
+continha uma contradição real: listava "Gestão Financeira", "Motor de
+
+Reservas" e "Relatórios Inteligentes" como prioridades futuras quando
+
+versões básicas dessas capacidades já estavam implementadas e em uso.
+
+
+
+\*\*Motivação\*\*
+
+
+
+A dívida técnica de CSS acumulada ao longo de múltiplas sessões estava
+
+causando bugs reais e visíveis em produção, além de tornar qualquer
+
+alteração visual arriscada por conta da guerra de especificidade entre
+
+blocos `!important`. A padronização do processo de trabalho (Checklist
+
+Ativo, skill de contexto automático) responde à necessidade identificada
+
+de evitar dispersão de escopo entre sessões consecutivas. A auditoria
+
+retroativa responde a uma exigência explícita do usuário: o Documento
+
+Mestre deve ser revisado e atualizado por completo ao final de cada
+
+sessão relevante, não apenas receber uma entrada de changelog pontual —
+
+nenhuma divergência entre o documento e o estado real do produto deve
+
+persistir de uma sessão para a outra.
+
+
+
+\*\*Impacto\*\*
+
+
+
+O Frontend passa a ter uma arquitetura de CSS sustentável e auditável, com
+
+fonte única de tokens de design. Bugs de mobile que afetavam a experiência
+
+real de uso foram eliminados. O processo de desenvolvimento ganha uma
+
+camada de continuidade entre sessões (via skill automático) e de controle
+
+de escopo (via Checklist Ativo), reduzindo risco de retrabalho. O
+
+Documento Mestre volta a refletir fielmente o estado real do produto,
+
+eliminando um atraso de documentação de mais de quatro dias sobre
+
+funcionalidades já em produção.
+
+
+
+\---
+
+
+
 \## 18.5 Atualização do Documento Mestre
 
 
@@ -5502,5 +6217,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.0.0\*\*
-
+\*\*Fim da Versão Oficial 1.3.0\*\*
