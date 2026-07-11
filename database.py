@@ -301,6 +301,19 @@ def get_or_create_guest(hostel_id, phone):
     return guest_id
 
 
+def update_guest_name(hostel_id, phone, name):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE guests SET name = ? WHERE hostel_id = ? AND phone = ?",
+        (name, hostel_id, phone)
+    )
+
+    conn.commit()
+    conn.close()
+
+
 def get_or_create_conversation(guest_id):
     # guest_id já garante o isolamento por hostel, pois cada guest
     # pertence a exatamente um hostel.

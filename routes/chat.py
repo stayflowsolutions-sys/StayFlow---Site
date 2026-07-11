@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from database import get_hostel_id_by_number, get_hostel_whatsapp_config
 from services.ai_service import ask_ai
 from services.memory_service import save_message, get_history
-from services.guest_service import get_or_create_guest
+from services.guest_service import get_or_create_guest, update_guest_name
 from services.lead_service import save_lead
 from services.message_service import save_message_db
 from services.decision_engine import analyze_message
@@ -26,7 +26,15 @@ def process_incoming_message(hostel_id, phone, text, send_to_whatsapp=False):
     save_message_db(hostel_id, phone, "user", text)
 
     history = get_history(hostel_id, phone)
-    answer = ask_ai(history, text)
+
+    # O telefone só é passado pra IA quando a mensagem realmente veio do
+    # WhatsApp de verdade (phone != "unknown", usado no endpoint de teste
+    # manual). Isso evita a IA tratar um telefone de teste como contato real.
+    guest_phone = phone if phone != "unknown" else None
+    answer, guest_name = ask_ai(history, text, guest_phone=guest_phone)
+
+    if guest_name:
+        update_guest_name(hostel_id, phone, guest_name)
 
     save_message(hostel_id, phone, "assistant", answer)
     save_message_db(hostel_id, phone, "assistant", answer)
