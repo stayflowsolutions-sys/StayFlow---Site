@@ -1,6 +1,102 @@
 // StayFlow - Chats live integration
 // Consome /chats e /guests/<id> para alimentar a aba "Chats".
 
+// ===== Divisores de data no chat (estilo WhatsApp) =====
+// created_at vem do backend como "YYYY-MM-DD HH:MM:SS" (timezone local
+// do servidor). Comparamos só a parte da data (dia/mês/ano), sem
+// conversão de timezone — mesma lógica simples que apps de chat usam
+// pra agrupar por dia.
+function stayflowParseServerDate(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(String(dateStr).replace(" ", "T"));
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function stayflowDayKey(dateStr) {
+    const d = stayflowParseServerDate(dateStr);
+    if (!d) return null;
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+// ===== Bandeira do país a partir do código de discagem =====
+// Chave = código de discagem sem o "+". Checamos do prefixo mais
+// longo (3 dígitos) pro mais curto (1 dígito) porque vários códigos
+// compartilham o começo (ex.: 591/593/595/598 começam com "59").
+const STAYFLOW_COUNTRY_FLAGS = {
+    // América do Sul
+    "55": "🇧🇷",   // Brasil
+    "54": "🇦🇷",   // Argentina
+    "595": "🇵🇾",  // Paraguai
+    "598": "🇺🇾",  // Uruguai
+    "56": "🇨🇱",   // Chile
+    "51": "🇵🇪",   // Peru
+    "57": "🇨🇴",   // Colômbia
+    "58": "🇻🇪",   // Venezuela
+    "593": "🇪🇨",  // Equador
+    "591": "🇧🇴",  // Bolívia
+    "597": "🇸🇷",  // Suriname
+    "592": "🇬🇾",  // Guiana
+    "594": "🇬🇫",  // Guiana Francesa
+    // América do Norte / Central
+    "1": "🇺🇸",    // EUA/Canadá (código compartilhado do NANP)
+    "52": "🇲🇽",   // México
+    "506": "🇨🇷",  // Costa Rica
+    "507": "🇵🇦",  // Panamá
+    // Europa
+    "34": "🇪🇸",   // Espanha
+    "351": "🇵🇹",  // Portugal
+    "44": "🇬🇧",   // Reino Unido
+    "33": "🇫🇷",   // França
+    "49": "🇩🇪",   // Alemanha
+    "39": "🇮🇹",   // Itália
+    // Outros comuns
+    "81": "🇯🇵",   // Japão
+    "86": "🇨🇳",   // China
+    "91": "🇮🇳",   // Índia
+    "61": "🇦🇺",   // Austrália
+    "7": "🇷🇺",    // Rússia
+};
+
+function stayflowCountryFlag(phone) {
+    if (!phone) return "";
+    const match = String(phone).match(/^\+?(\d{1,3})/);
+    if (!match) return "";
+    const numDigits = match[1];
+    for (let len = 3; len >= 1; len--) {
+        const code = numDigits.slice(0, len);
+        if (STAYFLOW_COUNTRY_FLAGS[code]) return STAYFLOW_COUNTRY_FLAGS[code];
+    }
+    return "";
+}
+
+function stayflowFormatDateDivider(dateStr) {
+    const msgDate = stayflowParseServerDate(dateStr);
+    if (!msgDate) return "";
+
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    const sameDay = (a, b) =>
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate();
+
+    if (sameDay(msgDate, today)) return "Hoje";
+    if (sameDay(msgDate, yesterday)) return "Ontem";
+
+    const months = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
+        "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+    const label = `${msgDate.getDate()} de ${months[msgDate.getMonth()]}`;
+
+    // Ano só aparece se for diferente do ano atual (mensagem "5 de
+    // julho" de hoje não precisa de ano; uma de 2025 precisa, senão
+    // fica ambíguo).
+    return msgDate.getFullYear() !== today.getFullYear()
+        ? `${label} de ${msgDate.getFullYear()}`
+        : label;
+}
+
 async function loadChats() {
     try {
         const response = await fetch("/chats");
@@ -41,10 +137,11 @@ async function loadChats() {
             const intent = chat.intent || "-";
             const urgency = (chat.urgency || "low").toLowerCase();
             const score = chat.score ?? 0;
+            const flag = stayflowCountryFlag(chat.phone);
 
             item.innerHTML = `
                 <div class="chat-name">
-                    <span>${chat.phone || "Sem telefone"}</span>
+                    <span>${flag ? flag + " " : ""}${chat.phone || "Sem telefone"}</span>
                     <span class="status-pill ${urgency}">
                         ${intent} · ${score}/100
                     </span>
@@ -101,7 +198,8 @@ async function loadGuestProfile(guestId) {
         // Título da conversa
         const chatTitle = document.getElementById("chatTitle");
         if (chatTitle) {
-            chatTitle.textContent = `Conversa · ${guest.phone || "Hóspede"}`;
+            const flag = stayflowCountryFlag(guest.phone);
+            chatTitle.textContent = `Conversa · ${flag ? flag + " " : ""}${guest.phone || "Hóspede"}`;
         }
 
         // Mensagens
@@ -111,7 +209,17 @@ async function loadGuestProfile(guestId) {
             if (!messages.length) {
                 chatMessages.innerHTML = `<div class="msg bot">Nenhuma mensagem registrada para este hóspede.</div>`;
             } else {
+                let lastDayKey = null;
                 messages.forEach(msg => {
+                    const dayKey = stayflowDayKey(msg.created_at);
+                    if (dayKey && dayKey !== lastDayKey) {
+                        const divider = document.createElement("div");
+                        divider.className = "date-divider";
+                        divider.innerHTML = `<span>${stayflowFormatDateDivider(msg.created_at)}</span>`;
+                        chatMessages.appendChild(divider);
+                        lastDayKey = dayKey;
+                    }
+
                     const div = document.createElement("div");
                     div.className = `msg ${msg.sender === "user" ? "user" : "bot"}`;
                     div.textContent = msg.message;
@@ -216,9 +324,9 @@ if (guestNextAction) {
     }
 }
 
-// Carrega chats automaticamente ao abrir a aba "Chats"
-document.addEventListener("DOMContentLoaded", () => {
-    // Se a aba chats for aberta manualmente depois, você pode chamar loadChats()
-    // quando o usuário clicar no menu. Por ora, carregamos na inicialização:
-    loadChats();
-});
+// loadChats() é chamado por dashboard.html no evento "stayflow:session-ready"
+// (junto com todos os outros loaders da página), depois que /me confirma a
+// sessão. Havia um segundo gatilho aqui, em DOMContentLoaded, que disparava
+// sem esperar essa confirmação — além de causar o fetch duplicado em /chats,
+// era o único loader da página que não esperava a sessão ser validada antes
+// de bater numa rota protegida. Removido.

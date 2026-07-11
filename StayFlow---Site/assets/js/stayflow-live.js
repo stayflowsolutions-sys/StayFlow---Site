@@ -117,7 +117,7 @@ function updateOpportunityCenterTable(opportunities){
 
 async function loadOpportunities() {
   try {
-    const response = await fetch("/opportunities");
+    const response = await fetch("/opportunities", { credentials: "same-origin" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const opportunities = await response.json();
@@ -143,6 +143,9 @@ async function loadOpportunities() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadOpportunities();
-});
+// loadOpportunities() é chamado por dashboard.html no evento
+// "stayflow:session-ready" (junto com os outros loaders da página),
+// depois que /me confirma a sessão — mesmo padrão usado em todo o
+// resto do app. Não tem gatilho próprio aqui de propósito: um
+// DOMContentLoaded independente bateria em rota protegida antes da
+// sessão ser confirmada (mesmo problema já corrigido em chats-live.js).
