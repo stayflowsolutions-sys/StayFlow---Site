@@ -1287,6 +1287,13 @@ function openNewUserForm() {
       const res = await fetch("/settings", { credentials: "same-origin" });
       if(!res.ok) return;
 
+      const backendPill = document.getElementById("statusBackendPill");
+      if(backendPill){
+        backendPill.textContent = "Backend conectado";
+        backendPill.classList.remove("cold");
+        backendPill.classList.add("ok");
+      }
+
       const data = await res.json();
       if(!data || Object.keys(data).length === 0) return;
 
@@ -1296,13 +1303,6 @@ function openNewUserForm() {
           setFieldValue(input, data[key]);
         }
       });
-
-      const backendPill = document.getElementById("statusBackendPill");
-      if(backendPill){
-        backendPill.textContent = "Backend conectado";
-        backendPill.classList.remove("cold");
-        backendPill.classList.add("ok");
-      }
     }catch(e){
       console.warn("Não foi possível carregar settings do backend, mantendo local.", e);
     }
