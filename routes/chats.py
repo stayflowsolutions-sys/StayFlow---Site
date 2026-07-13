@@ -16,6 +16,7 @@ def chats(hostel_id):
         SELECT
             g.id AS guest_id,
             g.phone,
+            g.name,
             m.message AS last_message,
             m.sender AS last_sender,
             m.created_at AS last_activity,
