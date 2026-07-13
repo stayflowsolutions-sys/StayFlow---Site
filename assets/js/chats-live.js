@@ -141,7 +141,7 @@ async function loadChats() {
 
             item.innerHTML = `
                 <div class="chat-name">
-                    <span>${flag ? flag + " " : ""}${chat.phone || "Sem telefone"}</span>
+                    <span>${flag ? flag + " " : ""}${chat.name || chat.phone || "Sem telefone"}</span>
                     <span class="status-pill ${urgency}">
                         ${intent} · ${score}/100
                     </span>
@@ -199,7 +199,7 @@ async function loadGuestProfile(guestId) {
         const chatTitle = document.getElementById("chatTitle");
         if (chatTitle) {
             const flag = stayflowCountryFlag(guest.phone);
-            chatTitle.textContent = `Conversa · ${flag ? flag + " " : ""}${guest.phone || "Hóspede"}`;
+            chatTitle.textContent = `Conversa · ${flag ? flag + " " : ""}${guest.name || guest.phone || "Hóspede"}`;
         }
 
         // Mensagens
