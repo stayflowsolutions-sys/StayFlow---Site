@@ -893,8 +893,8 @@ function openNewUserForm() {
         <h2>Status do sistema</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <span class="status-pill ok">Frontend Online</span>
-          <span class="status-pill cold">Backend: aguardando conexão</span>
-          <span class="status-pill cold">WhatsApp não conectado</span>
+          <span id="statusBackendPill" class="status-pill cold">Backend: verificando...</span>
+          <span id="statusWhatsappPill" class="status-pill cold">WhatsApp: verificando...</span>
         </div>
       </div>
 
@@ -1266,6 +1266,14 @@ function openNewUserForm() {
           ? "✅ Access Token já configurado."
           : "⚠️ Nenhum Access Token salvo ainda.";
       }
+
+      const whatsappPill = document.getElementById("statusWhatsappPill");
+      if(whatsappPill){
+        const connected = Boolean(data.phone_number_id) && data.has_access_token;
+        whatsappPill.textContent = connected ? "WhatsApp conectado" : "WhatsApp não conectado";
+        whatsappPill.classList.remove(connected ? "cold" : "ok");
+        whatsappPill.classList.add(connected ? "ok" : "cold");
+      }
     }catch(e){
       console.warn("Erro ao carregar config WhatsApp:", e);
     }
@@ -1288,6 +1296,13 @@ function openNewUserForm() {
           setFieldValue(input, data[key]);
         }
       });
+
+      const backendPill = document.getElementById("statusBackendPill");
+      if(backendPill){
+        backendPill.textContent = "Backend conectado";
+        backendPill.classList.remove("cold");
+        backendPill.classList.add("ok");
+      }
     }catch(e){
       console.warn("Não foi possível carregar settings do backend, mantendo local.", e);
     }
