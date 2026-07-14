@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.3.0
+\*\*Versão:\*\* 1.4.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 09/07/2026
+\*\*Última atualização:\*\* 13/07/2026
 
 
 
@@ -47,6 +47,8 @@
 | 1.2.0 | 05/07/2026 | Oficial | Publicação em produção com domínio oficial e disco persistente; conclusão e validação de ponta a ponta da integração com WhatsApp Business; registro de limitação de plataforma (restrição de mensagens cross-country Brasil/Indonésia); atualização do roadmap com dívidas técnicas de UX identificadas. |
 
 | 1.3.0 | 09/07/2026 | Oficial | Refatoração completa da arquitetura de CSS do Frontend (tokens/reset/app/landing/auth); correção de múltiplas dívidas técnicas de UX em mobile identificadas na versão anterior; adoção do Claude Code como ferramenta de desenvolvimento assistido, incluindo criação de skill de contexto automático; novas funcionalidades no módulo de Chats (divisores de data, identificação de país por telefone); criação do processo formal de Checklist Ativo para controle de escopo. |
+
+| 1.4.0 | 13/07/2026 | Oficial | Correção de divergência crítica de repositório Git (branch `main` desatualizada em relação a `arquitetura-v2`); publicação em produção de todos os commits pendentes desde a versão anterior; implementação e validação em produção da captura do nome do hóspede via function calling da IA; correção de múltiplos bugs reais no menu de Configurações (indicadores de status falsos, painel de Equipe desconectado); início da Fase 1 (schema) de um sistema de permissões multi-hostel; pesquisa e decisão de estratégia para integrações com OTAs (Booking.com/Airbnb); remoção de infraestrutura órfã no ambiente de hospedagem. |
 
 
 
@@ -2544,6 +2546,30 @@ Cada projeto possui responsabilidades independentes e bem definidas.
 
 
 
+\*\*Nota crítica de infraestrutura (atualizada em 13/07/2026, versão 1.4.0):\*\*
+o ambiente de hospedagem (Render) builda apenas um repositório por serviço.
+Por isso, além do repositório `StayFlow---Site` independente (onde o
+desenvolvimento do frontend efetivamente acontece), existe uma \*\*cópia
+física\*\* de todo o conteúdo do frontend dentro de
+`HostelBot/StayFlow---Site/`, versionada dentro do próprio repositório do
+backend. É essa cópia interna, não o repositório `StayFlow---Site`
+sozinho, que o Render de fato publica em produção.
+
+
+
+Isso significa que \*\*toda alteração de frontend precisa ser replicada
+manualmente\*\* para dentro do `HostelBot` (cópia de arquivo + commit + push
+nos dois repositórios) antes de chegar ao ar. Esse processo manual é uma
+dívida técnica conhecida e ativa — gera risco real de divergência entre os
+dois repositórios se um dos dois passos for esquecido, e já causou
+retrabalho e confusão real durante o desenvolvimento. A resolução
+definitiva (separar o frontend como Static Site próprio do Render, com o
+Backend expondo apenas API, possivelmente num subdomínio dedicado) está
+registrada no Roadmap Oficial (Capítulo 17) como item a resolver quando a
+prioridade operacional atual estiver concluída.
+
+
+
 \---
 
 
@@ -3632,6 +3658,54 @@ vinculado), sustentando os alertas de reposição do módulo de Estoque.
 Armazena o catálogo de experiências, passeios e upsells oferecidos pelo
 
 hostel, usado pelo módulo de Receitas.
+
+
+
+\---
+
+
+
+\### Users, Roles, Hostel\_Memberships e Membership\_Permission\_Overrides
+(schema em migração — ver nota de status abaixo)
+
+
+
+A partir da versão 1.4.0, a entidade `Users` deixa de representar
+diretamente "um funcionário de um hostel" e passa a representar uma
+\*\*identidade única de pessoa\*\* (nome, e-mail globalmente único, senha) —
+sem `hostel_id` nem função (`role`) próprios.
+
+
+
+O vínculo entre uma pessoa e um hostel passa a viver em
+`Hostel_Memberships`, permitindo que a mesma pessoa tenha acesso a mais de
+um hostel simultaneamente (cada vínculo com sua própria função), com
+suporte planejado para troca entre hostels sem necessidade de novo login.
+
+
+
+Cada hostel define suas próprias funções em `Roles` (nome + lista
+configurável de permissões — não existem funções fixas no sistema, apenas
+a função "Admin" com todas as permissões e "Staff" sem nenhuma permissão
+por padrão, criadas automaticamente durante a migração de dados
+existentes).
+
+
+
+`Membership\_Permission\_Overrides` permite ao administrador do hostel
+conceder ou revogar permissões específicas para uma pessoa individual, por
+cima do padrão definido pela função dela — sem afetar as demais pessoas
+com a mesma função.
+
+
+
+\*\*Status de implantação:\*\* o schema das 4 tabelas foi criado e a
+migração de dados existentes foi escrita e validada (Fase 1, ver
+Capítulo 17 — Roadmap). Até a publicação desta versão do documento, essa
+mudança existe apenas no ambiente local de desenvolvimento — \*\*não foi
+publicada em produção\*\*. As APIs que consomem esse novo modelo (login com
+múltiplos hostels, CRUD de funções e vínculos) ainda não foram
+implementadas (Fases 2 e 3).
 
 
 
@@ -4763,7 +4837,14 @@ Centralizar todas as conversas realizadas pela plataforma.
 
 \- listagem de conversas;
 
-\- histórico;
+\- histórico, com divisores de data entre mensagens (estilo WhatsApp);
+
+\- identificação de bandeira de país por código de telefone;
+
+\- exibição do nome do hóspede (quando capturado — ver 16.19) em vez do
+  telefone, tanto na lista de conversas quanto no título da conversa
+  aberta, com telefone como reserva (fallback) quando o nome ainda não
+  foi coletado;
 
 \- integração com IA;
 
@@ -5359,6 +5440,140 @@ que causava bugs reais de experiência do usuário.
 
 
 
+\## 16.19 Captura do Nome do Hóspede via Inteligência Artificial
+
+
+
+\*\*Status:\*\* Implementado e validado em produção com número real de
+WhatsApp
+
+
+
+\### Objetivo
+
+
+
+Permitir que o nome do hóspede seja reconhecido durante a conversa natural
+com a IA e persistido automaticamente, sem exigir formulário ou pergunta
+estruturada separada.
+
+
+
+\### Capacidades atuais
+
+
+
+\- a IA identifica quando o hóspede declara o próprio nome durante a
+  conversa e aciona uma ferramenta estruturada (function calling da
+  OpenAI), separada do texto da resposta enviada ao hóspede;
+
+\- o nome capturado é persistido no cadastro do hóspede automaticamente,
+  sem intervenção manual;
+
+\- a captura ocorre no máximo uma vez por conversa, evitando sobrescrever
+  o nome já registrado se o hóspede mencionar outro nome depois;
+
+\- validado de ponta a ponta com uma conversa real de WhatsApp em
+  produção, confirmando a gravação correta no banco de dados.
+
+
+
+\### Limitação conhecida
+
+
+
+Conversas anteriores à implementação desta funcionalidade não têm o nome
+preenchido retroativamente — o campo permanece vazio (com telefone como
+reserva na exibição) até que o hóspede converse novamente após a
+funcionalidade estar ativa.
+
+
+
+\---
+
+
+
+\## 16.20 Indicadores Reais de Status do Sistema
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Garantir que o painel de Configurações informe o estado verdadeiro de
+conectividade do Backend e da integração com WhatsApp Business, em vez de
+texto fixo.
+
+
+
+\### Capacidades atuais
+
+
+
+\- indicador de conexão com o Backend, atualizado a partir da resposta
+  real da API de configurações;
+
+\- indicador de conexão com o WhatsApp Business, atualizado a partir da
+  presença confirmada de credenciais válidas (identificador do número e
+  token de acesso).
+
+
+
+\---
+
+
+
+\## 16.21 Painel de Equipe — acesso pelo menu de Configurações
+
+
+
+\*\*Status:\*\* Parcialmente implementado (dívida técnica conhecida, ver
+Capítulo 17)
+
+
+
+\### Objetivo
+
+
+
+Permitir a gestão da equipe do hostel a partir do menu de Configurações,
+não apenas por um atalho lateral pouco descobrível.
+
+
+
+\### Capacidades atuais
+
+
+
+\- o botão "Equipe" dentro do menu de Configurações agora aciona o mesmo
+  painel de gestão de equipe já utilizado pelo atalho da barra lateral.
+
+
+
+\### Limitação conhecida
+
+
+
+O painel em si possui uma falha estrutural pré-existente (não introduzida
+nesta versão): a marcação visual (HTML) do painel nunca foi criada,
+apesar da lógica de carregamento de dados estar pronta e funcional contra
+a API. Como consequência, tanto o atalho da barra lateral quanto o novo
+botão do menu de Configurações produzem um erro ao serem acionados, em
+vez de abrir o painel. Correção registrada como prioridade no Roadmap
+Oficial, junto da reconstrução completa do módulo de gestão de equipe
+(Capítulo 17).
+
+
+
+\---
+
+
+
 \## 16.18 Critério para atualização
 
 
@@ -5487,27 +5702,71 @@ Prioridades atuais:
 
 \- corrigir a responsividade da plataforma para dispositivos móveis —
 
-  \*\*em andamento, com progresso significativo em 09/07/2026\*\*: refatoração
+  \*\*confirmação do fix de navbar concluída em 13/07/2026\*\*: testado
 
-  completa da arquitetura de CSS concluída, com correção de múltiplos bugs
+  fisicamente em Safari iOS real (não apenas ferramenta headless),
 
-  reais (grid de KPIs cortado, logo estourando a tela, botões cortados,
+  navbar permanece estável durante scroll rápido, sem piscar. Pendente:
 
-  card de login sem margem, navbar piscando durante scroll em iOS, scroll
+  correção de um seletor de idioma que aparece cortado fora da tela em
 
-  da aba Chats). Pendente: confirmação visual em dispositivo iOS real
+  telas mobile estreitas (bug real confirmado, correção adiada de
 
-  (correções aplicadas via ferramenta de teste headless), e verificação
+  propósito para a fase de lapidação visual completa, já que o layout
 
-  final de um menu de navegação compacto para mobile na landing page;
+  mobile do cabeçalho será reorganizado por completo);
 
-\- implementar de fato as ações do menu de Configurações (Geral, Empresa,
+\- \*\*concluir de fato o menu de Configurações\*\* (Geral, Empresa, IA,
 
-  IA, Comunicação, Integrações, Equipe, Segurança), hoje apenas visuais;
+  Comunicação, Integrações, Equipe, Segurança, Billing, Developer) —
 
-\- cadastrar o primeiro hostel real de produção, encerrando o uso de dados
+  auditoria completa realizada em 13/07/2026 revelou que apenas Geral e
 
-  de teste;
+  WhatsApp Business são 100% funcionais; os demais 7 botões de categoria
+
+  não trocam conteúdo algum (apenas alternam uma classe visual). Dois
+
+  bugs reais identificados e ainda não corrigidos: (1) o card de
+
+  configurações de IA envia dois campos (resposta automática e geração
+
+  de oportunidades) que o Backend recebe e descarta silenciosamente; (2)
+
+  o painel de gestão de Equipe nunca teve sua marcação HTML criada,
+
+  produzindo erro ao ser aberto por qualquer um dos dois pontos de
+
+  acesso existentes (ver Capítulo 16, seções 16.20 e 16.21);
+
+\- \*\*sistema de permissões multi-hostel\*\* — iniciativa nova, tratada como
+
+  prioridade alta pelo mesmo motivo do menu de Configurações: a gestão de
+
+  equipe do produto precisa nascer completa (identidade única por pessoa,
+
+  suporte a múltiplos hostels por pessoa com troca de conta sem novo
+
+  login, funções configuráveis por hostel, exceções de permissão por
+
+  pessoa individual), não como um recurso parcial que exigiria retrabalho
+
+  estrutural depois. Fase 1 (schema e migração de dados) concluída e
+
+  validada em ambiente local em 13/07/2026, ainda não publicada em
+
+  produção. Fases 2 (Backend: fluxo de login com múltiplos hostels, APIs
+
+  de gestão de funções e vínculos) e 3 (Frontend: seletor de conta,
+
+  reconstrução completa do painel de Equipe, navegação filtrada por
+
+  permissão) permanecem pendentes;
+
+\- cadastrar o Hostel Lagares como o primeiro hostel-cliente real de
+
+  produção, com cadastro, login e número de WhatsApp próprios — separado
+
+  da conta de demonstração de vendas atualmente em uso pelo fundador;
 
 \- avaliar estratégia de atendimento para hóspedes localizados no Brasil,
 
@@ -5563,9 +5822,31 @@ Entre elas:
 
 \- Gestão de Equipe;
 
-\- Motor de Reservas avançado (integração com PMS/Channel Managers — o
+\- Motor de Reservas avançado, incluindo integração com Channel Managers —
 
-  módulo básico de reservas já está implementado, ver Capítulo 16);
+  pesquisa realizada em 13/07/2026 confirmou que os principais canais de
+
+  distribuição (Booking.com, Airbnb) mantêm hoje acesso de API fechado
+
+  para desenvolvedores independentes/pequenos. Estratégia decidida: como
+
+  primeiro passo, captura de reservas via leitura automatizada dos
+
+  e-mails de confirmação que essas plataformas já enviam ao hostel
+
+  (extração de dados estruturados via Inteligência Artificial, mesmo
+
+  padrão já usado na captura de mensagens de WhatsApp), sem dependência
+
+  de aprovação de parceria. A conexão via channel manager terceirizado
+
+  (parceiro já certificado pelas OTAs) permanece como alternativa
+
+  avaliável no futuro, condicionada a validação de custo e escopo de
+
+  acesso. Esta frente fica deliberadamente represada até a conclusão
+
+  total do operacional (menu de Configurações e gestão de equipe);
 
 \- Relatórios Inteligentes avançados (a versão básica de receita por
 
@@ -5573,7 +5854,21 @@ Entre elas:
 
 \- Notificações Inteligentes;
 
-\- Automações Operacionais.
+\- Automações Operacionais;
+
+\- Separação definitiva de infraestrutura de deploy — hoje o Frontend é
+
+  publicado através de uma cópia manual mantida dentro do repositório do
+
+  Backend (ver nota crítica no Capítulo 9), o que exige replicação manual
+
+  de toda alteração de Frontend. Solução de longo prazo identificada:
+
+  Frontend publicado como Static Site independente, Backend exposto
+
+  apenas como API (possivelmente em subdomínio dedicado), eliminando a
+
+  cópia manual.
 
 
 
@@ -6133,6 +6428,158 @@ funcionalidades já em produção.
 
 
 
+\### Versão 1.4.0
+
+
+
+\*\*Data\*\*
+
+
+
+13/07/2026
+
+
+
+\*\*Área\*\*
+
+
+
+Infraestrutura, Backend, Frontend, Inteligência Artificial, Banco de
+
+Dados, Roadmap
+
+
+
+\*\*Descrição\*\*
+
+
+
+Correção de uma divergência crítica entre as branches `main` e
+
+`arquitetura-v2` do repositório do Frontend — a branch `main` nunca havia
+
+recebido a correção do bug de duplicação de arquivo `login.html`/
+
+`Login.html` já resolvida anteriormente na branch de trabalho, o que
+
+bloqueava a publicação de todo o trabalho acumulado. Após a correção,
+
+publicação em produção de todos os commits pendentes desde a versão
+
+1.3.0. Identificação e remoção de um serviço de hospedagem órfão,
+
+sem função real, mantido ativo desnecessariamente. Documentação formal,
+
+pela primeira vez, da duplicação física do Frontend dentro do repositório
+
+do Backend, necessária para o processo de publicação atual (Capítulo 9).
+
+
+
+Implementação e validação em produção, com número real de WhatsApp, da
+
+captura do nome do hóspede durante a conversa com a Inteligência
+
+Artificial, utilizando function calling — encerrando uma investigação em
+
+aberto desde a versão anterior. Exibição do nome do hóspede (com telefone
+
+como reserva) na lista de conversas e no título da conversa aberta.
+
+
+
+Auditoria completa do menu de Configurações, revelando que apenas duas de
+
+nove categorias possuíam implementação real. Correção dos indicadores de
+
+status do sistema, que exibiam informação falsa independentemente do
+
+estado real de conectividade. Conexão do botão de gestão de Equipe do
+
+menu de Configurações ao painel já existente, expondo (sem introduzir) uma
+
+falha estrutural pré-existente na marcação do próprio painel. Identificação
+
+de um bug de perda silenciosa de dados nas configurações de Inteligência
+
+Artificial.
+
+
+
+Início da primeira fase (modelagem e migração de dados) de um sistema de
+
+permissões multi-hostel, permitindo que uma mesma pessoa possua acesso a
+
+múltiplos hostels com funções independentes por hostel, funções
+
+configuráveis por cada administrador, e exceções de permissão por pessoa
+
+individual. Migração de dados existentes escrita, testada e validada em
+
+ambiente isolado, ainda não publicada em produção.
+
+
+
+Pesquisa de mercado sobre integração com agências de viagem on-line
+
+(Booking.com, Airbnb), confirmando restrição de acesso a desenvolvedores
+
+independentes nas duas plataformas, e definição de estratégia alternativa
+
+(captura via e-mail de confirmação) para quando essa frente for
+
+priorizada.
+
+
+
+\*\*Motivação\*\*
+
+
+
+Resolver o acúmulo de trabalho não publicado desde a versão anterior,
+
+validar de ponta a ponta uma capacidade da Inteligência Artificial que
+
+permanecia apenas planejada, e tratar com seriedade estrutural um pedido
+
+explícito do usuário: nenhuma funcionalidade de gestão de equipe deveria
+
+ser entregue de forma parcial, mesmo que isso exigisse desenhar uma
+
+arquitetura de permissões mais ampla antes de continuar corrigindo
+
+sintomas pontuais no menu de Configurações.
+
+
+
+\*\*Impacto\*\*
+
+
+
+A plataforma volta a ter, em produção, todo o trabalho acumulado desde a
+
+versão 1.3.0. A Inteligência Artificial passa a coletar de forma
+
+autônoma uma informação de perfil do hóspede antes obtida apenas
+
+manualmente. O menu de Configurações deixa de aparentar funcionalidade
+
+completa quando na verdade não possuía — a distância entre aparência e
+
+realidade do produto foi documentada com precisão, criando uma base
+
+confiável para o trabalho de conclusão. A gestão de equipe do produto
+
+recebe uma base arquitetural pensada para o cenário real de operação com
+
+múltiplos hostels, evitando uma reconstrução futura.
+
+
+
+\---
+
+
+
 \## 18.5 Atualização do Documento Mestre
 
 
@@ -6217,4 +6664,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.3.0\*\*
+\*\*Fim da Versão Oficial 1.4.0\*\*
