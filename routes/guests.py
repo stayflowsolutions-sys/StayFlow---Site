@@ -1,12 +1,12 @@
 from flask import Blueprint, jsonify
 from database import get_connection
-from utils.tenant import require_auth
+from utils.tenant import require_permission
 
 guests_bp = Blueprint("guests", __name__)
 
 
 @guests_bp.route("/guests", methods=["GET"])
-@require_auth
+@require_permission("guests")
 def list_guests(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()
@@ -43,7 +43,7 @@ def list_guests(hostel_id):
 
 
 @guests_bp.route("/guests/<int:guest_id>", methods=["GET"])
-@require_auth
+@require_permission("guests")
 def guest_profile(hostel_id, guest_id):
 
     conn = get_connection()

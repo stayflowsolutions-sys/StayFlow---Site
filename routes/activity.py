@@ -1,12 +1,12 @@
 from flask import Blueprint, jsonify
 from database import get_connection
-from utils.tenant import require_auth
+from utils.tenant import require_permission
 
 activity_bp = Blueprint("activity", __name__)
 
 
 @activity_bp.route("/activity", methods=["GET"])
-@require_auth
+@require_permission("dashboard")
 def activity(hostel_id):
 
     conn = get_connection()

@@ -20,6 +20,7 @@ from routes.inventory import inventory_bp
 from routes.operations import operations_bp
 from routes.revenue import revenue_bp
 from routes.whatsapp_webhook import whatsapp_webhook_bp
+from routes.team import team_bp
 
 app = Flask(__name__, static_folder=None)
 
@@ -51,6 +52,7 @@ app.register_blueprint(inventory_bp)
 app.register_blueprint(operations_bp)
 app.register_blueprint(revenue_bp)
 app.register_blueprint(whatsapp_webhook_bp)
+app.register_blueprint(team_bp)
 
 # Caminho do frontend: por padrão assume que a pasta do site fica ao lado
 # da pasta do backend (ex: C:\StayFlow\backend + C:\StayFlow\StayFlow---Site).

@@ -2,13 +2,13 @@ from datetime import date
 
 from flask import Blueprint, jsonify
 from database import get_connection
-from utils.tenant import require_auth
+from utils.tenant import require_permission
 
 operations_bp = Blueprint("operations", __name__)
 
 
 @operations_bp.route("/operations", methods=["GET"])
-@require_auth
+@require_permission("operations")
 def operations(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()

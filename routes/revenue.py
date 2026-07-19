@@ -1,12 +1,12 @@
 from flask import Blueprint, jsonify, request
 from database import get_connection
-from utils.tenant import require_auth
+from utils.tenant import require_permission
 
 revenue_bp = Blueprint("revenue", __name__)
 
 
 @revenue_bp.route("/revenue", methods=["GET"])
-@require_auth
+@require_permission("revenue")
 def revenue(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()
@@ -42,7 +42,7 @@ def revenue(hostel_id):
 
 
 @revenue_bp.route("/offerings", methods=["POST"])
-@require_auth
+@require_permission("revenue")
 def create_offering(hostel_id):
     data = request.get_json() or {}
 
@@ -73,7 +73,7 @@ def create_offering(hostel_id):
 
 
 @revenue_bp.route("/offerings/<int:offering_id>", methods=["DELETE"])
-@require_auth
+@require_permission("revenue")
 def delete_offering(hostel_id, offering_id):
     conn = get_connection()
     cursor = conn.cursor()

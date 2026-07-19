@@ -5,7 +5,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 from database import get_connection
-from utils.tenant import require_auth
+from utils.tenant import require_permission
 
 load_dotenv()
 
@@ -28,7 +28,7 @@ def fallback_summary(stats):
 
 
 @executive_bp.route("/executive-summary", methods=["GET"])
-@require_auth
+@require_permission("dashboard")
 def executive_summary(hostel_id):
 
     conn = get_connection()

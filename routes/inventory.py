@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from database import get_connection
-from utils.tenant import require_auth
+from utils.tenant import require_permission
 
 inventory_bp = Blueprint("inventory", __name__)
 
@@ -31,7 +31,7 @@ def build_reorder_message(item, supplier):
 # ===== FORNECEDORES =====
 
 @inventory_bp.route("/suppliers", methods=["GET"])
-@require_auth
+@require_permission("inventory")
 def list_suppliers(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()
@@ -50,7 +50,7 @@ def list_suppliers(hostel_id):
 
 
 @inventory_bp.route("/suppliers", methods=["POST"])
-@require_auth
+@require_permission("inventory")
 def create_supplier(hostel_id):
     data = request.get_json() or {}
 
@@ -84,7 +84,7 @@ def create_supplier(hostel_id):
 # ===== ITENS DE ESTOQUE =====
 
 @inventory_bp.route("/inventory", methods=["GET"])
-@require_auth
+@require_permission("inventory")
 def list_inventory(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()
@@ -139,7 +139,7 @@ def list_inventory(hostel_id):
 
 
 @inventory_bp.route("/inventory", methods=["POST"])
-@require_auth
+@require_permission("inventory")
 def create_inventory_item(hostel_id):
     data = request.get_json() or {}
 
@@ -192,7 +192,7 @@ def create_inventory_item(hostel_id):
 
 
 @inventory_bp.route("/inventory/<int:item_id>", methods=["PATCH"])
-@require_auth
+@require_permission("inventory")
 def update_inventory_item(hostel_id, item_id):
     data = request.get_json() or {}
 
@@ -234,7 +234,7 @@ def update_inventory_item(hostel_id, item_id):
 
 
 @inventory_bp.route("/inventory/<int:item_id>", methods=["DELETE"])
-@require_auth
+@require_permission("inventory")
 def delete_inventory_item(hostel_id, item_id):
     conn = get_connection()
     cursor = conn.cursor()

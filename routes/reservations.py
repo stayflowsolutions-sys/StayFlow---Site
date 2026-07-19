@@ -3,13 +3,13 @@ from datetime import date
 from flask import Blueprint, jsonify, request
 
 from database import get_connection
-from utils.tenant import require_auth
+from utils.tenant import require_permission
 
 reservations_bp = Blueprint("reservations", __name__)
 
 
 @reservations_bp.route("/reservations", methods=["GET"])
-@require_auth
+@require_permission("reservations")
 def list_reservations(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()
@@ -50,7 +50,7 @@ def list_reservations(hostel_id):
 
 
 @reservations_bp.route("/reservations", methods=["POST"])
-@require_auth
+@require_permission("reservations")
 def create_reservation(hostel_id):
     data = request.get_json() or {}
 
@@ -109,7 +109,7 @@ def create_reservation(hostel_id):
 
 
 @reservations_bp.route("/reservations/<int:reservation_id>", methods=["PATCH"])
-@require_auth
+@require_permission("reservations")
 def update_reservation(hostel_id, reservation_id):
     data = request.get_json() or {}
 
