@@ -23,16 +23,35 @@
   </div>
 
   <div class="sidebar-profile">
-    <div class="hostel-mini" onclick="openPage('settings', this)" title="Informações do hostel">
-      <div class="hostel-avatar">🏨</div>
-      <div class="profile-copy">
-        <div class="hostel-name">Nenhum hostel</div>
-        <div class="hostel-meta">Aguardando cadastro</div>
+    <div class="hostel-selector-wrap">
+      <div class="hostel-mini" onclick="toggleHostelSelector(event)" title="Trocar de hostel">
+        <div class="hostel-avatar">🏨</div>
+        <div class="profile-copy">
+          <div class="hostel-name">Nenhum hostel</div>
+          <div class="hostel-meta"></div>
+        </div>
+      </div>
+
+      <div id="hostelSelectorDropdown" class="hostel-selector-dropdown" style="display:none;">
+        <div id="hostelSelectorList"></div>
+        <div class="hostel-selector-divider"></div>
+        <button type="button" class="hostel-selector-settings-link" onclick="toggleHostelSelector(); openPage('settings', document.querySelector('[data-page=settings]'))">
+          ⚙ Configurações do hostel
+        </button>
       </div>
     </div>
 
 <script>
 // ===== TEAM PANEL (Equipe) =====
+
+let teamMembersCache = [];
+let rolesCache = [];
+
+function escapeHtml(str){
+  const div = document.createElement("div");
+  div.textContent = str == null ? "" : String(str);
+  return div.innerHTML;
+}
 
 function openTeamPanel() {
   document.getElementById("teamOverlay").classList.add("open");
@@ -45,34 +64,65 @@ function closeTeamPanel() {
   document.getElementById("teamPanel").classList.remove("open");
 }
 
+function switchTeamTab(tab){
+  document.querySelectorAll(".team-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.teamTab === tab);
+  });
+  // Usa "" (nao "block") pra nao sobrescrever o display:grid definido
+  // em .ask-body no CSS - forcar "block" quebraria o espacamento
+  // entre os cards.
+  document.getElementById("teamTabMembers").style.display = tab === "members" ? "" : "none";
+  document.getElementById("teamTabRoles").style.display = tab === "roles" ? "" : "none";
+
+  if(tab === "roles"){
+    loadRolesList();
+  }
+}
+
 async function loadTeamList() {
   const container = document.getElementById("teamListContainer");
   container.innerHTML = "<p style='color:var(--muted)'>Carregando...</p>";
 
   try {
-    const res = await fetch("/users", { credentials: "same-origin" });
+    const res = await fetch("/team", { credentials: "same-origin" });
     const data = await res.json();
 
-    if (!data.success || !data.users) {
+    if (!data.success || !data.members) {
       container.innerHTML = "<p style='color:var(--red)'>Erro ao carregar equipe.</p>";
       return;
     }
 
-    if (data.users.length === 0) {
-      container.innerHTML = "<p style='color:var(--muted)'>Nenhum usuário cadastrado.</p>";
+    if (data.members.length === 0) {
+      container.innerHTML = "<p style='color:var(--muted)'>Nenhum membro cadastrado.</p>";
       return;
     }
 
     container.innerHTML = "";
-    data.users.forEach(user => {
-      const userCard = document.createElement("div");
-      userCard.style.cssText = "padding:12px;border:1px solid #ffffff12;border-radius:14px;margin-bottom:10px;background:#ffffff05";
-      userCard.innerHTML = `
-        <div style="font-weight:800;color:#f7fbff">${user.name}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:3px">${user.email}</div>
-        <div style="font-size:11px;color:#7bc2ff;margin-top:4px">Role: ${user.role}</div>
+    teamMembersCache = data.members;
+    data.members.forEach(member => {
+      const card = document.createElement("div");
+      card.style.cssText = "padding:12px;border:1px solid #ffffff12;border-radius:14px;margin-bottom:10px;background:#ffffff05";
+      const statusBadge = member.active
+        ? ""
+        : `<span style="font-size:10px;color:#ff8b8b;border:1px solid #ff8b8b44;border-radius:999px;padding:2px 8px;margin-left:6px">Inativo</span>`;
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:800;color:#f7fbff">${escapeHtml(member.name)}${statusBadge}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px">${escapeHtml(member.email)}</div>
+            <div style="font-size:11px;color:#7bc2ff;margin-top:4px">${escapeHtml(member.role_name)} · ${member.permissions.length} permissões</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openRoleChangeForm(${member.membership_id})">Trocar função</button>
+          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openMemberPermissionsForm(${member.membership_id})">Permissões</button>
+          ${member.active
+            ? `<button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deactivateMember(${member.membership_id})">Desativar</button>`
+            : `<button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="reactivateMember(${member.membership_id})">Reativar</button>`
+          }
+        </div>
       `;
-      container.appendChild(userCard);
+      container.appendChild(card);
     });
   } catch (err) {
     console.error("Erro ao carregar equipe:", err);
@@ -80,8 +130,461 @@ async function loadTeamList() {
   }
 }
 
-function openNewUserForm() {
-  alert("Formulário de novo usuário será criado no próximo passo.");
+async function loadRolesList() {
+  const container = document.getElementById("rolesListContainer");
+  container.innerHTML = "<p style='color:var(--muted)'>Carregando...</p>";
+
+  try {
+    const res = await fetch("/roles", { credentials: "same-origin" });
+    const data = await res.json();
+
+    if (!data.success || !data.roles) {
+      container.innerHTML = "<p style='color:var(--red)'>Erro ao carregar funções.</p>";
+      return;
+    }
+
+    container.innerHTML = "";
+    rolesCache = data.roles;
+    data.roles.forEach(role => {
+      const permCount = (role.permissions || "").split(",").filter(Boolean).length;
+      const card = document.createElement("div");
+      card.style.cssText = "padding:12px;border:1px solid #ffffff12;border-radius:14px;margin-bottom:10px;background:#ffffff05";
+      card.innerHTML = `
+        <div style="font-weight:800;color:#f7fbff">${escapeHtml(role.name)}</div>
+        <div style="font-size:11px;color:#7bc2ff;margin-top:4px">${permCount} permissões</div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openEditRoleForm(${role.id})">Editar</button>
+          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deleteRoleConfirm(${role.id})">Apagar</button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.error("Erro ao carregar funções:", err);
+    container.innerHTML = "<p style='color:var(--red)'>Erro na requisição.</p>";
+  }
+}
+
+function openGenericModal(title, bodyHtml){
+  document.getElementById("genericModalTitle").textContent = title;
+  document.getElementById("genericModalBody").innerHTML = bodyHtml;
+  document.getElementById("genericModalOverlay").classList.add("open");
+  document.getElementById("genericModal").classList.add("open");
+}
+
+function closeGenericModal(){
+  document.getElementById("genericModalOverlay").classList.remove("open");
+  document.getElementById("genericModal").classList.remove("open");
+}
+
+async function openMemberPermissionsForm(membershipId){
+  const member = teamMembersCache.find(m => m.membership_id === membershipId);
+  const memberName = member ? member.name : "";
+
+  let detail = [];
+  try{
+    const res = await fetch(`/team/${membershipId}/permissions-detail`, { credentials: "same-origin" });
+    const data = await res.json();
+    if(data.success) detail = data.permissions;
+  }catch(e){
+    console.error("Erro ao carregar detalhe de permissoes:", e);
+  }
+
+  let catalog = await fetchPermissionCatalog();
+  const labelByKey = {};
+  catalog.forEach(p => labelByKey[p.key] = p.label);
+
+  const rows = detail.map(p => {
+    const inheritedClass = p.from_role ? " inherited" : "";
+    const tag = p.override !== null
+      ? (p.override ? "ajustado: liberado" : "ajustado: bloqueado")
+      : (p.from_role ? "herdado da função" : "");
+    return `
+      <label class="permission-checkbox-row${inheritedClass}">
+        <input type="checkbox" data-perm-key="${p.key}" data-original-effective="${p.effective}" ${p.effective ? "checked" : ""}>
+        ${escapeHtml(labelByKey[p.key] || p.key)}
+        <span class="perm-tag">${tag}</span>
+      </label>
+    `;
+  }).join("");
+
+  openGenericModal(`Permissões de ${memberName}`, `
+    <p style="font-size:12px;color:var(--muted);margin:0">Marcados com borda azul vêm da função. Alterar aqui cria uma exceção individual, só para esta pessoa.</p>
+    <div class="permission-checkbox-list">${rows}</div>
+    <div id="memberPermissionsMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" onclick="submitMemberPermissions(${membershipId})">Salvar</button>
+  `);
+}
+
+async function submitMemberPermissions(membershipId){
+  const msg = document.getElementById("memberPermissionsMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  const checkboxes = Array.from(document.querySelectorAll("[data-perm-key]"));
+  const changed = checkboxes.filter(el => String(el.checked) !== el.dataset.originalEffective);
+
+  try{
+    for(const el of changed){
+      const res = await fetch(`/team/${membershipId}/permissions`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ permission_key: el.dataset.permKey, allowed: el.checked })
+      });
+      const data = await res.json();
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || `Não foi possível salvar "${el.dataset.permKey}".`;
+        msg.classList.add("error");
+        return;
+      }
+    }
+
+    closeGenericModal();
+    loadTeamList();
+  }catch(e){
+    console.error("Erro ao salvar permissões:", e);
+    msg.textContent = "Erro de conexão.";
+    msg.classList.add("error");
+  }
+}
+
+async function openInviteForm(){
+  let roles = [];
+  try{
+    const res = await fetch("/roles", { credentials: "same-origin" });
+    const data = await res.json();
+    if(data.success) roles = data.roles;
+  }catch(e){
+    console.error("Erro ao carregar funções para convite:", e);
+  }
+
+  const options = roles.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join("");
+
+  openGenericModal("Convidar pessoa", `
+    <div>
+      <label>Nome</label>
+      <input id="inviteName" type="text" placeholder="Nome completo">
+    </div>
+    <div>
+      <label>Email</label>
+      <input id="inviteEmail" type="email" placeholder="email@exemplo.com">
+    </div>
+    <div>
+      <label>Função</label>
+      <select id="inviteRole">${options}</select>
+    </div>
+    <div id="inviteMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" onclick="submitInvite()">Convidar</button>
+  `);
+}
+
+async function submitInvite(){
+  const name = document.getElementById("inviteName").value.trim();
+  const email = document.getElementById("inviteEmail").value.trim();
+  const roleId = document.getElementById("inviteRole").value;
+  const msg = document.getElementById("inviteMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  if(!name || !email || !roleId){
+    msg.textContent = "Preencha nome, email e função.";
+    msg.classList.add("error");
+    return;
+  }
+
+  try{
+    const res = await fetch("/team/invite", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ name, email, role_id: Number(roleId) })
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.success){
+      msg.textContent = data.message || "Não foi possível convidar.";
+      msg.classList.add("error");
+      return;
+    }
+
+    document.getElementById("genericModalBody").innerHTML = `
+      <p style="color:#7bffa0;font-weight:700">Convite criado!</p>
+      <p style="font-size:13px;color:var(--muted)">Compartilhe esta senha temporária com a pessoa — ela será obrigada a trocá-la no primeiro acesso. Esta senha não será mostrada novamente.</p>
+      <div style="background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px;font-family:monospace;font-size:15px;text-align:center;user-select:all">${escapeHtml(data.temporary_password)}</div>
+      <button class="btn" type="button" onclick="closeGenericModal(); loadTeamList();">Fechar</button>
+    `;
+  }catch(e){
+    console.error("Erro ao convidar:", e);
+    msg.textContent = "Erro de conexão ao convidar.";
+    msg.classList.add("error");
+  }
+}
+
+async function openRoleChangeForm(membershipId){
+  const member = teamMembersCache.find(m => m.membership_id === membershipId);
+  const memberName = member ? member.name : "";
+  const currentRoleId = member ? member.role_id : null;
+
+  let roles = [];
+  try{
+    const res = await fetch("/roles", { credentials: "same-origin" });
+    const data = await res.json();
+    if(data.success) roles = data.roles;
+  }catch(e){
+    console.error("Erro ao carregar funções:", e);
+  }
+
+  const options = roles.map(r => `<option value="${r.id}" ${r.id === currentRoleId ? "selected" : ""}>${escapeHtml(r.name)}</option>`).join("");
+
+  openGenericModal(`Trocar função de ${memberName}`, `
+    <div>
+      <label>Nova função</label>
+      <select id="roleChangeSelect">${options}</select>
+    </div>
+    <div id="roleChangeMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" onclick="submitRoleChange(${membershipId})">Salvar</button>
+  `);
+}
+
+async function submitRoleChange(membershipId){
+  const roleId = document.getElementById("roleChangeSelect").value;
+  const msg = document.getElementById("roleChangeMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  try{
+    const res = await fetch(`/team/${membershipId}/role`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ role_id: Number(roleId) })
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.success){
+      msg.textContent = data.message || "Não foi possível trocar a função.";
+      msg.classList.add("error");
+      return;
+    }
+
+    closeGenericModal();
+    loadTeamList();
+  }catch(e){
+    console.error("Erro ao trocar função:", e);
+    msg.textContent = "Erro de conexão.";
+    msg.classList.add("error");
+  }
+}
+
+async function deactivateMember(membershipId){
+  if(!confirm("Tem certeza que quer desativar esta pessoa? Ela perderá acesso ao hostel até ser reativada.")) return;
+
+  try{
+    const res = await fetch(`/team/${membershipId}/deactivate`, {
+      method: "PATCH",
+      credentials: "same-origin"
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.success){
+      alert(data.message || "Não foi possível desativar.");
+      return;
+    }
+
+    loadTeamList();
+  }catch(e){
+    console.error("Erro ao desativar:", e);
+    alert("Erro de conexão ao desativar.");
+  }
+}
+
+async function reactivateMember(membershipId){
+  try{
+    const res = await fetch(`/team/${membershipId}/reactivate`, {
+      method: "PATCH",
+      credentials: "same-origin"
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.success){
+      alert(data.message || "Não foi possível reativar.");
+      return;
+    }
+
+    loadTeamList();
+  }catch(e){
+    console.error("Erro ao reativar:", e);
+    alert("Erro de conexão ao reativar.");
+  }
+}
+
+async function fetchPermissionCatalog(){
+  try{
+    const res = await fetch("/permissions/catalog", { credentials: "same-origin" });
+    const data = await res.json();
+    return data.success ? data.permissions : [];
+  }catch(e){
+    console.error("Erro ao carregar catalogo de permissoes:", e);
+    return [];
+  }
+}
+
+function renderPermissionCheckboxes(catalog, checkedKeys){
+  return `<div class="permission-checkbox-list">` + catalog.map(p => `
+    <label class="permission-checkbox-row">
+      <input type="checkbox" data-perm-key="${p.key}" ${checkedKeys.includes(p.key) ? "checked" : ""}>
+      ${escapeHtml(p.label)}
+    </label>
+  `).join("") + `</div>`;
+}
+
+function collectCheckedPermissions(){
+  return Array.from(document.querySelectorAll("[data-perm-key]"))
+    .filter(el => el.checked)
+    .map(el => el.dataset.permKey);
+}
+
+async function openNewRoleForm(){
+  const catalog = await fetchPermissionCatalog();
+
+  openGenericModal("Nova função", `
+    <div>
+      <label>Nome da função</label>
+      <input id="newRoleName" type="text" placeholder="Ex: Recepção">
+    </div>
+    <div>
+      <label>Permissões</label>
+      ${renderPermissionCheckboxes(catalog, [])}
+    </div>
+    <div id="newRoleMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" onclick="submitNewRole()">Criar função</button>
+  `);
+}
+
+async function submitNewRole(){
+  const name = document.getElementById("newRoleName").value.trim();
+  const permissions = collectCheckedPermissions();
+  const msg = document.getElementById("newRoleMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  if(!name){
+    msg.textContent = "Digite um nome para a função.";
+    msg.classList.add("error");
+    return;
+  }
+
+  try{
+    const res = await fetch("/roles", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ name, permissions })
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.success){
+      msg.textContent = data.message || "Não foi possível criar a função.";
+      msg.classList.add("error");
+      return;
+    }
+
+    closeGenericModal();
+    loadRolesList();
+  }catch(e){
+    console.error("Erro ao criar função:", e);
+    msg.textContent = "Erro de conexão.";
+    msg.classList.add("error");
+  }
+}
+
+async function openEditRoleForm(roleId){
+  const role = rolesCache.find(r => r.id === roleId);
+  if(!role) return;
+
+  const catalog = await fetchPermissionCatalog();
+  const checkedKeys = (role.permissions || "").split(",").filter(Boolean);
+
+  openGenericModal("Editar função", `
+    <div>
+      <label>Nome da função</label>
+      <input id="editRoleName" type="text">
+    </div>
+    <div>
+      <label>Permissões</label>
+      ${renderPermissionCheckboxes(catalog, checkedKeys)}
+    </div>
+    <div id="editRoleMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" onclick="submitEditRole(${roleId})">Salvar</button>
+  `);
+
+  // Define o valor via propriedade JS, nao via atributo HTML - evita
+  // quebrar o input se o nome da funcao tiver aspas duplas (escapeHtml
+  // protege texto dentro de tags, nao dentro de atributos).
+  document.getElementById("editRoleName").value = role.name;
+}
+
+async function submitEditRole(roleId){
+  const name = document.getElementById("editRoleName").value.trim();
+  const permissions = collectCheckedPermissions();
+  const msg = document.getElementById("editRoleMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  if(!name){
+    msg.textContent = "Digite um nome para a função.";
+    msg.classList.add("error");
+    return;
+  }
+
+  try{
+    const res = await fetch(`/roles/${roleId}`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ name, permissions })
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.success){
+      msg.textContent = data.message || "Não foi possível salvar.";
+      msg.classList.add("error");
+      return;
+    }
+
+    closeGenericModal();
+    loadRolesList();
+  }catch(e){
+    console.error("Erro ao editar função:", e);
+    msg.textContent = "Erro de conexão.";
+    msg.classList.add("error");
+  }
+}
+
+async function deleteRoleConfirm(roleId){
+  const role = rolesCache.find(r => r.id === roleId);
+  const roleName = role ? role.name : "esta função";
+
+  if(!confirm(`Tem certeza que quer apagar a função "${roleName}"? Isso só é possível se ninguém estiver usando ela.`)) return;
+
+  try{
+    const res = await fetch(`/roles/${roleId}`, {
+      method: "DELETE",
+      credentials: "same-origin"
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.success){
+      alert(data.message || "Não foi possível apagar a função.");
+      return;
+    }
+
+    loadRolesList();
+  }catch(e){
+    console.error("Erro ao apagar função:", e);
+    alert("Erro de conexão.");
+  }
 }
 </script>
 
@@ -109,17 +612,20 @@ function openNewUserForm() {
     <button data-page="chats" onclick="openPage('chats',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span>Chats
     </button>
+    <button data-page="reservations" onclick="openPage('reservations',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 11h16v8"/><path d="M4 19V7"/><path d="M8 11V8h8v3"/></svg></span>Reservas
+    </button>
     <button data-page="opportunities" onclick="openPage('opportunities',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3s4 4 4 8a4 4 0 0 1-8 0c0-4 4-8 4-8z"/><path d="M7 14a5 5 0 0 0 10 0"/></svg></span>Opportunity Center
     </button>
-    <button data-page="reservations" onclick="openPage('reservations',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 11h16v8"/><path d="M4 19V7"/><path d="M8 11V8h8v3"/></svg></span>Reservas
+    <button data-page="guests" onclick="openPage('guests',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4"/><circle cx="12" cy="9" r="3"/><path d="M20 19c0-1.7-1-3.1-2.5-3.7"/><path d="M17 7.2a2.5 2.5 0 0 1 0 3.6"/></svg></span>Hóspedes
     </button>
     <button data-page="operations" onclick="openPage('operations',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span>Operações
     </button>
-    <button data-page="guests" onclick="openPage('guests',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4"/><circle cx="12" cy="9" r="3"/><path d="M20 19c0-1.7-1-3.1-2.5-3.7"/><path d="M17 7.2a2.5 2.5 0 0 1 0 3.6"/></svg></span>Hóspedes
+    <button type="button" data-required-permission="team" onclick="openTeamPanel()">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span>Equipe
     </button>
     <button data-page="finance" onclick="openPage('finance',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></span>Financeiro
@@ -1042,6 +1548,46 @@ function openNewUserForm() {
 <button class="ask-floating" onclick="openAskStayFlow()" aria-label="Pergunte à StayFlow" title="Pergunte à StayFlow">
   <img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo">
 </button>
+
+<div id="teamOverlay" class="ask-overlay" onclick="closeTeamPanel()"></div>
+
+<aside id="teamPanel" class="ask-panel">
+  <div class="ask-head">
+    <div>
+      <h2>Equipe</h2>
+      <p>Gerencie quem tem acesso e o que cada pessoa pode ver</p>
+    </div>
+    <button class="close-btn" onclick="closeTeamPanel()">×</button>
+  </div>
+
+  <div class="team-tabs">
+    <button type="button" class="team-tab active" data-team-tab="members" onclick="switchTeamTab('members')">Equipe</button>
+    <button type="button" class="team-tab" data-team-tab="roles" onclick="switchTeamTab('roles')">Funções</button>
+  </div>
+
+  <div id="teamTabMembers" class="ask-body team-tab-content">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="btn" type="button" onclick="openInviteForm()">+ Convidar</button>
+    </div>
+    <div id="teamListContainer"></div>
+  </div>
+
+  <div id="teamTabRoles" class="ask-body team-tab-content" style="display:none">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="btn" type="button" onclick="openNewRoleForm()">+ Nova função</button>
+    </div>
+    <div id="rolesListContainer"></div>
+  </div>
+</aside>
+
+<div id="genericModalOverlay" class="generic-modal-overlay" onclick="closeGenericModal()"></div>
+<div id="genericModal" class="generic-modal">
+  <div class="generic-modal-head">
+    <h3 id="genericModalTitle"></h3>
+    <button class="close-btn" onclick="closeGenericModal()">×</button>
+  </div>
+  <div id="genericModalBody" class="generic-modal-body"></div>
+</div>
 
 <script>
 (function(){
@@ -2245,6 +2791,7 @@ async function loadGuests(){
         return;
       }
 
+      window.STAYFLOW_SESSION = data;
       window.STAYFLOW_USER = data.user;
       localStorage.setItem("stayflow_user", JSON.stringify(data.user));
 
@@ -2268,17 +2815,92 @@ async function loadGuests(){
 </script>
 
 <script>
+  function populateHostelSelector(session){
+    const list = document.getElementById("hostelSelectorList");
+    if(!list) return;
+
+    list.innerHTML = "";
+    const hostels = session.hostels || [];
+
+    hostels.forEach(h => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "hostel-selector-option" + (h.hostel_id === session.hostel_id ? " active" : "");
+      btn.innerHTML = `
+        <span class="option-name">${h.hostel_name}</span>
+        <span class="option-role">${h.role_name}</span>
+      `;
+      btn.addEventListener("click", () => switchHostel(h.hostel_id));
+      list.appendChild(btn);
+    });
+  }
+
+  window.toggleHostelSelector = function(event){
+    if(event) event.stopPropagation();
+    const dropdown = document.getElementById("hostelSelectorDropdown");
+    if(!dropdown) return;
+    dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+  };
+
+  window.switchHostel = async function(hostelId){
+    try{
+      const res = await fetch("/select-hostel", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ hostel_id: hostelId })
+      });
+      const data = await res.json();
+      if(!res.ok || !data.success){
+        alert(data.message || "Nao foi possivel trocar de hostel.");
+        return;
+      }
+      window.location.href = "/app";
+    }catch(e){
+      console.error("Erro ao trocar de hostel:", e);
+      alert("Erro de conexao ao trocar de hostel.");
+    }
+  };
+
+  document.addEventListener("click", (event) => {
+    const dropdown = document.getElementById("hostelSelectorDropdown");
+    const trigger = document.querySelector(".hostel-mini");
+    if(!dropdown || dropdown.style.display === "none") return;
+    if(!dropdown.contains(event.target) && !trigger.contains(event.target)){
+      dropdown.style.display = "none";
+    }
+  });
+
+  function hideNavItemsWithoutPermission(permissions){
+    document.querySelectorAll(".menu button").forEach(btn => {
+      const key = btn.dataset.requiredPermission || btn.dataset.page;
+      if(key && !permissions.includes(key)){
+        btn.style.display = "none";
+      }else{
+        btn.style.display = "";
+      }
+    });
+  }
+
   function hydrateUserUI(u){
     if(!u) return;
 
     const hostelNameEl = document.querySelector(".hostel-name");
     const hostelMetaEl = document.querySelector(".hostel-meta");
+    const session = window.STAYFLOW_SESSION || {};
 
     if(hostelNameEl){
-      hostelNameEl.textContent = u.hostel_name || "Hostel sem nome";
+      hostelNameEl.textContent = session.hostel_name || "Hostel sem nome";
     }
+
+    populateHostelSelector(session);
+    hideNavItemsWithoutPermission(session.permissions || []);
+
     if(hostelMetaEl){
-      hostelMetaEl.textContent = u.hostel_email || "Sem email cadastrado";
+      // Decisao de design do que mostrar aqui (funcao? seletor de conta?)
+      // fica pro proximo passo (seletor de conta). Por ora, so limpa o
+      // texto estatico antigo ("Aguardando cadastro") pra nao mentir.
+      hostelMetaEl.textContent = "";
     }
 
     const userNameEl = document.querySelector(".user-name");
@@ -2289,7 +2911,7 @@ async function loadGuests(){
       userNameEl.textContent = u.name || "Usuário";
     }
     if(userRoleEl){
-      userRoleEl.textContent = u.role || "admin";
+      userRoleEl.textContent = session.role_name || "—";
     }
     if(userAvatarEl && u.name){
       userAvatarEl.textContent = (u.name[0] || "?").toUpperCase();

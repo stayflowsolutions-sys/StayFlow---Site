@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="static/css/auth.css">
 </head>
 <body>
-  <div class="auth-card">
+  <div class="auth-card" id="loginCard">
     <div class="logo">
       <img src="assets/images/logo2.png" alt="StayFlow">
       <h1>Stay<span>Flow</span></h1>
@@ -40,9 +40,70 @@
     </div>
   </div>
 
+  <div id="hostelSelector" class="auth-card" style="display:none;">
+    <div class="logo">
+      <img src="assets/images/logo2.png" alt="StayFlow">
+      <h1>Stay<span>Flow</span></h1>
+      <p>Smart Stay Solutions</p>
+    </div>
+
+    <h2>Escolha o hostel</h2>
+    <p>Sua conta tem acesso a mais de um hostel. Selecione qual voce
+    quer usar agora.</p>
+
+    <div id="hostelList"></div>
+
+    <div id="hostelSelectorMessage" class="error"></div>
+  </div>
+
   <script>
     const form = document.getElementById("loginForm");
     const msg  = document.getElementById("loginMessage");
+
+    function finishLogin(data){
+      // Guarda o usuario no localStorage (simples) para uso no front
+      localStorage.setItem("stayflow_user", JSON.stringify(data.user));
+      // Redireciona para o dashboard servido pelo Flask
+      window.location.href = "/app";
+    }
+
+    function showHostelSelector(data){
+      document.getElementById("loginCard").style.display = "none";
+      const selector = document.getElementById("hostelSelector");
+      const list = document.getElementById("hostelList");
+      list.innerHTML = "";
+
+      data.hostels.forEach(h => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "auth-btn";
+        btn.style.marginBottom = "10px";
+        btn.textContent = `${h.hostel_name} (${h.role_name})`;
+        btn.addEventListener("click", async () => {
+          const selectorMsg = document.getElementById("hostelSelectorMessage");
+          selectorMsg.textContent = "";
+          try{
+            const res = await fetch("/select-hostel", {
+              method: "POST",
+              headers: {"Content-Type": "application/json"},
+              body: JSON.stringify({ hostel_id: h.hostel_id })
+            });
+            const selectData = await res.json();
+            if (!res.ok || !selectData.success){
+              selectorMsg.textContent = selectData.message || "Nao foi possivel entrar nesse hostel.";
+              return;
+            }
+            finishLogin(selectData);
+          }catch(err){
+            console.error(err);
+            selectorMsg.textContent = "Erro ao tentar entrar. Tente novamente.";
+          }
+        });
+        list.appendChild(btn);
+      });
+
+      selector.style.display = "block";
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -70,12 +131,12 @@
           return;
         }
 
-        // Guarda o usuário no localStorage (simples) para uso no front
-        localStorage.setItem("stayflow_user", JSON.stringify(data.user));
+        if (data.needs_hostel_selection){
+          showHostelSelector(data);
+          return;
+        }
 
-        // Redireciona para o dashboard servido pelo Flask
-        window.location.href = "/app";
-
+        finishLogin(data);
 
       }catch(err){
         console.error(err);
