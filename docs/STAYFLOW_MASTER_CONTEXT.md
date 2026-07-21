@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.4.0
+\*\*Versão:\*\* 1.5.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 13/07/2026
+\*\*Última atualização:\*\* 19/07/2026
 
 
 
@@ -49,6 +49,8 @@
 | 1.3.0 | 09/07/2026 | Oficial | Refatoração completa da arquitetura de CSS do Frontend (tokens/reset/app/landing/auth); correção de múltiplas dívidas técnicas de UX em mobile identificadas na versão anterior; adoção do Claude Code como ferramenta de desenvolvimento assistido, incluindo criação de skill de contexto automático; novas funcionalidades no módulo de Chats (divisores de data, identificação de país por telefone); criação do processo formal de Checklist Ativo para controle de escopo. |
 
 | 1.4.0 | 13/07/2026 | Oficial | Correção de divergência crítica de repositório Git (branch `main` desatualizada em relação a `arquitetura-v2`); publicação em produção de todos os commits pendentes desde a versão anterior; implementação e validação em produção da captura do nome do hóspede via function calling da IA; correção de múltiplos bugs reais no menu de Configurações (indicadores de status falsos, painel de Equipe desconectado); início da Fase 1 (schema) de um sistema de permissões multi-hostel; pesquisa e decisão de estratégia para integrações com OTAs (Booking.com/Airbnb); remoção de infraestrutura órfã no ambiente de hospedagem. |
+
+| 1.5.0 | 19/07/2026 | Oficial | Conclusão e publicação em produção do sistema de permissões multi-hostel (Fases 2 e 3): identidade única de pessoa com suporte a múltiplos hostels e troca de conta sem novo login, funções configuráveis por hostel, exceções de permissão individuais com distinção visual entre herdado e ajustado manualmente. Reconstrução completa do painel de Equipe (nunca teve marcação visual antes). Menu lateral reordenado por prioridade de uso e filtrado pela permissão real de cada pessoa. Catálogo de permissões expandido de 10 para 12 chaves. |
 
 
 
@@ -3666,46 +3668,44 @@ hostel, usado pelo módulo de Receitas.
 
 
 \### Users, Roles, Hostel\_Memberships e Membership\_Permission\_Overrides
-(schema em migração — ver nota de status abaixo)
 
 
 
-A partir da versão 1.4.0, a entidade `Users` deixa de representar
-diretamente "um funcionário de um hostel" e passa a representar uma
-\*\*identidade única de pessoa\*\* (nome, e-mail globalmente único, senha) —
-sem `hostel_id` nem função (`role`) próprios.
+A entidade `Users` representa uma \*\*identidade única de pessoa\*\* (nome,
+e-mail globalmente único, senha) — sem `hostel_id` nem função (`role`)
+próprios.
 
 
 
-O vínculo entre uma pessoa e um hostel passa a viver em
-`Hostel_Memberships`, permitindo que a mesma pessoa tenha acesso a mais de
-um hostel simultaneamente (cada vínculo com sua própria função), com
-suporte planejado para troca entre hostels sem necessidade de novo login.
+O vínculo entre uma pessoa e um hostel vive em `Hostel_Memberships`,
+permitindo que a mesma pessoa tenha acesso a mais de um hostel
+simultaneamente (cada vínculo com sua própria função), com troca entre
+hostels sem necessidade de novo login.
 
 
 
 Cada hostel define suas próprias funções em `Roles` (nome + lista
-configurável de permissões — não existem funções fixas no sistema, apenas
-a função "Admin" com todas as permissões e "Staff" sem nenhuma permissão
-por padrão, criadas automaticamente durante a migração de dados
-existentes).
+configurável de permissões, de um catálogo de 12 chaves — ver 13.3 e
+16.22 — não existem funções fixas no sistema, apenas a função "Admin"
+com todas as permissões e "Staff" sem nenhuma permissão por padrão,
+criadas automaticamente durante a migração de dados existentes).
 
 
 
 `Membership\_Permission\_Overrides` permite ao administrador do hostel
 conceder ou revogar permissões específicas para uma pessoa individual, por
 cima do padrão definido pela função dela — sem afetar as demais pessoas
-com a mesma função.
+com a mesma função. O cálculo da permissão efetiva de cada pessoa é
+sempre recalculado em tempo real (função + exceções), nunca guardado em
+cache de sessão — uma mudança feita pelo administrador vale
+imediatamente, sem esperar novo login.
 
 
 
-\*\*Status de implantação:\*\* o schema das 4 tabelas foi criado e a
-migração de dados existentes foi escrita e validada (Fase 1, ver
-Capítulo 17 — Roadmap). Até a publicação desta versão do documento, essa
-mudança existe apenas no ambiente local de desenvolvimento — \*\*não foi
-publicada em produção\*\*. As APIs que consomem esse novo modelo (login com
-múltiplos hostels, CRUD de funções e vínculos) ainda não foram
-implementadas (Fases 2 e 3).
+\*\*Status de implantação (atualizado em 19/07/2026, versão 1.5.0):\*\* schema,
+migração de dados e todas as APIs consumidoras (login com múltiplos
+hostels, CRUD de funções e vínculos, exceções individuais) estão
+publicados e validados em produção — ver Capítulo 16, seção 16.22.
 
 
 
@@ -3988,6 +3988,8 @@ Exemplos:
 \- Revenue (catálogo de upsells)
 
 \- Settings
+
+\- Team e Roles (gestão de equipe, funções e permissões individuais)
 
 \- WhatsApp Webhook (integração com a Meta Cloud API)
 
@@ -5362,7 +5364,7 @@ de venda adicional identificadas pela IA.
 
 
 
-\*\*Status:\*\* Implementado
+\*\*Status:\*\* Implementado e validado em produção
 
 
 
@@ -5372,7 +5374,9 @@ de venda adicional identificadas pela IA.
 
 Garantir que o acesso ao Dashboard dependa de uma sessão real e
 
-verificável, não apenas de um indicador local no navegador.
+verificável, com suporte a uma pessoa possuir acesso a mais de um
+
+hostel simultaneamente.
 
 
 
@@ -5380,9 +5384,27 @@ verificável, não apenas de um indicador local no navegador.
 
 
 
-\- verificação de sessão real via endpoint dedicado, substituindo checagem
+\- identidade única por pessoa (e-mail globalmente único), independente
 
-  baseada apenas em armazenamento local do navegador;
+  de quantos hostels ela tenha acesso;
+
+\- login que reconhece automaticamente se a pessoa tem acesso a mais de
+
+  um hostel e, nesse caso, apresenta a lista para escolha antes de
+
+  liberar a sessão completa;
+
+\- troca de hostel a qualquer momento, sem necessidade de nova senha
+
+  (equivalente à troca de conta/workspace de ferramentas como Slack ou
+
+  Notion);
+
+\- verificação de sessão real via endpoint dedicado (`/me`), que devolve
+
+  também a função e as permissões efetivas da pessoa no hostel atual, e
+
+  a lista dos demais hostels disponíveis;
 
 \- logout funcional;
 
@@ -5528,12 +5550,11 @@ texto fixo.
 
 
 
-\## 16.21 Painel de Equipe — acesso pelo menu de Configurações
+\## 16.21 Painel de Equipe
 
 
 
-\*\*Status:\*\* Parcialmente implementado (dívida técnica conhecida, ver
-Capítulo 17)
+\*\*Status:\*\* Implementado e validado em produção
 
 
 
@@ -5541,8 +5562,10 @@ Capítulo 17)
 
 
 
-Permitir a gestão da equipe do hostel a partir do menu de Configurações,
-não apenas por um atalho lateral pouco descobrível.
+Permitir a gestão completa da equipe de cada hostel: convidar pessoas,
+atribuir e trocar funções, ajustar exceções individuais de permissão, e
+desativar/reativar acesso — tudo a partir de uma interface dedicada,
+acessível tanto pelo menu principal quanto pelo atalho da barra lateral.
 
 
 
@@ -5550,23 +5573,95 @@ não apenas por um atalho lateral pouco descobrível.
 
 
 
-\- o botão "Equipe" dentro do menu de Configurações agora aciona o mesmo
-  painel de gestão de equipe já utilizado pelo atalho da barra lateral.
+\- listagem de todos os membros do hostel (ativos e inativos), com nome,
+  e-mail, função e contagem de permissões efetivas;
+\- convite de pessoa nova ou já existente na plataforma (se o e-mail já
+  é uma identidade cadastrada, apenas cria o vínculo com o hostel; se é
+  pessoa nova, cria a identidade com senha temporária de uso único,
+  exibida apenas no momento do convite);
+\- troca da função de qualquer membro;
+\- ajuste de exceções individuais de permissão por pessoa, com
+  distinção visual clara entre o que vem por padrão da função
+  ("herdado") e o que foi ajustado manualmente para aquela pessoa
+  específica;
+\- desativação e reativação de acesso, sem apagar histórico;
+\- aba dedicada de gestão de Funções: criar, editar (nome e permissões)
+  e apagar funções do hostel, com seleção das 12 permissões disponíveis
+  por checkbox.
 
 
 
-\### Limitação conhecida
+\### Limitação histórica corrigida nesta versão
 
 
 
-O painel em si possui uma falha estrutural pré-existente (não introduzida
-nesta versão): a marcação visual (HTML) do painel nunca foi criada,
-apesar da lógica de carregamento de dados estar pronta e funcional contra
-a API. Como consequência, tanto o atalho da barra lateral quanto o novo
-botão do menu de Configurações produzem um erro ao serem acionados, em
-vez de abrir o painel. Correção registrada como prioridade no Roadmap
-Oficial, junto da reconstrução completa do módulo de gestão de equipe
-(Capítulo 17).
+Este módulo nunca teve a marcação visual (HTML) do painel criada, apesar
+da lógica de carregamento já existir — descoberta registrada na versão
+1.4.0. Reconstruído por completo nesta versão, junto com toda a
+funcionalidade de gestão descrita acima.
+
+
+
+\---
+
+
+
+\## 16.22 Sistema de Permissões Multi-Hostel
+
+
+
+\*\*Status:\*\* Implementado e validado em produção
+
+
+
+\### Objetivo
+
+
+
+Permitir que uma mesma pessoa tenha acesso a múltiplos hostels de forma
+independente, e que cada hostel controle com precisão o que cada membro
+da equipe pode ver e fazer na plataforma.
+
+
+
+\### Capacidades atuais
+
+
+
+\- catálogo de 12 permissões, uma por seção principal do produto
+  (dashboard, chats, opportunities, reservations, operations, guests,
+  finance, reports, inventory, revenue, settings, team), centralizado
+  numa única fonte de verdade reutilizada por todas as camadas do
+  sistema (migração de dados, controle de acesso das rotas, interface);
+\- toda rota protegida da plataforma exige a permissão específica
+  correspondente à sua área, verificada a cada requisição — nunca
+  apenas "estar logado";
+\- funções totalmente configuráveis por hostel (o administrador decide
+  quais das 12 permissões cada função concede, sem funções fixas
+  impostas pelo sistema além dos padrões "Admin" e "Staff" criados
+  automaticamente na migração);
+\- exceções de permissão por pessoa individual, por cima do padrão da
+  função dela, sem afetar as demais pessoas com a mesma função;
+\- proteções de segurança automáticas: nenhuma alteração (troca de
+  função, exceção individual ou desativação) pode deixar um hostel sem
+  nenhuma pessoa capaz de gerenciar a própria equipe; uma função só pode
+  ser apagada quando nenhum vínculo, ativo ou inativo, ainda a
+  referencia;
+\- navegação principal da plataforma escondendo automaticamente as
+  seções que a pessoa logada não tem permissão para acessar.
+
+
+
+\### Nota de arquitetura
+
+
+
+Diferente do restante da sessão do usuário (que guarda apenas a
+identidade da pessoa e o hostel atualmente selecionado), a permissão
+efetiva de cada pessoa nunca é armazenada em cache — é recalculada a
+partir do banco de dados a cada requisição, garantindo que qualquer
+ajuste feito por um administrador valha imediatamente, sem exigir novo
+login de quem foi afetado.
 
 
 
@@ -5716,51 +5811,53 @@ Prioridades atuais:
 
   mobile do cabeçalho será reorganizado por completo);
 
-\- \*\*concluir de fato o menu de Configurações\*\* (Geral, Empresa, IA,
+\- \*\*terminar de concluir o menu de Configurações\*\* — a categoria Equipe
 
-  Comunicação, Integrações, Equipe, Segurança, Billing, Developer) —
+  já está 100% funcional (ver Capítulo 16, seções 16.21 e 16.22).
 
-  auditoria completa realizada em 13/07/2026 revelou que apenas Geral e
+  Restam: (1) o card de configurações de IA continua enviando dois
 
-  WhatsApp Business são 100% funcionais; os demais 7 botões de categoria
+  campos (resposta automática e geração de oportunidades) que o Backend
 
-  não trocam conteúdo algum (apenas alternam uma classe visual). Dois
+  recebe e descarta silenciosamente, ainda não corrigido; (2) as 5
 
-  bugs reais identificados e ainda não corrigidos: (1) o card de
+  categorias restantes (Empresa, Comunicação, Integrações além do
 
-  configurações de IA envia dois campos (resposta automática e geração
+  WhatsApp, Segurança, Billing, Developer) continuam sendo apenas botões
 
-  de oportunidades) que o Backend recebe e descarta silenciosamente; (2)
+  visuais, sem decisão tomada sobre construir cada uma ou remover;
 
-  o painel de gestão de Equipe nunca teve sua marcação HTML criada,
+\- \*\*reorganizar o cabeçalho principal do Dashboard\*\* — mover o card de
 
-  produzindo erro ao ser aberto por qualquer um dos dois pontos de
+  hostel/usuário (hoje na barra lateral) para o topo à direita, e
 
-  acesso existentes (ver Capítulo 16, seções 16.20 e 16.21);
+  transformar o botão "Nova reserva" num botão flutuante, empilhado com
 
-\- \*\*sistema de permissões multi-hostel\*\* — iniciativa nova, tratada como
+  o "Ask StayFlow" já existente. Decidido tratar como frente separada da
 
-  prioridade alta pelo mesmo motivo do menu de Configurações: a gestão de
+  reordenação do menu lateral (concluída em 19/07/2026), para não
 
-  equipe do produto precisa nascer completa (identidade única por pessoa,
+  misturar duas mudanças de risco visual na mesma edição;
 
-  suporte a múltiplos hostels por pessoa com troca de conta sem novo
+\- \*\*criação de reserva via modal flutuante\*\* — reaproveitando o sistema
 
-  login, funções configuráveis por hostel, exceções de permissão por
+  de modal genérico já construído para o painel de Equipe, em vez de
 
-  pessoa individual), não como um recurso parcial que exigiria retrabalho
+  exigir navegação para outra tela;
 
-  estrutural depois. Fase 1 (schema e migração de dados) concluída e
+\- \*\*corrigir a arquitetura de tradução do Dashboard\*\* — a landing page
 
-  validada em ambiente local em 13/07/2026, ainda não publicada em
+  (`index.html`) já possui um sistema central de tradução (PT/EN/ES);
 
-  produção. Fases 2 (Backend: fluxo de login com múltiplos hostels, APIs
+  o Dashboard não segue o mesmo padrão de forma consistente, com partes
 
-  de gestão de funções e vínculos) e 3 (Frontend: seletor de conta,
+  traduzidas e partes que permanecem no idioma original independente da
 
-  reconstrução completa do painel de Equipe, navegação filtrada por
+  seleção. Correção priorizada antes de adicionar francês, alemão e
 
-  permissão) permanecem pendentes;
+  possivelmente japonês ao seletor de idioma, para não multiplicar a
+
+  inconsistência existente;
 
 \- cadastrar o Hostel Lagares como o primeiro hostel-cliente real de
 
@@ -5820,7 +5917,21 @@ Entre elas:
 
   básica já está implementada, ver Capítulo 16);
 
-\- Gestão de Equipe;
+\- \*\*Ask StayFlow como agente de ação\*\* — hoje esse botão flutuante do
+
+  Dashboard é uma simulação de conversa, sem conexão real com o Backend.
+
+  Visão registrada em 19/07/2026: usar o mesmo mecanismo de function
+
+  calling já validado na captura do nome do hóspede (ver Capítulo 16,
+
+  seção 16.19) para permitir que o usuário converse com a IA sobre a
+
+  própria operação e ela execute ações reais (ex.: relatar a chegada de
+
+  uma compra e a IA atualizar o estoque correspondente sozinha), além de
+
+  responder perguntas com contexto real da operação;
 
 \- Motor de Reservas avançado, incluindo integração com Channel Managers —
 
@@ -5846,7 +5957,7 @@ Entre elas:
 
   acesso. Esta frente fica deliberadamente represada até a conclusão
 
-  total do operacional (menu de Configurações e gestão de equipe);
+  total do menu de Configurações (ver 17.2);
 
 \- Relatórios Inteligentes avançados (a versão básica de receita por
 
@@ -6580,6 +6691,140 @@ múltiplos hostels, evitando uma reconstrução futura.
 
 
 
+\### Versão 1.5.0
+
+
+
+\*\*Data\*\*
+
+
+
+19/07/2026
+
+
+
+\*\*Área\*\*
+
+
+
+Backend, Frontend, Banco de Dados, Roadmap
+
+
+
+\*\*Descrição\*\*
+
+
+
+Conclusão das Fases 2 e 3 do sistema de permissões multi-hostel iniciado
+
+na versão anterior, com publicação completa em produção. No Backend:
+
+reescrita total do fluxo de autenticação, permitindo que uma pessoa
+
+possua acesso a múltiplos hostels com troca de conta sem necessidade de
+
+nova senha; criação de um decorator central que passou a proteger toda
+
+rota da plataforma pela permissão específica da área acessada, calculada
+
+em tempo real a partir da função da pessoa somada a eventuais exceções
+
+individuais, nunca a partir de valor guardado em sessão; criação de um
+
+módulo completo de gestão de equipe e funções (nove rotas novas), com
+
+proteções de segurança automáticas contra configurações que deixariam um
+
+hostel sem ninguém capaz de gerenciar a própria equipe; expansão do
+
+catálogo de permissões de dez para doze chaves.
+
+
+
+No Frontend: reconstrução completa do painel de gestão de Equipe, que
+
+nunca havia possuído marcação visual própria; criação de um seletor de
+
+conta na barra lateral para troca de hostel; tela de gestão de funções
+
+com seleção de permissões por checkbox; tela de exceções individuais de
+
+permissão por pessoa, com distinção visual entre o que é herdado da
+
+função e o que foi ajustado manualmente; reordenação do menu de
+
+navegação principal por prioridade de uso real, e filtragem automática
+
+dos itens do menu conforme a permissão da pessoa logada.
+
+
+
+Durante a construção, três bugs reais nos indicadores de identidade do
+
+usuário na barra lateral (nome do hostel, e-mail do hostel e função da
+
+pessoa, todos presos em texto de reserva fixo) foram identificados e
+
+corrigidos por revisão própria, antes de qualquer reclamação de uso —
+
+mesmo padrão aplicado a diversos outros pontos ao longo da sessão
+
+(tratamento de concorrência em cadastro de função, proteção contra
+
+apagar função com vínculo inativo remanescente, prevenção de quebra de
+
+atributo HTML por caracteres especiais em nome de pessoa).
+
+
+
+\*\*Motivação\*\*
+
+
+
+Encerrar por completo uma iniciativa que o usuário determinou
+
+explicitamente não poder ficar parcialmente implementada — uma vez que a
+
+decisão de construir o sistema de permissões foi tomada, o compromisso
+
+assumido foi de não interromper o trabalho até toda a extensão da
+
+visão original (identidade única multi-hostel, funções configuráveis,
+
+exceções individuais com distinção de origem) estar funcional e
+
+publicada, evitando o retrabalho estrutural que uma entrega parcial
+
+inevitavelmente geraria.
+
+
+
+\*\*Impacto\*\*
+
+
+
+A plataforma passa a operar oficialmente sob um modelo de identidade e
+
+permissões preparado para o cenário real de múltiplos hostels e equipes,
+
+eliminando a limitação anterior de um usuário por hostel. A categoria
+
+Equipe do menu de Configurações, que era a maior lacuna identificada na
+
+auditoria da versão anterior, torna-se a primeira categoria totalmente
+
+funcional além de Geral e WhatsApp Business. O produto ganha uma base
+
+de controle de acesso que qualquer funcionalidade futura poderá herdar
+
+automaticamente, sem exigir nova arquitetura de segurança.
+
+
+
+\---
+
+
+
 \## 18.5 Atualização do Documento Mestre
 
 
@@ -6664,4 +6909,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.4.0\*\*
+\*\*Fim da Versão Oficial 1.5.0\*\*

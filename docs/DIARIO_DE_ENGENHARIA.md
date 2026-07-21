@@ -723,3 +723,249 @@ navegação filtrada por permissão) ficam pra sessão futura.
 - [ ] Faxina de pastas locais (`Archive_old/`, `Audit_old/`,
       `backups_old/`) — ainda não feita
 - [ ] Decidir destino de `templates/components/` — ainda sem decisão
+
+---
+
+## SESSÃO 5 - 14 a 19/07/2026
+
+### Contexto no início da sessão
+
+Continuação direta da Sessão 4, através de várias pausas reais do usuário
+(algumas de um dia inteiro). Objetivo único, declarado logo no início:
+terminar por completo o sistema de permissões multi-hostel que ficou como
+Fase 1 (schema) na sessão anterior — Fases 2 (backend) e 3 (frontend),
+sem deixar nada pela metade, do jeito que o usuário passou a exigir
+explicitamente a partir de hoje.
+
+### Correção de processo: memória de preferências
+
+Uma ferramenta usada em turnos anteriores para salvar preferências
+(`memory_user_edits`) parou de existir/retornou erro. Corrigido migrando
+essas preferências para o sistema de memória real (arquivo
+`/preferences.md`), preservando tudo que já tinha sido registrado.
+
+### Padrões de trabalho reforçados nesta sessão (o usuário cobrou cada um deles em algum momento)
+
+- **Revisar o próprio código antes de mandar pro Claude Code**, não só
+  depois que o usuário perguntar "tem certeza?". Isso pegou bugs reais
+  repetidas vezes antes de eles chegarem a existir no código (ver lista
+  abaixo).
+- **Um comando por vez**, nunca empilhar instruções.
+- **Nenhuma funcionalidade pela metade** — levado ao extremo hoje: o que
+  começou como "só ligar o botão Equipe" virou a construção completa de
+  um sistema de identidade + múltiplos hostels + funções + exceções
+  individuais, porque o usuário recusou qualquer atalho parcial.
+- **Não repetir investigação já feita** — checar o que já foi confirmado
+  na própria conversa antes de pedir novo comando.
+
+### Fase 2 (Backend) — construída e testada peça por peça
+
+**Núcleo de cálculo de permissão** (`database.py`): `get_membership()`,
+`get_effective_permissions()` (função + exceções individuais combinadas
+em tempo real, nunca cacheado). Testado isoladamente com 4 cenários
+(admin com tudo, staff sem nada, staff com exceção pontual, pessoa sem
+vínculo) antes de qualquer coisa depender dele.
+
+**Decorator `@require_permission`** (`utils/tenant.py`) — verifica
+permissão a cada requisição, sempre recalculada do banco (decisão
+explícita do usuário: "fazemos da forma correta, não a mais rápida").
+Testado com Flask de verdade (não só função isolada): bloqueio sem
+sessão, bloqueio por falta de permissão específica, liberação por
+exceção individual, liberação total do admin.
+
+**Identidade e múltiplos hostels** (`database.py`): `get_hostel()`,
+`get_user_by_email()`, `get_user_by_id()`, `get_user_hostels()`,
+`create_identity_and_hostel()` (transação real, com rollback testado
+forçando um e-mail duplicado no meio da criação — confirmado que nada
+fica órfão no banco).
+
+**`routes/auth.py` reescrito por completo** — `login()`/`register()`
+adaptados ao novo modelo, `select_hostel()` novo (finaliza a escolha de
+hostel, serve tanto pro primeiro login com múltiplas contas quanto pra
+trocar de hostel depois, sem senha nova), `/me` expandido (devolve
+permissões calculadas + lista de outros hostels). **Revisão própria
+pegou 3 problemas antes de mandar**: campos que sumiriam da sessão e
+quebrariam `utils/tenant.py`; erro de concorrência não tratado no
+registro simultâneo; decisão de `must_change_password` que eu tinha
+mudado sem avisar. Depois, por pedido do usuário ("vamos terminar tudo
+hoje"), a camada de compatibilidade com o frontend antigo foi removida —
+simplificação consciente, sabendo que trava tudo até a Fase 3 terminar.
+Testado via `app.test_client()` real: registro, logout, `/me` sem
+sessão, senha errada, login com 1 hostel, login com múltiplos hostels
+(devolve lista), tentar escolher hostel que não é seu (403), escolher
+hostel válido, trocar de hostel já logado sem senha nova.
+
+**Conversão das 13 rotas antigas** de `@require_auth` pra
+`@require_permission`, uma chave por arquivo. Descoberta no processo:
+faltavam 2 permissões no catálogo original de 10 (`reports` e `team`,
+esse último criado depois de uma conversa sobre separar "editar
+configurações gerais" de "gerenciar equipe") — catálogo final com 12
+chaves, centralizado em `utils/permissions.py` (`ALL_PERMISSIONS`,
+`PERMISSION_LABELS`), fonte única de verdade reaproveitada por
+migração, decorator, rotas e frontend.
+
+**`routes/team.py` (novo, 9 rotas)** — CRUD de funções, listar/convidar/
+trocar função/exceção individual/desativar/reativar equipe, mais
+catálogo de permissões e detalhe de origem por pessoa
+(`/permissions-detail`, separa "vem da função" de "foi ajustado
+manualmente" — pedido explícito do usuário, "nível de empresa
+multinacional", não a versão simplificada que eu tinha sugerido primeiro
+por ser mais rápida).
+
+**Proteções de segurança construídas com o usuário aprovando cada
+decisão antes**: nenhuma mudança pode deixar um hostel sem ninguém com
+permissão `team` (checado em troca de função, exceção individual e
+desativação — `check_team_permission_safety`); função só pode ser
+apagada sem nenhum vínculo restante, **ativo ou inativo** (bug pego na
+própria revisão antes de mandar: a primeira versão só checava vínculos
+ativos, deixaria gente desativada com referência quebrada, sumindo
+silenciosamente da listagem).
+
+**Limpeza**: as rotas antigas e quebradas `POST`/`GET /users` em
+`routes/settings.py` (usavam colunas que não existem mais desde a
+migração da Sessão 4) foram removidas, junto do `import bcrypt`/
+`hash_password` que só existiam pra sustentar elas.
+
+### Bugs pegos na revisão própria antes de qualquer código ir pro Claude Code (lista consolidada)
+
+- Import redundante de `ALL_PERMISSIONS_STR` duplicado (topo do arquivo
+  + dentro de função).
+- Concorrência não tratada em `create_role`/`update_role` (nome
+  duplicado gerava erro cru em vez de mensagem clara).
+- Nome de função/pessoa injetado direto dentro de atributo `onclick` —
+  quebraria com aspas duplas no nome; corrigido buscando o dado por id
+  numa lista já carregada, em vez de embutir texto no HTML.
+- Duplo escape: `escapeHtml()` aplicado num texto que já ia por
+  `.textContent` (que já é seguro por natureza) — mostraria códigos HTML
+  literais na tela.
+- `ON CONFLICT ... DO UPDATE` (sintaxe SQLite recente, nunca testada no
+  ambiente) trocada por `SELECT` + `UPDATE`/`INSERT` manual, garantido
+  de funcionar em qualquer versão.
+- Especificidade de CSS: `.collapse-menu{display:none}` perdendo pra
+  `.menu button{display:flex}` por ser menos específico — corrigido com
+  `.menu button.collapse-menu`.
+
+### Fase 3 (Frontend) — construída em cima do backend testado
+
+**`Login.html`** — card novo (`#hostelSelector`) que aparece quando o
+login devolve `needs_hostel_selection: true`, listando os hostels como
+botões; escolher um chama `/select-hostel` e só então redireciona.
+
+**3 bugs reais encontrados por revisão própria, não por reclamação do
+usuário**: `window.STAYFLOW_USER` guardava só o pedaço `user` da
+resposta do `/me`, perdendo `hostel_name`/`role_name` que vêm no nível
+acima — os 3 campos da sidebar (nome do hostel, e-mail do hostel, função
+da pessoa) sempre mostravam texto de fallback fixo, nunca o dado real.
+Corrigido introduzindo `window.STAYFLOW_SESSION` (resposta completa do
+`/me`), usado por tudo que precisa desses dados daqui pra frente.
+
+**Seletor de conta na sidebar** (`.hostel-selector-wrap`, dropdown) —
+corrigido um bug de posicionamento (`position:relative` faltando no
+invólucro, o dropdown abriria em lugar errado da tela) antes de mandar.
+Testado com 2 hostels reais (vínculo criado direto no banco de teste
+pra simular): lista os dois, marca o ativo, troca funciona (recarrega a
+página, hostel novo ativo, permissões recalculadas corretas pro novo
+contexto).
+
+**Painel de Equipe reconstruído do zero** (o HTML nunca tinha existido,
+confirmado na Sessão 4) — 2 abas (Equipe/Funções), modal genérico
+reutilizável (`openGenericModal`/`closeGenericModal`, usado por convite,
+trocar função, criar/editar função, exceções individuais — evita
+duplicar CSS/JS pra cada formulário). Convite gera senha temporária
+mostrada uma única vez na tela. Cada card de pessoa tem botões pra
+trocar função, editar exceções individuais (com a distinção visual
+"herdado da função" vs "ajustado manualmente", vinda da rota
+`/permissions-detail`), desativar/reativar. Cada card de função tem
+editar (com os 12 checkboxes) e apagar.
+
+**Menu lateral**: reordenado por prioridade de uso real (o usuário pediu
+uma lista priorizada antes de aprovar a ordem final), "Equipe" virou
+item de primeira classe (antes só existia via clique no avatar), e
+passou a esconder itens conforme a permissão real da pessoa logada
+(`hideNavItemsWithoutPermission`, lida do `/me`).
+
+### Lição de processo aprendida no meio dos testes: reiniciar o servidor
+
+Mudança em arquivo Python (`database.py`, `routes/`) só é lida pelo
+Flask quando o processo reinicia — diferente de HTML/CSS, sempre lido
+fresco a cada carregamento de página. Um teste deu "modal vazio" porque
+o servidor local ainda estava com o backend de antes das rotas novas
+existirem; resolvido matando o processo antigo e subindo de novo.
+Registrado como lembrete permanente pro resto da sessão.
+
+### Testes finais confirmados pelo usuário, na interface real (não só backend isolado)
+
+Login com múltiplos hostels mostrando a tela de escolha; editar e
+apagar função (incluindo a proteção contra apagar função com gente
+vinculada); trocar função de uma pessoa; exceção individual persistindo
+corretamente (reaberto depois, a mudança continuava lá); login com
+conta sem ser admin mostrando o menu lateral filtrado, só com os itens
+permitidos pela função dela.
+
+### Publicação em produção
+
+Dois commits em cada repositório (frontend `StayFlow---Site` e backend
+`HostelBot` com xcopy sincronizado), todos com o mesmo cuidado de
+sempre (`git status` conferido antes de cada `add`, `services/
+memory_service.py` mantido de fora por ser frente não relacionada e
+ainda não testada). Deploy confirmado em produção: a migração de banco
+rodou pela primeira vez contra dado real (com backup de segurança feito
+na Sessão 4, nunca precisou ser usado), a conta real do usuário
+continuou funcionando, e a função dela apareceu corretamente como
+"Admin" com as 12 permissões.
+
+### Assuntos levantados pelo usuário, registrados mas não atacados nesta sessão
+
+- **Reorganizar o cabeçalho**: mover hostel/usuário da sidebar pro topo
+  à direita (onde hoje fica "+ Nova reserva"), e "Nova reserva" virar
+  botão flutuante empilhado com o "Ask StayFlow". Adiado de propósito
+  pra não misturar com a reordenação do menu (risco de não saber qual
+  mudança quebrou o quê, se algo desse errado).
+- **Reserva criada via modal flutuante**, reaproveitando o mesmo padrão
+  de modal genérico construído hoje, em vez de navegar pra outra tela.
+- **"Assumir conversa" (Ask StayFlow) virar agente de verdade** — a
+  intenção do usuário é a IA conseguir agir sobre o sistema durante a
+  conversa (ex: "chegou uma compra de 50 toalhas" atualizando o estoque
+  sozinho), usando o mesmo mecanismo de function calling já validado na
+  captura de nome do hóspede. Reconhecido como grande iniciativa nova,
+  fora do escopo de hoje — o próprio usuário concordou em adiar depois
+  de eu apontar que já estava registrada no caderno dele como "Fase 2"
+  represada.
+- **Traduções inconsistentes fora da landing page** — usuário percebeu
+  que o dashboard não tem o mesmo sistema de tradução central que a
+  landing page (`index.html`) já tinha; funciona em alguns lugares,
+  falha em outros. Quer adicionar francês, alemão e possivelmente
+  japonês depois — decisão registrada de corrigir a arquitetura de
+  tradução primeiro (senão os novos idiomas multiplicam o problema em
+  vez de resolver).
+
+### O que ficou pendente pra próxima sessão
+
+- [ ] Reorganizar cabeçalho (hostel/usuário pro topo, "Nova reserva" como
+      botão flutuante)
+- [ ] Criar reserva via modal flutuante, sem navegar pra outra tela
+- [ ] Corrigir bug do card "IA" em Configurações (checkboxes que o
+      backend ainda ignora silenciosamente — não atacado nesta sessão)
+- [ ] Decidir destino das 5 categorias vazias de Configurações (Empresa,
+      Comunicação, Segurança, Billing, Developer)
+- [ ] Investigar e corrigir a arquitetura de tradução do dashboard antes
+      de adicionar francês/alemão/japonês
+- [ ] Transformar "Ask StayFlow" num agente real com function calling
+      (grande iniciativa nova, represada)
+- [ ] `services/memory_service.py` — ainda não commitado, não testado com
+      WhatsApp real
+- [ ] Cadastrar o Hostel Lagares real (login + número de WhatsApp
+      próprios)
+- [ ] Preencher `hostels.phone` (organização, não bloqueia nada)
+- [ ] Corrigir dropdown de idioma cortado no mobile — adiado pra fase de
+      lapidação visual
+- [ ] Visual do Login — fundo com mapa mundi (padrão do `Register.html`)
+- [ ] Botão "Teste grátis" ainda linka pro WhatsApp
+- [ ] Decidir arquitetura definitiva de deploy (eliminar o xcopy manual)
+- [ ] Integração por e-mail com OTAs — só depois do operacional 100%
+      fechado
+- [ ] `Login_MISTERIOSO_BACKUP.html`, `_screenshots_revisao/`,
+      `teste-users.html` continuam fora do Git
+- [ ] Faxina de pastas locais (`Archive_old/`, `Audit_old/`,
+      `backups_old/`)
+- [ ] Decidir destino de `templates/components/`
