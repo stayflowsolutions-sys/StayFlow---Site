@@ -49,7 +49,7 @@ def get_settings(hostel_id):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT hostel_name, hostel_type, checkin, checkout
+        SELECT hostel_name, hostel_type, checkin, checkout, opportunity_generation
         FROM settings
         WHERE hostel_id = ?
     """, (hostel_id,))
@@ -62,7 +62,8 @@ def get_settings(hostel_id):
             "hostel_name": row["hostel_name"],
             "hostel_type": row["hostel_type"],
             "checkin": row["checkin"],
-            "checkout": row["checkout"]
+            "checkout": row["checkout"],
+            "opportunity_generation": bool(row["opportunity_generation"]) if row["opportunity_generation"] is not None else True
         })
 
     return jsonify({})
@@ -85,25 +86,28 @@ def update_settings(hostel_id):
                 hostel_name = ?,
                 hostel_type = ?,
                 checkin = ?,
-                checkout = ?
+                checkout = ?,
+                opportunity_generation = ?
             WHERE hostel_id = ?
         """, (
             data.get("hostel_name"),
             data.get("hostel_type"),
             data.get("checkin"),
             data.get("checkout"),
+            1 if data.get("opportunity_generation", True) else 0,
             hostel_id
         ))
     else:
         cursor.execute("""
-            INSERT INTO settings (hostel_id, hostel_name, hostel_type, checkin, checkout)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO settings (hostel_id, hostel_name, hostel_type, checkin, checkout, opportunity_generation)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
             hostel_id,
             data.get("hostel_name"),
             data.get("hostel_type"),
             data.get("checkin"),
-            data.get("checkout")
+            data.get("checkout"),
+            1 if data.get("opportunity_generation", True) else 0
         ))
 
     conn.commit()

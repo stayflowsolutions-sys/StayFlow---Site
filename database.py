@@ -332,6 +332,8 @@ def create_database():
     )
     """)
 
+    add_column_if_not_exists(cursor, "settings", "opportunity_generation", "INTEGER DEFAULT 1")
+
     # settings antigo (de antes do multi-tenant) não tinha essas colunas —
     # CREATE TABLE IF NOT EXISTS não adiciona coluna em tabela já existente,
     # então precisa migrar manualmente, igual fizemos com guests/leads.
@@ -1247,6 +1249,28 @@ def get_hostel_whatsapp_config(hostel_id):
         return None, None
 
     return row["whatsapp_phone_number_id"], row["whatsapp_access_token"]
+
+
+def is_opportunity_generation_enabled(hostel_id):
+    """
+    Verifica se a geracao de oportunidades esta ligada pra esse
+    hostel. Se o hostel nunca salvou nenhuma configuracao ainda (sem
+    linha em settings), assume ligado por padrao - preserva o
+    comportamento atual de quem nunca mexeu nessa tela.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT opportunity_generation FROM settings WHERE hostel_id = ?",
+        (hostel_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row or row["opportunity_generation"] is None:
+        return True
+
+    return bool(row["opportunity_generation"])
 
 
 def save_hostel_whatsapp_config(hostel_id, phone_number_id, access_token):

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 
-from database import get_hostel_id_by_number, get_hostel_whatsapp_config
+from database import get_hostel_id_by_number, get_hostel_whatsapp_config, is_opportunity_generation_enabled
 from services.ai_service import ask_ai
 from services.memory_service import save_message, get_history
 from services.guest_service import get_or_create_guest, update_guest_name
@@ -41,7 +41,7 @@ def process_incoming_message(hostel_id, phone, text, send_to_whatsapp=False):
 
     save_lead(hostel_id, phone, text)
 
-    opportunity = analyze_message(hostel_id, phone, text)
+    opportunity = analyze_message(hostel_id, phone, text) if is_opportunity_generation_enabled(hostel_id) else None
 
     if send_to_whatsapp:
         phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)

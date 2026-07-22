@@ -11,6 +11,7 @@
      1360px  ajuste fino de padding em telas grandes (app)
    ============================== */
 :root{
+  --floating-btn-size: 64px;
   --bg:#03070d;
   --bg2:#06101b;
   --panel:#07111d;
