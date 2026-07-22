@@ -22,25 +22,6 @@
     <div class="tagline">Smart Stay Solutions</div>
   </div>
 
-  <div class="sidebar-profile">
-    <div class="hostel-selector-wrap">
-      <div class="hostel-mini" onclick="toggleHostelSelector(event)" title="Trocar de hostel">
-        <div class="hostel-avatar">🏨</div>
-        <div class="profile-copy">
-          <div class="hostel-name">Nenhum hostel</div>
-          <div class="hostel-meta"></div>
-        </div>
-      </div>
-
-      <div id="hostelSelectorDropdown" class="hostel-selector-dropdown" style="display:none;">
-        <div id="hostelSelectorList"></div>
-        <div class="hostel-selector-divider"></div>
-        <button type="button" class="hostel-selector-settings-link" onclick="toggleHostelSelector(); openPage('settings', document.querySelector('[data-page=settings]'))">
-          ⚙ Configurações do hostel
-        </button>
-      </div>
-    </div>
-
 <script>
 // ===== TEAM PANEL (Equipe) =====
 
@@ -589,21 +570,6 @@ async function deleteRoleConfirm(roleId){
 </script>
 
 
-   <div class="user-mini" onclick="openTeamPanel()" title="Equipe">
-      <div class="user-avatar">?</div>
-      <div class="profile-copy">
-        <div class="user-name">—</div>
-        <div class="user-role">—</div>
-      </div>
-    </div>
-
-    <button type="button" onclick="event.stopPropagation(); stayflowLogout()"
-      style="width:100%;margin-top:2px;padding:8px 10px;border-radius:12px;
-             border:1px solid #ffffff14;background:#ffffff06;color:#9aa8bb;
-             font-size:12px;font-weight:700;text-align:center;">
-      Sair
-    </button>
-  </div>
 
   <nav class="menu">
     <button data-page="dashboard" class="active" onclick="openPage('dashboard',this)">
@@ -657,8 +623,46 @@ async function deleteRoleConfirm(roleId){
     <p>Visão geral inteligente da operação</p>
   </div>
   <div class="actions">
-    <button class="btn secondary" onclick="openPage('operations', document.querySelector('[data-page=operations]'))">Alertas operacionais</button>
-    <button class="btn" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))">+ Nova reserva</button>
+    <div class="hostel-selector-wrap">
+      <div class="hostel-mini" onclick="toggleHostelSelector(event)" title="Trocar de hostel">
+        <div class="hostel-avatar">🏨</div>
+        <div class="profile-copy">
+          <div class="hostel-name">Nenhum hostel</div>
+          <div class="hostel-meta"></div>
+        </div>
+      </div>
+
+      <div id="hostelSelectorDropdown" class="hostel-selector-dropdown" style="display:none;">
+        <div id="hostelSelectorList"></div>
+        <div class="hostel-selector-divider"></div>
+        <button type="button" class="hostel-selector-settings-link" onclick="toggleHostelSelector(); openPage('settings', document.querySelector('[data-page=settings]'))">
+          ⚙ Configurações do hostel
+        </button>
+      </div>
+    </div>
+
+    <button class="btn secondary bell-btn" onclick="openPage('operations', document.querySelector('[data-page=operations]'))" title="Alertas operacionais">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span id="opsAlertBadge" class="notif-badge" style="display:none;">0</span>
+    </button>
+
+    <div class="hostel-selector-wrap">
+      <div class="user-avatar" id="userMenuTrigger" onclick="toggleUserMenu(event)" title="Menu do usuário">?</div>
+
+      <div id="userMenuDropdown" class="hostel-selector-dropdown" style="display:none;">
+        <div class="profile-copy" style="padding:8px 10px;">
+          <div class="user-name">—</div>
+          <div class="user-role">—</div>
+        </div>
+        <div class="hostel-selector-divider"></div>
+        <button type="button" id="userMenuEquipeItem" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openTeamPanel()">
+          👥 Equipe
+        </button>
+        <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
+          ↪ Sair
+        </button>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -1494,9 +1498,9 @@ async function deleteRoleConfirm(roleId){
       <div class="card">
         <h2>IA StayFlow</h2>
 
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
-          <span>Resposta automática para dúvidas simples</span>
-          <input type="checkbox" data-setting="auto_reply" checked>
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;opacity:.5;">
+          <span>Resposta automática para dúvidas simples<br><small style="font-weight:400;color:var(--muted)">Em breve — depende do recurso de assumir conversa</small></span>
+          <input type="checkbox" checked disabled>
         </label>
 
         <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
@@ -1545,8 +1549,12 @@ async function deleteRoleConfirm(roleId){
   </div>
 </aside>
 
+<button class="reserva-floating" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" title="Nova reserva">
+  <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#06101b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
 <button class="ask-floating" onclick="openAskStayFlow()" aria-label="Pergunte à StayFlow" title="Pergunte à StayFlow">
-  <img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo">
+  <span class="brand-logo-mask" role="img" aria-label="StayFlow"></span>
 </button>
 
 <div id="teamOverlay" class="ask-overlay" onclick="closeTeamPanel()"></div>
@@ -2234,6 +2242,16 @@ async function loadOperations(){
     const alerts = data.alerts || [];
     const tasks = data.tasks || [];
 
+    const badgeEl = document.getElementById("opsAlertBadge");
+    if(badgeEl){
+      if(alerts.length > 0){
+        badgeEl.textContent = alerts.length > 99 ? "99+" : alerts.length;
+        badgeEl.style.display = "flex";
+      }else{
+        badgeEl.style.display = "none";
+      }
+    }
+
     if(!alerts.length){
       if(alertsEmptyEl) alertsEmptyEl.style.display = "flex";
       if(alertsListEl) alertsListEl.style.display = "none";
@@ -2842,6 +2860,22 @@ async function loadGuests(){
     dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
   };
 
+  window.toggleUserMenu = function(event){
+    if(event) event.stopPropagation();
+    const dropdown = document.getElementById("userMenuDropdown");
+    if(!dropdown) return;
+    dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+  };
+
+  document.addEventListener("click", (event) => {
+    const dropdown = document.getElementById("userMenuDropdown");
+    const trigger = document.getElementById("userMenuTrigger");
+    if(!dropdown || dropdown.style.display === "none") return;
+    if(!dropdown.contains(event.target) && trigger && !trigger.contains(event.target)){
+      dropdown.style.display = "none";
+    }
+  });
+
   window.switchHostel = async function(hostelId){
     try{
       const res = await fetch("/select-hostel", {
@@ -2894,6 +2928,11 @@ async function loadGuests(){
     }
 
     populateHostelSelector(session);
+
+    const equipeMenuItem = document.getElementById("userMenuEquipeItem");
+    if(equipeMenuItem){
+      equipeMenuItem.style.display = (session.permissions || []).includes("team") ? "" : "none";
+    }
     hideNavItemsWithoutPermission(session.permissions || []);
 
     if(hostelMetaEl){

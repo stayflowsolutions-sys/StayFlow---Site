@@ -969,3 +969,153 @@ continuou funcionando, e a função dela apareceu corretamente como
 - [ ] Faxina de pastas locais (`Archive_old/`, `Audit_old/`,
       `backups_old/`)
 - [ ] Decidir destino de `templates/components/`
+
+---
+
+## SESSÃO 6 - 21/07/2026
+
+### Contexto no início da sessão
+
+Continuação direta da Sessão 5 (que terminou com o sistema de
+permissões multi-hostel publicado em produção). Objetivo: reorganização
+visual do cabeçalho do Dashboard (item que já estava planejado como
+próximo passo), seguido de correção do bug conhecido do card "IA" em
+Configurações.
+
+### Padrão de trabalho ajustado nesta sessão
+
+O usuário pediu explicitamente pra combinar o máximo de trabalho
+seguro numa instrução só, em vez de fatiar em muitos ciclos — motivado
+por limite de tempo/mensagens no Claude Code. Isso mudou o ritmo: menos
+investigação incremental, mais instruções completas de uma vez,
+mantendo os mesmos princípios de segurança (checagem prévia de texto
+único antes de editar, revisão própria antes de mandar).
+
+### Reorganização dos botões flutuantes
+
+Unificação visual dos dois botões flutuantes ("Ask StayFlow" e "Nova
+reserva"), que hoje tinham formatos e tamanhos incompatíveis (140px
+transparente vs recém-criado 56px sólido). Processo iterativo, com
+vários ajustes visuais em cima do resultado renderizado (não dava pra
+acertar de primeira sem ver na tela):
+
+- Ambos padronizados no mesmo tamanho, cantos arredondados com o token
+  oficial `var(--radius)`, fundo azul idêntico.
+- A logo do "Ask StayFlow" (antes um `<img>` colorido) recolorida via
+  `mask-image` do CSS para a cor de fundo escura do dashboard
+  (`#06101b`), criando um efeito de "recorte" sobre o azul do botão —
+  técnica nova no projeto, nunca usada antes.
+- Confirmado por análise real do arquivo (`PIL`/Pillow) que `logo2.png`
+  tem transparência real (RGBA) e que a margem transparente ao redor
+  do desenho é praticamente simétrica (12px vs 10px, de 1536px de
+  largura) — o desalinhamento percebido visualmente era causado por
+  distorção de proporção (`mask-size` forçando os dois eixos ao mesmo
+  valor numa imagem não-quadrada, 1536×1024), não por deslocamento
+  real do arquivo. Corrigido usando `auto` num dos eixos do
+  `mask-size`, deixando o CSS calcular a proporção certa.
+- Tamanho final do botão centralizado numa variável CSS nova
+  (`--floating-btn-size`, em `tokens.css`), pra qualquer ajuste futuro
+  ser uma mudança de 1 número, não reescrita de 3 blocos.
+- Todo o processo de ajuste fino (tamanho da logo, posição, cor do
+  ícone "+") envolveu bastante tentativa-e-erro guiado por
+  print/feedback visual direto do usuário — sem tentar resolver por
+  cálculo puro depois da primeira rodada.
+
+### Reorganização do cabeçalho: hostel/usuário movidos pro topbar
+
+O card de hostel e o card de usuário, antes empilhados verticalmente
+na barra lateral (dentro de `.sidebar-profile`, com o botão "Sair"
+solto embaixo), foram movidos para a faixa horizontal do topbar, ao
+lado do sino de alertas.
+
+Decisão de design: o avatar do usuário deixou de abrir o painel de
+Equipe diretamente e passou a abrir um menu suspenso pequeno, com 2
+opções — "Equipe" (escondida automaticamente se a pessoa não tiver a
+permissão `team`, reaproveitando `hideNavItemsWithoutPermission`) e
+"Sair" (que antes só existia como botão solto na sidebar, agora tem um
+lugar definido). O dropdown do hostel continua com a mesma lógica de
+antes (trocar de conta), só realocado.
+
+Achado durante a investigação (não corrigido, registrado): o clique no
+avatar do usuário sempre abriu o painel de Equipe sem checar
+permissão — diferente do item "Equipe" do menu lateral, que já usa
+`hideNavItemsWithoutPermission`. Não é falha de segurança (o backend
+bloqueia certo com 403), só inconsistência de UX. Resolvido de
+propósito nesta sessão ao construir o novo menu suspenso (o item
+"Equipe" dentro dele agora sim respeita a permissão).
+
+### Correção do bug do card "IA" em Configurações
+
+Bug já identificado numa auditoria anterior (Sessão 4): os checkboxes
+"Resposta automática" e "Geração de oportunidades", dentro do card de
+IA em Configurações, pareciam salvar (nenhum erro na tela), mas o
+backend nunca gravava esses dois valores — a rota só persistia 4
+campos (nome, tipo, checkin, checkout). Investigação nesta sessão
+revelou uma camada extra mascarando o problema: `saveSettingsToLocal()`
+grava a resposta inteira do formulário no `localStorage` antes mesmo
+da chamada ao servidor — então, depois de salvar e recarregar, os
+checkboxes apareciam exatamente como deixados, dando falsa sensação de
+persistência real.
+
+Separado em dois destinos diferentes, por decisão consciente:
+
+- **"Geração de oportunidades"**: corrigido de ponta a ponta.
+  Adicionada coluna `opportunity_generation` em `settings` (padrão
+  ligado, preserva comportamento de quem nunca mexeu). `GET`/`POST
+  /settings` passam a ler/gravar de verdade. A chamada de
+  `analyze_message()` em `routes/chat.py` (que rodava sempre,
+  incondicional) passou a checar essa preferência antes de executar.
+  Testado com mensagem real simulando reserva urgente, hostel com a
+  preferência desligada: a IA respondeu normalmente ao hóspede, mas
+  zero oportunidade nova foi criada — confirma que o desligamento tem
+  efeito real, não é cosmético.
+- **"Resposta automática"**: decidido não fingir uma correção — esse
+  checkbox só faria sentido de verdade com um mecanismo de aprovação
+  humana antes de enviar (o "assumir conversa"/Ask StayFlow agente,
+  ainda não construído). Em vez de salvar um valor sem efeito nenhum,
+  o checkbox foi desabilitado visualmente, com texto explicando o
+  motivo ("Em breve — depende do recurso de assumir conversa").
+
+### Correção de processo: instruções corrigidas sempre completas
+
+O usuário identificou e corrigiu um hábito ruim: ao revisar e corrigir
+uma instrução já enviada, só a parte alterada estava sendo reenviada,
+pedindo pro usuário juntar manualmente com a mensagem anterior.
+Registrado como regra permanente: toda correção deve vir como bloco
+completo e autocontido, nunca como fragmento pra colar em cima de algo
+já mandado.
+
+### O que ficou pendente pra próxima sessão
+
+- [ ] Publicar em produção o trabalho desta sessão (cabeçalho
+      reorganizado, botões flutuantes unificados, correção do
+      checkbox de oportunidades) — commit/push feitos ao final desta
+      sessão, deploy a confirmar
+- [ ] Decidir destino das 5 categorias vazias de Configurações
+      (Empresa, Comunicação, Segurança, Billing, Developer)
+- [ ] Corrigir arquitetura de tradução do Dashboard antes de adicionar
+      francês/alemão/japonês
+- [ ] Transformar "Ask StayFlow" num agente real com function calling
+      — pré-requisito também do checkbox "Resposta automática", que
+      continua desabilitado até esse recurso existir
+- [ ] Cadastrar o Hostel Lagares real (login + WhatsApp próprios)
+- [ ] `services/memory_service.py` — ainda não commitado, não testado
+      com WhatsApp real
+- [ ] Preencher `hostels.phone` (organização, não bloqueia nada)
+- [ ] Corrigir dropdown de idioma cortado no mobile
+- [ ] Visual do Login — fundo com mapa mundi (padrão do `Register.html`)
+- [ ] Botão "Teste grátis" ainda linka pro WhatsApp
+- [ ] Decidir arquitetura definitiva de deploy (eliminar o xcopy manual)
+- [ ] Integração por e-mail com OTAs
+- [ ] `Login_MISTERIOSO_BACKUP.html`, `_screenshots_revisao/`,
+      `teste-users.html` continuam fora do Git
+- [ ] Faxina de pastas locais (`Archive_old/`, `Audit_old/`,
+      `backups_old/`)
+- [ ] Decidir destino de `templates/components/`
+- [ ] Colunas mortas na tabela `settings` (`checkin_time`,
+      `checkout_time`, `breakfast_time`, `languages`, `services`,
+      `tours` — existem no schema, nunca lidas nem escritas por
+      nenhuma rota) — achado nesta sessão, não investigado a fundo
+- [ ] Padronizar formato de resposta da rota `/settings` (hoje devolve
+      `{"status": "ok"}`, diferente do padrão `{"success": true, ...}`
+      usado em todas as outras rotas construídas nas últimas sessões)

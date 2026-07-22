@@ -531,6 +531,33 @@ body::before{
   border-color:#ffffff18;
   box-shadow:none;
 }
+.bell-btn{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:40px;
+  height:40px;
+  padding:0;
+}
+.notif-badge{
+  position:absolute;
+  top:-4px;
+  right:-4px;
+  min-width:18px;
+  height:18px;
+  padding:0 4px;
+  border-radius:999px;
+  background:#ff4d4d;
+  color:white;
+  font-size:11px;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  border:2px solid #06101b;
+}
 .btn.green{
   background:linear-gradient(180deg,#1fd89a,#0ca26f);
 }
@@ -1132,28 +1159,59 @@ body::before{
   position:fixed;
   right:24px;
   bottom:22px;
-  width:140px;
-  height:140px;
+  width:var(--floating-btn-size);
+  height:var(--floating-btn-size);
   border:0;
-  background:transparent;
+  background:linear-gradient(180deg,#0f8bff,#056ee7);
   color:white;
-  border-radius:0;
+  border-radius:var(--radius);
   padding:0;
   display:flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
-  box-shadow:none;
+  box-shadow:0 16px 34px #0b84ff40;
   transition:.22s;
   z-index:30;
 }
-.ask-floating .brand-logo{
-  width:130px;
-  height:130px;
-  filter:drop-shadow(0 14px 31px #0b84ff7a);
+.ask-floating .brand-logo-mask{
+  display:inline-block;
+  width:58px;
+  height:58px;
+  background-color:#06101b;
+  -webkit-mask-image:url('../../assets/images/logo2.png');
+  mask-image:url('../../assets/images/logo2.png');
+  -webkit-mask-size:auto 170%;
+  mask-size:auto 170%;
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+  -webkit-mask-position:center 35%;
+  mask-position:center 35%;
 }
 .ask-floating:hover{
   transform:translateY(-4px) scale(1.04);
+}
+.reserva-floating{
+  position:fixed;
+  right:24px;
+  bottom:100px;
+  width:var(--floating-btn-size);
+  height:var(--floating-btn-size);
+  border-radius:var(--radius);
+  border:0;
+  background:linear-gradient(180deg,#0f8bff,#056ee7);
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  box-shadow:0 16px 34px #0b84ff40;
+  transition:.22s;
+  z-index:30;
+}
+.reserva-floating:hover{
+  transform:translateY(-2px);
+  filter:brightness(1.08);
 }
 .ask-overlay{
   position:fixed;
@@ -1379,4 +1437,10 @@ body::before{
   .span-3,.span-4,.span-5,.span-6,.span-7,.span-8,.span-9,.kpi{
     grid-column:span 12;
   }
+}
+
+#userMenuDropdown{
+  left:auto;
+  right:0;
+  width:220px;
 }

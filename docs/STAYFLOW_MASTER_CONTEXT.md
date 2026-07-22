@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.5.0
+\*\*Versão:\*\* 1.6.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 19/07/2026
+\*\*Última atualização:\*\* 21/07/2026
 
 
 
@@ -51,6 +51,8 @@
 | 1.4.0 | 13/07/2026 | Oficial | Correção de divergência crítica de repositório Git (branch `main` desatualizada em relação a `arquitetura-v2`); publicação em produção de todos os commits pendentes desde a versão anterior; implementação e validação em produção da captura do nome do hóspede via function calling da IA; correção de múltiplos bugs reais no menu de Configurações (indicadores de status falsos, painel de Equipe desconectado); início da Fase 1 (schema) de um sistema de permissões multi-hostel; pesquisa e decisão de estratégia para integrações com OTAs (Booking.com/Airbnb); remoção de infraestrutura órfã no ambiente de hospedagem. |
 
 | 1.5.0 | 19/07/2026 | Oficial | Conclusão e publicação em produção do sistema de permissões multi-hostel (Fases 2 e 3): identidade única de pessoa com suporte a múltiplos hostels e troca de conta sem novo login, funções configuráveis por hostel, exceções de permissão individuais com distinção visual entre herdado e ajustado manualmente. Reconstrução completa do painel de Equipe (nunca teve marcação visual antes). Menu lateral reordenado por prioridade de uso e filtrado pela permissão real de cada pessoa. Catálogo de permissões expandido de 10 para 12 chaves. |
+
+| 1.6.0 | 21/07/2026 | Oficial | Reorganização do cabeçalho do Dashboard: card de hostel/usuário movidos da barra lateral para o topbar, menu suspenso no avatar do usuário (Equipe/Sair, filtrado por permissão). Unificação visual dos botões flutuantes (Ask StayFlow e Nova reserva). Correção do bug de persistência do card "IA" em Configurações — geração de oportunidades agora efetivamente controlável pelo administrador, validada de ponta a ponta; resposta automática desabilitada honestamente até seu pré-requisito (agente de conversa) existir. |
 
 
 
@@ -5669,6 +5671,58 @@ login de quem foi afetado.
 
 
 
+\## 16.23 Configurações de Inteligência Artificial
+
+
+
+\*\*Status:\*\* Parcialmente implementado (um dos dois controles
+depende de um recurso futuro)
+
+
+
+\### Objetivo
+
+
+
+Permitir que o administrador do hostel controle aspectos do
+comportamento da Inteligência Artificial diretamente pela interface,
+sem depender de alteração de código.
+
+
+
+\### Capacidades atuais
+
+
+
+\- controle real de geração de oportunidades: quando desativado pelo
+  administrador, a plataforma deixa de registrar novas oportunidades
+  comerciais a partir das conversas, sem afetar a geração normal de
+  respostas pela IA;
+
+\- a preferência é persistida por hostel e recalculada a cada mensagem
+  recebida — não existe atraso nem necessidade de reiniciar nada para
+  a mudança valer.
+
+
+
+\### Limitação conhecida
+
+
+
+O controle de "resposta automática" permanece desabilitado na
+interface, com aviso explícito ao administrador. Este controle só
+poderá ser implementado de forma real quando existir um mecanismo de
+revisão humana antes do envio de mensagens (ver "Ask StayFlow como
+agente de ação", Capítulo 17) — sem esse mecanismo, desativar a
+resposta automática significaria simplesmente parar de responder o
+hóspede, o que não é o comportamento pretendido pelo controle.
+
+
+
+\---
+
+
+
 \## 16.18 Critério para atualização
 
 
@@ -5811,33 +5865,17 @@ Prioridades atuais:
 
   mobile do cabeçalho será reorganizado por completo);
 
-\- \*\*terminar de concluir o menu de Configurações\*\* — a categoria Equipe
+\- \*\*terminar de concluir o menu de Configurações\*\* — as categorias
 
-  já está 100% funcional (ver Capítulo 16, seções 16.21 e 16.22).
+  Equipe (16.21/16.22) e IA (16.23) já estão 100% funcionais. Restam as
 
-  Restam: (1) o card de configurações de IA continua enviando dois
+  5 categorias vazias (Empresa, Comunicação, Integrações além do
 
-  campos (resposta automática e geração de oportunidades) que o Backend
+  WhatsApp, Segurança, Billing, Developer), que continuam sendo apenas
 
-  recebe e descarta silenciosamente, ainda não corrigido; (2) as 5
+  botões visuais, sem decisão tomada sobre construir cada uma ou
 
-  categorias restantes (Empresa, Comunicação, Integrações além do
-
-  WhatsApp, Segurança, Billing, Developer) continuam sendo apenas botões
-
-  visuais, sem decisão tomada sobre construir cada uma ou remover;
-
-\- \*\*reorganizar o cabeçalho principal do Dashboard\*\* — mover o card de
-
-  hostel/usuário (hoje na barra lateral) para o topo à direita, e
-
-  transformar o botão "Nova reserva" num botão flutuante, empilhado com
-
-  o "Ask StayFlow" já existente. Decidido tratar como frente separada da
-
-  reordenação do menu lateral (concluída em 19/07/2026), para não
-
-  misturar duas mudanças de risco visual na mesma edição;
+  remover;
 
 \- \*\*criação de reserva via modal flutuante\*\* — reaproveitando o sistema
 
@@ -6825,6 +6863,88 @@ automaticamente, sem exigir nova arquitetura de segurança.
 
 
 
+\### Versão 1.6.0
+
+
+
+\*\*Data\*\*
+
+
+
+21/07/2026
+
+
+
+\*\*Área\*\*
+
+
+
+Frontend, Backend, Banco de Dados
+
+
+
+\*\*Descrição\*\*
+
+
+
+Reorganização do cabeçalho principal do Dashboard: o card de hostel e
+o card de usuário, antes na barra lateral, foram movidos para a faixa
+superior da interface, ao lado do indicador de alertas operacionais
+(que nesta mesma frente passou de botão de texto para ícone de sino
+com contador de notificações). O avatar do usuário passou a abrir um
+menu suspenso com acesso à gestão de Equipe (respeitando a permissão
+da pessoa) e à opção de sair da sessão, substituindo o acesso direto
+anterior. Unificação visual dos dois botões flutuantes da interface
+(atalho de conversa com a IA e atalho de nova reserva), padronizados
+em tamanho, formato e paleta de cores.
+
+
+
+Correção do controle de geração de oportunidades no menu de
+Configurações: identificado que o valor selecionado pelo administrador
+nunca chegava a ser persistido pelo Backend, mascarado por uma camada
+de armazenamento local no navegador que dava a falsa impressão de que
+a preferência era respeitada. Corrigido de ponta a ponta, incluindo a
+alteração do comportamento real do motor de geração de oportunidades,
+que passou a respeitar a preferência configurada por cada hostel. O
+controle de resposta automática, por depender de um mecanismo de
+revisão humana ainda não construído, foi desabilitado de forma
+transparente na interface em vez de manter uma aparência de
+funcionalidade inexistente.
+
+
+
+\*\*Motivação\*\*
+
+
+
+Dar continuidade ao plano de reorganização visual já registrado no
+Roadmap Oficial, e eliminar uma divergência real entre o que a
+interface comunicava ao administrador do hostel e o que efetivamente
+acontecia no sistema — uma configuração que parece funcionar mas não
+tem efeito real compromete a confiança no produto de forma mais grave
+do que a ausência do próprio controle.
+
+
+
+\*\*Impacto\*\*
+
+
+
+O cabeçalho do Dashboard ganha organização mais alinhada a padrões
+consolidados de produtos de gestão, com identidade do usuário e do
+hostel sempre visíveis independente da página aberta. O administrador
+do hostel passa a ter controle real, não apenas aparente, sobre a
+geração automática de oportunidades comerciais pela Inteligência
+Artificial — um dos dois controles do card de IA em Configurações
+sai do estado de dívida técnica identificado na versão 1.4.0.
+
+
+
+\---
+
+
+
 \## 18.5 Atualização do Documento Mestre
 
 
@@ -6909,4 +7029,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.5.0\*\*
+\*\*Fim da Versão Oficial 1.6.0\*\*
