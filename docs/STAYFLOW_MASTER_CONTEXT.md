@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.10.1
+\*\*Versão:\*\* 1.11.0
 
 
 
@@ -65,6 +65,8 @@
 | 1.10.0 | 23/07/2026 | Oficial | Captura de documento de identidade via WhatsApp: webhook passou a processar mensagens de imagem (antes só texto), baixando o arquivo real da API da Meta e guardando no disco persistente, associado ao hóspede. IA de atendimento passa a pedir nome completo, data de nascimento e foto do documento após criar a reserva. Documentos recebidos aparecem no perfil do hóspede na tela de Chats. Corrigido também: lista vazia de camas disponíveis não bloqueia mais a reserva quando a modalidade simplesmente não tem camas cadastradas individualmente (comum em quarto privado) — a reserva é criada sem cama especifica, atribuída depois no check-in. |
 
 | 1.10.1 | 23/07/2026 | Oficial | Trava real contra overbooking: modalidade sem nenhuma cama cadastrada não permite mais reserva automática (vira oportunidade de alta prioridade pra equipe confirmar manualmente, sem duplicar se o hóspede repetir o pedido); modalidade com cama cadastrada passa a exigir escolha de uma cama específica e realmente disponível antes de reservar. Revisão do próprio usuário sobre um risco que a correção anterior (1.10.0) tinha introduzido. |
+
+| 1.11.0 | 23/07/2026 | Oficial | Novo tipo de estadia "morador de longa duração" (ex: funcionário que mora no hostel, pagando conforme consegue) — sem data de saída definida, saldo calculado sob demanda (dias ocupados vezes diária configurável, menos pagamentos registrados), suportando tanto saldo devedor quanto crédito acumulado quando a pessoa paga mais do que deve. Exposto na tela de Reservas (formulário próprio, tabela com saldo colorido) e no Ask StayFlow (criar morador, consultar saldo, registrar pagamento, encerrar estadia). |
 
 
 

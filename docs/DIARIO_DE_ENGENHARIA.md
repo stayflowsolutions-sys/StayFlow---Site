@@ -1804,3 +1804,40 @@ Testado com banco isolado (4 cenários: sem cama, repetição não
 duplica oportunidade, com cama sem escolher trava, com cama escolhendo
 reserva) e com conversa real de IA (confirmou que a reserva não é
 criada e o hóspede recebe aviso correto).
+
+### Sétima rodada da Sessão 8 (mesma data) — morador de longa duração
+
+Pedido novo do usuário, com exemplo real (ele mesmo mora no hostel,
+pagando conforme consegue): lugares onde alguém mora fixo/indeterminado
+(ex: funcionário) precisam ser identificados separado de reserva
+normal, contando quantos dias a pessoa deve, com pagamentos parciais
+abatendo o saldo — e o usuário fez questão de lembrar que também pode
+acontecer o inverso (pagar a mais e ficar com crédito acumulado).
+
+**Modelo**: `reservations` ganhou `stay_type` ('fixed' padrão ou
+'indefinite') e `daily_rate`; nova tabela `reservation_payments`
+(cada pagamento é uma linha, nunca sobrescreve). Saldo é sempre
+calculado sob demanda (nunca um campo estático que poderia
+dessincronizar): dias ocupados (checkin até hoje, ou até checkout se
+já encerrada) vezes diária, menos soma de tudo que já foi pago. Saldo
+positivo significa que deve; saldo negativo significa crédito
+acumulado por ter pago a mais — mesma fórmula cobre os dois casos sem
+lógica especial.
+
+`create_indefinite_stay`: sempre status='confirmed' (é um arranjo já
+decidido pela equipe, não pedido de hóspede aguardando aprovação);
+daily_rate pode ser 0 (funcionário que não paga nada, só ocupa a
+cama). Se bed_id for passado, ocupa a cama de verdade na hora (mesma
+integridade operacional do check-in normal). close_indefinite_stay
+libera a cama pra limpeza, igual um check-out normal.
+
+Exposto em 3 lugares, mesma fonte de verdade: formulário próprio na
+tela de Reservas (separado do form de reserva normal), tabela de
+Reservas mostrando "Deve US$ X" ou "Crédito US$ X" com cor diferente,
+e 4 ferramentas novas no Ask StayFlow (criar morador, consultar saldo,
+registrar pagamento, encerrar estadia).
+
+Testado: cálculo de dias vezes diária, pagamento parcial, pagamento
+que gera crédito (saldo negativo), pagamento inválido (zero/negativo)
+recusado, diária zero resulta em saldo zero, cama ocupada na criação e
+liberada pra limpeza no encerramento.

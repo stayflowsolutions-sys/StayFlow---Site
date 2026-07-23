@@ -982,6 +982,19 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-12">
+      <h2>🏠 Morador de longa duração</h2>
+      <p style="margin-bottom:14px;color:var(--muted);font-size:13px">Pra quem mora fixo (ex: funcionário) sem data de saída definida — o saldo devedor acumula por dia e é abatido conforme os pagamentos forem registrados.</p>
+      <form onsubmit="submitIndefiniteStay(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
+        <input class="span-3" name="guest_name" placeholder="Nome" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-2" name="phone" placeholder="Telefone (opcional)" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-2" name="room_type" placeholder="Quarto/observação" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-2" type="date" name="checkin_date" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-2" type="number" step="0.01" name="daily_rate" placeholder="Diária (0 = não paga)" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <button type="submit" class="btn span-1" style="grid-column:span 1;">Criar</button>
+      </form>
+    </div>
+
+    <div class="card span-12">
       <h2>🛏 Reservas</h2>
       <div class="sf-empty" id="reservationsEmpty">
         <div>
@@ -2712,6 +2725,33 @@ async function loadReservations(){
     reservations.forEach(r => {
       const row = document.createElement("tr");
       const statusClass = reservationStatusPillClass(r.status);
+
+      if(r.stay_type === "indefinite"){
+        const balance = Number(r.balance || 0);
+        // saldo positivo = deve pra gente; negativo = pagou a mais,
+        // fica com credito acumulado pra abater depois.
+        const balanceLabel = balance > 0
+          ? `<span style="color:#ff9caf">Deve US$ ${balance.toFixed(2)}</span>`
+          : balance < 0
+            ? `<span style="color:#6ff0bd">Crédito US$ ${Math.abs(balance).toFixed(2)}</span>`
+            : `<span style="color:var(--muted)">Em dia</span>`;
+
+        row.innerHTML = `
+          <td>${r.guest_name || "-"}</td>
+          <td>${r.room_type || "-"}${r.bed ? " · " + r.bed : ""}</td>
+          <td>Desde ${r.checkin_date || "-"}${r.checkout_date ? " até " + r.checkout_date : ""} (${r.days_occupied ?? 0}d)</td>
+          <td>morador fixo</td>
+          <td><span class="status-pill ok">MORADOR</span></td>
+          <td>${balanceLabel}</td>
+          <td>
+            <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="registerPaymentUI(${r.id})">Registrar pagamento</button>
+            ${!r.checkout_date ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="closeIndefiniteStayUI(${r.id})">Encerrar estadia</button>` : ""}
+          </td>
+        `;
+        bodyEl.appendChild(row);
+        return;
+      }
+
       row.innerHTML = `
         <td>${r.guest_name || "-"}</td>
         <td>${r.room_type || "-"}${r.bed ? " · " + r.bed : ""}</td>
@@ -2800,6 +2840,90 @@ window.submitNewReservation = async function(event){
   }catch(e){
     console.error("Erro ao criar reserva:", e);
     alert("Erro de conexão ao criar reserva.");
+  }
+};
+
+window.submitIndefiniteStay = async function(event){
+  event.preventDefault();
+  const form = event.target;
+
+  const payload = {
+    guest_name: form.guest_name.value.trim(),
+    phone: form.phone.value.trim(),
+    room_type: form.room_type.value.trim(),
+    checkin_date: form.checkin_date.value,
+    daily_rate: form.daily_rate.value || 0
+  };
+
+  if(!payload.guest_name || !payload.checkin_date){
+    alert("Preencha ao menos nome e data de início.");
+    return;
+  }
+
+  try{
+    const res = await fetch("/reservations/indefinite", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível criar a estadia.");
+      return;
+    }
+
+    form.reset();
+    loadReservations();
+  }catch(e){
+    alert("Erro de conexão ao criar a estadia de longa duração.");
+  }
+};
+
+window.registerPaymentUI = async function(reservationId){
+  const amountStr = prompt("Valor do pagamento recebido:");
+  if(!amountStr) return;
+  const amount = parseFloat(amountStr.replace(",", "."));
+  if(!amount || amount <= 0){
+    alert("Valor inválido.");
+    return;
+  }
+
+  try{
+    const res = await fetch(`/reservations/${reservationId}/payments`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ amount })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível registrar o pagamento.");
+      return;
+    }
+    loadReservations();
+  }catch(e){
+    alert("Erro de conexão ao registrar o pagamento.");
+  }
+};
+
+window.closeIndefiniteStayUI = async function(reservationId){
+  if(!confirm("Confirma o encerramento dessa estadia? A cama será liberada pra limpeza.")) return;
+
+  try{
+    const res = await fetch(`/reservations/${reservationId}/close-stay`, {
+      method: "POST",
+      credentials: "same-origin"
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível encerrar a estadia.");
+      return;
+    }
+    loadReservations();
+  }catch(e){
+    alert("Erro de conexão ao encerrar a estadia.");
   }
 };
 
