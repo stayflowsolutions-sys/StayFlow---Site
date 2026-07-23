@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.13.0
+\*\*Versão:\*\* 1.13.1
 
 
 
@@ -71,6 +71,8 @@
 | 1.12.0 | 23/07/2026 | Oficial | Correção de bugs reais no Mapa de Quartos: não era possível editar ou excluir quarto, editar tipo/grupo de cama, nem editar ou excluir modalidade — só existia criação. Adicionados botões de editar/excluir em quartos e modalidades (rotas `PATCH /rooms/<id>` e `PATCH /room-categories/<id>` novas no backend) e edição de tipo/grupo de cama. Tradução completa do Dashboard (motor compartilhado `i18n-core.js` + dicionário `i18n-dashboard-data.js` com ~570 chaves): todas as 13 seções (Dashboard, Chats, Reservas, Mapa de Quartos, Opportunity Center, Hóspedes, Operações, Equipe, Financeiro, Estoque, Receitas, Relatórios, Configurações com 7 sub-abas) mais o painel Ask StayFlow, incluindo texto estático, conteúdo dinâmico gerado por JS e mensagens de alert/confirm/prompt — em português, inglês, espanhol, francês e alemão, com terminologia real de hotelaria (não tradução literal). Seletor de idioma novo no topbar ao lado do sino de notificações. Landing page (`index.html`) migrada para o mesmo motor compartilhado, com francês e alemão adicionados aos 3 idiomas existentes. Escopo definido como fora desta fase: mensagens de erro geradas pelo backend (Flask), que continuam em português — exigiria o backend passar a devolver códigos de erro em vez de texto pronto, projeto maior e separado. |
 
 | 1.13.0 | 23/07/2026 | Oficial | Correção de três bugs reais na IA de atendimento via WhatsApp, encontrados pelo usuário testando com números diferentes: (1) a IA trocava de idioma sozinha no meio da conversa — corrigido persistindo o idioma estabelecido na coluna `guests.language` (já existia no schema, nunca era usada) e reforçando no prompt a cada mensagem; (2) contagem errada de diárias (5 em vez do correto para sexta→domingo) — a IA calculava datas de cabeça; corrigido com nova ferramenta `calculate_nights` (cálculo determinístico em Python, nunca pelo modelo) e `create_reservation_from_chat` passou a devolver o número real de noites no resultado da reserva; (3) captura de dados pós-confirmação incompleta — reescrita como checklist explícito e ordenado (nome legal, telefone, email, nacionalidade — campo novo — data de nascimento, foto do documento), com gatilho claro no momento da criação da reserva. |
+
+| 1.13.1 | 23/07/2026 | Oficial | Correção de lacuna na tradução do Dashboard: a página inicial (KPIs, Resumo Executivo da IA, Operação, Atividades de hoje, Ações prioritárias) tinha ficado inteira fora do trabalho de tradução anterior. Adicionado `data-i18n` em todo o conteúdo estático dessa seção. Corrigido também o texto gerado pela IA (`/executive-summary`), que sempre respondia em português independente do idioma escolhido no painel — endpoint agora aceita `?lang=`, o prompt pede a resposta no idioma certo, e o fallback (usado se a IA falhar) tem versão traduzida pronta em cada um dos 5 idiomas. |
 
 
 

@@ -705,9 +705,9 @@ async function deleteRoleConfirm(roleId){
         <div class="kpi-arrow">›</div>
       </div>
       <div>
-        <div class="label">Ocupação</div>
+        <div class="label" data-i18n="home.kpi.occupancyLabel">Ocupação</div>
         <div class="value" id="kpiOccupancy">0%</div>
-        <div class="note">Aguardando dados reais</div>
+        <div class="note" data-i18n="home.kpi.occupancyNote">Aguardando dados reais</div>
       </div>
     </div>
 
@@ -717,9 +717,9 @@ async function deleteRoleConfirm(roleId){
         <div class="kpi-arrow">›</div>
       </div>
       <div>
-        <div class="label">Reservas</div>
+        <div class="label" data-i18n="reservations.table.titlePlain">Reservas</div>
         <div class="value" id="kpiReservations">0</div>
-        <div class="note">Nenhum registro</div>
+        <div class="note" data-i18n="home.kpi.reservationsNote">Nenhum registro</div>
       </div>
     </div>
 
@@ -729,9 +729,9 @@ async function deleteRoleConfirm(roleId){
         <div class="kpi-arrow">›</div>
       </div>
       <div>
-        <div class="label">Receita</div>
+        <div class="label" data-i18n="home.kpi.revenueLabel">Receita</div>
         <div class="value" id="kpiRevenue">US$ 0</div>
-        <div class="note">Aguardando reservas</div>
+        <div class="note" data-i18n="home.kpi.revenueNote">Aguardando reservas</div>
       </div>
     </div>
 
@@ -741,9 +741,9 @@ async function deleteRoleConfirm(roleId){
         <div class="kpi-arrow">›</div>
       </div>
       <div>
-        <div class="label">Mensagens</div>
+        <div class="label" data-i18n="home.kpi.messagesLabel">Mensagens</div>
         <div class="value" id="kpiMessages">0</div>
-        <div class="note">Nenhuma conversa recebida</div>
+        <div class="note" data-i18n="home.kpi.messagesNoteEmpty">Nenhuma conversa recebida</div>
       </div>
     </div>
 
@@ -753,9 +753,9 @@ async function deleteRoleConfirm(roleId){
         <div class="kpi-arrow">›</div>
       </div>
       <div>
-        <div class="label">Oportunidades</div>
+        <div class="label" data-i18n="home.kpi.opportunitiesLabel">Oportunidades</div>
         <div class="value" id="kpiOpportunities">0</div>
-        <div class="note">Nenhuma detectada ainda</div>
+        <div class="note" data-i18n="home.kpi.opportunitiesNote">Nenhuma detectada ainda</div>
       </div>
     </div>
 
@@ -763,24 +763,24 @@ async function deleteRoleConfirm(roleId){
     <div class="card ai-brief span-8">
       <div class="brief-header">
         <div>
-          <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span>Resumo Executivo da IA</h2>
-          <p>A StayFlow vai gerar este resumo automaticamente assim que existirem conversas, reservas e tarefas reais no seu hostel.</p>
+          <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span><span data-i18n="home.brief.title">Resumo Executivo da IA</span></h2>
+          <p data-i18n="home.brief.defaultText">A StayFlow vai gerar este resumo automaticamente assim que existirem conversas, reservas e tarefas reais no seu hostel.</p>
         </div>
-        <button class="btn" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]'))">Ver oportunidades</button>
+        <button class="btn" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]'))" data-i18n="home.brief.viewOpportunitiesBtn">Ver oportunidades</button>
       </div>
 
       <div class="brief-metrics">
-        <div><strong id="metricAlmostClosed">—</strong><span>Reservas quase fechadas</span></div>
-        <div><strong id="metricProbableRevenue">—</strong><span>Receita provável</span></div>
-        <div><strong id="metricHumanReplies">—</strong><span>Respostas humanas pendentes</span></div>
-        <div><strong id="metricRisk">—</strong><span>Risco operacional</span></div>
+        <div><strong id="metricAlmostClosed">—</strong><span data-i18n="home.brief.almostClosed">Reservas quase fechadas</span></div>
+        <div><strong id="metricProbableRevenue">—</strong><span data-i18n="home.brief.probableRevenue">Receita provável</span></div>
+        <div><strong id="metricHumanReplies">—</strong><span data-i18n="home.brief.humanRepliesPending">Respostas humanas pendentes</span></div>
+        <div><strong id="metricRisk">—</strong><span data-i18n="home.brief.operationalRisk">Risco operacional</span></div>
       </div>
 
       <div id="aiRecommendations">
         <div class="sf-empty">
           <div>
-            <strong>Nenhum insight disponível.</strong>
-            <span>Quando a IA tiver dados suficientes, recomendações específicas de hóspedes e tarefas aparecerão aqui.</span>
+            <strong data-i18n="home.brief.noInsightTitle">Nenhum insight disponível.</strong>
+            <span data-i18n="home.brief.noInsightDesc">Quando a IA tiver dados suficientes, recomendações específicas de hóspedes e tarefas aparecerão aqui.</span>
           </div>
         </div>
       </div>
@@ -788,41 +788,41 @@ async function deleteRoleConfirm(roleId){
 
     <!-- Operação -->
     <div class="card span-4">
-      <h2>Operação</h2>
+      <h2 data-i18n="home.operation.title">Operação</h2>
       <div class="ops-health">
         <div class="health-ring">
           <strong id="opsHealthScore">—</strong>
         </div>
         <div>
-          <p>Nenhuma informação operacional registrada. Assim que check-ins, check-outs e tarefas forem conectados, o status geral da operação aparecerá aqui.</p>
-          <span class="status-pill ok">Aguardando dados reais</span>
+          <p data-i18n="home.operation.defaultText">Nenhuma informação operacional registrada. Assim que check-ins, check-outs e tarefas forem conectados, o status geral da operação aparecerá aqui.</p>
+          <span class="status-pill ok" data-i18n="home.operation.awaitingData">Aguardando dados reais</span>
         </div>
       </div>
     </div>
 
     <!-- Atividades de hoje -->
     <div class="card span-4">
-      <h2>Atividades de hoje</h2>
+      <h2 data-i18n="home.timeline.title">Atividades de hoje</h2>
       <div id="todayTimeline" class="timeline">
         <!-- O script live pode inserir .timeline-item aqui -->
       </div>
       <div id="todayTimelineEmpty" class="sf-empty">
         <div>
-          <strong>Nenhuma atividade registrado.</strong>
-          <span>Entradas, saídas, tarefas de limpeza, mensagens críticas e eventos diários aparecerão aqui quando a operação estiver ligada ao StayFlow.</span>
+          <strong data-i18n="home.timeline.emptyTitle">Nenhuma atividade registrado.</strong>
+          <span data-i18n="home.timeline.emptyDesc">Entradas, saídas, tarefas de limpeza, mensagens críticas e eventos diários aparecerão aqui quando a operação estiver ligada ao StayFlow.</span>
         </div>
       </div>
     </div>
 
     <!-- Ações prioritárias -->
     <div class="card span-8">
-      <h2>Ações prioritárias</h2>
+      <h2 data-i18n="home.priorityActions.title">Ações prioritárias</h2>
       <table id="liveActivityTable" class="table">
         <thead>
           <tr>
-            <th>Ação</th>
-            <th>Prioridade</th>
-            <th>Impacto</th>
+            <th data-i18n="home.priorityActions.col.action">Ação</th>
+            <th data-i18n="home.priorityActions.col.priority">Prioridade</th>
+            <th data-i18n="home.priorityActions.col.impact">Impacto</th>
           </tr>
         </thead>
         <tbody id="liveActivityBody">
@@ -831,8 +831,8 @@ async function deleteRoleConfirm(roleId){
       </table>
       <div id="liveActivityEmpty" class="sf-empty">
         <div>
-          <strong>Nenhuma ação recomendada no momento.</strong>
-          <span>Quando a IA detectar reservas em risco, hóspedes aguardando resposta ou oportunidades de upsell, elas serão listadas aqui.</span>
+          <strong data-i18n="home.priorityActions.emptyTitle">Nenhuma ação recomendada no momento.</strong>
+          <span data-i18n="home.priorityActions.emptyDesc">Quando a IA detectar reservas em risco, hóspedes aguardando resposta ou oportunidades de upsell, elas serão listadas aqui.</span>
         </div>
       </div>
     </div>
@@ -2665,7 +2665,7 @@ async function loadDashboardStats(){
     if(kpiMessages) kpiMessages.textContent = String(stats.messages ?? 0);
 
     const msgNote = kpiMessages?.closest(".card")?.querySelector(".note");
-    if(msgNote) msgNote.textContent = stats.messages ? "Total recebido" : "Nenhuma conversa recebida";
+    if(msgNote) msgNote.textContent = stats.messages ? T('home.kpi.messagesNoteReceived', 'Total recebido') : T('home.kpi.messagesNoteEmpty', 'Nenhuma conversa recebida');
 
   }catch(e){
     console.warn("Erro ao carregar /dashboard:", e);
@@ -2678,7 +2678,8 @@ async function loadExecutiveSummary(){
   const riskEl = document.getElementById("metricRisk");
 
   try{
-    const res = await fetch("/executive-summary", { credentials: "same-origin" });
+    const lang = window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt";
+    const res = await fetch(`/executive-summary?lang=${lang}`, { credentials: "same-origin" });
     if(!res.ok) return;
 
     const summary = await res.json();
@@ -2699,7 +2700,7 @@ async function loadExecutiveSummary(){
         row.innerHTML = `
           <div class="rec-icon">🎯</div>
           <div>
-            <div class="rec-title">Ação recomendada</div>
+            <div class="rec-title">${T('home.brief.recommendedAction', 'Ação recomendada')}</div>
             <div class="rec-text">${action}</div>
           </div>
         `;

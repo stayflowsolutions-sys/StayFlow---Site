@@ -1980,3 +1980,41 @@ modelo (`client.chat.completions.create` trocado por uma função de
 teste) confirmando que as três ferramentas novas (idioma, noites,
 nacionalidade) são chamadas e processadas corretamente de ponta a
 ponta antes de qualquer teste real em produção.
+
+### Décima rodada da Sessão 8 (mesma data) — Dashboard (home) sem tradução
+### + Resumo Executivo da IA sempre em português
+
+Usuário testou a troca de idioma de novo (francês) e mandou print: o
+menu lateral e o título do topbar traduzem certinho, mas a PÁGINA
+Dashboard em si (a primeira tela depois do login — cards de KPI,
+"Resumo Executivo da IA", "Operação", "Atividades de hoje", "Ações
+prioritárias") continuava inteira em português. Essa seção
+especificamente tinha ficado de fora de todo o trabalho de tradução da
+rodada anterior — um `data-i18n` esquecido em toda a home, não em
+seções específicas.
+
+Dois problemas diferentes, corrigidos os dois:
+
+1. **Conteúdo estático da home** (rótulos dos KPIs, títulos dos
+   cards, textos padrão de "nenhum dado ainda", cabeçalhos de tabela):
+   simplesmente nunca tinham recebido `data-i18n` — corrigido com o
+   mesmo padrão usado no resto do Dashboard, ~35 chaves novas × 5
+   idiomas.
+
+2. **Texto gerado pela IA** ("O hostel possui X hóspedes..." e as
+   "Ações recomendadas"): esse é conteúdo de verdade gerado por uma
+   chamada à OpenAI (`routes/executive.py`), com o prompt
+   explicitamente mandando "use português", sem nenhuma noção de qual
+   idioma o gestor está usando no painel. Corrigido: o endpoint
+   `/executive-summary` agora aceita `?lang=` (o frontend manda o
+   idioma atual do Dashboard), o prompt pede o resumo no idioma pedido
+   em vez de fixo em português, e o fallback (usado se a chamada à IA
+   falhar) tem uma versão traduzida pronta pra cada um dos 5 idiomas —
+   não depende da IA responder certo pra pelo menos mostrar algo no
+   idioma correto.
+
+Esse mesmo problema (texto gerado pela IA sempre em português,
+independente do idioma escolhido no painel) provavelmente também
+afeta o campo `next_action` das oportunidades (preenchido pela IA de
+atendimento/motor de decisão) — não foi mexido nesta rodada, fica
+registrado como pendência conhecida pra próxima vez que aparecer.
