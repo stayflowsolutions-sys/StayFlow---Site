@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.6.0
+\*\*Versão:\*\* 1.7.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 21/07/2026
+\*\*Última atualização:\*\* 23/07/2026
 
 
 
@@ -53,6 +53,8 @@
 | 1.5.0 | 19/07/2026 | Oficial | Conclusão e publicação em produção do sistema de permissões multi-hostel (Fases 2 e 3): identidade única de pessoa com suporte a múltiplos hostels e troca de conta sem novo login, funções configuráveis por hostel, exceções de permissão individuais com distinção visual entre herdado e ajustado manualmente. Reconstrução completa do painel de Equipe (nunca teve marcação visual antes). Menu lateral reordenado por prioridade de uso e filtrado pela permissão real de cada pessoa. Catálogo de permissões expandido de 10 para 12 chaves. |
 
 | 1.6.0 | 21/07/2026 | Oficial | Reorganização do cabeçalho do Dashboard: card de hostel/usuário movidos da barra lateral para o topbar, menu suspenso no avatar do usuário (Equipe/Sair, filtrado por permissão). Unificação visual dos botões flutuantes (Ask StayFlow e Nova reserva). Correção do bug de persistência do card "IA" em Configurações — geração de oportunidades agora efetivamente controlável pelo administrador, validada de ponta a ponta; resposta automática desabilitada honestamente até seu pré-requisito (agente de conversa) existir. |
+
+| 1.7.0 | 23/07/2026 | Oficial | Ask StayFlow deixou de ser mockado: agente real com function calling multi-rodada, autenticado, 34 ferramentas escopadas por permissão, endpoint `/ask` com histórico próprio em SQL. Fase de ações reais: pedido de reposição a fornecedor e aviso proativo a hóspede, ambos com fluxo propor→aprovar→enviar via WhatsApp Business; extensão automática de reserva pela IA de atendimento dentro de limite seguro (mesma diária/quarto), fora disso vira oportunidade pra equipe decidir. Novo sistema de Mapa de Quartos: modalidades de quarto configuráveis por propriedade (com padrão automático por tipo — hostel ganha Privado/Compartilhado, hotel/pousada/resort ganham Standard/Luxo), cadastro de quartos em lote, camas normais e beliches pareados, status real (livre/ocupada/precisa de limpeza) refletido em mapa visual colorido. Ciclo completo de lavanderia: check-out move cama pra lista de limpeza automaticamente, marcar como limpa desconta roupa de cama limpa do estoque e move pra "na lavanderia", com ação de devolução ao estoque quando a lavanderia retorna. |
 
 
 

@@ -1449,3 +1449,105 @@ body::before{
   right:0;
   width:220px;
 }
+
+/* ===== Mapa de Quartos ===== */
+.bed-map-legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px;
+  margin:2px 0 18px;
+  font-size:13px;
+  color:var(--muted);
+}
+.bed-map-legend span{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.bed-map-legend i{
+  width:12px;
+  height:12px;
+  border-radius:4px;
+  display:inline-block;
+}
+.bed-map-legend i.free{background:var(--green)}
+.bed-map-legend i.occupied{background:var(--red)}
+.bed-map-legend i.needs_cleaning{background:#ffbd4a}
+
+.bed-map-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+  gap:14px;
+}
+.bed-room-card{
+  background:#02070d;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px 16px;
+}
+.bed-room-card h4{
+  margin:0 0 2px;
+  font-size:15px;
+  color:#f7fbff;
+}
+.bed-room-meta{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:10px;
+}
+.bed-tiles{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.bed-tile{
+  width:66px;
+  height:60px;
+  border-radius:10px;
+  cursor:pointer;
+  overflow:hidden;
+  border:1px solid #ffffff18;
+  display:flex;
+  flex-direction:column;
+  font-size:10px;
+  font-weight:700;
+  text-align:center;
+  line-height:1.25;
+}
+.bed-tile-half{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:2px 3px;
+  color:#06101b;
+}
+.bed-tile-half.free{background:var(--green)}
+.bed-tile-half.occupied{background:var(--red);color:#fff}
+.bed-tile-half.needs_cleaning{background:#ffbd4a}
+.bed-tile-label{
+  display:block;
+  font-size:9px;
+  margin-top:2px;
+  color:var(--muted);
+  text-align:center;
+}
+.bed-action-panel{
+  margin-top:10px;
+  padding:10px;
+  background:#ffffff08;
+  border:1px solid var(--line);
+  border-radius:10px;
+  font-size:13px;
+}
+.bed-action-panel select,
+.bed-action-panel input{
+  width:100%;
+  background:#02070d;
+  border:1px solid var(--line);
+  border-radius:10px;
+  color:white;
+  padding:8px 10px;
+  font-size:13px;
+  margin:6px 0;
+}

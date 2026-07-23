@@ -1437,3 +1437,153 @@ colunas mortas de `settings`, formato de resposta de `/settings`.
       `.gitignore` (só não fazem parte de nenhum commit por enquanto).
       Da próxima vez, rodar com `/XD docs .claude` também, igual já se
       faz com `.git`, pra não repetir isso.
+
+## SESSÃO 8 - 23/07/2026
+
+### Contexto no início da sessão
+
+Continuação direta após o fechamento da Sessão 7 (já publicada em
+produção). Objetivo declarado pelo usuário: "fazer o botão Ask
+StayFlow funcionar de verdade, e depois começar a preparar as
+integrações". Terminou virando duas entregas grandes: o Ask StayFlow
+como agente real, e — puxado por um exemplo concreto do usuário
+(pedido de reposição a fornecedor) — um sistema completo de Mapa de
+Quartos/Camas com ciclo de limpeza e lavanderia.
+
+### Ask StayFlow — de mock pra agente real
+
+Antes desta sessão, o botão "Ask StayFlow" só ecoava uma mensagem fixa
+("Mensagem registrada. Quando o backend estiver conectado...") — não
+existia rota `/ask`, nem histórico, nem qualquer function calling real
+pro painel do operador (o único function calling que já existia era o
+`save_guest_name` da IA de atendimento ao hóspede, um "2 rounds fixos",
+não um loop de verdade).
+
+**Camada de dados**: extraídas 10 funções de leitura de `database.py`
+(dashboard, oportunidades, reservas, estoque, receita, hóspedes,
+conversas, financeiro, relatórios) a partir do SQL que já vivia inline
+nas rotas manuais — agora rota manual e ferramenta do agente chamam a
+mesma função, uma única fonte de verdade. Nova tabela `ask_messages`
+(histórico do agente, chave `hostel_id`+`user_id`, separada de
+propósito do `memory_service` que é guest-scoped).
+
+**`services/ask_agent_service.py`** (novo): loop real de function
+calling (até 6 rodadas por requisição, não fixo), cada ferramenta só
+entra na lista oferecida ao modelo se `get_effective_permissions`
+incluir a permissão equivalente da rota manual — nunca confia em
+`hostel_id`/`user_id` vindo do modelo, sempre vem da sessão.
+
+**Fase de ações reais** (aprovada explicitamente pelo usuário depois
+de uma pergunta de escopo — "isso é só pro pão ou é genérico?"):
+- Pedido de reposição a fornecedor: `propose_supplier_order` monta a
+  mensagem e mostra pro operador, `confirm_and_send_supplier_order` só
+  manda de verdade (reusa `send_whatsapp_message`, já existente pra
+  hóspede) depois de confirmação explícita numa mensagem separada —
+  nunca no mesmo turno da proposta. Nova tabela `inventory_orders`
+  rastreia pending_confirmation → sent → received, em vez de depender
+  da memória da conversa.
+- Aviso proativo a hóspede: mesmo padrão propor→aprovar→enviar,
+  `propose_guest_message`/`send_guest_message`. Ao enviar, a mensagem
+  é gravada tanto no `memory_service` (JSON, usado pela IA de
+  atendimento) quanto no `message_service` (SQL, usado pelas telas) —
+  quando o hóspede responder pelo WhatsApp, a IA de atendimento já vê
+  esse aviso no histórico normalmente, sem nenhum código novo no
+  webhook.
+- Extensão de reserva: a IA de atendimento (não o Ask StayFlow) ganhou
+  a ferramenta `extend_reservation` — só executa sozinha quando é
+  extensão pura (mesmo quarto, mesma diária, calculada pela diária
+  atual da reserva); qualquer outra condição (troca de quarto,
+  desconto) vira `flag_extension_for_approval`, que cria uma
+  oportunidade de alta urgência pra equipe decidir manualmente. Decisão
+  confirmada com o usuário via pergunta direta antes de implementar.
+
+**Achados/correções no caminho**:
+- `find_inventory_item_by_name`/`find_guest_by_name` usavam `LIKE` puro
+  no SQL, sensível a acentuação — "pão" (que o modelo tende a grafar
+  corretamente) não batia com um item cadastrado sem acento. Trocado
+  por comparação normalizada (remove acento + minúsculas) em Python.
+- A IA de atendimento nunca recebia a data de hoje no prompt — não
+  conseguia calcular "amanhã" nem validar datas de extensão
+  corretamente. Corrigido injetando a data real a cada chamada.
+- Confirmação simples ("pode mandar") às vezes fazia o modelo montar a
+  proposta de novo em vez de executar o envio — reforçada a instrução
+  do prompt pra tratar confirmação subsequente como sinal inequívoco de
+  "execute o que já propus". Testado antes e depois, comportamento
+  consistente depois do ajuste.
+
+### Mapa de Quartos/Camas (novo módulo completo)
+
+Puxado pelo pedido de reposição a fornecedor, o usuário levou o
+raciocínio adiante: "quero fazer o mapa de quartos, com camas
+separadas por cor, ocupada vermelho, livre verde, beliche meio a meio,
+checkout entra na lista de limpeza, roupa de cama vai pra lavanderia".
+Depois ampliado explicitamente pra pensar em hotel/resort grande, não
+só hostel pequeno.
+
+**Modelo de dados**: `room_categories` (modalidade de quarto,
+configurável por cada propriedade — não é lista fixa), `rooms`
+(com `floor` pra organização de propriedade grande), `beds` (tipo
+`single`/`bunk_top`/`bunk_bottom`, pareadas por `bunk_group`), status
+gravado de verdade (`free`/`occupied`/`needs_cleaning`) — decisão
+consciente de NÃO calcular ocupação pelas datas da reserva, porque
+check-in/check-out reais nem sempre batem com o planejado.
+`inventory_items` ganhou `in_laundry_quantity` (quantidade suja, fora
+do estoque limpo disponível) e `reservations` ganhou `bed_id`.
+
+**Ciclo completo testado**: check-in atribui reserva a uma cama livre
+específica; check-out libera a cama pra `needs_cleaning` (a "lista de
+limpeza do dia" é simplesmente essa consulta, sem tabela própria);
+marcar como limpa consulta o "kit de roupa de cama" configurado por
+tipo de cama, desconta do estoque limpo e soma em `in_laundry_quantity`;
+devolução da lavanderia faz o caminho inverso, com proteção contra
+devolver mais do que realmente está lá.
+
+**Pensando em hotel/resort grande** (pedido explícito do usuário):
+`create_rooms_bulk` cria vários quartos de uma vez com a mesma
+modalidade/andar — testado criando 3 quartos num único comando, tanto
+via banco quanto via HTTP real.
+
+**Modalidades padrão por tipo de propriedade**: reaproveitado o campo
+`hostel_type` que já existia em Configurações > Empresa (antes sem
+nenhum efeito prático) — `apply_default_room_categories_if_needed`
+roda quando esse campo é salvo e, **só se o hostel ainda não tem
+nenhuma modalidade cadastrada**, cria os padrões do tipo (Hostel →
+Privado/Compartilhado; Hotel/Pousada/Resort → Standard/Luxo). Nunca
+sobrescreve modalidade manual já existente. Opção "Resort" adicionada
+ao seletor, que antes só tinha Hostel/Hotel/Pousada/Flat.
+
+**Frontend**: nova seção "Mapa de Quartos" no menu lateral (logo após
+Reservas, posição escolhida pelo usuário entre 3 opções), mapa visual
+com legendas de cor, beliche renderizado como um bloco só com metade
+de cima/baixo coloridas pelo status real de cada cama, painel de ação
+inline ao clicar numa cama (check-in com busca de reserva confirmada
+sem cama atribuída, check-out, marcar como limpa).
+
+**Limitação de teste registrada**: sem ferramenta de navegador
+disponível nesta sessão (sem Playwright/Puppeteer), a validação da UI
+foi feita via HTTP real (login com sessão de verdade, cookies reais,
+todas as chamadas que o JS faz) contra um servidor Flask local com
+banco isolado — não clique físico na interface. Recomendado ao usuário
+testar visualmente antes de considerar 100% fechado. No caminho, dois
+processos de teste ficaram escutando a mesma porta ao mesmo tempo
+(`pkill` não mata processo Python no Git Bash/Windows do jeito
+esperado) e mascararam uma correção por um momento — resolvido matando
+os PIDs via `Stop-Process` do PowerShell.
+
+### O que ficou pendente pra próxima sessão
+
+- [ ] Validação visual manual do Mapa de Quartos num navegador de
+      verdade (clique físico nas camas, beliche, formulários) — não
+      foi possível nesta sessão por falta de ferramenta de navegador
+- [ ] Cadastrar de verdade quartos/camas/kits de roupa de cama do
+      Hostel Lagares real, hoje só testado com dados sintéticos
+- [ ] Decidir se `resort` merece um conjunto de modalidades padrão
+      próprio (hoje reaproveita o mesmo Standard/Luxo do Hotel) —
+      simplificação deliberada, não formalmente confirmada com o
+      usuário
+- [ ] Integrações com redes sociais (Facebook/Instagram/TikTok) e
+      OTAs/PMS (Booking/Airbnb) — adiadas de propósito até a fundação
+      de function calling do Ask StayFlow existir de verdade, que
+      passou a existir nesta sessão
+- [ ] Itens já pendentes da Sessão 7 continuam pendentes (ver acima),
+      não repetidos aqui
