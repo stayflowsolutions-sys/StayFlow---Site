@@ -12,12 +12,49 @@ Hostel B.
 """
 
 from functools import wraps
-from flask import session, jsonify
+from flask import session, jsonify, g
+
+
+def _current_session_data():
+    """
+    Busca a sessao atual no banco a partir do token opaco guardado no
+    cookie assinado do Flask (session["session_id"]). Cacheia em
+    flask.g pra nao consultar o banco mais de uma vez por requisicao.
+    Retorna None se nao houver cookie de sessao, ou se a sessao nao
+    existir/estiver revogada no banco.
+    """
+    if hasattr(g, "_stayflow_session_data"):
+        return g._stayflow_session_data
+
+    from database import get_valid_session
+
+    session_id = session.get("session_id")
+    data = get_valid_session(session_id) if session_id else None
+
+    g._stayflow_session_data = data
+    return data
 
 
 def get_current_hostel_id():
-    """Retorna o hostel_id do usuário logado, ou None se não houver sessão."""
-    return session.get("hostel_id")
+    """
+    Retorna o hostel_id da sessao atual, ou None se nao houver sessao
+    valida OU se o hostel ainda nao foi escolhido (sessao "pending"
+    apos login multi-hostel, antes de /select-hostel).
+    """
+    data = _current_session_data()
+    return data["hostel_id"] if data else None
+
+
+def get_current_user_id():
+    """Retorna o user_id da sessao atual, ou None se nao houver sessao valida."""
+    data = _current_session_data()
+    return data["user_id"] if data else None
+
+
+def get_current_session_id():
+    """Retorna o token opaco (id) da sessao atual, direto do cookie - usado
+    pra revogar/listar a sessao certa (ex: trocar senha, ver sessoes ativas)."""
+    return session.get("session_id")
 
 
 def get_current_user():
@@ -27,8 +64,8 @@ def get_current_user():
     confia em valor cacheado na sessao) - mesma logica de seguranca
     usada por require_permission.
     """
-    user_id = session.get("user_id")
-    hostel_id = session.get("hostel_id")
+    user_id = get_current_user_id()
+    hostel_id = get_current_hostel_id()
 
     if not user_id or not hostel_id:
         return None
@@ -97,7 +134,7 @@ def require_permission(permission_key):
         @wraps(view_func)
         def wrapper(*args, **kwargs):
             hostel_id = get_current_hostel_id()
-            user_id = session.get("user_id")
+            user_id = get_current_user_id()
 
             if not hostel_id or not user_id:
                 return jsonify({

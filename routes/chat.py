@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 
-from database import get_hostel_id_by_number, get_hostel_whatsapp_config, is_opportunity_generation_enabled
+from database import get_hostel_id_by_number, get_hostel_whatsapp_config, is_opportunity_generation_enabled, is_ai_enabled
 from services.ai_service import ask_ai
 from services.memory_service import save_message, get_history
 from services.guest_service import get_or_create_guest, update_guest_name
@@ -25,6 +25,17 @@ def process_incoming_message(hostel_id, phone, text, send_to_whatsapp=False):
     save_message(hostel_id, phone, "user", text)
     save_message_db(hostel_id, phone, "user", text)
 
+    save_lead(hostel_id, phone, text)
+
+    opportunity = analyze_message(hostel_id, phone, text) if is_opportunity_generation_enabled(hostel_id) else None
+
+    # Interruptor mestre: quando desligado, a mensagem do hospede e a
+    # oportunidade (acima) ainda sao salvas normalmente - so a resposta
+    # da IA (interna e o envio real pelo WhatsApp) e que fica pulada,
+    # deixando o atendimento inteiramente manual a partir daqui.
+    if not is_ai_enabled(hostel_id):
+        return None, opportunity
+
     history = get_history(hostel_id, phone)
 
     # O telefone só é passado pra IA quando a mensagem realmente veio do
@@ -38,10 +49,6 @@ def process_incoming_message(hostel_id, phone, text, send_to_whatsapp=False):
 
     save_message(hostel_id, phone, "assistant", answer)
     save_message_db(hostel_id, phone, "assistant", answer)
-
-    save_lead(hostel_id, phone, text)
-
-    opportunity = analyze_message(hostel_id, phone, text) if is_opportunity_generation_enabled(hostel_id) else None
 
     if send_to_whatsapp:
         phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)

@@ -10,6 +10,11 @@ from database import (
     get_membership,
     get_effective_permissions,
     create_identity_and_hostel,
+    create_session,
+    get_valid_session,
+    update_session_hostel,
+    revoke_session_by_id,
+    log_login_attempt,
 )
 
 auth_bp = Blueprint("auth", __name__)
@@ -29,16 +34,18 @@ def check_password(password, password_hash):
     )
 
 
-def start_full_session(user_id, hostel_id):
+def start_new_session(user_id, hostel_id):
     """
-    Finaliza a sessao de servidor com pessoa + hostel escolhidos.
-    A sessao guarda so o minimo (user_id, hostel_id) - nome, role e
-    permissoes sao sempre recalculados do banco a cada requisicao,
-    nunca ficam desatualizados se o admin mudar algo.
+    Cria uma sessao nova no servidor (linha em sessions) e guarda so o
+    token opaco no cookie assinado do Flask - nunca user_id/hostel_id
+    direto. hostel_id pode ser None (estado "pending", login
+    multi-hostel antes da escolha).
     """
     session.clear()
-    session["user_id"] = user_id
-    session["hostel_id"] = hostel_id
+    user_agent = request.headers.get("User-Agent", "")
+    session_id = create_session(user_id, hostel_id, user_agent)
+    session["session_id"] = session_id
+    return session_id
 
 
 def build_session_payload(user_id, hostel_id):
@@ -103,7 +110,7 @@ def register():
     except sqlite3.IntegrityError:
         return jsonify({"success": False, "message": "This email is already registered."}), 409
 
-    start_full_session(result["user_id"], result["hostel_id"])
+    start_new_session(result["user_id"], result["hostel_id"])
 
     return jsonify({"success": True, "message": "Hostel created successfully."})
 
@@ -118,27 +125,30 @@ def login():
     user = get_user_by_email(email)
 
     if not user or not user["password"] or not check_password(password, user["password"]):
+        log_login_attempt(user["id"] if user else None, None, email, False)
         return jsonify({"success": False, "message": "Invalid email or password."}), 401
 
     hostels = get_user_hostels(user["id"])
 
     if not hostels:
+        log_login_attempt(user["id"], None, email, False)
         return jsonify({
             "success": False,
             "message": "This account has no active hostel access. Contact your administrator."
         }), 403
 
     if len(hostels) == 1:
-        start_full_session(user["id"], hostels[0]["hostel_id"])
+        start_new_session(user["id"], hostels[0]["hostel_id"])
+        log_login_attempt(user["id"], hostels[0]["hostel_id"], email, True)
         payload = build_session_payload(user["id"], hostels[0]["hostel_id"])
         return jsonify(payload)
 
-    # Mais de um hostel: confirma quem e a pessoa, mas nao finaliza a
-    # sessao completa ainda - o frontend precisa perguntar qual hostel
-    # usar antes de qualquer rota protegida por hostel_id ficar
-    # acessivel.
-    session.clear()
-    session["pending_user_id"] = user["id"]
+    # Mais de um hostel: cria uma sessao real (pending, hostel_id None)
+    # - e uma sessao de verdade na tabela, so ainda sem hostel escolhido.
+    # Nenhuma rota protegida por @require_auth/@require_permission
+    # libera acesso nesse estado (hostel_id None = bloqueado).
+    start_new_session(user["id"], None)
+    log_login_attempt(user["id"], None, email, True)
 
     return jsonify({
         "success": True,
@@ -156,8 +166,10 @@ def login():
 def select_hostel():
     """
     Finaliza a escolha de hostel - usado logo apos um login com
-    multiplos hostels, ou para trocar de hostel estando ja logado
-    (equivalente a troca de conta/workspace).
+    multiplos hostels (saindo do estado pending), ou para trocar de
+    hostel estando ja logado (equivalente a troca de conta/workspace).
+    Sempre ATUALIZA o hostel_id da sessao existente (mesma linha,
+    mesmo dispositivo) - nunca cria uma sessao nova.
     """
     data = request.get_json() or {}
     hostel_id = data.get("hostel_id")
@@ -165,11 +177,13 @@ def select_hostel():
     if not hostel_id:
         return jsonify({"success": False, "message": "hostel_id is required."}), 400
 
-    user_id = session.get("pending_user_id") or session.get("user_id")
+    session_id = session.get("session_id")
+    session_data = get_valid_session(session_id) if session_id else None
 
-    if not user_id:
+    if not session_data:
         return jsonify({"success": False, "message": "Not authenticated."}), 401
 
+    user_id = session_data["user_id"]
     membership = get_membership(user_id, hostel_id)
 
     if not membership:
@@ -178,7 +192,7 @@ def select_hostel():
             "message": "You do not have access to this hostel."
         }), 403
 
-    start_full_session(user_id, hostel_id)
+    update_session_hostel(session_id, hostel_id)
     payload = build_session_payload(user_id, hostel_id)
 
     return jsonify(payload)
@@ -186,19 +200,25 @@ def select_hostel():
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
+    session_id = session.get("session_id")
+    if session_id:
+        revoke_session_by_id(session_id)
     session.clear()
     return jsonify({"success": True})
 
 
 @auth_bp.route("/me", methods=["GET"])
 def me():
-    user_id = session.get("user_id")
-    hostel_id = session.get("hostel_id")
+    session_id = session.get("session_id")
+    session_data = get_valid_session(session_id) if session_id else None
 
-    if not user_id or not hostel_id:
+    # hostel_id None cobre tanto "sem sessao" quanto "sessao pending"
+    # (login multi-hostel sem escolha ainda) - em ambos os casos, /me
+    # nao tem um payload completo pra devolver.
+    if not session_data or not session_data["hostel_id"]:
         return jsonify({"success": False, "message": "Not authenticated."}), 401
 
-    payload = build_session_payload(user_id, hostel_id)
+    payload = build_session_payload(session_data["user_id"], session_data["hostel_id"])
 
     if not payload:
         session.clear()

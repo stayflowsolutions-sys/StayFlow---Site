@@ -1,4 +1,5 @@
 import os
+import secrets
 import sqlite3
 
 from utils.permissions import ALL_PERMISSIONS_STR
@@ -72,6 +73,64 @@ def _migrate_guests_to_composite_unique(cursor):
     """)
 
     cursor.execute("DROP TABLE guests_old")
+
+
+def _settings_table_needs_migration(cursor):
+    """
+    Detecta se a tabela settings ainda tem as colunas antigas nunca
+    usadas de verdade em nenhum lugar do codigo (checkin_time,
+    checkout_time, breakfast_time, languages, services, tours) -
+    confirmado por busca completa antes de decidir remover. Presenca
+    de "tours" (qualquer uma das 6 serviria) indica schema antigo.
+    """
+    cursor.execute("PRAGMA table_info(settings)")
+    columns = [column["name"] for column in cursor.fetchall()]
+    return "tours" in columns
+
+
+def _migrate_settings_table(cursor):
+    """
+    Reconstroi settings sem as 6 colunas mortas (checkin_time,
+    checkout_time, breakfast_time, languages, services, tours) e ja
+    com as colunas novas de Empresa/Comunicacao (Sessao 7). checkin/
+    checkout sao reaproveitadas como horario padrao de check-in/
+    checkout - nao recriar checkin_time/checkout_time. Preserva todos
+    os dados das colunas que continuam existindo.
+    """
+    cursor.execute("ALTER TABLE settings RENAME TO settings_old")
+
+    cursor.execute("""
+    CREATE TABLE settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER,
+        hostel_name TEXT,
+        hostel_type TEXT,
+        checkin TEXT,
+        checkout TEXT,
+        legal_name TEXT,
+        tax_id TEXT,
+        address TEXT,
+        timezone TEXT,
+        currency TEXT,
+        logo_url TEXT,
+        opportunity_generation INTEGER DEFAULT 1,
+        alert_channels TEXT,
+        quiet_hours_start TEXT,
+        quiet_hours_end TEXT
+    )
+    """)
+
+    cursor.execute("""
+        INSERT INTO settings (
+            id, hostel_id, hostel_name, hostel_type, checkin, checkout,
+            opportunity_generation
+        )
+        SELECT id, hostel_id, hostel_name, hostel_type, checkin, checkout,
+               opportunity_generation
+        FROM settings_old
+    """)
+
+    cursor.execute("DROP TABLE settings_old")
 
 
 def _users_table_needs_migration(cursor):
@@ -168,6 +227,45 @@ def _migrate_users_to_memberships(cursor):
     cursor.execute("DROP TABLE users_old")
 
 
+# Chaves que existiam em ALL_PERMISSIONS antes de "security"/"billing"
+# serem adicionadas (Sessao 7). Fixo aqui de propósito - não importar
+# de utils.permissions.ALL_PERMISSIONS, que já inclui as novas chaves
+# e não serviria pra detectar quem era "acesso total" no esquema antigo.
+_LEGACY_FULL_ACCESS_PERMISSIONS = {
+    "dashboard", "chats", "opportunities", "reservations", "operations",
+    "guests", "finance", "reports", "inventory", "revenue", "settings", "team",
+}
+
+
+def _backfill_security_billing_for_full_access_roles(cursor):
+    """
+    Roles criadas antes da Sessao 7 guardam uma string de permissoes
+    congelada no momento da criacao - adicionar chaves novas em
+    ALL_PERMISSIONS nao as alcança retroativamente (mesmo problema ja
+    visto com "team"). Aqui, qualquer role que ja tinha as 12 chaves
+    antigas (ou seja, já era "acesso total" no esquema anterior) ganha
+    "security" e "billing" tambem, preservando a intencao original de
+    quem por ela.
+    """
+    cursor.execute("SELECT id, permissions FROM roles")
+    roles = cursor.fetchall()
+
+    for role in roles:
+        current = set(p for p in (role["permissions"] or "").split(",") if p)
+
+        if not _LEGACY_FULL_ACCESS_PERMISSIONS.issubset(current):
+            continue
+
+        if "security" in current and "billing" in current:
+            continue
+
+        updated = current | {"security", "billing"}
+        cursor.execute(
+            "UPDATE roles SET permissions = ? WHERE id = ?",
+            (",".join(sorted(updated)), role["id"])
+        )
+
+
 def create_database():
     conn = get_connection()
     cursor = conn.cursor()
@@ -235,6 +333,15 @@ def create_database():
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS quick_replies (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # guests: cria já com o schema correto se for banco novo
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS guests (
@@ -255,6 +362,61 @@ def create_database():
 
     if _users_table_needs_migration(cursor):
         _migrate_users_to_memberships(cursor)
+
+    _backfill_security_billing_for_full_access_roles(cursor)
+
+    # Sessao rastreada no servidor (Sessao 7) - substitui o cookie
+    # assinado client-side, que carregava user_id/hostel_id direto.
+    # Agora o cookie so guarda um token opaco (id), e cada requisicao
+    # busca essa linha pra saber quem e a pessoa e revogar sessoes
+    # individualmente sem depender de reautenticacao.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        hostel_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        revoked INTEGER NOT NULL DEFAULT 0,
+        user_agent TEXT
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS login_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        hostel_id INTEGER,
+        email_attempted TEXT,
+        success INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Billing (PASSO 8) - so estrutura, sem processador de pagamento
+    # integrado. Tela em Configuracoes e honestamente estatica ("modelo
+    # de cobranca em definicao"), nao le nem escreve nesta tabela ainda.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS billing (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        plan_name TEXT,
+        status TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Developer (PASSO 9) - so estrutura pra chave de API futura, sem
+    # geracao real de chave agora. Tela em Configuracoes e estatica
+    # ("em breve"), nao le nem escreve nesta tabela ainda.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS api_keys (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        key_name TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS conversations (
@@ -323,12 +485,16 @@ def create_database():
         hostel_type TEXT,
         checkin TEXT,
         checkout TEXT,
-        checkin_time TEXT,
-        checkout_time TEXT,
-        breakfast_time TEXT,
-        languages TEXT,
-        services TEXT,
-        tours TEXT
+        legal_name TEXT,
+        tax_id TEXT,
+        address TEXT,
+        timezone TEXT,
+        currency TEXT,
+        logo_url TEXT,
+        opportunity_generation INTEGER DEFAULT 1,
+        alert_channels TEXT,
+        quiet_hours_start TEXT,
+        quiet_hours_end TEXT
     )
     """)
 
@@ -341,6 +507,20 @@ def create_database():
     add_column_if_not_exists(cursor, "settings", "hostel_type", "TEXT")
     add_column_if_not_exists(cursor, "settings", "checkin", "TEXT")
     add_column_if_not_exists(cursor, "settings", "checkout", "TEXT")
+
+    # settings antigo (Sessao 2) tinha 6 colunas nunca usadas de verdade
+    # em nenhum lugar do codigo (checkin_time, checkout_time,
+    # breakfast_time, languages, services, tours) - confirmado por busca
+    # completa antes de remover. Migra pra reconstruir sem elas e ja
+    # adicionar as colunas novas de Empresa/Comunicacao (Sessao 7).
+    if _settings_table_needs_migration(cursor):
+        _migrate_settings_table(cursor)
+
+    # Interruptor mestre de resposta automatica ao hospede - aditivo,
+    # nao precisa da migracao de tabela acima (chamado depois dela de
+    # proposito, pra nunca correr risco de ficar de fora de uma copia
+    # feita durante a reconstrucao da tabela).
+    add_column_if_not_exists(cursor, "settings", "ai_enabled", "INTEGER DEFAULT 1")
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS reservations (
@@ -640,6 +820,192 @@ def create_identity_and_hostel(name, email, password_hash, hostel_name, hostel_e
         "role_id": role_id,
         "membership_id": membership_id
     }
+
+
+def create_session(user_id, hostel_id, user_agent):
+    """
+    Cria uma sessao nova no servidor (uma linha em sessions). hostel_id
+    pode ser None - estado "pending", antes da escolha de hostel num
+    login multi-conta. Retorna o token opaco (id da sessao), aleatorio
+    e nao sequencial (nao da pra adivinhar por tentativa).
+    """
+    session_id = secrets.token_urlsafe(32)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO sessions (id, user_id, hostel_id, user_agent) VALUES (?, ?, ?, ?)",
+        (session_id, user_id, hostel_id, user_agent)
+    )
+    conn.commit()
+    conn.close()
+
+    return session_id
+
+
+def get_valid_session(session_id):
+    """
+    Retorna {user_id, hostel_id} se a sessao existir e nao estiver
+    revogada, atualizando last_seen_at como efeito colateral (toda
+    requisicao autenticada passa por aqui). Retorna None se a sessao
+    nao existir ou tiver sido revogada - bloqueia a proxima
+    requisicao imediatamente apos uma revogacao.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, user_id, hostel_id, revoked FROM sessions WHERE id = ?",
+        (session_id,)
+    )
+    row = cursor.fetchone()
+
+    if not row or row["revoked"]:
+        conn.close()
+        return None
+
+    cursor.execute(
+        "UPDATE sessions SET last_seen_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (session_id,)
+    )
+    conn.commit()
+    conn.close()
+
+    return {"user_id": row["user_id"], "hostel_id": row["hostel_id"]}
+
+
+def update_session_hostel(session_id, hostel_id):
+    """
+    Preenche/atualiza o hostel_id de uma sessao ja existente - usado
+    por /select-hostel tanto pra completar a escolha inicial (saindo
+    do estado pending) quanto pra trocar de hostel estando ja logado.
+    Nunca cria uma sessao nova - e sempre o mesmo "dispositivo".
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE sessions SET hostel_id = ? WHERE id = ?",
+        (hostel_id, session_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def revoke_session_by_id(session_id):
+    """Revoga uma sessao sem checar dono - usado no /logout, onde o
+    proprio cookie ja garante que e a sessao de quem esta pedindo."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE sessions SET revoked = 1 WHERE id = ?", (session_id,))
+    conn.commit()
+    conn.close()
+
+
+def revoke_session(session_id, user_id):
+    """
+    Revoga uma sessao especifica, so se ela pertencer ao user_id
+    informado - evita que alguem revogue a sessao de outra pessoa
+    passando um id adivinhado/roubado. Retorna True se revogou.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE sessions SET revoked = 1 WHERE id = ? AND user_id = ?",
+        (session_id, user_id)
+    )
+    revoked = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return revoked
+
+
+def revoke_other_sessions(user_id, except_session_id):
+    """
+    Revoga todas as sessoes ativas do usuario, exceto a informada -
+    usado na troca de senha (a sessao que esta trocando continua
+    valida, nao precisa relogar na hora).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE sessions SET revoked = 1 WHERE user_id = ? AND id != ? AND revoked = 0",
+        (user_id, except_session_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_user_sessions(user_id):
+    """Lista as sessoes ATIVAS (nao revogadas) do usuario, mais
+    recente primeiro - usado na tela de Seguranca."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT id, created_at, last_seen_at, user_agent
+        FROM sessions
+        WHERE user_id = ? AND revoked = 0
+        ORDER BY last_seen_at DESC
+        """,
+        (user_id,)
+    )
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def log_login_attempt(user_id, hostel_id, email_attempted, success):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO login_attempts (user_id, hostel_id, email_attempted, success) VALUES (?, ?, ?, ?)",
+        (user_id, hostel_id, email_attempted, 1 if success else 0)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_login_attempts(user_id, limit=20):
+    """Lista as ultimas tentativas de login associadas a esse
+    usuario (tentativas com email desconhecido - sem match de
+    usuario nenhum - nao aparecem aqui, nao ha a quem mostrar)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT hostel_id, email_attempted, success, created_at
+        FROM login_attempts
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT ?
+        """,
+        (user_id, limit)
+    )
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def get_user_password_hash(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT password FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["password"] if row else None
+
+
+def update_user_password(user_id, new_password_hash):
+    """Atualiza a senha e desliga must_change_password - a pessoa
+    acabou de trocar por uma senha de verdade, nao precisa forcar
+    troca de novo."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET password = ?, must_change_password = 0 WHERE id = ?",
+        (new_password_hash, user_id)
+    )
+    conn.commit()
+    conn.close()
 
 
 def get_role(role_id):
@@ -1273,6 +1639,68 @@ def is_opportunity_generation_enabled(hostel_id):
     return bool(row["opportunity_generation"])
 
 
+def is_ai_enabled(hostel_id):
+    """
+    Interruptor mestre: verifica se a IA deve gerar e enviar resposta
+    automatica pros hospedes desse hostel. Controla tanto a resposta
+    interna quanto o envio real pelo WhatsApp - quando desligado, o
+    atendimento fica inteiramente manual. Se nunca configurado, assume
+    ligado (preserva o comportamento atual de quem nunca mexeu nessa
+    tela).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT ai_enabled FROM settings WHERE hostel_id = ?",
+        (hostel_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row or row["ai_enabled"] is None:
+        return True
+
+    return bool(row["ai_enabled"])
+
+
+def is_within_quiet_hours(hostel_id):
+    """
+    Verifica se o horario atual (na hora local do hostel) esta dentro
+    do horario de silencio configurado. Usa zoneinfo (biblioteca padrao
+    do Python, cuida de DST sozinha) - so calcula algo se o hostel
+    configurou timezone E os dois horarios; caso contrario, assume que
+    nao ha horario de silencio (nunca suprime automatico sem
+    configuracao explicita).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT timezone, quiet_hours_start, quiet_hours_end FROM settings WHERE hostel_id = ?",
+        (hostel_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row or not row["timezone"] or not row["quiet_hours_start"] or not row["quiet_hours_end"]:
+        return False
+
+    from datetime import datetime, time as dt_time
+    from zoneinfo import ZoneInfo
+
+    try:
+        now_local = datetime.now(ZoneInfo(row["timezone"])).time()
+        start = dt_time.fromisoformat(row["quiet_hours_start"])
+        end = dt_time.fromisoformat(row["quiet_hours_end"])
+    except (ValueError, KeyError):
+        return False
+
+    if start <= end:
+        return start <= now_local < end
+
+    # Horario de silencio atravessa a meia-noite (ex: 22:00 as 07:00).
+    return now_local >= start or now_local < end
+
+
 def save_hostel_whatsapp_config(hostel_id, phone_number_id, access_token):
     conn = get_connection()
     cursor = conn.cursor()
@@ -1288,6 +1716,49 @@ def save_hostel_whatsapp_config(hostel_id, phone_number_id, access_token):
 
     conn.commit()
     conn.close()
+
+
+def get_quick_replies(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, hostel_id, text, created_at FROM quick_replies WHERE hostel_id = ? ORDER BY created_at DESC",
+        (hostel_id,)
+    )
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def create_quick_reply(hostel_id, text):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO quick_replies (hostel_id, text) VALUES (?, ?)",
+        (hostel_id, text)
+    )
+    quick_reply_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return quick_reply_id
+
+
+def delete_quick_reply(quick_reply_id, hostel_id):
+    """
+    Apaga so se a resposta rapida pertencer ao hostel informado -
+    evita que alguem apague (por id adivinhado) a resposta rapida de
+    outro hostel.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM quick_replies WHERE id = ? AND hostel_id = ?",
+        (quick_reply_id, hostel_id)
+    )
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
 
 
 def get_hostel_id_by_number(whatsapp_number):

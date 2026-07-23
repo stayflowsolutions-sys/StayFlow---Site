@@ -18,6 +18,8 @@ ALL_PERMISSIONS = [
     "revenue",
     "settings",
     "team",
+    "security",
+    "billing",
 ]
 
 ALL_PERMISSIONS_STR = ",".join(ALL_PERMISSIONS)
@@ -35,4 +37,6 @@ PERMISSION_LABELS = {
     "revenue": "Receitas",
     "settings": "Configurações",
     "team": "Equipe",
+    "security": "Segurança",
+    "billing": "Billing",
 }

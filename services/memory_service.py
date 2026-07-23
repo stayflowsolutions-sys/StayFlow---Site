@@ -2,7 +2,12 @@ import json
 import os
 from datetime import datetime
 
-MEMORY_FILE = "conversations.json"
+MEMORY_FILE = os.path.join(os.getenv("STAYFLOW_DATA_DIR", "."), "conversations.json")
+
+# Quantas mensagens (indo e voltando) ficam disponíveis pra IA como contexto.
+# Um atendimento completo costuma passar de 20 mensagens; 12 cortava
+# informação já coletada (ex: idioma) no meio da conversa.
+HISTORY_WINDOW = 60
 
 
 def _tenant_key(hostel_id, phone):
@@ -49,7 +54,7 @@ def get_history(hostel_id, phone):
     history = []
 
     if key in memory:
-        for item in memory[key]["messages"][-12:]:
+        for item in memory[key]["messages"][-HISTORY_WINDOW:]:
             history.append({
                 "role": item["role"],
                 "content": item["text"]
