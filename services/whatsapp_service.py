@@ -56,3 +56,46 @@ def send_whatsapp_message(phone_number_id, access_token, to, message):
     except Exception as error:
         print("Erro de conexão ao enviar WhatsApp:", error)
         return False
+
+
+def download_whatsapp_media(media_id, access_token):
+    """
+    Baixa uma midia recebida do WhatsApp (ex: foto de documento) - e
+    sempre em 2 passos na API da Meta: primeiro pega a URL temporaria
+    de download (expira rapido), depois baixa o arquivo de verdade
+    dessa URL, sempre autenticado com o mesmo token.
+
+    Retorna (bytes, mime_type) ou (None, None) se falhar - nunca
+    levanta excecao, mesmo motivo do send_whatsapp_message.
+    """
+    if not access_token:
+        print("WhatsApp não configurado para este hostel — não foi possível baixar a mídia.")
+        return None, None
+
+    try:
+        info_url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{media_id}"
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        info_response = requests.get(info_url, headers=headers, timeout=10)
+        if info_response.status_code >= 400:
+            print("Erro ao buscar URL da mídia do WhatsApp:", info_response.status_code, info_response.text)
+            return None, None
+
+        info = info_response.json()
+        media_url = info.get("url")
+        mime_type = info.get("mime_type", "application/octet-stream")
+
+        if not media_url:
+            print("Resposta da Meta sem URL de mídia:", info)
+            return None, None
+
+        file_response = requests.get(media_url, headers=headers, timeout=20)
+        if file_response.status_code >= 400:
+            print("Erro ao baixar arquivo de mídia do WhatsApp:", file_response.status_code)
+            return None, None
+
+        return file_response.content, mime_type
+
+    except Exception as error:
+        print("Erro de conexão ao baixar mídia do WhatsApp:", error)
+        return None, None

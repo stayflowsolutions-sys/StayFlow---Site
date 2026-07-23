@@ -11,6 +11,7 @@ from database import (
     list_room_categories,
     find_available_beds,
     get_offerings_for_chat,
+    save_guest_date_of_birth,
 )
 
 load_dotenv()
@@ -48,6 +49,20 @@ Information you're gathering, in a natural order (not a strict script):
 - email
 - whether they'd like towels, extra blankets, or tour recommendations
 
+AFTER THE RESERVATION IS CREATED — HOSTEL REGISTRATION (IMPORTANT):
+Once create_reservation succeeds, the hostel also needs, for its legal
+guest registration: the guest's full legal name (as it appears on their
+ID — confirm it matches what they already told you, or ask if unsure),
+their date of birth, and a photo of their ID/passport. Ask for these
+naturally in the following messages (don't dump all three at once).
+As soon as the guest states their date of birth, call
+save_guest_date_of_birth with it. For the document photo, just ask them
+to send a photo of their ID or passport — you don't need to do anything
+else, the system automatically receives and confirms the photo on its
+own; you don't need to ask again once you've asked once, and don't
+worry if you can't tell whether it arrived — a separate confirmation
+message is sent directly to the guest when it's received.
+
 PRICING AND ROOM OPTIONS — IMPORTANT:
 Never invent a price or say a room type is available without checking first.
 As soon as the guest asks about room types, prices, or what's included, call
@@ -76,6 +91,17 @@ a window or aisle seat on a bus site. Once the guest states a preference
 and use that bed's id when creating the reservation. If nothing is available
 for those dates, say so honestly and offer to check other dates instead of
 inventing availability.
+
+EMPTY BED LIST DOESN'T ALWAYS MEAN "FULLY BOOKED" — IMPORTANT: if
+get_available_beds returns an empty list, that can mean either (a) every
+bed in that category is taken for those dates, or (b) this category
+simply hasn't had its individual beds cataloged in the system yet (common
+for private rooms, which aren't always broken into numbered beds). You
+can't tell which from the empty list alone, so don't assume it's fully
+booked — go ahead and call create_reservation anyway WITHOUT a bed_id
+(the specific bed/room gets assigned later at check-in either way). Only
+tell the guest nothing is available if create_reservation itself comes
+back with an error.
 
 RIGHT BEFORE BOOKING — IMPORTANT (do not skip):
 Availability can change between messages (another guest may book in the
@@ -281,6 +307,24 @@ RESERVATION_TOOLS = [
                 "required": ["guest_name", "category_name", "checkin_date", "checkout_date"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "save_guest_date_of_birth",
+            "description": (
+                "Call this as soon as the guest states their date of birth "
+                "(part of hostel registration, asked after the reservation "
+                "is created), so it can be saved to their profile."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "date_of_birth": {"type": "string", "description": "YYYY-MM-DD"}
+                },
+                "required": ["date_of_birth"]
+            }
+        }
     }
 ]
 
@@ -394,6 +438,8 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None):
                     tool_content = json.dumps(result, ensure_ascii=False)
                 except ValueError as error:
                     tool_content = json.dumps({"error": str(error)}, ensure_ascii=False)
+            elif name == "save_guest_date_of_birth":
+                save_guest_date_of_birth(hostel_id, guest_phone, args.get("date_of_birth"))
 
             messages.append({
                 "role": "tool",

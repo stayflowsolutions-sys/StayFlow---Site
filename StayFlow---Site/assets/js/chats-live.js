@@ -196,8 +196,25 @@ async function loadGuestProfile(guestId) {
         const guest = data.guest || {};
         const messages = data.messages || [];
         const opportunities = data.opportunities || [];
+        const documents = data.documents || [];
 
         stayflowCurrentGuestId = guest.id || guestId;
+
+        const docsSection = document.getElementById("guestDocumentsSection");
+        const docsList = document.getElementById("guestDocumentsList");
+        if (docsSection && docsList) {
+            if (documents.length) {
+                docsSection.style.display = "block";
+                docsList.innerHTML = documents.map(doc => `
+                    <a href="/guests/documents/${doc.id}/file" target="_blank" rel="noopener"
+                       style="display:block;padding:6px 0;color:#7bc2ff;text-decoration:none">
+                        📎 Documento recebido em ${doc.received_at}
+                    </a>
+                `).join("");
+            } else {
+                docsSection.style.display = "none";
+            }
+        }
 
         const takeoverBtn = document.getElementById("chatTakeoverBtn");
         if (takeoverBtn) {

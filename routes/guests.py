@@ -1,5 +1,11 @@
-from flask import Blueprint, jsonify, request
-from database import get_guests_list, get_guest_profile, set_guest_ai_paused, send_message_to_guest_now
+from flask import Blueprint, jsonify, request, send_file
+from database import (
+    get_guests_list,
+    get_guest_profile,
+    set_guest_ai_paused,
+    send_message_to_guest_now,
+    get_guest_document_file,
+)
 from utils.tenant import require_permission
 
 guests_bp = Blueprint("guests", __name__)
@@ -49,3 +55,14 @@ def send_message_to_guest_route(hostel_id, guest_id):
         return jsonify({"success": False, "message": "WhatsApp não configurado para este hostel — mensagem não enviada."}), 502
 
     return jsonify({"success": True, **result})
+
+
+@guests_bp.route("/guests/documents/<int:document_id>/file", methods=["GET"])
+@require_permission("guests")
+def get_guest_document_file_route(hostel_id, document_id):
+    document = get_guest_document_file(hostel_id, document_id)
+
+    if not document:
+        return jsonify({"error": "Document not found"}), 404
+
+    return send_file(document["file_path"], mimetype=document["mime_type"])

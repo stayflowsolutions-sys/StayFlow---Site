@@ -378,6 +378,10 @@ def create_database():
     # e por hospede, aquele e o interruptor mestre do hostel inteiro).
     add_column_if_not_exists(cursor, "guests", "ai_paused", "INTEGER DEFAULT 0")
 
+    # Data de nascimento, coletada durante o registro do hospede (junto
+    # com o documento) - texto livre em formato AAAA-MM-DD.
+    add_column_if_not_exists(cursor, "guests", "date_of_birth", "TEXT")
+
     # se for um banco antigo (criado antes do multi-tenant), migra
     if _guests_table_needs_migration(cursor):
         _migrate_guests_to_composite_unique(cursor)
@@ -386,6 +390,24 @@ def create_database():
         _migrate_users_to_memberships(cursor)
 
     _backfill_security_billing_for_full_access_roles(cursor)
+
+    # Documentos de identidade (foto de passaporte/RG) enviados pelo
+    # hospede via WhatsApp como imagem - arquivo fica no mesmo disco
+    # persistente do banco (STAYFLOW_DATA_DIR/documents/...), essa
+    # tabela so guarda a referencia. Um hospede pode mandar mais de
+    # um documento/tentativa, por isso e tabela separada, nao coluna
+    # unica em guests.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS guest_documents (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        guest_id INTEGER NOT NULL,
+        file_path TEXT NOT NULL,
+        mime_type TEXT,
+        whatsapp_media_id TEXT,
+        received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
 
     # Sessao rastreada no servidor (Sessao 7) - substitui o cookie
     # assinado client-side, que carregava user_id/hostel_id direto.
@@ -823,6 +845,100 @@ def is_guest_ai_paused(hostel_id, phone):
     conn.close()
 
     return bool(row["ai_paused"]) if row else False
+
+
+def save_guest_date_of_birth(hostel_id, phone, date_of_birth):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE guests SET date_of_birth = ? WHERE hostel_id = ? AND phone = ?",
+        (date_of_birth, hostel_id, phone)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+_DOCUMENTS_MIME_EXTENSIONS = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "application/pdf": "pdf",
+}
+
+
+def save_guest_document(hostel_id, guest_id, file_bytes, mime_type, whatsapp_media_id=None):
+    """
+    Grava o arquivo de documento no disco persistente
+    (STAYFLOW_DATA_DIR/documents/{hostel_id}/{guest_id}/...) e a
+    referencia no banco. Um hospede pode mandar mais de um documento
+    (ou reenviar se a foto saiu ruim), por isso cada envio vira uma
+    linha nova, nunca sobrescreve a anterior.
+    """
+    extension = _DOCUMENTS_MIME_EXTENSIONS.get(mime_type, "bin")
+
+    documents_dir = os.path.join(
+        os.getenv("STAYFLOW_DATA_DIR", "."), "documents", str(hostel_id), str(guest_id)
+    )
+    os.makedirs(documents_dir, exist_ok=True)
+
+    filename = f"{secrets.token_hex(8)}.{extension}"
+    file_path = os.path.join(documents_dir, filename)
+
+    with open(file_path, "wb") as f:
+        f.write(file_bytes)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO guest_documents (hostel_id, guest_id, file_path, mime_type, whatsapp_media_id)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (hostel_id, guest_id, file_path, mime_type, whatsapp_media_id)
+    )
+
+    document_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return {"document_id": document_id, "file_path": file_path}
+
+
+def list_guest_documents(hostel_id, guest_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, mime_type, received_at
+        FROM guest_documents
+        WHERE hostel_id = ? AND guest_id = ?
+        ORDER BY received_at DESC
+        """,
+        (hostel_id, guest_id)
+    )
+    documents = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return documents
+
+
+def get_guest_document_file(hostel_id, document_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT file_path, mime_type FROM guest_documents WHERE id = ? AND hostel_id = ?",
+        (document_id, hostel_id)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    return dict(row) if row else None
 
 
 def send_message_to_guest_now(hostel_id, guest_id, message):
@@ -2217,7 +2333,7 @@ def get_guest_profile(hostel_id, guest_id):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT id, name, phone, email, language, created_at, ai_paused
+        SELECT id, name, phone, email, language, created_at, ai_paused, date_of_birth
         FROM guests
         WHERE id = ? AND hostel_id = ?
     """, (guest_id, hostel_id))
@@ -2249,12 +2365,22 @@ def get_guest_profile(hostel_id, guest_id):
 
     opportunities = [dict(row) for row in cursor.fetchall()]
 
+    cursor.execute("""
+        SELECT id, mime_type, received_at
+        FROM guest_documents
+        WHERE hostel_id = ? AND guest_id = ?
+        ORDER BY received_at DESC
+    """, (hostel_id, guest_id))
+
+    documents = [dict(row) for row in cursor.fetchall()]
+
     conn.close()
 
     return {
         "guest": dict(guest),
         "messages": messages,
-        "opportunities": opportunities
+        "opportunities": opportunities,
+        "documents": documents
     }
 
 
