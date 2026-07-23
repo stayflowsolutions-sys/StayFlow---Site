@@ -12,6 +12,7 @@ from database import (
     find_available_beds,
     get_offerings_for_chat,
     save_guest_date_of_birth,
+    save_guest_nationality,
 )
 
 load_dotenv()
@@ -24,6 +25,9 @@ SYSTEM_PROMPT = """
 Today's date is {today_date}. Use this as your reference for anything
 relative ("tomorrow", "next week", "2 more nights", etc.) — always convert
 relative dates to actual YYYY-MM-DD dates based on it, never guess.
+
+LANGUAGE — IMPORTANT, DO NOT SWITCH MID-CONVERSATION:
+{language_instruction}
 
 You are the virtual assistant of Hostel Lagares in Mendoza.
 
@@ -50,18 +54,28 @@ Information you're gathering, in a natural order (not a strict script):
 - whether they'd like towels, extra blankets, or tour recommendations
 
 AFTER THE RESERVATION IS CREATED — HOSTEL REGISTRATION (IMPORTANT):
-Once create_reservation succeeds, the hostel also needs, for its legal
-guest registration: the guest's full legal name (as it appears on their
-ID — confirm it matches what they already told you, or ask if unsure),
-their date of birth, and a photo of their ID/passport. Ask for these
-naturally in the following messages (don't dump all three at once).
-As soon as the guest states their date of birth, call
-save_guest_date_of_birth with it. For the document photo, just ask them
-to send a photo of their ID or passport — you don't need to do anything
-else, the system automatically receives and confirms the photo on its
-own; you don't need to ask again once you've asked once, and don't
-worry if you can't tell whether it arrived — a separate confirmation
-message is sent directly to the guest when it's received.
+The moment create_reservation succeeds, treat that as the trigger to start
+the hostel's legal guest registration — this is a required checklist, not
+optional small talk, even though you still ask for it warmly and one or two
+items per message (never dump the whole list in one message). Go through
+these, in order, skipping anything you've already collected earlier in the
+conversation:
+1. Full legal name, as it appears on their ID (confirm it matches what
+   they already told you, or ask if unsure).
+2. Contact number (usually already known from WhatsApp — just confirm it's
+   fine to use, per the CONTACT NUMBER section below).
+3. Email address.
+4. Nationality. As soon as the guest states it, call save_guest_nationality
+   with it.
+5. Date of birth. As soon as the guest states it, call
+   save_guest_date_of_birth with it.
+6. A photo of their ID/passport. Just ask them to send it — you don't need
+   to do anything else, the system automatically receives and confirms the
+   photo on its own; don't ask again once you've asked once, and don't
+   worry if you can't tell whether it arrived — a separate confirmation
+   message is sent directly to the guest when it's received.
+Do not consider the conversation wrapped up (see WHEN YOU'RE DONE below)
+until you've gone through all six of these at least once.
 
 PRICING AND ROOM OPTIONS — IMPORTANT:
 Never invent a price or say a room type is available without checking first.
@@ -69,9 +83,12 @@ As soon as the guest asks about room types, prices, or what's included, call
 get_room_options to see the real categories this hostel actually has
 configured (name, price per night, capacity, description/what's included).
 Quote the real price_per_night and multiply by the number of nights to give
-the total for their stay — do the math yourself from the real numbers, never
-estimate. If a category has no price configured yet, say pricing needs to be
-confirmed by the team instead of guessing a number.
+the total for their stay. NEVER count nights yourself by subtracting dates in
+your head — that kind of date arithmetic is exactly where mistakes happen.
+The moment you know both checkin_date and checkout_date, call
+calculate_nights to get the exact number, then multiply that exact number by
+price_per_night. If a category has no price configured yet, say pricing
+needs to be confirmed by the team instead of guessing a number.
 NEVER rescale or reformat the number — if price_per_night is 20000, say
 "20.000" (or "20000"), never "200" or "R$200". Don't guess a currency
 symbol either; just state the plain number, since the hostel's actual
@@ -175,6 +192,35 @@ anything.
 
 Never invent prices or availability — always check with the tools above.
 """
+
+SAVE_GUEST_LANGUAGE_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "save_guest_language",
+        "description": (
+            "Call this once you've determined the guest's established "
+            "language for this conversation — either right after their "
+            "first message (inferred from what they wrote), or whenever "
+            "the guest explicitly asks to switch to a different language. "
+            "Do NOT call this again just because a message happens to "
+            "contain a foreign word or emoji — only when the language they "
+            "are actually conversing in changes or is first established."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "language": {
+                    "type": "string",
+                    "description": (
+                        "Short language code for the language the guest is "
+                        "conversing in, e.g. 'pt', 'en', 'es', 'fr', 'de'."
+                    )
+                }
+            },
+            "required": ["language"]
+        }
+    }
+}
 
 SAVE_GUEST_NAME_TOOL = {
     "type": "function",
@@ -288,6 +334,27 @@ RESERVATION_TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "calculate_nights",
+            "description": (
+                "Calculates the exact number of nights between a check-in and "
+                "check-out date. ALWAYS call this before telling the guest how "
+                "many nights they're booking or quoting a total price — never "
+                "count the days yourself, that kind of date arithmetic is "
+                "exactly where mistakes happen."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "checkin_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "checkout_date": {"type": "string", "description": "YYYY-MM-DD"}
+                },
+                "required": ["checkin_date", "checkout_date"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "create_reservation",
             "description": (
                 "Creates the guest's reservation as 'pending' once you have "
@@ -325,13 +392,31 @@ RESERVATION_TOOLS = [
                 "required": ["date_of_birth"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "save_guest_nationality",
+            "description": (
+                "Call this as soon as the guest states their nationality "
+                "(part of hostel registration, asked after the reservation "
+                "is created), so it can be saved to their profile."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nationality": {"type": "string"}
+                },
+                "required": ["nationality"]
+            }
+        }
     }
 ]
 
 MAX_TOOL_ROUNDS = 4
 
 
-def ask_ai(history, message, guest_phone=None, hostel_id=None):
+def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None):
     if guest_phone:
         phone_instruction = (
             f"The guest is messaging from WhatsApp number {guest_phone}. "
@@ -347,8 +432,27 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None):
             "go ahead and ask for a contact number naturally."
         )
 
+    if guest_language:
+        language_instruction = (
+            f"This guest's established language for this conversation is "
+            f"'{guest_language}'. ALWAYS reply in this language for the rest "
+            f"of the conversation. People often mix in a foreign word, "
+            f"emoji, or a place name — that is NOT a request to switch "
+            f"language, ignore it. Only switch if the guest EXPLICITLY asks "
+            f"to continue in a different language; if that happens, switch "
+            f"and call save_guest_language with the new one."
+        )
+    else:
+        language_instruction = (
+            "You don't know this guest's language yet. Infer it from the "
+            "language of their message below and call save_guest_language "
+            "with it right away — then keep replying in that same language "
+            "for the rest of the conversation, never switching on your own."
+        )
+
     system_prompt = SYSTEM_PROMPT.format(
         phone_instruction=phone_instruction,
+        language_instruction=language_instruction,
         today_date=datetime.date.today().isoformat()
     )
 
@@ -361,11 +465,12 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None):
     # As ferramentas de reserva/preco/cama precisam de hostel_id+telefone
     # reais pra saber de qual hospede/hostel se trata - sem isso (ex:
     # endpoint de teste manual sem hostel_id), elas nem aparecem pro modelo.
-    tools = [SAVE_GUEST_NAME_TOOL]
+    tools = [SAVE_GUEST_NAME_TOOL, SAVE_GUEST_LANGUAGE_TOOL]
     if hostel_id and guest_phone:
         tools = tools + RESERVATION_TOOLS
 
     extracted_name = None
+    extracted_language = None
     final_text = None
 
     for _ in range(MAX_TOOL_ROUNDS):
@@ -390,6 +495,17 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None):
 
             if name == "save_guest_name":
                 extracted_name = args.get("name")
+            elif name == "save_guest_language":
+                extracted_language = args.get("language")
+            elif name == "calculate_nights":
+                try:
+                    nights = (
+                        datetime.date.fromisoformat(args.get("checkout_date"))
+                        - datetime.date.fromisoformat(args.get("checkin_date"))
+                    ).days
+                    tool_content = json.dumps({"nights": nights}, ensure_ascii=False)
+                except (ValueError, TypeError):
+                    tool_content = json.dumps({"error": "Datas invalidas."}, ensure_ascii=False)
             elif name == "extend_reservation":
                 try:
                     result = attempt_extend_reservation(
@@ -440,6 +556,8 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None):
                     tool_content = json.dumps({"error": str(error)}, ensure_ascii=False)
             elif name == "save_guest_date_of_birth":
                 save_guest_date_of_birth(hostel_id, guest_phone, args.get("date_of_birth"))
+            elif name == "save_guest_nationality":
+                save_guest_nationality(hostel_id, guest_phone, args.get("nationality"))
 
             messages.append({
                 "role": "tool",
@@ -448,6 +566,15 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None):
             })
 
     if final_text is None:
-        final_text = "Deixa eu confirmar isso com a equipe e já te retorno, tá bom?"
+        fallback_by_language = {
+            "pt": "Deixa eu confirmar isso com a equipe e já te retorno, tá bom?",
+            "en": "Let me confirm that with the team and I'll get back to you shortly.",
+            "es": "Déjame confirmar eso con el equipo y te aviso enseguida.",
+            "fr": "Laissez-moi confirmer ça avec l'équipe, je reviens vers vous très vite.",
+            "de": "Lassen Sie mich das mit dem Team klären, ich melde mich gleich bei Ihnen.",
+        }
+        final_text = fallback_by_language.get(
+            guest_language or extracted_language, fallback_by_language["pt"]
+        )
 
-    return final_text, extracted_name
+    return final_text, extracted_name, extracted_language

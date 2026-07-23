@@ -382,6 +382,10 @@ def create_database():
     # com o documento) - texto livre em formato AAAA-MM-DD.
     add_column_if_not_exists(cursor, "guests", "date_of_birth", "TEXT")
 
+    # Nacionalidade, coletada no mesmo registro pos-reserva (nome legal,
+    # data de nascimento, documento, nacionalidade) - texto livre.
+    add_column_if_not_exists(cursor, "guests", "nationality", "TEXT")
+
     # se for um banco antigo (criado antes do multi-tenant), migra
     if _guests_table_needs_migration(cursor):
         _migrate_guests_to_composite_unique(cursor)
@@ -874,6 +878,51 @@ def save_guest_date_of_birth(hostel_id, phone, date_of_birth):
     cursor.execute(
         "UPDATE guests SET date_of_birth = ? WHERE hostel_id = ? AND phone = ?",
         (date_of_birth, hostel_id, phone)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def save_guest_nationality(hostel_id, phone, nationality):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE guests SET nationality = ? WHERE hostel_id = ? AND phone = ?",
+        (nationality, hostel_id, phone)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def get_guest_language(hostel_id, phone):
+    """
+    Idioma ja confirmado numa mensagem anterior desse hospede, se houver -
+    usado pra reforcar no prompt da IA de atendimento que o idioma ja
+    estabelecido nao deve mudar sozinho no meio da conversa.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT language FROM guests WHERE hostel_id = ? AND phone = ?",
+        (hostel_id, phone)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    return row["language"] if row and row["language"] else None
+
+
+def update_guest_language(hostel_id, phone, language):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE guests SET language = ? WHERE hostel_id = ? AND phone = ?",
+        (language, hostel_id, phone)
     )
 
     conn.commit()
@@ -2376,7 +2425,7 @@ def get_guest_profile(hostel_id, guest_id):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT id, name, phone, email, language, created_at, ai_paused, date_of_birth
+        SELECT id, name, phone, email, language, created_at, ai_paused, date_of_birth, nationality
         FROM guests
         WHERE id = ? AND hostel_id = ?
     """, (guest_id, hostel_id))
@@ -3059,8 +3108,13 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
     existing = cursor.fetchone()
 
     if existing:
+        nights = 0
+        try:
+            nights = (datetime.date.fromisoformat(checkout_date) - datetime.date.fromisoformat(checkin_date)).days
+        except (ValueError, TypeError):
+            pass
         conn.close()
-        return {"reservation_id": existing["id"], "already_existed": True}
+        return {"reservation_id": existing["id"], "already_existed": True, "nights": nights}
 
     cursor.execute(
         "SELECT price_per_night FROM room_categories WHERE hostel_id = ? AND name = ?",
@@ -3100,12 +3154,13 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
         raise ValueError("Essa cama nao esta mais disponivel pras datas pedidas - escolha outra.")
 
     amount = 0
+    nights = 0
+    try:
+        nights = max((datetime.date.fromisoformat(checkout_date) - datetime.date.fromisoformat(checkin_date)).days, 0)
+    except (ValueError, TypeError):
+        nights = 0
     if category_row and category_row["price_per_night"]:
-        try:
-            nights = (datetime.date.fromisoformat(checkout_date) - datetime.date.fromisoformat(checkin_date)).days
-            amount = round(category_row["price_per_night"] * max(nights, 0), 2)
-        except (ValueError, TypeError):
-            amount = 0
+        amount = round(category_row["price_per_night"] * nights, 2)
 
     reservation_id = create_reservation_record(
         hostel_id,
@@ -3125,7 +3180,13 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
     conn.commit()
     conn.close()
 
-    return {"reservation_id": reservation_id, "already_existed": False, "amount": amount}
+    return {
+        "reservation_id": reservation_id,
+        "already_existed": False,
+        "nights": nights,
+        "price_per_night": category_row["price_per_night"] if category_row else None,
+        "amount": amount,
+    }
 
 
 def update_reservation_status_record(hostel_id, reservation_id, status):
