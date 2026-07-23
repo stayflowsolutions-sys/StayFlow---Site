@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.9.0
+\*\*Versão:\*\* 1.9.1
 
 
 
@@ -59,6 +59,8 @@
 | 1.8.0 | 23/07/2026 | Oficial | Correção de bug crítico de produção: servidor Flask sem `threaded=True` travava o site inteiro durante qualquer chamada real à IA (descoberto pelo usuário testando em produção). Reserva automática via WhatsApp: a IA de atendimento cria a reserva sozinha (status pending) com valor sempre calculado a partir do preço real configurado, nunca inventado. Hóspede agora pode ver preço real e escolher cama específica (cima/baixo do beliche) pelo WhatsApp antes de reservar, com disponibilidade futura calculada por sobreposição de datas. Mapa de Quartos expandido de 3 para 5 estados visuais (livre/ocupada/limpeza/reservada/manutenção). Equipe pode assumir uma conversa específica (pausando a resposta automática só daquele hóspede) e devolver depois; caixa de envio manual do Chat, que sempre foi simulada, agora envia mensagem real pelo WhatsApp Business. Lista de limpeza do Mapa de Quartos espelhada na caixa de tarefas de Operações. |
 
 | 1.9.0 | 23/07/2026 | Oficial | Correção de série de bugs reais encontrados pelo usuário testando em produção: renderização do beliche (era 2 quadrados, virou 1 cama dividida ao meio, formato retangular), tecla Enter do chat ainda chamando o envio simulado antigo, sino de alertas nunca zerando, IA de reserva confundindo nome de modalidade com nome de quarto (causava falso "sem disponibilidade"), IA atrasando a criação da reserva esperando dados extras, IA reescalando o preço ao falar com o hóspede (a reserva em si sempre foi gravada com valor correto). Preparação de servidor de produção: `Procfile` com `gunicorn` (já estava nas dependências, nunca ativado) — pendente o usuário atualizar o Start Command no painel do Render. |
+
+| 1.9.1 | 23/07/2026 | Oficial | Confirmado que o Render já usava `gunicorn app:app` (sem workers/threads configurados, mesmo efeito prático do problema de travamento); Start Command atualizado pelo usuário. Corrigido bug real de CSS achado testando ao vivo: painel do Ask StayFlow sendo sobreposto pelo cabeçalho (z-index) e caixa de digitação "sumindo" conforme a conversa crescia (armadilha de flexbox sem `min-height:0`/`overflow-y`). Mapa de Quartos ganhou edição de nome e exclusão de cama (bloqueada se a cama estiver ocupada). |
 
 
 

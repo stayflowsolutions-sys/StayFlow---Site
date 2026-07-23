@@ -1701,3 +1701,36 @@ documento) durante a reserva pelo WhatsApp — requer lidar com
 mensagens de mídia no webhook do WhatsApp, que hoje só processa texto;
 não implementado ainda, precisa de decisão sobre onde armazenar as
 fotos antes de começar.
+
+### Quarta rodada da Sessão 8 (mesma data) — testando em produção de verdade, mais bugs reais
+
+**Descoberta importante sobre o servidor**: o usuário mostrou que o
+Start Command do Render já era `gunicorn app:app` (não o servidor de
+desenvolvimento do Flask, como eu tinha suposto antes). O diagnóstico
+mudou, mas a correção continuou a mesma: `gunicorn app:app` sozinho,
+sem `--workers`/`--threads`, usa 1 processo único por padrão — mesmo
+efeito prático de travar tudo durante uma chamada lenta à IA. Start
+Command atualizado manualmente pelo usuário pra
+`gunicorn app:app --workers 3 --threads 4 --timeout 120`.
+
+**Duas camas cadastradas com o mesmo nome "Cama 1"** (uma beliche de
+cima, outra de baixo) confundiram a IA numa conversa real — não é bug
+de código, é qualidade de dado cadastrado; anotado como lembrete de
+usar nomes distintos ao criar beliches.
+
+**Bug real de CSS, achado testando ao vivo**: o painel do Ask StayFlow
+ficava com o cabeçalho (seletor de hostel, sino, avatar) renderizado
+por cima dele, e depois de acumular mensagens a caixa de digitação
+"sumia". Duas causas raiz distintas, ambas corrigidas:
+- `.topbar` tinha `z-index:50`, maior que o `.ask-panel` (`z-index:40`)
+  — corrigido pra 55/56, entre o topbar e os modais genéricos (60/65).
+- `.ask-body` (flex:1 dentro de `.ask-panel`, que é flex-column) não
+  tinha `min-height:0` nem `overflow-y` — armadilha clássica de
+  flexbox: sem isso, o item flex cresce pra caber todo o conteúdo em
+  vez de rolar, empurrando a `.ask-input` pra fora da tela conforme a
+  conversa cresce. Corrigido com `min-height:0` + `overflow-y:auto`.
+
+**Mapa de Quartos ganhou editar/excluir cama**: `update_bed_label`
+(novo) e `delete_bed` (já existia, agora bloqueia exclusão de cama
+ocupada — pede check-out antes) expostos na UI via botões no painel
+de ação de qualquer cama, em qualquer status.
