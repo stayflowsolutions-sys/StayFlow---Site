@@ -4,10 +4,12 @@ from database import (
     create_room_category,
     list_room_categories,
     delete_room_category,
+    update_room_category,
     create_room,
     create_rooms_bulk,
     list_rooms,
     delete_room,
+    update_room,
     create_bed,
     delete_bed,
     update_bed_label,
@@ -58,6 +60,21 @@ def create_room_category_route(hostel_id):
     return jsonify({"success": True, "id": category_id}), 201
 
 
+@rooms_bp.route("/room-categories/<int:category_id>", methods=["PATCH"])
+@require_permission("operations")
+def update_room_category_route(hostel_id, category_id):
+    data = request.get_json() or {}
+    try:
+        update_room_category(
+            hostel_id, category_id,
+            name=data.get("name"), capacity=data.get("capacity"),
+            price_per_night=data.get("price_per_night"), description=data.get("description"),
+        )
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+    return jsonify({"success": True})
+
+
 @rooms_bp.route("/room-categories/<int:category_id>", methods=["DELETE"])
 @require_permission("operations")
 def delete_room_category_route(hostel_id, category_id):
@@ -94,6 +111,17 @@ def create_rooms_bulk_route(hostel_id):
     except ValueError as error:
         return jsonify({"success": False, "message": str(error)}), 400
     return jsonify({"success": True, "ids": room_ids, "count": len(room_ids)}), 201
+
+
+@rooms_bp.route("/rooms/<int:room_id>", methods=["PATCH"])
+@require_permission("operations")
+def update_room_route(hostel_id, room_id):
+    data = request.get_json() or {}
+    try:
+        update_room(hostel_id, room_id, name=data.get("name"), category_name=data.get("category_name"), floor=data.get("floor"))
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+    return jsonify({"success": True})
 
 
 @rooms_bp.route("/rooms/<int:room_id>", methods=["DELETE"])

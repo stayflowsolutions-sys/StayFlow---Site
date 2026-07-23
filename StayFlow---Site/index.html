@@ -27,11 +27,13 @@
 
     <div class="nav-actions">
       <div class="lang-select" id="langSelect">
-        <button class="lang-current" id="langCurrent" type="button" aria-label="Language">EN</button>
+        <button class="lang-current" id="langCurrent" type="button" aria-label="Language" data-lang-current>EN</button>
         <div class="lang-menu" id="langMenu">
           <button class="lang-option" type="button" data-lang="en">EN</button>
           <button class="lang-option" type="button" data-lang="pt">PT</button>
           <button class="lang-option" type="button" data-lang="es">ES</button>
+          <button class="lang-option" type="button" data-lang="fr">FR</button>
+          <button class="lang-option" type="button" data-lang="de">DE</button>
         </div>
       </div>
       <a class="login-btn" href="Login.html" data-route="Login.html" data-i18n="nav.login">Client Login</a>
@@ -150,296 +152,23 @@
   <img src="assets/images/logo2.png" alt="StayFlow">
 </a>
 
+<script src="assets/js/i18n-core.js"></script>
+<script src="assets/js/i18n-landing-data.js"></script>
 <script>
-const translations={
-  en:{
-    "nav.features":"Features",
-    "nav.platform":"Platform",
-    "nav.how":"How it works",
-    "nav.future":"Future",
-    "nav.login":"Client Login",
-    "nav.demo":"Free trial",
-
-    "hero.eyebrow":"AI active for hospitality operations",
-    "hero.title":"More bookings.<br><span class=\"gradient-text\">Less work.</span>",
-    "hero.text":"StayFlow is an <strong>AI Digital Manager</strong> for hostels, hotels and pousadas. It helps your team answer guests, detect booking opportunities, reduce manual work and turn daily conversations into revenue.",
-
-    "cta.demo":"Free trial →",
-    "cta.dashboard":"View Dashboard",
-    "trust.whatsapp":"WhatsApp-first workflow",
-    "trust.ai":"AI recommendations",
-    "trust.independent":"Built for independent hospitality",
-
-    "mock.live":"Live demo",
-    "metric.operationHealth":"Operation health",
-    "metric.reservations":"Reservations tracked",
-    "metric.revenue":"Probable revenue today",
-    "metric.humanReplies":"Human replies needed",
-    "mock.recommendation":"StayFlow recommendation",
-    "mock.recommendationText":"John is ready to book. He asked for price, dates and payment method. Recommended action: confirm price and close the reservation now.",
-    "mock.signals":"Operational signals",
-    "signal.hot":"Hot lead",
-    "signal.tour":"Tour upsell",
-    "signal.room":"Needs release",
-    "signal.follow":"Follow-up",
-
-    "features.kicker":"Core features",
-    "features.title":"One intelligent layer over your daily operation.",
-    "features.text":"StayFlow is not just a chatbot. It is a command center designed to help hospitality teams see what matters and act faster.",
-    "card.inbox.title":"Smart Inbox",
-    "card.inbox.text":"Centralize guest conversations, understand urgency and let AI handle repetitive questions while your team focuses on what really needs attention.",
-    "card.reservation.title":"Reservation Flow",
-    "card.reservation.text":"Track booking intent, guest information, dates, rooms and pending confirmations so promising conversations do not get lost.",
-    "card.opp.title":"Opportunity Center",
-    "card.opp.text":"Detect hot leads, abandoned conversations, upsells, tours, late check-out opportunities and revenue that can still be captured today.",
-
-    "platform.kicker":"Platform",
-    "platform.title":"Your AI cockpit for hospitality.",
-    "platform.text":"The dashboard turns the operation into clear decisions: what happened, what needs attention and where money can be made.",
-    "platform.panel.title":"Designed for managers, owners and reception teams.",
-    "platform.panel.text":"StayFlow gives the business a living operational view instead of a static admin panel. Every module is connected to decisions, not just data.",
-    "platform.check1":"AI alerts before problems grow",
-    "platform.check2":"Guest profiles and conversation context",
-    "platform.check3":"Revenue suggestions inside the workflow",
-    "platform.ops.title":"Less operational chaos",
-    "platform.ops.text":"Spot pending replies, check-ins, room releases and risky situations before they become guest problems.",
-    "platform.money.title":"More revenue moments",
-    "platform.money.text":"Turn conversations into direct bookings, upgrades, tours, late check-out and other extra revenue opportunities.",
-
-    "how.kicker":"How it works",
-    "how.title":"Start simple. Sell faster. Operate smarter.",
-    "how.text":"StayFlow is designed to start as a revenue-focused AI layer and evolve into your complete digital manager.",
-    "how.step1.title":"Connect conversations",
-    "how.step1.text":"Centralize direct guest communication and keep context attached to every guest and reservation opportunity.",
-    "how.step2.title":"Let AI identify what matters",
-    "how.step2.text":"The system detects booking intent, questions, risk, upsells and moments that need human attention.",
-    "how.step3.title":"Act from the cockpit",
-    "how.step3.text":"Your team sees priorities, opens the right module and acts before revenue or service quality is lost.",
-
-    "future.kicker":"Roadmap",
-    "future.title":"Built to become the operating system of your property.",
-    "future.text":"StayFlow starts with conversations and revenue, then expands into a full AI operations layer for hospitality.",
-    "future.pms.title":"PMS connection",
-    "future.pms.text":"Connect StayFlow with reservation systems to sync real bookings, availability and guest data.",
-    "future.channels.title":"Channels",
-    "future.channels.text":"Organize WhatsApp communication, direct website leads, social channels and future booking platforms.",
-    "future.ai.title":"AI Assistant",
-    "future.ai.text":"Multilingual support that helps guests, reception and managers make faster decisions 24/7.",
-
-    "final.title":"Ready to turn guest conversations into revenue?",
-    "final.text":"Book a demo and see how StayFlow can help your hostel or hotel answer faster, sell more and operate with less chaos.",
-    "footer.brand":"StayFlow — AI Digital Manager for Hospitality",
-    "footer.rights":"© 2026 StayFlow. All rights reserved."
-  },
-
-  pt:{
-    "nav.features":"Recursos",
-    "nav.platform":"Plataforma",
-    "nav.how":"Como funciona",
-    "nav.future":"Futuro",
-    "nav.login":"Login do Cliente",
-    "nav.demo":"Teste grátis",
-
-    "hero.eyebrow":"IA ativa para operações de hotelaria",
-    "hero.title":"Mais reservas.<br><span class=\"gradient-text\">Menos trabalho.</span>",
-    "hero.text":"A StayFlow é um <strong>Gerente Digital com IA</strong> para hostels, hotéis e pousadas. Ela ajuda sua equipe a responder hóspedes, identificar oportunidades de reserva, reduzir trabalho manual e transformar conversas diárias em receita.",
-
-    "cta.demo":"Teste grátis →",
-    "cta.dashboard":"Ver Dashboard",
-    "trust.whatsapp":"Fluxo pensado para WhatsApp",
-    "trust.ai":"Recomendações da IA",
-    "trust.independent":"Criado para hotelaria independente",
-
-    "mock.live":"Demo ao vivo",
-    "metric.operationHealth":"Saúde da operação",
-    "metric.reservations":"Reservas acompanhadas",
-    "metric.revenue":"Receita provável hoje",
-    "metric.humanReplies":"Respostas humanas necessárias",
-    "mock.recommendation":"Recomendação da StayFlow",
-    "mock.recommendationText":"John está pronto para reservar. Ele perguntou preço, datas e forma de pagamento. Ação recomendada: confirmar o preço e fechar a reserva agora.",
-    "mock.signals":"Sinais operacionais",
-    "signal.hot":"Lead quente",
-    "signal.tour":"Upsell de passeio",
-    "signal.room":"Precisa liberar",
-    "signal.follow":"Follow-up",
-
-    "features.kicker":"Recursos principais",
-    "features.title":"Uma camada inteligente sobre sua operação diária.",
-    "features.text":"A StayFlow não é apenas um chatbot. É um centro de comando criado para ajudar equipes de hotelaria a enxergar o que importa e agir mais rápido.",
-    "card.inbox.title":"Inbox inteligente",
-    "card.inbox.text":"Centralize conversas com hóspedes, entenda urgência e deixe a IA cuidar das perguntas repetitivas enquanto sua equipe foca no que realmente precisa de atenção.",
-    "card.reservation.title":"Fluxo de reservas",
-    "card.reservation.text":"Acompanhe intenção de reserva, dados do hóspede, datas, quartos e confirmações pendentes para que nenhuma conversa promissora se perca.",
-    "card.opp.title":"Central de oportunidades",
-    "card.opp.text":"Detecte leads quentes, conversas abandonadas, upsells, passeios, late check-out e receitas que ainda podem ser capturadas hoje.",
-
-    "platform.kicker":"Plataforma",
-    "platform.title":"Seu cockpit de IA para hotelaria.",
-    "platform.text":"O dashboard transforma a operação em decisões claras: o que aconteceu, o que precisa de atenção e onde existe dinheiro para ganhar.",
-    "platform.panel.title":"Criado para gerentes, donos e equipes de recepção.",
-    "platform.panel.text":"A StayFlow entrega uma visão operacional viva em vez de um painel administrativo estático. Cada módulo é conectado a decisões, não apenas a dados.",
-    "platform.check1":"Alertas de IA antes dos problemas crescerem",
-    "platform.check2":"Perfis de hóspedes e contexto das conversas",
-    "platform.check3":"Sugestões de receita dentro do fluxo de trabalho",
-    "platform.ops.title":"Menos caos operacional",
-    "platform.ops.text":"Veja respostas pendentes, check-ins, liberação de quartos e situações de risco antes que virem problemas para hóspedes.",
-    "platform.money.title":"Mais momentos de receita",
-    "platform.money.text":"Transforme conversas em reservas diretas, upgrades, passeios, late check-out e outras oportunidades de receita extra.",
-
-    "how.kicker":"Como funciona",
-    "how.title":"Comece simples. Venda mais rápido. Opere melhor.",
-    "how.text":"A StayFlow começa como uma camada de IA focada em receita e evolui para seu gerente digital completo.",
-    "how.step1.title":"Conecte conversas",
-    "how.step1.text":"Centralize a comunicação direta com hóspedes e mantenha o contexto ligado a cada hóspede e oportunidade de reserva.",
-    "how.step2.title":"Deixe a IA identificar o que importa",
-    "how.step2.text":"O sistema detecta intenção de reserva, dúvidas, riscos, upsells e momentos que precisam de atenção humana.",
-    "how.step3.title":"Aja pelo cockpit",
-    "how.step3.text":"Sua equipe vê prioridades, abre o módulo certo e age antes de perder receita ou qualidade de atendimento.",
-
-    "future.kicker":"Roadmap",
-    "future.title":"Construída para se tornar o sistema operacional da sua propriedade.",
-    "future.text":"A StayFlow começa com conversas e receita, depois se expande para uma camada operacional completa com IA para hotelaria.",
-    "future.pms.title":"Conexão com PMS",
-    "future.pms.text":"Conecte a StayFlow a sistemas de reserva para sincronizar reservas reais, disponibilidade e dados de hóspedes.",
-    "future.channels.title":"Canais",
-    "future.channels.text":"Organize comunicação do WhatsApp, leads diretos do site, redes sociais e futuras plataformas de reserva.",
-    "future.ai.title":"Assistente de IA",
-    "future.ai.text":"Suporte multilíngue que ajuda hóspedes, recepção e gerentes a tomar decisões mais rápidas 24/7.",
-
-    "final.title":"Pronto para transformar conversas em receita?",
-    "final.text":"Agende uma demo e veja como a StayFlow pode ajudar seu hostel ou hotel a responder mais rápido, vender mais e operar com menos caos.",
-    "footer.brand":"StayFlow — Gerente Digital com IA para Hotelaria",
-    "footer.rights":"© 2026 StayFlow. Todos os direitos reservados."
-  },
-
-  es:{
-    "nav.features":"Funciones",
-    "nav.platform":"Plataforma",
-    "nav.how":"Cómo funciona",
-    "nav.future":"Futuro",
-    "nav.login":"Login del Cliente",
-    "nav.demo":"Teste grátis",
-
-    "hero.eyebrow":"IA activa para operaciones hoteleras",
-    "hero.title":"Más reservas.<br><span class=\"gradient-text\">Menos trabajo.</span>",
-    "hero.text":"StayFlow es un <strong>Gerente Digital con IA</strong> para hostels, hoteles y posadas. Ayuda a tu equipo a responder huéspedes, detectar oportunidades de reserva, reducir trabajo manual y transformar conversaciones diarias en ingresos.",
-
-    "cta.demo":"Teste grátis →",
-    "cta.dashboard":"Ver Dashboard",
-    "trust.whatsapp":"Flujo pensado para WhatsApp",
-    "trust.ai":"Recomendaciones de IA",
-    "trust.independent":"Creado para hotelería independiente",
-
-    "mock.live":"Demo en vivo",
-    "metric.operationHealth":"Salud de la operación",
-    "metric.reservations":"Reservas monitoreadas",
-    "metric.revenue":"Ingreso probable hoy",
-    "metric.humanReplies":"Respuestas humanas necesarias",
-    "mock.recommendation":"Recomendación de StayFlow",
-    "mock.recommendationText":"John está listo para reservar. Preguntó precio, fechas y forma de pago. Acción recomendada: confirmar el precio y cerrar la reserva ahora.",
-    "mock.signals":"Señales operativas",
-    "signal.hot":"Lead caliente",
-    "signal.tour":"Upsell de tour",
-    "signal.room":"Necesita liberación",
-    "signal.follow":"Follow-up",
-
-    "features.kicker":"Funciones principales",
-    "features.title":"Una capa inteligente sobre tu operación diaria.",
-    "features.text":"StayFlow no es solo un chatbot. Es un centro de comando diseñado para ayudar a equipos de hotelería a ver lo importante y actuar más rápido.",
-    "card.inbox.title":"Inbox inteligente",
-    "card.inbox.text":"Centraliza conversaciones con huéspedes, entiende la urgencia y deja que la IA responda preguntas repetitivas mientras tu equipo se enfoca en lo importante.",
-    "card.reservation.title":"Flujo de reservas",
-    "card.reservation.text":"Monitorea intención de reserva, datos del huésped, fechas, habitaciones y confirmaciones pendientes para que no se pierdan conversaciones prometedoras.",
-    "card.opp.title":"Centro de oportunidades",
-    "card.opp.text":"Detecta leads calientes, conversaciones abandonadas, upsells, tours, late check-out e ingresos que todavía puedes capturar hoy.",
-
-    "platform.kicker":"Plataforma",
-    "platform.title":"Tu cockpit de IA para hotelería.",
-    "platform.text":"El dashboard transforma la operación en decisiones claras: qué pasó, qué necesita atención y dónde hay dinero para ganar.",
-    "platform.panel.title":"Diseñado para gerentes, dueños y equipos de recepción.",
-    "platform.panel.text":"StayFlow entrega una visión operativa viva en lugar de un panel administrativo estático. Cada módulo está conectado a decisiones, no solo a datos.",
-    "platform.check1":"Alertas de IA antes de que crezcan los problemas",
-    "platform.check2":"Perfiles de huéspedes y contexto de conversaciones",
-    "platform.check3":"Sugerencias de ingresos dentro del flujo de trabajo",
-    "platform.ops.title":"Menos caos operativo",
-    "platform.ops.text":"Detecta respuestas pendientes, check-ins, liberación de habitaciones y situaciones de riesgo antes de que afecten al huésped.",
-    "platform.money.title":"Más momentos de ingreso",
-    "platform.money.text":"Transforma conversaciones en reservas directas, upgrades, tours, late check-out y otras oportunidades de ingreso extra.",
-
-    "how.kicker":"Cómo funciona",
-    "how.title":"Empieza simple. Vende más rápido. Opera mejor.",
-    "how.text":"StayFlow está diseñado para empezar como una capa de IA enfocada en ingresos y evolucionar hacia tu gerente digital completo.",
-    "how.step1.title":"Conecta conversaciones",
-    "how.step1.text":"Centraliza la comunicación directa con huéspedes y mantiene el contexto unido a cada huésped y oportunidad de reserva.",
-    "how.step2.title":"Deja que la IA identifique lo importante",
-    "how.step2.text":"El sistema detecta intención de reserva, preguntas, riesgos, upsells y momentos que necesitan atención humana.",
-    "how.step3.title":"Actúa desde el cockpit",
-    "how.step3.text":"Tu equipo ve prioridades, abre el módulo correcto y actúa antes de perder ingresos o calidad de servicio.",
-
-    "future.kicker":"Roadmap",
-    "future.title":"Diseñada para convertirse en el sistema operativo de tu propiedad.",
-    "future.text":"StayFlow comienza con conversaciones e ingresos, luego se expande hacia una capa operativa completa de IA para hotelería.",
-    "future.pms.title":"Conexión con PMS",
-    "future.pms.text":"Conecta StayFlow con sistemas de reserva para sincronizar reservas reales, disponibilidad y datos de huéspedes.",
-    "future.channels.title":"Canales",
-    "future.channels.text":"Organiza comunicación de WhatsApp, leads directos del sitio, redes sociales y futuras plataformas de reserva.",
-    "future.ai.title":"Asistente de IA",
-    "future.ai.text":"Soporte multilingüe que ayuda a huéspedes, recepción y gerentes a tomar decisiones más rápidas 24/7.",
-
-    "final.title":"¿Listo para transformar conversaciones en ingresos?",
-    "final.text":"Agenda una demo y mira cómo StayFlow puede ayudar a tu hostel u hotel a responder más rápido, vender más y operar con menos caos.",
-    "footer.brand":"StayFlow — Gerente Digital con IA para Hotelería",
-    "footer.rights":"© 2026 StayFlow. Todos los derechos reservados."
-  }
+// Dicionario (STAYFLOW_LANDING_I18N) e motor compartilhado (StayFlowI18n)
+// vem dos scripts incluidos acima - so a logica especifica desta pagina
+// (titulo do documento por idioma) fica aqui.
+const LANDING_TITLES={
+  en:'StayFlow | More bookings. Less work.',
+  pt:'StayFlow | Mais reservas. Menos trabalho.',
+  es:'StayFlow | Más reservas. Menos trabajo.',
+  fr:'StayFlow | Plus de réservations. Moins de travail.',
+  de:'StayFlow | Mehr Buchungen. Weniger Arbeit.'
 };
 
-function getInitialLang(){
-  const urlLang=new URLSearchParams(window.location.search).get('lang');
-  if(['en','pt','es'].includes(urlLang)) return urlLang;
-  const saved=localStorage.getItem('stayflow_lang');
-  if(['en','pt','es'].includes(saved)) return saved;
-  const browser=(navigator.language||navigator.userLanguage||'en').toLowerCase();
-  if(browser.startsWith('pt')) return 'pt';
-  if(browser.startsWith('es')) return 'es';
-  return 'en';
-}
-
 function applyLanguage(lang){
-  const safeLang=['en','pt','es'].includes(lang)?lang:'en';
-  const dict=translations[safeLang]||translations.en;
-
-  document.documentElement.lang=safeLang;
-  localStorage.setItem('stayflow_lang',safeLang);
-
-  if(safeLang==='pt'){
-    document.title='StayFlow | Mais reservas. Menos trabalho.';
-  }else if(safeLang==='es'){
-    document.title='StayFlow | Más reservas. Menos trabajo.';
-  }else{
-    document.title='StayFlow | More bookings. Less work.';
-  }
-
-  document.querySelectorAll('[data-i18n]').forEach(el=>{
-    const key=el.getAttribute('data-i18n');
-    if(dict[key]) el.textContent=dict[key];
-  });
-
-  document.querySelectorAll('[data-i18n-html]').forEach(el=>{
-    const key=el.getAttribute('data-i18n-html');
-    if(dict[key]) el.innerHTML=dict[key];
-  });
-
-  document.querySelectorAll('.lang-option').forEach(btn=>{
-    btn.classList.toggle('active',btn.dataset.lang===safeLang);
-  });
-
-  const current=document.getElementById('langCurrent');
-  if(current) current.textContent=safeLang.toUpperCase();
-
-  document.querySelectorAll('[data-route]').forEach(link=>{
-    const base=link.getAttribute('data-route');
-    if(base) link.setAttribute('href',`${base}?lang=${safeLang}`);
-  });
+  const safeLang=StayFlowI18n.applyTranslations(STAYFLOW_LANDING_I18N, lang);
+  document.title=LANDING_TITLES[safeLang]||LANDING_TITLES.en;
 }
 
 const langSelect=document.getElementById('langSelect');
@@ -463,7 +192,7 @@ document.addEventListener('click',()=>{
   if(langSelect) langSelect.classList.remove('open');
 });
 
-applyLanguage(getInitialLang());
+applyLanguage(StayFlowI18n.getInitialLang());
 </script>
 </body>
 </html>

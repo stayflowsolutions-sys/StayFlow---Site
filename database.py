@@ -4015,25 +4015,97 @@ def delete_bed(hostel_id, bed_id):
     conn.close()
 
 
-def update_bed_label(hostel_id, bed_id, label):
-    label = (label or "").strip()
-    if not label:
-        raise ValueError("O nome da cama e obrigatorio.")
+def update_bed_label(hostel_id, bed_id, label=None, bed_kind=None, bunk_group=None):
+    """
+    label so muda o nome. bed_kind/bunk_group, quando passados, mudam se a
+    cama e solteiro ou parte de um beliche (e com qual par) - pensado pra
+    corrigir cadastro (ex: cama criada como solteiro que na verdade e a
+    metade de baixo de um beliche), sem precisar excluir e recriar.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
 
+    cursor.execute("SELECT label, bed_kind, bunk_group FROM beds WHERE id = ? AND hostel_id = ?", (bed_id, hostel_id))
+    bed = cursor.fetchone()
+    if not bed:
+        conn.close()
+        raise ValueError("Cama nao encontrada.")
+
+    new_label = (label.strip() if label else "") or bed["label"]
+    new_bed_kind = bed_kind if bed_kind is not None else bed["bed_kind"]
+    new_bunk_group = bunk_group if bunk_group is not None else bed["bunk_group"]
+
+    if new_bed_kind not in VALID_BED_KINDS:
+        conn.close()
+        raise ValueError(f"Tipo de cama invalido: {new_bed_kind}.")
+    if new_bed_kind in ("bunk_top", "bunk_bottom") and not new_bunk_group:
+        conn.close()
+        raise ValueError("Camas de beliche precisam de um grupo pra parear a de cima com a de baixo.")
+    if new_bed_kind == "single":
+        new_bunk_group = None
+
+    cursor.execute(
+        "UPDATE beds SET label = ?, bed_kind = ?, bunk_group = ? WHERE id = ? AND hostel_id = ?",
+        (new_label, new_bed_kind, new_bunk_group, bed_id, hostel_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def update_room(hostel_id, room_id, name=None, category_name=None, floor=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT name, floor, category_id FROM rooms WHERE id = ? AND hostel_id = ?", (room_id, hostel_id))
+    room = cursor.fetchone()
+    if not room:
+        conn.close()
+        raise ValueError("Quarto nao encontrado.")
+
+    new_name = (name.strip() if name else "") or room["name"]
+    new_floor = (floor.strip() or None) if floor is not None else room["floor"]
+    new_category_id = _resolve_category_id(hostel_id, category_name) if category_name is not None else room["category_id"]
+
+    cursor.execute(
+        "UPDATE rooms SET name = ?, category_id = ?, floor = ? WHERE id = ? AND hostel_id = ?",
+        (new_name, new_category_id, new_floor, room_id, hostel_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def update_room_category(hostel_id, category_id, name=None, capacity=None, price_per_night=None, description=None):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute(
-        "UPDATE beds SET label = ? WHERE id = ? AND hostel_id = ?",
-        (label, bed_id, hostel_id)
+        "SELECT name, capacity, price_per_night, description FROM room_categories WHERE id = ? AND hostel_id = ?",
+        (category_id, hostel_id)
     )
+    category = cursor.fetchone()
+    if not category:
+        conn.close()
+        raise ValueError("Modalidade nao encontrada.")
 
-    updated = cursor.rowcount > 0
-    conn.commit()
+    new_name = (name.strip() if name else "") or category["name"]
+    new_capacity = int(capacity) if capacity not in (None, "") else None
+    new_price = float(price_per_night) if price_per_night not in (None, "") else None
+    new_description = (description or "").strip() or None
+
+    try:
+        cursor.execute(
+            "UPDATE room_categories SET name = ?, capacity = ?, price_per_night = ?, description = ? WHERE id = ? AND hostel_id = ?",
+            (new_name, new_capacity, new_price, new_description, category_id, hostel_id)
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        conn.close()
+        raise ValueError(f"Ja existe uma modalidade chamada '{new_name}' neste hostel.")
+
     conn.close()
-
-    if not updated:
-        raise ValueError("Cama nao encontrada.")
 
 
 def get_bed_map(hostel_id):

@@ -34,6 +34,20 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
+// Atalho pra traduzir strings montadas em JS (fallback = texto em
+// portugues, usado se a chave nao existir ou o motor de i18n ainda nao
+// tiver carregado). ph, quando passado, e um dict de {token: valor} pra
+// substituir placeholders "{token}" dentro do texto ja traduzido.
+function T(key, fallback, ph){
+  let text = window.StayFlowI18n
+    ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, StayFlowI18n.currentLang(), key, fallback)
+    : fallback;
+  if(ph){
+    Object.keys(ph).forEach(token => { text = text.replace(`{${token}}`, ph[token]); });
+  }
+  return text;
+}
+
 function openTeamPanel() {
   document.getElementById("teamOverlay").classList.add("open");
   document.getElementById("teamPanel").classList.add("open");
@@ -62,19 +76,19 @@ function switchTeamTab(tab){
 
 async function loadTeamList() {
   const container = document.getElementById("teamListContainer");
-  container.innerHTML = "<p style='color:var(--muted)'>Carregando...</p>";
+  container.innerHTML = `<p style='color:var(--muted)'>${T('common.loading', 'Carregando...')}</p>`;
 
   try {
     const res = await fetch("/team", { credentials: "same-origin" });
     const data = await res.json();
 
     if (!data.success || !data.members) {
-      container.innerHTML = "<p style='color:var(--red)'>Erro ao carregar equipe.</p>";
+      container.innerHTML = `<p style='color:var(--red)'>${T('team.errorLoadMembers', 'Erro ao carregar equipe.')}</p>`;
       return;
     }
 
     if (data.members.length === 0) {
-      container.innerHTML = "<p style='color:var(--muted)'>Nenhum membro cadastrado.</p>";
+      container.innerHTML = `<p style='color:var(--muted)'>${T('team.noMembers', 'Nenhum membro cadastrado.')}</p>`;
       return;
     }
 
@@ -85,21 +99,21 @@ async function loadTeamList() {
       card.style.cssText = "padding:12px;border:1px solid #ffffff12;border-radius:14px;margin-bottom:10px;background:#ffffff05";
       const statusBadge = member.active
         ? ""
-        : `<span style="font-size:10px;color:#ff8b8b;border:1px solid #ff8b8b44;border-radius:999px;padding:2px 8px;margin-left:6px">Inativo</span>`;
+        : `<span style="font-size:10px;color:#ff8b8b;border:1px solid #ff8b8b44;border-radius:999px;padding:2px 8px;margin-left:6px">${T('team.inactive', 'Inativo')}</span>`;
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <div style="font-weight:800;color:#f7fbff">${escapeHtml(member.name)}${statusBadge}</div>
             <div style="font-size:12px;color:var(--muted);margin-top:3px">${escapeHtml(member.email)}</div>
-            <div style="font-size:11px;color:#7bc2ff;margin-top:4px">${escapeHtml(member.role_name)} · ${member.permissions.length} permissões</div>
+            <div style="font-size:11px;color:#7bc2ff;margin-top:4px">${escapeHtml(member.role_name)} · ${member.permissions.length} ${T('team.permissionsCount', 'permissões')}</div>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openRoleChangeForm(${member.membership_id})">Trocar função</button>
-          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openMemberPermissionsForm(${member.membership_id})">Permissões</button>
+          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openRoleChangeForm(${member.membership_id})">${T('team.changeRoleBtn', 'Trocar função')}</button>
+          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openMemberPermissionsForm(${member.membership_id})">${T('team.permissionsBtn', 'Permissões')}</button>
           ${member.active
-            ? `<button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deactivateMember(${member.membership_id})">Desativar</button>`
-            : `<button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="reactivateMember(${member.membership_id})">Reativar</button>`
+            ? `<button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deactivateMember(${member.membership_id})">${T('team.deactivateBtn', 'Desativar')}</button>`
+            : `<button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="reactivateMember(${member.membership_id})">${T('team.reactivateBtn', 'Reativar')}</button>`
           }
         </div>
       `;
@@ -113,14 +127,14 @@ async function loadTeamList() {
 
 async function loadRolesList() {
   const container = document.getElementById("rolesListContainer");
-  container.innerHTML = "<p style='color:var(--muted)'>Carregando...</p>";
+  container.innerHTML = `<p style='color:var(--muted)'>${T('common.loading', 'Carregando...')}</p>`;
 
   try {
     const res = await fetch("/roles", { credentials: "same-origin" });
     const data = await res.json();
 
     if (!data.success || !data.roles) {
-      container.innerHTML = "<p style='color:var(--red)'>Erro ao carregar funções.</p>";
+      container.innerHTML = `<p style='color:var(--red)'>${T('team.errorLoadRoles', 'Erro ao carregar funções.')}</p>`;
       return;
     }
 
@@ -132,10 +146,10 @@ async function loadRolesList() {
       card.style.cssText = "padding:12px;border:1px solid #ffffff12;border-radius:14px;margin-bottom:10px;background:#ffffff05";
       card.innerHTML = `
         <div style="font-weight:800;color:#f7fbff">${escapeHtml(role.name)}</div>
-        <div style="font-size:11px;color:#7bc2ff;margin-top:4px">${permCount} permissões</div>
+        <div style="font-size:11px;color:#7bc2ff;margin-top:4px">${permCount} ${T('team.permissionsCount', 'permissões')}</div>
         <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openEditRoleForm(${role.id})">Editar</button>
-          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deleteRoleConfirm(${role.id})">Apagar</button>
+          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openEditRoleForm(${role.id})">${T('common.edit', 'Editar')}</button>
+          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deleteRoleConfirm(${role.id})">${T('team.deleteRoleBtn', 'Apagar')}</button>
         </div>
       `;
       container.appendChild(card);
@@ -178,8 +192,8 @@ async function openMemberPermissionsForm(membershipId){
   const rows = detail.map(p => {
     const inheritedClass = p.from_role ? " inherited" : "";
     const tag = p.override !== null
-      ? (p.override ? "ajustado: liberado" : "ajustado: bloqueado")
-      : (p.from_role ? "herdado da função" : "");
+      ? (p.override ? T('team.tag.overrideAllowed', 'ajustado: liberado') : T('team.tag.overrideBlocked', 'ajustado: bloqueado'))
+      : (p.from_role ? T('team.tag.inherited', 'herdado da função') : "");
     return `
       <label class="permission-checkbox-row${inheritedClass}">
         <input type="checkbox" data-perm-key="${p.key}" data-original-effective="${p.effective}" ${p.effective ? "checked" : ""}>
@@ -189,11 +203,11 @@ async function openMemberPermissionsForm(membershipId){
     `;
   }).join("");
 
-  openGenericModal(`Permissões de ${memberName}`, `
-    <p style="font-size:12px;color:var(--muted);margin:0">Marcados com borda azul vêm da função. Alterar aqui cria uma exceção individual, só para esta pessoa.</p>
+  openGenericModal(`${T('team.modal.permissionsTitlePrefix', 'Permissões de')} ${memberName}`, `
+    <p style="font-size:12px;color:var(--muted);margin:0">${T('team.permissionsModal.description', 'Marcados com borda azul vêm da função. Alterar aqui cria uma exceção individual, só para esta pessoa.')}</p>
     <div class="permission-checkbox-list">${rows}</div>
     <div id="memberPermissionsMessage" class="generic-modal-message"></div>
-    <button class="btn" type="button" onclick="submitMemberPermissions(${membershipId})">Salvar</button>
+    <button class="btn" type="button" onclick="submitMemberPermissions(${membershipId})">${T('common.save', 'Salvar')}</button>
   `);
 }
 
@@ -215,7 +229,7 @@ async function submitMemberPermissions(membershipId){
       });
       const data = await res.json();
       if(!res.ok || !data.success){
-        msg.textContent = data.message || `Não foi possível salvar "${el.dataset.permKey}".`;
+        msg.textContent = data.message || T('team.msg.savePermissionFailed', 'Não foi possível salvar "{key}".', { key: el.dataset.permKey });
         msg.classList.add("error");
         return;
       }
@@ -225,7 +239,7 @@ async function submitMemberPermissions(membershipId){
     loadTeamList();
   }catch(e){
     console.error("Erro ao salvar permissões:", e);
-    msg.textContent = "Erro de conexão.";
+    msg.textContent = T('common.connectionError', 'Erro de conexão.');
     msg.classList.add("error");
   }
 }
@@ -242,21 +256,21 @@ async function openInviteForm(){
 
   const options = roles.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join("");
 
-  openGenericModal("Convidar pessoa", `
+  openGenericModal(T('team.modal.inviteTitle', 'Convidar pessoa'), `
     <div>
-      <label>Nome</label>
-      <input id="inviteName" type="text" placeholder="Nome completo">
+      <label>${T('common.name', 'Nome')}</label>
+      <input id="inviteName" type="text" placeholder="${T('team.namePlaceholder', 'Nome completo')}">
     </div>
     <div>
-      <label>Email</label>
-      <input id="inviteEmail" type="email" placeholder="email@exemplo.com">
+      <label>${T('common.email', 'Email')}</label>
+      <input id="inviteEmail" type="email" placeholder="${T('team.emailPlaceholder', 'email@exemplo.com')}">
     </div>
     <div>
-      <label>Função</label>
+      <label>${T('team.roleLabel', 'Função')}</label>
       <select id="inviteRole">${options}</select>
     </div>
     <div id="inviteMessage" class="generic-modal-message"></div>
-    <button class="btn" type="button" onclick="submitInvite()">Convidar</button>
+    <button class="btn" type="button" onclick="submitInvite()">${T('team.inviteSubmitBtn', 'Convidar')}</button>
   `);
 }
 
@@ -269,7 +283,7 @@ async function submitInvite(){
   msg.className = "generic-modal-message";
 
   if(!name || !email || !roleId){
-    msg.textContent = "Preencha nome, email e função.";
+    msg.textContent = T('team.msg.fillInviteFields', 'Preencha nome, email e função.');
     msg.classList.add("error");
     return;
   }
@@ -284,16 +298,16 @@ async function submitInvite(){
     const data = await res.json();
 
     if(!res.ok || !data.success){
-      msg.textContent = data.message || "Não foi possível convidar.";
+      msg.textContent = data.message || T('team.msg.inviteFailed', 'Não foi possível convidar.');
       msg.classList.add("error");
       return;
     }
 
     document.getElementById("genericModalBody").innerHTML = `
-      <p style="color:#7bffa0;font-weight:700">Convite criado!</p>
-      <p style="font-size:13px;color:var(--muted)">Compartilhe esta senha temporária com a pessoa — ela será obrigada a trocá-la no primeiro acesso. Esta senha não será mostrada novamente.</p>
+      <p style="color:#7bffa0;font-weight:700">${T('team.msg.inviteCreated', 'Convite criado!')}</p>
+      <p style="font-size:13px;color:var(--muted)">${T('team.msg.inviteCreatedDesc', 'Compartilhe esta senha temporária com a pessoa — ela será obrigada a trocá-la no primeiro acesso. Esta senha não será mostrada novamente.')}</p>
       <div style="background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px;font-family:monospace;font-size:15px;text-align:center;user-select:all">${escapeHtml(data.temporary_password)}</div>
-      <button class="btn" type="button" onclick="closeGenericModal(); loadTeamList();">Fechar</button>
+      <button class="btn" type="button" onclick="closeGenericModal(); loadTeamList();">${T('common.close', 'Fechar')}</button>
     `;
   }catch(e){
     console.error("Erro ao convidar:", e);
@@ -318,13 +332,13 @@ async function openRoleChangeForm(membershipId){
 
   const options = roles.map(r => `<option value="${r.id}" ${r.id === currentRoleId ? "selected" : ""}>${escapeHtml(r.name)}</option>`).join("");
 
-  openGenericModal(`Trocar função de ${memberName}`, `
+  openGenericModal(`${T('team.modal.changeRoleTitlePrefix', 'Trocar função de')} ${memberName}`, `
     <div>
-      <label>Nova função</label>
+      <label>${T('team.newRoleSelectLabel', 'Nova função')}</label>
       <select id="roleChangeSelect">${options}</select>
     </div>
     <div id="roleChangeMessage" class="generic-modal-message"></div>
-    <button class="btn" type="button" onclick="submitRoleChange(${membershipId})">Salvar</button>
+    <button class="btn" type="button" onclick="submitRoleChange(${membershipId})">${T('common.save', 'Salvar')}</button>
   `);
 }
 
@@ -344,7 +358,7 @@ async function submitRoleChange(membershipId){
     const data = await res.json();
 
     if(!res.ok || !data.success){
-      msg.textContent = data.message || "Não foi possível trocar a função.";
+      msg.textContent = data.message || T('team.msg.roleChangeFailed', 'Não foi possível trocar a função.');
       msg.classList.add("error");
       return;
     }
@@ -353,13 +367,13 @@ async function submitRoleChange(membershipId){
     loadTeamList();
   }catch(e){
     console.error("Erro ao trocar função:", e);
-    msg.textContent = "Erro de conexão.";
+    msg.textContent = T('common.connectionError', 'Erro de conexão.');
     msg.classList.add("error");
   }
 }
 
 async function deactivateMember(membershipId){
-  if(!confirm("Tem certeza que quer desativar esta pessoa? Ela perderá acesso ao hostel até ser reativada.")) return;
+  if(!confirm(T('team.confirm.deactivate', 'Tem certeza que quer desativar esta pessoa? Ela perderá acesso ao hostel até ser reativada.'))) return;
 
   try{
     const res = await fetch(`/team/${membershipId}/deactivate`, {
@@ -369,7 +383,7 @@ async function deactivateMember(membershipId){
     const data = await res.json();
 
     if(!res.ok || !data.success){
-      alert(data.message || "Não foi possível desativar.");
+      alert(data.message || T('team.msg.deactivateFailed', 'Não foi possível desativar.'));
       return;
     }
 
@@ -389,7 +403,7 @@ async function reactivateMember(membershipId){
     const data = await res.json();
 
     if(!res.ok || !data.success){
-      alert(data.message || "Não foi possível reativar.");
+      alert(data.message || T('team.msg.reactivateFailed', 'Não foi possível reativar.'));
       return;
     }
 
@@ -429,17 +443,17 @@ function collectCheckedPermissions(){
 async function openNewRoleForm(){
   const catalog = await fetchPermissionCatalog();
 
-  openGenericModal("Nova função", `
+  openGenericModal(T('team.modal.newRoleTitle', 'Nova função'), `
     <div>
-      <label>Nome da função</label>
-      <input id="newRoleName" type="text" placeholder="Ex: Recepção">
+      <label>${T('team.roleNameLabel', 'Nome da função')}</label>
+      <input id="newRoleName" type="text" placeholder="${T('team.roleNamePlaceholderExample', 'Ex: Recepção')}">
     </div>
     <div>
-      <label>Permissões</label>
+      <label>${T('team.permissionsLabel', 'Permissões')}</label>
       ${renderPermissionCheckboxes(catalog, [])}
     </div>
     <div id="newRoleMessage" class="generic-modal-message"></div>
-    <button class="btn" type="button" onclick="submitNewRole()">Criar função</button>
+    <button class="btn" type="button" onclick="submitNewRole()">${T('team.createRoleBtn', 'Criar função')}</button>
   `);
 }
 
@@ -451,7 +465,7 @@ async function submitNewRole(){
   msg.className = "generic-modal-message";
 
   if(!name){
-    msg.textContent = "Digite um nome para a função.";
+    msg.textContent = T('team.msg.roleNameRequired', 'Digite um nome para a função.');
     msg.classList.add("error");
     return;
   }
@@ -466,7 +480,7 @@ async function submitNewRole(){
     const data = await res.json();
 
     if(!res.ok || !data.success){
-      msg.textContent = data.message || "Não foi possível criar a função.";
+      msg.textContent = data.message || T('team.msg.createRoleFailed', 'Não foi possível criar a função.');
       msg.classList.add("error");
       return;
     }
@@ -475,7 +489,7 @@ async function submitNewRole(){
     loadRolesList();
   }catch(e){
     console.error("Erro ao criar função:", e);
-    msg.textContent = "Erro de conexão.";
+    msg.textContent = T('common.connectionError', 'Erro de conexão.');
     msg.classList.add("error");
   }
 }
@@ -487,17 +501,17 @@ async function openEditRoleForm(roleId){
   const catalog = await fetchPermissionCatalog();
   const checkedKeys = (role.permissions || "").split(",").filter(Boolean);
 
-  openGenericModal("Editar função", `
+  openGenericModal(T('team.modal.editRoleTitle', 'Editar função'), `
     <div>
-      <label>Nome da função</label>
+      <label>${T('team.roleNameLabel', 'Nome da função')}</label>
       <input id="editRoleName" type="text">
     </div>
     <div>
-      <label>Permissões</label>
+      <label>${T('team.permissionsLabel', 'Permissões')}</label>
       ${renderPermissionCheckboxes(catalog, checkedKeys)}
     </div>
     <div id="editRoleMessage" class="generic-modal-message"></div>
-    <button class="btn" type="button" onclick="submitEditRole(${roleId})">Salvar</button>
+    <button class="btn" type="button" onclick="submitEditRole(${roleId})">${T('common.save', 'Salvar')}</button>
   `);
 
   // Define o valor via propriedade JS, nao via atributo HTML - evita
@@ -514,7 +528,7 @@ async function submitEditRole(roleId){
   msg.className = "generic-modal-message";
 
   if(!name){
-    msg.textContent = "Digite um nome para a função.";
+    msg.textContent = T('team.msg.roleNameRequired', 'Digite um nome para a função.');
     msg.classList.add("error");
     return;
   }
@@ -529,7 +543,7 @@ async function submitEditRole(roleId){
     const data = await res.json();
 
     if(!res.ok || !data.success){
-      msg.textContent = data.message || "Não foi possível salvar.";
+      msg.textContent = data.message || T('common.saveFailed', 'Não foi possível salvar.');
       msg.classList.add("error");
       return;
     }
@@ -538,7 +552,7 @@ async function submitEditRole(roleId){
     loadRolesList();
   }catch(e){
     console.error("Erro ao editar função:", e);
-    msg.textContent = "Erro de conexão.";
+    msg.textContent = T('common.connectionError', 'Erro de conexão.');
     msg.classList.add("error");
   }
 }
@@ -547,7 +561,7 @@ async function deleteRoleConfirm(roleId){
   const role = rolesCache.find(r => r.id === roleId);
   const roleName = role ? role.name : "esta função";
 
-  if(!confirm(`Tem certeza que quer apagar a função "${roleName}"? Isso só é possível se ninguém estiver usando ela.`)) return;
+  if(!confirm(T('team.confirm.deleteRole', 'Tem certeza que quer apagar a função "{name}"? Isso só é possível se ninguém estiver usando ela.', { name: roleName }))) return;
 
   try{
     const res = await fetch(`/roles/${roleId}`, {
@@ -573,46 +587,46 @@ async function deleteRoleConfirm(roleId){
 
   <nav class="menu">
     <button data-page="dashboard" class="active" onclick="openPage('dashboard',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span>Dashboard
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span data-i18n="nav.dashboard">Dashboard</span>
     </button>
     <button data-page="chats" onclick="openPage('chats',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span>Chats
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="nav.chats">Chats</span>
     </button>
     <button data-page="reservations" onclick="openPage('reservations',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 11h16v8"/><path d="M4 19V7"/><path d="M8 11V8h8v3"/></svg></span>Reservas
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 11h16v8"/><path d="M4 19V7"/><path d="M8 11V8h8v3"/></svg></span><span data-i18n="nav.reservations">Reservas</span>
     </button>
     <button data-page="roommap" data-required-permission="operations" onclick="openPage('roommap',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="6" rx="1.5"/><rect x="13" y="13" width="8" height="6" rx="1.5"/></svg></span>Mapa de Quartos
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="6" rx="1.5"/><rect x="13" y="13" width="8" height="6" rx="1.5"/></svg></span><span data-i18n="nav.roommap">Mapa de Quartos</span>
     </button>
     <button data-page="opportunities" onclick="openPage('opportunities',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3s4 4 4 8a4 4 0 0 1-8 0c0-4 4-8 4-8z"/><path d="M7 14a5 5 0 0 0 10 0"/></svg></span>Opportunity Center
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3s4 4 4 8a4 4 0 0 1-8 0c0-4 4-8 4-8z"/><path d="M7 14a5 5 0 0 0 10 0"/></svg></span><span data-i18n="nav.opportunities">Opportunity Center</span>
     </button>
     <button data-page="guests" onclick="openPage('guests',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4"/><circle cx="12" cy="9" r="3"/><path d="M20 19c0-1.7-1-3.1-2.5-3.7"/><path d="M17 7.2a2.5 2.5 0 0 1 0 3.6"/></svg></span>Hóspedes
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4"/><circle cx="12" cy="9" r="3"/><path d="M20 19c0-1.7-1-3.1-2.5-3.7"/><path d="M17 7.2a2.5 2.5 0 0 1 0 3.6"/></svg></span><span data-i18n="nav.guests">Hóspedes</span>
     </button>
     <button data-page="operations" onclick="openPage('operations',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span>Operações
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span><span data-i18n="nav.operations">Operações</span>
     </button>
     <button type="button" data-required-permission="team" onclick="openTeamPanel()">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span>Equipe
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span><span data-i18n="nav.team">Equipe</span>
     </button>
     <button data-page="finance" onclick="openPage('finance',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></span>Financeiro
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></span><span data-i18n="nav.finance">Financeiro</span>
     </button>
     <button data-page="inventory" onclick="openPage('inventory',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span>Estoque
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span><span data-i18n="nav.inventory">Estoque</span>
     </button>
     <button data-page="revenue" onclick="openPage('revenue',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></span>Receitas
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></span><span data-i18n="nav.revenue">Receitas</span>
     </button>
     <button data-page="reports" onclick="openPage('reports',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M9 19v-7"/><path d="M13 19V8"/><path d="M17 19v-4"/></svg></span>Relatórios
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M9 19v-7"/><path d="M13 19V8"/><path d="M17 19v-4"/></svg></span><span data-i18n="nav.reports">Relatórios</span>
     </button>
     <button data-page="settings" onclick="openPage('settings',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 2.9a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1l.4 2.9h4.8l.4-2.9a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6a7 7 0 0 0 .1-1z"/></svg></span>Configurações
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 2.9a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1l.4 2.9h4.8l.4-2.9a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6a7 7 0 0 0 .1-1z"/></svg></span><span data-i18n="nav.settings">Configurações</span>
     </button>
     <button class="collapse-menu" onclick="toggleSidebar()">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="m21 18-6-6 6-6"/></svg></span>Recolher menu
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="m21 18-6-6 6-6"/></svg></span><span data-i18n="nav.collapse">Recolher menu</span>
     </button>
   </nav>
 </aside>
@@ -622,12 +636,12 @@ async function deleteRoleConfirm(roleId){
 <header class="topbar">
   <div>
     <button class="btn secondary mobile-menu" onclick="toggleSidebar()">☰</button>
-    <h1 id="pageTitle">Dashboard</h1>
-    <p>Visão geral inteligente da operação</p>
+    <h1 id="pageTitle" data-i18n="nav.dashboard">Dashboard</h1>
+    <p id="pageSubtitle" data-i18n="topbar.subtitle.default">Visão geral inteligente da operação</p>
   </div>
   <div class="actions">
     <div class="hostel-selector-wrap">
-      <div class="hostel-mini" onclick="toggleHostelSelector(event)" title="Trocar de hostel">
+      <div class="hostel-mini" onclick="toggleHostelSelector(event)" data-i18n-title="topbar.hostelSwitch.title" title="Trocar de hostel">
         <div class="hostel-avatar">🏨</div>
         <div class="profile-copy">
           <div class="hostel-name">Nenhum hostel</div>
@@ -639,18 +653,29 @@ async function deleteRoleConfirm(roleId){
         <div id="hostelSelectorList"></div>
         <div class="hostel-selector-divider"></div>
         <button type="button" class="hostel-selector-settings-link" onclick="toggleHostelSelector(); openPage('settings', document.querySelector('[data-page=settings]'))">
-          ⚙ Configurações do hostel
+          <span data-i18n="topbar.hostelSwitch.settingsLink">⚙ Configurações do hostel</span>
         </button>
       </div>
     </div>
 
-    <button class="btn secondary bell-btn" onclick="openPage('operations', document.querySelector('[data-page=operations]'))" title="Alertas operacionais">
+    <button class="btn secondary bell-btn" onclick="openPage('operations', document.querySelector('[data-page=operations]'))" data-i18n-title="topbar.bell.title" title="Alertas operacionais">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <span id="opsAlertBadge" class="notif-badge" style="display:none;">0</span>
     </button>
 
     <div class="hostel-selector-wrap">
-      <div class="user-avatar" id="userMenuTrigger" onclick="toggleUserMenu(event)" title="Menu do usuário">?</div>
+      <button type="button" class="btn secondary" id="langCurrentBtn" data-i18n-title="topbar.lang.title" title="Idioma" style="padding:9px 12px;font-weight:800;font-size:12px" data-lang-current>PT</button>
+      <div id="langDropdown" class="hostel-selector-dropdown" style="display:none;min-width:140px">
+        <button type="button" class="hostel-selector-option" data-lang="pt">Português</button>
+        <button type="button" class="hostel-selector-option" data-lang="en">English</button>
+        <button type="button" class="hostel-selector-option" data-lang="es">Español</button>
+        <button type="button" class="hostel-selector-option" data-lang="fr">Français</button>
+        <button type="button" class="hostel-selector-option" data-lang="de">Deutsch</button>
+      </div>
+    </div>
+
+    <div class="hostel-selector-wrap">
+      <div class="user-avatar" id="userMenuTrigger" onclick="toggleUserMenu(event)" data-i18n-title="topbar.userMenu.title" title="Menu do usuário">?</div>
 
       <div id="userMenuDropdown" class="hostel-selector-dropdown" style="display:none;">
         <div class="profile-copy" style="padding:8px 10px;">
@@ -659,10 +684,10 @@ async function deleteRoleConfirm(roleId){
         </div>
         <div class="hostel-selector-divider"></div>
         <button type="button" id="userMenuEquipeItem" data-required-permission="team" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openTeamPanel()">
-          👥 Equipe
+          <span data-i18n="topbar.userMenu.team">👥 Equipe</span>
         </button>
         <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
-          ↪ Sair
+          <span data-i18n="topbar.userMenu.logout">↪ Sair</span>
         </button>
       </div>
     </div>
@@ -819,83 +844,83 @@ async function deleteRoleConfirm(roleId){
 <section id="chats" class="page">
   <div class="chat-layout">
     <div class="card chat-list" id="realChatList">
-      <h2>Conversas</h2>
+      <h2 data-i18n="chats.conversationsTitle">Conversas</h2>
       <!-- chats-live.js preenche esta área -->
       <div class="sf-empty" id="chatListEmpty">
         <div>
-          <strong>Nenhuma conversa encontrada.</strong>
-          <span>Assim que o StayFlow estiver conectado ao seu WhatsApp ou canal de mensagens, as conversas reais aparecerão nesta lista.</span>
+          <strong data-i18n="chats.emptyTitle">Nenhuma conversa encontrada.</strong>
+          <span data-i18n="chats.emptyDesc">Assim que o StayFlow estiver conectado ao seu WhatsApp ou canal de mensagens, as conversas reais aparecerão nesta lista.</span>
         </div>
       </div>
     </div>
 
     <div class="card chat-window">
-      <h2 id="chatTitle">Conversa</h2>
-      <span id="chatMode" class="status-pill ai">Aguardando conexão</span>
+      <h2 id="chatTitle" data-i18n="chats.defaultTitle">Conversa</h2>
+      <span id="chatMode" class="status-pill ai" data-i18n="chats.waitingConnection">Aguardando conexão</span>
       <span id="chatChance" class="status-pill cold">Score: —</span>
-      <button type="button" class="btn secondary" id="chatTakeoverBtn" style="display:none;margin-left:8px" onclick="toggleChatTakeover()">Assumir conversa</button>
+      <button type="button" class="btn secondary" id="chatTakeoverBtn" style="display:none;margin-left:8px" onclick="toggleChatTakeover()" data-i18n="chats.takeoverBtn">Assumir conversa</button>
 
       <div id="chatMessages" class="messages">
-        <div class="msg bot">Quando houver conversas reais no sistema, a última troca com o hóspede será exibida aqui.</div>
+        <div class="msg bot" data-i18n="chats.placeholderMsg">Quando houver conversas reais no sistema, a última troca com o hóspede será exibida aqui.</div>
       </div>
 
       <div class="chat-input" style="position:relative">
-        <button class="btn secondary" type="button" id="chatQuickReplyTrigger" onclick="toggleQuickReplyPicker(event)" title="Respostas rápidas" style="flex:0 0 auto">💬</button>
-        <input placeholder="Escrever mensagem como recepção...">
-        <button class="btn" onclick="sendMessageToGuestUI(this)">Enviar</button>
+        <button class="btn secondary" type="button" id="chatQuickReplyTrigger" onclick="toggleQuickReplyPicker(event)" data-i18n-title="chats.quickReplyTitle" title="Respostas rápidas" style="flex:0 0 auto">💬</button>
+        <input data-i18n-placeholder="chats.inputPlaceholder" placeholder="Escrever mensagem como recepção...">
+        <button class="btn" onclick="sendMessageToGuestUI(this)" data-i18n="chats.sendBtn">Enviar</button>
 
         <div id="chatQuickReplyPicker" class="hostel-selector-dropdown" style="display:none;top:auto;bottom:100%;left:0;right:auto;width:280px;margin-top:0;margin-bottom:6px;"></div>
       </div>
     </div>
 
     <div class="card guest-profile">
-      <h2>Perfil do hóspede</h2>
+      <h2 data-i18n="chats.guestProfileTitle">Perfil do hóspede</h2>
 
       <div class="smart-profile-hero">
-        <div class="smart-profile-title" id="guestName">Aguardando conversa</div>
-        <div class="smart-profile-subtitle" id="guestSmartSubtitle">
+        <div class="smart-profile-title" id="guestName" data-i18n="chats.waitingConversation">Aguardando conversa</div>
+        <div class="smart-profile-subtitle" id="guestSmartSubtitle" data-i18n="chats.smartSubtitleDefault">
           Selecione uma conversa para a IA montar o briefing operacional do hóspede.
         </div>
         <div class="smart-tags">
-          <span class="smart-tag" id="guestPhone">Telefone não identificado</span>
-          <span class="smart-tag" id="guestIntentTag">Intenção: —</span>
-          <span class="smart-tag" id="guestUrgencyTag">Urgência: —</span>
+          <span class="smart-tag" id="guestPhone" data-i18n="chats.phoneUnidentified">Telefone não identificado</span>
+          <span class="smart-tag" id="guestIntentTag" data-i18n="chats.intentDefault">Intenção: —</span>
+          <span class="smart-tag" id="guestUrgencyTag" data-i18n="chats.urgencyDefault">Urgência: —</span>
         </div>
       </div>
 
       <div class="smart-profile-section">
-        <h3>📋 Resumo da IA</h3>
-        <div class="ai-summary-box" id="guestNotes">
+        <h3 data-i18n="chats.aiSummaryTitle">📋 Resumo da IA</h3>
+        <div class="ai-summary-box" id="guestNotes" data-i18n="chats.aiSummaryDefault">
           As observações serão geradas a partir das mensagens reais do hóspede e das reservas associadas.
         </div>
       </div>
 
       <div class="smart-profile-section">
-        <h3>🎯 Próxima melhor ação</h3>
-        <div class="next-action-box" id="guestNextAction">
+        <h3 data-i18n="chats.nextActionTitle">🎯 Próxima melhor ação</h3>
+        <div class="next-action-box" id="guestNextAction" data-i18n="chats.nextActionDefault">
           Assim que houver dados, a IA recomendará aqui o próximo passo para fechar reserva, evitar cancelamento ou vender uma experiência.
         </div>
       </div>
 
       <div class="smart-profile-section">
-        <h3>📈 Histórico IA</h3>
+        <h3 data-i18n="chats.aiHistoryTitle">📈 Histórico IA</h3>
         <div class="ai-history" id="guestAIHistory">
           <div class="ai-history-item">
-            <div class="ai-history-time">Agora</div>
+            <div class="ai-history-time" data-i18n="chats.aiHistoryNow">Agora</div>
             <div class="ai-history-text">
-              <strong>Sem histórico</strong>
-              Nenhuma oportunidade ou ação automatizada registrada para este hóspede ainda.
+              <strong data-i18n="chats.aiHistoryNoneTitle">Sem histórico</strong>
+              <span data-i18n="chats.aiHistoryNoneDesc">Nenhuma oportunidade ou ação automatizada registrada para este hóspede ainda.</span>
             </div>
           </div>
         </div>
       </div>
 
       <div class="smart-profile-section" id="guestDocumentsSection" style="display:none">
-        <h3>🪪 Documentos recebidos</h3>
+        <h3 data-i18n="chats.documentsTitle">🪪 Documentos recebidos</h3>
         <div id="guestDocumentsList" style="font-size:13px;color:var(--muted)"></div>
       </div>
 
-      <button class="btn" style="width:100%;margin-top:2px" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]'))">
+      <button class="btn" style="width:100%;margin-top:2px" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]'))" data-i18n="chats.openOpportunityBtn">
         Abrir Opportunity Center
       </button>
     </div>
@@ -906,16 +931,16 @@ async function deleteRoleConfirm(roleId){
 <section id="opportunities" class="page">
   <div class="grid">
     <div class="card span-12">
-      <h2>🔥 Opportunity Center</h2>
+      <h2 data-i18n="opportunities.title">🔥 Opportunity Center</h2>
       <table class="table">
         <thead>
           <tr>
-            <th>Hóspede</th>
-            <th>Urgência</th>
-            <th>Motivo</th>
-            <th>Score</th>
-            <th>Receita</th>
-            <th>Próxima ação</th>
+            <th data-i18n="opportunities.col.guest">Hóspede</th>
+            <th data-i18n="opportunities.col.urgency">Urgência</th>
+            <th data-i18n="opportunities.col.reason">Motivo</th>
+            <th data-i18n="opportunities.col.score">Score</th>
+            <th data-i18n="opportunities.col.revenue">Receita</th>
+            <th data-i18n="opportunities.col.nextAction">Próxima ação</th>
           </tr>
         </thead>
         <tbody id="opportunitiesTableBody">
@@ -924,8 +949,8 @@ async function deleteRoleConfirm(roleId){
       </table>
       <div id="opportunitiesEmpty" class="sf-empty">
         <div>
-          <strong>Nenhuma oportunidade ativa.</strong>
-          <span>Quando a IA identificar hóspedes com alta chance de reserva, risco de cancelamento ou possibilidade de upsell, eles aparecerão aqui com prioridade, valor e próxima ação sugerida.</span>
+          <strong data-i18n="opportunities.emptyTitle">Nenhuma oportunidade ativa.</strong>
+          <span data-i18n="opportunities.emptyDesc">Quando a IA identificar hóspedes com alta chance de reserva, risco de cancelamento ou possibilidade de upsell, eles aparecerão aqui com prioridade, valor e próxima ação sugerida.</span>
         </div>
       </div>
     </div>
@@ -936,82 +961,82 @@ async function deleteRoleConfirm(roleId){
 <section id="reservations" class="page">
   <div class="grid">
     <div class="card kpi">
-      <div class="label">Reservas hoje</div>
+      <div class="label" data-i18n="reservations.kpi.todayLabel">Reservas hoje</div>
       <div class="value" id="kpiResToday">0</div>
-      <div class="note">Nenhuma reserva registrada</div>
+      <div class="note" data-i18n="reservations.kpi.todayNote">Nenhuma reserva registrada</div>
     </div>
     <div class="card kpi">
-      <div class="label">Check-ins</div>
+      <div class="label" data-i18n="reservations.kpi.checkinsLabel">Check-ins</div>
       <div class="value" id="kpiCheckins">0</div>
-      <div class="note">Sem chegadas previstas</div>
+      <div class="note" data-i18n="reservations.kpi.checkinsNote">Sem chegadas previstas</div>
     </div>
     <div class="card kpi">
-      <div class="label">Check-outs</div>
+      <div class="label" data-i18n="reservations.kpi.checkoutsLabel">Check-outs</div>
       <div class="value" id="kpiCheckouts">0</div>
-      <div class="note">Sem saídas previstas</div>
+      <div class="note" data-i18n="reservations.kpi.checkoutsNote">Sem saídas previstas</div>
     </div>
     <div class="card kpi">
-      <div class="label">No-show</div>
+      <div class="label" data-i18n="reservations.kpi.noShowLabel">No-show</div>
       <div class="value" id="kpiNoShow">0</div>
-      <div class="note">Nenhuma perda registrada</div>
+      <div class="note" data-i18n="reservations.kpi.noShowNote">Nenhuma perda registrada</div>
     </div>
 
     <div class="card span-12">
-      <h2>+ Nova reserva</h2>
+      <h2 data-i18n="reservations.newReservation.title">+ Nova reserva</h2>
       <form onsubmit="submitNewReservation(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
-        <input class="span-3" name="guest_name" placeholder="Nome do hóspede" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-2" name="phone" placeholder="Telefone" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-3" name="guest_name" data-i18n-placeholder="reservations.newReservation.guestNamePlaceholder" placeholder="Nome do hóspede" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-2" name="phone" data-i18n-placeholder="reservations.newReservation.phonePlaceholder" placeholder="Telefone" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         <select class="span-2" name="room_type" id="reservationRoomTypeSelect" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          <option value="">Tipo de quarto</option>
-          <option value="Privado">Privado</option>
-          <option value="Compartilhado">Compartilhado</option>
-          <option value="__new_room_type__">+ Novo tipo...</option>
+          <option value="" data-i18n="reservations.newReservation.roomTypeOption">Tipo de quarto</option>
+          <option value="Privado" data-i18n="reservations.newReservation.roomTypePrivate">Privado</option>
+          <option value="Compartilhado" data-i18n="reservations.newReservation.roomTypeShared">Compartilhado</option>
+          <option value="__new_room_type__" data-i18n="reservations.newReservation.newRoomTypeOption">+ Novo tipo...</option>
         </select>
         <input class="span-2" type="date" name="checkin_date" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         <input class="span-2" type="date" name="checkout_date" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-1" type="number" step="0.01" name="amount" placeholder="Valor" style="grid-column:span 1;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-1" type="number" step="0.01" name="amount" data-i18n-placeholder="reservations.newReservation.amountPlaceholder" placeholder="Valor" style="grid-column:span 1;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         <select name="status" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          <option value="pending">Pendente</option>
-          <option value="confirmed">Confirmada</option>
-          <option value="cancelled">Cancelada</option>
-          <option value="no_show">No-show</option>
+          <option value="pending" data-i18n="reservations.status.pending">Pendente</option>
+          <option value="confirmed" data-i18n="reservations.status.confirmed">Confirmada</option>
+          <option value="cancelled" data-i18n="reservations.status.cancelled">Cancelada</option>
+          <option value="no_show" data-i18n="reservations.status.noShow">No-show</option>
         </select>
         <input type="hidden" name="source" value="manual">
-        <button type="submit" class="btn span-2" style="grid-column:span 2;">Criar reserva</button>
+        <button type="submit" class="btn span-2" data-i18n="reservations.newReservation.submitBtn" style="grid-column:span 2;">Criar reserva</button>
       </form>
     </div>
 
     <div class="card span-12">
-      <h2>🏠 Morador de longa duração</h2>
-      <p style="margin-bottom:14px;color:var(--muted);font-size:13px">Pra quem mora fixo (ex: funcionário) sem data de saída definida — o saldo devedor acumula por dia e é abatido conforme os pagamentos forem registrados.</p>
+      <h2 data-i18n="longTermStay.title">🏠 Morador de longa duração</h2>
+      <p data-i18n="longTermStay.desc" style="margin-bottom:14px;color:var(--muted);font-size:13px">Pra quem mora fixo (ex: funcionário) sem data de saída definida — o saldo devedor acumula por dia e é abatido conforme os pagamentos forem registrados.</p>
       <form onsubmit="submitIndefiniteStay(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
-        <input class="span-3" name="guest_name" placeholder="Nome" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-2" name="phone" placeholder="Telefone (opcional)" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-2" name="room_type" placeholder="Quarto/observação" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-3" name="guest_name" data-i18n-placeholder="longTermStay.namePlaceholder" placeholder="Nome" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-2" name="phone" data-i18n-placeholder="longTermStay.phonePlaceholder" placeholder="Telefone (opcional)" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-2" name="room_type" data-i18n-placeholder="longTermStay.roomNotePlaceholder" placeholder="Quarto/observação" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         <input class="span-2" type="date" name="checkin_date" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-2" type="number" step="0.01" name="daily_rate" placeholder="Diária (0 = não paga)" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <button type="submit" class="btn span-1" style="grid-column:span 1;">Criar</button>
+        <input class="span-2" type="number" step="0.01" name="daily_rate" data-i18n-placeholder="longTermStay.dailyRatePlaceholder" placeholder="Diária (0 = não paga)" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <button type="submit" class="btn span-1" data-i18n="longTermStay.submitBtn" style="grid-column:span 1;">Criar</button>
       </form>
     </div>
 
     <div class="card span-12">
-      <h2>🛏 Reservas</h2>
+      <h2 data-i18n="reservations.table.title">🛏 Reservas</h2>
       <div class="sf-empty" id="reservationsEmpty">
         <div>
-          <strong>Nenhuma reserva encontrada.</strong>
-          <span>As reservas confirmadas, pendentes e canceladas aparecerão aqui assim que o StayFlow estiver recebendo dados do seu canal de vendas.</span>
+          <strong data-i18n="reservations.emptyTitle">Nenhuma reserva encontrada.</strong>
+          <span data-i18n="reservations.emptyDesc">As reservas confirmadas, pendentes e canceladas aparecerão aqui assim que o StayFlow estiver recebendo dados do seu canal de vendas.</span>
         </div>
       </div>
       <table class="table" id="reservationsTable" style="display:none">
         <thead>
           <tr>
-            <th>Hóspede</th>
-            <th>Quarto</th>
-            <th>Datas</th>
-            <th>Origem</th>
-            <th>Status</th>
-            <th>Valor</th>
-            <th>Ações</th>
+            <th data-i18n="reservations.col.guest">Hóspede</th>
+            <th data-i18n="reservations.col.room">Quarto</th>
+            <th data-i18n="reservations.col.dates">Datas</th>
+            <th data-i18n="reservations.col.source">Origem</th>
+            <th data-i18n="reservations.col.status">Status</th>
+            <th data-i18n="reservations.col.amount">Valor</th>
+            <th data-i18n="reservations.col.actions">Ações</th>
           </tr>
         </thead>
         <tbody id="reservationsTableBody">
@@ -1027,18 +1052,18 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
 
     <div class="card span-12">
-      <h2>🗺️ Mapa de Quartos</h2>
+      <h2 data-i18n="roommap.title">🗺️ Mapa de Quartos</h2>
       <div class="bed-map-legend">
-        <span><i class="free"></i>Livre</span>
-        <span><i class="occupied"></i>Ocupada</span>
-        <span><i class="needs_cleaning"></i>Precisa de limpeza</span>
-        <span><i class="reserved"></i>Reservada</span>
-        <span><i class="maintenance"></i>Manutenção</span>
+        <span><i class="free"></i><span data-i18n="bed.status.free">Livre</span></span>
+        <span><i class="occupied"></i><span data-i18n="bed.status.occupied">Ocupada</span></span>
+        <span><i class="needs_cleaning"></i><span data-i18n="bed.status.needs_cleaning">Precisa de limpeza</span></span>
+        <span><i class="reserved"></i><span data-i18n="bed.status.reserved">Reservada</span></span>
+        <span><i class="maintenance"></i><span data-i18n="bed.status.maintenance">Manutenção</span></span>
       </div>
       <div class="sf-empty" id="roomMapEmpty">
         <div>
-          <strong>Nenhum quarto cadastrado ainda.</strong>
-          <span>Crie modalidades e quartos abaixo pra montar o mapa do seu hostel, hotel ou resort.</span>
+          <strong data-i18n="roommap.emptyTitle">Nenhum quarto cadastrado ainda.</strong>
+          <span data-i18n="roommap.emptyDesc">Crie modalidades e quartos abaixo pra montar o mapa do seu hostel, hotel ou resort.</span>
         </div>
       </div>
       <div class="bed-map-grid" id="roomMapGrid" style="display:none"></div>
@@ -1046,78 +1071,78 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-6">
-      <h2>🏷️ Modalidades de quarto</h2>
+      <h2 data-i18n="roommap.categories.title">🏷️ Modalidades de quarto</h2>
       <form onsubmit="submitNewRoomCategory(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
-        <input class="span-6" name="name" placeholder="Ex: Standard Duplo, Suíte, Dormitório Misto" required style="grid-column:span 6;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <input class="span-2" type="number" min="1" name="capacity" placeholder="Capac." style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <input class="span-2" type="number" min="0" step="0.01" name="price_per_night" placeholder="Diária" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <button type="submit" class="btn span-2" style="grid-column:span 2;">Criar</button>
-        <input class="span-12" name="description" placeholder="Ex: Inclui café da manhã" style="grid-column:span 12;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <input class="span-6" name="name" data-i18n-placeholder="roommap.categories.namePlaceholder" placeholder="Ex: Standard Duplo, Suíte, Dormitório Misto" required style="grid-column:span 6;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <input class="span-2" type="number" min="1" name="capacity" data-i18n-placeholder="roommap.categories.capacityPlaceholder" placeholder="Capac." style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <input class="span-2" type="number" min="0" step="0.01" name="price_per_night" data-i18n-placeholder="roommap.categories.pricePlaceholder" placeholder="Diária" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <button type="submit" class="btn span-2" data-i18n="common.create" style="grid-column:span 2;">Criar</button>
+        <input class="span-12" name="description" data-i18n-placeholder="roommap.categories.descPlaceholder" placeholder="Ex: Inclui café da manhã" style="grid-column:span 12;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
       </form>
       <div id="roomCategoriesList" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
     </div>
 
     <div class="card span-6">
-      <h2>🚪 Novo quarto</h2>
+      <h2 data-i18n="roommap.newRoom.title">🚪 Novo quarto</h2>
       <form onsubmit="submitNewRoom(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
-        <input class="span-4" name="name" placeholder="Número/nome do quarto" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <input class="span-4" name="name" data-i18n-placeholder="roommap.newRoom.namePlaceholder" placeholder="Número/nome do quarto" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
         <select class="span-4" name="category_name" id="roomCategorySelect" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-          <option value="">Modalidade (opcional)</option>
+          <option value="" data-i18n="roommap.categoryOptionalOption">Modalidade (opcional)</option>
         </select>
-        <input class="span-4" name="floor" placeholder="Andar (opcional)" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <button type="submit" class="btn span-12" style="grid-column:span 12;">Criar quarto</button>
+        <input class="span-4" name="floor" data-i18n-placeholder="roommap.floorOptionalPlaceholder" placeholder="Andar (opcional)" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <button type="submit" class="btn span-12" data-i18n="roommap.newRoom.submitBtn" style="grid-column:span 12;">Criar quarto</button>
       </form>
-      <p style="font-size:12px;color:var(--muted);margin:10px 0 4px">Cadastro rápido de vários quartos (um por linha) — útil pra hotéis/resorts grandes:</p>
+      <p data-i18n="roommap.bulkRooms.intro" style="font-size:12px;color:var(--muted);margin:10px 0 4px">Cadastro rápido de vários quartos (um por linha) — útil pra hotéis/resorts grandes:</p>
       <form onsubmit="submitBulkRooms(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
         <textarea class="span-12" name="names" rows="3" placeholder="201&#10;202&#10;203" style="grid-column:span 12;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;font-family:inherit"></textarea>
         <select class="span-6" name="category_name" style="grid-column:span 6;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-          <option value="">Modalidade (opcional)</option>
+          <option value="" data-i18n="roommap.categoryOptionalOption">Modalidade (opcional)</option>
         </select>
-        <input class="span-3" name="floor" placeholder="Andar" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <button type="submit" class="btn span-3" style="grid-column:span 3;">Criar em lote</button>
+        <input class="span-3" name="floor" data-i18n-placeholder="roommap.floorPlaceholder" placeholder="Andar" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <button type="submit" class="btn span-3" data-i18n="roommap.bulkRooms.submitBtn" style="grid-column:span 3;">Criar em lote</button>
       </form>
     </div>
 
     <div class="card span-6">
-      <h2>🛏️ Nova cama</h2>
+      <h2 data-i18n="roommap.newBed.title">🛏️ Nova cama</h2>
       <form onsubmit="submitNewBed(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
         <select class="span-4" name="room_id" id="bedRoomSelect" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-          <option value="">Quarto...</option>
+          <option value="" data-i18n="roommap.roomSelectPlaceholder">Quarto...</option>
         </select>
-        <input class="span-3" name="label" placeholder="Ex: Cama 1" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <input class="span-3" name="label" data-i18n-placeholder="roommap.newBed.labelPlaceholder" placeholder="Ex: Cama 1" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
         <select class="span-3" name="bed_kind" onchange="toggleBunkGroupField(this)" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-          <option value="single">Normal</option>
-          <option value="bunk_top">Beliche - Cima</option>
-          <option value="bunk_bottom">Beliche - Baixo</option>
+          <option value="single" data-i18n="bed.kind.single">Normal</option>
+          <option value="bunk_top" data-i18n="bed.kind.bunkTop">Beliche - Cima</option>
+          <option value="bunk_bottom" data-i18n="bed.kind.bunkBottom">Beliche - Baixo</option>
         </select>
-        <input class="span-2" type="number" name="bunk_group" placeholder="Grupo" id="bunkGroupInput" style="display:none;grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <button type="submit" class="btn span-12" style="grid-column:span 12;">Criar cama</button>
+        <input class="span-2" type="number" name="bunk_group" data-i18n-placeholder="roommap.newBed.groupPlaceholder" placeholder="Grupo" id="bunkGroupInput" style="display:none;grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <button type="submit" class="btn span-12" data-i18n="roommap.newBed.submitBtn" style="grid-column:span 12;">Criar cama</button>
       </form>
-      <p style="font-size:11px;color:var(--muted);margin-top:8px">As duas metades do mesmo beliche precisam do mesmo número de "Grupo" pra aparecerem juntas no mapa.</p>
+      <p data-i18n="roommap.newBed.hint" style="font-size:11px;color:var(--muted);margin-top:8px">As duas metades do mesmo beliche precisam do mesmo número de "Grupo" pra aparecerem juntas no mapa.</p>
     </div>
 
     <div class="card span-6">
-      <h2>🧺 Lista de limpeza do dia</h2>
+      <h2 data-i18n="roommap.cleaning.title">🧺 Lista de limpeza do dia</h2>
       <div class="sf-empty" id="cleaningListEmpty">
         <div>
-          <strong>Nenhuma cama aguardando limpeza.</strong>
-          <span>Quando um check-out acontecer, a cama aparece aqui automaticamente.</span>
+          <strong data-i18n="roommap.cleaning.emptyTitle">Nenhuma cama aguardando limpeza.</strong>
+          <span data-i18n="roommap.cleaning.emptyDesc">Quando um check-out acontecer, a cama aparece aqui automaticamente.</span>
         </div>
       </div>
       <table class="table" id="cleaningListTable" style="display:none">
-        <thead><tr><th>Quarto</th><th>Cama</th><th>Ação</th></tr></thead>
+        <thead><tr><th data-i18n="common.room">Quarto</th><th data-i18n="common.bed">Cama</th><th data-i18n="common.action">Ação</th></tr></thead>
         <tbody id="cleaningListBody"></tbody>
       </table>
     </div>
 
     <div class="card span-6">
-      <h2>🔄 Devolver da lavanderia</h2>
+      <h2 data-i18n="roommap.laundry.title">🔄 Devolver da lavanderia</h2>
       <form onsubmit="submitReturnFromLaundry(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
-        <input class="span-7" name="item_name" placeholder="Nome do item (ex: Lençol solteiro)" required style="grid-column:span 7;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <input class="span-3" type="number" min="1" name="quantity" placeholder="Qtd" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <button type="submit" class="btn span-2" style="grid-column:span 2;">Devolver</button>
+        <input class="span-7" name="item_name" data-i18n-placeholder="roommap.laundry.itemPlaceholder" placeholder="Nome do item (ex: Lençol solteiro)" required style="grid-column:span 7;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <input class="span-3" type="number" min="1" name="quantity" data-i18n-placeholder="roommap.laundry.qtyPlaceholder" placeholder="Qtd" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <button type="submit" class="btn span-2" data-i18n="roommap.laundry.submitBtn" style="grid-column:span 2;">Devolver</button>
       </form>
-      <p style="font-size:12px;color:var(--muted);margin-top:10px">Registra que roupas de cama voltaram limpas da lavanderia, somando de volta no estoque disponível.</p>
+      <p data-i18n="roommap.laundry.hint" style="font-size:12px;color:var(--muted);margin-top:10px">Registra que roupas de cama voltaram limpas da lavanderia, somando de volta no estoque disponível.</p>
     </div>
 
   </div>
@@ -1127,19 +1152,19 @@ async function deleteRoleConfirm(roleId){
 <section id="operations" class="page">
   <div class="grid">
     <div class="card span-6">
-      <h2>🧹 Tarefas operacionais</h2>
+      <h2 data-i18n="operations.tasks.title">🧹 Tarefas operacionais</h2>
       <div class="sf-empty" id="opsTasksEmpty">
         <div>
-          <strong>Nenhuma tarefa cadastrada.</strong>
-          <span>Quando integrações de limpeza, manutenção ou tarefas forem configuradas, a fila operacional aparecerá aqui.</span>
+          <strong data-i18n="operations.tasks.emptyTitle">Nenhuma tarefa cadastrada.</strong>
+          <span data-i18n="operations.tasks.emptyDesc">Quando integrações de limpeza, manutenção ou tarefas forem configuradas, a fila operacional aparecerá aqui.</span>
         </div>
       </div>
       <table class="table" id="opsTasksTable" style="display:none">
         <thead>
           <tr>
-            <th>Tarefa</th>
-            <th>Responsável</th>
-            <th>Status</th>
+            <th data-i18n="operations.tasks.col.task">Tarefa</th>
+            <th data-i18n="operations.tasks.col.owner">Responsável</th>
+            <th data-i18n="guests.col.status">Status</th>
           </tr>
         </thead>
         <tbody id="opsTasksBody">
@@ -1148,11 +1173,11 @@ async function deleteRoleConfirm(roleId){
       </table>
     </div>
     <div class="card span-6">
-      <h2>⚠️ Alertas</h2>
+      <h2 data-i18n="operations.alerts.title">⚠️ Alertas</h2>
       <div class="sf-empty" id="opsAlertsEmpty">
         <div>
-          <strong>Nenhum alerta ativo.</strong>
-          <span>Riscos de overbooking, atrasos de limpeza, pendências de pagamento e outros alertas serão listados aqui automaticamente.</span>
+          <strong data-i18n="operations.alerts.emptyTitle">Nenhum alerta ativo.</strong>
+          <span data-i18n="operations.alerts.emptyDesc">Riscos de overbooking, atrasos de limpeza, pendências de pagamento e outros alertas serão listados aqui automaticamente.</span>
         </div>
       </div>
       <ul id="opsAlertsList" style="margin:0;padding-left:16px;display:none;color:var(--muted);font-size:14px;line-height:1.5">
@@ -1165,21 +1190,21 @@ async function deleteRoleConfirm(roleId){
 <!-- GUESTS -->
 <section id="guests" class="page">
   <div class="card">
-    <h2>👥 Hóspedes</h2>
+    <h2 data-i18n="guests.title">👥 Hóspedes</h2>
     <div class="sf-empty" id="guestsEmpty">
       <div>
-        <strong>Nenhum hóspede registrado.</strong>
-        <span>Quando reservas e conversas estiverem conectadas, a base de hóspedes será construída aqui com contato, histórico e valor gerado.</span>
+        <strong data-i18n="guests.emptyTitle">Nenhum hóspede registrado.</strong>
+        <span data-i18n="guests.emptyDesc">Quando reservas e conversas estiverem conectadas, a base de hóspedes será construída aqui com contato, histórico e valor gerado.</span>
       </div>
     </div>
     <table class="table" id="guestsTable" style="display:none">
       <thead>
         <tr>
-          <th>Nome</th>
-          <th>Telefone</th>
-          <th>Email</th>
-          <th>Status</th>
-          <th>Valor</th>
+          <th data-i18n="common.name">Nome</th>
+          <th data-i18n="common.phone">Telefone</th>
+          <th data-i18n="common.email">Email</th>
+          <th data-i18n="guests.col.status">Status</th>
+          <th data-i18n="guests.col.value">Valor</th>
         </tr>
       </thead>
       <tbody id="guestsTableBody">
@@ -1193,41 +1218,41 @@ async function deleteRoleConfirm(roleId){
 <section id="finance" class="page">
   <div class="grid">
     <div class="card kpi">
-      <div class="label">Receita confirmada</div>
+      <div class="label" data-i18n="finance.kpi.confirmedLabel">Receita confirmada</div>
       <div class="value" id="kpiFinConfirmed">US$ 0</div>
-      <div class="note">Aguardando reservas reais</div>
+      <div class="note" data-i18n="finance.kpi.confirmedNote">Aguardando reservas reais</div>
     </div>
     <div class="card kpi">
-      <div class="label">Recuperada pela IA</div>
+      <div class="label" data-i18n="finance.kpi.recoveredLabel">Recuperada pela IA</div>
       <div class="value" id="kpiFinRecovered">US$ 0</div>
-      <div class="note">Nenhuma recuperação registrada</div>
+      <div class="note" data-i18n="finance.kpi.recoveredNote">Nenhuma recuperação registrada</div>
     </div>
     <div class="card kpi">
-      <div class="label">Receita em risco</div>
+      <div class="label" data-i18n="finance.kpi.atRiskLabel">Receita em risco</div>
       <div class="value" id="kpiFinAtRisk">US$ 0</div>
-      <div class="note">Nenhuma oportunidade em risco</div>
+      <div class="note" data-i18n="finance.kpi.atRiskNote">Nenhuma oportunidade em risco</div>
     </div>
     <div class="card kpi">
-      <div class="label">Recuperável</div>
+      <div class="label" data-i18n="finance.kpi.recoverableLabel">Recuperável</div>
       <div class="value" id="kpiFinRecoverable">US$ 0</div>
-      <div class="note">Aguardando recomendações da IA</div>
+      <div class="note" data-i18n="finance.kpi.recoverableNote">Aguardando recomendações da IA</div>
     </div>
 
     <div class="card span-12">
-      <h2>💰 Financeiro</h2>
+      <h2 data-i18n="finance.title">💰 Financeiro</h2>
       <div class="sf-empty" id="financeEmpty">
         <div>
-          <strong>Nenhuma movimentação financeira registrada.</strong>
-          <span>Quando o primeiro hostel começar a operar no StayFlow, receitas, recebimentos pendentes e oportunidades financeiras aparecerão aqui.</span>
+          <strong data-i18n="finance.emptyTitle">Nenhuma movimentação financeira registrada.</strong>
+          <span data-i18n="finance.emptyDesc">Quando o primeiro hostel começar a operar no StayFlow, receitas, recebimentos pendentes e oportunidades financeiras aparecerão aqui.</span>
         </div>
       </div>
       <table class="table" id="financeTable" style="display:none">
         <thead>
           <tr>
-            <th>Tipo</th>
-            <th>Descrição</th>
-            <th>Valor</th>
-            <th>Status</th>
+            <th data-i18n="common.type">Tipo</th>
+            <th data-i18n="finance.col.description">Descrição</th>
+            <th data-i18n="reservations.col.amount">Valor</th>
+            <th data-i18n="guests.col.status">Status</th>
           </tr>
         </thead>
         <tbody id="financeTableBody">
@@ -1243,102 +1268,102 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
 
     <div class="card span-12">
-      <h2>📦 Novo produto</h2>
+      <h2 data-i18n="inventory.newItem.title">📦 Novo produto</h2>
       <form onsubmit="submitNewInventoryItem(event)" autocomplete="off" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
 
         <div style="grid-column:span 3">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Nome do produto</label>
+          <label data-i18n="inventory.newItem.nameLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Nome do produto</label>
           <input name="name" autocomplete="off" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
 
         <div style="grid-column:span 2">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Categoria</label>
+          <label data-i18n="inventory.newItem.categoryLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Categoria</label>
           <select name="category" id="inventoryCategorySelect" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <option value="cafe_da_manha">Café da manhã</option>
-            <option value="limpeza">Limpeza</option>
-            <option value="enxoval">Enxoval</option>
-            <option value="outro">Outro</option>
-            <option value="__new_category__">+ Nova categoria...</option>
+            <option value="cafe_da_manha" data-i18n="inventory.category.breakfast">Café da manhã</option>
+            <option value="limpeza" data-i18n="inventory.category.cleaning">Limpeza</option>
+            <option value="enxoval" data-i18n="inventory.category.linen">Enxoval</option>
+            <option value="outro" data-i18n="inventory.category.other">Outro</option>
+            <option value="__new_category__" data-i18n="inventory.category.newOption">+ Nova categoria...</option>
           </select>
         </div>
 
         <div style="grid-column:span 1">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Qtd. atual</label>
+          <label data-i18n="inventory.newItem.quantityLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Qtd. atual</label>
           <input name="quantity" type="number" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
 
         <div style="grid-column:span 1">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Mínimo</label>
+          <label data-i18n="inventory.newItem.minLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Mínimo</label>
           <input name="min_threshold" type="number" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
 
         <div style="grid-column:span 1">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Repor (qtd.)</label>
+          <label data-i18n="inventory.newItem.reorderLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Repor (qtd.)</label>
           <input name="reorder_quantity" type="number" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
 
         <div style="grid-column:span 1">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Unidade</label>
+          <label data-i18n="inventory.newItem.unitLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Unidade</label>
           <select name="unit" id="inventoryUnitSelect" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <option value="un">un (unidades)</option>
-            <option value="kg">kg (quilos)</option>
-            <option value="l">l (litros)</option>
-            <option value="pct">pct (pacotes)</option>
-            <option value="cx">cx (caixas)</option>
-            <option value="__other__">Outro...</option>
+            <option value="un" data-i18n="inventory.unit.un">un (unidades)</option>
+            <option value="kg" data-i18n="inventory.unit.kg">kg (quilos)</option>
+            <option value="l" data-i18n="inventory.unit.l">l (litros)</option>
+            <option value="pct" data-i18n="inventory.unit.pct">pct (pacotes)</option>
+            <option value="cx" data-i18n="inventory.unit.cx">cx (caixas)</option>
+            <option value="__other__" data-i18n="inventory.unit.other">Outro...</option>
           </select>
-          <input name="unit_other" id="inventoryUnitOther" autocomplete="off" placeholder="Digite a unidade" style="display:none;margin-top:6px;width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <input name="unit_other" id="inventoryUnitOther" autocomplete="off" data-i18n-placeholder="inventory.unit.otherPlaceholder" placeholder="Digite a unidade" style="display:none;margin-top:6px;width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
 
         <div style="grid-column:span 2">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Fornecedor</label>
+          <label data-i18n="inventory.newItem.supplierLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Fornecedor</label>
           <select name="supplier_id" id="inventorySupplierSelect" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <option value="">Sem fornecedor</option>
-            <option value="__new__">+ Novo fornecedor...</option>
+            <option value="" data-i18n="inventory.noSupplierOption">Sem fornecedor</option>
+            <option value="__new__" data-i18n="inventory.newSupplierOption">+ Novo fornecedor...</option>
           </select>
         </div>
 
         <div style="grid-column:span 1;display:flex;align-items:flex-end">
-          <button type="submit" class="btn" style="width:100%">Criar</button>
+          <button type="submit" class="btn" data-i18n="common.create" style="width:100%">Criar</button>
         </div>
       </form>
 
       <div id="newSupplierForm" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #ffffff12;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
         <div style="grid-column:span 3">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Nome do fornecedor</label>
+          <label data-i18n="inventory.supplierForm.nameLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Nome do fornecedor</label>
           <input id="newSupplierName" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
         <div style="grid-column:span 3">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Telefone</label>
+          <label data-i18n="common.phone" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Telefone</label>
           <input id="newSupplierPhone" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
         <div style="grid-column:span 3">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Email (opcional)</label>
+          <label data-i18n="inventory.supplierForm.emailLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Email (opcional)</label>
           <input id="newSupplierEmail" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
         <div style="grid-column:span 3;display:flex;align-items:flex-end">
-          <button type="button" class="btn secondary" style="width:100%" onclick="submitNewSupplier()">Salvar fornecedor</button>
+          <button type="button" class="btn secondary" data-i18n="inventory.supplierForm.submitBtn" style="width:100%" onclick="submitNewSupplier()">Salvar fornecedor</button>
         </div>
       </div>
     </div>
 
     <div class="card span-12">
-      <h2>🗂 Itens em estoque</h2>
+      <h2 data-i18n="inventory.itemsTitle">🗂 Itens em estoque</h2>
       <div class="sf-empty" id="inventoryEmpty">
         <div>
-          <strong>Nenhum item cadastrado.</strong>
-          <span>Cadastre café da manhã, produtos de limpeza, enxoval e outros itens para acompanhar o estoque real.</span>
+          <strong data-i18n="inventory.emptyTitle">Nenhum item cadastrado.</strong>
+          <span data-i18n="inventory.emptyDesc">Cadastre café da manhã, produtos de limpeza, enxoval e outros itens para acompanhar o estoque real.</span>
         </div>
       </div>
       <table class="table" id="inventoryTable" style="display:none">
         <thead>
           <tr>
-            <th>Produto</th>
-            <th>Categoria</th>
-            <th>Quantidade</th>
-            <th>Mínimo</th>
-            <th>Fornecedor</th>
-            <th>Ações</th>
+            <th data-i18n="inventory.col.product">Produto</th>
+            <th data-i18n="inventory.newItem.categoryLabel">Categoria</th>
+            <th data-i18n="inventory.col.quantity">Quantidade</th>
+            <th data-i18n="inventory.newItem.minLabel">Mínimo</th>
+            <th data-i18n="inventory.newItem.supplierLabel">Fornecedor</th>
+            <th data-i18n="reservations.col.actions">Ações</th>
           </tr>
         </thead>
         <tbody id="inventoryTableBody"></tbody>
@@ -1346,11 +1371,11 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-12">
-      <h2>⚠️ Alertas de reposição</h2>
+      <h2 data-i18n="inventory.alertsTitle">⚠️ Alertas de reposição</h2>
       <div class="sf-empty" id="inventoryAlertsEmpty">
         <div>
-          <strong>Nenhum alerta de estoque.</strong>
-          <span>Quando um item chegar na quantidade mínima, a sugestão de mensagem pro fornecedor aparece aqui.</span>
+          <strong data-i18n="inventory.alertsEmptyTitle">Nenhum alerta de estoque.</strong>
+          <span data-i18n="inventory.alertsEmptyDesc">Quando um item chegar na quantidade mínima, a sugestão de mensagem pro fornecedor aparece aqui.</span>
         </div>
       </div>
       <div id="inventoryAlertsList" style="display:grid;gap:10px"></div>
@@ -1363,41 +1388,41 @@ async function deleteRoleConfirm(roleId){
 <section id="revenue" class="page">
   <div class="grid">
     <div class="card span-8">
-      <h2>🍷 Catálogo de experiências e upsells</h2>
+      <h2 data-i18n="revenue.catalogTitle">🍷 Catálogo de experiências e upsells</h2>
       <form onsubmit="submitNewOffering(event)" autocomplete="off" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;margin-bottom:16px">
         <div style="grid-column:span 5">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Nome</label>
+          <label data-i18n="common.name" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Nome</label>
           <input name="name" autocomplete="off" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
         <div style="grid-column:span 3">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Tipo</label>
+          <label data-i18n="common.type" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Tipo</label>
           <select name="type" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <option value="tour">Tour / Experiência</option>
-            <option value="upsell">Upsell</option>
+            <option value="tour" data-i18n="revenue.type.tour">Tour / Experiência</option>
+            <option value="upsell" data-i18n="revenue.type.upsell">Upsell</option>
           </select>
         </div>
         <div style="grid-column:span 2">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Preço (US$)</label>
+          <label data-i18n="revenue.priceLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Preço (US$)</label>
           <input name="price" type="number" step="0.01" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
         <div style="grid-column:span 2;display:flex;align-items:flex-end">
-          <button type="submit" class="btn" style="width:100%">Adicionar</button>
+          <button type="submit" class="btn" data-i18n="revenue.addBtn" style="width:100%">Adicionar</button>
         </div>
       </form>
 
       <div class="sf-empty" id="offeringsEmpty">
         <div>
-          <strong>Nenhuma experiência ou upsell cadastrado.</strong>
-          <span>Cadastre tours, late checkout, aluguel de toalha e outras ofertas do seu hostel.</span>
+          <strong data-i18n="revenue.emptyOfferingsTitle">Nenhuma experiência ou upsell cadastrado.</strong>
+          <span data-i18n="revenue.emptyOfferingsDesc">Cadastre tours, late checkout, aluguel de toalha e outras ofertas do seu hostel.</span>
         </div>
       </div>
       <table class="table" id="offeringsTable" style="display:none">
         <thead>
           <tr>
-            <th>Nome</th>
-            <th>Tipo</th>
-            <th>Preço</th>
-            <th>Ações</th>
+            <th data-i18n="common.name">Nome</th>
+            <th data-i18n="common.type">Tipo</th>
+            <th data-i18n="revenue.col.price">Preço</th>
+            <th data-i18n="reservations.col.actions">Ações</th>
           </tr>
         </thead>
         <tbody id="offeringsTableBody"></tbody>
@@ -1405,27 +1430,27 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-4">
-      <h2>💰 Receita extra</h2>
+      <h2 data-i18n="revenue.extraTitle">💰 Receita extra</h2>
       <div class="value" style="font-size:34px;font-weight:900;color:var(--blue)" id="kpiExtraRevenue">US$ 0</div>
-      <p>Soma das oportunidades abertas de tour/upsell identificadas pela IA.</p>
+      <p data-i18n="revenue.extraDesc">Soma das oportunidades abertas de tour/upsell identificadas pela IA.</p>
     </div>
 
     <div class="card span-12">
-      <h2>📈 Oportunidades de receita</h2>
+      <h2 data-i18n="revenue.opportunitiesTitle">📈 Oportunidades de receita</h2>
       <div class="sf-empty" id="revenueEmpty">
         <div>
-          <strong>Nenhuma oportunidade cadastrada.</strong>
-          <span>Quando a IA identificar hóspedes propensos a contratar experiências ou serviços adicionais, eles aparecerão aqui.</span>
+          <strong data-i18n="revenue.emptyOpportunitiesTitle">Nenhuma oportunidade cadastrada.</strong>
+          <span data-i18n="revenue.emptyOpportunitiesDesc">Quando a IA identificar hóspedes propensos a contratar experiências ou serviços adicionais, eles aparecerão aqui.</span>
         </div>
       </div>
       <table class="table" id="revenueTable" style="display:none">
         <thead>
           <tr>
-            <th>Hóspede</th>
-            <th>Tipo</th>
-            <th>Oferta sugerida</th>
-            <th>Valor</th>
-            <th>Ação</th>
+            <th data-i18n="opportunities.col.guest">Hóspede</th>
+            <th data-i18n="common.type">Tipo</th>
+            <th data-i18n="revenue.col.suggestedOffer">Oferta sugerida</th>
+            <th data-i18n="reservations.col.amount">Valor</th>
+            <th data-i18n="revenue.col.action">Ação</th>
           </tr>
         </thead>
         <tbody id="revenueTableBody">
@@ -1440,18 +1465,18 @@ async function deleteRoleConfirm(roleId){
 <section id="reports" class="page">
   <div class="grid">
     <div class="card span-6">
-      <h2>📊 Receita por canal</h2>
+      <h2 data-i18n="reports.channelTitle">📊 Receita por canal</h2>
       <div class="sf-empty" id="reportsChannelEmpty">
         <div>
-          <strong>Nenhum canal com receita registrada.</strong>
-          <span>Quando houver reservas reais, o StayFlow exibirá aqui a distribuição por WhatsApp, site, OTA, walk-in e outros canais.</span>
+          <strong data-i18n="reports.channelEmptyTitle">Nenhum canal com receita registrada.</strong>
+          <span data-i18n="reports.channelEmptyDesc">Quando houver reservas reais, o StayFlow exibirá aqui a distribuição por WhatsApp, site, OTA, walk-in e outros canais.</span>
         </div>
       </div>
       <table class="table" id="reportsChannelTable" style="display:none">
         <thead>
           <tr>
-            <th>Canal</th>
-            <th>Receita</th>
+            <th data-i18n="reports.col.channel">Canal</th>
+            <th data-i18n="reservations.col.amount">Receita</th>
           </tr>
         </thead>
         <tbody id="reportsChannelBody">
@@ -1461,18 +1486,18 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-6">
-      <h2>📈 Conversão por etapa</h2>
+      <h2 data-i18n="reports.funnelTitle">📈 Conversão por etapa</h2>
       <div class="sf-empty" id="reportsFunnelEmpty">
         <div>
-          <strong>Nenhuma conversão registrada.</strong>
-          <span>Conversas, leads, oportunidades e reservas aparecerão aqui após o início da operação real.</span>
+          <strong data-i18n="reports.funnelEmptyTitle">Nenhuma conversão registrada.</strong>
+          <span data-i18n="reports.funnelEmptyDesc">Conversas, leads, oportunidades e reservas aparecerão aqui após o início da operação real.</span>
         </div>
       </div>
       <table class="table" id="reportsFunnelTable" style="display:none">
         <thead>
           <tr>
-            <th>Etapa</th>
-            <th>Quantidade</th>
+            <th data-i18n="reports.col.stage">Etapa</th>
+            <th data-i18n="reports.col.count">Quantidade</th>
           </tr>
         </thead>
         <tbody id="reportsFunnelBody">
@@ -1482,11 +1507,11 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-12">
-      <h2>📋 Relatório diário IA</h2>
+      <h2 data-i18n="reports.dailyTitle">📋 Relatório diário IA</h2>
       <div class="sf-empty" id="reportsDailyEmpty">
         <div>
-          <strong>Nenhum relatório disponível.</strong>
-          <span>O relatório diário será gerado automaticamente quando existirem conversas, reservas, tarefas e dados operacionais reais.</span>
+          <strong data-i18n="reports.dailyEmptyTitle">Nenhum relatório disponível.</strong>
+          <span data-i18n="reports.dailyEmptyDesc">O relatório diário será gerado automaticamente quando existirem conversas, reservas, tarefas e dados operacionais reais.</span>
         </div>
       </div>
       <div id="reportsDailyContent" style="display:none">
@@ -1501,23 +1526,23 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
 
     <div class="card span-4">
-      <h2>⚙ Configurações</h2>
+      <h2 data-i18n="nav.settings">⚙ Configurações</h2>
 
       <div class="sf-empty">
         <div>
-          <strong>Menu de configuração</strong>
-          <span>Escolha uma categoria para ajustar como o StayFlow opera no seu hostel.</span>
+          <strong data-i18n="settings.menuHint.title">Menu de configuração</strong>
+          <span data-i18n="settings.menuHint.desc">Escolha uma categoria para ajustar como o StayFlow opera no seu hostel.</span>
         </div>
       </div>
 
       <div class="settings-menu" style="margin-top:16px;display:grid;gap:8px">
-        <button class="btn secondary active" data-settings-target="geral">Geral</button>
-        <button class="btn secondary" data-settings-target="empresa">Empresa</button>
-        <button class="btn secondary" data-settings-target="ia">IA</button>
-        <button class="btn secondary" data-settings-target="comunicacao">Comunicação</button>
-        <button class="btn secondary" data-settings-target="developer">Integrações</button>
-        <button class="btn secondary" onclick="openTeamPanel()">Equipe</button>
-        <button class="btn secondary" data-settings-target="seguranca">Segurança</button>
+        <button class="btn secondary active" data-settings-target="geral" data-i18n="settings.menu.general">Geral</button>
+        <button class="btn secondary" data-settings-target="empresa" data-i18n="settings.menu.company">Empresa</button>
+        <button class="btn secondary" data-settings-target="ia" data-i18n="settings.menu.ai">IA</button>
+        <button class="btn secondary" data-settings-target="comunicacao" data-i18n="settings.menu.communication">Comunicação</button>
+        <button class="btn secondary" data-settings-target="developer" data-i18n="settings.menu.integrations">Integrações</button>
+        <button class="btn secondary" onclick="openTeamPanel()" data-i18n="nav.team">Equipe</button>
+        <button class="btn secondary" data-settings-target="seguranca" data-i18n="settings.menu.security">Segurança</button>
         <button class="btn secondary" data-settings-target="billing">Billing</button>
       </div>
     </div>
@@ -1525,9 +1550,9 @@ async function deleteRoleConfirm(roleId){
     <div class="span-8">
 
       <div class="card">
-        <h2>Status do sistema</h2>
+        <h2 data-i18n="settings.systemStatus.title">Status do sistema</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <span class="status-pill ok">Frontend Online</span>
+          <span class="status-pill ok" data-i18n="settings.systemStatus.frontendOnline">Frontend Online</span>
           <span id="statusBackendPill" class="status-pill cold">Backend: verificando...</span>
           <span id="statusWhatsappPill" class="status-pill cold">WhatsApp: verificando...</span>
         </div>
@@ -1536,65 +1561,65 @@ async function deleteRoleConfirm(roleId){
       <div class="grid" data-settings-section="geral">
 
         <div class="card span-6">
-          <h2>IA</h2>
-          <p>Configure quando a IA pode responder automaticamente e quando deve apenas sugerir ações para a equipe.</p>
+          <h2 data-i18n="settings.general.aiCard.title">IA</h2>
+          <p data-i18n="settings.general.aiCard.desc">Configure quando a IA pode responder automaticamente e quando deve apenas sugerir ações para a equipe.</p>
         </div>
 
         <div class="card span-6">
-          <h2>Reservas</h2>
-          <p>Defina regras de confirmação, políticas de cancelamento e horários padrão de check-in e check-out.</p>
+          <h2 data-i18n="settings.general.reservationsCard.title">Reservas</h2>
+          <p data-i18n="settings.general.reservationsCard.desc">Defina regras de confirmação, políticas de cancelamento e horários padrão de check-in e check-out.</p>
         </div>
 
         <div class="card span-6">
-          <h2>Integrações</h2>
-          <p>Conecte PMS, motor de reservas, meios de pagamento e canais de venda.</p>
+          <h2 data-i18n="settings.general.integrationsCard.title">Integrações</h2>
+          <p data-i18n="settings.general.integrationsCard.desc">Conecte PMS, motor de reservas, meios de pagamento e canais de venda.</p>
         </div>
 
         <div class="card span-6">
-          <h2>Equipe</h2>
-          <p>Gerencie acessos, permissões e notificações para cada membro da equipe.</p>
+          <h2 data-i18n="settings.general.teamCard.title">Equipe</h2>
+          <p data-i18n="settings.general.teamCard.desc">Gerencie acessos, permissões e notificações para cada membro da equipe.</p>
         </div>
 
       </div>
 
       <div class="card" data-settings-section="geral">
-        <h2>Geral</h2>
+        <h2 data-i18n="settings.general.title">Geral</h2>
 
         <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
           <div class="span-6">
-            <input type="text" data-setting="hostel_name" placeholder="Nome do hostel">
+            <input type="text" data-setting="hostel_name" data-i18n-placeholder="settings.general.hostelNamePlaceholder" placeholder="Nome do hostel">
           </div>
           <div class="span-6">
             <select data-setting="hostel_type" id="settingsHostelTypeSelect">
-              <option value="">Tipo de propriedade</option>
-              <option value="Hostel">Hostel</option>
-              <option value="Hotel">Hotel</option>
-              <option value="Resort">Resort</option>
-              <option value="Pousada">Pousada</option>
-              <option value="Flat">Flat</option>
-              <option value="__new_hostel_type__">+ Novo tipo...</option>
+              <option value="" data-i18n="settings.general.hostelTypeOption">Tipo de propriedade</option>
+              <option value="Hostel" data-i18n="settings.hostelType.hostel">Hostel</option>
+              <option value="Hotel" data-i18n="settings.hostelType.hotel">Hotel</option>
+              <option value="Resort" data-i18n="settings.hostelType.resort">Resort</option>
+              <option value="Pousada" data-i18n="settings.hostelType.pousada">Pousada</option>
+              <option value="Flat" data-i18n="settings.hostelType.flat">Flat</option>
+              <option value="__new_hostel_type__" data-i18n="settings.hostelType.newOption">+ Novo tipo...</option>
             </select>
           </div>
         </div>
       </div>
 
       <div class="card" data-settings-section="empresa">
-        <h2>Empresa</h2>
-        <p style="margin-bottom:14px">Dados legais, horários padrão e identidade visual do hostel.</p>
+        <h2 data-i18n="settings.company.title">Empresa</h2>
+        <p data-i18n="settings.company.desc" style="margin-bottom:14px">Dados legais, horários padrão e identidade visual do hostel.</p>
 
         <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
           <div class="span-6">
-            <input type="text" data-setting="legal_name" placeholder="Razão social">
+            <input type="text" data-setting="legal_name" data-i18n-placeholder="settings.company.legalNamePlaceholder" placeholder="Razão social">
           </div>
           <div class="span-6">
             <input type="text" data-setting="tax_id" placeholder="CUIT/RUT">
           </div>
           <div class="span-12">
-            <input type="text" data-setting="address" placeholder="Endereço completo">
+            <input type="text" data-setting="address" data-i18n-placeholder="settings.company.addressPlaceholder" placeholder="Endereço completo">
           </div>
           <div class="span-6">
             <select data-setting="timezone" id="settingsTimezoneSelect">
-              <option value="">Fuso horário</option>
+              <option value="" data-i18n="settings.company.timezoneOption">Fuso horário</option>
               <option value="America/Argentina/Buenos_Aires">America/Argentina/Buenos_Aires</option>
               <option value="America/Santiago">America/Santiago</option>
               <option value="America/Sao_Paulo">America/Sao_Paulo</option>
@@ -1605,7 +1630,7 @@ async function deleteRoleConfirm(roleId){
           </div>
           <div class="span-6">
             <select data-setting="currency" id="settingsCurrencySelect">
-              <option value="">Moeda</option>
+              <option value="" data-i18n="settings.company.currencyOption">Moeda</option>
               <option value="ARS">ARS - Peso argentino</option>
               <option value="CLP">CLP - Peso chileno</option>
               <option value="BRL">BRL - Real brasileiro</option>
@@ -1616,43 +1641,43 @@ async function deleteRoleConfirm(roleId){
             </select>
           </div>
           <div class="span-6">
-            <input type="text" data-setting="checkin" placeholder="Check-in padrão (ex: 14:00)">
+            <input type="text" data-setting="checkin" data-i18n-placeholder="settings.company.checkinPlaceholder" placeholder="Check-in padrão (ex: 14:00)">
           </div>
           <div class="span-6">
-            <input type="text" data-setting="checkout" placeholder="Check-out padrão (ex: 11:00)">
+            <input type="text" data-setting="checkout" data-i18n-placeholder="settings.company.checkoutPlaceholder" placeholder="Check-out padrão (ex: 11:00)">
           </div>
           <div class="span-12">
-            <input type="text" data-setting="logo_url" placeholder="URL do logo (opcional - cole o link de uma imagem já hospedada)">
+            <input type="text" data-setting="logo_url" data-i18n-placeholder="settings.company.logoUrlPlaceholder" placeholder="URL do logo (opcional - cole o link de uma imagem já hospedada)">
           </div>
         </div>
       </div>
 
       <div class="card" data-settings-section="comunicacao">
-        <h2>📱 WhatsApp Business</h2>
-        <p style="margin-bottom:14px">Conecte o número oficial do hostel no WhatsApp (Meta Cloud API).</p>
+        <h2 data-i18n="settings.whatsapp.title">📱 WhatsApp Business</h2>
+        <p data-i18n="settings.whatsapp.desc" style="margin-bottom:14px">Conecte o número oficial do hostel no WhatsApp (Meta Cloud API).</p>
 
         <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
           <div style="grid-column:span 6">
-            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Phone Number ID (da Meta)</label>
+            <label data-i18n="settings.whatsapp.phoneIdLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Phone Number ID (da Meta)</label>
             <input type="text" id="whatsappPhoneNumberId" autocomplete="off" placeholder="ex: 123456789012345" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
           </div>
           <div style="grid-column:span 6">
-            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Access Token</label>
-            <input type="password" id="whatsappAccessToken" autocomplete="off" placeholder="Deixe em branco pra manter o já salvo" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+            <label data-i18n="settings.whatsapp.tokenLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Access Token</label>
+            <input type="password" id="whatsappAccessToken" autocomplete="off" data-i18n-placeholder="settings.whatsapp.tokenPlaceholder" placeholder="Deixe em branco pra manter o já salvo" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
           </div>
         </div>
 
         <div id="whatsappTokenStatus" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
 
         <div style="margin-top:14px;padding:14px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff05">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">
+          <div data-i18n="settings.whatsapp.webhookIntro" style="font-size:12px;color:var(--muted);margin-bottom:6px">
             Configure isso no painel da Meta, na seção Webhooks do seu app WhatsApp Business:
           </div>
-          <div style="font-size:13px;font-weight:700">Callback URL:</div>
+          <div data-i18n="settings.whatsapp.callbackUrlLabel" style="font-size:13px;font-weight:700">Callback URL:</div>
           <code id="whatsappWebhookUrl" style="display:block;margin:4px 0 10px;word-break:break-all;color:#7bc2ff">carregando...</code>
-          <div style="font-size:13px;font-weight:700">Verify Token:</div>
+          <div data-i18n="settings.whatsapp.verifyTokenLabel" style="font-size:13px;font-weight:700">Verify Token:</div>
           <code style="display:block;margin-top:4px;color:#7bc2ff">stayflow-verify-token</code>
-          <div style="font-size:11px;color:var(--muted);margin-top:10px">
+          <div data-i18n="settings.whatsapp.localWarning" style="font-size:11px;color:var(--muted);margin-top:10px">
             ⚠️ Se ainda estiver testando local (127.0.0.1), a Meta não consegue acessar essa URL —
             você vai precisar de uma ferramenta como o ngrok pra criar um link público temporário
             até o servidor estar hospedado de vez.
@@ -1660,105 +1685,105 @@ async function deleteRoleConfirm(roleId){
         </div>
 
         <div style="display:flex;justify-content:flex-end;margin-top:14px">
-          <button class="btn" type="button" onclick="saveWhatsappSettings()">Salvar WhatsApp</button>
+          <button class="btn" type="button" onclick="saveWhatsappSettings()" data-i18n="settings.whatsapp.saveBtn">Salvar WhatsApp</button>
         </div>
       </div>
 
       <div class="card" data-settings-section="comunicacao">
-        <h2>Comunicação</h2>
+        <h2 data-i18n="settings.communication.title">Comunicação</h2>
 
         <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
-          <span>Mostrar contagem de alertas no sininho</span>
+          <span data-i18n="settings.communication.bellToggleLabel">Mostrar contagem de alertas no sininho</span>
           <input type="checkbox" data-setting="alert_channels" checked>
         </label>
 
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;opacity:.5;">
-          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Horário de silêncio</div>
-          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Ainda não aplicado — vai silenciar mensagens proativas quando o Ask StayFlow (function calling) existir. Não afeta resposta direta a hóspede.</p>
+          <div data-i18n="settings.communication.quietHoursTitle" style="font-size:13px;font-weight:700;margin-bottom:8px">Horário de silêncio</div>
+          <p data-i18n="settings.communication.quietHoursDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Ainda não aplicado — vai silenciar mensagens proativas quando o Ask StayFlow (function calling) existir. Não afeta resposta direta a hóspede.</p>
           <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
             <div class="span-6">
-              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Início</label>
+              <label data-i18n="settings.communication.quietHoursStartLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Início</label>
               <input type="time" data-setting="quiet_hours_start" disabled>
             </div>
             <div class="span-6">
-              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Fim</label>
+              <label data-i18n="settings.communication.quietHoursEndLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Fim</label>
               <input type="time" data-setting="quiet_hours_end" disabled>
             </div>
           </div>
         </div>
 
-        <h3 style="margin:20px 0 10px;font-size:14px;font-weight:800">Respostas rápidas</h3>
+        <h3 data-i18n="settings.communication.quickRepliesTitle" style="margin:20px 0 10px;font-size:14px;font-weight:800">Respostas rápidas</h3>
         <div id="quickRepliesList" style="display:grid;gap:8px"></div>
         <div style="display:flex;gap:10px;margin-top:10px">
-          <input type="text" id="newQuickReplyText" placeholder="Nova resposta rápida...">
-          <button class="btn secondary" type="button" onclick="createQuickReply()">+ Adicionar</button>
+          <input type="text" id="newQuickReplyText" data-i18n-placeholder="settings.communication.newQuickReplyPlaceholder" placeholder="Nova resposta rápida...">
+          <button class="btn secondary" type="button" onclick="createQuickReply()" data-i18n="settings.communication.addQuickReplyBtn">+ Adicionar</button>
         </div>
 
         <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
-          <button class="btn secondary" type="button" onclick="openPage('dashboard', document.querySelector('[data-page=dashboard]'))">Cancelar</button>
-          <button class="btn" type="button" onclick="saveSettings()">Salvar alterações</button>
+          <button class="btn secondary" type="button" onclick="openPage('dashboard', document.querySelector('[data-page=dashboard]'))" data-i18n="settings.cancelBtn">Cancelar</button>
+          <button class="btn" type="button" onclick="saveSettings()" data-i18n="settings.saveChangesBtn">Salvar alterações</button>
         </div>
       </div>
 
       <div class="card" data-settings-section="ia">
-        <h2>IA StayFlow</h2>
+        <h2 data-i18n="settings.ai.title">IA StayFlow</h2>
 
         <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;background:#0b84ff14;border:1px solid #0b84ff30;border-radius:12px;padding:10px 12px;">
-          <span style="font-weight:700">IA responde automaticamente aos hóspedes<br><small style="font-weight:400;color:var(--muted)">Quando desativado, a IA para de responder; as mensagens continuam sendo salvas pra atendimento manual.</small></span>
+          <span style="font-weight:700"><span data-i18n="settings.ai.autoReplyLabel">IA responde automaticamente aos hóspedes</span><br><small data-i18n="settings.ai.autoReplyDesc" style="font-weight:400;color:var(--muted)">Quando desativado, a IA para de responder; as mensagens continuam sendo salvas pra atendimento manual.</small></span>
           <input type="checkbox" data-setting="ai_enabled" checked>
         </label>
 
         <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;opacity:.5;">
-          <span>Resposta automática para dúvidas simples<br><small style="font-weight:400;color:var(--muted)">Em breve — depende do recurso de assumir conversa</small></span>
+          <span><span data-i18n="settings.ai.simpleAutoReplyLabel">Resposta automática para dúvidas simples</span><br><small data-i18n="settings.ai.simpleAutoReplyDesc" style="font-weight:400;color:var(--muted)">Em breve — depende do recurso de assumir conversa</small></span>
           <input type="checkbox" checked disabled>
         </label>
 
         <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
-          <span>Geração de oportunidades (leads e upsell)</span>
+          <span data-i18n="settings.ai.opportunityGenLabel">Geração de oportunidades (leads e upsell)</span>
           <input type="checkbox" data-setting="opportunity_generation" checked>
         </label>
 
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;opacity:.5;">
-          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Agente de IA (persona, tom, regras de escalonamento)</div>
-          <p style="font-size:12px;color:var(--muted);margin:0">Disponível quando o Ask StayFlow (function calling) estiver pronto.</p>
+          <div data-i18n="settings.ai.agentTitle" style="font-size:13px;font-weight:700;margin-bottom:8px">Agente de IA (persona, tom, regras de escalonamento)</div>
+          <p data-i18n="settings.ai.agentDesc" style="font-size:12px;color:var(--muted);margin:0">Disponível quando o Ask StayFlow (function calling) estiver pronto.</p>
         </div>
 
         <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
-          <button class="btn secondary" type="button" onclick="openPage('dashboard', document.querySelector('[data-page=dashboard]'))">Cancelar</button>
-          <button class="btn" type="button" onclick="saveSettings()">Salvar alterações</button>
+          <button class="btn secondary" type="button" onclick="openPage('dashboard', document.querySelector('[data-page=dashboard]'))" data-i18n="settings.cancelBtn">Cancelar</button>
+          <button class="btn" type="button" onclick="saveSettings()" data-i18n="settings.saveChangesBtn">Salvar alterações</button>
         </div>
       </div>
 
       <div class="card" data-settings-section="seguranca">
-        <h2>Segurança</h2>
+        <h2 data-i18n="settings.security.title">Segurança</h2>
 
-        <h3 style="margin:0 0 10px;font-size:14px;font-weight:800">Trocar senha</h3>
+        <h3 data-i18n="settings.security.changePasswordTitle" style="margin:0 0 10px;font-size:14px;font-weight:800">Trocar senha</h3>
         <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
           <div class="span-12">
-            <input type="password" id="currentPasswordInput" placeholder="Senha atual" autocomplete="current-password">
+            <input type="password" id="currentPasswordInput" data-i18n-placeholder="settings.security.currentPasswordPlaceholder" placeholder="Senha atual" autocomplete="current-password">
           </div>
           <div class="span-6">
-            <input type="password" id="newPasswordInput" placeholder="Nova senha (mínimo 8 caracteres)" autocomplete="new-password">
+            <input type="password" id="newPasswordInput" data-i18n-placeholder="settings.security.newPasswordPlaceholder" placeholder="Nova senha (mínimo 8 caracteres)" autocomplete="new-password">
           </div>
           <div class="span-6">
-            <input type="password" id="confirmPasswordInput" placeholder="Confirmar nova senha" autocomplete="new-password">
+            <input type="password" id="confirmPasswordInput" data-i18n-placeholder="settings.security.confirmPasswordPlaceholder" placeholder="Confirmar nova senha" autocomplete="new-password">
           </div>
         </div>
         <div id="changePasswordMessage" class="generic-modal-message" style="margin-top:4px"></div>
         <div style="display:flex;justify-content:flex-end;margin-top:10px">
-          <button class="btn" type="button" onclick="submitChangePassword()">Trocar senha</button>
+          <button class="btn" type="button" onclick="submitChangePassword()" data-i18n="settings.security.changePasswordBtn">Trocar senha</button>
         </div>
 
-        <h3 style="margin:24px 0 10px;font-size:14px;font-weight:800">Sessões ativas</h3>
-        <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Dispositivos/navegadores com sessão válida hoje. Revogar uma sessão bloqueia o próximo acesso dela imediatamente.</p>
+        <h3 data-i18n="settings.security.activeSessionsTitle" style="margin:24px 0 10px;font-size:14px;font-weight:800">Sessões ativas</h3>
+        <p data-i18n="settings.security.activeSessionsDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Dispositivos/navegadores com sessão válida hoje. Revogar uma sessão bloqueia o próximo acesso dela imediatamente.</p>
         <div id="activeSessionsList" style="display:grid;gap:8px"></div>
 
-        <h3 style="margin:24px 0 10px;font-size:14px;font-weight:800">Últimas tentativas de login</h3>
+        <h3 data-i18n="settings.security.loginAttemptsTitle" style="margin:24px 0 10px;font-size:14px;font-weight:800">Últimas tentativas de login</h3>
         <div id="loginAttemptsList" style="display:grid;gap:8px"></div>
 
         <div style="margin-top:20px;padding-top:14px;border-top:1px solid #ffffff12;opacity:.5;">
-          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Autenticação em duas etapas (2FA)</div>
-          <p style="font-size:12px;color:var(--muted);margin:0">Em breve.</p>
+          <div data-i18n="settings.security.twoFATitle" style="font-size:13px;font-weight:700;margin-bottom:8px">Autenticação em duas etapas (2FA)</div>
+          <p data-i18n="settings.security.comingSoon" style="font-size:12px;color:var(--muted);margin:0">Em breve.</p>
         </div>
       </div>
 
@@ -1766,18 +1791,18 @@ async function deleteRoleConfirm(roleId){
         <h2>Billing</h2>
         <div class="sf-empty">
           <div>
-            <strong>Modelo de cobrança em definição</strong>
-            <span>Ainda não há processador de pagamento integrado nem plano ativo. Esta tela vai mostrar plano contratado, status e faturas assim que o modelo comercial estiver definido.</span>
+            <strong data-i18n="settings.billing.emptyTitle">Modelo de cobrança em definição</strong>
+            <span data-i18n="settings.billing.emptyDesc">Ainda não há processador de pagamento integrado nem plano ativo. Esta tela vai mostrar plano contratado, status e faturas assim que o modelo comercial estiver definido.</span>
           </div>
         </div>
       </div>
 
       <div class="card" data-settings-section="developer">
-        <h2>Developer</h2>
+        <h2 data-i18n="settings.developer.title">Developer</h2>
         <div class="sf-empty">
           <div>
-            <strong>Integrações — em breve</strong>
-            <span>Planejado: OTAs (Booking.com, Airbnb, Hostelworld) e channel managers (ex: Beds24) via e-mail ou API, quando o acesso de parceiro estiver disponível. Chaves de API para integrações próprias também ficam para essa fase — nenhuma chave é gerada ainda.</span>
+            <strong data-i18n="settings.developer.emptyTitle">Integrações — em breve</strong>
+            <span data-i18n="settings.developer.emptyDesc">Planejado: OTAs (Booking.com, Airbnb, Hostelworld) e channel managers (ex: Beds24) via e-mail ou API, quando o acesso de parceiro estiver disponível. Chaves de API para integrações próprias também ficam para essa fase — nenhuma chave é gerada ainda.</span>
           </div>
         </div>
       </div>
@@ -1796,32 +1821,32 @@ async function deleteRoleConfirm(roleId){
 <aside id="askPanel" class="ask-panel">
   <div class="ask-head">
     <div>
-      <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span>Pergunte à StayFlow</h2>
-      <p>IA interna do seu hostel</p>
+      <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span><span data-i18n="ask.title">Pergunte à StayFlow</span></h2>
+      <p data-i18n="ask.subtitle">IA interna do seu hostel</p>
     </div>
     <button class="close-btn" onclick="closeAskStayFlow()">×</button>
   </div>
 
   <div class="ask-body">
-    <div class="ask-message bot">
+    <div class="ask-message bot" data-i18n="ask.welcomeMsg">
       Oi! Assim que seu StayFlow estiver conectado a dados reais, posso analisar reservas, conversas, receita, limpeza e oportunidades. O que você quer resolver agora?
     </div>
-    <button class="ask-suggestion" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]')); closeAskStayFlow()">Quais oportunidades existem hoje?</button>
-    <button class="ask-suggestion" onclick="openPage('chats', document.querySelector('[data-page=chats]')); closeAskStayFlow()">Quem precisa de resposta humana?</button>
-    <button class="ask-suggestion" onclick="openPage('revenue', document.querySelector('[data-page=revenue]')); closeAskStayFlow()">Onde posso aumentar receita?</button>
+    <button class="ask-suggestion" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]')); closeAskStayFlow()" data-i18n="ask.suggestion1">Quais oportunidades existem hoje?</button>
+    <button class="ask-suggestion" onclick="openPage('chats', document.querySelector('[data-page=chats]')); closeAskStayFlow()" data-i18n="ask.suggestion2">Quem precisa de resposta humana?</button>
+    <button class="ask-suggestion" onclick="openPage('revenue', document.querySelector('[data-page=revenue]')); closeAskStayFlow()" data-i18n="ask.suggestion3">Onde posso aumentar receita?</button>
   </div>
 
   <div class="ask-input">
-    <input placeholder="Pergunte algo sobre a operação...">
-    <button class="btn" onclick="askStayFlowSend(this)">Enviar</button>
+    <input data-i18n-placeholder="ask.inputPlaceholder" placeholder="Pergunte algo sobre a operação...">
+    <button class="btn" onclick="askStayFlowSend(this)" data-i18n="chats.sendBtn">Enviar</button>
   </div>
 </aside>
 
-<button class="reserva-floating" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" title="Nova reserva">
+<button class="reserva-floating" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" data-i18n-title="reservations.newReservation.title2" title="Nova reserva">
   <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#06101b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
 </button>
 
-<button class="ask-floating" onclick="openAskStayFlow()" aria-label="Pergunte à StayFlow" title="Pergunte à StayFlow">
+<button class="ask-floating" onclick="openAskStayFlow()" aria-label="Pergunte à StayFlow" data-i18n-title="ask.title" title="Pergunte à StayFlow">
   <span class="brand-logo-mask" role="img" aria-label="StayFlow"></span>
 </button>
 
@@ -1830,27 +1855,27 @@ async function deleteRoleConfirm(roleId){
 <aside id="teamPanel" class="ask-panel">
   <div class="ask-head">
     <div>
-      <h2>Equipe</h2>
-      <p>Gerencie quem tem acesso e o que cada pessoa pode ver</p>
+      <h2 data-i18n="nav.team">Equipe</h2>
+      <p data-i18n="team.panel.subtitle">Gerencie quem tem acesso e o que cada pessoa pode ver</p>
     </div>
     <button class="close-btn" onclick="closeTeamPanel()">×</button>
   </div>
 
   <div class="team-tabs">
-    <button type="button" class="team-tab active" data-team-tab="members" onclick="switchTeamTab('members')">Equipe</button>
-    <button type="button" class="team-tab" data-team-tab="roles" onclick="switchTeamTab('roles')">Funções</button>
+    <button type="button" class="team-tab active" data-team-tab="members" onclick="switchTeamTab('members')" data-i18n="team.tab.members">Equipe</button>
+    <button type="button" class="team-tab" data-team-tab="roles" onclick="switchTeamTab('roles')" data-i18n="team.tab.roles">Funções</button>
   </div>
 
   <div id="teamTabMembers" class="ask-body team-tab-content">
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-      <button class="btn" type="button" onclick="openInviteForm()">+ Convidar</button>
+      <button class="btn" type="button" onclick="openInviteForm()" data-i18n="team.inviteBtn">+ Convidar</button>
     </div>
     <div id="teamListContainer"></div>
   </div>
 
   <div id="teamTabRoles" class="ask-body team-tab-content" style="display:none">
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-      <button class="btn" type="button" onclick="openNewRoleForm()">+ Nova função</button>
+      <button class="btn" type="button" onclick="openNewRoleForm()" data-i18n="team.newRoleBtn">+ Nova função</button>
     </div>
     <div id="rolesListContainer"></div>
   </div>
@@ -1873,17 +1898,18 @@ async function deleteRoleConfirm(roleId){
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
   const PAGE_LABELS = {
-    dashboard:    ["Dashboard",          "Visão geral inteligente da operação"],
-    chats:        ["Chats",              "Conversas, hóspedes e IA em tempo real"],
-    opportunities:["Opportunity Center", "Oportunidades detectadas pela StayFlow"],
-    reservations: ["Reservas",           "Reservas reais e próximas ações"],
-    operations:   ["Operações",          "Rotina operacional, alertas e tarefas"],
-    guests:       ["Hóspedes",           "Perfis, histórico e relacionamento"],
-    finance:      ["Financeiro",         "Receita, pagamentos e oportunidades"],
-    inventory:    ["Estoque",            "Controle de itens e reposição"],
-    revenue:      ["Receitas",           "Precificação e aumento de receita"],
-    reports:      ["Relatórios",         "Relatórios operacionais da IA"],
-    settings:     ["Configurações",      "Centro de controle do StayFlow"]
+    dashboard:    ["nav.dashboard",     "topbar.subtitle.dashboard"],
+    chats:        ["nav.chats",         "topbar.subtitle.chats"],
+    opportunities:["nav.opportunities", "topbar.subtitle.opportunities"],
+    reservations: ["nav.reservations",  "topbar.subtitle.reservations"],
+    roommap:      ["nav.roommap",       "topbar.subtitle.roommap"],
+    operations:   ["nav.operations",    "topbar.subtitle.operations"],
+    guests:       ["nav.guests",        "topbar.subtitle.guests"],
+    finance:      ["nav.finance",       "topbar.subtitle.finance"],
+    inventory:    ["nav.inventory",     "topbar.subtitle.inventory"],
+    revenue:      ["nav.revenue",       "topbar.subtitle.revenue"],
+    reports:      ["nav.reports",       "topbar.subtitle.reports"],
+    settings:     ["nav.settings",      "topbar.subtitle.settings"]
   };
 
   function setActiveMenu(pageId, trigger){
@@ -1895,17 +1921,24 @@ async function deleteRoleConfirm(roleId){
   }
 
   function updateTopbar(pageId){
-    const [title, subtitle] = PAGE_LABELS[pageId] || ["StayFlow", ""];
+    const [titleKey, subtitleKey] = PAGE_LABELS[pageId] || ["nav.dashboard", ""];
     const titleEl = $("#pageTitle");
-    const subEl   = $(".topbar p");
+    const subEl   = $("#pageSubtitle");
+    const lang    = window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt";
+    const title   = window.StayFlowI18n ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, titleKey, titleKey) : titleKey;
+    const subtitle= window.StayFlowI18n && subtitleKey ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, subtitleKey, "") : "";
     if(titleEl) titleEl.textContent = title;
-    if(subEl)   subEl.textContent   = subtitle || "";
+    if(subEl)   subEl.textContent   = subtitle;
   }
+
+  let currentOpenPageId = "dashboard";
+  document.addEventListener("stayflow:language-changed", () => updateTopbar(currentOpenPageId));
 
   window.openPage = function(pageId, trigger){
     const page = document.getElementById(pageId);
     if(!page) return;
 
+    currentOpenPageId = pageId;
     $$(".page").forEach(p => p.classList.remove("active"));
     page.classList.add("active");
 
@@ -1999,7 +2032,7 @@ async function deleteRoleConfirm(roleId){
     setTimeout(()=>{
       addMessage(
         container,
-        "Mensagem registrada. Quando o backend estiver conectado, a StayFlow utilizará dados reais para responder e sugerir ações.",
+        T('ask.mockReply', 'Mensagem registrada. Quando o backend estiver conectado, a StayFlow utilizará dados reais para responder e sugerir ações.'),
         "bot"
       );
     }, 180);
@@ -2024,7 +2057,7 @@ async function deleteRoleConfirm(roleId){
 
     const thinking = document.createElement("div");
     thinking.className = "ask-message bot";
-    thinking.textContent = "Consultando...";
+    thinking.textContent = T('ask.consulting', 'Consultando...');
     container.appendChild(thinking);
     container.scrollTop = container.scrollHeight;
 
@@ -2046,18 +2079,18 @@ async function deleteRoleConfirm(roleId){
       });
 
       if(res.status === 401){
-        thinking.textContent = "Sua sessão expirou. Faça login novamente.";
+        thinking.textContent = T('reservations.msg.sessionExpired', 'Sua sessão expirou. Faça login novamente.');
         window.location.href = "/Login.html";
         return;
       }
 
       const data = await res.json();
-      thinking.textContent = (data && data.reply) || "Não consegui responder agora. Tente novamente.";
+      thinking.textContent = (data && data.reply) || T('ask.msg.noReply', 'Não consegui responder agora. Tente novamente.');
     }catch(err){
       console.warn("Falha ao consultar o Ask StayFlow:", err);
       thinking.textContent = err.name === "AbortError"
-        ? "A resposta demorou demais e foi cancelada. Tente perguntar de novo, talvez de um jeito mais direto."
-        : "Erro ao conectar com o servidor. Tente novamente em instantes.";
+        ? T('ask.msg.timeout', 'A resposta demorou demais e foi cancelada. Tente perguntar de novo, talvez de um jeito mais direto.')
+        : T('ask.msg.connError', 'Erro ao conectar com o servidor. Tente novamente em instantes.');
     }finally{
       clearTimeout(timeoutId);
       button.disabled = false;
@@ -2102,17 +2135,17 @@ async function deleteRoleConfirm(roleId){
         body:JSON.stringify(data)
       });
       if(res.ok){
-        alert("Configurações salvas.");
+        alert(T('settings.msg.saved', 'Configurações salvas.'));
       }else if(res.status === 401){
-        alert("Sua sessão expirou. Faça login novamente.");
+        alert(T('reservations.msg.sessionExpired', 'Sua sessão expirou. Faça login novamente.'));
         window.location.href = "/Login.html";
       }else{
         console.warn("POST /settings retornou erro, mantendo apenas local.");
-        alert("Configurações salvas localmente. Backend ainda não confirmou.");
+        alert(T('settings.msg.savedLocalOnly', 'Configurações salvas localmente. Backend ainda não confirmou.'));
       }
     }catch(err){
       console.warn("Backend /settings indisponível. Usando apenas armazenamento local.", err);
-      alert("Configurações salvas localmente. Backend indisponível.");
+      alert(T('settings.msg.savedLocalUnavailable', 'Configurações salvas localmente. Backend indisponível.'));
     }
   };
 
@@ -2148,7 +2181,7 @@ async function deleteRoleConfirm(roleId){
     const accessToken = document.getElementById("whatsappAccessToken").value.trim();
 
     if(!phoneNumberId){
-      alert("Cola o Phone Number ID que a Meta te deu.");
+      alert(T('settings.whatsapp.msg.phoneIdRequired', 'Cola o Phone Number ID que a Meta te deu.'));
       return;
     }
 
@@ -2161,16 +2194,16 @@ async function deleteRoleConfirm(roleId){
       });
 
       if(!res.ok){
-        alert("Não foi possível salvar a configuração do WhatsApp.");
+        alert(T('settings.whatsapp.msg.saveFailed', 'Não foi possível salvar a configuração do WhatsApp.'));
         return;
       }
 
-      alert("WhatsApp salvo.");
+      alert(T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
       document.getElementById("whatsappAccessToken").value = "";
       loadWhatsappSettings();
     }catch(e){
       console.error("Erro ao salvar WhatsApp:", e);
-      alert("Erro de conexão ao salvar.");
+      alert(T('common.saveConnError', 'Erro de conexão ao salvar.'));
     }
   };
 
@@ -2190,14 +2223,14 @@ async function deleteRoleConfirm(roleId){
       const statusEl = document.getElementById("whatsappTokenStatus");
       if(statusEl){
         statusEl.textContent = data.has_access_token
-          ? "✅ Access Token já configurado."
-          : "⚠️ Nenhum Access Token salvo ainda.";
+          ? T('settings.whatsapp.tokenConfigured', '✅ Access Token já configurado.')
+          : T('settings.whatsapp.tokenMissing', '⚠️ Nenhum Access Token salvo ainda.');
       }
 
       const whatsappPill = document.getElementById("statusWhatsappPill");
       if(whatsappPill){
         const connected = Boolean(data.phone_number_id) && data.has_access_token;
-        whatsappPill.textContent = connected ? "WhatsApp conectado" : "WhatsApp não conectado";
+        whatsappPill.textContent = connected ? T('settings.systemStatus.whatsappConnected', 'WhatsApp conectado') : T('settings.systemStatus.whatsappNotConnected', 'WhatsApp não conectado');
         whatsappPill.classList.remove(connected ? "cold" : "ok");
         whatsappPill.classList.add(connected ? "ok" : "cold");
       }
@@ -2216,7 +2249,7 @@ async function deleteRoleConfirm(roleId){
 
       const backendPill = document.getElementById("statusBackendPill");
       if(backendPill){
-        backendPill.textContent = "Backend conectado";
+        backendPill.textContent = T('settings.systemStatus.backendConnected', 'Backend conectado');
         backendPill.classList.remove("cold");
         backendPill.classList.add("ok");
       }
@@ -2288,7 +2321,7 @@ async function deleteRoleConfirm(roleId){
     container.innerHTML = "";
 
     if(!window.STAYFLOW_QUICK_REPLIES.length){
-      container.innerHTML = "<p style='color:var(--muted);font-size:13px;margin:0'>Nenhuma resposta rápida cadastrada.</p>";
+      container.innerHTML = `<p style='color:var(--muted);font-size:13px;margin:0'>${T('settings.quickReplies.empty', 'Nenhuma resposta rápida cadastrada.')}</p>`;
       return;
     }
 
@@ -2297,7 +2330,7 @@ async function deleteRoleConfirm(roleId){
       row.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #ffffff12;border-radius:12px;background:#ffffff05";
       row.innerHTML = `
         <span style="font-size:13px">${escapeHtml(qr.text)}</span>
-        <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deleteQuickReply(${qr.id})">Remover</button>
+        <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deleteQuickReply(${qr.id})">${T('settings.quickReplies.removeBtn', 'Remover')}</button>
       `;
       container.appendChild(row);
     });
@@ -2319,7 +2352,7 @@ async function deleteRoleConfirm(roleId){
       const data = await res.json();
 
       if(!res.ok || !data.success){
-        alert(data.message || "Não foi possível criar a resposta rápida.");
+        alert(data.message || T('settings.quickReplies.createFailed', 'Não foi possível criar a resposta rápida.'));
         return;
       }
 
@@ -2327,12 +2360,12 @@ async function deleteRoleConfirm(roleId){
       loadQuickReplies();
     }catch(e){
       console.error("Erro ao criar resposta rápida:", e);
-      alert("Erro de conexão.");
+      alert(T('common.connectionError', 'Erro de conexão.'));
     }
   };
 
   window.deleteQuickReply = async function(id){
-    if(!confirm("Remover esta resposta rápida?")) return;
+    if(!confirm(T('settings.quickReplies.removeConfirm', 'Remover esta resposta rápida?'))) return;
 
     try{
       const res = await fetch(`/quick-replies/${id}`, {
@@ -2342,14 +2375,14 @@ async function deleteRoleConfirm(roleId){
       const data = await res.json();
 
       if(!res.ok || !data.success){
-        alert(data.message || "Não foi possível remover.");
+        alert(data.message || T('settings.quickReplies.removeFailed', 'Não foi possível remover.'));
         return;
       }
 
       loadQuickReplies();
     }catch(e){
       console.error("Erro ao remover resposta rápida:", e);
-      alert("Erro de conexão.");
+      alert(T('common.connectionError', 'Erro de conexão.'));
     }
   };
 
@@ -2369,19 +2402,19 @@ async function deleteRoleConfirm(roleId){
     const confirmPassword = confirmInput.value;
 
     if(!currentPassword || !newPassword || !confirmPassword){
-      msg.textContent = "Preencha os 3 campos.";
+      msg.textContent = T('settings.security.msg.fillAllFields', 'Preencha os 3 campos.');
       msg.classList.add("error");
       return;
     }
 
     if(newPassword.length < 8){
-      msg.textContent = "A nova senha precisa ter pelo menos 8 caracteres.";
+      msg.textContent = T('settings.security.msg.passwordTooShort', 'A nova senha precisa ter pelo menos 8 caracteres.');
       msg.classList.add("error");
       return;
     }
 
     if(newPassword !== confirmPassword){
-      msg.textContent = "A confirmação não bate com a nova senha.";
+      msg.textContent = T('settings.security.msg.passwordMismatch', 'A confirmação não bate com a nova senha.');
       msg.classList.add("error");
       return;
     }
@@ -2396,12 +2429,12 @@ async function deleteRoleConfirm(roleId){
       const data = await res.json();
 
       if(!res.ok || !data.success){
-        msg.textContent = data.message || "Não foi possível trocar a senha.";
+        msg.textContent = data.message || T('settings.security.msg.changePasswordFailed', 'Não foi possível trocar a senha.');
         msg.classList.add("error");
         return;
       }
 
-      msg.textContent = data.message || "Senha alterada.";
+      msg.textContent = data.message || T('settings.security.msg.passwordChanged', 'Senha alterada.');
       msg.classList.add("success");
       currentInput.value = "";
       newInput.value = "";
@@ -2409,7 +2442,7 @@ async function deleteRoleConfirm(roleId){
       loadActiveSessions();
     }catch(e){
       console.error("Erro ao trocar senha:", e);
-      msg.textContent = "Erro de conexão.";
+      msg.textContent = T('common.connectionError', 'Erro de conexão.');
       msg.classList.add("error");
     }
   };
@@ -2429,12 +2462,12 @@ async function deleteRoleConfirm(roleId){
         const row = document.createElement("div");
         row.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #ffffff12;border-radius:12px;background:#ffffff05";
         const currentTag = s.is_current
-          ? `<span class="perm-tag" style="color:#7bffa0">esta sessão</span>`
+          ? `<span class="perm-tag" style="color:#7bffa0">${T('settings.security.thisSession', 'esta sessão')}</span>`
           : "";
         row.innerHTML = `
           <div>
-            <div style="font-size:13px;font-weight:700">${escapeHtml(s.user_agent || "Dispositivo desconhecido")} ${currentTag}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">Criada em ${escapeHtml(s.created_at)} · Última atividade ${escapeHtml(s.last_seen_at)}</div>
+            <div style="font-size:13px;font-weight:700">${escapeHtml(s.user_agent || T('settings.security.unknownDevice', 'Dispositivo desconhecido'))} ${currentTag}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${T('settings.security.createdAt', 'Criada em')} ${escapeHtml(s.created_at)} · ${T('settings.security.lastActivity', 'Última atividade')} ${escapeHtml(s.last_seen_at)}</div>
           </div>
         `;
         if(!s.is_current){
@@ -2442,7 +2475,7 @@ async function deleteRoleConfirm(roleId){
           btn.className = "btn secondary";
           btn.type = "button";
           btn.style.cssText = "font-size:11px;padding:6px 10px";
-          btn.textContent = "Revogar";
+          btn.textContent = T('settings.security.revokeBtn', 'Revogar');
           btn.addEventListener("click", () => revokeSessionUI(s.id));
           row.appendChild(btn);
         }
@@ -2454,7 +2487,7 @@ async function deleteRoleConfirm(roleId){
   }
 
   window.revokeSessionUI = async function(sessionId){
-    if(!confirm("Revogar esta sessão? O dispositivo será desconectado no próximo acesso.")) return;
+    if(!confirm(T('settings.security.revokeConfirm', 'Revogar esta sessão? O dispositivo será desconectado no próximo acesso.'))) return;
 
     try{
       const res = await fetch(`/security/sessions/${sessionId}`, {
@@ -2464,14 +2497,14 @@ async function deleteRoleConfirm(roleId){
       const data = await res.json();
 
       if(!res.ok || !data.success){
-        alert(data.message || "Não foi possível revogar.");
+        alert(data.message || T('settings.security.revokeFailed', 'Não foi possível revogar.'));
         return;
       }
 
       loadActiveSessions();
     }catch(e){
       console.error("Erro ao revogar sessão:", e);
-      alert("Erro de conexão.");
+      alert(T('common.connectionError', 'Erro de conexão.'));
     }
   };
 
@@ -2488,7 +2521,7 @@ async function deleteRoleConfirm(roleId){
       container.innerHTML = "";
 
       if(!data.attempts.length){
-        container.innerHTML = "<p style='color:var(--muted);font-size:13px;margin:0'>Nenhuma tentativa registrada ainda.</p>";
+        container.innerHTML = `<p style='color:var(--muted);font-size:13px;margin:0'>${T('settings.security.noAttempts', 'Nenhuma tentativa registrada ainda.')}</p>`;
         return;
       }
 
@@ -2496,8 +2529,8 @@ async function deleteRoleConfirm(roleId){
         const row = document.createElement("div");
         row.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #ffffff12;border-radius:12px;background:#ffffff05";
         const statusTag = a.success
-          ? `<span class="perm-tag" style="color:#7bffa0">sucesso</span>`
-          : `<span class="perm-tag" style="color:#ff8b8b">falha</span>`;
+          ? `<span class="perm-tag" style="color:#7bffa0">${T('settings.security.attemptSuccess', 'sucesso')}</span>`
+          : `<span class="perm-tag" style="color:#ff8b8b">${T('settings.security.attemptFailure', 'falha')}</span>`;
         row.innerHTML = `
           <div style="font-size:13px">${escapeHtml(a.created_at)} ${statusTag}</div>
         `;
@@ -2731,21 +2764,21 @@ async function loadReservations(){
         // saldo positivo = deve pra gente; negativo = pagou a mais,
         // fica com credito acumulado pra abater depois.
         const balanceLabel = balance > 0
-          ? `<span style="color:#ff9caf">Deve US$ ${balance.toFixed(2)}</span>`
+          ? `<span style="color:#ff9caf">${T('longTermStay.owes', 'Deve US$ {amount}', { amount: balance.toFixed(2) })}</span>`
           : balance < 0
-            ? `<span style="color:#6ff0bd">Crédito US$ ${Math.abs(balance).toFixed(2)}</span>`
-            : `<span style="color:var(--muted)">Em dia</span>`;
+            ? `<span style="color:#6ff0bd">${T('longTermStay.credit', 'Crédito US$ {amount}', { amount: Math.abs(balance).toFixed(2) })}</span>`
+            : `<span style="color:var(--muted)">${T('longTermStay.upToDate', 'Em dia')}</span>`;
 
         row.innerHTML = `
           <td>${r.guest_name || "-"}</td>
           <td>${r.room_type || "-"}${r.bed ? " · " + r.bed : ""}</td>
-          <td>Desde ${r.checkin_date || "-"}${r.checkout_date ? " até " + r.checkout_date : ""} (${r.days_occupied ?? 0}d)</td>
-          <td>morador fixo</td>
-          <td><span class="status-pill ok">MORADOR</span></td>
+          <td>${T('longTermStay.since', 'Desde')} ${r.checkin_date || "-"}${r.checkout_date ? " " + T('longTermStay.until', 'até') + " " + r.checkout_date : ""} (${r.days_occupied ?? 0}${T('longTermStay.daysUnit', 'd')})</td>
+          <td>${T('longTermStay.fixedResidentLabel', 'morador fixo')}</td>
+          <td><span class="status-pill ok">${T('longTermStay.statusPill', 'MORADOR')}</span></td>
           <td>${balanceLabel}</td>
           <td>
-            <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="registerPaymentUI(${r.id})">Registrar pagamento</button>
-            ${!r.checkout_date ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="closeIndefiniteStayUI(${r.id})">Encerrar estadia</button>` : ""}
+            <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="registerPaymentUI(${r.id})">${T('longTermStay.registerPaymentBtn', 'Registrar pagamento')}</button>
+            ${!r.checkout_date ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="closeIndefiniteStayUI(${r.id})">${T('longTermStay.closeStayBtn', 'Encerrar estadia')}</button>` : ""}
           </td>
         `;
         bodyEl.appendChild(row);
@@ -2761,11 +2794,11 @@ async function loadReservations(){
         <td>US$ ${Number(r.amount || 0).toFixed(2)}</td>
         <td>
           <select onchange="updateReservationStatus(${r.id}, this.value)" style="background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:6px 8px;font-size:12px">
-            <option value="">Mudar status...</option>
-            <option value="pending" ${r.status === "pending" ? "disabled" : ""}>Pendente</option>
-            <option value="confirmed" ${r.status === "confirmed" ? "disabled" : ""}>Confirmada</option>
-            <option value="cancelled" ${r.status === "cancelled" ? "disabled" : ""}>Cancelada</option>
-            <option value="no_show" ${r.status === "no_show" ? "disabled" : ""}>No-show</option>
+            <option value="">${T('reservations.changeStatusOption', 'Mudar status...')}</option>
+            <option value="pending" ${r.status === "pending" ? "disabled" : ""}>${T('reservations.status.pending', 'Pendente')}</option>
+            <option value="confirmed" ${r.status === "confirmed" ? "disabled" : ""}>${T('reservations.status.confirmed', 'Confirmada')}</option>
+            <option value="cancelled" ${r.status === "cancelled" ? "disabled" : ""}>${T('reservations.status.cancelled', 'Cancelada')}</option>
+            <option value="no_show" ${r.status === "no_show" ? "disabled" : ""}>${T('reservations.status.noShow', 'No-show')}</option>
           </select>
         </td>
       `;
@@ -2787,7 +2820,7 @@ window.updateReservationStatus = async function(reservationId, newStatus){
       body: JSON.stringify({ status: newStatus })
     });
     if(!res.ok){
-      alert("Não foi possível atualizar o status.");
+      alert(T('reservations.msg.updateStatusFailed', 'Não foi possível atualizar o status.'));
       return;
     }
     loadReservations();
@@ -2812,7 +2845,7 @@ window.submitNewReservation = async function(event){
   };
 
   if(!payload.guest_name || !payload.checkin_date || !payload.checkout_date){
-    alert("Preencha ao menos hóspede, check-in e check-out.");
+    alert(T('reservations.msg.fillRequiredFields', 'Preencha ao menos hóspede, check-in e check-out.'));
     return;
   }
 
@@ -2825,13 +2858,13 @@ window.submitNewReservation = async function(event){
     });
 
     if(res.status === 401){
-      alert("Sua sessão expirou. Faça login novamente.");
+      alert(T('reservations.msg.sessionExpired', 'Sua sessão expirou. Faça login novamente.'));
       window.location.href = "/Login.html";
       return;
     }
 
     if(!res.ok){
-      alert("Não foi possível criar a reserva.");
+      alert(T('reservations.msg.createFailed', 'Não foi possível criar a reserva.'));
       return;
     }
 
@@ -2839,7 +2872,7 @@ window.submitNewReservation = async function(event){
     loadReservations();
   }catch(e){
     console.error("Erro ao criar reserva:", e);
-    alert("Erro de conexão ao criar reserva.");
+    alert(T('reservations.msg.createConnError', 'Erro de conexão ao criar reserva.'));
   }
 };
 
@@ -2856,7 +2889,7 @@ window.submitIndefiniteStay = async function(event){
   };
 
   if(!payload.guest_name || !payload.checkin_date){
-    alert("Preencha ao menos nome e data de início.");
+    alert(T('longTermStay.msg.fillRequiredFields', 'Preencha ao menos nome e data de início.'));
     return;
   }
 
@@ -2870,23 +2903,23 @@ window.submitIndefiniteStay = async function(event){
 
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível criar a estadia.");
+      alert(data.message || T('longTermStay.msg.createFailed', 'Não foi possível criar a estadia.'));
       return;
     }
 
     form.reset();
     loadReservations();
   }catch(e){
-    alert("Erro de conexão ao criar a estadia de longa duração.");
+    alert(T('longTermStay.msg.createConnError', 'Erro de conexão ao criar a estadia de longa duração.'));
   }
 };
 
 window.registerPaymentUI = async function(reservationId){
-  const amountStr = prompt("Valor do pagamento recebido:");
+  const amountStr = prompt(T('longTermStay.payment.prompt', 'Valor do pagamento recebido:'));
   if(!amountStr) return;
   const amount = parseFloat(amountStr.replace(",", "."));
   if(!amount || amount <= 0){
-    alert("Valor inválido.");
+    alert(T('longTermStay.payment.invalidAmount', 'Valor inválido.'));
     return;
   }
 
@@ -2899,17 +2932,17 @@ window.registerPaymentUI = async function(reservationId){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível registrar o pagamento.");
+      alert(data.message || T('longTermStay.payment.registerFailed', 'Não foi possível registrar o pagamento.'));
       return;
     }
     loadReservations();
   }catch(e){
-    alert("Erro de conexão ao registrar o pagamento.");
+    alert(T('longTermStay.payment.registerConnError', 'Erro de conexão ao registrar o pagamento.'));
   }
 };
 
 window.closeIndefiniteStayUI = async function(reservationId){
-  if(!confirm("Confirma o encerramento dessa estadia? A cama será liberada pra limpeza.")) return;
+  if(!confirm(T('longTermStay.closeConfirm', 'Confirma o encerramento dessa estadia? A cama será liberada pra limpeza.'))) return;
 
   try{
     const res = await fetch(`/reservations/${reservationId}/close-stay`, {
@@ -2918,24 +2951,27 @@ window.closeIndefiniteStayUI = async function(reservationId){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível encerrar a estadia.");
+      alert(data.message || T('longTermStay.closeFailed', 'Não foi possível encerrar a estadia.'));
       return;
     }
     loadReservations();
   }catch(e){
-    alert("Erro de conexão ao encerrar a estadia.");
+    alert(T('longTermStay.closeConnError', 'Erro de conexão ao encerrar a estadia.'));
   }
 };
 
 // ===== MAPA DE QUARTOS: /bed-map, /room-categories, /rooms, /cleaning-list =====
 
-const BED_STATUS_LABEL = { free: "Livre", occupied: "Ocupada", needs_cleaning: "Precisa de limpeza", reserved: "Reservada", maintenance: "Em manutenção" };
+const BED_STATUS_LABEL_PT = { free: "Livre", occupied: "Ocupada", needs_cleaning: "Precisa de limpeza", reserved: "Reservada", maintenance: "Em manutenção" };
+function bedStatusLabel(status){
+  return T(`bed.status.${status}`, BED_STATUS_LABEL_PT[status] || status);
+}
 
 function fillCategorySelects(categories){
   const selects = document.querySelectorAll("#roomCategorySelect, #roommap select[name='category_name']");
   selects.forEach(select => {
     const current = select.value;
-    select.innerHTML = '<option value="">Modalidade (opcional)</option>' +
+    select.innerHTML = `<option value="">${T('roommap.categoryOptionalOption', 'Modalidade (opcional)')}</option>` +
       categories.map(c => `<option value="${c.name}">${c.name}${c.capacity ? ` (${c.capacity})` : ""}</option>`).join("");
     select.value = current;
   });
@@ -2945,7 +2981,7 @@ function fillRoomSelect(rooms){
   const select = document.getElementById("bedRoomSelect");
   if(!select) return;
   const current = select.value;
-  select.innerHTML = '<option value="">Quarto...</option>' +
+  select.innerHTML = `<option value="">${T('roommap.roomSelectPlaceholder', 'Quarto...')}</option>` +
     rooms.map(r => `<option value="${r.id}">${r.name}${r.category_name ? " - " + r.category_name : ""}</option>`).join("");
   select.value = current;
 }
@@ -2960,16 +2996,16 @@ function renderBedTile(bed, pairBed){
     return `
       <div>
         <div class="bed-tile bunk">
-          <div class="bed-tile-half ${top.display_status || top.status}" onclick="onBedTileClick(${top.id})" title="${top.label} - ${BED_STATUS_LABEL[top.display_status || top.status]}"></div>
-          <div class="bed-tile-half ${bottom.display_status || bottom.status}" onclick="onBedTileClick(${bottom.id})" title="${bottom.label} - ${BED_STATUS_LABEL[bottom.display_status || bottom.status]}"></div>
+          <div class="bed-tile-half ${top.display_status || top.status}" onclick="onBedTileClick(${top.id})" title="${top.label} - ${bedStatusLabel(top.display_status || top.status)}"></div>
+          <div class="bed-tile-half ${bottom.display_status || bottom.status}" onclick="onBedTileClick(${bottom.id})" title="${bottom.label} - ${bedStatusLabel(bottom.display_status || bottom.status)}"></div>
         </div>
-        <span class="bed-tile-label">Beliche</span>
+        <span class="bed-tile-label">${T('bed.kind.bunkLabel', 'Beliche')}</span>
       </div>
     `;
   }
   return `
     <div>
-      <div class="bed-tile" onclick="onBedTileClick(${bed.id})" title="${bed.label} - ${BED_STATUS_LABEL[bed.display_status || bed.status]}">
+      <div class="bed-tile" onclick="onBedTileClick(${bed.id})" title="${bed.label} - ${bedStatusLabel(bed.display_status || bed.status)}">
         <div class="bed-tile-half ${bed.display_status || bed.status}" style="flex:1"></div>
       </div>
       <span class="bed-tile-label">${bed.label}</span>
@@ -2978,12 +3014,15 @@ function renderBedTile(bed, pairBed){
 }
 
 let ROOM_MAP_BEDS_BY_ID = {};
+let ROOM_MAP_ROOMS_CACHE = [];
+let ROOM_CATEGORIES_CACHE = [];
 
 function renderRoomMap(rooms){
   const emptyEl = document.getElementById("roomMapEmpty");
   const gridEl = document.getElementById("roomMapGrid");
   if(!emptyEl || !gridEl) return;
 
+  ROOM_MAP_ROOMS_CACHE = rooms;
   ROOM_MAP_BEDS_BY_ID = {};
   rooms.forEach(room => (room.beds || []).forEach(bed => { ROOM_MAP_BEDS_BY_ID[bed.id] = bed; }));
 
@@ -3020,9 +3059,17 @@ function renderRoomMap(rooms){
     });
 
     card.innerHTML = `
-      <h4>${room.name}</h4>
-      <div class="bed-room-meta">${room.category_name || "Sem modalidade"}${room.floor ? " · " + room.floor : ""}</div>
-      <div class="bed-tiles">${tilesHtml || '<span style="font-size:12px;color:var(--muted)">Sem camas cadastradas.</span>'}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div>
+          <h4 style="margin:0">${escapeHtml(room.name)}</h4>
+          <div class="bed-room-meta">${room.category_name ? escapeHtml(room.category_name) : T('roommap.noCategoryLabel', 'Sem modalidade')}${room.floor ? " · " + escapeHtml(room.floor) : ""}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button type="button" onclick="editRoomUI(${room.id})" title="${T('roommap.room.editModalTitle', 'Editar quarto')}" style="background:none;border:1px solid var(--line);border-radius:8px;color:#7bc2ff;cursor:pointer;font-size:12px;padding:3px 7px">✎</button>
+          <button type="button" onclick="deleteRoomUI(${room.id}, '${room.name.replace(/'/g, "\\'")}')" title="${T('roommap.room.deleteBtn', 'Excluir quarto')}" style="background:none;border:1px solid var(--line);border-radius:8px;color:#ff8b8b;cursor:pointer;font-size:12px;padding:3px 7px">✕</button>
+        </div>
+      </div>
+      <div class="bed-tiles">${tilesHtml || `<span style="font-size:12px;color:var(--muted)">${T('roommap.noBedsLabel', 'Sem camas cadastradas.')}</span>`}</div>
     `;
     gridEl.appendChild(card);
   });
@@ -3036,18 +3083,19 @@ window.onBedTileClick = async function(bedId){
   // Editar/excluir fica disponivel em qualquer status - excluir com
   // cama ocupada e bloqueado pelo backend (pede check-out antes).
   const manageButtons = `
-    <div style="margin-top:10px;display:flex;gap:8px">
-      <button type="button" class="btn secondary" onclick="editBedLabelUI(${bed.id}, '${bed.label.replace(/'/g, "\\'")}')">Editar nome</button>
-      <button type="button" class="btn secondary" onclick="deleteBedUI(${bed.id})">Excluir cama</button>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn secondary" onclick="editBedLabelUI(${bed.id}, '${bed.label.replace(/'/g, "\\'")}')">${T('common.editName', 'Editar nome')}</button>
+      <button type="button" class="btn secondary" onclick="editBedGroupUI(${bed.id})">${T('roommap.bed.editKindBtn', 'Editar tipo/grupo')}</button>
+      <button type="button" class="btn secondary" onclick="deleteBedUI(${bed.id})">${T('roommap.bed.deleteBtn', 'Excluir cama')}</button>
     </div>
   `;
 
   if(bed.status === "needs_cleaning"){
     panel.style.display = "block";
     panel.innerHTML = `
-      <strong>${bed.label}</strong> — ${BED_STATUS_LABEL[bed.status]}
+      <strong>${bed.label}</strong> — ${bedStatusLabel(bed.status)}
       <div style="margin-top:8px">
-        <button type="button" class="btn" onclick="markBedCleanedUI(${bed.id})">Marcar como limpa</button>
+        <button type="button" class="btn" onclick="markBedCleanedUI(${bed.id})">${T('roommap.bed.markCleanBtn', 'Marcar como limpa')}</button>
       </div>
       ${manageButtons}
     `;
@@ -3057,9 +3105,9 @@ window.onBedTileClick = async function(bedId){
   if(bed.status === "occupied"){
     panel.style.display = "block";
     panel.innerHTML = `
-      <strong>${bed.label}</strong> — ${BED_STATUS_LABEL[bed.status]}${bed.guest_name ? " · " + bed.guest_name : ""}
+      <strong>${bed.label}</strong> — ${bedStatusLabel(bed.status)}${bed.guest_name ? " · " + bed.guest_name : ""}
       <div style="margin-top:8px">
-        <button type="button" class="btn" onclick="checkoutBedUI(${bed.id})">Fazer check-out</button>
+        <button type="button" class="btn" onclick="checkoutBedUI(${bed.id})">${T('roommap.bed.checkoutBtn', 'Fazer check-out')}</button>
       </div>
       ${manageButtons}
     `;
@@ -3069,9 +3117,9 @@ window.onBedTileClick = async function(bedId){
   if(bed.status === "maintenance"){
     panel.style.display = "block";
     panel.innerHTML = `
-      <strong>${bed.label}</strong> — ${BED_STATUS_LABEL[bed.status]}
+      <strong>${bed.label}</strong> — ${bedStatusLabel(bed.status)}
       <div style="margin-top:8px">
-        <button type="button" class="btn" onclick="setBedMaintenanceUI(${bed.id}, false)">Tirar da manutenção</button>
+        <button type="button" class="btn" onclick="setBedMaintenanceUI(${bed.id}, false)">${T('roommap.bed.removeMaintenanceBtn', 'Tirar da manutenção')}</button>
       </div>
       ${manageButtons}
     `;
@@ -3082,10 +3130,10 @@ window.onBedTileClick = async function(bedId){
   // busca reservas confirmadas sem cama atribuida pra check-in, e da
   // opcao de colocar em manutencao.
   panel.style.display = "block";
-  const statusLabel = BED_STATUS_LABEL[bed.display_status || bed.status];
-  panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. Carregando reservas...`;
+  const statusLabel = bedStatusLabel(bed.display_status || bed.status);
+  panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. ${T('roommap.bed.loadingReservations', 'Carregando reservas...')}`;
 
-  const maintenanceBtn = `<div style="margin-top:8px"><button type="button" class="btn secondary" onclick="setBedMaintenanceUI(${bed.id}, true)">Colocar em manutenção</button></div>`;
+  const maintenanceBtn = `<div style="margin-top:8px"><button type="button" class="btn secondary" onclick="setBedMaintenanceUI(${bed.id}, true)">${T('roommap.bed.setMaintenanceBtn', 'Colocar em manutenção')}</button></div>`;
 
   try{
     const res = await fetch("/reservations", { credentials: "same-origin" });
@@ -3093,7 +3141,7 @@ window.onBedTileClick = async function(bedId){
     const pending = (data.reservations || []).filter(r => r.status === "confirmed" && !r.bed_id);
 
     if(!pending.length){
-      panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. Nenhuma reserva confirmada aguardando check-in.${maintenanceBtn}${manageButtons}`;
+      panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. ${T('roommap.bed.noPendingCheckin', 'Nenhuma reserva confirmada aguardando check-in.')}${maintenanceBtn}${manageButtons}`;
       return;
     }
 
@@ -3102,17 +3150,17 @@ window.onBedTileClick = async function(bedId){
       <select id="checkinReservationSelect" style="margin-top:8px">
         ${pending.map(r => `<option value="${r.id}">${r.guest_name} (${r.checkin_date} → ${r.checkout_date})</option>`).join("")}
       </select>
-      <button type="button" class="btn" style="margin-top:6px" onclick="checkinBedUI(${bed.id})">Fazer check-in</button>
+      <button type="button" class="btn" style="margin-top:6px" onclick="checkinBedUI(${bed.id})">${T('roommap.bed.checkinBtn', 'Fazer check-in')}</button>
       ${maintenanceBtn}
       ${manageButtons}
     `;
   }catch(e){
-    panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. Erro ao carregar reservas.${maintenanceBtn}${manageButtons}`;
+    panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. ${T('roommap.bed.errorLoadReservations', 'Erro ao carregar reservas.')}${maintenanceBtn}${manageButtons}`;
   }
 };
 
 window.editBedLabelUI = async function(bedId, currentLabel){
-  const newLabel = prompt("Novo nome da cama:", currentLabel);
+  const newLabel = prompt(T('roommap.bed.renamePrompt', 'Novo nome da cama:'), currentLabel);
   if(!newLabel || !newLabel.trim() || newLabel.trim() === currentLabel) return;
 
   try{
@@ -3124,18 +3172,18 @@ window.editBedLabelUI = async function(bedId, currentLabel){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível renomear a cama.");
+      alert(data.message || T('roommap.bed.renameFailed', 'Não foi possível renomear a cama.'));
       return;
     }
     document.getElementById("bedActionCard").style.display = "none";
     loadRoomMap();
   }catch(e){
-    alert("Erro de conexão ao renomear a cama.");
+    alert(T('roommap.bed.renameConnError', 'Erro de conexão ao renomear a cama.'));
   }
 };
 
 window.deleteBedUI = async function(bedId){
-  if(!confirm("Tem certeza que quer excluir essa cama? Essa ação não pode ser desfeita.")) return;
+  if(!confirm(T('roommap.bed.deleteConfirm', 'Tem certeza que quer excluir essa cama? Essa ação não pode ser desfeita.'))) return;
 
   try{
     const res = await fetch(`/beds/${bedId}`, {
@@ -3144,13 +3192,217 @@ window.deleteBedUI = async function(bedId){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível excluir a cama.");
+      alert(data.message || T('roommap.bed.deleteFailed', 'Não foi possível excluir a cama.'));
       return;
     }
     document.getElementById("bedActionCard").style.display = "none";
     loadRoomMap();
   }catch(e){
-    alert("Erro de conexão ao excluir a cama.");
+    alert(T('roommap.bed.deleteConnError', 'Erro de conexão ao excluir a cama.'));
+  }
+};
+
+window.editBedGroupUI = function(bedId){
+  const bed = ROOM_MAP_BEDS_BY_ID[bedId];
+  if(!bed) return;
+
+  openGenericModal(T('roommap.bed.editKindModalTitle', 'Editar tipo de cama'), `
+    <div>
+      <label>${T('common.type', 'Tipo')}</label>
+      <select id="editBedKind" onchange="document.getElementById('editBedGroupRow').style.display = this.value === 'single' ? 'none' : ''">
+        <option value="single" ${bed.bed_kind === "single" ? "selected" : ""}>${T('bed.kind.single', 'Normal')}</option>
+        <option value="bunk_top" ${bed.bed_kind === "bunk_top" ? "selected" : ""}>${T('bed.kind.bunkTop', 'Beliche - Cima')}</option>
+        <option value="bunk_bottom" ${bed.bed_kind === "bunk_bottom" ? "selected" : ""}>${T('bed.kind.bunkBottom', 'Beliche - Baixo')}</option>
+      </select>
+    </div>
+    <div id="editBedGroupRow" style="display:${bed.bed_kind === "single" ? "none" : ""}">
+      <label>${T('roommap.newBed.groupFieldLabel', 'Grupo (mesmo número da outra metade do beliche)')}</label>
+      <input id="editBedGroup" type="number" value="${bed.bunk_group || ""}">
+    </div>
+    <div id="editBedGroupMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" onclick="submitEditBedGroup(${bedId})">${T('common.save', 'Salvar')}</button>
+  `);
+};
+
+window.submitEditBedGroup = async function(bedId){
+  const msg = document.getElementById("editBedGroupMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  const bedKind = document.getElementById("editBedKind").value;
+  const bunkGroup = document.getElementById("editBedGroup").value;
+
+  if(bedKind !== "single" && !bunkGroup){
+    msg.textContent = T('roommap.bed.groupMissing', 'Informe o número do grupo pra parear as duas metades do beliche.');
+    msg.classList.add("error");
+    return;
+  }
+
+  try{
+    const res = await fetch(`/beds/${bedId}`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ bed_kind: bedKind, bunk_group: bedKind === "single" ? null : Number(bunkGroup) })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      msg.textContent = data.message || T('roommap.bed.saveKindFailed', 'Não foi possível salvar o tipo da cama.');
+      msg.classList.add("error");
+      return;
+    }
+    closeGenericModal();
+    document.getElementById("bedActionCard").style.display = "none";
+    loadRoomMap();
+  }catch(e){
+    msg.textContent = "Erro de conexão.";
+    msg.classList.add("error");
+  }
+};
+
+window.editRoomUI = function(roomId){
+  const room = ROOM_MAP_ROOMS_CACHE.find(r => r.id === roomId);
+  if(!room) return;
+
+  const categoryOptions = ROOM_CATEGORIES_CACHE.map(c => `<option value="${escapeHtml(c.name)}" ${c.name === room.category_name ? "selected" : ""}>${escapeHtml(c.name)}</option>`).join("");
+
+  openGenericModal(T('roommap.room.editModalTitle', 'Editar quarto'), `
+    <div>
+      <label>${T('roommap.room.nameLabel', 'Número/nome')}</label>
+      <input id="editRoomName" type="text" value="${escapeHtml(room.name)}">
+    </div>
+    <div>
+      <label>${T('roommap.room.categoryLabel', 'Modalidade')}</label>
+      <select id="editRoomCategory">
+        <option value="">${T('roommap.noCategoryLabel', 'Sem modalidade')}</option>
+        ${categoryOptions}
+      </select>
+    </div>
+    <div>
+      <label>${T('roommap.room.floorLabel', 'Andar')}</label>
+      <input id="editRoomFloor" type="text" value="${escapeHtml(room.floor || "")}">
+    </div>
+    <div id="editRoomMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" onclick="submitEditRoom(${room.id})">${T('common.save', 'Salvar')}</button>
+  `);
+};
+
+window.submitEditRoom = async function(roomId){
+  const msg = document.getElementById("editRoomMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  try{
+    const res = await fetch(`/rooms/${roomId}`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        name: document.getElementById("editRoomName").value.trim(),
+        category_name: document.getElementById("editRoomCategory").value,
+        floor: document.getElementById("editRoomFloor").value.trim()
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      msg.textContent = data.message || T('roommap.room.saveFailed', 'Não foi possível salvar o quarto.');
+      msg.classList.add("error");
+      return;
+    }
+    closeGenericModal();
+    loadRoomMap();
+  }catch(e){
+    msg.textContent = T('common.connectionError', 'Erro de conexão.');
+    msg.classList.add("error");
+  }
+};
+
+window.deleteRoomUI = async function(roomId, name){
+  if(!confirm(T('roommap.room.deleteConfirm', 'Excluir o quarto "{name}"? Todas as camas desse quarto também são excluídas junto. Essa ação não pode ser desfeita.', { name }))) return;
+
+  try{
+    const res = await fetch(`/rooms/${roomId}`, { method: "DELETE", credentials: "same-origin" });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || T('roommap.room.deleteFailed', 'Não foi possível excluir o quarto.'));
+      return;
+    }
+    loadRoomMap();
+  }catch(e){
+    alert(T('roommap.room.deleteConnError', 'Erro de conexão ao excluir o quarto.'));
+  }
+};
+
+window.editCategoryUI = function(categoryId){
+  const category = ROOM_CATEGORIES_CACHE.find(c => c.id === categoryId);
+  if(!category) return;
+
+  openGenericModal(T('roommap.category.editModalTitle', 'Editar modalidade'), `
+    <div>
+      <label>${T('common.name', 'Nome')}</label>
+      <input id="editCatName" type="text" value="${escapeHtml(category.name)}">
+    </div>
+    <div>
+      <label>${T('roommap.category.capacityLabel', 'Capacidade')}</label>
+      <input id="editCatCapacity" type="number" min="1" value="${category.capacity || ""}">
+    </div>
+    <div>
+      <label>${T('roommap.category.priceLabel', 'Diária (US$)')}</label>
+      <input id="editCatPrice" type="number" min="0" step="0.01" value="${category.price_per_night || ""}">
+    </div>
+    <div>
+      <label>${T('roommap.category.descLabel', 'Descrição')}</label>
+      <input id="editCatDescription" type="text" value="${escapeHtml(category.description || "")}">
+    </div>
+    <div id="editCatMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" onclick="submitEditCategory(${category.id})">${T('common.save', 'Salvar')}</button>
+  `);
+};
+
+window.submitEditCategory = async function(categoryId){
+  const msg = document.getElementById("editCatMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  try{
+    const res = await fetch(`/room-categories/${categoryId}`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        name: document.getElementById("editCatName").value.trim(),
+        capacity: document.getElementById("editCatCapacity").value,
+        price_per_night: document.getElementById("editCatPrice").value,
+        description: document.getElementById("editCatDescription").value.trim()
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      msg.textContent = data.message || T('roommap.category.saveFailed', 'Não foi possível salvar a modalidade.');
+      msg.classList.add("error");
+      return;
+    }
+    closeGenericModal();
+    loadRoomMap();
+  }catch(e){
+    msg.textContent = T('common.connectionError', 'Erro de conexão.');
+    msg.classList.add("error");
+  }
+};
+
+window.deleteCategoryUI = async function(categoryId, name){
+  if(!confirm(T('roommap.category.deleteConfirm', 'Excluir a modalidade "{name}"? Os quartos que usam ela ficam sem modalidade (não são excluídos).', { name }))) return;
+
+  try{
+    const res = await fetch(`/room-categories/${categoryId}`, { method: "DELETE", credentials: "same-origin" });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || T('roommap.category.deleteFailed', 'Não foi possível excluir a modalidade.'));
+      return;
+    }
+    loadRoomMap();
+  }catch(e){
+    alert(T('roommap.category.deleteConnError', 'Erro de conexão ao excluir modalidade.'));
   }
 };
 
@@ -3164,13 +3416,13 @@ window.setBedMaintenanceUI = async function(bedId, underMaintenance){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível atualizar o status da cama.");
+      alert(data.message || T('roommap.bed.updateStatusFailed', 'Não foi possível atualizar o status da cama.'));
       return;
     }
     document.getElementById("bedActionCard").style.display = "none";
     loadRoomMap();
   }catch(e){
-    alert("Erro de conexão ao atualizar a cama.");
+    alert(T('roommap.bed.updateStatusConnError', 'Erro de conexão ao atualizar a cama.'));
   }
 };
 
@@ -3187,14 +3439,14 @@ window.checkinBedUI = async function(bedId){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível fazer o check-in.");
+      alert(data.message || T('roommap.bed.checkinFailed', 'Não foi possível fazer o check-in.'));
       return;
     }
     document.getElementById("bedActionCard").style.display = "none";
     loadRoomMap();
     if(typeof loadReservations === "function") loadReservations();
   }catch(e){
-    alert("Erro de conexão ao fazer check-in.");
+    alert(T('roommap.bed.checkinConnError', 'Erro de conexão ao fazer check-in.'));
   }
 };
 
@@ -3207,7 +3459,7 @@ window.checkoutBedUI = async function(bedId){
     const data = resList.ok ? await resList.json() : { reservations: [] };
     const reservation = (data.reservations || []).find(r => r.bed_id === bedId);
     if(!reservation){
-      alert("Não encontrei a reserva ligada a essa cama.");
+      alert(T('roommap.bed.reservationNotFound', 'Não encontrei a reserva ligada a essa cama.'));
       return;
     }
 
@@ -3217,13 +3469,13 @@ window.checkoutBedUI = async function(bedId){
     });
     const resData = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(resData.message || "Não foi possível fazer o check-out.");
+      alert(resData.message || T('roommap.bed.checkoutFailed', 'Não foi possível fazer o check-out.'));
       return;
     }
     document.getElementById("bedActionCard").style.display = "none";
     loadRoomMap();
   }catch(e){
-    alert("Erro de conexão ao fazer check-out.");
+    alert(T('roommap.bed.checkoutConnError', 'Erro de conexão ao fazer check-out.'));
   }
 };
 
@@ -3235,13 +3487,13 @@ window.markBedCleanedUI = async function(bedId){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível marcar a cama como limpa.");
+      alert(data.message || T('roommap.bed.markCleanFailed', 'Não foi possível marcar a cama como limpa.'));
       return;
     }
     document.getElementById("bedActionCard").style.display = "none";
     loadRoomMap();
   }catch(e){
-    alert("Erro de conexão ao marcar a cama como limpa.");
+    alert(T('roommap.bed.markCleanConnError', 'Erro de conexão ao marcar a cama como limpa.'));
   }
 };
 
@@ -3271,7 +3523,7 @@ async function loadCleaningList(){
       row.innerHTML = `
         <td>${item.room_name}</td>
         <td>${item.label}</td>
-        <td><button type="button" class="btn" onclick="markBedCleanedUI(${item.bed_id})">Marcar como limpa</button></td>
+        <td><button type="button" class="btn" onclick="markBedCleanedUI(${item.bed_id})">${T('roommap.bed.markCleanBtn', 'Marcar como limpa')}</button></td>
       `;
       bodyEl.appendChild(row);
     });
@@ -3291,12 +3543,19 @@ async function loadRoomMap(){
     if(mapRes.ok) renderRoomMap(await mapRes.json());
     if(categoriesRes.ok){
       const categories = await categoriesRes.json();
+      ROOM_CATEGORIES_CACHE = categories;
       fillCategorySelects(categories);
       const listEl = document.getElementById("roomCategoriesList");
       if(listEl){
         listEl.innerHTML = categories.length
-          ? categories.map(c => `<span style="display:inline-block;margin:2px 6px 2px 0;padding:4px 10px;border:1px solid var(--line);border-radius:999px">${c.name}${c.capacity ? ` (${c.capacity})` : ""}${c.price_per_night ? ` · US$ ${Number(c.price_per_night).toFixed(2)}/noite` : ""}</span>`).join("")
-          : "Nenhuma modalidade criada ainda.";
+          ? categories.map(c => `
+              <span style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0;padding:4px 4px 4px 10px;border:1px solid var(--line);border-radius:999px">
+                ${escapeHtml(c.name)}${c.capacity ? ` (${c.capacity})` : ""}${c.price_per_night ? ` · US$ ${Number(c.price_per_night).toFixed(2)}${T('roommap.category.perNightSuffix', '/noite')}` : ""}
+                <button type="button" onclick="editCategoryUI(${c.id})" title="${T('roommap.category.editModalTitle', 'Editar modalidade')}" style="background:none;border:0;color:#7bc2ff;cursor:pointer;font-size:12px;padding:2px">✎</button>
+                <button type="button" onclick="deleteCategoryUI(${c.id}, '${c.name.replace(/'/g, "\\'")}')" title="${T('roommap.category.deleteBtn', 'Excluir modalidade')}" style="background:none;border:0;color:#ff8b8b;cursor:pointer;font-size:12px;padding:2px">✕</button>
+              </span>
+            `).join("")
+          : T('roommap.noCategoriesYet', 'Nenhuma modalidade criada ainda.');
       }
     }
     if(roomsRes.ok) fillRoomSelect(await roomsRes.json());
@@ -3330,13 +3589,13 @@ window.submitNewRoomCategory = async function(event){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível criar a modalidade.");
+      alert(data.message || T('roommap.category.createFailed', 'Não foi possível criar a modalidade.'));
       return;
     }
     form.reset();
     loadRoomMap();
   }catch(e){
-    alert("Erro de conexão ao criar modalidade.");
+    alert(T('roommap.category.createConnError', 'Erro de conexão ao criar modalidade.'));
   }
 };
 
@@ -3356,13 +3615,13 @@ window.submitNewRoom = async function(event){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível criar o quarto.");
+      alert(data.message || T('roommap.room.createFailed', 'Não foi possível criar o quarto.'));
       return;
     }
     form.reset();
     loadRoomMap();
   }catch(e){
-    alert("Erro de conexão ao criar quarto.");
+    alert(T('roommap.room.createConnError', 'Erro de conexão ao criar quarto.'));
   }
 };
 
@@ -3371,7 +3630,7 @@ window.submitBulkRooms = async function(event){
   const form = event.target;
   const names = form.names.value.split("\n").map(n => n.trim()).filter(Boolean);
   if(!names.length){
-    alert("Informe pelo menos um nome/número de quarto.");
+    alert(T('roommap.bulkRooms.nameRequired', 'Informe pelo menos um nome/número de quarto.'));
     return;
   }
   try{
@@ -3387,13 +3646,13 @@ window.submitBulkRooms = async function(event){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível criar os quartos.");
+      alert(data.message || T('roommap.bulkRooms.createFailed', 'Não foi possível criar os quartos.'));
       return;
     }
     form.reset();
     loadRoomMap();
   }catch(e){
-    alert("Erro de conexão ao criar quartos em lote.");
+    alert(T('roommap.bulkRooms.createConnError', 'Erro de conexão ao criar quartos em lote.'));
   }
 };
 
@@ -3404,7 +3663,7 @@ window.submitNewBed = async function(event){
   const bunkGroup = form.bunk_group.value;
 
   if(bedKind !== "single" && !bunkGroup){
-    alert("Camas de beliche precisam de um número de grupo, pra parear cima e baixo.");
+    alert(T('roommap.newBed.groupRequired', 'Camas de beliche precisam de um número de grupo, pra parear cima e baixo.'));
     return;
   }
 
@@ -3421,14 +3680,14 @@ window.submitNewBed = async function(event){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível criar a cama.");
+      alert(data.message || T('roommap.newBed.createFailed', 'Não foi possível criar a cama.'));
       return;
     }
     form.reset();
     document.getElementById("bunkGroupInput").style.display = "none";
     loadRoomMap();
   }catch(e){
-    alert("Erro de conexão ao criar cama.");
+    alert(T('roommap.newBed.createConnError', 'Erro de conexão ao criar cama.'));
   }
 };
 
@@ -3444,13 +3703,13 @@ window.submitReturnFromLaundry = async function(event){
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || "Não foi possível registrar a devolução.");
+      alert(data.message || T('roommap.laundry.registerFailed', 'Não foi possível registrar a devolução.'));
       return;
     }
     form.reset();
-    alert(`${data.returned} unidade(s) de "${data.item_name}" devolvida(s) da lavanderia.`);
+    alert(T('roommap.laundry.returnedMsg', '{qty} unidade(s) de "{item}" devolvida(s) da lavanderia.', { qty: data.returned, item: data.item_name }));
   }catch(e){
-    alert("Erro de conexão ao devolver da lavanderia.");
+    alert(T('roommap.laundry.connError', 'Erro de conexão ao devolver da lavanderia.'));
   }
 };
 
@@ -3654,7 +3913,7 @@ async function loadOperations(){
           row.innerHTML = `
             <td>${t.task}</td>
             <td>${t.assignee || "-"}</td>
-            <td><span class="status-pill warm">Pendente</span></td>
+            <td><span class="status-pill warm">${T('reservations.status.pending', 'Pendente')}</span></td>
           `;
           tasksBodyEl.appendChild(row);
         });
@@ -3679,7 +3938,7 @@ window.submitNewOffering = async function(event){
   };
 
   if(!payload.name){
-    alert("Digita o nome da experiência/upsell.");
+    alert(T('revenue.msg.nameRequired', 'Digita o nome da experiência/upsell.'));
     return;
   }
 
@@ -3692,7 +3951,7 @@ window.submitNewOffering = async function(event){
     });
 
     if(!res.ok){
-      alert("Não foi possível criar a oferta.");
+      alert(T('revenue.msg.createFailed', 'Não foi possível criar a oferta.'));
       return;
     }
 
@@ -3704,7 +3963,7 @@ window.submitNewOffering = async function(event){
 };
 
 window.deleteOffering = async function(offeringId){
-  if(!confirm("Excluir esta oferta?")) return;
+  if(!confirm(T('revenue.msg.deleteConfirm', 'Excluir esta oferta?'))) return;
   try{
     await fetch(`/offerings/${offeringId}`, {
       method: "DELETE",
@@ -3716,7 +3975,10 @@ window.deleteOffering = async function(offeringId){
   }
 };
 
-const OFFERING_TYPE_LABELS = { tour: "Tour / Experiência", upsell: "Upsell" };
+const OFFERING_TYPE_LABELS_PT = { tour: "Tour / Experiência", upsell: "Upsell" };
+function offeringTypeLabel(type){
+  return T(`revenue.type.${type}`, OFFERING_TYPE_LABELS_PT[type] || type);
+}
 
 async function loadRevenue(){
   try{
@@ -3746,9 +4008,9 @@ async function loadRevenue(){
           const row = document.createElement("tr");
           row.innerHTML = `
             <td>${o.name}</td>
-            <td>${OFFERING_TYPE_LABELS[o.type] || o.type}</td>
+            <td>${offeringTypeLabel(o.type)}</td>
             <td>US$ ${Number(o.price || 0).toFixed(2)}</td>
-            <td><button class="btn red" style="padding:6px 10px;font-size:12px" onclick="deleteOffering(${o.id})">Excluir</button></td>
+            <td><button class="btn red" style="padding:6px 10px;font-size:12px" onclick="deleteOffering(${o.id})">${T('common.delete', 'Excluir')}</button></td>
           `;
           offeringsBody.appendChild(row);
         });
@@ -3773,7 +4035,7 @@ async function loadRevenue(){
           const row = document.createElement("tr");
           row.innerHTML = `
             <td>${o.phone || "-"}</td>
-            <td>${OFFERING_TYPE_LABELS[o.type] || o.type}</td>
+            <td>${offeringTypeLabel(o.type)}</td>
             <td>${o.description || "-"}</td>
             <td>US$ ${Number(o.estimated_value || 0).toFixed(2)}</td>
             <td>${o.next_action || "-"}</td>
@@ -3790,12 +4052,17 @@ async function loadRevenue(){
 
 // ===== ESTOQUE: /inventory e /suppliers =====
 
-const CATEGORY_LABELS = {
+const CATEGORY_LABELS_PT = {
   cafe_da_manha: "Café da manhã",
   limpeza: "Limpeza",
   enxoval: "Enxoval",
   outro: "Outro"
 };
+const CATEGORY_KEY_MAP = { cafe_da_manha: "breakfast", limpeza: "cleaning", enxoval: "linen", outro: "other" };
+function categoryLabel(category){
+  const key = CATEGORY_KEY_MAP[category];
+  return key ? T(`inventory.category.${key}`, CATEGORY_LABELS_PT[category]) : category;
+}
 
 async function loadSuppliers(){
   const select = document.getElementById("inventorySupplierSelect");
@@ -3828,7 +4095,7 @@ window.submitNewSupplier = async function(){
   const email = document.getElementById("newSupplierEmail").value.trim();
 
   if(!name){
-    alert("Digita o nome do fornecedor.");
+    alert(T('inventory.msg.supplierNameRequired', 'Digita o nome do fornecedor.'));
     return;
   }
 
@@ -3841,7 +4108,7 @@ window.submitNewSupplier = async function(){
     });
 
     if(!res.ok){
-      alert("Não foi possível criar o fornecedor.");
+      alert(T('inventory.msg.createSupplierFailed', 'Não foi possível criar o fornecedor.'));
       return;
     }
 
@@ -3857,7 +4124,7 @@ window.submitNewSupplier = async function(){
     document.getElementById("newSupplierEmail").value = "";
   }catch(e){
     console.error("Erro ao criar fornecedor:", e);
-    alert("Erro de conexão ao criar fornecedor.");
+    alert(T('inventory.msg.createSupplierConnError', 'Erro de conexão ao criar fornecedor.'));
   }
 };
 
@@ -3881,7 +4148,7 @@ window.submitNewInventoryItem = async function(event){
   };
 
   if(!payload.name){
-    alert("Digita o nome do produto.");
+    alert(T('inventory.msg.productNameRequired', 'Digita o nome do produto.'));
     return;
   }
 
@@ -3894,7 +4161,7 @@ window.submitNewInventoryItem = async function(event){
     });
 
     if(!res.ok){
-      alert("Não foi possível criar o produto.");
+      alert(T('inventory.msg.createProductFailed', 'Não foi possível criar o produto.'));
       return;
     }
 
@@ -3902,18 +4169,18 @@ window.submitNewInventoryItem = async function(event){
     loadInventory();
   }catch(e){
     console.error("Erro ao criar produto:", e);
-    alert("Erro de conexão ao criar produto.");
+    alert(T('inventory.msg.createProductConnError', 'Erro de conexão ao criar produto.'));
   }
 };
 
 window.editInventoryItem = async function(itemId, currentQuantity, currentMin, currentReorder){
-  const quantity = prompt("Nova quantidade atual:", currentQuantity);
+  const quantity = prompt(T('inventory.edit.quantityPrompt', 'Nova quantidade atual:'), currentQuantity);
   if(quantity === null) return;
 
-  const minThreshold = prompt("Novo mínimo (alerta):", currentMin);
+  const minThreshold = prompt(T('inventory.edit.minPrompt', 'Novo mínimo (alerta):'), currentMin);
   if(minThreshold === null) return;
 
-  const reorderQuantity = prompt("Nova quantidade sugerida de reposição:", currentReorder);
+  const reorderQuantity = prompt(T('inventory.edit.reorderPrompt', 'Nova quantidade sugerida de reposição:'), currentReorder);
   if(reorderQuantity === null) return;
 
   try{
@@ -3948,7 +4215,7 @@ window.markInventoryItemEmpty = async function(itemId){
 };
 
 window.deleteInventoryItem = async function(itemId){
-  if(!confirm("Excluir este produto do estoque?")) return;
+  if(!confirm(T('inventory.msg.deleteConfirm', 'Excluir este produto do estoque?'))) return;
   try{
     await fetch(`/inventory/${itemId}`, {
       method: "DELETE",
@@ -3963,7 +4230,7 @@ window.deleteInventoryItem = async function(itemId){
 window.copySuggestedMessage = function(button, text){
   navigator.clipboard.writeText(text).then(() => {
     const original = button.textContent;
-    button.textContent = "Copiado!";
+    button.textContent = T('inventory.copiedBtn', 'Copiado!');
     setTimeout(() => { button.textContent = original; }, 1500);
   }).catch(() => {
     alert(text);
@@ -3998,14 +4265,14 @@ async function loadInventory(){
           const low = item.quantity <= item.min_threshold;
           row.innerHTML = `
             <td>${item.name}</td>
-            <td>${CATEGORY_LABELS[item.category] || item.category}</td>
+            <td>${categoryLabel(item.category)}</td>
             <td><span class="status-pill ${low ? "hot" : "ok"}">${item.quantity} ${item.unit}</span></td>
             <td>${item.min_threshold} ${item.unit}</td>
             <td>${item.supplier_name || "-"}</td>
             <td style="display:flex;gap:6px;flex-wrap:wrap">
-              <button class="btn secondary" style="padding:6px 10px;font-size:12px" onclick="editInventoryItem(${item.id}, ${item.quantity}, ${item.min_threshold}, ${item.reorder_quantity})">Editar</button>
-              <button class="btn secondary" style="padding:6px 10px;font-size:12px" onclick="markInventoryItemEmpty(${item.id})">Marcar vazio</button>
-              <button class="btn red" style="padding:6px 10px;font-size:12px" onclick="deleteInventoryItem(${item.id})">Excluir</button>
+              <button class="btn secondary" style="padding:6px 10px;font-size:12px" onclick="editInventoryItem(${item.id}, ${item.quantity}, ${item.min_threshold}, ${item.reorder_quantity})">${T('common.edit', 'Editar')}</button>
+              <button class="btn secondary" style="padding:6px 10px;font-size:12px" onclick="markInventoryItemEmpty(${item.id})">${T('inventory.markEmptyBtn', 'Marcar vazio')}</button>
+              <button class="btn red" style="padding:6px 10px;font-size:12px" onclick="deleteInventoryItem(${item.id})">${T('common.delete', 'Excluir')}</button>
             </td>
           `;
           bodyEl.appendChild(row);
@@ -4025,10 +4292,10 @@ async function loadInventory(){
           card.style.cssText = "border:1px solid #ff5d7628;background:#ff5d7610;border-radius:14px;padding:14px;";
           card.innerHTML = `
             <div style="font-weight:800;margin-bottom:6px">
-              ${a.name} — ${a.quantity} ${a.unit} (mínimo: ${a.min_threshold} ${a.unit})
+              ${a.name} — ${a.quantity} ${a.unit} (${T('inventory.alerts.minimumLabel', 'mínimo')}: ${a.min_threshold} ${a.unit})
             </div>
             <div style="color:var(--muted);font-size:13px;margin-bottom:8px">${a.suggested_message}</div>
-            <button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copySuggestedMessage(this, ${JSON.stringify(a.suggested_message)})">Copiar mensagem</button>
+            <button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copySuggestedMessage(this, ${JSON.stringify(a.suggested_message)})">${T('inventory.copyMessageBtn', 'Copiar mensagem')}</button>
           `;
           alertsListEl.appendChild(card);
         });
@@ -4066,7 +4333,7 @@ document.addEventListener("DOMContentLoaded", () => {
     categorySelect.addEventListener("change", () => {
       if(categorySelect.value !== "__new_category__") return;
 
-      const newCategory = prompt("Nome da nova categoria:");
+      const newCategory = prompt(T('inventory.newCategoryPrompt', 'Nome da nova categoria:'));
 
       if(!newCategory || !newCategory.trim()){
         categorySelect.value = "outro";
@@ -4087,7 +4354,7 @@ document.addEventListener("DOMContentLoaded", () => {
     roomTypeSelect.addEventListener("change", () => {
       if(roomTypeSelect.value !== "__new_room_type__") return;
 
-      const newType = prompt("Nome do novo tipo de quarto:");
+      const newType = prompt(T('reservations.newRoomTypePrompt', 'Nome do novo tipo de quarto:'));
 
       if(!newType || !newType.trim()){
         roomTypeSelect.value = "";
@@ -4108,7 +4375,7 @@ document.addEventListener("DOMContentLoaded", () => {
     hostelTypeSelect.addEventListener("change", () => {
       if(hostelTypeSelect.value !== "__new_hostel_type__") return;
 
-      const newType = prompt("Nome do novo tipo de propriedade:");
+      const newType = prompt(T('settings.newHostelTypePrompt', 'Nome do novo tipo de propriedade:'));
 
       if(!newType || !newType.trim()){
         hostelTypeSelect.value = "";
@@ -4152,10 +4419,10 @@ async function loadGuests(){
     guests.forEach(g => {
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td>${g.name || "Sem nome"}</td>
+        <td>${g.name || T('guests.noName', 'Sem nome')}</td>
         <td>${g.phone || "-"}</td>
         <td>${g.email || "-"}</td>
-        <td><span class="status-pill ${g.message_count > 0 ? "ok" : "cold"}">${g.message_count > 0 ? "Ativo" : "Sem interação"}</span></td>
+        <td><span class="status-pill ${g.message_count > 0 ? "ok" : "cold"}">${g.message_count > 0 ? T('guests.active', 'Ativo') : T('guests.noInteraction', 'Sem interação')}</span></td>
         <td>US$ ${Number(g.total_value || 0).toFixed(2)}</td>
       `;
       bodyEl.appendChild(row);
@@ -4384,5 +4651,70 @@ async function loadGuests(){
 </script>
 
 <script src="assets/js/chats-live.js"></script>
+
+<script src="assets/js/i18n-core.js"></script>
+<script src="assets/js/i18n-dashboard-data.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // Paginas cujo conteudo dinamico (vindo do backend) precisa ser
+  // recarregado quando o idioma muda, pra nao ficar traduzida so a
+  // casca estatica. So a pagina ABERTA agora recarrega na hora - as
+  // outras ficam marcadas "sujas" e recarregam sozinhas quando o
+  // usuario realmente for abri-las (openPage ja roda toda vez que uma
+  // secao fica visivel). Evita disparar ~15 fetch simultaneos no
+  // backend so porque a pessoa trocou o idioma.
+  const PAGE_LOADERS = {
+    dashboard: ["loadDashboardStats", "loadExecutiveSummary"],
+    chats: ["loadChats"],
+    opportunities: ["loadOpportunities"],
+    reservations: ["loadReservations"],
+    roommap: ["loadRoomMap"],
+    operations: ["loadOperations"],
+    guests: ["loadGuests"],
+    finance: ["loadFinance"],
+    inventory: ["loadInventory", "loadSuppliers"],
+    revenue: ["loadRevenue"],
+    reports: ["loadReports"],
+    settings: ["hydrateSettingsFromBackend", "loadWhatsappSettings"]
+  };
+
+  function reloadDynamicContent(pageId){
+    (PAGE_LOADERS[pageId] || []).forEach(fnName => {
+      if(typeof window[fnName] === "function") window[fnName]();
+    });
+  }
+
+  function currentPageId(){
+    const active = document.querySelector(".page.active");
+    return active ? active.id : "dashboard";
+  }
+
+  let dirtyPages = new Set(Object.keys(PAGE_LOADERS));
+
+  document.addEventListener("stayflow:language-changed", () => {
+    const pageId = currentPageId();
+    reloadDynamicContent(pageId);
+    dirtyPages = new Set(Object.keys(PAGE_LOADERS));
+    dirtyPages.delete(pageId);
+  });
+
+  const originalOpenPage = window.openPage;
+  window.openPage = function(pageId, trigger){
+    originalOpenPage(pageId, trigger);
+    if(dirtyPages.has(pageId)){
+      reloadDynamicContent(pageId);
+      dirtyPages.delete(pageId);
+    }
+  };
+
+  const initialLang = StayFlowI18n.getInitialLang();
+  StayFlowI18n.applyTranslations(STAYFLOW_DASHBOARD_I18N, initialLang);
+  dirtyPages.delete(currentPageId());
+
+  StayFlowI18n.wireLanguageSwitcher("langCurrentBtn", "langDropdown", STAYFLOW_DASHBOARD_I18N);
+})();
+</script>
 </body>
 </html>
