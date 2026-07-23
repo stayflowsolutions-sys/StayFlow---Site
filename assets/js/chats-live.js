@@ -1,6 +1,8 @@
 // StayFlow - Chats live integration
 // Consome /chats e /guests/<id> para alimentar a aba "Chats".
 
+let stayflowCurrentGuestId = null;
+
 // ===== Divisores de data no chat (estilo WhatsApp) =====
 // created_at vem do backend como "YYYY-MM-DD HH:MM:SS" (timezone local
 // do servidor). Comparamos só a parte da data (dia/mês/ano), sem
@@ -195,6 +197,15 @@ async function loadGuestProfile(guestId) {
         const messages = data.messages || [];
         const opportunities = data.opportunities || [];
 
+        stayflowCurrentGuestId = guest.id || guestId;
+
+        const takeoverBtn = document.getElementById("chatTakeoverBtn");
+        if (takeoverBtn) {
+            takeoverBtn.style.display = "inline-flex";
+            takeoverBtn.textContent = guest.ai_paused ? "Devolver pra IA" : "Assumir conversa";
+            takeoverBtn.classList.toggle("secondary", !guest.ai_paused);
+        }
+
         // Título da conversa
         const chatTitle = document.getElementById("chatTitle");
         if (chatTitle) {
@@ -323,6 +334,74 @@ if (guestNextAction) {
         console.error("Erro ao carregar guest profile:", err);
     }
 }
+
+// Assumir/devolver: quando a equipe assume, a IA para de responder SO
+// esse hospede (mensagem/oportunidade continuam sendo salvas) - ate
+// alguem devolver clicando de novo. Recarrega o perfil pra refletir
+// o estado real vindo do backend, nao so o texto do botao.
+window.toggleChatTakeover = async function () {
+    if (!stayflowCurrentGuestId) return;
+
+    const btn = document.getElementById("chatTakeoverBtn");
+    const wantsToPause = btn && btn.textContent === "Assumir conversa";
+
+    try {
+        const res = await fetch(`/guests/${stayflowCurrentGuestId}/toggle-ai`, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paused: wantsToPause })
+        });
+        if (!res.ok) {
+            alert("Não foi possível atualizar o estado da conversa.");
+            return;
+        }
+        loadGuestProfile(stayflowCurrentGuestId);
+    } catch (err) {
+        alert("Erro de conexão ao atualizar a conversa.");
+    }
+};
+
+// Envio manual real pro hóspede - substitui o antigo mockSend() desta
+// caixa especifica (a de guest chat), que so ecoava uma mensagem fake.
+window.sendMessageToGuestUI = async function (button) {
+    if (!button || !stayflowCurrentGuestId) return;
+
+    const scope = button.closest(".chat-window");
+    const input = scope ? scope.querySelector(".chat-input input") : null;
+    if (!input) return;
+
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+
+    const container = document.getElementById("chatMessages");
+    if (container) {
+        const div = document.createElement("div");
+        div.className = "msg user";
+        div.textContent = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    button.disabled = true;
+    try {
+        const res = await fetch(`/guests/${stayflowCurrentGuestId}/send-message`, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.message || "Não foi possível enviar a mensagem.");
+        }
+    } catch (err) {
+        alert("Erro de conexão ao enviar a mensagem.");
+    } finally {
+        button.disabled = false;
+    }
+};
 
 // loadChats() é chamado por dashboard.html no evento "stayflow:session-ready"
 // (junto com todos os outros loaders da página), depois que /me confirma a

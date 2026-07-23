@@ -1587,3 +1587,65 @@ os PIDs via `Stop-Process` do PowerShell.
       passou a existir nesta sessão
 - [ ] Itens já pendentes da Sessão 7 continuam pendentes (ver acima),
       não repetidos aqui
+
+### Continuação da Sessão 8 (mesma data) — reserva por WhatsApp, preço, mapa de camas com 5 estados
+
+Depois do fechamento acima, o usuário testou o Ask StayFlow em produção
+de verdade e trouxe uma sequência de achados e pedidos novos, todos
+tratados na mesma sessão:
+
+**Bug crítico de produção descoberto pelo usuário**: o servidor Flask
+rodava sem `threaded=True` — enquanto o Ask StayFlow ou a IA de
+atendimento estavam no meio de uma chamada real à OpenAI (vários
+segundos), o processo inteiro ficava bloqueado pra qualquer outro
+pedido, inclusive mandar mensagem manual pro hóspede. Corrigido com uma
+linha (`app.run(..., threaded=True)`). Complementado no frontend: o
+painel Ask StayFlow agora usa `AbortController` com timeout de 75s, pra
+nunca mais deixar o botão de enviar travado indefinidamente.
+
+**Reserva automática via WhatsApp**: a IA de atendimento ganhou
+`create_reservation_from_chat` (database.py) — cria a reserva sozinha
+assim que reúne nome/modalidade/datas, sempre `status='pending'`
+(equipe confirma depois) e **valor sempre calculado a partir do
+`price_per_night` real da modalidade** (nunca aceito como argumento do
+modelo — reforço mecânico, não só instrução de prompt). Não duplica se
+o hóspede reafirmar a mesma coisa na conversa.
+
+**Preço e seleção de cama pelo hóspede** (pedido explícito, comparado
+pelo usuário a escolher janela/corredor num site de passagem de
+ônibus): `room_categories` ganhou `price_per_night`/`description`;
+`find_available_beds` calcula disponibilidade **futura** por
+sobreposição de datas de reserva (diferente do status operacional em
+tempo real do mapa) — a IA de atendimento consulta isso, apresenta as
+camas livres (cima/baixo do beliche) e usa a escolhida ao criar a
+reserva. Achado no caminho: em pelo menos uma conversa de teste real, o
+modelo disse que uma cama "tinha acabado de ser reservada" quando na
+verdade ainda estava livre — a validação mecânica de disponibilidade
+(que bloqueia de verdade um double-booking) funcionou corretamente, mas
+a explicação que o modelo deu ao hóspede foi imprecisa. Registrado como
+limitação conhecida de confiabilidade do modelo, não um bug de código —
+não perseguido além disso por causa do tempo de sessão.
+
+**5 estados de cama no mapa** (pedido explícito do usuário): verde
+livre, vermelho ocupada, âmbar precisa de limpeza, azul reservada,
+laranja manutenção. "Reservada" é um estado **derivado só pra
+exibição** (cama com status real `free` mas com reserva futura
+atribuída) — o status operacional de verdade continua sendo só
+free/occupied/needs_cleaning/maintenance; nova acao
+`set_bed_maintenance` (só permite entrar em manutenção se a cama
+estiver fisicamente livre agora).
+
+**Assumir/devolver conversa + envio manual real**: novo campo
+`guests.ai_paused` — quando true, a IA para de responder aquele
+hóspede específico (mensagem/oportunidade continuam sendo salvas),
+diferente de `is_ai_enabled` (interruptor do hostel inteiro). Botão
+"Assumir conversa"/"Devolver pra IA" na tela de Chats. A caixa de
+envio manual da tela de Chats, que **sempre foi mock** desde o início
+do projeto (só ecoava uma resposta fake), agora manda mensagem de
+verdade pelo WhatsApp Business (`send_message_to_guest_now`).
+
+**Lista de limpeza espelhada em Operações**: a caixa "Tarefas
+operacionais" de Operações, que desde a Sessão 6 tinha um comentário
+dizendo "depende do mapa de camas, ainda não construído", agora
+consome `get_cleaning_list` (mesma fonte de verdade do Mapa de
+Quartos) — sem tabela duplicada.
