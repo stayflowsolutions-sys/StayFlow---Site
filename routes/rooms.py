@@ -10,6 +10,7 @@ from database import (
     delete_room,
     create_bed,
     delete_bed,
+    update_bed_label,
     get_bed_map,
     get_cleaning_list,
     set_linen_kit,
@@ -127,7 +128,18 @@ def delete_bed_route(hostel_id, bed_id):
     try:
         delete_bed(hostel_id, bed_id)
     except ValueError as error:
-        return jsonify({"success": False, "message": str(error)}), 404
+        return jsonify({"success": False, "message": str(error)}), 400
+    return jsonify({"success": True})
+
+
+@rooms_bp.route("/beds/<int:bed_id>", methods=["PATCH"])
+@require_permission("operations")
+def update_bed_route(hostel_id, bed_id):
+    data = request.get_json() or {}
+    try:
+        update_bed_label(hostel_id, bed_id, data.get("label"))
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
     return jsonify({"success": True})
 
 

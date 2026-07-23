@@ -2904,6 +2904,15 @@ window.onBedTileClick = async function(bedId){
   const panel = document.getElementById("bedActionCard");
   if(!bed || !panel) return;
 
+  // Editar/excluir fica disponivel em qualquer status - excluir com
+  // cama ocupada e bloqueado pelo backend (pede check-out antes).
+  const manageButtons = `
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button type="button" class="btn secondary" onclick="editBedLabelUI(${bed.id}, '${bed.label.replace(/'/g, "\\'")}')">Editar nome</button>
+      <button type="button" class="btn secondary" onclick="deleteBedUI(${bed.id})">Excluir cama</button>
+    </div>
+  `;
+
   if(bed.status === "needs_cleaning"){
     panel.style.display = "block";
     panel.innerHTML = `
@@ -2911,6 +2920,7 @@ window.onBedTileClick = async function(bedId){
       <div style="margin-top:8px">
         <button type="button" class="btn" onclick="markBedCleanedUI(${bed.id})">Marcar como limpa</button>
       </div>
+      ${manageButtons}
     `;
     return;
   }
@@ -2922,6 +2932,7 @@ window.onBedTileClick = async function(bedId){
       <div style="margin-top:8px">
         <button type="button" class="btn" onclick="checkoutBedUI(${bed.id})">Fazer check-out</button>
       </div>
+      ${manageButtons}
     `;
     return;
   }
@@ -2933,6 +2944,7 @@ window.onBedTileClick = async function(bedId){
       <div style="margin-top:8px">
         <button type="button" class="btn" onclick="setBedMaintenanceUI(${bed.id}, false)">Tirar da manutenção</button>
       </div>
+      ${manageButtons}
     `;
     return;
   }
@@ -2952,7 +2964,7 @@ window.onBedTileClick = async function(bedId){
     const pending = (data.reservations || []).filter(r => r.status === "confirmed" && !r.bed_id);
 
     if(!pending.length){
-      panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. Nenhuma reserva confirmada aguardando check-in.${maintenanceBtn}`;
+      panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. Nenhuma reserva confirmada aguardando check-in.${maintenanceBtn}${manageButtons}`;
       return;
     }
 
@@ -2963,9 +2975,53 @@ window.onBedTileClick = async function(bedId){
       </select>
       <button type="button" class="btn" style="margin-top:6px" onclick="checkinBedUI(${bed.id})">Fazer check-in</button>
       ${maintenanceBtn}
+      ${manageButtons}
     `;
   }catch(e){
-    panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. Erro ao carregar reservas.${maintenanceBtn}`;
+    panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. Erro ao carregar reservas.${maintenanceBtn}${manageButtons}`;
+  }
+};
+
+window.editBedLabelUI = async function(bedId, currentLabel){
+  const newLabel = prompt("Novo nome da cama:", currentLabel);
+  if(!newLabel || !newLabel.trim() || newLabel.trim() === currentLabel) return;
+
+  try{
+    const res = await fetch(`/beds/${bedId}`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ label: newLabel.trim() })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível renomear a cama.");
+      return;
+    }
+    document.getElementById("bedActionCard").style.display = "none";
+    loadRoomMap();
+  }catch(e){
+    alert("Erro de conexão ao renomear a cama.");
+  }
+};
+
+window.deleteBedUI = async function(bedId){
+  if(!confirm("Tem certeza que quer excluir essa cama? Essa ação não pode ser desfeita.")) return;
+
+  try{
+    const res = await fetch(`/beds/${bedId}`, {
+      method: "DELETE",
+      credentials: "same-origin"
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível excluir a cama.");
+      return;
+    }
+    document.getElementById("bedActionCard").style.display = "none";
+    loadRoomMap();
+  }catch(e){
+    alert("Erro de conexão ao excluir a cama.");
   }
 };
 

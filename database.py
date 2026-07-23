@@ -3553,13 +3553,40 @@ def delete_bed(hostel_id, bed_id):
     conn = get_connection()
     cursor = conn.cursor()
 
+    cursor.execute("SELECT status, label FROM beds WHERE id = ? AND hostel_id = ?", (bed_id, hostel_id))
+    bed = cursor.fetchone()
+
+    if not bed:
+        conn.close()
+        raise ValueError("Cama nao encontrada.")
+    if bed["status"] == "occupied":
+        conn.close()
+        raise ValueError(f"A cama '{bed['label']}' esta ocupada agora - faca o check-out antes de excluir.")
+
     cursor.execute("DELETE FROM beds WHERE id = ? AND hostel_id = ?", (bed_id, hostel_id))
 
-    deleted = cursor.rowcount > 0
     conn.commit()
     conn.close()
 
-    if not deleted:
+
+def update_bed_label(hostel_id, bed_id, label):
+    label = (label or "").strip()
+    if not label:
+        raise ValueError("O nome da cama e obrigatorio.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE beds SET label = ? WHERE id = ? AND hostel_id = ?",
+        (label, bed_id, hostel_id)
+    )
+
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    if not updated:
         raise ValueError("Cama nao encontrada.")
 
 
