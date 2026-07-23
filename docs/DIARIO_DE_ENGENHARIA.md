@@ -1773,3 +1773,34 @@ Testado nos dois casos.
 
 Documentos capturados aparecem no perfil do hóspede na tela de Chats,
 com link pra abrir o arquivo (`GET /guests/documents/<id>/file`).
+
+### Sexta rodada da Sessão 8 (mesma data) — trava real contra overbooking
+
+O usuário perguntou (sem pedir mudança ainda) se o ajuste da rodada
+anterior ("lista de camas vazia não bloqueia mais a reserva") abria
+risco de overbooking. Resposta honesta: sim, abria — se uma modalidade
+não tem nenhuma cama cadastrada, nada detecta duas reservas
+sobrepostas pra ela, já que a checagem de conflito é toda por
+`bed_id`. O usuário pediu a correção certa: exigir cama cadastrada
+antes de liberar reserva automática.
+
+`create_reservation_from_chat` reescrita com a trava definitiva:
+- Modalidade sem NENHUMA cama cadastrada → reserva NÃO é criada.
+  Vira oportunidade tipo `booking`, urgência alta, pra equipe cadastrar
+  as camas e confirmar manualmente. Não duplica a oportunidade se o
+  hóspede repetir o pedido na mesma conversa.
+- Modalidade com cama(s) cadastrada(s) → `bed_id` passa a ser
+  OBRIGATÓRIO (antes era opcional) e precisa apontar pra uma cama
+  realmente livre pras datas pedidas, verificada de novo no momento da
+  reserva.
+
+Prompt da IA de atendimento revertido/corrigido: a instrução anterior
+("lista vazia não significa lotado, reserve sem cama mesmo assim") foi
+removida — o comportamento certo agora é o oposto, e a IA foi
+instruída a avisar o hóspede que o pedido foi registrado pra equipe
+quando `create_reservation` recusar por falta de cama cadastrada.
+
+Testado com banco isolado (4 cenários: sem cama, repetição não
+duplica oportunidade, com cama sem escolher trava, com cama escolhendo
+reserva) e com conversa real de IA (confirmou que a reserva não é
+criada e o hóspede recebe aviso correto).
