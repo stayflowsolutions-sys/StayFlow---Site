@@ -1387,16 +1387,16 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div style="margin-top:16px;display:grid;gap:8px">
-        <button class="btn secondary">Geral</button>
-        <button class="btn secondary">Empresa</button>
-        <button class="btn secondary">IA</button>
-        <button class="btn secondary">Comunicação</button>
-        <button class="btn secondary">Integrações</button>
+      <div class="settings-menu" style="margin-top:16px;display:grid;gap:8px">
+        <button class="btn secondary active" data-settings-target="geral">Geral</button>
+        <button class="btn secondary" data-settings-target="empresa">Empresa</button>
+        <button class="btn secondary" data-settings-target="ia">IA</button>
+        <button class="btn secondary" data-settings-target="comunicacao">Comunicação</button>
+        <button class="btn secondary" data-settings-target="developer">Integrações</button>
         <button class="btn secondary" onclick="openTeamPanel()">Equipe</button>
-        <button class="btn secondary">Segurança</button>
-        <button class="btn secondary">Billing</button>
-        <button class="btn secondary">Developer</button>
+        <button class="btn secondary" data-settings-target="seguranca">Segurança</button>
+        <button class="btn secondary" data-settings-target="billing">Billing</button>
+        <button class="btn secondary" data-settings-target="developer">Developer</button>
       </div>
     </div>
 
@@ -1411,7 +1411,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="grid">
+      <div class="grid" data-settings-section="geral">
 
         <div class="card span-6">
           <h2>IA</h2>
@@ -1435,7 +1435,7 @@ async function deleteRoleConfirm(roleId){
 
       </div>
 
-      <div class="card">
+      <div class="card" data-settings-section="geral">
         <h2>Geral</h2>
 
         <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
@@ -1455,7 +1455,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" data-settings-section="empresa">
         <h2>Empresa</h2>
         <p style="margin-bottom:14px">Dados legais, horários padrão e identidade visual do hostel.</p>
 
@@ -1504,7 +1504,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" data-settings-section="comunicacao">
         <h2>📱 WhatsApp Business</h2>
         <p style="margin-bottom:14px">Conecte o número oficial do hostel no WhatsApp (Meta Cloud API).</p>
 
@@ -1541,7 +1541,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" data-settings-section="comunicacao">
         <h2>Comunicação</h2>
 
         <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
@@ -1577,7 +1577,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" data-settings-section="ia">
         <h2>IA StayFlow</h2>
 
         <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;background:#0b84ff14;border:1px solid #0b84ff30;border-radius:12px;padding:10px 12px;">
@@ -1606,7 +1606,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" data-settings-section="seguranca">
         <h2>Segurança</h2>
 
         <h3 style="margin:0 0 10px;font-size:14px;font-weight:800">Trocar senha</h3>
@@ -1639,7 +1639,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card" data-required-permission="billing">
+      <div class="card" data-required-permission="billing" data-settings-section="billing">
         <h2>Billing</h2>
         <div class="sf-empty">
           <div>
@@ -1649,7 +1649,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" data-settings-section="developer">
         <h2>Developer</h2>
         <div class="sf-empty">
           <div>
@@ -2354,13 +2354,30 @@ async function deleteRoleConfirm(roleId){
     });
   }
 
+  // Mostra so o card (ou grupo de cards) marcado com o
+  // data-settings-section correspondente, escondendo os outros - e o
+  // que fazia falta antes: bindSettingsMenu so trocava a classe
+  // "active" visual, nunca controlou o conteudo. "Equipe" fica de fora
+  // desse mecanismo de proposito (abre painel separado via onclick).
+  function switchSettingsSection(target){
+    $$("#settings [data-settings-section]").forEach(el=>{
+      el.style.display = (el.dataset.settingsSection === target) ? "" : "none";
+    });
+    $$("#settings .settings-menu .btn.secondary[data-settings-target]").forEach(btn=>{
+      btn.classList.toggle("active", btn.dataset.settingsTarget === target);
+    });
+  }
+
   function bindSettingsMenu(){
-    $$("#settings .card.span-4 .btn.secondary").forEach(btn=>{
+    $$("#settings .settings-menu .btn.secondary[data-settings-target]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
-        $$("#settings .card.span-4 .btn.secondary").forEach(b=>b.classList.remove("active"));
-        btn.classList.add("active");
+        switchSettingsSection(btn.dataset.settingsTarget);
       });
     });
+    // "Geral" e a secao padrao ao entrar em Configuracoes - o botao ja
+    // nasce com a classe "active" no HTML, isso so aplica o show/hide
+    // real dos cards pra bater com esse estado inicial.
+    switchSettingsSection("geral");
   }
 
   document.addEventListener("DOMContentLoaded", ()=>{

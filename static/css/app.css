@@ -234,6 +234,11 @@ body::before{
   color:#dce9fb;
   border-color:rgba(11,132,255,.3);
 }
+.settings-menu .btn.secondary.active{
+  background:rgba(11,132,255,.14);
+  color:#dce9fb;
+  border-color:rgba(11,132,255,.3);
+}
 .generic-modal-overlay{
   position:fixed;
   inset:0;
