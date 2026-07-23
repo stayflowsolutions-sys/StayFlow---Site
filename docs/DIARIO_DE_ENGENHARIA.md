@@ -1428,3 +1428,12 @@ colunas mortas de `settings`, formato de resposta de `/settings`.
       sem meio-termo possível
 - [ ] Billing/Developer funcionais — quando o modelo comercial e as
       integrações de verdade existirem, respectivamente
+- [ ] Robocopy de sincronização do fechamento da Sessão 7 usou `/MIR`
+      sem excluir `docs/` nem `.claude/` (fugiu do padrão seletivo de
+      sync usado nas sessões anteriores, que só copiava os arquivos de
+      deploy de verdade). Resultado: `StayFlow---Site/docs/` e
+      `StayFlow---Site/.claude/` ficaram untracked dentro do
+      `HostelBot` — deliberadamente não commitados nem adicionados ao
+      `.gitignore` (só não fazem parte de nenhum commit por enquanto).
+      Da próxima vez, rodar com `/XD docs .claude` também, igual já se
+      faz com `.git`, pra não repetir isso.
