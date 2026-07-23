@@ -23,6 +23,8 @@ from routes.whatsapp_webhook import whatsapp_webhook_bp
 from routes.team import team_bp
 from routes.quick_replies import quick_replies_bp
 from routes.security import security_bp
+from routes.ask import ask_bp
+from routes.rooms import rooms_bp
 
 app = Flask(__name__, static_folder=None)
 
@@ -57,6 +59,8 @@ app.register_blueprint(whatsapp_webhook_bp)
 app.register_blueprint(team_bp)
 app.register_blueprint(quick_replies_bp)
 app.register_blueprint(security_bp)
+app.register_blueprint(ask_bp)
+app.register_blueprint(rooms_bp)
 
 # Caminho do frontend: por padrão assume que a pasta do site fica ao lado
 # da pasta do backend (ex: C:\StayFlow\backend + C:\StayFlow\StayFlow---Site).

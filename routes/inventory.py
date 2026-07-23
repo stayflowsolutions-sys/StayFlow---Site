@@ -1,31 +1,8 @@
 from flask import Blueprint, jsonify, request
-from database import get_connection
+from database import get_connection, get_inventory_with_alerts, create_supplier_record
 from utils.tenant import require_permission
 
 inventory_bp = Blueprint("inventory", __name__)
-
-
-def build_reorder_message(item, supplier):
-    """
-    Monta uma sugestão de mensagem pra reposição — texto pronto que o
-    gestor pode revisar e mandar pro fornecedor (WhatsApp, email, etc).
-    Hoje é só o texto sugerido; o envio automático fica pra quando
-    houver integração de WhatsApp com fornecedores.
-    """
-    if not supplier:
-        return (
-            f"Nenhum fornecedor cadastrado para '{item['name']}'. "
-            f"Cadastre um fornecedor pra receber a sugestão de contato."
-        )
-
-    quantity_to_order = item["reorder_quantity"] or item["min_threshold"] or 1
-
-    return (
-        f"Olá {supplier['name']}, tudo bem? Nosso estoque de "
-        f"'{item['name']}' está em {item['quantity']} {item['unit']}, "
-        f"abaixo do mínimo de {item['min_threshold']}. "
-        f"Poderia providenciar mais {quantity_to_order} {item['unit']}?"
-    )
 
 
 # ===== FORNECEDORES =====
@@ -54,31 +31,17 @@ def list_suppliers(hostel_id):
 def create_supplier(hostel_id):
     data = request.get_json() or {}
 
-    name = (data.get("name") or "").strip()
-    if not name:
-        return jsonify({"success": False, "message": "name is required."}), 400
-
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        INSERT INTO suppliers (hostel_id, name, phone, email)
-        VALUES (?, ?, ?, ?)
-        """,
-        (
+    try:
+        supplier_id = create_supplier_record(
             hostel_id,
-            name,
-            (data.get("phone") or "").strip(),
-            (data.get("email") or "").strip()
+            name=data.get("name"),
+            phone=data.get("phone"),
+            email=data.get("email"),
         )
-    )
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
 
-    supplier_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-
-    return jsonify({"success": True, "id": supplier_id, "name": name}), 201
+    return jsonify({"success": True, "id": supplier_id, "name": (data.get("name") or "").strip()}), 201
 
 
 # ===== ITENS DE ESTOQUE =====
@@ -86,56 +49,7 @@ def create_supplier(hostel_id):
 @inventory_bp.route("/inventory", methods=["GET"])
 @require_permission("inventory")
 def list_inventory(hostel_id):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT
-            i.id, i.category, i.name, i.quantity, i.min_threshold,
-            i.reorder_quantity, i.unit, i.supplier_id,
-            s.name AS supplier_name, s.phone AS supplier_phone,
-            s.email AS supplier_email
-        FROM inventory_items i
-        LEFT JOIN suppliers s ON s.id = i.supplier_id
-        WHERE i.hostel_id = ?
-        ORDER BY i.category, i.name
-    """, (hostel_id,))
-
-    items = [dict(row) for row in cursor.fetchall()]
-
-    by_category = {}
-    alerts = []
-
-    for item in items:
-        by_category.setdefault(item["category"], []).append(item)
-
-        if item["quantity"] <= item["min_threshold"]:
-            supplier = None
-            if item["supplier_id"]:
-                supplier = {
-                    "name": item["supplier_name"],
-                    "phone": item["supplier_phone"],
-                    "email": item["supplier_email"]
-                }
-
-            alerts.append({
-                "id": item["id"],
-                "name": item["name"],
-                "category": item["category"],
-                "quantity": item["quantity"],
-                "min_threshold": item["min_threshold"],
-                "unit": item["unit"],
-                "supplier": supplier,
-                "suggested_message": build_reorder_message(item, supplier)
-            })
-
-    conn.close()
-
-    return jsonify({
-        "items": items,
-        "by_category": by_category,
-        "alerts": alerts
-    })
+    return jsonify(get_inventory_with_alerts(hostel_id))
 
 
 @inventory_bp.route("/inventory", methods=["POST"])

@@ -1,10 +1,24 @@
 import os
 import secrets
 import sqlite3
+import unicodedata
 
 from utils.permissions import ALL_PERMISSIONS_STR
 
 DATABASE = os.path.join(os.getenv("STAYFLOW_DATA_DIR", "."), "stayflow.db")
+
+
+def _normalize_text(text):
+    """
+    Remove acentos e baixa a caixa - usado pra comparar nomes vindos do
+    modelo (que tende a "corrigir" a ortografia, ex: usuario digita
+    "pao" mas a tool recebe "pão") contra nomes cadastrados no banco,
+    sem depender de LIKE (que e sensivel a acentuacao no SQLite).
+    """
+    if not text:
+        return ""
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if not unicodedata.combining(c)).lower()
 
 
 def get_connection():
@@ -418,6 +432,54 @@ def create_database():
     )
     """)
 
+    # Historico de conversa do agente Ask StayFlow (painel do operador
+    # logado, nao do hospede) - chave hostel_id+user_id.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS ask_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Pedidos de reposicao a fornecedor feitos pelo Ask StayFlow.
+    # status: pending_confirmation -> sent -> received (ou cancelled).
+    # Existe pra rastrear "o que foi pedido e ainda nao chegou" de forma
+    # confiavel, em vez de depender so da memoria da conversa com a IA.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS inventory_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        inventory_item_id INTEGER NOT NULL,
+        supplier_id INTEGER,
+        quantity INTEGER NOT NULL,
+        message TEXT,
+        status TEXT NOT NULL DEFAULT 'pending_confirmation',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        sent_at TIMESTAMP,
+        received_at TIMESTAMP
+    )
+    """)
+
+    # Rascunho de mensagem proativa (iniciada pela equipe via Ask StayFlow,
+    # nao pelo hospede) - mesmo padrao propose->confirm->send do pedido a
+    # fornecedor. Ao enviar, a mensagem tambem e gravada na conversa normal
+    # do hospede, entao a IA de atendimento ja ve esse aviso quando ele responder.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS guest_message_drafts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        guest_id INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending_confirmation',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        sent_at TIMESTAMP
+    )
+    """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -540,6 +602,12 @@ def create_database():
     )
     """)
 
+    # Cama fisica atribuida a essa reserva quando o hospede faz check-in
+    # de verdade (nao e o mesmo que a data planejada) - fica null ate
+    # o check-in acontecer, e permanece apontando pra la depois do
+    # check-out (registro historico de qual cama foi usada).
+    add_column_if_not_exists(cursor, "reservations", "bed_id", "INTEGER")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS suppliers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -563,6 +631,82 @@ def create_database():
         unit TEXT DEFAULT 'un',
         supplier_id INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Quantidade que saiu do estoque limpo e esta na lavanderia (suja,
+    # ainda nao voltou). "quantity" continua sendo so o que esta limpo
+    # e disponivel pra uso - as duas colunas juntas = total do item.
+    add_column_if_not_exists(cursor, "inventory_items", "in_laundry_quantity", "INTEGER DEFAULT 0")
+
+    # ===== Mapa de quartos/camas - cada hostel/hotel/resort monta o
+    # proprio, com camas normais ou de beliche (bunk_top/bunk_bottom
+    # pareadas por bunk_group pra desenhar o mesmo beliche no mapa).
+    # Status da cama e gravado de verdade (nao calculado pelas datas
+    # da reserva), porque check-in/check-out reais nem sempre batem
+    # com o planejado. =====
+
+    # Modalidade de quarto (ex: "Dormitorio Misto 6 camas", "Standard
+    # Duplo", "Suite Presidencial") - cada propriedade cria as suas
+    # proprias, nao e uma lista fixa. capacity e so informativo (quantas
+    # pessoas cabem), usado pra sugerir quantidade de camas ao criar.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS room_categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        capacity INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(hostel_id, name)
+    )
+    """)
+
+    # floor existe pra organizar propriedades grandes (hotel/resort com
+    # varios andares/blocos) - opcional, hostel pequeno pode ignorar.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS rooms (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        category_id INTEGER,
+        floor TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS beds (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        room_id INTEGER NOT NULL,
+        label TEXT NOT NULL,
+        bed_kind TEXT NOT NULL DEFAULT 'single',
+        bunk_group INTEGER,
+        status TEXT NOT NULL DEFAULT 'free',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Kit de roupa de cama por tipo de cama (solteiro, beliche de
+    # cima/baixo, casal) - configurado uma vez por hostel, aplicado a
+    # toda cama daquele tipo, em vez de configurar cama por cama.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS linen_kits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        bed_kind TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(hostel_id, bed_kind)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS linen_kit_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        linen_kit_id INTEGER NOT NULL,
+        inventory_item_id INTEGER NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        UNIQUE(linen_kit_id, inventory_item_id)
     )
     """)
 
@@ -1699,6 +1843,1807 @@ def is_within_quiet_hours(hostel_id):
 
     # Horario de silencio atravessa a meia-noite (ex: 22:00 as 07:00).
     return now_local >= start or now_local < end
+
+
+# ===== Consultas de leitura reaproveitadas pelas rotas normais E pelas
+# tools do agente Ask StayFlow (Fase A) - uma unica fonte de verdade
+# pra cada consulta, nunca duplicada entre rota HTTP e tool de IA. =====
+
+def get_dashboard_stats(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT COUNT(*) AS total FROM guests WHERE hostel_id = ?",
+        (hostel_id,)
+    )
+    guests = cursor.fetchone()["total"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total
+        FROM messages m
+        JOIN conversations c ON m.conversation_id = c.id
+        JOIN guests g ON c.guest_id = g.id
+        WHERE g.hostel_id = ?
+    """, (hostel_id,))
+    messages = cursor.fetchone()["total"]
+
+    cursor.execute(
+        "SELECT COUNT(*) AS total FROM leads WHERE hostel_id = ?",
+        (hostel_id,)
+    )
+    leads = cursor.fetchone()["total"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total
+        FROM opportunities o
+        JOIN guests g ON o.guest_id = g.id
+        WHERE g.hostel_id = ?
+    """, (hostel_id,))
+    opportunities = cursor.fetchone()["total"]
+
+    cursor.execute("""
+        SELECT phone, interest, status, created_at
+        FROM leads
+        WHERE hostel_id = ?
+        ORDER BY id DESC
+        LIMIT 5
+    """, (hostel_id,))
+    recent_leads = [dict(row) for row in cursor.fetchall()]
+
+    cursor.execute("""
+        SELECT m.sender, m.message, m.created_at
+        FROM messages m
+        JOIN conversations c ON m.conversation_id = c.id
+        JOIN guests g ON c.guest_id = g.id
+        WHERE g.hostel_id = ?
+        ORDER BY m.id DESC
+        LIMIT 5
+    """, (hostel_id,))
+    recent_messages = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return {
+        "stats": {
+            "guests": guests,
+            "messages": messages,
+            "leads": leads,
+            "opportunities": opportunities
+        },
+        "recent_leads": recent_leads,
+        "recent_messages": recent_messages
+    }
+
+
+def get_opportunities_list(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            o.id,
+            g.phone,
+            o.type,
+            o.description,
+            o.status,
+            o.score,
+            o.urgency,
+            o.estimated_value,
+            o.next_action,
+            o.created_at
+        FROM opportunities o
+        JOIN guests g
+            ON o.guest_id = g.id
+        WHERE g.hostel_id = ?
+        ORDER BY o.created_at DESC
+    """, (hostel_id,))
+
+    data = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return data
+
+
+def get_reservations_with_stats(hostel_id):
+    from datetime import date
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, guest_id, guest_name, room_type, bed, checkin_date,
+               checkout_date, source, payment_method, amount, status,
+               bed_id, created_at
+        FROM reservations
+        WHERE hostel_id = ?
+        ORDER BY checkin_date ASC, id DESC
+        """,
+        (hostel_id,)
+    )
+
+    reservations = [dict(row) for row in cursor.fetchall()]
+
+    today = date.today().isoformat()
+
+    stats = {
+        "today": sum(1 for r in reservations if r["checkin_date"] == today),
+        "checkins_today": sum(1 for r in reservations if r["checkin_date"] == today),
+        "checkouts_today": sum(1 for r in reservations if r["checkout_date"] == today),
+        "no_show": sum(1 for r in reservations if r["status"] == "no_show"),
+        "total": len(reservations),
+        "confirmed_revenue": sum(
+            r["amount"] or 0 for r in reservations if r["status"] == "confirmed"
+        ),
+    }
+
+    conn.close()
+
+    return {"reservations": reservations, "stats": stats}
+
+
+def build_reorder_message(item, supplier):
+    """
+    Monta uma sugestão de mensagem pra reposição — texto pronto que o
+    gestor pode revisar e mandar pro fornecedor (WhatsApp, email, etc).
+    Hoje é só o texto sugerido; o envio automático fica pra quando
+    houver integração de WhatsApp com fornecedores.
+    """
+    if not supplier:
+        return (
+            f"Nenhum fornecedor cadastrado para '{item['name']}'. "
+            f"Cadastre um fornecedor pra receber a sugestão de contato."
+        )
+
+    quantity_to_order = item["reorder_quantity"] or item["min_threshold"] or 1
+
+    return (
+        f"Olá {supplier['name']}, tudo bem? Nosso estoque de "
+        f"'{item['name']}' está em {item['quantity']} {item['unit']}, "
+        f"abaixo do mínimo de {item['min_threshold']}. "
+        f"Poderia providenciar mais {quantity_to_order} {item['unit']}?"
+    )
+
+
+def get_inventory_with_alerts(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            i.id, i.category, i.name, i.quantity, i.min_threshold,
+            i.reorder_quantity, i.unit, i.supplier_id, i.in_laundry_quantity,
+            s.name AS supplier_name, s.phone AS supplier_phone,
+            s.email AS supplier_email
+        FROM inventory_items i
+        LEFT JOIN suppliers s ON s.id = i.supplier_id
+        WHERE i.hostel_id = ?
+        ORDER BY i.category, i.name
+    """, (hostel_id,))
+
+    items = [dict(row) for row in cursor.fetchall()]
+
+    by_category = {}
+    alerts = []
+
+    for item in items:
+        by_category.setdefault(item["category"], []).append(item)
+
+        if item["quantity"] <= item["min_threshold"]:
+            supplier = None
+            if item["supplier_id"]:
+                supplier = {
+                    "name": item["supplier_name"],
+                    "phone": item["supplier_phone"],
+                    "email": item["supplier_email"]
+                }
+
+            alerts.append({
+                "id": item["id"],
+                "name": item["name"],
+                "category": item["category"],
+                "quantity": item["quantity"],
+                "min_threshold": item["min_threshold"],
+                "unit": item["unit"],
+                "supplier": supplier,
+                "suggested_message": build_reorder_message(item, supplier)
+            })
+
+    conn.close()
+
+    return {"items": items, "by_category": by_category, "alerts": alerts}
+
+
+def get_revenue_summary(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, type, name, price
+        FROM offerings
+        WHERE hostel_id = ?
+        ORDER BY type, name
+    """, (hostel_id,))
+    offerings = [dict(row) for row in cursor.fetchall()]
+
+    cursor.execute("""
+        SELECT o.id, o.type, o.description, o.estimated_value, o.next_action, g.phone
+        FROM opportunities o
+        JOIN guests g ON o.guest_id = g.id
+        WHERE g.hostel_id = ? AND o.status = 'open' AND o.type IN ('tour', 'upsell')
+        ORDER BY o.estimated_value DESC
+    """, (hostel_id,))
+    opportunities = [dict(row) for row in cursor.fetchall()]
+
+    extra_revenue = sum(o["estimated_value"] or 0 for o in opportunities)
+
+    conn.close()
+
+    return {
+        "offerings": offerings,
+        "opportunities": opportunities,
+        "extra_revenue": extra_revenue
+    }
+
+
+def get_guests_list(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            g.id,
+            g.name,
+            g.phone,
+            g.email,
+            g.language,
+            g.created_at,
+            (
+                SELECT COUNT(*)
+                FROM messages m
+                JOIN conversations c ON m.conversation_id = c.id
+                WHERE c.guest_id = g.id
+            ) AS message_count,
+            (
+                SELECT COALESCE(SUM(o.estimated_value), 0)
+                FROM opportunities o
+                WHERE o.guest_id = g.id
+            ) AS total_value
+        FROM guests g
+        WHERE g.hostel_id = ?
+        ORDER BY g.created_at DESC
+    """, (hostel_id,))
+
+    guests = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return guests
+
+
+def get_guest_profile(hostel_id, guest_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, name, phone, email, language, created_at
+        FROM guests
+        WHERE id = ? AND hostel_id = ?
+    """, (guest_id, hostel_id))
+
+    guest = cursor.fetchone()
+
+    if not guest:
+        conn.close()
+        return None
+
+    cursor.execute("""
+        SELECT m.sender, m.message, m.created_at
+        FROM messages m
+        JOIN conversations c
+            ON m.conversation_id = c.id
+        WHERE c.guest_id = ?
+        ORDER BY m.created_at ASC, m.id ASC
+    """, (guest_id,))
+
+    messages = [dict(row) for row in cursor.fetchall()]
+
+    cursor.execute("""
+        SELECT type, description, score, urgency, estimated_value,
+               next_action, status, created_at
+        FROM opportunities
+        WHERE guest_id = ?
+        ORDER BY created_at DESC, id DESC
+    """, (guest_id,))
+
+    opportunities = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return {
+        "guest": dict(guest),
+        "messages": messages,
+        "opportunities": opportunities
+    }
+
+
+def find_guest_by_name(hostel_id, name_query):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, name, phone, email, created_at
+        FROM guests
+        WHERE hostel_id = ?
+        ORDER BY created_at DESC
+    """, (hostel_id,))
+
+    all_guests = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    query_norm = _normalize_text(name_query)
+    matches = [g for g in all_guests if query_norm in _normalize_text(g["name"])]
+
+    return matches[:5]
+
+
+def get_chats_list(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            g.id AS guest_id,
+            g.phone,
+            g.name,
+            m.message AS last_message,
+            m.sender AS last_sender,
+            m.created_at AS last_activity,
+            o.type AS intent,
+            o.score,
+            o.urgency,
+            o.estimated_value,
+            o.next_action
+        FROM guests g
+
+        LEFT JOIN conversations c
+            ON c.guest_id = g.id
+
+        LEFT JOIN messages m
+            ON m.id = (
+                SELECT m2.id
+                FROM messages m2
+                JOIN conversations c2
+                    ON m2.conversation_id = c2.id
+                WHERE c2.guest_id = g.id
+                ORDER BY m2.created_at DESC, m2.id DESC
+                LIMIT 1
+            )
+
+        LEFT JOIN opportunities o
+            ON o.id = (
+                SELECT o2.id
+                FROM opportunities o2
+                WHERE o2.guest_id = g.id
+                ORDER BY o2.created_at DESC, o2.id DESC
+                LIMIT 1
+            )
+
+        WHERE m.message IS NOT NULL
+          AND g.hostel_id = ?
+
+        GROUP BY g.id
+
+        ORDER BY m.created_at DESC
+    """, (hostel_id,))
+
+    data = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return data
+
+
+def get_finance_summary(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COALESCE(SUM(amount), 0) AS total
+        FROM reservations
+        WHERE hostel_id = ? AND status = 'confirmed'
+    """, (hostel_id,))
+    confirmed_revenue = cursor.fetchone()["total"]
+
+    cursor.execute("""
+        SELECT COALESCE(SUM(o.estimated_value), 0) AS total
+        FROM opportunities o
+        JOIN guests g ON o.guest_id = g.id
+        WHERE g.hostel_id = ? AND o.status = 'open' AND o.urgency = 'high'
+    """, (hostel_id,))
+    at_risk = cursor.fetchone()["total"]
+
+    cursor.execute("""
+        SELECT COALESCE(SUM(o.estimated_value), 0) AS total
+        FROM opportunities o
+        JOIN guests g ON o.guest_id = g.id
+        WHERE g.hostel_id = ? AND o.status = 'open'
+    """, (hostel_id,))
+    recoverable = cursor.fetchone()["total"]
+
+    cursor.execute("""
+        SELECT COALESCE(SUM(o.estimated_value), 0) AS total
+        FROM opportunities o
+        JOIN guests g ON o.guest_id = g.id
+        WHERE g.hostel_id = ? AND o.status = 'closed'
+    """, (hostel_id,))
+    recovered = cursor.fetchone()["total"]
+
+    cursor.execute("""
+        SELECT
+            'Reserva' AS type,
+            guest_name || COALESCE(' - ' || NULLIF(room_type, ''), '') AS description,
+            amount AS value,
+            status,
+            created_at
+        FROM reservations
+        WHERE hostel_id = ?
+
+        UNION ALL
+
+        SELECT
+            'Oportunidade' AS type,
+            o.description AS description,
+            o.estimated_value AS value,
+            o.status,
+            o.created_at
+        FROM opportunities o
+        JOIN guests g ON o.guest_id = g.id
+        WHERE g.hostel_id = ?
+
+        ORDER BY created_at DESC
+        LIMIT 30
+    """, (hostel_id, hostel_id))
+
+    movements = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return {
+        "confirmed_revenue": confirmed_revenue,
+        "recovered": recovered,
+        "at_risk": at_risk,
+        "recoverable": recoverable,
+        "movements": movements
+    }
+
+
+def get_reports_summary(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            COALESCE(NULLIF(source, ''), 'manual') AS channel,
+            COALESCE(SUM(amount), 0) AS revenue
+        FROM reservations
+        WHERE hostel_id = ?
+        GROUP BY channel
+        ORDER BY revenue DESC
+    """, (hostel_id,))
+    by_channel = [dict(row) for row in cursor.fetchall()]
+
+    cursor.execute("SELECT COUNT(*) AS c FROM guests WHERE hostel_id = ?", (hostel_id,))
+    total_guests = cursor.fetchone()["c"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS c
+        FROM messages m
+        JOIN conversations c ON m.conversation_id = c.id
+        JOIN guests g ON c.guest_id = g.id
+        WHERE g.hostel_id = ?
+    """, (hostel_id,))
+    total_messages = cursor.fetchone()["c"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS c
+        FROM opportunities o
+        JOIN guests g ON o.guest_id = g.id
+        WHERE g.hostel_id = ?
+    """, (hostel_id,))
+    total_opportunities = cursor.fetchone()["c"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS c
+        FROM reservations
+        WHERE hostel_id = ? AND status = 'confirmed'
+    """, (hostel_id,))
+    total_confirmed = cursor.fetchone()["c"]
+
+    funnel = [
+        {"stage": "Hóspedes", "count": total_guests},
+        {"stage": "Mensagens", "count": total_messages},
+        {"stage": "Oportunidades", "count": total_opportunities},
+        {"stage": "Reservas confirmadas", "count": total_confirmed},
+    ]
+
+    conn.close()
+
+    return {
+        "by_channel": by_channel,
+        "funnel": funnel
+    }
+
+
+# ===== Acoes de escrita do Ask StayFlow (Fase B) - cada funcao aqui e
+# a MESMA fonte de verdade usada pelas rotas manuais quando existe uma
+# rota equivalente; quando nao existe (ex: ajuste de estoque por nome),
+# a funcao foi desenhada pra ser chamada por linguagem natural. =====
+
+def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
+                                checkin_date=None, checkout_date=None,
+                                source="manual", payment_method="",
+                                amount=0, status="pending", phone=""):
+    guest_name = (guest_name or "").strip()
+    checkin_date = (checkin_date or "").strip()
+    checkout_date = (checkout_date or "").strip()
+
+    if not guest_name:
+        raise ValueError("guest_name is required.")
+    if not checkin_date or not checkout_date:
+        raise ValueError("checkin_date and checkout_date are required.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    guest_id = None
+    phone = (phone or "").strip()
+    if phone:
+        cursor.execute(
+            "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
+            (hostel_id, phone)
+        )
+        row = cursor.fetchone()
+        if row:
+            guest_id = row["id"]
+
+    cursor.execute(
+        """
+        INSERT INTO reservations
+        (hostel_id, guest_id, guest_name, room_type, bed, checkin_date,
+         checkout_date, source, payment_method, amount, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            hostel_id, guest_id, guest_name, (room_type or "").strip(),
+            (bed or "").strip(), checkin_date, checkout_date,
+            (source or "manual").strip(), (payment_method or "").strip(),
+            float(amount or 0), (status or "pending").strip(),
+        )
+    )
+
+    reservation_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return reservation_id
+
+
+def update_reservation_status_record(hostel_id, reservation_id, status):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id FROM reservations WHERE id = ? AND hostel_id = ?",
+        (reservation_id, hostel_id)
+    )
+    if not cursor.fetchone():
+        conn.close()
+        raise ValueError("Reservation not found.")
+
+    cursor.execute(
+        "UPDATE reservations SET status = ? WHERE id = ? AND hostel_id = ?",
+        (status, reservation_id, hostel_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def create_supplier_record(hostel_id, name, phone="", email=""):
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("name is required.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT INTO suppliers (hostel_id, name, phone, email) VALUES (?, ?, ?, ?)",
+        (hostel_id, name, (phone or "").strip(), (email or "").strip())
+    )
+
+    supplier_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return supplier_id
+
+
+def find_inventory_item_by_name(hostel_id, name_query):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            i.id, i.category, i.name, i.quantity, i.min_threshold,
+            i.reorder_quantity, i.unit, i.supplier_id, i.in_laundry_quantity,
+            s.name AS supplier_name, s.phone AS supplier_phone
+        FROM inventory_items i
+        LEFT JOIN suppliers s ON s.id = i.supplier_id
+        WHERE i.hostel_id = ?
+        ORDER BY i.name
+    """, (hostel_id,))
+
+    all_items = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    query_norm = _normalize_text(name_query)
+    matches = [item for item in all_items if query_norm in _normalize_text(item["name"])]
+
+    return matches
+
+
+def adjust_inventory_quantity_by_name(hostel_id, item_name, delta):
+    matches = find_inventory_item_by_name(hostel_id, item_name)
+
+    if not matches:
+        raise ValueError(f"Nenhum item de estoque encontrado com o nome '{item_name}'.")
+    if len(matches) > 1:
+        names = ", ".join(m["name"] for m in matches)
+        raise ValueError(f"Mais de um item de estoque bate com '{item_name}': {names}. Seja mais especifico.")
+
+    item = matches[0]
+    new_quantity = max(0, item["quantity"] + delta)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE inventory_items SET quantity = ? WHERE id = ? AND hostel_id = ?",
+        (new_quantity, item["id"], hostel_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "id": item["id"],
+        "name": item["name"],
+        "previous_quantity": item["quantity"],
+        "new_quantity": new_quantity,
+        "unit": item["unit"]
+    }
+
+
+def list_pending_supplier_orders(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            io.id, io.quantity, io.status, io.message,
+            io.created_at, io.sent_at,
+            i.name AS item_name, i.unit,
+            s.name AS supplier_name, s.phone AS supplier_phone
+        FROM inventory_orders io
+        JOIN inventory_items i ON i.id = io.inventory_item_id
+        LEFT JOIN suppliers s ON s.id = io.supplier_id
+        WHERE io.hostel_id = ? AND io.status IN ('pending_confirmation', 'sent')
+        ORDER BY io.created_at DESC
+    """, (hostel_id,))
+
+    orders = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return orders
+
+
+def propose_supplier_order(hostel_id, item_name, quantity):
+    matches = find_inventory_item_by_name(hostel_id, item_name)
+
+    if not matches:
+        raise ValueError(f"Nenhum item de estoque encontrado com o nome '{item_name}'.")
+    if len(matches) > 1:
+        names = ", ".join(m["name"] for m in matches)
+        raise ValueError(f"Mais de um item de estoque bate com '{item_name}': {names}. Seja mais especifico.")
+
+    item = matches[0]
+
+    if not item["supplier_id"]:
+        raise ValueError(f"O item '{item['name']}' nao tem fornecedor cadastrado. Cadastre um fornecedor antes de pedir reposicao.")
+    if not item["supplier_phone"]:
+        raise ValueError(f"O fornecedor de '{item['name']}' nao tem telefone cadastrado.")
+
+    quantity = int(quantity)
+    message = (
+        f"Ola {item['supplier_name']}, tudo bem? Poderia providenciar "
+        f"{quantity} {item['unit']} de '{item['name']}' pra gente?"
+    )
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO inventory_orders
+        (hostel_id, inventory_item_id, supplier_id, quantity, message, status)
+        VALUES (?, ?, ?, ?, ?, 'pending_confirmation')
+        """,
+        (hostel_id, item["id"], item["supplier_id"], quantity, message)
+    )
+
+    order_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return {
+        "order_id": order_id,
+        "item_name": item["name"],
+        "supplier_name": item["supplier_name"],
+        "supplier_phone": item["supplier_phone"],
+        "quantity": quantity,
+        "unit": item["unit"],
+        "message": message
+    }
+
+
+def get_pending_confirmation_order(hostel_id, order_id=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if order_id:
+        cursor.execute(
+            """
+            SELECT * FROM inventory_orders
+            WHERE id = ? AND hostel_id = ? AND status = 'pending_confirmation'
+            """,
+            (order_id, hostel_id)
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT * FROM inventory_orders
+            WHERE hostel_id = ? AND status = 'pending_confirmation'
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (hostel_id,)
+        )
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return dict(row) if row else None
+
+
+def send_supplier_order(hostel_id, order_id=None):
+    from services.whatsapp_service import send_whatsapp_message
+
+    order = get_pending_confirmation_order(hostel_id, order_id)
+    if not order:
+        raise ValueError("Nenhum pedido pendente de confirmacao encontrado.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT i.name AS item_name, s.name AS supplier_name, s.phone AS supplier_phone
+        FROM inventory_orders io
+        JOIN inventory_items i ON i.id = io.inventory_item_id
+        LEFT JOIN suppliers s ON s.id = io.supplier_id
+        WHERE io.id = ?
+        """,
+        (order["id"],)
+    )
+    details = dict(cursor.fetchone())
+    conn.close()
+
+    phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)
+
+    sent = send_whatsapp_message(
+        phone_number_id, access_token, details["supplier_phone"], order["message"]
+    )
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if sent:
+        cursor.execute(
+            "UPDATE inventory_orders SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (order["id"],)
+        )
+        conn.commit()
+    conn.close()
+
+    return {
+        "order_id": order["id"],
+        "sent": sent,
+        "item_name": details["item_name"],
+        "supplier_name": details["supplier_name"],
+        "supplier_phone": details["supplier_phone"],
+        "quantity": order["quantity"]
+    }
+
+
+def cancel_pending_supplier_order(hostel_id, order_id=None):
+    order = get_pending_confirmation_order(hostel_id, order_id)
+    if not order:
+        raise ValueError("Nenhum pedido pendente de confirmacao encontrado.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE inventory_orders SET status = 'cancelled' WHERE id = ?",
+        (order["id"],)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {"order_id": order["id"], "cancelled": True}
+
+
+def confirm_supplier_order_received(hostel_id, item_name=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT io.*, i.name AS item_name, i.unit
+        FROM inventory_orders io
+        JOIN inventory_items i ON i.id = io.inventory_item_id
+        WHERE io.hostel_id = ? AND io.status = 'sent'
+        ORDER BY io.created_at DESC
+        """,
+        (hostel_id,)
+    )
+
+    candidates = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    if item_name:
+        query_norm = _normalize_text(item_name)
+        candidates = [c for c in candidates if query_norm in _normalize_text(c["item_name"])]
+
+    if not candidates:
+        raise ValueError("Nenhum pedido enviado ao fornecedor esta aguardando confirmacao de recebimento.")
+    if len(candidates) > 1:
+        names = ", ".join(f"{c['item_name']} (pedido #{c['id']})" for c in candidates)
+        raise ValueError(f"Mais de um pedido em aberto bate com essa descricao: {names}. Diga qual item recebeu.")
+
+    order = candidates[0]
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT quantity FROM inventory_items WHERE id = ?",
+        (order["inventory_item_id"],)
+    )
+    current = cursor.fetchone()
+    new_quantity = current["quantity"] + order["quantity"]
+
+    cursor.execute(
+        "UPDATE inventory_items SET quantity = ? WHERE id = ?",
+        (new_quantity, order["inventory_item_id"])
+    )
+    cursor.execute(
+        "UPDATE inventory_orders SET status = 'received', received_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (order["id"],)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "order_id": order["id"],
+        "item_name": order["item_name"],
+        "quantity_added": order["quantity"],
+        "new_quantity": new_quantity,
+        "unit": order["unit"]
+    }
+
+
+# ===== Mensagem proativa da equipe pro hospede, via Ask StayFlow.
+# Mesmo padrao propose->confirm->send do pedido a fornecedor. Ao
+# enviar, a mensagem tambem entra na conversa normal do hospede (JSON
+# do memory_service + SQL do message_service) - assim a IA de
+# atendimento ja ve esse aviso quando ele responder. =====
+
+def propose_guest_message(hostel_id, guest_name, message):
+    matches = find_guest_by_name(hostel_id, guest_name)
+
+    if not matches:
+        raise ValueError(f"Nenhum hospede encontrado com o nome '{guest_name}'.")
+    if len(matches) > 1:
+        names = ", ".join(m["name"] for m in matches)
+        raise ValueError(f"Mais de um hospede bate com '{guest_name}': {names}. Seja mais especifico.")
+
+    guest = matches[0]
+
+    if not guest["phone"]:
+        raise ValueError(f"O hospede '{guest['name']}' nao tem telefone cadastrado.")
+
+    message = (message or "").strip()
+    if not message:
+        raise ValueError("A mensagem nao pode ser vazia.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO guest_message_drafts (hostel_id, guest_id, message, status)
+        VALUES (?, ?, ?, 'pending_confirmation')
+        """,
+        (hostel_id, guest["id"], message)
+    )
+
+    draft_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return {
+        "draft_id": draft_id,
+        "guest_name": guest["name"],
+        "phone": guest["phone"],
+        "message": message
+    }
+
+
+def get_pending_guest_message_draft(hostel_id, draft_id=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if draft_id:
+        cursor.execute(
+            """
+            SELECT * FROM guest_message_drafts
+            WHERE id = ? AND hostel_id = ? AND status = 'pending_confirmation'
+            """,
+            (draft_id, hostel_id)
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT * FROM guest_message_drafts
+            WHERE hostel_id = ? AND status = 'pending_confirmation'
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (hostel_id,)
+        )
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return dict(row) if row else None
+
+
+def cancel_guest_message_draft(hostel_id, draft_id=None):
+    draft = get_pending_guest_message_draft(hostel_id, draft_id)
+    if not draft:
+        raise ValueError("Nenhuma mensagem pendente de confirmacao encontrada.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE guest_message_drafts SET status = 'cancelled' WHERE id = ?",
+        (draft["id"],)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {"draft_id": draft["id"], "cancelled": True}
+
+
+def send_guest_message(hostel_id, draft_id=None):
+    from services.whatsapp_service import send_whatsapp_message
+    from services.memory_service import save_message as save_memory_message
+    from services.message_service import save_message_db
+
+    draft = get_pending_guest_message_draft(hostel_id, draft_id)
+    if not draft:
+        raise ValueError("Nenhuma mensagem pendente de confirmacao encontrada.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT name, phone FROM guests WHERE id = ?",
+        (draft["guest_id"],)
+    )
+    guest = cursor.fetchone()
+    conn.close()
+
+    if not guest:
+        raise ValueError("Hospede nao encontrado.")
+
+    phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)
+
+    sent = send_whatsapp_message(phone_number_id, access_token, guest["phone"], draft["message"])
+
+    if sent:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE guest_message_drafts SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (draft["id"],)
+        )
+        conn.commit()
+        conn.close()
+
+        # entra na mesma conversa que a IA de atendimento usa, como se
+        # a IA/equipe tivesse dito isso - assim a resposta do hospede
+        # chega com esse aviso ja no contexto.
+        save_memory_message(hostel_id, guest["phone"], "assistant", draft["message"])
+        save_message_db(hostel_id, guest["phone"], "assistant", draft["message"])
+
+    return {
+        "draft_id": draft["id"],
+        "sent": sent,
+        "guest_name": guest["name"],
+        "phone": guest["phone"]
+    }
+
+
+# ===== Extensao de reserva pedida pelo hospede na conversa com a IA
+# de atendimento (nao pelo Ask StayFlow). Autonoma SO quando e uma
+# extensao pura (mesmo quarto, mesma diaria) - qualquer coisa fora
+# disso vira uma oportunidade de alta urgencia pra equipe decidir. =====
+
+def _create_extension_opportunity(guest_id, description, next_action, estimated_value=0, urgency="high"):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO opportunities
+        (guest_id, type, description, status, score, urgency, estimated_value, next_action)
+        VALUES (?, 'extension', ?, 'open', 80, ?, ?, ?)
+        """,
+        (guest_id, description, urgency, estimated_value, next_action)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def attempt_extend_reservation(hostel_id, phone, new_checkout_date):
+    import datetime
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
+        (hostel_id, phone)
+    )
+    guest = cursor.fetchone()
+
+    if not guest:
+        conn.close()
+        raise ValueError("Hospede nao encontrado.")
+
+    cursor.execute(
+        """
+        SELECT id, room_type, bed, checkin_date, checkout_date, amount, status
+        FROM reservations
+        WHERE hostel_id = ? AND guest_id = ? AND status != 'cancelled'
+        ORDER BY checkout_date DESC
+        LIMIT 1
+        """,
+        (hostel_id, guest["id"])
+    )
+    reservation = cursor.fetchone()
+    conn.close()
+
+    if not reservation:
+        raise ValueError("Nenhuma reserva ativa encontrada pra esse hospede.")
+
+    try:
+        checkin = datetime.date.fromisoformat(reservation["checkin_date"])
+        current_checkout = datetime.date.fromisoformat(reservation["checkout_date"])
+        new_checkout = datetime.date.fromisoformat(new_checkout_date)
+    except (ValueError, TypeError):
+        raise ValueError("Data invalida - use o formato AAAA-MM-DD.")
+
+    nights_current = (current_checkout - checkin).days
+    nights_new = (new_checkout - checkin).days
+    added_nights = nights_new - nights_current
+
+    if added_nights <= 0:
+        raise ValueError("A nova data de checkout precisa ser depois da atual.")
+
+    rate_known = nights_current > 0 and (reservation["amount"] or 0) > 0
+
+    if not rate_known:
+        _create_extension_opportunity(
+            guest["id"],
+            description=f"Hospede pediu extensao ate {new_checkout_date}, mas nao foi possivel calcular a diaria com seguranca pra estender automaticamente.",
+            next_action="Confirmar manualmente a extensao e o valor com o hospede.",
+        )
+        return {
+            "auto_extended": False,
+            "routed_to_staff": True,
+            "reason": "Nao foi possivel calcular a diaria com seguranca."
+        }
+
+    rate_per_night = reservation["amount"] / nights_current
+    added_amount = round(rate_per_night * added_nights, 2)
+    new_amount = round(reservation["amount"] + added_amount, 2)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE reservations SET checkout_date = ?, amount = ? WHERE id = ?",
+        (new_checkout_date, new_amount, reservation["id"])
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "auto_extended": True,
+        "reservation_id": reservation["id"],
+        "new_checkout_date": new_checkout_date,
+        "added_nights": added_nights,
+        "added_amount": added_amount,
+        "new_amount": new_amount
+    }
+
+
+def flag_extension_for_approval(hostel_id, phone, note):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
+        (hostel_id, phone)
+    )
+    guest = cursor.fetchone()
+    conn.close()
+
+    if not guest:
+        raise ValueError("Hospede nao encontrado.")
+
+    _create_extension_opportunity(
+        guest["id"],
+        description=f"Hospede pediu extensao de estadia em condicoes diferentes: {note}",
+        next_action="Revisar pedido de extensao manualmente com o hospede.",
+    )
+
+    return {"routed_to_staff": True}
+
+
+# ===== Mapa de quartos/camas - cada hostel monta o proprio mapa.
+# Status da cama e gravado de verdade (free/occupied/needs_cleaning),
+# nao calculado pelas datas da reserva. Beliche = duas camas (bunk_top
+# e bunk_bottom) com o mesmo bunk_group, pra desenhar como uma unidade
+# so no mapa (metade vermelha/metade verde quando uma ta ocupada e a
+# outra livre). =====
+
+VALID_BED_KINDS = {"single", "bunk_top", "bunk_bottom"}
+
+
+def create_room_category(hostel_id, name, capacity=None):
+    """
+    Modalidade de quarto (ex: "Standard Duplo", "Dormitorio Misto 6
+    camas", "Suite Premium") - cada propriedade cria as suas proprias,
+    nao existe lista fixa. Serve tanto pra hostel pequeno (poucas
+    modalidades) quanto hotel/resort grande (dezenas delas).
+    """
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("O nome da modalidade e obrigatorio.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            "INSERT INTO room_categories (hostel_id, name, capacity) VALUES (?, ?, ?)",
+            (hostel_id, name, int(capacity) if capacity else None)
+        )
+        category_id = cursor.lastrowid
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        conn.close()
+        raise ValueError(f"Ja existe uma modalidade chamada '{name}' neste hostel.")
+
+    conn.close()
+
+    return category_id
+
+
+def list_room_categories(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id, name, capacity FROM room_categories WHERE hostel_id = ? ORDER BY name",
+        (hostel_id,)
+    )
+    categories = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return categories
+
+
+# Modalidades sugeridas por tipo de propriedade - so entram quando o
+# hostel ainda nao tem NENHUMA modalidade cadastrada (nunca sobrescreve
+# o que o admin ja criou na mao). "hostel_type" vem do mesmo campo que
+# ja existe em Configuracoes > Empresa.
+DEFAULT_ROOM_CATEGORIES_BY_HOSTEL_TYPE = {
+    "hostel": [("Privado", 2), ("Compartilhado", 6)],
+    "hotel": [("Standard", 2), ("Luxo", 2)],
+    "pousada": [("Standard", 2), ("Luxo", 2)],
+    "resort": [("Standard", 2), ("Luxo", 2)],
+    "flat": [("Standard", 4)],
+}
+
+
+def apply_default_room_categories_if_needed(hostel_id, hostel_type):
+    """
+    Na primeira vez que o tipo de propriedade e definido (ou trocado
+    pra um tipo reconhecido), cria as modalidades padrao daquele tipo -
+    hostel ganha Privado/Compartilhado, hotel/pousada/resort ganham
+    Standard/Luxo. So roda se o hostel ainda nao tem nenhuma modalidade
+    cadastrada, pra nunca sobrescrever configuracao manual existente.
+    Tipos customizados (digitados via "+ Novo tipo...") nao tem padrao
+    e ficam com cadastro manual mesmo.
+    """
+    if not hostel_type:
+        return
+
+    if list_room_categories(hostel_id):
+        return
+
+    defaults = DEFAULT_ROOM_CATEGORIES_BY_HOSTEL_TYPE.get(hostel_type.strip().lower())
+    if not defaults:
+        return
+
+    for name, capacity in defaults:
+        try:
+            create_room_category(hostel_id, name, capacity)
+        except ValueError:
+            pass
+
+
+def delete_room_category(hostel_id, category_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("UPDATE rooms SET category_id = NULL WHERE category_id = ? AND hostel_id = ?", (category_id, hostel_id))
+    cursor.execute("DELETE FROM room_categories WHERE id = ? AND hostel_id = ?", (category_id, hostel_id))
+
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    if not deleted:
+        raise ValueError("Modalidade nao encontrada.")
+
+
+def _resolve_category_id(hostel_id, category_name):
+    if not category_name:
+        return None
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id FROM room_categories WHERE hostel_id = ? AND name = ?",
+        (hostel_id, category_name)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        raise ValueError(f"Modalidade '{category_name}' nao encontrada. Crie a modalidade primeiro.")
+
+    return row["id"]
+
+
+def create_room(hostel_id, name, category_name=None, floor=None):
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("O nome/numero do quarto e obrigatorio.")
+
+    category_id = _resolve_category_id(hostel_id, category_name)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT INTO rooms (hostel_id, name, category_id, floor) VALUES (?, ?, ?, ?)",
+        (hostel_id, name, category_id, (floor or "").strip() or None)
+    )
+
+    room_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return room_id
+
+
+def create_rooms_bulk(hostel_id, names, category_name=None, floor=None):
+    """
+    Cria varios quartos de uma vez com a mesma modalidade/andar - pensado
+    pra hotel/resort grande, onde cadastrar quarto por quarto nao escala.
+    names: lista de nomes/numeros de quarto (ex: ["201", "202", "203"]).
+    """
+    category_id = _resolve_category_id(hostel_id, category_name)
+
+    if not names:
+        raise ValueError("Informe pelo menos um nome/numero de quarto.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    room_ids = []
+    for raw_name in names:
+        name = (raw_name or "").strip()
+        if not name:
+            continue
+        cursor.execute(
+            "INSERT INTO rooms (hostel_id, name, category_id, floor) VALUES (?, ?, ?, ?)",
+            (hostel_id, name, category_id, (floor or "").strip() or None)
+        )
+        room_ids.append(cursor.lastrowid)
+
+    conn.commit()
+    conn.close()
+
+    return room_ids
+
+
+def list_rooms(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT r.id, r.name, r.floor, r.created_at,
+               rc.id AS category_id, rc.name AS category_name, rc.capacity
+        FROM rooms r
+        LEFT JOIN room_categories rc ON rc.id = r.category_id
+        WHERE r.hostel_id = ?
+        ORDER BY r.floor, r.name
+        """,
+        (hostel_id,)
+    )
+    rooms = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return rooms
+
+
+def delete_room(hostel_id, room_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM beds WHERE room_id = ? AND hostel_id = ?", (room_id, hostel_id))
+    cursor.execute("DELETE FROM rooms WHERE id = ? AND hostel_id = ?", (room_id, hostel_id))
+
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    if not deleted:
+        raise ValueError("Quarto nao encontrado.")
+
+
+def create_bed(hostel_id, room_id, label, bed_kind="single", bunk_group=None):
+    label = (label or "").strip()
+    if not label:
+        raise ValueError("O nome/numero da cama e obrigatorio.")
+    if bed_kind not in VALID_BED_KINDS:
+        raise ValueError(f"Tipo de cama invalido: {bed_kind}.")
+    if bed_kind in ("bunk_top", "bunk_bottom") and not bunk_group:
+        raise ValueError("Camas de beliche precisam de um bunk_group pra parear a de cima com a de baixo.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id FROM rooms WHERE id = ? AND hostel_id = ?",
+        (room_id, hostel_id)
+    )
+    if not cursor.fetchone():
+        conn.close()
+        raise ValueError("Quarto nao encontrado.")
+
+    cursor.execute(
+        """
+        INSERT INTO beds (hostel_id, room_id, label, bed_kind, bunk_group, status)
+        VALUES (?, ?, ?, ?, ?, 'free')
+        """,
+        (hostel_id, room_id, label, bed_kind, bunk_group)
+    )
+
+    bed_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return bed_id
+
+
+def delete_bed(hostel_id, bed_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM beds WHERE id = ? AND hostel_id = ?", (bed_id, hostel_id))
+
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    if not deleted:
+        raise ValueError("Cama nao encontrada.")
+
+
+def get_bed_map(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT r.id, r.name, r.floor, rc.name AS category_name
+        FROM rooms r
+        LEFT JOIN room_categories rc ON rc.id = r.category_id
+        WHERE r.hostel_id = ?
+        ORDER BY r.floor, r.name
+        """,
+        (hostel_id,)
+    )
+    rooms = [dict(row) for row in cursor.fetchall()]
+
+    cursor.execute(
+        """
+        SELECT id, room_id, label, bed_kind, bunk_group, status
+        FROM beds
+        WHERE hostel_id = ?
+        ORDER BY bunk_group, label
+        """,
+        (hostel_id,)
+    )
+    beds = [dict(row) for row in cursor.fetchall()]
+
+    # pra cada cama ocupada/suja, tenta achar o hospede da reserva mais
+    # recente ligada a ela - so pra exibicao no mapa, nao e fonte de
+    # verdade de ocupacao (isso e o status da cama).
+    occupied_bed_ids = [b["id"] for b in beds if b["status"] in ("occupied", "needs_cleaning")]
+    guest_by_bed = {}
+    if occupied_bed_ids:
+        placeholders = ",".join("?" * len(occupied_bed_ids))
+        cursor.execute(
+            f"""
+            SELECT bed_id, guest_name, MAX(id) as rid
+            FROM reservations
+            WHERE bed_id IN ({placeholders})
+            GROUP BY bed_id
+            """,
+            occupied_bed_ids
+        )
+        for row in cursor.fetchall():
+            guest_by_bed[row["bed_id"]] = row["guest_name"]
+
+    conn.close()
+
+    beds_by_room = {}
+    for bed in beds:
+        bed["guest_name"] = guest_by_bed.get(bed["id"])
+        beds_by_room.setdefault(bed["room_id"], []).append(bed)
+
+    for room in rooms:
+        room["beds"] = beds_by_room.get(room["id"], [])
+
+    return rooms
+
+
+def get_cleaning_list(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT b.id AS bed_id, b.label, b.bed_kind, r.name AS room_name
+        FROM beds b
+        JOIN rooms r ON r.id = b.room_id
+        WHERE b.hostel_id = ? AND b.status = 'needs_cleaning'
+        ORDER BY r.name, b.label
+        """,
+        (hostel_id,)
+    )
+    result = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return result
+
+
+def set_linen_kit(hostel_id, bed_kind, items):
+    """items: lista de {"item_name": str, "quantity": int}"""
+    if bed_kind not in VALID_BED_KINDS:
+        raise ValueError(f"Tipo de cama invalido: {bed_kind}.")
+
+    resolved_items = []
+    for entry in items:
+        matches = find_inventory_item_by_name(hostel_id, entry["item_name"])
+        if not matches:
+            raise ValueError(f"Nenhum item de estoque encontrado com o nome '{entry['item_name']}'.")
+        if len(matches) > 1:
+            names = ", ".join(m["name"] for m in matches)
+            raise ValueError(f"Mais de um item bate com '{entry['item_name']}': {names}. Seja mais especifico.")
+        resolved_items.append((matches[0]["id"], int(entry.get("quantity", 1))))
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT OR IGNORE INTO linen_kits (hostel_id, bed_kind) VALUES (?, ?)",
+        (hostel_id, bed_kind)
+    )
+    cursor.execute(
+        "SELECT id FROM linen_kits WHERE hostel_id = ? AND bed_kind = ?",
+        (hostel_id, bed_kind)
+    )
+    kit_id = cursor.fetchone()["id"]
+
+    cursor.execute("DELETE FROM linen_kit_items WHERE linen_kit_id = ?", (kit_id,))
+
+    for item_id, quantity in resolved_items:
+        cursor.execute(
+            "INSERT INTO linen_kit_items (linen_kit_id, inventory_item_id, quantity) VALUES (?, ?, ?)",
+            (kit_id, item_id, quantity)
+        )
+
+    conn.commit()
+    conn.close()
+
+    return {"bed_kind": bed_kind, "items_count": len(resolved_items)}
+
+
+def get_linen_kit(hostel_id, bed_kind):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT i.id AS inventory_item_id, i.name, lki.quantity
+        FROM linen_kits lk
+        JOIN linen_kit_items lki ON lki.linen_kit_id = lk.id
+        JOIN inventory_items i ON i.id = lki.inventory_item_id
+        WHERE lk.hostel_id = ? AND lk.bed_kind = ?
+        """,
+        (hostel_id, bed_kind)
+    )
+    items = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return items
+
+
+def checkin_reservation_to_bed(hostel_id, reservation_id, bed_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id, guest_name FROM reservations WHERE id = ? AND hostel_id = ? AND status != 'cancelled'",
+        (reservation_id, hostel_id)
+    )
+    reservation = cursor.fetchone()
+    if not reservation:
+        conn.close()
+        raise ValueError("Reserva nao encontrada ou cancelada.")
+
+    cursor.execute(
+        "SELECT id, status, label FROM beds WHERE id = ? AND hostel_id = ?",
+        (bed_id, hostel_id)
+    )
+    bed = cursor.fetchone()
+    if not bed:
+        conn.close()
+        raise ValueError("Cama nao encontrada.")
+    if bed["status"] != "free":
+        conn.close()
+        raise ValueError(f"A cama '{bed['label']}' nao esta livre (status atual: {bed['status']}).")
+
+    cursor.execute("UPDATE reservations SET bed_id = ? WHERE id = ?", (bed_id, reservation_id))
+    cursor.execute("UPDATE beds SET status = 'occupied' WHERE id = ?", (bed_id,))
+
+    conn.commit()
+    conn.close()
+
+    return {"reservation_id": reservation_id, "bed_id": bed_id, "bed_label": bed["label"], "guest_name": reservation["guest_name"]}
+
+
+def checkout_reservation_bed(hostel_id, reservation_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT bed_id, guest_name FROM reservations WHERE id = ? AND hostel_id = ?",
+        (reservation_id, hostel_id)
+    )
+    reservation = cursor.fetchone()
+    if not reservation:
+        conn.close()
+        raise ValueError("Reserva nao encontrada.")
+    if not reservation["bed_id"]:
+        conn.close()
+        raise ValueError("Essa reserva nao tem cama atribuida (nao foi feito check-in).")
+
+    cursor.execute(
+        "SELECT label FROM beds WHERE id = ?",
+        (reservation["bed_id"],)
+    )
+    bed = cursor.fetchone()
+
+    cursor.execute("UPDATE beds SET status = 'needs_cleaning' WHERE id = ?", (reservation["bed_id"],))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "reservation_id": reservation_id,
+        "bed_id": reservation["bed_id"],
+        "bed_label": bed["label"] if bed else None,
+        "guest_name": reservation["guest_name"]
+    }
+
+
+def mark_bed_cleaned(hostel_id, bed_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id, label, bed_kind, status FROM beds WHERE id = ? AND hostel_id = ?",
+        (bed_id, hostel_id)
+    )
+    bed = cursor.fetchone()
+    conn.close()
+
+    if not bed:
+        raise ValueError("Cama nao encontrada.")
+    if bed["status"] != "needs_cleaning":
+        raise ValueError(f"A cama '{bed['label']}' nao esta na lista de limpeza (status atual: {bed['status']}).")
+
+    kit_items = get_linen_kit(hostel_id, bed["bed_kind"])
+    linen_used = []
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    for kit_item in kit_items:
+        cursor.execute(
+            "SELECT quantity, in_laundry_quantity FROM inventory_items WHERE id = ?",
+            (kit_item["inventory_item_id"],)
+        )
+        current = cursor.fetchone()
+        if not current:
+            continue
+
+        new_quantity = max(0, current["quantity"] - kit_item["quantity"])
+        new_in_laundry = (current["in_laundry_quantity"] or 0) + kit_item["quantity"]
+
+        cursor.execute(
+            "UPDATE inventory_items SET quantity = ?, in_laundry_quantity = ? WHERE id = ?",
+            (new_quantity, new_in_laundry, kit_item["inventory_item_id"])
+        )
+        linen_used.append({"item_name": kit_item["name"], "quantity": kit_item["quantity"]})
+
+    cursor.execute("UPDATE beds SET status = 'free' WHERE id = ?", (bed_id,))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "bed_id": bed_id,
+        "bed_label": bed["label"],
+        "linen_used": linen_used,
+        "linen_kit_configured": len(kit_items) > 0
+    }
+
+
+def return_items_from_laundry(hostel_id, item_name, quantity):
+    matches = find_inventory_item_by_name(hostel_id, item_name)
+
+    if not matches:
+        raise ValueError(f"Nenhum item de estoque encontrado com o nome '{item_name}'.")
+    if len(matches) > 1:
+        names = ", ".join(m["name"] for m in matches)
+        raise ValueError(f"Mais de um item bate com '{item_name}': {names}. Seja mais especifico.")
+
+    item = matches[0]
+    quantity = int(quantity)
+    returned = min(quantity, item["in_laundry_quantity"] or 0)
+
+    if returned <= 0:
+        raise ValueError(f"'{item['name']}' nao tem nada registrado na lavanderia.")
+
+    new_quantity = item["quantity"] + returned
+    new_in_laundry = (item["in_laundry_quantity"] or 0) - returned
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE inventory_items SET quantity = ?, in_laundry_quantity = ? WHERE id = ?",
+        (new_quantity, new_in_laundry, item["id"])
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "item_name": item["name"],
+        "returned": returned,
+        "requested": quantity,
+        "new_quantity": new_quantity,
+        "still_in_laundry": new_in_laundry
+    }
+
+
+# ===== Historico de conversa do Ask StayFlow (agente do painel,
+# operador logado) - chave hostel_id+user_id, separado do
+# memory_service (que e guest-scoped, hostel_id+phone). Guardado no
+# SQL (nao no arquivo JSON) - evita repetir a duplicacao de fonte de
+# verdade ja documentada como debito tecnico no memory_service. =====
+
+ASK_HISTORY_WINDOW = 40
+
+
+def save_ask_message(hostel_id, user_id, role, content):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO ask_messages (hostel_id, user_id, role, content) VALUES (?, ?, ?, ?)",
+        (hostel_id, user_id, role, content)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_ask_history(hostel_id, user_id, limit=ASK_HISTORY_WINDOW):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT role, content FROM ask_messages
+        WHERE hostel_id = ? AND user_id = ?
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        (hostel_id, user_id, limit)
+    )
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return list(reversed(rows))
 
 
 def save_hostel_whatsapp_config(hostel_id, phone_number_id, access_token):

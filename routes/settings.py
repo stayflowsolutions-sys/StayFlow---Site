@@ -1,7 +1,12 @@
 import json
 
 from flask import Blueprint, jsonify, request
-from database import get_connection, get_hostel_whatsapp_config, save_hostel_whatsapp_config
+from database import (
+    get_connection,
+    get_hostel_whatsapp_config,
+    save_hostel_whatsapp_config,
+    apply_default_room_categories_if_needed,
+)
 from utils.tenant import require_permission
 
 
@@ -173,6 +178,9 @@ def update_settings(hostel_id):
 
     conn.commit()
     conn.close()
+
+    if "hostel_type" in updates:
+        apply_default_room_categories_if_needed(hostel_id, data.get("hostel_type"))
 
     return jsonify({"success": True})
 

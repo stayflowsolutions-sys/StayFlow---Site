@@ -581,6 +581,9 @@ async function deleteRoleConfirm(roleId){
     <button data-page="reservations" onclick="openPage('reservations',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 11h16v8"/><path d="M4 19V7"/><path d="M8 11V8h8v3"/></svg></span>Reservas
     </button>
+    <button data-page="roommap" data-required-permission="operations" onclick="openPage('roommap',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="6" rx="1.5"/><rect x="13" y="13" width="8" height="6" rx="1.5"/></svg></span>Mapa de Quartos
+    </button>
     <button data-page="opportunities" onclick="openPage('opportunities',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3s4 4 4 8a4 4 0 0 1-8 0c0-4 4-8 4-8z"/><path d="M7 14a5 5 0 0 0 10 0"/></svg></span>Opportunity Center
     </button>
@@ -997,6 +1000,103 @@ async function deleteRoleConfirm(roleId){
         </tbody>
       </table>
     </div>
+  </div>
+</section>
+
+<!-- ROOM MAP -->
+<section id="roommap" class="page">
+  <div class="grid">
+
+    <div class="card span-12">
+      <h2>🗺️ Mapa de Quartos</h2>
+      <div class="bed-map-legend">
+        <span><i class="free"></i>Livre</span>
+        <span><i class="occupied"></i>Ocupada</span>
+        <span><i class="needs_cleaning"></i>Precisa de limpeza</span>
+      </div>
+      <div class="sf-empty" id="roomMapEmpty">
+        <div>
+          <strong>Nenhum quarto cadastrado ainda.</strong>
+          <span>Crie modalidades e quartos abaixo pra montar o mapa do seu hostel, hotel ou resort.</span>
+        </div>
+      </div>
+      <div class="bed-map-grid" id="roomMapGrid" style="display:none"></div>
+      <div class="bed-action-panel" id="bedActionCard" style="display:none;margin-top:16px"></div>
+    </div>
+
+    <div class="card span-6">
+      <h2>🏷️ Modalidades de quarto</h2>
+      <form onsubmit="submitNewRoomCategory(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
+        <input class="span-8" name="name" placeholder="Ex: Standard Duplo, Suíte, Dormitório Misto" required style="grid-column:span 8;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <input class="span-2" type="number" min="1" name="capacity" placeholder="Capac." style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <button type="submit" class="btn span-2" style="grid-column:span 2;">Criar</button>
+      </form>
+      <div id="roomCategoriesList" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
+    </div>
+
+    <div class="card span-6">
+      <h2>🚪 Novo quarto</h2>
+      <form onsubmit="submitNewRoom(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
+        <input class="span-4" name="name" placeholder="Número/nome do quarto" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <select class="span-4" name="category_name" id="roomCategorySelect" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+          <option value="">Modalidade (opcional)</option>
+        </select>
+        <input class="span-4" name="floor" placeholder="Andar (opcional)" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <button type="submit" class="btn span-12" style="grid-column:span 12;">Criar quarto</button>
+      </form>
+      <p style="font-size:12px;color:var(--muted);margin:10px 0 4px">Cadastro rápido de vários quartos (um por linha) — útil pra hotéis/resorts grandes:</p>
+      <form onsubmit="submitBulkRooms(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
+        <textarea class="span-12" name="names" rows="3" placeholder="201&#10;202&#10;203" style="grid-column:span 12;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;font-family:inherit"></textarea>
+        <select class="span-6" name="category_name" style="grid-column:span 6;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+          <option value="">Modalidade (opcional)</option>
+        </select>
+        <input class="span-3" name="floor" placeholder="Andar" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <button type="submit" class="btn span-3" style="grid-column:span 3;">Criar em lote</button>
+      </form>
+    </div>
+
+    <div class="card span-6">
+      <h2>🛏️ Nova cama</h2>
+      <form onsubmit="submitNewBed(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
+        <select class="span-4" name="room_id" id="bedRoomSelect" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+          <option value="">Quarto...</option>
+        </select>
+        <input class="span-3" name="label" placeholder="Ex: Cama 1" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <select class="span-3" name="bed_kind" onchange="toggleBunkGroupField(this)" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+          <option value="single">Normal</option>
+          <option value="bunk_top">Beliche - Cima</option>
+          <option value="bunk_bottom">Beliche - Baixo</option>
+        </select>
+        <input class="span-2" type="number" name="bunk_group" placeholder="Grupo" id="bunkGroupInput" style="display:none;grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <button type="submit" class="btn span-12" style="grid-column:span 12;">Criar cama</button>
+      </form>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px">As duas metades do mesmo beliche precisam do mesmo número de "Grupo" pra aparecerem juntas no mapa.</p>
+    </div>
+
+    <div class="card span-6">
+      <h2>🧺 Lista de limpeza do dia</h2>
+      <div class="sf-empty" id="cleaningListEmpty">
+        <div>
+          <strong>Nenhuma cama aguardando limpeza.</strong>
+          <span>Quando um check-out acontecer, a cama aparece aqui automaticamente.</span>
+        </div>
+      </div>
+      <table class="table" id="cleaningListTable" style="display:none">
+        <thead><tr><th>Quarto</th><th>Cama</th><th>Ação</th></tr></thead>
+        <tbody id="cleaningListBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card span-6">
+      <h2>🔄 Devolver da lavanderia</h2>
+      <form onsubmit="submitReturnFromLaundry(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
+        <input class="span-7" name="item_name" placeholder="Nome do item (ex: Lençol solteiro)" required style="grid-column:span 7;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <input class="span-3" type="number" min="1" name="quantity" placeholder="Qtd" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <button type="submit" class="btn span-2" style="grid-column:span 2;">Devolver</button>
+      </form>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">Registra que roupas de cama voltaram limpas da lavanderia, somando de volta no estoque disponível.</p>
+    </div>
+
   </div>
 </section>
 
@@ -1446,6 +1546,7 @@ async function deleteRoleConfirm(roleId){
               <option value="">Tipo de propriedade</option>
               <option value="Hostel">Hostel</option>
               <option value="Hotel">Hotel</option>
+              <option value="Resort">Resort</option>
               <option value="Pousada">Pousada</option>
               <option value="Flat">Flat</option>
               <option value="__new_hostel_type__">+ Novo tipo...</option>
@@ -1689,7 +1790,7 @@ async function deleteRoleConfirm(roleId){
 
   <div class="ask-input">
     <input placeholder="Pergunte algo sobre a operação...">
-    <button class="btn" onclick="mockSend(this)">Enviar</button>
+    <button class="btn" onclick="askStayFlowSend(this)">Enviar</button>
   </div>
 </aside>
 
@@ -1801,15 +1902,43 @@ async function deleteRoleConfirm(roleId){
     if(sidebar) sidebar.classList.toggle("open");
   };
 
+  let askHistoryLoaded = false;
+
   window.openAskStayFlow = function(){
     $("#askOverlay")?.classList.add("open");
     $("#askPanel")?.classList.add("open");
     setTimeout(() => $("#askPanel input")?.focus(), 80);
+
+    if(!askHistoryLoaded){
+      askHistoryLoaded = true;
+      loadAskHistory();
+    }
   };
   window.closeAskStayFlow = function(){
     $("#askOverlay")?.classList.remove("open");
     $("#askPanel")?.classList.remove("open");
   };
+
+  async function loadAskHistory(){
+    const body = $("#askPanel .ask-body");
+    if(!body) return;
+
+    try{
+      const res = await fetch("/ask", { method:"GET", credentials:"same-origin" });
+      if(!res.ok) return;
+
+      const data = await res.json();
+      const history = (data && data.history) || [];
+      if(!history.length) return;
+
+      body.innerHTML = "";
+      history.forEach(msg => {
+        addMessage(body, msg.content, msg.role === "user" ? "user" : "bot");
+      });
+    }catch(err){
+      console.warn("Falha ao carregar historico do Ask StayFlow:", err);
+    }
+  }
 
   function addMessage(container, text, type){
     const msg = document.createElement("div");
@@ -1844,6 +1973,54 @@ async function deleteRoleConfirm(roleId){
         "bot"
       );
     }, 180);
+  };
+
+  window.askStayFlowSend = async function(button){
+    if(!button) return;
+    const scope = button.closest(".ask-panel");
+    if(!scope) return;
+
+    const input = scope.querySelector(".ask-input input");
+    if(!input) return;
+    const text = input.value.trim();
+    if(!text) return;
+    input.value = "";
+
+    const container = $(".ask-body", scope);
+    if(!container) return;
+
+    addMessage(container, text, "user");
+    button.disabled = true;
+
+    const thinking = document.createElement("div");
+    thinking.className = "ask-message bot";
+    thinking.textContent = "Consultando...";
+    container.appendChild(thinking);
+    container.scrollTop = container.scrollHeight;
+
+    try{
+      const res = await fetch("/ask", {
+        method:"POST",
+        credentials:"same-origin",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ message: text })
+      });
+
+      if(res.status === 401){
+        thinking.textContent = "Sua sessão expirou. Faça login novamente.";
+        window.location.href = "/Login.html";
+        return;
+      }
+
+      const data = await res.json();
+      thinking.textContent = (data && data.reply) || "Não consegui responder agora. Tente novamente.";
+    }catch(err){
+      console.warn("Falha ao consultar o Ask StayFlow:", err);
+      thinking.textContent = "Erro ao conectar com o servidor. Tente novamente em instantes.";
+    }finally{
+      button.disabled = false;
+      container.scrollTop = container.scrollHeight;
+    }
   };
 
   function saveSettingsToLocal(data){
@@ -2343,11 +2520,14 @@ async function deleteRoleConfirm(roleId){
 
   function bindEnterToSend(){
     $$(".chat-input input, .ask-input input").forEach(input=>{
+      const isAsk = !!input.closest(".ask-input");
       input.addEventListener("keydown", ev=>{
         if(ev.key === "Enter"){
           ev.preventDefault();
           const btn = input.parentElement?.querySelector("button");
-          if(btn) window.mockSend(btn);
+          if(!btn) return;
+          if(isAsk) window.askStayFlowSend(btn);
+          else window.mockSend(btn);
         }
       });
     });
@@ -2591,6 +2771,436 @@ window.submitNewReservation = async function(event){
   }catch(e){
     console.error("Erro ao criar reserva:", e);
     alert("Erro de conexão ao criar reserva.");
+  }
+};
+
+// ===== MAPA DE QUARTOS: /bed-map, /room-categories, /rooms, /cleaning-list =====
+
+const BED_STATUS_LABEL = { free: "Livre", occupied: "Ocupada", needs_cleaning: "Precisa de limpeza" };
+
+function fillCategorySelects(categories){
+  const selects = document.querySelectorAll("#roomCategorySelect, #roommap select[name='category_name']");
+  selects.forEach(select => {
+    const current = select.value;
+    select.innerHTML = '<option value="">Modalidade (opcional)</option>' +
+      categories.map(c => `<option value="${c.name}">${c.name}${c.capacity ? ` (${c.capacity})` : ""}</option>`).join("");
+    select.value = current;
+  });
+}
+
+function fillRoomSelect(rooms){
+  const select = document.getElementById("bedRoomSelect");
+  if(!select) return;
+  const current = select.value;
+  select.innerHTML = '<option value="">Quarto...</option>' +
+    rooms.map(r => `<option value="${r.id}">${r.name}${r.category_name ? " - " + r.category_name : ""}</option>`).join("");
+  select.value = current;
+}
+
+function renderBedTile(bed, pairBed){
+  // beliche: renderiza como UM tile com metade de cima e metade de baixo,
+  // cada metade colorida pelo status daquela cama especifica.
+  if(pairBed){
+    const top = bed.bed_kind === "bunk_top" ? bed : pairBed;
+    const bottom = bed.bed_kind === "bunk_bottom" ? bed : pairBed;
+    return `
+      <div>
+        <div class="bed-tile" onclick="onBedTileClick(${top.id})" title="${top.label}">
+          <div class="bed-tile-half ${top.status}"></div>
+        </div>
+        <div class="bed-tile" onclick="onBedTileClick(${bottom.id})" title="${bottom.label}" style="margin-top:4px">
+          <div class="bed-tile-half ${bottom.status}"></div>
+        </div>
+        <span class="bed-tile-label">Beliche</span>
+      </div>
+    `;
+  }
+  return `
+    <div>
+      <div class="bed-tile" onclick="onBedTileClick(${bed.id})" title="${bed.label}">
+        <div class="bed-tile-half ${bed.status}"></div>
+      </div>
+      <span class="bed-tile-label">${bed.label}</span>
+    </div>
+  `;
+}
+
+let ROOM_MAP_BEDS_BY_ID = {};
+
+function renderRoomMap(rooms){
+  const emptyEl = document.getElementById("roomMapEmpty");
+  const gridEl = document.getElementById("roomMapGrid");
+  if(!emptyEl || !gridEl) return;
+
+  ROOM_MAP_BEDS_BY_ID = {};
+  rooms.forEach(room => (room.beds || []).forEach(bed => { ROOM_MAP_BEDS_BY_ID[bed.id] = bed; }));
+
+  if(!rooms.length){
+    emptyEl.style.display = "flex";
+    gridEl.style.display = "none";
+    return;
+  }
+
+  emptyEl.style.display = "none";
+  gridEl.style.display = "grid";
+  gridEl.innerHTML = "";
+
+  rooms.forEach(room => {
+    const card = document.createElement("div");
+    card.className = "bed-room-card";
+
+    const beds = room.beds || [];
+    const rendered = new Set();
+    let tilesHtml = "";
+
+    beds.forEach(bed => {
+      if(rendered.has(bed.id)) return;
+
+      if(bed.bunk_group && (bed.bed_kind === "bunk_top" || bed.bed_kind === "bunk_bottom")){
+        const pair = beds.find(b => b.id !== bed.id && b.bunk_group === bed.bunk_group);
+        tilesHtml += renderBedTile(bed, pair || null);
+        rendered.add(bed.id);
+        if(pair) rendered.add(pair.id);
+      }else{
+        tilesHtml += renderBedTile(bed, null);
+        rendered.add(bed.id);
+      }
+    });
+
+    card.innerHTML = `
+      <h4>${room.name}</h4>
+      <div class="bed-room-meta">${room.category_name || "Sem modalidade"}${room.floor ? " · " + room.floor : ""}</div>
+      <div class="bed-tiles">${tilesHtml || '<span style="font-size:12px;color:var(--muted)">Sem camas cadastradas.</span>'}</div>
+    `;
+    gridEl.appendChild(card);
+  });
+}
+
+window.onBedTileClick = async function(bedId){
+  const bed = ROOM_MAP_BEDS_BY_ID[bedId];
+  const panel = document.getElementById("bedActionCard");
+  if(!bed || !panel) return;
+
+  if(bed.status === "needs_cleaning"){
+    panel.style.display = "block";
+    panel.innerHTML = `
+      <strong>${bed.label}</strong> — ${BED_STATUS_LABEL[bed.status]}
+      <div style="margin-top:8px">
+        <button type="button" class="btn" onclick="markBedCleanedUI(${bed.id})">Marcar como limpa</button>
+      </div>
+    `;
+    return;
+  }
+
+  if(bed.status === "occupied"){
+    panel.style.display = "block";
+    panel.innerHTML = `
+      <strong>${bed.label}</strong> — ${BED_STATUS_LABEL[bed.status]}${bed.guest_name ? " · " + bed.guest_name : ""}
+      <div style="margin-top:8px">
+        <button type="button" class="btn" onclick="checkoutBedUI(${bed.id})">Fazer check-out</button>
+      </div>
+    `;
+    return;
+  }
+
+  // free -> busca reservas confirmadas sem cama atribuida pra check-in
+  panel.style.display = "block";
+  panel.innerHTML = `<strong>${bed.label}</strong> — Livre. Carregando reservas...`;
+
+  try{
+    const res = await fetch("/reservations", { credentials: "same-origin" });
+    const data = res.ok ? await res.json() : { reservations: [] };
+    const pending = (data.reservations || []).filter(r => r.status === "confirmed" && !r.bed_id);
+
+    if(!pending.length){
+      panel.innerHTML = `<strong>${bed.label}</strong> — Livre. Nenhuma reserva confirmada aguardando check-in.`;
+      return;
+    }
+
+    panel.innerHTML = `
+      <strong>${bed.label}</strong> — Livre
+      <select id="checkinReservationSelect" style="margin-top:8px">
+        ${pending.map(r => `<option value="${r.id}">${r.guest_name} (${r.checkin_date} → ${r.checkout_date})</option>`).join("")}
+      </select>
+      <button type="button" class="btn" style="margin-top:6px" onclick="checkinBedUI(${bed.id})">Fazer check-in</button>
+    `;
+  }catch(e){
+    panel.innerHTML = `<strong>${bed.label}</strong> — Livre. Erro ao carregar reservas.`;
+  }
+};
+
+window.checkinBedUI = async function(bedId){
+  const select = document.getElementById("checkinReservationSelect");
+  if(!select || !select.value) return;
+
+  try{
+    const res = await fetch(`/reservations/${select.value}/checkin`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ bed_id: bedId })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível fazer o check-in.");
+      return;
+    }
+    document.getElementById("bedActionCard").style.display = "none";
+    loadRoomMap();
+    if(typeof loadReservations === "function") loadReservations();
+  }catch(e){
+    alert("Erro de conexão ao fazer check-in.");
+  }
+};
+
+window.checkoutBedUI = async function(bedId){
+  const bed = ROOM_MAP_BEDS_BY_ID[bedId];
+  if(!bed) return;
+
+  try{
+    const resList = await fetch("/reservations", { credentials: "same-origin" });
+    const data = resList.ok ? await resList.json() : { reservations: [] };
+    const reservation = (data.reservations || []).find(r => r.bed_id === bedId);
+    if(!reservation){
+      alert("Não encontrei a reserva ligada a essa cama.");
+      return;
+    }
+
+    const res = await fetch(`/reservations/${reservation.id}/checkout`, {
+      method: "POST",
+      credentials: "same-origin"
+    });
+    const resData = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(resData.message || "Não foi possível fazer o check-out.");
+      return;
+    }
+    document.getElementById("bedActionCard").style.display = "none";
+    loadRoomMap();
+  }catch(e){
+    alert("Erro de conexão ao fazer check-out.");
+  }
+};
+
+window.markBedCleanedUI = async function(bedId){
+  try{
+    const res = await fetch(`/beds/${bedId}/mark-cleaned`, {
+      method: "POST",
+      credentials: "same-origin"
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível marcar a cama como limpa.");
+      return;
+    }
+    document.getElementById("bedActionCard").style.display = "none";
+    loadRoomMap();
+  }catch(e){
+    alert("Erro de conexão ao marcar a cama como limpa.");
+  }
+};
+
+async function loadCleaningList(){
+  const emptyEl = document.getElementById("cleaningListEmpty");
+  const tableEl = document.getElementById("cleaningListTable");
+  const bodyEl = document.getElementById("cleaningListBody");
+  if(!emptyEl || !tableEl || !bodyEl) return;
+
+  try{
+    const res = await fetch("/cleaning-list", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const list = await res.json();
+
+    if(!list.length){
+      emptyEl.style.display = "flex";
+      tableEl.style.display = "none";
+      return;
+    }
+
+    emptyEl.style.display = "none";
+    tableEl.style.display = "table";
+    bodyEl.innerHTML = "";
+
+    list.forEach(item => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${item.room_name}</td>
+        <td>${item.label}</td>
+        <td><button type="button" class="btn" onclick="markBedCleanedUI(${item.bed_id})">Marcar como limpa</button></td>
+      `;
+      bodyEl.appendChild(row);
+    });
+  }catch(e){
+    console.warn("Erro ao carregar /cleaning-list:", e);
+  }
+}
+
+async function loadRoomMap(){
+  try{
+    const [mapRes, categoriesRes, roomsRes] = await Promise.all([
+      fetch("/bed-map", { credentials: "same-origin" }),
+      fetch("/room-categories", { credentials: "same-origin" }),
+      fetch("/rooms", { credentials: "same-origin" }),
+    ]);
+
+    if(mapRes.ok) renderRoomMap(await mapRes.json());
+    if(categoriesRes.ok){
+      const categories = await categoriesRes.json();
+      fillCategorySelects(categories);
+      const listEl = document.getElementById("roomCategoriesList");
+      if(listEl){
+        listEl.innerHTML = categories.length
+          ? categories.map(c => `<span style="display:inline-block;margin:2px 6px 2px 0;padding:4px 10px;border:1px solid var(--line);border-radius:999px">${c.name}${c.capacity ? ` (${c.capacity})` : ""}</span>`).join("")
+          : "Nenhuma modalidade criada ainda.";
+      }
+    }
+    if(roomsRes.ok) fillRoomSelect(await roomsRes.json());
+
+    loadCleaningList();
+  }catch(e){
+    console.warn("Erro ao carregar mapa de quartos:", e);
+  }
+}
+
+window.toggleBunkGroupField = function(select){
+  const input = document.getElementById("bunkGroupInput");
+  if(!input) return;
+  input.style.display = select.value === "single" ? "none" : "";
+};
+
+window.submitNewRoomCategory = async function(event){
+  event.preventDefault();
+  const form = event.target;
+  try{
+    const res = await fetch("/room-categories", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ name: form.name.value.trim(), capacity: form.capacity.value || null })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível criar a modalidade.");
+      return;
+    }
+    form.reset();
+    loadRoomMap();
+  }catch(e){
+    alert("Erro de conexão ao criar modalidade.");
+  }
+};
+
+window.submitNewRoom = async function(event){
+  event.preventDefault();
+  const form = event.target;
+  try{
+    const res = await fetch("/rooms", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        name: form.name.value.trim(),
+        category_name: form.category_name.value || null,
+        floor: form.floor.value.trim() || null
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível criar o quarto.");
+      return;
+    }
+    form.reset();
+    loadRoomMap();
+  }catch(e){
+    alert("Erro de conexão ao criar quarto.");
+  }
+};
+
+window.submitBulkRooms = async function(event){
+  event.preventDefault();
+  const form = event.target;
+  const names = form.names.value.split("\n").map(n => n.trim()).filter(Boolean);
+  if(!names.length){
+    alert("Informe pelo menos um nome/número de quarto.");
+    return;
+  }
+  try{
+    const res = await fetch("/rooms/bulk", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        names,
+        category_name: form.category_name.value || null,
+        floor: form.floor.value.trim() || null
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível criar os quartos.");
+      return;
+    }
+    form.reset();
+    loadRoomMap();
+  }catch(e){
+    alert("Erro de conexão ao criar quartos em lote.");
+  }
+};
+
+window.submitNewBed = async function(event){
+  event.preventDefault();
+  const form = event.target;
+  const bedKind = form.bed_kind.value;
+  const bunkGroup = form.bunk_group.value;
+
+  if(bedKind !== "single" && !bunkGroup){
+    alert("Camas de beliche precisam de um número de grupo, pra parear cima e baixo.");
+    return;
+  }
+
+  try{
+    const res = await fetch(`/rooms/${form.room_id.value}/beds`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        label: form.label.value.trim(),
+        bed_kind: bedKind,
+        bunk_group: bunkGroup || null
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível criar a cama.");
+      return;
+    }
+    form.reset();
+    document.getElementById("bunkGroupInput").style.display = "none";
+    loadRoomMap();
+  }catch(e){
+    alert("Erro de conexão ao criar cama.");
+  }
+};
+
+window.submitReturnFromLaundry = async function(event){
+  event.preventDefault();
+  const form = event.target;
+  try{
+    const res = await fetch("/inventory/return-from-laundry", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ item_name: form.item_name.value.trim(), quantity: form.quantity.value })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível registrar a devolução.");
+      return;
+    }
+    form.reset();
+    alert(`${data.returned} unidade(s) de "${data.item_name}" devolvida(s) da lavanderia.`);
+  }catch(e){
+    alert("Erro de conexão ao devolver da lavanderia.");
   }
 };
 
@@ -3466,6 +4076,7 @@ async function loadGuests(){
     if (typeof loadDashboardStats === "function") loadDashboardStats();
     if (typeof loadExecutiveSummary === "function") loadExecutiveSummary();
     if (typeof loadReservations === "function") loadReservations();
+    if (typeof loadRoomMap === "function") loadRoomMap();
     if (typeof loadGuests === "function") loadGuests();
     if (typeof loadFinance === "function") loadFinance();
     if (typeof loadReports === "function") loadReports();

@@ -42,7 +42,7 @@ def process_incoming_message(hostel_id, phone, text, send_to_whatsapp=False):
     # WhatsApp de verdade (phone != "unknown", usado no endpoint de teste
     # manual). Isso evita a IA tratar um telefone de teste como contato real.
     guest_phone = phone if phone != "unknown" else None
-    answer, guest_name = ask_ai(history, text, guest_phone=guest_phone)
+    answer, guest_name = ask_ai(history, text, guest_phone=guest_phone, hostel_id=hostel_id)
 
     if guest_name:
         update_guest_name(hostel_id, phone, guest_name)
