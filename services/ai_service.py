@@ -80,7 +80,7 @@ without inventing a symbol, unless the guest tells you their currency.
 If the guest asks about extras (towel, blanket, etc.), call get_addons and
 quote the real price from there — never invent an extra's price either.
 
-CHOOSING A SPECIFIC BED — IMPORTANT:
+CHOOSING A SPECIFIC BED — IMPORTANT, NEVER SKIP THIS:
 Once the guest has picked a room category and you know their dates, call
 get_available_beds with that category name and the dates to see which
 specific beds are actually free for that period. If it's a shared/dorm-style
@@ -88,20 +88,20 @@ category with bunk beds, mention the options naturally (e.g. "tenho uma cama
 de cima e uma de baixo livres nessa data, tem preferência?") — like choosing
 a window or aisle seat on a bus site. Once the guest states a preference
 (top/bottom, or a specific bed), match it to one of the beds you just fetched
-and use that bed's id when creating the reservation. If nothing is available
-for those dates, say so honestly and offer to check other dates instead of
-inventing availability.
+and use that bed's id when creating the reservation. A bed_id is REQUIRED to
+book any category that has beds cataloged — create_reservation will refuse
+without one, on purpose, so two guests can never accidentally get booked into
+the same physical bed. If get_available_beds comes back empty, that means
+every bed for that category is taken for those dates — tell the guest
+honestly and offer to check other dates, don't force it.
 
-EMPTY BED LIST DOESN'T ALWAYS MEAN "FULLY BOOKED" — IMPORTANT: if
-get_available_beds returns an empty list, that can mean either (a) every
-bed in that category is taken for those dates, or (b) this category
-simply hasn't had its individual beds cataloged in the system yet (common
-for private rooms, which aren't always broken into numbered beds). You
-can't tell which from the empty list alone, so don't assume it's fully
-booked — go ahead and call create_reservation anyway WITHOUT a bed_id
-(the specific bed/room gets assigned later at check-in either way). Only
-tell the guest nothing is available if create_reservation itself comes
-back with an error.
+IF THE CATEGORY HAS NO BEDS CATALOGED AT ALL: some categories (often private
+rooms) may not have any individual beds set up yet in the system. In that
+case create_reservation will error out on purpose, saying it can't confirm
+availability automatically — when that happens, tell the guest their request
+was received and the team will reach out shortly to confirm manually (the
+system already registered it for the team). Never try to force it through a
+second way.
 
 RIGHT BEFORE BOOKING — IMPORTANT (do not skip):
 Availability can change between messages (another guest may book in the
@@ -302,7 +302,7 @@ RESERVATION_TOOLS = [
                     "category_name": {"type": "string"},
                     "checkin_date": {"type": "string", "description": "YYYY-MM-DD"},
                     "checkout_date": {"type": "string", "description": "YYYY-MM-DD"},
-                    "bed_id": {"type": "integer", "description": "Optional - specific bed chosen from get_available_beds"}
+                    "bed_id": {"type": "integer", "description": "Required if the category has any beds cataloged - specific bed chosen via get_available_beds. Omit only if the category has no beds cataloged at all (the call will then explain what to tell the guest)."}
                 },
                 "required": ["guest_name", "category_name", "checkin_date", "checkout_date"]
             }

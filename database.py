@@ -2731,16 +2731,70 @@ def get_offerings_for_chat(hostel_id):
     return offerings
 
 
+def _flag_booking_needs_manual_setup(hostel_id, phone, guest_name, category_name, checkin_date, checkout_date):
+    """
+    Quando a modalidade pedida nao tem NENHUMA cama cadastrada, nao da
+    pra confirmar disponibilidade automaticamente - reservar as cegas
+    arriscaria overbooking real (dois hospedes reservando a mesma
+    modalidade sem nenhuma trava de capacidade). Em vez disso, vira uma
+    oportunidade de alta prioridade pra equipe cadastrar as camas e
+    confirmar manualmente. Nao duplica se ja existir uma oportunidade
+    aberta desse tipo pro mesmo hospede.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
+        (hostel_id, phone)
+    )
+    guest = cursor.fetchone()
+
+    if not guest:
+        conn.close()
+        return
+
+    cursor.execute(
+        "SELECT id FROM opportunities WHERE guest_id = ? AND type = 'booking' AND status = 'open'",
+        (guest["id"],)
+    )
+    if cursor.fetchone():
+        conn.close()
+        return
+
+    cursor.execute(
+        """
+        INSERT INTO opportunities
+        (guest_id, type, description, status, score, urgency, estimated_value, next_action)
+        VALUES (?, 'booking', ?, 'open', 90, 'high', 0, ?)
+        """,
+        (
+            guest["id"],
+            f"{guest_name} quer reservar '{category_name}' de {checkin_date} a {checkout_date}, mas essa "
+            f"modalidade ainda nao tem nenhuma cama cadastrada - nao da pra confirmar disponibilidade automaticamente.",
+            "Cadastrar as camas dessa modalidade no Mapa de Quartos e confirmar a reserva manualmente com o hospede."
+        )
+    )
+
+    conn.commit()
+    conn.close()
+
+
 def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, checkin_date, checkout_date, bed_id=None):
     """
     Cria a reserva automaticamente a partir da conversa da IA de
     atendimento com o hospede pelo WhatsApp - sempre status 'pending'
     (a equipe confirma depois, igual ja fazia manualmente). O valor e
     SEMPRE calculado a partir do price_per_night real da modalidade
-    (nunca aceito como argumento do modelo) - se a modalidade nao tiver
-    preco configurado, fica 0, nunca inventado. Se bed_id for passado,
-    valida disponibilidade futura antes de reservar essa cama especifica
-    (soft hold - o status operacional da cama so muda no check-in real).
+    (nunca aceito como argumento do modelo).
+
+    Protecao contra overbooking: se a modalidade nao tem NENHUMA cama
+    cadastrada, a reserva NAO e criada - vira oportunidade pra equipe
+    (ver _flag_booking_needs_manual_setup). Se a modalidade tem camas
+    cadastradas, bed_id se torna OBRIGATORIO e precisa apontar pra uma
+    cama realmente livre nessas datas - sem isso nao ha como saber
+    quantas unidades daquela modalidade ja estao ocupadas.
+
     Nao duplica se o mesmo hospede ja tem uma reserva pending pras
     mesmas datas vinda do chat (guest pode reafirmar a mesma coisa em
     mais de uma mensagem na mesma conversa).
@@ -2771,7 +2825,37 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
         (hostel_id, category_name)
     )
     category_row = cursor.fetchone()
+
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS cnt
+        FROM beds b
+        JOIN rooms r ON r.id = b.room_id
+        JOIN room_categories rc ON rc.id = r.category_id
+        WHERE b.hostel_id = ? AND rc.name = ?
+        """,
+        (hostel_id, category_name)
+    )
+    bed_count = cursor.fetchone()["cnt"]
     conn.close()
+
+    if bed_count == 0:
+        _flag_booking_needs_manual_setup(hostel_id, phone, guest_name, category_name, checkin_date, checkout_date)
+        raise ValueError(
+            f"A modalidade '{category_name}' ainda nao tem nenhuma cama cadastrada, entao nao da pra confirmar "
+            f"disponibilidade com seguranca. O pedido foi registrado como oportunidade de alta prioridade pra "
+            f"equipe cadastrar as camas e confirmar manualmente com o hospede."
+        )
+
+    if not bed_id:
+        raise ValueError(
+            f"A modalidade '{category_name}' tem camas cadastradas - use get_available_beds pra escolher uma "
+            f"cama especifica disponivel antes de reservar."
+        )
+
+    still_free = any(b["id"] == int(bed_id) for b in find_available_beds(hostel_id, category_name, checkin_date, checkout_date))
+    if not still_free:
+        raise ValueError("Essa cama nao esta mais disponivel pras datas pedidas - escolha outra.")
 
     amount = 0
     if category_row and category_row["price_per_night"]:
@@ -2780,11 +2864,6 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
             amount = round(category_row["price_per_night"] * max(nights, 0), 2)
         except (ValueError, TypeError):
             amount = 0
-
-    if bed_id:
-        still_free = any(b["id"] == int(bed_id) for b in find_available_beds(hostel_id, category_name, checkin_date, checkout_date))
-        if not still_free:
-            raise ValueError("Essa cama nao esta mais disponivel pras datas pedidas - escolha outra.")
 
     reservation_id = create_reservation_record(
         hostel_id,
@@ -2798,12 +2877,11 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
         phone=phone,
     )
 
-    if bed_id:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE reservations SET bed_id = ? WHERE id = ?", (int(bed_id), reservation_id))
-        conn.commit()
-        conn.close()
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE reservations SET bed_id = ? WHERE id = ?", (int(bed_id), reservation_id))
+    conn.commit()
+    conn.close()
 
     return {"reservation_id": reservation_id, "already_existed": False, "amount": amount}
 
