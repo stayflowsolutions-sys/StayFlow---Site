@@ -1,6 +1,6 @@
 import json
 import os
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -13,15 +13,66 @@ executive_bp = Blueprint("executive", __name__)
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Idioma vem do seletor do Dashboard (?lang=), nao de preferencia do
+# hostel - cada pessoa que olha o resumo pode estar num idioma
+# diferente. "pt" e sempre o fallback se o valor for invalido/ausente.
+LANGUAGE_NAMES = {
+    "pt": "Portuguese",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+}
 
-def fallback_summary(stats):
-    return {
+FALLBACK_SUMMARIES = {
+    "pt": {
         "main_summary": "O StayFlow identificou atividade operacional recente, com oportunidades abertas que precisam de acompanhamento.",
         "priority_actions": [
             "Priorizar oportunidades com maior score.",
             "Responder hóspedes com urgência alta.",
             "Revisar conversas recentes antes de perder intenção de reserva."
         ],
+    },
+    "en": {
+        "main_summary": "StayFlow identified recent operational activity, with open opportunities that need follow-up.",
+        "priority_actions": [
+            "Prioritize opportunities with the highest score.",
+            "Reply to high-urgency guests.",
+            "Review recent conversations before losing booking intent."
+        ],
+    },
+    "es": {
+        "main_summary": "StayFlow identificó actividad operativa reciente, con oportunidades abiertas que necesitan seguimiento.",
+        "priority_actions": [
+            "Priorizar las oportunidades con mayor puntaje.",
+            "Responder a los huéspedes con alta urgencia.",
+            "Revisar las conversaciones recientes antes de perder la intención de reserva."
+        ],
+    },
+    "fr": {
+        "main_summary": "StayFlow a identifié une activité opérationnelle récente, avec des opportunités ouvertes qui nécessitent un suivi.",
+        "priority_actions": [
+            "Prioriser les opportunités avec le meilleur score.",
+            "Répondre aux clients à forte urgence.",
+            "Vérifier les conversations récentes avant de perdre l'intention de réservation."
+        ],
+    },
+    "de": {
+        "main_summary": "StayFlow hat kürzliche Betriebsaktivität erkannt, mit offenen Chancen, die eine Nachverfolgung benötigen.",
+        "priority_actions": [
+            "Chancen mit dem höchsten Score priorisieren.",
+            "Gästen mit hoher Dringlichkeit antworten.",
+            "Aktuelle Unterhaltungen prüfen, bevor die Buchungsabsicht verloren geht."
+        ],
+    },
+}
+
+
+def fallback_summary(stats, lang="pt"):
+    base = FALLBACK_SUMMARIES.get(lang, FALLBACK_SUMMARIES["pt"])
+    return {
+        "main_summary": base["main_summary"],
+        "priority_actions": base["priority_actions"],
         "revenue_opportunity": stats.get("revenue_opportunity", 0),
         "risk_level": "medium"
     }
@@ -30,6 +81,10 @@ def fallback_summary(stats):
 @executive_bp.route("/executive-summary", methods=["GET"])
 @require_permission("dashboard")
 def executive_summary(hostel_id):
+    lang = request.args.get("lang", "pt")
+    if lang not in LANGUAGE_NAMES:
+        lang = "pt"
+    language_name = LANGUAGE_NAMES[lang]
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -111,11 +166,11 @@ Dados:
 Retorne somente JSON válido neste formato:
 
 {{
-  "main_summary": "resumo curto e claro em português",
+  "main_summary": "resumo curto e claro, em {language_name}",
   "priority_actions": [
-    "ação 1",
-    "ação 2",
-    "ação 3"
+    "ação 1, em {language_name}",
+    "ação 2, em {language_name}",
+    "ação 3, em {language_name}"
   ],
   "revenue_opportunity": 0,
   "risk_level": "low | medium | high"
@@ -125,7 +180,8 @@ Regras:
 - Seja objetivo.
 - Foque em dinheiro, risco e ações práticas.
 - Não invente dados que não estejam na base.
-- Use português.
+- Escreva main_summary e priority_actions em {language_name}, mesmo que os dados de entrada estejam em português.
+- risk_level continua sempre em inglês (low/medium/high), nunca traduza esse valor.
 - Retorne somente JSON.
 """
 
@@ -136,7 +192,7 @@ Regras:
             messages=[
                 {
                     "role": "system",
-                    "content": "Você é o motor executivo do StayFlow. Retorne somente JSON válido."
+                    "content": f"Você é o motor executivo do StayFlow. Retorne somente JSON válido, com main_summary e priority_actions escritos em {language_name}."
                 },
                 {
                     "role": "user",
@@ -154,6 +210,6 @@ Regras:
 
     except Exception as error:
         print("Executive Summary error:", error)
-        summary = fallback_summary(stats)
+        summary = fallback_summary(stats, lang)
 
     return jsonify(summary)
