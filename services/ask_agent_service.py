@@ -41,6 +41,10 @@ from database import (
     create_room,
     create_rooms_bulk,
     create_bed,
+    create_indefinite_stay,
+    get_reservation_balance,
+    record_reservation_payment,
+    close_indefinite_stay,
 )
 
 load_dotenv()
@@ -269,6 +273,85 @@ TOOLS_CATALOG = [
                         "status": {"type": "string", "enum": ["pending", "confirmed", "cancelled"]}
                     },
                     "required": ["reservation_id", "status"]
+                }
+            }
+        }
+    },
+    {
+        "permission": "reservations",
+        "function": lambda hostel_id, guest_name, checkin_date, daily_rate, room_type="", bed_id=None, phone="": create_indefinite_stay(hostel_id, guest_name, checkin_date, daily_rate, room_type, int(bed_id) if bed_id else None, phone),
+        "spec": {
+            "type": "function",
+            "function": {
+                "name": "create_indefinite_stay",
+                "description": "Registra um morador de longa duração (ex: funcionário que mora no hostel), sem data de saída definida. daily_rate pode ser 0 (não paga nada) ou um valor real que acumula saldo devedor por dia, abatido conforme pagamentos forem registrados.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "guest_name": {"type": "string"},
+                        "checkin_date": {"type": "string", "description": "Data de início, AAAA-MM-DD"},
+                        "daily_rate": {"type": "number", "description": "Valor cobrado por dia, 0 se não pagar nada"},
+                        "room_type": {"type": "string"},
+                        "bed_id": {"type": "integer", "description": "Opcional - cama específica que a pessoa já ocupa"},
+                        "phone": {"type": "string"}
+                    },
+                    "required": ["guest_name", "checkin_date", "daily_rate"]
+                }
+            }
+        }
+    },
+    {
+        "permission": "reservations",
+        "function": lambda hostel_id, reservation_id: get_reservation_balance(hostel_id, int(reservation_id)),
+        "spec": {
+            "type": "function",
+            "function": {
+                "name": "get_reservation_balance",
+                "description": "Consulta o saldo de um morador de longa duração: dias ocupados, valor devido total, total pago, e saldo (positivo = deve, negativo = tem crédito por ter pago a mais).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"reservation_id": {"type": "integer"}},
+                    "required": ["reservation_id"]
+                }
+            }
+        }
+    },
+    {
+        "permission": "reservations",
+        "function": lambda hostel_id, reservation_id, amount, method=None, note=None: record_reservation_payment(hostel_id, int(reservation_id), amount, method, note),
+        "spec": {
+            "type": "function",
+            "function": {
+                "name": "record_reservation_payment",
+                "description": "Registra um pagamento recebido de um morador de longa duração, abatendo do saldo devedor (ou aumentando o crédito se pagar mais do que deve).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "reservation_id": {"type": "integer"},
+                        "amount": {"type": "number"},
+                        "method": {"type": "string"},
+                        "note": {"type": "string"}
+                    },
+                    "required": ["reservation_id", "amount"]
+                }
+            }
+        }
+    },
+    {
+        "permission": "reservations",
+        "function": lambda hostel_id, reservation_id, checkout_date=None: close_indefinite_stay(hostel_id, int(reservation_id), checkout_date),
+        "spec": {
+            "type": "function",
+            "function": {
+                "name": "close_indefinite_stay",
+                "description": "Encerra a estadia de um morador de longa duração (saiu de verdade), libera a cama pra limpeza e mostra o saldo final.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "reservation_id": {"type": "integer"},
+                        "checkout_date": {"type": "string", "description": "Opcional, padrão é hoje"}
+                    },
+                    "required": ["reservation_id"]
                 }
             }
         }

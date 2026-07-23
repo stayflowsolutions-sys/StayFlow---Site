@@ -635,8 +635,28 @@ def create_database():
     # Cama fisica atribuida a essa reserva quando o hospede faz check-in
     # de verdade (nao e o mesmo que a data planejada) - fica null ate
     # o check-in acontecer, e permanece apontando pra la depois do
-    # check-out (registro historico de qual cama foi usada).
+    # check-out (registro historico de qual cama usada).
     add_column_if_not_exists(cursor, "reservations", "bed_id", "INTEGER")
+
+    # Estadia de longa duracao / morador fixo (ex: funcionario que mora
+    # no hostel, pagando conforme consegue) - 'fixed' (padrao, hospede
+    # normal com checkout definido) ou 'indefinite' (sem checkout
+    # definido, saldo devedor calculado por dia ocupado x daily_rate,
+    # abatido conforme pagamentos registrados em reservation_payments).
+    add_column_if_not_exists(cursor, "reservations", "stay_type", "TEXT DEFAULT 'fixed'")
+    add_column_if_not_exists(cursor, "reservations", "daily_rate", "REAL")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS reservation_payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        reservation_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        method TEXT,
+        note TEXT,
+        paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS suppliers (
@@ -2161,7 +2181,7 @@ def get_reservations_with_stats(hostel_id):
         """
         SELECT id, guest_id, guest_name, room_type, bed, checkin_date,
                checkout_date, source, payment_method, amount, status,
-               bed_id, created_at
+               bed_id, created_at, stay_type, daily_rate
         FROM reservations
         WHERE hostel_id = ?
         ORDER BY checkin_date ASC, id DESC
@@ -2173,6 +2193,29 @@ def get_reservations_with_stats(hostel_id):
 
     today = date.today().isoformat()
 
+    # Estadia de longa duracao nao tem "amount" fixo - saldo devedor e
+    # calculado sob demanda (dias ocupados x diaria, menos pagamentos).
+    for r in reservations:
+        if r["stay_type"] == "indefinite":
+            try:
+                checkin = date.fromisoformat(r["checkin_date"])
+                end = date.fromisoformat(r["checkout_date"]) if r["checkout_date"] else date.today()
+                days_occupied = max((end - checkin).days, 0)
+            except (ValueError, TypeError):
+                days_occupied = 0
+
+            daily_rate = r["daily_rate"] or 0
+            total_owed = round(days_occupied * daily_rate, 2)
+
+            cursor.execute(
+                "SELECT COALESCE(SUM(amount), 0) AS total FROM reservation_payments WHERE reservation_id = ?",
+                (r["id"],)
+            )
+            total_paid = cursor.fetchone()["total"]
+
+            r["days_occupied"] = days_occupied
+            r["balance"] = round(total_owed - total_paid, 2)
+
     stats = {
         "today": sum(1 for r in reservations if r["checkin_date"] == today),
         "checkins_today": sum(1 for r in reservations if r["checkin_date"] == today),
@@ -2180,7 +2223,7 @@ def get_reservations_with_stats(hostel_id):
         "no_show": sum(1 for r in reservations if r["status"] == "no_show"),
         "total": len(reservations),
         "confirmed_revenue": sum(
-            r["amount"] or 0 for r in reservations if r["status"] == "confirmed"
+            r["amount"] or 0 for r in reservations if r["status"] == "confirmed" and r["stay_type"] != "indefinite"
         ),
     }
 
@@ -2645,6 +2688,205 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
     conn.close()
 
     return reservation_id
+
+
+def create_indefinite_stay(hostel_id, guest_name, checkin_date, daily_rate, room_type="", bed_id=None, phone=""):
+    """
+    Estadia de longa duracao / morador fixo (ex: funcionario que mora
+    no hostel, pagando conforme consegue) - sem data de saida definida.
+    Status sempre 'confirmed' (e um arranjo ja decidido pela equipe,
+    nao um pedido de hospede aguardando aprovacao). daily_rate pode ser
+    0 (funcionario que nao paga nada, so ocupa a cama) ou um valor real
+    que vai acumulando saldo devedor por dia, abatido conforme
+    pagamentos forem registrados (record_reservation_payment). Se
+    bed_id for passado, ocupa a cama de verdade na hora (diferente de
+    uma reserva futura - aqui a pessoa ja esta la).
+    """
+    guest_name = (guest_name or "").strip()
+    checkin_date = (checkin_date or "").strip()
+
+    if not guest_name:
+        raise ValueError("guest_name is required.")
+    if not checkin_date:
+        raise ValueError("checkin_date is required.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if bed_id:
+        cursor.execute("SELECT status, label FROM beds WHERE id = ? AND hostel_id = ?", (bed_id, hostel_id))
+        bed = cursor.fetchone()
+        if not bed:
+            conn.close()
+            raise ValueError("Cama nao encontrada.")
+        if bed["status"] != "free":
+            conn.close()
+            raise ValueError(f"A cama '{bed['label']}' nao esta livre (status atual: {bed['status']}).")
+
+    guest_id = None
+    phone = (phone or "").strip()
+    if phone:
+        cursor.execute(
+            "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
+            (hostel_id, phone)
+        )
+        row = cursor.fetchone()
+        if row:
+            guest_id = row["id"]
+
+    cursor.execute(
+        """
+        INSERT INTO reservations
+        (hostel_id, guest_id, guest_name, room_type, checkin_date, checkout_date,
+         source, amount, status, stay_type, daily_rate, bed_id)
+        VALUES (?, ?, ?, ?, ?, NULL, 'manual', 0, 'confirmed', 'indefinite', ?, ?)
+        """,
+        (hostel_id, guest_id, guest_name, (room_type or "").strip(), checkin_date, float(daily_rate or 0), bed_id)
+    )
+
+    reservation_id = cursor.lastrowid
+
+    if bed_id:
+        cursor.execute("UPDATE beds SET status = 'occupied' WHERE id = ?", (bed_id,))
+
+    conn.commit()
+    conn.close()
+
+    return reservation_id
+
+
+def get_reservation_balance(hostel_id, reservation_id):
+    """
+    Saldo sempre calculado sob demanda (nunca um campo estatico que
+    poderia ficar desatualizado): dias ocupados (do checkin ate hoje,
+    ou ate o checkout se a estadia ja foi encerrada) x daily_rate,
+    menos a soma de tudo que ja foi pago.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT checkin_date, checkout_date, daily_rate FROM reservations WHERE id = ? AND hostel_id = ?",
+        (reservation_id, hostel_id)
+    )
+    reservation = cursor.fetchone()
+
+    if not reservation:
+        conn.close()
+        raise ValueError("Reserva nao encontrada.")
+
+    end_date = reservation["checkout_date"] or datetime.date.today().isoformat()
+
+    try:
+        checkin = datetime.date.fromisoformat(reservation["checkin_date"])
+        end = datetime.date.fromisoformat(end_date)
+        days_occupied = max((end - checkin).days, 0)
+    except (ValueError, TypeError):
+        days_occupied = 0
+
+    daily_rate = reservation["daily_rate"] or 0
+    total_owed = round(days_occupied * daily_rate, 2)
+
+    cursor.execute(
+        "SELECT COALESCE(SUM(amount), 0) AS total FROM reservation_payments WHERE reservation_id = ?",
+        (reservation_id,)
+    )
+    total_paid = cursor.fetchone()["total"]
+
+    conn.close()
+
+    return {
+        "reservation_id": reservation_id,
+        "days_occupied": days_occupied,
+        "daily_rate": daily_rate,
+        "total_owed": total_owed,
+        "total_paid": total_paid,
+        "balance": round(total_owed - total_paid, 2)
+    }
+
+
+def record_reservation_payment(hostel_id, reservation_id, amount, method=None, note=None):
+    amount = float(amount or 0)
+    if amount <= 0:
+        raise ValueError("O valor do pagamento precisa ser maior que zero.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id FROM reservations WHERE id = ? AND hostel_id = ?",
+        (reservation_id, hostel_id)
+    )
+    if not cursor.fetchone():
+        conn.close()
+        raise ValueError("Reserva nao encontrada.")
+
+    cursor.execute(
+        "INSERT INTO reservation_payments (hostel_id, reservation_id, amount, method, note) VALUES (?, ?, ?, ?, ?)",
+        (hostel_id, reservation_id, amount, (method or "").strip() or None, (note or "").strip() or None)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return get_reservation_balance(hostel_id, reservation_id)
+
+
+def list_reservation_payments(hostel_id, reservation_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, amount, method, note, paid_at
+        FROM reservation_payments
+        WHERE hostel_id = ? AND reservation_id = ?
+        ORDER BY paid_at DESC
+        """,
+        (hostel_id, reservation_id)
+    )
+    payments = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return payments
+
+
+def close_indefinite_stay(hostel_id, reservation_id, checkout_date=None):
+    """
+    Encerra uma estadia de longa duracao (a pessoa saiu de verdade) -
+    grava a data de saida e libera a cama pra limpeza, igual um
+    check-out normal. O saldo devedor continua consultavel depois
+    (get_reservation_balance passa a usar checkout_date como fim da
+    contagem em vez de "hoje").
+    """
+    checkout_date = (checkout_date or datetime.date.today().isoformat()).strip()
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT bed_id FROM reservations WHERE id = ? AND hostel_id = ? AND stay_type = 'indefinite'",
+        (reservation_id, hostel_id)
+    )
+    reservation = cursor.fetchone()
+
+    if not reservation:
+        conn.close()
+        raise ValueError("Estadia de longa duracao nao encontrada.")
+
+    cursor.execute(
+        "UPDATE reservations SET checkout_date = ? WHERE id = ?",
+        (checkout_date, reservation_id)
+    )
+
+    if reservation["bed_id"]:
+        cursor.execute("UPDATE beds SET status = 'needs_cleaning' WHERE id = ?", (reservation["bed_id"],))
+
+    conn.commit()
+    conn.close()
+
+    return get_reservation_balance(hostel_id, reservation_id)
 
 
 def find_available_beds(hostel_id, category_name, checkin_date, checkout_date):
