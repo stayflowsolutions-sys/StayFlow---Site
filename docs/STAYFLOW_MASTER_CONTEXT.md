@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.8.0
+\*\*Versão:\*\* 1.9.0
 
 
 
@@ -57,6 +57,8 @@
 | 1.7.0 | 23/07/2026 | Oficial | Ask StayFlow deixou de ser mockado: agente real com function calling multi-rodada, autenticado, 34 ferramentas escopadas por permissão, endpoint `/ask` com histórico próprio em SQL. Fase de ações reais: pedido de reposição a fornecedor e aviso proativo a hóspede, ambos com fluxo propor→aprovar→enviar via WhatsApp Business; extensão automática de reserva pela IA de atendimento dentro de limite seguro (mesma diária/quarto), fora disso vira oportunidade pra equipe decidir. Novo sistema de Mapa de Quartos: modalidades de quarto configuráveis por propriedade (com padrão automático por tipo — hostel ganha Privado/Compartilhado, hotel/pousada/resort ganham Standard/Luxo), cadastro de quartos em lote, camas normais e beliches pareados, status real (livre/ocupada/precisa de limpeza) refletido em mapa visual colorido. Ciclo completo de lavanderia: check-out move cama pra lista de limpeza automaticamente, marcar como limpa desconta roupa de cama limpa do estoque e move pra "na lavanderia", com ação de devolução ao estoque quando a lavanderia retorna. |
 
 | 1.8.0 | 23/07/2026 | Oficial | Correção de bug crítico de produção: servidor Flask sem `threaded=True` travava o site inteiro durante qualquer chamada real à IA (descoberto pelo usuário testando em produção). Reserva automática via WhatsApp: a IA de atendimento cria a reserva sozinha (status pending) com valor sempre calculado a partir do preço real configurado, nunca inventado. Hóspede agora pode ver preço real e escolher cama específica (cima/baixo do beliche) pelo WhatsApp antes de reservar, com disponibilidade futura calculada por sobreposição de datas. Mapa de Quartos expandido de 3 para 5 estados visuais (livre/ocupada/limpeza/reservada/manutenção). Equipe pode assumir uma conversa específica (pausando a resposta automática só daquele hóspede) e devolver depois; caixa de envio manual do Chat, que sempre foi simulada, agora envia mensagem real pelo WhatsApp Business. Lista de limpeza do Mapa de Quartos espelhada na caixa de tarefas de Operações. |
+
+| 1.9.0 | 23/07/2026 | Oficial | Correção de série de bugs reais encontrados pelo usuário testando em produção: renderização do beliche (era 2 quadrados, virou 1 cama dividida ao meio, formato retangular), tecla Enter do chat ainda chamando o envio simulado antigo, sino de alertas nunca zerando, IA de reserva confundindo nome de modalidade com nome de quarto (causava falso "sem disponibilidade"), IA atrasando a criação da reserva esperando dados extras, IA reescalando o preço ao falar com o hóspede (a reserva em si sempre foi gravada com valor correto). Preparação de servidor de produção: `Procfile` com `gunicorn` (já estava nas dependências, nunca ativado) — pendente o usuário atualizar o Start Command no painel do Render. |
 
 
 

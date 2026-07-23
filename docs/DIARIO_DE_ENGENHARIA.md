@@ -1649,3 +1649,55 @@ operacionais" de Operações, que desde a Sessão 6 tinha um comentário
 dizendo "depende do mapa de camas, ainda não construído", agora
 consome `get_cleaning_list` (mesma fonte de verdade do Mapa de
 Quartos) — sem tabela duplicada.
+
+### Terceira rodada da Sessão 8 (mesma data) — bugs reais achados testando, gunicorn
+
+O usuário continuou testando em produção e achou mais uma série de
+bugs reais, todos corrigidos:
+
+- **Beliche renderizava como 2 quadrados separados**, não uma cama só
+  dividida ao meio (o CSS já previa a divisão, a função de geração de
+  HTML que estava errada — criava dois `.bed-tile` em vez de um com
+  dois `.bed-tile-half`). Corrigido, e aproveitado pra deixar o
+  formato mais retangular (cama vista de cima), não quadrado.
+- **Tecla Enter no chat ainda chamava `mockSend()`** — o botão
+  "Enviar" tinha sido trocado pro envio real, mas o atalho de teclado
+  (`bindEnterToSend`) foi esquecido, então digitar e apertar Enter
+  ainda caía na mensagem simulada antiga. Corrigido.
+- **Sino de alertas nunca zerava**: contagem de `/operations` era
+  recalculada do zero a cada carregamento e nunca marcada como "vista".
+  Agora abrir Operações grava a contagem atual como vista
+  (`localStorage`), e o sino só acende de novo se a contagem
+  subir acima do que já foi visto.
+- **IA de reserva confundia nome de MODALIDADE com nome de QUARTO**
+  entre uma chamada e outra de `get_available_beds` (ex: usava "Dorm 1"
+  em vez de "Compartilhado") — isso fazia a consulta devolver lista
+  vazia, que a IA interpretava como "sem cama disponível" (falso
+  negativo real, reproduzido e comprovado com log das chamadas reais
+  de function calling). `find_available_beds` agora detecta esse erro
+  e devolve uma mensagem explicando o problema com a lista de
+  modalidades válidas, e o prompt foi reforçado explicando a diferença.
+- **IA às vezes atrasava a criação da reserva** esperando e-mail/toalha
+  antes de reservar, mesmo já tendo nome+modalidade+datas — prompt
+  ajustado deixando claro que a reserva deve ser criada assim que esses
+  3 dados existirem, o resto continua sendo coletado depois.
+- **IA reescalava o preço ao falar com o hóspede** (dizia "R$ 200"/
+  "R$ 600" quando o valor real configurado era 20.000/60.000) — a
+  reserva em si sempre foi gravada com o valor certo (calculado no
+  servidor, nunca aceito do modelo), só a fala pro hóspede estava
+  errada. Prompt agora instrui a nunca reescalar nem inventar símbolo
+  de moeda.
+- **Servidor de produção**: `gunicorn` já estava em `requirements.txt`
+  mas nunca foi de fato usado — criado `Procfile`
+  (`web: gunicorn app:app --workers 3 --threads 4 --timeout 120`).
+  Não foi possível testar `gunicorn` localmente (não roda nativamente
+  no Windows, depende de `fork`/`fcntl` do POSIX) — o usuário precisa
+  atualizar o Start Command no painel do Render manualmente, sem
+  acesso direto a isso nesta sessão.
+
+Pendência levantada pelo usuário e ainda não escopada: captura de
+documento de identidade (nome completo, data de nascimento, foto do
+documento) durante a reserva pelo WhatsApp — requer lidar com
+mensagens de mídia no webhook do WhatsApp, que hoje só processa texto;
+não implementado ainda, precisa de decisão sobre onde armazenar as
+fotos antes de começar.

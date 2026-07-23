@@ -1894,6 +1894,13 @@ async function deleteRoleConfirm(roleId){
     setActiveMenu(pageId, trigger);
     updateTopbar(pageId);
 
+    // Abrir Operações marca os alertas atuais como "vistos" - o sino
+    // some ate que apareça algo NOVO (contagem maior que a vista),
+    // em vez de continuar marcado pra sempre depois de ja ter sido aberto.
+    if(pageId === "operations" && typeof markAlertsSeen === "function"){
+      markAlertsSeen();
+    }
+
     const sidebar = document.getElementById("sidebar");
     if(sidebar && window.innerWidth <= 1100){
       sidebar.classList.remove("open");
@@ -2544,7 +2551,7 @@ async function deleteRoleConfirm(roleId){
           const btn = input.parentElement?.querySelector("button");
           if(!btn) return;
           if(isAsk) window.askStayFlowSend(btn);
-          else window.mockSend(btn);
+          else window.sendMessageToGuestUI(btn);
         }
       });
     });
@@ -2815,18 +2822,17 @@ function fillRoomSelect(rooms){
 }
 
 function renderBedTile(bed, pairBed){
-  // beliche: renderiza como UM tile com metade de cima e metade de baixo,
-  // cada metade colorida pelo status daquela cama especifica.
+  // beliche: UMA caixa so (formato de cama), dividida ao meio - metade
+  // de cima e metade de baixo, cada uma colorida pelo status real
+  // daquela cama especifica e clicavel de forma independente.
   if(pairBed){
     const top = bed.bed_kind === "bunk_top" ? bed : pairBed;
     const bottom = bed.bed_kind === "bunk_bottom" ? bed : pairBed;
     return `
       <div>
-        <div class="bed-tile" onclick="onBedTileClick(${top.id})" title="${top.label} - ${BED_STATUS_LABEL[top.display_status || top.status]}">
-          <div class="bed-tile-half ${top.display_status || top.status}"></div>
-        </div>
-        <div class="bed-tile" onclick="onBedTileClick(${bottom.id})" title="${bottom.label} - ${BED_STATUS_LABEL[bottom.display_status || bottom.status]}" style="margin-top:4px">
-          <div class="bed-tile-half ${bottom.display_status || bottom.status}"></div>
+        <div class="bed-tile bunk">
+          <div class="bed-tile-half ${top.display_status || top.status}" onclick="onBedTileClick(${top.id})" title="${top.label} - ${BED_STATUS_LABEL[top.display_status || top.status]}"></div>
+          <div class="bed-tile-half ${bottom.display_status || bottom.status}" onclick="onBedTileClick(${bottom.id})" title="${bottom.label} - ${BED_STATUS_LABEL[bottom.display_status || bottom.status]}"></div>
         </div>
         <span class="bed-tile-label">Beliche</span>
       </div>
@@ -2835,7 +2841,7 @@ function renderBedTile(bed, pairBed){
   return `
     <div>
       <div class="bed-tile" onclick="onBedTileClick(${bed.id})" title="${bed.label} - ${BED_STATUS_LABEL[bed.display_status || bed.status]}">
-        <div class="bed-tile-half ${bed.display_status || bed.status}"></div>
+        <div class="bed-tile-half ${bed.display_status || bed.status}" style="flex:1"></div>
       </div>
       <span class="bed-tile-label">${bed.label}</span>
     </div>
@@ -3379,15 +3385,36 @@ async function loadFinance(){
 // diferentes (alerts de /operations, alert_channels de /settings) -
 // funcao compartilhada re-renderiza o badge sempre que qualquer um dos
 // dois lados atualizar, usando o que ja estiver disponivel do outro.
+// Alertas de /operations sao recalculados do zero a cada chamada (nao
+// sao linhas persistidas com id/lido), entao "so mostrar novidade" na
+// pratica significa: comparar a contagem atual contra a ultima
+// contagem que a pessoa JA VIU (guardada no localStorage, sobrevive a
+// reload) - se for igual ou menor, o sino fica limpo; se for maior,
+// mostra a diferenca (quantos alertas novos surgiram desde a ultima vez).
+const ALERT_SEEN_KEY = "stayflow_alerts_seen_count";
+
+function getSeenAlertCount(){
+  const raw = localStorage.getItem(ALERT_SEEN_KEY);
+  return raw ? parseInt(raw, 10) || 0 : 0;
+}
+
+window.markAlertsSeen = function(){
+  const count = window.STAYFLOW_LAST_ALERT_COUNT || 0;
+  localStorage.setItem(ALERT_SEEN_KEY, String(count));
+  updateAlertBadge();
+};
+
 function updateAlertBadge(){
   const badgeEl = document.getElementById("opsAlertBadge");
   if(!badgeEl) return;
 
   const channels = window.STAYFLOW_ALERT_CHANNELS || ["dashboard"];
   const count = window.STAYFLOW_LAST_ALERT_COUNT || 0;
+  const seen = getSeenAlertCount();
+  const newCount = Math.max(0, count - seen);
 
-  if(channels.includes("dashboard") && count > 0){
-    badgeEl.textContent = count > 99 ? "99+" : count;
+  if(channels.includes("dashboard") && newCount > 0){
+    badgeEl.textContent = newCount > 99 ? "99+" : newCount;
     badgeEl.style.display = "flex";
   }else{
     badgeEl.style.display = "none";
