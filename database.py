@@ -2547,6 +2547,30 @@ def find_available_beds(hostel_id, category_name, checkin_date, checkout_date):
     )
     candidates = [dict(row) for row in cursor.fetchall()]
 
+    # Guarda contra o modelo confundir nome de MODALIDADE (ex:
+    # "Compartilhado") com nome de QUARTO (ex: "Dorm 1") entre uma
+    # chamada e outra - sem isso, um category_name errado silenciosamente
+    # devolve lista vazia, e quem chama interpreta isso como "sem cama
+    # disponivel" (falso negativo real, ja observado em teste).
+    if not candidates:
+        cursor.execute(
+            "SELECT id FROM room_categories WHERE hostel_id = ? AND name = ?",
+            (hostel_id, category_name)
+        )
+        category_exists = cursor.fetchone()
+
+        if not category_exists:
+            cursor.execute(
+                "SELECT name FROM room_categories WHERE hostel_id = ?",
+                (hostel_id,)
+            )
+            valid_names = [row["name"] for row in cursor.fetchall()]
+            conn.close()
+            raise ValueError(
+                f"'{category_name}' não é uma modalidade de quarto válida (isso parece nome de quarto, não de modalidade). "
+                f"Modalidades reais deste hostel: {', '.join(valid_names) if valid_names else 'nenhuma cadastrada'}."
+            )
+
     available = []
     for bed in candidates:
         cursor.execute(

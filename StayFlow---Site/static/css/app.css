@@ -1503,18 +1503,23 @@ body::before{
   gap:10px;
 }
 .bed-tile{
-  width:66px;
-  height:60px;
-  border-radius:10px;
+  /* formato de cama vista de cima: retangulo, mais alto que largo */
+  width:46px;
+  height:84px;
+  border-radius:8px 8px 4px 4px;
   cursor:pointer;
   overflow:hidden;
-  border:1px solid #ffffff18;
+  border:2px solid #ffffff22;
   display:flex;
   flex-direction:column;
   font-size:10px;
   font-weight:700;
   text-align:center;
   line-height:1.25;
+  margin:0 auto;
+}
+.bed-tile.bunk{
+  border-color:#ffffff30;
 }
 .bed-tile-half{
   flex:1;
@@ -1523,6 +1528,12 @@ body::before{
   justify-content:center;
   padding:2px 3px;
   color:#06101b;
+  cursor:pointer;
+}
+/* divisor entre as duas metades do beliche - so existe quando ha as
+   duas, ja que .bed-tile.bunk sempre tem 2 metades e o normal so 1 */
+.bed-tile.bunk .bed-tile-half:first-child{
+  border-bottom:2px solid #06101b40;
 }
 .bed-tile-half.free{background:var(--green)}
 .bed-tile-half.occupied{background:var(--red);color:#fff}
