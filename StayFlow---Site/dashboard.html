@@ -655,7 +655,7 @@ async function deleteRoleConfirm(roleId){
           <div class="user-role">—</div>
         </div>
         <div class="hostel-selector-divider"></div>
-        <button type="button" id="userMenuEquipeItem" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openTeamPanel()">
+        <button type="button" id="userMenuEquipeItem" data-required-permission="team" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openTeamPanel()">
           👥 Equipe
         </button>
         <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
@@ -835,9 +835,12 @@ async function deleteRoleConfirm(roleId){
         <div class="msg bot">Quando houver conversas reais no sistema, a última troca com o hóspede será exibida aqui.</div>
       </div>
 
-      <div class="chat-input">
+      <div class="chat-input" style="position:relative">
+        <button class="btn secondary" type="button" id="chatQuickReplyTrigger" onclick="toggleQuickReplyPicker(event)" title="Respostas rápidas" style="flex:0 0 auto">💬</button>
         <input placeholder="Escrever mensagem como recepção...">
         <button class="btn" onclick="mockSend(this)">Enviar</button>
+
+        <div id="chatQuickReplyPicker" class="hostel-selector-dropdown" style="display:none;top:auto;bottom:100%;left:0;right:auto;width:280px;margin-top:0;margin-bottom:6px;"></div>
       </div>
     </div>
 
@@ -1449,11 +1452,54 @@ async function deleteRoleConfirm(roleId){
               <option value="__new_hostel_type__">+ Novo tipo...</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Empresa</h2>
+        <p style="margin-bottom:14px">Dados legais, horários padrão e identidade visual do hostel.</p>
+
+        <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+          <div class="span-6">
+            <input type="text" data-setting="legal_name" placeholder="Razão social">
+          </div>
+          <div class="span-6">
+            <input type="text" data-setting="tax_id" placeholder="CUIT/RUT">
+          </div>
+          <div class="span-12">
+            <input type="text" data-setting="address" placeholder="Endereço completo">
+          </div>
+          <div class="span-6">
+            <select data-setting="timezone" id="settingsTimezoneSelect">
+              <option value="">Fuso horário</option>
+              <option value="America/Argentina/Buenos_Aires">America/Argentina/Buenos_Aires</option>
+              <option value="America/Santiago">America/Santiago</option>
+              <option value="America/Sao_Paulo">America/Sao_Paulo</option>
+              <option value="America/Lima">America/Lima</option>
+              <option value="America/La_Paz">America/La_Paz</option>
+              <option value="America/Bogota">America/Bogota</option>
+            </select>
+          </div>
+          <div class="span-6">
+            <select data-setting="currency" id="settingsCurrencySelect">
+              <option value="">Moeda</option>
+              <option value="ARS">ARS - Peso argentino</option>
+              <option value="CLP">CLP - Peso chileno</option>
+              <option value="BRL">BRL - Real brasileiro</option>
+              <option value="PEN">PEN - Sol peruano</option>
+              <option value="BOB">BOB - Boliviano</option>
+              <option value="COP">COP - Peso colombiano</option>
+              <option value="USD">USD - Dólar americano</option>
+            </select>
+          </div>
           <div class="span-6">
             <input type="text" data-setting="checkin" placeholder="Check-in padrão (ex: 14:00)">
           </div>
           <div class="span-6">
             <input type="text" data-setting="checkout" placeholder="Check-out padrão (ex: 11:00)">
+          </div>
+          <div class="span-12">
+            <input type="text" data-setting="logo_url" placeholder="URL do logo (opcional - cole o link de uma imagem já hospedada)">
           </div>
         </div>
       </div>
@@ -1496,7 +1542,48 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div class="card">
+        <h2>Comunicação</h2>
+
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
+          <span>Mostrar contagem de alertas no sininho</span>
+          <input type="checkbox" data-setting="alert_channels" checked>
+        </label>
+
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;opacity:.5;">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Horário de silêncio</div>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Ainda não aplicado — vai silenciar mensagens proativas quando o Ask StayFlow (function calling) existir. Não afeta resposta direta a hóspede.</p>
+          <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+            <div class="span-6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Início</label>
+              <input type="time" data-setting="quiet_hours_start" disabled>
+            </div>
+            <div class="span-6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Fim</label>
+              <input type="time" data-setting="quiet_hours_end" disabled>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin:20px 0 10px;font-size:14px;font-weight:800">Respostas rápidas</h3>
+        <div id="quickRepliesList" style="display:grid;gap:8px"></div>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <input type="text" id="newQuickReplyText" placeholder="Nova resposta rápida...">
+          <button class="btn secondary" type="button" onclick="createQuickReply()">+ Adicionar</button>
+        </div>
+
+        <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+          <button class="btn secondary" type="button" onclick="openPage('dashboard', document.querySelector('[data-page=dashboard]'))">Cancelar</button>
+          <button class="btn" type="button" onclick="saveSettings()">Salvar alterações</button>
+        </div>
+      </div>
+
+      <div class="card">
         <h2>IA StayFlow</h2>
+
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;background:#0b84ff14;border:1px solid #0b84ff30;border-radius:12px;padding:10px 12px;">
+          <span style="font-weight:700">IA responde automaticamente aos hóspedes<br><small style="font-weight:400;color:var(--muted)">Quando desativado, a IA para de responder; as mensagens continuam sendo salvas pra atendimento manual.</small></span>
+          <input type="checkbox" data-setting="ai_enabled" checked>
+        </label>
 
         <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;opacity:.5;">
           <span>Resposta automática para dúvidas simples<br><small style="font-weight:400;color:var(--muted)">Em breve — depende do recurso de assumir conversa</small></span>
@@ -1508,9 +1595,67 @@ async function deleteRoleConfirm(roleId){
           <input type="checkbox" data-setting="opportunity_generation" checked>
         </label>
 
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;opacity:.5;">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Agente de IA (persona, tom, regras de escalonamento)</div>
+          <p style="font-size:12px;color:var(--muted);margin:0">Disponível quando o Ask StayFlow (function calling) estiver pronto.</p>
+        </div>
+
         <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
           <button class="btn secondary" type="button" onclick="openPage('dashboard', document.querySelector('[data-page=dashboard]'))">Cancelar</button>
           <button class="btn" type="button" onclick="saveSettings()">Salvar alterações</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Segurança</h2>
+
+        <h3 style="margin:0 0 10px;font-size:14px;font-weight:800">Trocar senha</h3>
+        <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+          <div class="span-12">
+            <input type="password" id="currentPasswordInput" placeholder="Senha atual" autocomplete="current-password">
+          </div>
+          <div class="span-6">
+            <input type="password" id="newPasswordInput" placeholder="Nova senha (mínimo 8 caracteres)" autocomplete="new-password">
+          </div>
+          <div class="span-6">
+            <input type="password" id="confirmPasswordInput" placeholder="Confirmar nova senha" autocomplete="new-password">
+          </div>
+        </div>
+        <div id="changePasswordMessage" class="generic-modal-message" style="margin-top:4px"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
+          <button class="btn" type="button" onclick="submitChangePassword()">Trocar senha</button>
+        </div>
+
+        <h3 style="margin:24px 0 10px;font-size:14px;font-weight:800">Sessões ativas</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Dispositivos/navegadores com sessão válida hoje. Revogar uma sessão bloqueia o próximo acesso dela imediatamente.</p>
+        <div id="activeSessionsList" style="display:grid;gap:8px"></div>
+
+        <h3 style="margin:24px 0 10px;font-size:14px;font-weight:800">Últimas tentativas de login</h3>
+        <div id="loginAttemptsList" style="display:grid;gap:8px"></div>
+
+        <div style="margin-top:20px;padding-top:14px;border-top:1px solid #ffffff12;opacity:.5;">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Autenticação em duas etapas (2FA)</div>
+          <p style="font-size:12px;color:var(--muted);margin:0">Em breve.</p>
+        </div>
+      </div>
+
+      <div class="card" data-required-permission="billing">
+        <h2>Billing</h2>
+        <div class="sf-empty">
+          <div>
+            <strong>Modelo de cobrança em definição</strong>
+            <span>Ainda não há processador de pagamento integrado nem plano ativo. Esta tela vai mostrar plano contratado, status e faturas assim que o modelo comercial estiver definido.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Developer</h2>
+        <div class="sf-empty">
+          <div>
+            <strong>Integrações — em breve</strong>
+            <span>Planejado: OTAs (Booking.com, Airbnb, Hostelworld) e channel managers (ex: Beds24) via e-mail ou API, quando o acesso de parceiro estiver disponível. Chaves de API para integrações próprias também ficam para essa fase — nenhuma chave é gerada ainda.</span>
+          </div>
         </div>
       </div>
 
@@ -1711,7 +1856,17 @@ async function deleteRoleConfirm(roleId){
     if(!settingsRoot) return;
 
     const data = {};
-    $$("[data-setting]", settingsRoot).forEach(input => {
+    // :not([disabled]) evita que campos desabilitados (ex: horario de
+    // silencio, ainda nao aplicado) mandem valor vazio no upsert parcial
+    // e sobrescrevam silenciosamente um valor real no futuro.
+    $$("[data-setting]:not([disabled])", settingsRoot).forEach(input => {
+      // alert_channels e o unico campo do contrato que e uma lista, nao
+      // um escalar - o checkbox aqui representa so o canal "dashboard"
+      // (unico que existe de verdade hoje, ligado ao badge do sino).
+      if(input.dataset.setting === "alert_channels"){
+        data.alert_channels = input.checked ? ["dashboard"] : [];
+        return;
+      }
       if(input.type === "checkbox"){
         data[input.dataset.setting] = input.checked;
       }else{
@@ -1851,8 +2006,15 @@ async function deleteRoleConfirm(roleId){
       const data = await res.json();
       if(!data || Object.keys(data).length === 0) return;
 
+      window.STAYFLOW_ALERT_CHANNELS = Array.isArray(data.alert_channels) ? data.alert_channels : ["dashboard"];
+      if(typeof updateAlertBadge === "function") updateAlertBadge();
+
       $$("[data-setting]", settingsRoot).forEach(input => {
         const key = input.dataset.setting;
+        if(key === "alert_channels"){
+          input.checked = window.STAYFLOW_ALERT_CHANNELS.includes("dashboard");
+          return;
+        }
         if(key in data && data[key] !== null){
           setFieldValue(input, data[key]);
         }
@@ -1871,6 +2033,10 @@ async function deleteRoleConfirm(roleId){
       const data = JSON.parse(raw);
       $$("[data-setting]", settingsRoot).forEach(input => {
         const key = input.dataset.setting;
+        if(key === "alert_channels"){
+          input.checked = Array.isArray(data.alert_channels) && data.alert_channels.includes("dashboard");
+          return;
+        }
         if(key in data){
           setFieldValue(input, data[key]);
         }
@@ -1879,6 +2045,302 @@ async function deleteRoleConfirm(roleId){
       console.warn("Falha ao carregar stayflow_settings do localStorage", e);
     }
   }
+
+  // ===== Respostas rápidas: /quick-replies =====
+  window.STAYFLOW_QUICK_REPLIES = [];
+
+  async function loadQuickReplies(){
+    try{
+      const res = await fetch("/quick-replies", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      window.STAYFLOW_QUICK_REPLIES = data.quick_replies || [];
+      renderQuickRepliesList();
+      renderChatQuickReplyPicker();
+    }catch(e){
+      console.warn("Erro ao carregar respostas rápidas:", e);
+    }
+  }
+
+  function renderQuickRepliesList(){
+    const container = document.getElementById("quickRepliesList");
+    if(!container) return;
+    container.innerHTML = "";
+
+    if(!window.STAYFLOW_QUICK_REPLIES.length){
+      container.innerHTML = "<p style='color:var(--muted);font-size:13px;margin:0'>Nenhuma resposta rápida cadastrada.</p>";
+      return;
+    }
+
+    window.STAYFLOW_QUICK_REPLIES.forEach(qr => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #ffffff12;border-radius:12px;background:#ffffff05";
+      row.innerHTML = `
+        <span style="font-size:13px">${escapeHtml(qr.text)}</span>
+        <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deleteQuickReply(${qr.id})">Remover</button>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  window.createQuickReply = async function(){
+    const input = document.getElementById("newQuickReplyText");
+    if(!input) return;
+    const text = input.value.trim();
+    if(!text) return;
+
+    try{
+      const res = await fetch("/quick-replies", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+
+      if(!res.ok || !data.success){
+        alert(data.message || "Não foi possível criar a resposta rápida.");
+        return;
+      }
+
+      input.value = "";
+      loadQuickReplies();
+    }catch(e){
+      console.error("Erro ao criar resposta rápida:", e);
+      alert("Erro de conexão.");
+    }
+  };
+
+  window.deleteQuickReply = async function(id){
+    if(!confirm("Remover esta resposta rápida?")) return;
+
+    try{
+      const res = await fetch(`/quick-replies/${id}`, {
+        method: "DELETE",
+        credentials: "same-origin"
+      });
+      const data = await res.json();
+
+      if(!res.ok || !data.success){
+        alert(data.message || "Não foi possível remover.");
+        return;
+      }
+
+      loadQuickReplies();
+    }catch(e){
+      console.error("Erro ao remover resposta rápida:", e);
+      alert("Erro de conexão.");
+    }
+  };
+
+  // ===== Segurança: troca de senha, sessões ativas, log de login =====
+  window.submitChangePassword = async function(){
+    const currentInput = document.getElementById("currentPasswordInput");
+    const newInput = document.getElementById("newPasswordInput");
+    const confirmInput = document.getElementById("confirmPasswordInput");
+    const msg = document.getElementById("changePasswordMessage");
+    if(!currentInput || !newInput || !confirmInput || !msg) return;
+
+    msg.textContent = "";
+    msg.className = "generic-modal-message";
+
+    const currentPassword = currentInput.value;
+    const newPassword = newInput.value;
+    const confirmPassword = confirmInput.value;
+
+    if(!currentPassword || !newPassword || !confirmPassword){
+      msg.textContent = "Preencha os 3 campos.";
+      msg.classList.add("error");
+      return;
+    }
+
+    if(newPassword.length < 8){
+      msg.textContent = "A nova senha precisa ter pelo menos 8 caracteres.";
+      msg.classList.add("error");
+      return;
+    }
+
+    if(newPassword !== confirmPassword){
+      msg.textContent = "A confirmação não bate com a nova senha.";
+      msg.classList.add("error");
+      return;
+    }
+
+    try{
+      const res = await fetch("/security/change-password", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+      });
+      const data = await res.json();
+
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || "Não foi possível trocar a senha.";
+        msg.classList.add("error");
+        return;
+      }
+
+      msg.textContent = data.message || "Senha alterada.";
+      msg.classList.add("success");
+      currentInput.value = "";
+      newInput.value = "";
+      confirmInput.value = "";
+      loadActiveSessions();
+    }catch(e){
+      console.error("Erro ao trocar senha:", e);
+      msg.textContent = "Erro de conexão.";
+      msg.classList.add("error");
+    }
+  };
+
+  async function loadActiveSessions(){
+    const container = document.getElementById("activeSessionsList");
+    if(!container) return;
+
+    try{
+      const res = await fetch("/security/sessions", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      container.innerHTML = "";
+      data.sessions.forEach(s => {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #ffffff12;border-radius:12px;background:#ffffff05";
+        const currentTag = s.is_current
+          ? `<span class="perm-tag" style="color:#7bffa0">esta sessão</span>`
+          : "";
+        row.innerHTML = `
+          <div>
+            <div style="font-size:13px;font-weight:700">${escapeHtml(s.user_agent || "Dispositivo desconhecido")} ${currentTag}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Criada em ${escapeHtml(s.created_at)} · Última atividade ${escapeHtml(s.last_seen_at)}</div>
+          </div>
+        `;
+        if(!s.is_current){
+          const btn = document.createElement("button");
+          btn.className = "btn secondary";
+          btn.type = "button";
+          btn.style.cssText = "font-size:11px;padding:6px 10px";
+          btn.textContent = "Revogar";
+          btn.addEventListener("click", () => revokeSessionUI(s.id));
+          row.appendChild(btn);
+        }
+        container.appendChild(row);
+      });
+    }catch(e){
+      console.warn("Erro ao carregar sessões ativas:", e);
+    }
+  }
+
+  window.revokeSessionUI = async function(sessionId){
+    if(!confirm("Revogar esta sessão? O dispositivo será desconectado no próximo acesso.")) return;
+
+    try{
+      const res = await fetch(`/security/sessions/${sessionId}`, {
+        method: "DELETE",
+        credentials: "same-origin"
+      });
+      const data = await res.json();
+
+      if(!res.ok || !data.success){
+        alert(data.message || "Não foi possível revogar.");
+        return;
+      }
+
+      loadActiveSessions();
+    }catch(e){
+      console.error("Erro ao revogar sessão:", e);
+      alert("Erro de conexão.");
+    }
+  };
+
+  async function loadLoginAttempts(){
+    const container = document.getElementById("loginAttemptsList");
+    if(!container) return;
+
+    try{
+      const res = await fetch("/security/login-attempts", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      container.innerHTML = "";
+
+      if(!data.attempts.length){
+        container.innerHTML = "<p style='color:var(--muted);font-size:13px;margin:0'>Nenhuma tentativa registrada ainda.</p>";
+        return;
+      }
+
+      data.attempts.forEach(a => {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #ffffff12;border-radius:12px;background:#ffffff05";
+        const statusTag = a.success
+          ? `<span class="perm-tag" style="color:#7bffa0">sucesso</span>`
+          : `<span class="perm-tag" style="color:#ff8b8b">falha</span>`;
+        row.innerHTML = `
+          <div style="font-size:13px">${escapeHtml(a.created_at)} ${statusTag}</div>
+        `;
+        container.appendChild(row);
+      });
+    }catch(e){
+      console.warn("Erro ao carregar tentativas de login:", e);
+    }
+  }
+
+  // Preenche o campo de texto do chat, igual digitar manualmente - nunca
+  // chama mockSend() por conta propria. Assim, quando o envio real
+  // substituir o mock, o seletor de respostas rapidas nao precisa de
+  // nenhuma mudanca: quem manda continua sendo sempre o botao Enviar.
+  window.toggleQuickReplyPicker = function(event){
+    if(event) event.stopPropagation();
+    const picker = document.getElementById("chatQuickReplyPicker");
+    if(!picker) return;
+    if(picker.style.display === "none"){
+      renderChatQuickReplyPicker();
+      picker.style.display = "block";
+    }else{
+      picker.style.display = "none";
+    }
+  };
+
+  function renderChatQuickReplyPicker(){
+    const picker = document.getElementById("chatQuickReplyPicker");
+    if(!picker) return;
+    picker.innerHTML = "";
+
+    if(!window.STAYFLOW_QUICK_REPLIES || !window.STAYFLOW_QUICK_REPLIES.length){
+      picker.innerHTML = "<div style='padding:8px 10px;font-size:12px;color:var(--muted)'>Nenhuma resposta rápida cadastrada.</div>";
+      return;
+    }
+
+    window.STAYFLOW_QUICK_REPLIES.forEach(qr => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "hostel-selector-option";
+      btn.textContent = qr.text;
+      btn.addEventListener("click", () => {
+        const input = document.querySelector(".chat-window .chat-input input");
+        if(input){
+          input.value = qr.text;
+          input.focus();
+        }
+        picker.style.display = "none";
+      });
+      picker.appendChild(btn);
+    });
+  }
+
+  document.addEventListener("click", (event) => {
+    const picker = document.getElementById("chatQuickReplyPicker");
+    const trigger = document.getElementById("chatQuickReplyTrigger");
+    if(!picker || picker.style.display === "none") return;
+    if(!picker.contains(event.target) && trigger && !trigger.contains(event.target)){
+      picker.style.display = "none";
+    }
+  });
 
   function bindEnterToSend(){
     $$(".chat-input input, .ask-input input").forEach(input=>{
@@ -2228,6 +2690,25 @@ async function loadFinance(){
 
 // ===== OPERAÇÕES: /operations =====
 
+// Contagem de alertas e preferencia de canal chegam por rotas/tempos
+// diferentes (alerts de /operations, alert_channels de /settings) -
+// funcao compartilhada re-renderiza o badge sempre que qualquer um dos
+// dois lados atualizar, usando o que ja estiver disponivel do outro.
+function updateAlertBadge(){
+  const badgeEl = document.getElementById("opsAlertBadge");
+  if(!badgeEl) return;
+
+  const channels = window.STAYFLOW_ALERT_CHANNELS || ["dashboard"];
+  const count = window.STAYFLOW_LAST_ALERT_COUNT || 0;
+
+  if(channels.includes("dashboard") && count > 0){
+    badgeEl.textContent = count > 99 ? "99+" : count;
+    badgeEl.style.display = "flex";
+  }else{
+    badgeEl.style.display = "none";
+  }
+}
+
 async function loadOperations(){
   const alertsEmptyEl = document.getElementById("opsAlertsEmpty");
   const alertsListEl = document.getElementById("opsAlertsList");
@@ -2242,15 +2723,8 @@ async function loadOperations(){
     const alerts = data.alerts || [];
     const tasks = data.tasks || [];
 
-    const badgeEl = document.getElementById("opsAlertBadge");
-    if(badgeEl){
-      if(alerts.length > 0){
-        badgeEl.textContent = alerts.length > 99 ? "99+" : alerts.length;
-        badgeEl.style.display = "flex";
-      }else{
-        badgeEl.style.display = "none";
-      }
-    }
+    window.STAYFLOW_LAST_ALERT_COUNT = alerts.length;
+    updateAlertBadge();
 
     if(!alerts.length){
       if(alertsEmptyEl) alertsEmptyEl.style.display = "flex";
@@ -2737,6 +3211,7 @@ document.addEventListener("DOMContentLoaded", () => {
       hostelTypeSelect.value = value;
     });
   }
+
 });
 
 // ===== HÓSPEDES: /guests =====
@@ -2916,6 +3391,19 @@ async function loadGuests(){
     });
   }
 
+  // Mecanismo generico de visibilidade por permissao - qualquer
+  // elemento fora do menu lateral (item de menu suspenso, categoria
+  // de Configuracoes, secao inteira de conteudo) some/aparece so
+  // marcando data-required-permission="<chave>" no HTML, sem
+  // precisar de logica nova em JS a cada permissao futura.
+  function applyPermissionVisibility(permissions){
+    document.querySelectorAll("[data-required-permission]").forEach(el => {
+      if(el.closest(".menu")) return;
+      const key = el.dataset.requiredPermission;
+      el.style.display = permissions.includes(key) ? "" : "none";
+    });
+  }
+
   function hydrateUserUI(u){
     if(!u) return;
 
@@ -2929,10 +3417,7 @@ async function loadGuests(){
 
     populateHostelSelector(session);
 
-    const equipeMenuItem = document.getElementById("userMenuEquipeItem");
-    if(equipeMenuItem){
-      equipeMenuItem.style.display = (session.permissions || []).includes("team") ? "" : "none";
-    }
+    applyPermissionVisibility(session.permissions || []);
     hideNavItemsWithoutPermission(session.permissions || []);
 
     if(hostelMetaEl){
@@ -2975,6 +3460,13 @@ async function loadGuests(){
     if (typeof loadChats === "function") loadChats();
     if (typeof hydrateSettingsFromBackend === "function") hydrateSettingsFromBackend();
     if (typeof loadWhatsappSettings === "function") loadWhatsappSettings();
+    if (typeof loadQuickReplies === "function") loadQuickReplies();
+
+    // Gestao da propria conta (senha, sessoes, historico de login) e
+    // acessivel pra qualquer pessoa autenticada, sem exigir permissao
+    // especial - cada uma so ve/mexe na propria conta.
+    if (typeof loadActiveSessions === "function") loadActiveSessions();
+    if (typeof loadLoginAttempts === "function") loadLoginAttempts();
   });
 </script>
 
