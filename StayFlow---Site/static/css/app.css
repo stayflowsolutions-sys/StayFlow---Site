@@ -1473,6 +1473,8 @@ body::before{
 .bed-map-legend i.free{background:var(--green)}
 .bed-map-legend i.occupied{background:var(--red)}
 .bed-map-legend i.needs_cleaning{background:#ffbd4a}
+.bed-map-legend i.reserved{background:#0b84ff}
+.bed-map-legend i.maintenance{background:#ff8a3d}
 
 .bed-map-grid{
   display:grid;
@@ -1525,6 +1527,8 @@ body::before{
 .bed-tile-half.free{background:var(--green)}
 .bed-tile-half.occupied{background:var(--red);color:#fff}
 .bed-tile-half.needs_cleaning{background:#ffbd4a}
+.bed-tile-half.reserved{background:#0b84ff;color:#fff}
+.bed-tile-half.maintenance{background:#ff8a3d}
 .bed-tile-label{
   display:block;
   font-size:9px;

@@ -833,6 +833,7 @@ async function deleteRoleConfirm(roleId){
       <h2 id="chatTitle">Conversa</h2>
       <span id="chatMode" class="status-pill ai">Aguardando conexão</span>
       <span id="chatChance" class="status-pill cold">Score: —</span>
+      <button type="button" class="btn secondary" id="chatTakeoverBtn" style="display:none;margin-left:8px" onclick="toggleChatTakeover()">Assumir conversa</button>
 
       <div id="chatMessages" class="messages">
         <div class="msg bot">Quando houver conversas reais no sistema, a última troca com o hóspede será exibida aqui.</div>
@@ -841,7 +842,7 @@ async function deleteRoleConfirm(roleId){
       <div class="chat-input" style="position:relative">
         <button class="btn secondary" type="button" id="chatQuickReplyTrigger" onclick="toggleQuickReplyPicker(event)" title="Respostas rápidas" style="flex:0 0 auto">💬</button>
         <input placeholder="Escrever mensagem como recepção...">
-        <button class="btn" onclick="mockSend(this)">Enviar</button>
+        <button class="btn" onclick="sendMessageToGuestUI(this)">Enviar</button>
 
         <div id="chatQuickReplyPicker" class="hostel-selector-dropdown" style="display:none;top:auto;bottom:100%;left:0;right:auto;width:280px;margin-top:0;margin-bottom:6px;"></div>
       </div>
@@ -1013,6 +1014,8 @@ async function deleteRoleConfirm(roleId){
         <span><i class="free"></i>Livre</span>
         <span><i class="occupied"></i>Ocupada</span>
         <span><i class="needs_cleaning"></i>Precisa de limpeza</span>
+        <span><i class="reserved"></i>Reservada</span>
+        <span><i class="maintenance"></i>Manutenção</span>
       </div>
       <div class="sf-empty" id="roomMapEmpty">
         <div>
@@ -1027,9 +1030,11 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-6">
       <h2>🏷️ Modalidades de quarto</h2>
       <form onsubmit="submitNewRoomCategory(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
-        <input class="span-8" name="name" placeholder="Ex: Standard Duplo, Suíte, Dormitório Misto" required style="grid-column:span 8;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <input class="span-6" name="name" placeholder="Ex: Standard Duplo, Suíte, Dormitório Misto" required style="grid-column:span 6;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
         <input class="span-2" type="number" min="1" name="capacity" placeholder="Capac." style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <input class="span-2" type="number" min="0" step="0.01" name="price_per_night" placeholder="Diária" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
         <button type="submit" class="btn span-2" style="grid-column:span 2;">Criar</button>
+        <input class="span-12" name="description" placeholder="Ex: Inclui café da manhã" style="grid-column:span 12;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
       </form>
       <div id="roomCategoriesList" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
     </div>
@@ -1998,12 +2003,21 @@ async function deleteRoleConfirm(roleId){
     container.appendChild(thinking);
     container.scrollTop = container.scrollHeight;
 
+    // AbortController com timeout: sem isso, uma resposta lenta/travada
+    // do servidor deixava o botao desabilitado pra sempre (usuario
+    // relatou nao conseguir mais mandar mensagem depois de uma pergunta
+    // que demorou). 75s cobre folgado o pior caso (varias rodadas reais
+    // de chamada a IA), mas sempre libera o botao no final.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 75000);
+
     try{
       const res = await fetch("/ask", {
         method:"POST",
         credentials:"same-origin",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ message: text })
+        body:JSON.stringify({ message: text }),
+        signal: controller.signal
       });
 
       if(res.status === 401){
@@ -2016,8 +2030,11 @@ async function deleteRoleConfirm(roleId){
       thinking.textContent = (data && data.reply) || "Não consegui responder agora. Tente novamente.";
     }catch(err){
       console.warn("Falha ao consultar o Ask StayFlow:", err);
-      thinking.textContent = "Erro ao conectar com o servidor. Tente novamente em instantes.";
+      thinking.textContent = err.name === "AbortError"
+        ? "A resposta demorou demais e foi cancelada. Tente perguntar de novo, talvez de um jeito mais direto."
+        : "Erro ao conectar com o servidor. Tente novamente em instantes.";
     }finally{
+      clearTimeout(timeoutId);
       button.disabled = false;
       container.scrollTop = container.scrollHeight;
     }
@@ -2776,7 +2793,7 @@ window.submitNewReservation = async function(event){
 
 // ===== MAPA DE QUARTOS: /bed-map, /room-categories, /rooms, /cleaning-list =====
 
-const BED_STATUS_LABEL = { free: "Livre", occupied: "Ocupada", needs_cleaning: "Precisa de limpeza" };
+const BED_STATUS_LABEL = { free: "Livre", occupied: "Ocupada", needs_cleaning: "Precisa de limpeza", reserved: "Reservada", maintenance: "Em manutenção" };
 
 function fillCategorySelects(categories){
   const selects = document.querySelectorAll("#roomCategorySelect, #roommap select[name='category_name']");
@@ -2805,11 +2822,11 @@ function renderBedTile(bed, pairBed){
     const bottom = bed.bed_kind === "bunk_bottom" ? bed : pairBed;
     return `
       <div>
-        <div class="bed-tile" onclick="onBedTileClick(${top.id})" title="${top.label}">
-          <div class="bed-tile-half ${top.status}"></div>
+        <div class="bed-tile" onclick="onBedTileClick(${top.id})" title="${top.label} - ${BED_STATUS_LABEL[top.display_status || top.status]}">
+          <div class="bed-tile-half ${top.display_status || top.status}"></div>
         </div>
-        <div class="bed-tile" onclick="onBedTileClick(${bottom.id})" title="${bottom.label}" style="margin-top:4px">
-          <div class="bed-tile-half ${bottom.status}"></div>
+        <div class="bed-tile" onclick="onBedTileClick(${bottom.id})" title="${bottom.label} - ${BED_STATUS_LABEL[bottom.display_status || bottom.status]}" style="margin-top:4px">
+          <div class="bed-tile-half ${bottom.display_status || bottom.status}"></div>
         </div>
         <span class="bed-tile-label">Beliche</span>
       </div>
@@ -2817,8 +2834,8 @@ function renderBedTile(bed, pairBed){
   }
   return `
     <div>
-      <div class="bed-tile" onclick="onBedTileClick(${bed.id})" title="${bed.label}">
-        <div class="bed-tile-half ${bed.status}"></div>
+      <div class="bed-tile" onclick="onBedTileClick(${bed.id})" title="${bed.label} - ${BED_STATUS_LABEL[bed.display_status || bed.status]}">
+        <div class="bed-tile-half ${bed.display_status || bed.status}"></div>
       </div>
       <span class="bed-tile-label">${bed.label}</span>
     </div>
@@ -2903,9 +2920,25 @@ window.onBedTileClick = async function(bedId){
     return;
   }
 
-  // free -> busca reservas confirmadas sem cama atribuida pra check-in
+  if(bed.status === "maintenance"){
+    panel.style.display = "block";
+    panel.innerHTML = `
+      <strong>${bed.label}</strong> — ${BED_STATUS_LABEL[bed.status]}
+      <div style="margin-top:8px">
+        <button type="button" class="btn" onclick="setBedMaintenanceUI(${bed.id}, false)">Tirar da manutenção</button>
+      </div>
+    `;
+    return;
+  }
+
+  // free (ou reserved, que e livre com reserva futura ja atribuida) ->
+  // busca reservas confirmadas sem cama atribuida pra check-in, e da
+  // opcao de colocar em manutencao.
   panel.style.display = "block";
-  panel.innerHTML = `<strong>${bed.label}</strong> — Livre. Carregando reservas...`;
+  const statusLabel = BED_STATUS_LABEL[bed.display_status || bed.status];
+  panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. Carregando reservas...`;
+
+  const maintenanceBtn = `<div style="margin-top:8px"><button type="button" class="btn secondary" onclick="setBedMaintenanceUI(${bed.id}, true)">Colocar em manutenção</button></div>`;
 
   try{
     const res = await fetch("/reservations", { credentials: "same-origin" });
@@ -2913,19 +2946,40 @@ window.onBedTileClick = async function(bedId){
     const pending = (data.reservations || []).filter(r => r.status === "confirmed" && !r.bed_id);
 
     if(!pending.length){
-      panel.innerHTML = `<strong>${bed.label}</strong> — Livre. Nenhuma reserva confirmada aguardando check-in.`;
+      panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. Nenhuma reserva confirmada aguardando check-in.${maintenanceBtn}`;
       return;
     }
 
     panel.innerHTML = `
-      <strong>${bed.label}</strong> — Livre
+      <strong>${bed.label}</strong> — ${statusLabel}
       <select id="checkinReservationSelect" style="margin-top:8px">
         ${pending.map(r => `<option value="${r.id}">${r.guest_name} (${r.checkin_date} → ${r.checkout_date})</option>`).join("")}
       </select>
       <button type="button" class="btn" style="margin-top:6px" onclick="checkinBedUI(${bed.id})">Fazer check-in</button>
+      ${maintenanceBtn}
     `;
   }catch(e){
-    panel.innerHTML = `<strong>${bed.label}</strong> — Livre. Erro ao carregar reservas.`;
+    panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. Erro ao carregar reservas.${maintenanceBtn}`;
+  }
+};
+
+window.setBedMaintenanceUI = async function(bedId, underMaintenance){
+  try{
+    const res = await fetch(`/beds/${bedId}/maintenance`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ under_maintenance: underMaintenance })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || "Não foi possível atualizar o status da cama.");
+      return;
+    }
+    document.getElementById("bedActionCard").style.display = "none";
+    loadRoomMap();
+  }catch(e){
+    alert("Erro de conexão ao atualizar a cama.");
   }
 };
 
@@ -3050,7 +3104,7 @@ async function loadRoomMap(){
       const listEl = document.getElementById("roomCategoriesList");
       if(listEl){
         listEl.innerHTML = categories.length
-          ? categories.map(c => `<span style="display:inline-block;margin:2px 6px 2px 0;padding:4px 10px;border:1px solid var(--line);border-radius:999px">${c.name}${c.capacity ? ` (${c.capacity})` : ""}</span>`).join("")
+          ? categories.map(c => `<span style="display:inline-block;margin:2px 6px 2px 0;padding:4px 10px;border:1px solid var(--line);border-radius:999px">${c.name}${c.capacity ? ` (${c.capacity})` : ""}${c.price_per_night ? ` · US$ ${Number(c.price_per_night).toFixed(2)}/noite` : ""}</span>`).join("")
           : "Nenhuma modalidade criada ainda.";
       }
     }
@@ -3076,7 +3130,12 @@ window.submitNewRoomCategory = async function(event){
       method: "POST",
       credentials: "same-origin",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ name: form.name.value.trim(), capacity: form.capacity.value || null })
+      body: JSON.stringify({
+        name: form.name.value.trim(),
+        capacity: form.capacity.value || null,
+        price_per_night: form.price_per_night.value || null,
+        description: form.description.value.trim() || null
+      })
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
@@ -3368,11 +3427,26 @@ async function loadOperations(){
       }
     }
 
-    // Tarefas: hoje sempre vazio de propósito (depende do mapa de camas,
-    // ainda não construído) — deixa o estado vazio original do HTML.
+    // Tarefas vem do Mapa de Quartos (camas aguardando limpeza).
     if(!tasks.length){
       if(tasksEmptyEl) tasksEmptyEl.style.display = "flex";
       if(tasksTableEl) tasksTableEl.style.display = "none";
+    }else{
+      if(tasksEmptyEl) tasksEmptyEl.style.display = "none";
+      if(tasksTableEl) tasksTableEl.style.display = "table";
+      const tasksBodyEl = document.getElementById("opsTasksBody");
+      if(tasksBodyEl){
+        tasksBodyEl.innerHTML = "";
+        tasks.forEach(t => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${t.task}</td>
+            <td>${t.assignee || "-"}</td>
+            <td><span class="status-pill warm">Pendente</span></td>
+          `;
+          tasksBodyEl.appendChild(row);
+        });
+      }
     }
 
   }catch(e){

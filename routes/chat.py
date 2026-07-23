@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 
-from database import get_hostel_id_by_number, get_hostel_whatsapp_config, is_opportunity_generation_enabled, is_ai_enabled
+from database import get_hostel_id_by_number, get_hostel_whatsapp_config, is_opportunity_generation_enabled, is_ai_enabled, is_guest_ai_paused
 from services.ai_service import ask_ai
 from services.memory_service import save_message, get_history
 from services.guest_service import get_or_create_guest, update_guest_name
@@ -33,7 +33,10 @@ def process_incoming_message(hostel_id, phone, text, send_to_whatsapp=False):
     # oportunidade (acima) ainda sao salvas normalmente - so a resposta
     # da IA (interna e o envio real pelo WhatsApp) e que fica pulada,
     # deixando o atendimento inteiramente manual a partir daqui.
-    if not is_ai_enabled(hostel_id):
+    # Interruptor mestre (hostel inteiro) OU essa conversa especifica foi
+    # assumida manualmente pela equipe - nos dois casos, resposta da IA
+    # fica pulada, mas mensagem/oportunidade continuam sendo salvas.
+    if not is_ai_enabled(hostel_id) or is_guest_ai_paused(hostel_id, phone):
         return None, opportunity
 
     history = get_history(hostel_id, phone)

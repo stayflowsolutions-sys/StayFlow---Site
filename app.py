@@ -112,7 +112,15 @@ if __name__ == "__main__":
     # PORT vem do ambiente em serviços como Render; localmente usa 10000.
     port = int(os.getenv("PORT", 10000))
 
+    # threaded=True e essencial aqui: sem isso, o servidor de
+    # desenvolvimento do Flask processa UM pedido por vez - enquanto o
+    # Ask StayFlow ou a IA de atendimento estao no meio de uma chamada
+    # (varias idas e vindas reais pra OpenAI, alguns segundos cada), o
+    # site inteiro travava pra qualquer outro pedido (inclusive mandar
+    # mensagem manual pro hospede). Achado real em producao, nao so
+    # teorico - reproduzido pelo usuario testando o Ask StayFlow.
     app.run(
         host="0.0.0.0",
-        port=port
+        port=port,
+        threaded=True
     )

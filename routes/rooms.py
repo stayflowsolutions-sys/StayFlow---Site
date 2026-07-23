@@ -18,6 +18,7 @@ from database import (
     checkout_reservation_bed,
     mark_bed_cleaned,
     return_items_from_laundry,
+    set_bed_maintenance,
 )
 from utils.tenant import require_permission
 
@@ -47,7 +48,10 @@ def room_categories_route(hostel_id):
 def create_room_category_route(hostel_id):
     data = request.get_json() or {}
     try:
-        category_id = create_room_category(hostel_id, data.get("name"), data.get("capacity"))
+        category_id = create_room_category(
+            hostel_id, data.get("name"), data.get("capacity"),
+            data.get("price_per_night"), data.get("description"),
+        )
     except ValueError as error:
         return jsonify({"success": False, "message": str(error)}), 400
     return jsonify({"success": True, "id": category_id}), 201
@@ -132,6 +136,17 @@ def delete_bed_route(hostel_id, bed_id):
 def mark_bed_cleaned_route(hostel_id, bed_id):
     try:
         result = mark_bed_cleaned(hostel_id, bed_id)
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+    return jsonify({"success": True, **result})
+
+
+@rooms_bp.route("/beds/<int:bed_id>/maintenance", methods=["POST"])
+@require_permission("operations")
+def set_bed_maintenance_route(hostel_id, bed_id):
+    data = request.get_json() or {}
+    try:
+        result = set_bed_maintenance(hostel_id, bed_id, bool(data.get("under_maintenance", True)))
     except ValueError as error:
         return jsonify({"success": False, "message": str(error)}), 400
     return jsonify({"success": True, **result})

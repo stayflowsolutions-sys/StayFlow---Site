@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify
-from database import get_guests_list, get_guest_profile
+from flask import Blueprint, jsonify, request
+from database import get_guests_list, get_guest_profile, set_guest_ai_paused, send_message_to_guest_now
 from utils.tenant import require_permission
 
 guests_bp = Blueprint("guests", __name__)
@@ -20,3 +20,32 @@ def guest_profile(hostel_id, guest_id):
         return jsonify({"error": "Guest not found"}), 404
 
     return jsonify(profile)
+
+
+@guests_bp.route("/guests/<int:guest_id>/toggle-ai", methods=["POST"])
+@require_permission("chats")
+def toggle_guest_ai(hostel_id, guest_id):
+    data = request.get_json() or {}
+
+    try:
+        result = set_guest_ai_paused(hostel_id, guest_id, bool(data.get("paused")))
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 404
+
+    return jsonify({"success": True, **result})
+
+
+@guests_bp.route("/guests/<int:guest_id>/send-message", methods=["POST"])
+@require_permission("chats")
+def send_message_to_guest_route(hostel_id, guest_id):
+    data = request.get_json() or {}
+
+    try:
+        result = send_message_to_guest_now(hostel_id, guest_id, data.get("message"))
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+
+    if not result["sent"]:
+        return jsonify({"success": False, "message": "WhatsApp não configurado para este hostel — mensagem não enviada."}), 502
+
+    return jsonify({"success": True, **result})

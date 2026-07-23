@@ -2,6 +2,7 @@ import os
 import secrets
 import sqlite3
 import unicodedata
+import datetime
 
 from utils.permissions import ALL_PERMISSIONS_STR
 
@@ -370,6 +371,13 @@ def create_database():
     )
     """)
 
+    # Quando true, a IA de atendimento para de responder esse hospede
+    # especifico (equipe assumiu a conversa manualmente) - mensagem e
+    # oportunidade continuam sendo salvas normalmente, so a resposta
+    # automatica e que para, igual ja acontece com is_ai_enabled (esse
+    # e por hospede, aquele e o interruptor mestre do hostel inteiro).
+    add_column_if_not_exists(cursor, "guests", "ai_paused", "INTEGER DEFAULT 0")
+
     # se for um banco antigo (criado antes do multi-tenant), migra
     if _guests_table_needs_migration(cursor):
         _migrate_guests_to_composite_unique(cursor)
@@ -661,6 +669,12 @@ def create_database():
     )
     """)
 
+    # Preco por noite e descricao (ex: "inclui cafe da manha") - usados
+    # pela IA de atendimento pra cotar preco real ao hospede, nunca
+    # inventado. NULL = preco ainda nao configurado pra essa modalidade.
+    add_column_if_not_exists(cursor, "room_categories", "price_per_night", "REAL")
+    add_column_if_not_exists(cursor, "room_categories", "description", "TEXT")
+
     # floor existe pra organizar propriedades grandes (hotel/resort com
     # varios andares/blocos) - opcional, hostel pequeno pode ignorar.
     cursor.execute("""
@@ -771,6 +785,83 @@ def update_guest_name(hostel_id, phone, name):
 
     conn.commit()
     conn.close()
+
+
+def set_guest_ai_paused(hostel_id, guest_id, paused):
+    """
+    Liga/desliga a resposta automatica da IA pra ESSE hospede
+    especifico (equipe assumindo ou devolvendo a conversa) - diferente
+    de is_ai_enabled, que e o interruptor mestre do hostel inteiro.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE guests SET ai_paused = ? WHERE id = ? AND hostel_id = ?",
+        (1 if paused else 0, guest_id, hostel_id)
+    )
+
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+
+    if not updated:
+        raise ValueError("Hospede nao encontrado.")
+
+    return {"guest_id": guest_id, "ai_paused": bool(paused)}
+
+
+def is_guest_ai_paused(hostel_id, phone):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT ai_paused FROM guests WHERE hostel_id = ? AND phone = ?",
+        (hostel_id, phone)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    return bool(row["ai_paused"]) if row else False
+
+
+def send_message_to_guest_now(hostel_id, guest_id, message):
+    """
+    Envio manual e direto da equipe pro hospede (compose box do Chat) -
+    diferente do propose->confirm do Ask StayFlow, aqui a equipe ja
+    esta dentro da conversa especifica daquele hospede, entao o envio
+    e imediato. Grava tanto no memory_service (JSON, historico da IA)
+    quanto no message_service (SQL, usado pelas telas) - sender='staff'
+    pra distinguir de mensagem gerada pela IA ('assistant').
+    """
+    from services.whatsapp_service import send_whatsapp_message
+    from services.memory_service import save_message as save_memory_message
+    from services.message_service import save_message_db
+
+    message = (message or "").strip()
+    if not message:
+        raise ValueError("A mensagem nao pode ser vazia.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT phone FROM guests WHERE id = ? AND hostel_id = ?",
+        (guest_id, hostel_id)
+    )
+    guest = cursor.fetchone()
+    conn.close()
+
+    if not guest:
+        raise ValueError("Hospede nao encontrado.")
+
+    phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)
+    sent = send_whatsapp_message(phone_number_id, access_token, guest["phone"], message)
+
+    if sent:
+        save_memory_message(hostel_id, guest["phone"], "assistant", message)
+        save_message_db(hostel_id, guest["phone"], "staff", message)
+
+    return {"sent": sent, "phone": guest["phone"]}
 
 
 def get_membership(user_id, hostel_id):
@@ -2126,7 +2217,7 @@ def get_guest_profile(hostel_id, guest_id):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT id, name, phone, email, language, created_at
+        SELECT id, name, phone, email, language, created_at, ai_paused
         FROM guests
         WHERE id = ? AND hostel_id = ?
     """, (guest_id, hostel_id))
@@ -2428,6 +2519,143 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
     conn.close()
 
     return reservation_id
+
+
+def find_available_beds(hostel_id, category_name, checkin_date, checkout_date):
+    """
+    Disponibilidade FUTURA (pra reserva), diferente do status
+    free/occupied/needs_cleaning das camas (que e sobre agora mesmo,
+    pro mapa operacional). Uma cama esta disponivel pro periodo pedido
+    se nenhuma reserva nao-cancelada com essa cama tem datas que se
+    cruzam com [checkin_date, checkout_date).
+    """
+    checkin_date = (checkin_date or "").strip()
+    checkout_date = (checkout_date or "").strip()
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT b.id, b.label, b.bed_kind, b.bunk_group, r.name AS room_name
+        FROM beds b
+        JOIN rooms r ON r.id = b.room_id
+        LEFT JOIN room_categories rc ON rc.id = r.category_id
+        WHERE b.hostel_id = ? AND rc.name = ?
+        """,
+        (hostel_id, category_name)
+    )
+    candidates = [dict(row) for row in cursor.fetchall()]
+
+    available = []
+    for bed in candidates:
+        cursor.execute(
+            """
+            SELECT id FROM reservations
+            WHERE bed_id = ? AND status != 'cancelled'
+              AND checkin_date < ? AND checkout_date > ?
+            """,
+            (bed["id"], checkout_date, checkin_date)
+        )
+        if not cursor.fetchone():
+            available.append(bed)
+
+    conn.close()
+
+    return available
+
+
+def get_offerings_for_chat(hostel_id):
+    """Extras (toalha, cobertor, etc) pra IA de atendimento cotar preco real ao hospede."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT type, name, price FROM offerings WHERE hostel_id = ? ORDER BY type, name",
+        (hostel_id,)
+    )
+    offerings = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return offerings
+
+
+def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, checkin_date, checkout_date, bed_id=None):
+    """
+    Cria a reserva automaticamente a partir da conversa da IA de
+    atendimento com o hospede pelo WhatsApp - sempre status 'pending'
+    (a equipe confirma depois, igual ja fazia manualmente). O valor e
+    SEMPRE calculado a partir do price_per_night real da modalidade
+    (nunca aceito como argumento do modelo) - se a modalidade nao tiver
+    preco configurado, fica 0, nunca inventado. Se bed_id for passado,
+    valida disponibilidade futura antes de reservar essa cama especifica
+    (soft hold - o status operacional da cama so muda no check-in real).
+    Nao duplica se o mesmo hospede ja tem uma reserva pending pras
+    mesmas datas vinda do chat (guest pode reafirmar a mesma coisa em
+    mais de uma mensagem na mesma conversa).
+    """
+    checkin_date = (checkin_date or "").strip()
+    checkout_date = (checkout_date or "").strip()
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT r.id FROM reservations r
+        JOIN guests g ON g.id = r.guest_id
+        WHERE r.hostel_id = ? AND g.phone = ? AND r.source = 'whatsapp'
+          AND r.status = 'pending' AND r.checkin_date = ? AND r.checkout_date = ?
+        """,
+        (hostel_id, phone, checkin_date, checkout_date)
+    )
+    existing = cursor.fetchone()
+
+    if existing:
+        conn.close()
+        return {"reservation_id": existing["id"], "already_existed": True}
+
+    cursor.execute(
+        "SELECT price_per_night FROM room_categories WHERE hostel_id = ? AND name = ?",
+        (hostel_id, category_name)
+    )
+    category_row = cursor.fetchone()
+    conn.close()
+
+    amount = 0
+    if category_row and category_row["price_per_night"]:
+        try:
+            nights = (datetime.date.fromisoformat(checkout_date) - datetime.date.fromisoformat(checkin_date)).days
+            amount = round(category_row["price_per_night"] * max(nights, 0), 2)
+        except (ValueError, TypeError):
+            amount = 0
+
+    if bed_id:
+        still_free = any(b["id"] == int(bed_id) for b in find_available_beds(hostel_id, category_name, checkin_date, checkout_date))
+        if not still_free:
+            raise ValueError("Essa cama nao esta mais disponivel pras datas pedidas - escolha outra.")
+
+    reservation_id = create_reservation_record(
+        hostel_id,
+        guest_name=guest_name,
+        room_type=category_name,
+        checkin_date=checkin_date,
+        checkout_date=checkout_date,
+        source="whatsapp",
+        amount=amount,
+        status="pending",
+        phone=phone,
+    )
+
+    if bed_id:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE reservations SET bed_id = ? WHERE id = ?", (int(bed_id), reservation_id))
+        conn.commit()
+        conn.close()
+
+    return {"reservation_id": reservation_id, "already_existed": False, "amount": amount}
 
 
 def update_reservation_status_record(hostel_id, reservation_id, status):
@@ -3045,12 +3273,14 @@ def flag_extension_for_approval(hostel_id, phone, note):
 VALID_BED_KINDS = {"single", "bunk_top", "bunk_bottom"}
 
 
-def create_room_category(hostel_id, name, capacity=None):
+def create_room_category(hostel_id, name, capacity=None, price_per_night=None, description=None):
     """
     Modalidade de quarto (ex: "Standard Duplo", "Dormitorio Misto 6
     camas", "Suite Premium") - cada propriedade cria as suas proprias,
     nao existe lista fixa. Serve tanto pra hostel pequeno (poucas
     modalidades) quanto hotel/resort grande (dezenas delas).
+    price_per_night e o que a IA de atendimento usa pra cotar preco
+    real ao hospede - sem isso configurado, ela nao inventa um valor.
     """
     name = (name or "").strip()
     if not name:
@@ -3061,8 +3291,12 @@ def create_room_category(hostel_id, name, capacity=None):
 
     try:
         cursor.execute(
-            "INSERT INTO room_categories (hostel_id, name, capacity) VALUES (?, ?, ?)",
-            (hostel_id, name, int(capacity) if capacity else None)
+            "INSERT INTO room_categories (hostel_id, name, capacity, price_per_night, description) VALUES (?, ?, ?, ?, ?)",
+            (
+                hostel_id, name, int(capacity) if capacity else None,
+                float(price_per_night) if price_per_night else None,
+                (description or "").strip() or None,
+            )
         )
         category_id = cursor.lastrowid
         conn.commit()
@@ -3081,7 +3315,7 @@ def list_room_categories(hostel_id):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, name, capacity FROM room_categories WHERE hostel_id = ? ORDER BY name",
+        "SELECT id, name, capacity, price_per_night, description FROM room_categories WHERE hostel_id = ? ORDER BY name",
         (hostel_id,)
     )
     categories = [dict(row) for row in cursor.fetchall()]
@@ -3351,17 +3585,68 @@ def get_bed_map(hostel_id):
         for row in cursor.fetchall():
             guest_by_bed[row["bed_id"]] = row["guest_name"]
 
+    # camas livres com uma reserva futura ja atribuida (soft hold da
+    # reserva pelo WhatsApp ou pelo Ask StayFlow) aparecem como
+    # "reserved" (azul) no mapa, em vez de "free" (verde) puro - so
+    # visual, o status real da cama continua 'free' ate o check-in.
+    free_bed_ids = [b["id"] for b in beds if b["status"] == "free"]
+    reserved_bed_ids = set()
+    if free_bed_ids:
+        today = datetime.date.today().isoformat()
+        placeholders = ",".join("?" * len(free_bed_ids))
+        cursor.execute(
+            f"""
+            SELECT DISTINCT bed_id FROM reservations
+            WHERE bed_id IN ({placeholders}) AND status != 'cancelled'
+              AND checkout_date >= ?
+            """,
+            free_bed_ids + [today]
+        )
+        reserved_bed_ids = {row["bed_id"] for row in cursor.fetchall()}
+
     conn.close()
 
     beds_by_room = {}
     for bed in beds:
         bed["guest_name"] = guest_by_bed.get(bed["id"])
+        bed["display_status"] = "reserved" if bed["id"] in reserved_bed_ids else bed["status"]
         beds_by_room.setdefault(bed["room_id"], []).append(bed)
 
     for room in rooms:
         room["beds"] = beds_by_room.get(room["id"], [])
 
     return rooms
+
+
+def set_bed_maintenance(hostel_id, bed_id, under_maintenance):
+    """
+    Marca/desmarca uma cama como em manutencao - so permite entrar em
+    manutencao se ela estiver livre (nao tira hospede de cama ocupada);
+    pra sair da manutencao, sempre volta pra 'free'.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT status, label FROM beds WHERE id = ? AND hostel_id = ?",
+        (bed_id, hostel_id)
+    )
+    bed = cursor.fetchone()
+
+    if not bed:
+        conn.close()
+        raise ValueError("Cama nao encontrada.")
+
+    if under_maintenance and bed["status"] not in ("free", "maintenance"):
+        conn.close()
+        raise ValueError(f"A cama '{bed['label']}' precisa estar livre pra entrar em manutencao (status atual: {bed['status']}).")
+
+    new_status = "maintenance" if under_maintenance else "free"
+    cursor.execute("UPDATE beds SET status = ? WHERE id = ?", (new_status, bed_id))
+    conn.commit()
+    conn.close()
+
+    return {"bed_id": bed_id, "status": new_status}
 
 
 def get_cleaning_list(hostel_id):

@@ -35,6 +35,7 @@ from database import (
     checkout_reservation_bed,
     mark_bed_cleaned,
     return_items_from_laundry,
+    set_bed_maintenance,
     create_room_category,
     list_room_categories,
     create_room,
@@ -500,6 +501,25 @@ TOOLS_CATALOG = [
         }
     },
     {
+        "permission": "operations",
+        "function": lambda hostel_id, bed_id, under_maintenance=True: set_bed_maintenance(hostel_id, int(bed_id), bool(under_maintenance)),
+        "spec": {
+            "type": "function",
+            "function": {
+                "name": "set_bed_maintenance",
+                "description": "Coloca uma cama em manutenção (precisa estar livre) ou tira ela da manutenção, devolvendo pra livre.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "bed_id": {"type": "integer"},
+                        "under_maintenance": {"type": "boolean", "description": "true pra colocar em manutenção, false pra tirar"}
+                    },
+                    "required": ["bed_id"]
+                }
+            }
+        }
+    },
+    {
         "permission": "inventory",
         "function": lambda hostel_id, item_name, quantity: return_items_from_laundry(hostel_id, item_name, int(quantity)),
         "spec": {
@@ -532,7 +552,7 @@ TOOLS_CATALOG = [
     },
     {
         "permission": "operations",
-        "function": lambda hostel_id, name, capacity=None: create_room_category(hostel_id, name, capacity),
+        "function": lambda hostel_id, name, capacity=None, price_per_night=None, description=None: create_room_category(hostel_id, name, capacity, price_per_night, description),
         "spec": {
             "type": "function",
             "function": {
@@ -542,7 +562,9 @@ TOOLS_CATALOG = [
                     "type": "object",
                     "properties": {
                         "name": {"type": "string"},
-                        "capacity": {"type": "integer", "description": "Quantas pessoas/camas cabem nessa modalidade, opcional"}
+                        "capacity": {"type": "integer", "description": "Quantas pessoas/camas cabem nessa modalidade, opcional"},
+                        "price_per_night": {"type": "number", "description": "Preço da diária, usado pela IA de atendimento pra cotar preço real ao hóspede"},
+                        "description": {"type": "string", "description": "Ex: 'Inclui café da manhã'"}
                     },
                     "required": ["name"]
                 }

@@ -4,7 +4,14 @@ import os
 import json
 import datetime
 
-from database import attempt_extend_reservation, flag_extension_for_approval
+from database import (
+    attempt_extend_reservation,
+    flag_extension_for_approval,
+    create_reservation_from_chat,
+    list_room_categories,
+    find_available_beds,
+    get_offerings_for_chat,
+)
 
 load_dotenv()
 
@@ -33,13 +40,47 @@ not through a rigid interrogation.
 
 Information you're gathering, in a natural order (not a strict script):
 - preferred language
-- room type
+- room category (see PRICING below)
 - number of guests
 - arrival and departure dates
 - guest name
 - contact number (see below — usually already known)
 - email
 - whether they'd like towels, extra blankets, or tour recommendations
+
+PRICING AND ROOM OPTIONS — IMPORTANT:
+Never invent a price or say a room type is available without checking first.
+As soon as the guest asks about room types, prices, or what's included, call
+get_room_options to see the real categories this hostel actually has
+configured (name, price per night, capacity, description/what's included).
+Quote the real price_per_night and multiply by the number of nights to give
+the total for their stay — do the math yourself from the real numbers, never
+estimate. If a category has no price configured yet, say pricing needs to be
+confirmed by the team instead of guessing a number.
+If the guest asks about extras (towel, blanket, etc.), call get_addons and
+quote the real price from there — never invent an extra's price either.
+
+CHOOSING A SPECIFIC BED — IMPORTANT:
+Once the guest has picked a room category and you know their dates, call
+get_available_beds with that category name and the dates to see which
+specific beds are actually free for that period. If it's a shared/dorm-style
+category with bunk beds, mention the options naturally (e.g. "tenho uma cama
+de cima e uma de baixo livres nessa data, tem preferência?") — like choosing
+a window or aisle seat on a bus site. Once the guest states a preference
+(top/bottom, or a specific bed), match it to one of the beds you just fetched
+and use that bed's id when creating the reservation. If nothing is available
+for those dates, say so honestly and offer to check other dates instead of
+inventing availability.
+
+CREATING THE RESERVATION — IMPORTANT:
+Once you have the guest's name, the room category, and both dates, call
+create_reservation (include the bed_id if one was chosen/resolved above).
+This creates the reservation as 'pending' automatically — you don't need
+anyone's approval to call it, but always tell the guest their request was
+received and the team will confirm shortly, never that it's 100% guaranteed
+yet. Call it only once per stay request — if the guest already confirmed
+these same dates and category earlier in the conversation, don't call it
+again, just reference the existing reservation.
 
 CONTACT NUMBER — IMPORTANT:
 {phone_instruction}
@@ -71,7 +112,7 @@ you've already collected, and do NOT ask the language question again once
 it's already been answered — check the conversation so far before asking
 anything.
 
-Never invent prices or availability. Reception confirms reservations.
+Never invent prices or availability — always check with the tools above.
 """
 
 SAVE_GUEST_NAME_TOOL = {
@@ -141,8 +182,74 @@ RESERVATION_TOOLS = [
                 "required": ["note"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_room_options",
+            "description": (
+                "Returns the hostel's real room categories, with price per "
+                "night, capacity and description (e.g. what's included). "
+                "Always call this before quoting a price or describing room "
+                "options to a guest."
+            ),
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_available_beds",
+            "description": (
+                "Returns which specific beds are actually free for a room "
+                "category in a given date range, so the guest can pick one "
+                "(e.g. top or bottom bunk)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category_name": {"type": "string"},
+                    "checkin_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "checkout_date": {"type": "string", "description": "YYYY-MM-DD"}
+                },
+                "required": ["category_name", "checkin_date", "checkout_date"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_addons",
+            "description": "Returns real extras (towel, blanket, tours, etc.) with their actual prices.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_reservation",
+            "description": (
+                "Creates the guest's reservation as 'pending' once you have "
+                "their name, room category, and both dates. Include bed_id if "
+                "a specific bed was chosen via get_available_beds. Call this "
+                "only once per stay request."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "guest_name": {"type": "string"},
+                    "category_name": {"type": "string"},
+                    "checkin_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "checkout_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "bed_id": {"type": "integer", "description": "Optional - specific bed chosen from get_available_beds"}
+                },
+                "required": ["guest_name", "category_name", "checkin_date", "checkout_date"]
+            }
+        }
     }
 ]
+
+MAX_TOOL_ROUNDS = 4
 
 
 def ask_ai(history, message, guest_phone=None, hostel_id=None):
@@ -172,26 +279,29 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None):
         + [{"role": "user", "content": message}]
     )
 
-    # extend_reservation/flag_extension_for_approval precisam de
-    # hostel_id+telefone reais pra saber de qual hospede/reserva se
-    # trata - sem isso (ex: endpoint de teste manual sem hostel_id),
-    # essas ferramentas nem aparecem pro modelo.
+    # As ferramentas de reserva/preco/cama precisam de hostel_id+telefone
+    # reais pra saber de qual hospede/hostel se trata - sem isso (ex:
+    # endpoint de teste manual sem hostel_id), elas nem aparecem pro modelo.
     tools = [SAVE_GUEST_NAME_TOOL]
     if hostel_id and guest_phone:
         tools = tools + RESERVATION_TOOLS
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        temperature=0.6,
-        messages=messages,
-        tools=tools,
-        tool_choice="auto"
-    )
-
-    response_message = response.choices[0].message
     extracted_name = None
+    final_text = None
 
-    if response_message.tool_calls:
+    for _ in range(MAX_TOOL_ROUNDS):
+        kwargs = dict(model="gpt-4.1-mini", temperature=0.6, messages=messages)
+        if tools:
+            kwargs["tools"] = tools
+            kwargs["tool_choice"] = "auto"
+
+        response = client.chat.completions.create(**kwargs)
+        response_message = response.choices[0].message
+
+        if not response_message.tool_calls:
+            final_text = response_message.content
+            break
+
         messages.append(response_message)
 
         for tool_call in response_message.tool_calls:
@@ -217,6 +327,38 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None):
                     tool_content = json.dumps(result, ensure_ascii=False)
                 except ValueError as error:
                     tool_content = json.dumps({"error": str(error)}, ensure_ascii=False)
+            elif name == "get_room_options":
+                try:
+                    result = list_room_categories(hostel_id)
+                    tool_content = json.dumps(result, ensure_ascii=False)
+                except Exception as error:
+                    tool_content = json.dumps({"error": "Erro ao buscar modalidades."}, ensure_ascii=False)
+            elif name == "get_available_beds":
+                try:
+                    result = find_available_beds(
+                        hostel_id, args.get("category_name"),
+                        args.get("checkin_date"), args.get("checkout_date")
+                    )
+                    tool_content = json.dumps(result, ensure_ascii=False)
+                except Exception as error:
+                    tool_content = json.dumps({"error": "Erro ao buscar camas disponíveis."}, ensure_ascii=False)
+            elif name == "get_addons":
+                try:
+                    result = get_offerings_for_chat(hostel_id)
+                    tool_content = json.dumps(result, ensure_ascii=False)
+                except Exception as error:
+                    tool_content = json.dumps({"error": "Erro ao buscar extras."}, ensure_ascii=False)
+            elif name == "create_reservation":
+                try:
+                    result = create_reservation_from_chat(
+                        hostel_id, guest_phone,
+                        args.get("guest_name"), args.get("category_name"),
+                        args.get("checkin_date"), args.get("checkout_date"),
+                        bed_id=args.get("bed_id")
+                    )
+                    tool_content = json.dumps(result, ensure_ascii=False)
+                except ValueError as error:
+                    tool_content = json.dumps({"error": str(error)}, ensure_ascii=False)
 
             messages.append({
                 "role": "tool",
@@ -224,13 +366,7 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None):
                 "content": tool_content
             })
 
-        response = client.chat.completions.create(
-            model="gpt-4.1-mini",
-            temperature=0.6,
-            messages=messages
-        )
-        final_text = response.choices[0].message.content
-    else:
-        final_text = response_message.content
+    if final_text is None:
+        final_text = "Deixa eu confirmar isso com a equipe e já te retorno, tá bom?"
 
     return final_text, extracted_name

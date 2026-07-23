@@ -1,7 +1,7 @@
 from datetime import date
 
 from flask import Blueprint, jsonify
-from database import get_connection
+from database import get_connection, get_cleaning_list
 from utils.tenant import require_permission
 
 operations_bp = Blueprint("operations", __name__)
@@ -57,9 +57,18 @@ def operations(hostel_id):
 
     conn.close()
 
+    # Tarefas de limpeza vem direto do Mapa de Quartos - mesma fonte de
+    # verdade (camas com status 'needs_cleaning'), sem tabela duplicada.
+    tasks = [
+        {
+            "task": f"Limpar {item['label']} ({item['room_name']})",
+            "assignee": "Equipe de limpeza",
+            "status": "pending"
+        }
+        for item in get_cleaning_list(hostel_id)
+    ]
+
     return jsonify({
         "alerts": alerts,
-        # Tarefas operacionais de verdade (limpeza, manutenção) dependem do
-        # mapa de camas e do fluxo da equipe — ainda não construído.
-        "tasks": []
+        "tasks": tasks
     })
