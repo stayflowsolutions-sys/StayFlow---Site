@@ -1119,3 +1119,312 @@ já mandado.
 - [ ] Padronizar formato de resposta da rota `/settings` (hoje devolve
       `{"status": "ok"}`, diferente do padrão `{"success": true, ...}`
       usado em todas as outras rotas construídas nas últimas sessões)
+- [ ] `_backfill_security_billing_for_full_access_roles()` roda a cada
+      `create_database()` (todo start do app), não só uma vez — hoje é
+      inofensivo porque não toca overrides individuais por pessoa, só
+      a permissão-base da role. Se no futuro existir edição direta da
+      permissão-base de uma role que remova propositalmente `security`/
+      `billing` de uma role que ainda tenha as 12 chaves antigas, essa
+      função reverteria a remoção a cada restart. Precisa ganhar uma
+      guarda de "já rodou uma vez" (registro em alguma tabela de
+      controle de migração), igual as outras migrações de schema —
+      achado na Sessão 7, não implementado ainda.
+
+## SESSÃO 7 - 22/07/2026
+
+### Contexto no início da sessão
+
+Continuação direta da Sessão 6. Objetivo único, declarado no início:
+resolver de ponta a ponta as 5 categorias vazias de Configurações
+(Empresa, Comunicação, Segurança, Billing, Developer) identificadas na
+sessão anterior, mais qualquer limpeza de base necessária pra isso.
+
+### Decisão de arquitetura (Sessão 7) — interruptor mestre da IA vs. horário de silêncio
+
+Durante a construção de Comunicação (PASSO 6), a primeira versão do
+horário de silêncio (`quiet_hours_start`/`quiet_hours_end`) chegou a
+suprimir o **envio automático real ao hóspede** via WhatsApp
+(`send_whatsapp_message` em `routes/chat.py`), usando o timezone já
+validado. Essa versão foi revertida — `is_within_quiet_hours()` continua
+existindo em `database.py`, testada e funcional, mas **não é chamada em
+lugar nenhum** por enquanto.
+
+No lugar dela, foi criado o interruptor mestre real: coluna
+`ai_enabled` em `settings` (aditiva, `INTEGER DEFAULT 1`), função
+`is_ai_enabled(hostel_id)`, e checkbox "IA responde automaticamente aos
+hóspedes" no card IA StayFlow (visualmente destacado, diferente do
+checkbox "Resposta automática para dúvidas simples", que continua
+desabilitado — este último é sobre assumir UMA conversa específica no
+futuro, não sobre ligar/desligar a IA inteira). Quando desligado, o
+hóspede continua tendo a mensagem salva e a oportunidade detectada
+(`analyze_message` não depende de resposta da IA), mas nenhuma resposta
+é gerada nem enviada — atendimento fica 100% manual a partir daí.
+
+**Regra de arquitetura registrada para o futuro:** `ai_enabled` é o
+único mecanismo que pode gatear resposta *direta* a um hóspede.
+`quiet_hours_start`/`quiet_hours_end` ficam reservados para mensagem
+*proativa*/notificação de equipe (quando o Ask StayFlow com function
+calling existir) — nunca devem voltar a gatear resposta direta a
+hóspede. O campo continua no contrato de `/settings`, mas a UI o
+renderiza desabilitado com aviso, pra não sugerir que já faz algo hoje.
+
+### Mudança estrutural de arquitetura (Sessão 7) — sessão rastreada no servidor
+
+Até este ponto da Sessão 7, a autenticação de todo o sistema era a
+sessão **padrão do Flask**: um cookie assinado (`itsdangerous`,
+`app.secret_key`) carregando `user_id`/`hostel_id` inteiramente no
+navegador. O servidor nunca guardava nenhum registro de quem estava
+logado — cada requisição só validava a assinatura do cookie e recalculava
+tudo fresco do banco. Isso significava que **não havia nenhuma forma de
+ver quantos dispositivos estavam logados, nem de derrubar um específico**
+— trocar a senha, por exemplo, não conseguia derrubar uma sessão de
+cookie já ativa em outro aparelho.
+
+**Decisão explícita do usuário:** fazer essa migração agora, e não
+adiar como "em breve" — ainda não há hóspede real nem o Hostel Lagares
+cadastrado, então o efeito colateral inevitável (todo mundo precisa
+logar de novo depois do deploy, já que o formato do cookie muda por
+completo) custa zero neste momento.
+
+**O que mudou:**
+- Nova tabela `sessions` (`id` — token opaco aleatório de 32 bytes via
+  `secrets.token_urlsafe`, não sequencial, impossível de adivinhar —
+  `user_id`, `hostel_id` opcional, `created_at`, `last_seen_at`,
+  `revoked`, `user_agent` cru).
+- O cookie do Flask passou a guardar **só** `session["session_id"]`
+  (o token opaco) — nunca mais `user_id`/`hostel_id` direto. Toda
+  requisição autenticada busca a linha correspondente no banco
+  (`get_valid_session`), confirma `revoked=0`, e só então libera acesso
+  — com cache por requisição em `flask.g` pra não consultar o banco mais
+  de uma vez por requisição.
+- **Login com múltiplos hostels vira uma sessão real também**, só com
+  `hostel_id = NULL` (estado "pending") até a escolha em
+  `/select-hostel` — não existe mais um mecanismo paralelo
+  (`session["pending_user_id"]`) por fora da tabela. Uma sessão pending
+  fica automaticamente bloqueada de qualquer rota protegida por
+  `@require_auth`/`@require_permission`, porque `hostel_id` vem `None`.
+- `/select-hostel` **atualiza a mesma linha** (mesmo token, mesmo
+  "dispositivo") — nunca cria uma sessão nova, seja completando a
+  escolha inicial ou trocando de hostel estando já logado.
+- Troca de senha (`/security/change-password`, nova) agora **revoga de
+  verdade** todas as outras sessões do usuário, exceto a que está
+  fazendo a troca — e a mensagem de sucesso passou a poder dizer isso
+  com honestidade, porque agora é real.
+- Tela "Sessões ativas" em Segurança lista as sessões do próprio
+  usuário (com a atual identificada) e permite revogar uma por uma —
+  revogar bloqueia a *próxima* requisição daquela sessão específica,
+  testado explicitamente.
+- Log básico de login (`login_attempts`): toda tentativa em `/login`
+  fica registrada (sucesso/falha, e-mail tentado), visível em Segurança.
+
+**Investigação de segurança feita antes de implementar** (para não
+deixar nenhuma rota insegura pela migração): confirmado que **só**
+`routes/auth.py` e `utils/tenant.py` tocam o objeto `session` do Flask
+em todo o codebase — nenhuma rota lê `session.get(...)` por fora dos
+decorators `@require_auth`/`@require_permission`. O webhook do WhatsApp
+e o endpoint de teste `/message` não usam sessão de forma alguma
+(confirmado). Nenhuma rota órfã encontrada.
+
+**Testado com rigor** (autenticação não admite meio-termo): login cria
+linha em `sessions`; dois "dispositivos" (test clients distintos)
+geram duas linhas distintas e acessam normalmente; revogar uma sessão
+específica bloqueia a *próxima* requisição dela (401) sem afetar a
+outra; trocar senha revoga todas as sessões exceto a atual (confirmado
+que a antiga falha e a atual continua válida), muda o hash de verdade
+e invalida a senha antiga para novo login; fluxo completo de login
+multi-hostel (sessão criada com `hostel_id NULL` → rota protegida
+bloqueada em pending, incluindo `/me` → `/select-hostel` preenche o
+`hostel_id` na mesma linha → rota protegida passa a funcionar) validado
+ponta a ponta; log de login confirmado com uma tentativa de sucesso e
+uma de falha aparecendo corretamente.
+
+**Correção pós-teste:** a primeira versão restringia a seção Segurança
+inteira à permissão `security` (via `applyPermissionVisibility`) — bug
+real, pego antes de aprovar o passo: trocar a própria senha, ver as
+próprias sessões ativas e o próprio histórico de login são gestão da
+**própria conta**, não administração do hostel — restringir isso
+bloquearia qualquer Staff sem essa permissão de trocar a própria senha.
+Corrigido: `change_password`/`list_sessions`/`revoke_session_route`/
+`list_login_attempts` usam `@require_auth` (só exige sessão válida, sem
+checar permissão específica) — continuam seguras porque cada uma é
+escopada por `get_current_user_id()` internamente (cada pessoa só
+vê/mexe na própria conta, nunca na de outra). O card no frontend
+também deixou de ter `data-required-permission="security"` — fica
+visível pra qualquer usuário autenticado.
+
+A permissão `security` continua existindo em `ALL_PERMISSIONS`, sem uso
+por enquanto — **reservada para uma futura tela de política de
+segurança do hostel** (ex: forçar 2FA pra toda a equipe, auditoria de
+login de todos os funcionários, não só o próprio) — isso sim seria
+administração do hostel, diferente de gerenciar a própria conta. Não é
+o mesmo caso de `billing`, que continua restrita a admin/dono de
+verdade porque é configuração do hostel (plano, fatura), não conta
+pessoal.
+
+Testado explicitamente: usuário Staff (sem a permissão `security`)
+logou, trocou a própria senha com sucesso, viu as próprias sessões e o
+próprio histórico de login — tudo sem precisar de nenhuma permissão
+especial. Teste de isolamento entre contas: usuário A tentou revogar um
+`session_id` pertencente ao usuário B — `revoke_session_route` rejeitou
+corretamente (404, nada foi apagado). Confirmado também que
+`last_seen_at` é atualizado a cada requisição autenticada (não só na
+criação) — duas requisições separadas, dois timestamps diferentes.
+
+### PASSO 8 — Billing e PASSO 9 — Developer
+
+Ambos honestamente desabilitados, sem dado falso nem formulário
+funcional:
+
+- **Billing**: card "Modelo de cobrança em definição" (sem processador
+  de pagamento integrado, sem plano ativo). Tabela nova `billing`
+  (hostel_id, plan_name, status, created_at) — só estrutura, nenhuma
+  rota lê nem escreve nela ainda. Restrita à permissão `billing` (via
+  `applyPermissionVisibility`) — essa sim continua config do hostel de
+  verdade (plano/fatura), diferente de Segurança (conta pessoal).
+- **Developer**: card "Integrações — em breve", com lista curta do que
+  está planejado (OTAs — Booking.com, Airbnb, Hostelworld — e channel
+  managers como Beds24, reaproveitando a pesquisa já feita na Sessão 4;
+  chaves de API próprias). Tabela nova `api_keys` (hostel_id, key_name,
+  created_at) — só estrutura, sem geração real de chave. Sem gate de
+  permissão por enquanto — nada funcional existe ainda pra proteger;
+  decisão a revisitar quando a funcionalidade real for construída.
+
+### Smoke test de regressão (antes do PASSO 8)
+
+A reescrita completa de autenticação (cookie assinado → sessão
+rastreada no servidor) toca o mecanismo usado por toda rota protegida
+do sistema, não só as de Segurança. Antes de prosseguir, testado login
+normal seguido de 8 rotas protegidas de módulos **não tocados** nesta
+sessão (`/reservations`, `/team`, `/finance`, `/inventory`, `/revenue`,
+`/guests`, `/opportunities`, `/reports`) — todas 200, sem nenhum erro
+relacionado à sessão.
+
+### Resumo da Sessão 7
+
+**As 5 categorias de Configurações, todas resolvidas** (nenhuma ficou
+pela metade):
+- **Empresa**: razão social, CUIT/RUT, endereço, fuso horário (lista
+  fechada IANA, validada no backend), moeda (lista fechada ISO 4217),
+  check-in/check-out (colunas reaproveitadas, não duplicadas), logo
+  (URL de texto, sem upload de arquivo). Testado ponta a ponta,
+  escopado por hostel_id.
+- **Comunicação**: preferência de canal de alerta (ligada ao sino já
+  existente), biblioteca de respostas rápidas (tabela + rotas CRUD +
+  integração real no picker do chat, preenchendo o campo de texto sem
+  nunca chamar o envio diretamente), interruptor mestre `ai_enabled`
+  (ver decisão de arquitetura acima). Horário de silêncio construído,
+  testado e depois **revertido** de gatear resposta direta — fica
+  reservado pra mensagem proativa futura, campo no contrato mas UI
+  desabilitada com aviso.
+- **Segurança**: trocar senha, ver/revogar sessões ativas, log de
+  login — todos como gestão da própria conta (`@require_auth`, sem
+  exigir permissão especial, corrigido depois de um erro de escopo
+  pego antes de aprovar o passo). 2FA desabilitado ("em breve"). A
+  mudança que sustenta tudo isso — sessão rastreada no servidor — é a
+  maior mudança estrutural da sessão (ver seção própria acima).
+- **Billing**: honestamente desabilitado, restrito à permissão
+  `billing` (config do hostel de verdade).
+- **Developer**: honestamente desabilitado, sem gate de permissão
+  (nada funcional pra proteger ainda).
+
+**Mudança estrutural**: autenticação migrou de cookie assinado
+client-side (Flask padrão, sem registro nenhum no servidor) pra sessão
+rastreada em tabela própria (`sessions`), com token opaco de 32 bytes,
+revogação individual e por troca de senha. Decisão explícita do usuário
+de fazer isso agora (não adiar) porque ainda não há hóspede real nem o
+Hostel Lagares cadastrado — o relogin geral forçado pelo deploy custa
+zero neste momento. Investigação prévia confirmou zero rotas órfãs;
+smoke test de regressão pós-implementação confirmou zero rotas
+quebradas fora do que já foi testado diretamente.
+
+**Migração de schema** (PASSO 3): removidas as 6 colunas mortas de
+`settings` (`checkin_time`, `checkout_time`, `breakfast_time`,
+`languages`, `services`, `tours` — confirmado sem nenhum uso real antes
+de remover), testado preservando 100% dos dados existentes numa cópia
+isolada (célula por célula, antes vs. depois). **Isso resolve** o item
+pendente da Sessão 6 sobre colunas mortas.
+
+**Contrato de `/settings` padronizado** (PASSO 2/5): resposta sempre
+`{"success": true, ...}` (troca do `{"status": "ok"}` antigo), upsert
+parcial de verdade (testado explicitamente: salvar só Comunicação não
+apaga Empresa, e vice-versa). **Isso resolve** o item pendente da
+Sessão 6 sobre o formato de resposta inconsistente.
+
+**Duas chaves de permissão novas**: `security` e `billing` adicionadas
+a `ALL_PERMISSIONS`, com backfill automático pras roles que já eram
+"acesso total" no esquema antigo (testado). `security` acabou sem uso
+direto (trocar senha/sessões/login são conta pessoal, não hostel) —
+fica reservada pra uma futura tela de política de segurança do hostel
+(forçar 2FA pra equipe, auditoria de login de todos os funcionários).
+
+**Achado de ambiente**: Windows não vem com dados IANA por padrão;
+`zoneinfo` (usado por `is_within_quiet_hours`, hoje não chamada em
+lugar nenhum) precisou do pacote `tzdata`, adicionado a
+`requirements.txt` (preservando a codificação UTF-16LE incomum do
+arquivo original). Verificar isso via `pip install -r requirements.txt`
+real acabou reinstalando pacotes locais (`bcrypt` voltou pra 4.2.1, a
+versão já fixada no arquivo) — mais invasivo do que pretendido pra uma
+simples verificação, mas resultado inofensivo (mesma versão de
+produção).
+
+**`services/memory_service.py` finalmente commitado**: a versão local
+(`MEMORY_FILE` via `STAYFLOW_DATA_DIR`, `HISTORY_WINDOW=60`) ficou sem
+commit desde a Sessão 3, nunca testada ponta a ponta. Investigado antes
+de decidir: só 1 commit já tinha tocado o arquivo (`21a0ca6`, Sessão 2,
+05/07), a versão em produção era a antiga (caminho relativo fixo,
+janela de 12 mensagens) — confirmado que `21a0ca6` é ancestral do
+último commit publicado (`daed695`). Testado nos 5 pontos antes de
+aprovar: `conversations.json` criado dentro de `STAYFLOW_DATA_DIR` (não
+mais na raiz do projeto — achado colateral: um `conversations.json`
+não rastreado, de 11/07, com conversa real desde 25/06, sentado na
+pasta de código, prova viva do bug); histórico correto até 60 mensagens
+(testado com 40 e com 80, nunca truncou em 12); sobrevive a um "restart"
+simulado (`create_database()` chamado de novo, mesmo diretório);
+`.gitignore` do HostelBot já protegia `conversations.json`/
+`conversations.json.backup` (nenhum ajuste necessário). Entra no
+commit de fechamento desta sessão, tal como está localmente.
+
+### O que ficou pendente pra próxima sessão
+
+Itens da Sessão 6 resolvidos nesta sessão (não repetidos aqui):
+colunas mortas de `settings`, formato de resposta de `/settings`.
+
+- [ ] Publicar em produção o trabalho da Sessão 6 E da Sessão 7 —
+      **nada foi commitado nem deployado ainda**, aguardando aprovação
+      final e backup manual do disco do Render antes do commit
+- [ ] `_backfill_security_billing_for_full_access_roles()` roda a cada
+      `create_database()`, não só uma vez — precisa de guarda "já
+      rodou uma vez" se um dia existir edição direta de permissão-base
+      de role que remova `security`/`billing` propositalmente (achado
+      na Sessão 7, não implementado)
+- [ ] Corrigir arquitetura de tradução do Dashboard antes de adicionar
+      francês/alemão/japonês
+- [ ] Transformar "Ask StayFlow" num agente real com function calling
+      — pré-requisito do checkbox "Resposta automática" (assumir Uma
+      conversa) E do horário de silêncio de verdade (mensagem proativa)
+- [ ] Cadastrar o Hostel Lagares real (login + WhatsApp próprios)
+- [ ] Preencher `hostels.phone` (organização, não bloqueia nada)
+- [ ] Corrigir dropdown de idioma cortado no mobile
+- [ ] Visual do Login — fundo com mapa mundi (padrão do `Register.html`)
+- [ ] Botão "Teste grátis" ainda linka pro WhatsApp
+- [ ] Decidir arquitetura definitiva de deploy (eliminar o xcopy manual)
+- [ ] Integração por e-mail com OTAs — só depois do operacional 100%
+      fechado
+- [ ] Faxina de pastas locais (`Archive_old/`, `Audit_old/`,
+      `backups_old/`)
+- [ ] Decidir destino de `templates/components/`
+- [ ] `migrate_conversations_json.py` (raiz do HostelBot) ainda usa o
+      caminho relativo antigo (`MEMORY_FILE = "conversations.json"`,
+      mesmo bug que existia em `memory_service.py`) — script solto de
+      execução manual, não importado por `app.py` nem por nenhuma rota,
+      não é bug ativo. Corrigir quando for usado de novo, não agora —
+      achado na Sessão 7 durante a investigação do memory_service.py.
+- [ ] Construir de verdade quando fizer sentido: tela de política de
+      segurança do hostel (usa a permissão `security`, já reservada
+      pra isso — forçar 2FA pra equipe, auditoria de login de todos os
+      funcionários)
+- [ ] 2FA de verdade (autenticação em duas etapas) — desabilitado como
+      "em breve", integração com SMS/authenticator é escopo maior,
+      sem meio-termo possível
+- [ ] Billing/Developer funcionais — quando o modelo comercial e as
+      integrações de verdade existirem, respectivamente
