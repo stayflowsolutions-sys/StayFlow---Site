@@ -1734,3 +1734,42 @@ por cima dele, e depois de acumular mensagens a caixa de digitação
 (novo) e `delete_bed` (já existia, agora bloqueia exclusão de cama
 ocupada — pede check-out antes) expostos na UI via botões no painel
 de ação de qualquer cama, em qualquer status.
+
+### Quinta rodada da Sessão 8 (mesma data) — captura de documento de identidade
+
+Feature nova pedida pelo usuário: hostels em geral precisam registrar
+documento de identidade do hóspede (nome completo, data de nascimento,
+foto do passaporte/RG). Nada disso existia — o webhook do WhatsApp só
+processava mensagens de texto, imagem chegava e era silenciosamente
+ignorada.
+
+**Armazenamento**: decisão consciente de guardar os arquivos no mesmo
+disco persistente onde já fica o banco (`STAYFLOW_DATA_DIR/documents/
+{hostel_id}/{guest_id}/...`), não em nuvem — não há credenciais de um
+serviço de storage externo disponíveis nesta sessão. Cada envio vira
+uma linha nova em `guest_documents` (nunca sobrescreve), permitindo
+reenvio se a foto sair ruim.
+
+**Download de mídia da Meta**: é sempre em 2 passos — primeiro busca a
+URL temporária de download pelo media_id, depois baixa o arquivo de
+verdade dessa URL, os dois autenticados com o token do hostel
+(`download_whatsapp_media`, novo em `whatsapp_service.py`). O webhook
+detecta `type == "image"` e processa fora do fluxo normal de texto —
+manda confirmação direta ("Recebi seu documento, obrigado!") sem
+passar pela IA de conversa, já que ela não analisa o conteúdo da
+imagem mesmo.
+
+**IA de atendimento**: pede nome completo, data de nascimento (nova
+tool `save_guest_date_of_birth`) e foto do documento logo depois de
+criar a reserva.
+
+**Achado no caminho, corrigido**: se `get_available_beds` devolve
+lista vazia, isso pode significar "lotado" OU "essa modalidade ainda
+não tem camas cadastradas individualmente" (comum em quarto privado)
+— a IA estava travando a reserva inteira nesse segundo caso. Prompt
+ajustado: lista vazia não bloqueia mais a reserva, ela é criada sem
+`bed_id` (atribuição de cama fica pro check-in, como já era o design).
+Testado nos dois casos.
+
+Documentos capturados aparecem no perfil do hóspede na tela de Chats,
+com link pra abrir o arquivo (`GET /guests/documents/<id>/file`).

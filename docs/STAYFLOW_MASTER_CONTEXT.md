@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.9.1
+\*\*Versão:\*\* 1.10.0
 
 
 
@@ -61,6 +61,8 @@
 | 1.9.0 | 23/07/2026 | Oficial | Correção de série de bugs reais encontrados pelo usuário testando em produção: renderização do beliche (era 2 quadrados, virou 1 cama dividida ao meio, formato retangular), tecla Enter do chat ainda chamando o envio simulado antigo, sino de alertas nunca zerando, IA de reserva confundindo nome de modalidade com nome de quarto (causava falso "sem disponibilidade"), IA atrasando a criação da reserva esperando dados extras, IA reescalando o preço ao falar com o hóspede (a reserva em si sempre foi gravada com valor correto). Preparação de servidor de produção: `Procfile` com `gunicorn` (já estava nas dependências, nunca ativado) — pendente o usuário atualizar o Start Command no painel do Render. |
 
 | 1.9.1 | 23/07/2026 | Oficial | Confirmado que o Render já usava `gunicorn app:app` (sem workers/threads configurados, mesmo efeito prático do problema de travamento); Start Command atualizado pelo usuário. Corrigido bug real de CSS achado testando ao vivo: painel do Ask StayFlow sendo sobreposto pelo cabeçalho (z-index) e caixa de digitação "sumindo" conforme a conversa crescia (armadilha de flexbox sem `min-height:0`/`overflow-y`). Mapa de Quartos ganhou edição de nome e exclusão de cama (bloqueada se a cama estiver ocupada). |
+
+| 1.10.0 | 23/07/2026 | Oficial | Captura de documento de identidade via WhatsApp: webhook passou a processar mensagens de imagem (antes só texto), baixando o arquivo real da API da Meta e guardando no disco persistente, associado ao hóspede. IA de atendimento passa a pedir nome completo, data de nascimento e foto do documento após criar a reserva. Documentos recebidos aparecem no perfil do hóspede na tela de Chats. Corrigido também: lista vazia de camas disponíveis não bloqueia mais a reserva quando a modalidade simplesmente não tem camas cadastradas individualmente (comum em quarto privado) — a reserva é criada sem cama especifica, atribuída depois no check-in. |
 
 
 
