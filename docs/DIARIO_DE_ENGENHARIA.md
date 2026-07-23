@@ -1924,3 +1924,59 @@ isso direito exigiria o backend devolver códigos de erro em vez de
 texto pronto — projeto maior, separado, tocando o outro repositório.
 Efeito prático: alguém usando o painel em alemão vê a interface toda
 traduzida, mas um erro vindo do servidor ainda aparece em português.
+
+### Nona rodada da Sessão 8 (mesma data) — bugs reais na IA de atendimento
+### via WhatsApp (idioma, contagem de diárias, coleta de dados)
+
+Usuário testou a IA de atendimento (WhatsApp) com dois números
+diferentes e relatou três problemas reais:
+1. Num teste em inglês, a IA trocou de idioma pra português sozinha no
+   meio da conversa.
+2. Na mesma conversa, pediram reserva de sexta a domingo e a IA disse 5
+   diárias em vez do correto — a IA estava calculando datas de cabeça
+   (subtração de calendário é exatamente o tipo de conta que um LLM
+   erra), sem nenhuma ferramenta garantindo o número certo.
+3. Num segundo teste (em espanhol, sem o problema de idioma), a
+   conversa não completou a captura de dados depois que o hóspede
+   confirmou a reserva — o usuário quer nome completo, telefone, email,
+   documento e nacionalidade coletados em ordem, de forma sistemática,
+   a partir do momento em que a reserva é confirmada.
+
+**Idioma**: a tabela `guests` já tinha uma coluna `language`, mas
+nenhum lugar do código lia ou escrevia nela — o idioma "estabelecido"
+não sobrevivia entre mensagens, a IA reconstruía a impressão de idioma
+relendo o histórico a cada vez, o que é frágil. Corrigido com o mesmo
+padrão já usado pra nome/data de nascimento: nova ferramenta
+`save_guest_language`, chamada assim que o idioma é detectado (ou
+trocado a pedido explícito do hóspede) e persistida via
+`update_guest_language`; o idioma já salvo é lido ANTES de cada chamada
+à IA (`get_guest_language`) e reforçado explicitamente no prompt
+("o idioma já estabelecido é X, nunca troque sozinho — uma palavra
+estrangeira ou emoji ocasional não é pedido de troca").
+
+**Contagem de diárias**: nova ferramenta `calculate_nights`
+(check-in/check-out → número exato de noites, calculado em Python, não
+pelo modelo) — o prompt agora proíbe explicitamente contar dias de
+cabeça e exige chamar essa ferramenta antes de cotar preço ou noites ao
+hóspede. Além disso, `create_reservation_from_chat` (que já calculava
+`nights` internamente pra saber o valor da reserva) passou a devolver
+esse número no resultado da própria reserva, pra IA usar o valor real
+salvo ao confirmar com o hóspede em vez de recalcular.
+
+**Captura de dados**: a seção do prompt sobre registro pós-reserva foi
+reescrita como checklist explícita e ordenada (nome legal completo,
+telefone, email, nacionalidade, data de nascimento, foto do
+documento) — o momento-gatilho é a criação da reserva, e a IA é
+instruída a não considerar a conversa encerrada até ter passado pelos
+seis itens. Nacionalidade é campo novo: coluna `guests.nationality`,
+função `save_guest_nationality` e ferramenta correspondente (mesmo
+padrão de `save_guest_date_of_birth`, que já existia).
+
+Testado sem gastar chamada real à IA: banco isolado confirmando
+persistência de idioma e nacionalidade, cálculo de 2 diárias pra
+sexta→domingo (e valor batendo com preço configurado), e uma simulação
+completa do loop de tool-calling do `ask_ai()` com respostas falsas do
+modelo (`client.chat.completions.create` trocado por uma função de
+teste) confirmando que as três ferramentas novas (idioma, noites,
+nacionalidade) são chamadas e processadas corretamente de ponta a
+ponta antes de qualquer teste real em produção.
