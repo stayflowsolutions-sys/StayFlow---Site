@@ -84,19 +84,24 @@ function stayflowFormatDateDivider(dateStr) {
         a.getMonth() === b.getMonth() &&
         a.getDate() === b.getDate();
 
-    if (sameDay(msgDate, today)) return "Hoje";
-    if (sameDay(msgDate, yesterday)) return "Ontem";
+    if (sameDay(msgDate, today)) return T('chats.today', 'Hoje');
+    if (sameDay(msgDate, yesterday)) return T('chats.yesterday', 'Ontem');
 
-    const months = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    const monthsPt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
         "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
-    const label = `${msgDate.getDate()} de ${months[msgDate.getMonth()]}`;
+    const months = T('chats.monthNames', monthsPt.join(",")).split(",");
+    const day = msgDate.getDate();
+    const month = months[msgDate.getMonth()];
+    const year = msgDate.getFullYear();
 
     // Ano só aparece se for diferente do ano atual (mensagem "5 de
     // julho" de hoje não precisa de ano; uma de 2025 precisa, senão
     // fica ambíguo).
-    return msgDate.getFullYear() !== today.getFullYear()
-        ? `${label} de ${msgDate.getFullYear()}`
-        : label;
+    const template = year !== today.getFullYear()
+        ? T('chats.dateFormatWithYear', '{day} de {month} de {year}')
+        : T('chats.dateFormat', '{day} de {month}');
+
+    return template.replace("{day}", day).replace("{month}", month).replace("{year}", year);
 }
 
 async function loadChats() {
@@ -110,17 +115,17 @@ async function loadChats() {
         const list = document.getElementById("realChatList");
         if (!list) return;
 
-        list.innerHTML = "<h2>Conversas</h2>";
+        list.innerHTML = `<h2>${T('chats.conversationsTitle', 'Conversas')}</h2>`;
 
         if (!chats.length) {
             const empty = document.createElement("div");
             empty.className = "chat-item";
             empty.innerHTML = `
                 <div class="chat-name">
-                    <span>Nenhuma conversa encontrada.</span>
+                    <span>${T('chats.emptyTitle', 'Nenhuma conversa encontrada.')}</span>
                     <span class="status-pill ai">Live</span>
                 </div>
-                <div class="chat-preview">Quando houver mensagens, elas aparecerão aqui.</div>
+                <div class="chat-preview">${T('chats.list.whenMessagesHint', 'Quando houver mensagens, elas aparecerão aqui.')}</div>
             `;
             list.appendChild(empty);
             return;
@@ -143,12 +148,12 @@ async function loadChats() {
 
             item.innerHTML = `
                 <div class="chat-name">
-                    <span>${flag ? flag + " " : ""}${chat.name || chat.phone || "Sem telefone"}</span>
+                    <span>${flag ? flag + " " : ""}${chat.name || chat.phone || T('chats.noPhone', 'Sem telefone')}</span>
                     <span class="status-pill ${urgency}">
                         ${intent} · ${score}/100
                     </span>
                 </div>
-                <div class="chat-preview">${preview || "Sem mensagens recentes."}</div>
+                <div class="chat-preview">${preview || T('chats.noRecentMessages', 'Sem mensagens recentes.')}</div>
             `;
 
             item.addEventListener("click", () => {
@@ -172,13 +177,13 @@ async function loadChats() {
         const list = document.getElementById("realChatList");
         if (list) {
             list.innerHTML = `
-                <h2>Conversas</h2>
+                <h2>${T('chats.conversationsTitle', 'Conversas')}</h2>
                 <div class="chat-item">
                     <div class="chat-name">
-                        <span>Erro ao carregar conversas.</span>
-                        <span class="status-pill ai">Erro</span>
+                        <span>${T('chats.loadErrorTitle', 'Erro ao carregar conversas.')}</span>
+                        <span class="status-pill ai">${T('chats.errorLabel', 'Erro')}</span>
                     </div>
-                    <div class="chat-preview">Tente novamente mais tarde.</div>
+                    <div class="chat-preview">${T('chats.tryAgainLater', 'Tente novamente mais tarde.')}</div>
                 </div>
             `;
         }
@@ -208,7 +213,7 @@ async function loadGuestProfile(guestId) {
                 docsList.innerHTML = documents.map(doc => `
                     <a href="/guests/documents/${doc.id}/file" target="_blank" rel="noopener"
                        style="display:block;padding:6px 0;color:#7bc2ff;text-decoration:none">
-                        📎 Documento recebido em ${doc.received_at}
+                        📎 ${T('chats.documentReceivedPrefix', 'Documento recebido em')} ${doc.received_at}
                     </a>
                 `).join("");
             } else {
@@ -219,7 +224,7 @@ async function loadGuestProfile(guestId) {
         const takeoverBtn = document.getElementById("chatTakeoverBtn");
         if (takeoverBtn) {
             takeoverBtn.style.display = "inline-flex";
-            takeoverBtn.textContent = guest.ai_paused ? "Devolver pra IA" : "Assumir conversa";
+            takeoverBtn.textContent = guest.ai_paused ? T('chats.giveBackToAiBtn', 'Devolver pra IA') : T('chats.takeoverBtn', 'Assumir conversa');
             takeoverBtn.classList.toggle("secondary", !guest.ai_paused);
         }
 
@@ -227,7 +232,7 @@ async function loadGuestProfile(guestId) {
         const chatTitle = document.getElementById("chatTitle");
         if (chatTitle) {
             const flag = stayflowCountryFlag(guest.phone);
-            chatTitle.textContent = `Conversa · ${flag ? flag + " " : ""}${guest.name || guest.phone || "Hóspede"}`;
+            chatTitle.textContent = `${T('chats.defaultTitle', 'Conversa')} · ${flag ? flag + " " : ""}${guest.name || guest.phone || T('chats.guestFallback', 'Hóspede')}`;
         }
 
         // Mensagens
@@ -235,7 +240,7 @@ async function loadGuestProfile(guestId) {
         if (chatMessages) {
             chatMessages.innerHTML = "";
             if (!messages.length) {
-                chatMessages.innerHTML = `<div class="msg bot">Nenhuma mensagem registrada para este hóspede.</div>`;
+                chatMessages.innerHTML = `<div class="msg bot">${T('chats.noMessagesForGuest', 'Nenhuma mensagem registrada para este hóspede.')}</div>`;
             } else {
                 let lastDayKey = null;
                 messages.forEach(msg => {
@@ -271,8 +276,8 @@ async function loadGuestProfile(guestId) {
         const guestNextAction = document.getElementById("guestNextAction");
         const guestAIHistory = document.getElementById("guestAIHistory");
 
-        if (guestName) guestName.textContent = guest.name || guest.phone || "Hóspede";
-        if (guestSubtitle) guestSubtitle.textContent = "Perfil consolidado a partir das mensagens reais.";
+        if (guestName) guestName.textContent = guest.name || guest.phone || T('chats.guestFallback', 'Hóspede');
+        if (guestSubtitle) guestSubtitle.textContent = T('chats.profileSubtitle', 'Perfil consolidado a partir das mensagens reais.');
 
         if (guestPhone) guestPhone.textContent = guest.phone || "-";
 
@@ -280,10 +285,10 @@ async function loadGuestProfile(guestId) {
         const lastOpp = opportunities[0] || null;
 
         if (guestIntentTag) {
-            guestIntentTag.textContent = `Intenção: ${lastOpp ? lastOpp.type : "-"}`;
+            guestIntentTag.textContent = `${T('chats.intentLabel', 'Intenção')}: ${lastOpp ? lastOpp.type : "-"}`;
         }
         if (guestUrgencyTag) {
-            guestUrgencyTag.textContent = `Urgência: ${lastOpp ? lastOpp.urgency : "baixa"}`;
+            guestUrgencyTag.textContent = `${T('chats.urgencyLabel', 'Urgência')}: ${lastOpp ? lastOpp.urgency : T('chats.urgencyLow', 'baixa')}`;
         }
 
         if (guestPayment) {
@@ -294,7 +299,7 @@ async function loadGuestProfile(guestId) {
             guestValue.textContent = `R$ ${val.toFixed(2)}`;
         }
         if (guestStatus) {
-            guestStatus.textContent = lastOpp ? (lastOpp.urgency || "baixa") : "Baixa";
+            guestStatus.textContent = lastOpp ? (lastOpp.urgency || T('chats.urgencyLow', 'baixa')) : T('chats.urgencyLowCapitalized', 'Baixa');
         }
         if (guestMessageCount) {
             guestMessageCount.textContent = messages.length || 0;
@@ -302,9 +307,9 @@ async function loadGuestProfile(guestId) {
 
         if (guestNotes) {
     if (lastOpp) {
-        guestNotes.textContent = lastOpp.description || "Oportunidade identificada para este hóspede.";
+        guestNotes.textContent = lastOpp.description || T('chats.opportunityIdentifiedDesc', 'Oportunidade identificada para este hóspede.');
     } else {
-        guestNotes.textContent = "Nenhuma oportunidade registrada para este hóspede ainda.";
+        guestNotes.textContent = T('chats.noOpportunityYet', 'Nenhuma oportunidade registrada para este hóspede ainda.');
     }
 }
 
@@ -312,9 +317,9 @@ if (guestNextAction) {
     if (lastOpp && lastOpp.next_action) {
         guestNextAction.textContent = lastOpp.next_action;
     } else if (lastOpp) {
-        guestNextAction.textContent = "Revisar a conversa e decidir a próxima ação.";
+        guestNextAction.textContent = T('chats.reviewAndDecide', 'Revisar a conversa e decidir a próxima ação.');
     } else {
-        guestNextAction.textContent = "Aguardando recomendação operacional.";
+        guestNextAction.textContent = T('chats.awaitingRecommendation', 'Aguardando recomendação operacional.');
     }
 }
 
@@ -326,10 +331,10 @@ if (guestNextAction) {
                     const item = document.createElement("div");
                     item.className = "ai-history-item";
                     item.innerHTML = `
-                        <div class="ai-history-time">${index === 0 ? "Agora" : "Anterior"}</div>
+                        <div class="ai-history-time">${index === 0 ? T('chats.aiHistoryNow', 'Agora') : T('chats.historyPrevious', 'Anterior')}</div>
                         <div class="ai-history-text">
-                            <strong>${opp.type || "Oportunidade"}</strong>
-                            ${opp.description || "Sem descrição."}
+                            <strong>${opp.type || T('chats.opportunityDefaultType', 'Oportunidade')}</strong>
+                            ${opp.description || T('chats.noDescription', 'Sem descrição.')}
                         </div>
                     `;
                     guestAIHistory.appendChild(item);
@@ -337,10 +342,10 @@ if (guestNextAction) {
             } else {
                 guestAIHistory.innerHTML = `
                     <div class="ai-history-item">
-                        <div class="ai-history-time">Agora</div>
+                        <div class="ai-history-time">${T('chats.aiHistoryNow', 'Agora')}</div>
                         <div class="ai-history-text">
-                            <strong>Sem oportunidades</strong>
-                            Quando houver oportunidades, a evolução aparecerá aqui.
+                            <strong>${T('chats.noOpportunitiesTitle', 'Sem oportunidades')}</strong>
+                            ${T('chats.noOpportunitiesDesc', 'Quando houver oportunidades, a evolução aparecerá aqui.')}
                         </div>
                     </div>
                 `;
@@ -360,7 +365,7 @@ window.toggleChatTakeover = async function () {
     if (!stayflowCurrentGuestId) return;
 
     const btn = document.getElementById("chatTakeoverBtn");
-    const wantsToPause = btn && btn.textContent === "Assumir conversa";
+    const wantsToPause = btn && btn.textContent === T('chats.takeoverBtn', 'Assumir conversa');
 
     try {
         const res = await fetch(`/guests/${stayflowCurrentGuestId}/toggle-ai`, {
@@ -370,12 +375,12 @@ window.toggleChatTakeover = async function () {
             body: JSON.stringify({ paused: wantsToPause })
         });
         if (!res.ok) {
-            alert("Não foi possível atualizar o estado da conversa.");
+            alert(T('chats.updateStateFailed', 'Não foi possível atualizar o estado da conversa.'));
             return;
         }
         loadGuestProfile(stayflowCurrentGuestId);
     } catch (err) {
-        alert("Erro de conexão ao atualizar a conversa.");
+        alert(T('chats.updateStateConnError', 'Erro de conexão ao atualizar a conversa.'));
     }
 };
 
@@ -411,10 +416,10 @@ window.sendMessageToGuestUI = async function (button) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.message || "Não foi possível enviar a mensagem.");
+            alert(data.message || T('chats.sendMessageFailed', 'Não foi possível enviar a mensagem.'));
         }
     } catch (err) {
-        alert("Erro de conexão ao enviar a mensagem.");
+        alert(T('chats.sendMessageConnError', 'Erro de conexão ao enviar a mensagem.'));
     } finally {
         button.disabled = false;
     }

@@ -1841,3 +1841,86 @@ Testado: cálculo de dias vezes diária, pagamento parcial, pagamento
 que gera crédito (saldo negativo), pagamento inválido (zero/negativo)
 recusado, diária zero resulta em saldo zero, cama ocupada na criação e
 liberada pra limpeza no encerramento.
+
+### Oitava rodada da Sessão 8 (mesma data) — bugs de edição no Mapa de
+### Quartos + tradução completa do Dashboard
+
+Usuário testando reportou, em duas mensagens seguidas: não conseguia
+editar nem excluir quarto, e também não tinha como editar cama
+(tipo/grupo), adicionar modalidade nova em edição, nem mudar nome de
+nada — só existia formulário de criação em cada uma dessas três
+coisas (quarto, cama, modalidade), sem nenhum caminho de edição ou
+exclusão na interface, mesmo quando o backend já suportava (`DELETE
+/rooms/<id>` e `DELETE /room-categories/<id>` já existiam, só sem
+botão que os chamasse).
+
+**Correção**: adicionadas rotas `PATCH /rooms/<id>` e `PATCH
+/room-categories/<id>` no backend (`update_room`/`update_room_category`
+em `database.py`), e `update_bed_label` estendida pra aceitar também
+`bed_kind`/`bunk_group` (não só o nome). No frontend, cada card de
+quarto no Mapa de Quartos ganhou botões ✎/✕ (editar/excluir), cada
+modalidade também, e o painel de ações da cama ganhou "Editar
+tipo/grupo" além do que já existia. Testado com banco isolado: editar
+nome/modalidade/andar de quarto, limpar modalidade, excluir quarto
+(cascateando pras camas), editar capacidade/preço/descrição de
+modalidade limpando cada campo, mudar cama de solteiro pra beliche e
+voltar (grupo é limpo automaticamente ao virar solteiro), rejeição de
+beliche sem grupo.
+
+**Depois disso**, o usuário testou trocar o idioma do painel pra
+francês e viu que só o menu lateral e o título/subtítulo do topbar
+traduziam — abrir qualquer painel (ex: Equipe) mostrava tudo em
+português por dentro. Pediu insistentemente tradução **completa**,
+"no contexto de hotelaria, sem tradução literal".
+
+**Arquitetura**: reaproveitado o motor que já existia (mas só na
+landing page) — extraído pra `assets/js/i18n-core.js`, compartilhado
+agora por `dashboard.html` e `index.html`. Dicionário do Dashboard em
+`assets/js/i18n-dashboard-data.js`, ~570 chaves × 5 idiomas
+(PT/EN/ES/FR/DE), cobrindo as 13 seções do painel (Dashboard, Chats,
+Reservas — incluindo morador de longa duração —, Mapa de Quartos,
+Opportunity Center, Hóspedes, Operações, Equipe, Financeiro, Estoque,
+Receitas, Relatórios, Configurações com suas 7 sub-abas) mais o painel
+Ask StayFlow: texto estático (via atributos `data-i18n` /
+`data-i18n-placeholder` / `data-i18n-title`), conteúdo montado em JS
+(helper `T(chave, texto_pt_de_fallback)`) e as mensagens de
+`alert`/`confirm`/`prompt` escritas no próprio frontend (as que vêm do
+backend, tipo `data.message`, ficam de fora — ver "fora de escopo"
+abaixo). `chats-live.js` e `stayflow-live.js` também passaram pelo
+mesmo tratamento (incluindo nomes de mês e "Hoje"/"Ontem" traduzidos
+pro divisor de data do chat).
+
+Um bug real foi achado e corrigido no meio do processo: o card de
+status do WhatsApp/Backend em Configurações e a URL do webhook tinham
+`data-i18n` colocado errado — como o JS sobrescreve esse texto no
+carregamento da página com o status real ("Backend conectado" etc.),
+trocar de idioma DEPOIS disso ia reverter o texto pra um placeholder
+traduzido, apagando a informação real. Corrigido removendo o
+`data-i18n` desses elementos específicos e traduzindo a string dentro
+do próprio JS que a define.
+
+Troca de idioma não recarrega tudo de uma vez (evita bater ~15
+requisições no backend simultâneas): a página ATIVA no momento da
+troca recarrega os dados na hora; as outras ficam marcadas como
+"sujas" e recarregam sozinhas na próxima vez que a pessoa realmente
+abrir aquela seção.
+
+Landing page (`index.html`) migrada pro mesmo motor compartilhado
+(tinha o próprio, duplicado, só com PT/EN/ES) — francês e alemão
+adicionados aos ~70 textos existentes, sem mexer no dropdown visual
+que já funcionava.
+
+Verificação: balanceamento de chaves/parênteses/colchetes em todo
+arquivo tocado, e um script de cobertura cruzada (todo `data-i18n` /
+`data-i18n-placeholder` / `data-i18n-title` / `T('chave'` usado no
+HTML/JS tem que existir no dicionário, e todo idioma tem que ter
+exatamente as mesmas chaves que os outros) — rodado várias vezes ao
+longo do trabalho, sempre limpo antes de sincronizar.
+
+**Fora de escopo, decisão explícita**: mensagens de erro que vêm
+prontas do backend Flask (`jsonify({"message": "..."})`, espalhadas
+por `routes/*.py` e `database.py`) continuam em português. Traduzir
+isso direito exigiria o backend devolver códigos de erro em vez de
+texto pronto — projeto maior, separado, tocando o outro repositório.
+Efeito prático: alguém usando o painel em alemão vê a interface toda
+traduzida, mas um erro vindo do servidor ainda aparece em português.

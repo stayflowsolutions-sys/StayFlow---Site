@@ -52,7 +52,7 @@ function updatePriorityActionsFromOpportunities(opportunities){
 
     const urgency = (opportunity.urgency || "low").toLowerCase();
     const estimatedValue = Number(opportunity.estimated_value || 0);
-    const actionLabel = opportunity.next_action || "Revisar conversa manualmente.";
+    const actionLabel = opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.');
     const impactLabel = estimatedValue > 0 ? formatCurrencyBRL(estimatedValue) : "—";
 
     row.innerHTML = `
@@ -81,7 +81,7 @@ function updateOpportunityCenterTable(opportunities){
     container.innerHTML = `
       <tr>
         <td colspan="6">
-          Nenhuma oportunidade ativa no momento.
+          ${T('opportunities.noneActiveNow', 'Nenhuma oportunidade ativa no momento.')}
         </td>
       </tr>
     `;
@@ -108,7 +108,7 @@ function updateOpportunityCenterTable(opportunities){
       <td>${opportunity.type || "opportunity"}</td>
       <td>${score}/100</td>
       <td>${formatCurrencyBRL(estimatedValue)}</td>
-      <td>${opportunity.next_action || "Revisar conversa manualmente."}</td>
+      <td>${opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.')}</td>
     `;
 
     container.appendChild(row);
@@ -135,7 +135,7 @@ async function loadOpportunities() {
       container.innerHTML = `
         <tr>
           <td colspan="6">
-            Erro ao carregar oportunidades. Tente novamente mais tarde.
+            ${T('opportunities.loadError', 'Erro ao carregar oportunidades. Tente novamente mais tarde.')}
           </td>
         </tr>
       `;

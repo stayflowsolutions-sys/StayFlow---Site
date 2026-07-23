@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.11.0
+\*\*Versão:\*\* 1.12.0
 
 
 
@@ -67,6 +67,8 @@
 | 1.10.1 | 23/07/2026 | Oficial | Trava real contra overbooking: modalidade sem nenhuma cama cadastrada não permite mais reserva automática (vira oportunidade de alta prioridade pra equipe confirmar manualmente, sem duplicar se o hóspede repetir o pedido); modalidade com cama cadastrada passa a exigir escolha de uma cama específica e realmente disponível antes de reservar. Revisão do próprio usuário sobre um risco que a correção anterior (1.10.0) tinha introduzido. |
 
 | 1.11.0 | 23/07/2026 | Oficial | Novo tipo de estadia "morador de longa duração" (ex: funcionário que mora no hostel, pagando conforme consegue) — sem data de saída definida, saldo calculado sob demanda (dias ocupados vezes diária configurável, menos pagamentos registrados), suportando tanto saldo devedor quanto crédito acumulado quando a pessoa paga mais do que deve. Exposto na tela de Reservas (formulário próprio, tabela com saldo colorido) e no Ask StayFlow (criar morador, consultar saldo, registrar pagamento, encerrar estadia). |
+
+| 1.12.0 | 23/07/2026 | Oficial | Correção de bugs reais no Mapa de Quartos: não era possível editar ou excluir quarto, editar tipo/grupo de cama, nem editar ou excluir modalidade — só existia criação. Adicionados botões de editar/excluir em quartos e modalidades (rotas `PATCH /rooms/<id>` e `PATCH /room-categories/<id>` novas no backend) e edição de tipo/grupo de cama. Tradução completa do Dashboard (motor compartilhado `i18n-core.js` + dicionário `i18n-dashboard-data.js` com ~570 chaves): todas as 13 seções (Dashboard, Chats, Reservas, Mapa de Quartos, Opportunity Center, Hóspedes, Operações, Equipe, Financeiro, Estoque, Receitas, Relatórios, Configurações com 7 sub-abas) mais o painel Ask StayFlow, incluindo texto estático, conteúdo dinâmico gerado por JS e mensagens de alert/confirm/prompt — em português, inglês, espanhol, francês e alemão, com terminologia real de hotelaria (não tradução literal). Seletor de idioma novo no topbar ao lado do sino de notificações. Landing page (`index.html`) migrada para o mesmo motor compartilhado, com francês e alemão adicionados aos 3 idiomas existentes. Escopo definido como fora desta fase: mensagens de erro geradas pelo backend (Flask), que continuam em português — exigiria o backend passar a devolver códigos de erro em vez de texto pronto, projeto maior e separado. |
 
 
 
