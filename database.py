@@ -300,6 +300,12 @@ def create_database():
     add_column_if_not_exists(cursor, "hostels", "whatsapp_phone_number_id", "TEXT")
     add_column_if_not_exists(cursor, "hostels", "whatsapp_access_token", "TEXT")
 
+    # ID da sub-propriedade desse hostel dentro da conta master de
+    # agência do StayFlow no Beds24 (channel manager) - não é segredo,
+    # só um identificador (mesma sensibilidade de whatsapp_phone_number_id
+    # acima). NULL = hostel ainda não ativou a integração de canais.
+    add_column_if_not_exists(cursor, "hostels", "beds24_property_id", "TEXT")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -463,6 +469,57 @@ def create_database():
         hostel_id INTEGER NOT NULL,
         key_name TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Conta master de agência do StayFlow no Beds24 (channel manager) -
+    # singleton, não tem hostel_id porque é UMA conta que vale pra todos
+    # os clientes (modelo white-label: cada hostel vira uma sub-
+    # propriedade dentro dela, ver hostels.beds24_property_id acima).
+    # Tokens ficam criptografados (services/beds24_service.py) porque,
+    # diferente do token de WhatsApp de um hostel só, um vazamento aqui
+    # expõe a reserva de todos os clientes StayFlow de uma vez.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS beds24_master_account (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        refresh_token_encrypted TEXT,
+        access_token_encrypted TEXT,
+        access_token_expires_at TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # De-para entre uma modalidade de quarto do StayFlow (room_categories)
+    # e o "room" correspondente dentro da propriedade daquele hostel no
+    # Beds24 - sem isso, uma reserva vinda de OTA não tem como saber em
+    # qual modalidade/quarto ela deveria cair.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS channel_room_mapping (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        room_category_id INTEGER NOT NULL,
+        beds24_room_id TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(hostel_id, room_category_id)
+    )
+    """)
+
+    # Log/idempotência de cada evento de webhook recebido do Beds24.
+    # UNIQUE(beds24_booking_id) + INSERT OR IGNORE evita processar
+    # reserva duplicada se o Beds24 reentregar o mesmo webhook (rede
+    # lenta, timeout). status='failed' aqui é o que permite detectar
+    # falha silenciosa de sincronização em vez de só torcer que funcionou.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS channel_webhook_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        beds24_booking_id TEXT NOT NULL UNIQUE,
+        hostel_id INTEGER,
+        event_type TEXT,
+        payload_json TEXT,
+        status TEXT NOT NULL DEFAULT 'processed',
+        error_message TEXT,
+        reservation_id INTEGER,
+        received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
@@ -649,6 +706,16 @@ def create_database():
     # abatido conforme pagamentos registrados em reservation_payments).
     add_column_if_not_exists(cursor, "reservations", "stay_type", "TEXT DEFAULT 'fixed'")
     add_column_if_not_exists(cursor, "reservations", "daily_rate", "REAL")
+
+    # ID da reserva no Beds24 (channel manager), quando essa reserva
+    # veio de uma OTA (Booking/Airbnb/Hostelworld) via webhook - usado
+    # pra achar/atualizar/cancelar a reserva certa quando o Beds24 avisa
+    # de uma alteração. NULL pra reserva manual ou criada via WhatsApp.
+    # 'source' já reaproveitado pra guardar o canal real (ex: 'booking',
+    # 'airbnb', 'hostelworld') nesses casos, em vez de um genérico
+    # 'beds24' - assim o relatório por canal (COALESCE(source,'manual'))
+    # já funciona certo sem precisar tocar em routes/reports.py.
+    add_column_if_not_exists(cursor, "reservations", "external_booking_id", "TEXT")
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS reservation_payments (
@@ -2938,6 +3005,53 @@ def close_indefinite_stay(hostel_id, reservation_id, checkout_date=None):
     return get_reservation_balance(hostel_id, reservation_id)
 
 
+def reservar_cama_com_trava(hostel_id, bed_id, checkin_date, checkout_date, insert_fn):
+    """
+    Reconfere que bed_id está livre pras datas pedidas e executa
+    insert_fn(cursor) — tudo dentro de uma única transação SQLite aberta
+    com BEGIN IMMEDIATE, em vez do padrão antigo do projeto (checar
+    disponibilidade numa conexão, inserir a reserva noutra) que deixava
+    uma janela real de corrida entre checar e inserir.
+
+    BEGIN IMMEDIATE pega a trava de escrita do banco assim que a
+    transação abre, não só quando o primeiro INSERT/UPDATE roda — por
+    isso uma segunda chamada concorrente pra essa mesma função (de
+    outra thread ou de outro worker do gunicorn) fica bloqueada
+    esperando a primeira terminar, em vez de ler o mesmo estado "livre"
+    e as duas inserirem por cima uma da outra. Existe hoje só pra
+    reservas automáticas de alta frequência que disputam cama entre si
+    (webhook de channel manager e a IA do WhatsApp) — a criação manual
+    pela equipe continua sem essa trava, ver decisão registrada no
+    plano da integração Beds24.
+
+    insert_fn recebe o cursor já dentro da transação e deve devolver o
+    id da reserva criada/atualizada. Se a cama não estiver mais livre,
+    levanta ValueError e desfaz tudo (nada é escrito).
+    """
+    conn = get_connection()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT id FROM reservations
+            WHERE bed_id = ? AND hostel_id = ? AND status != 'cancelled'
+              AND checkin_date < ? AND checkout_date > ?
+            """,
+            (bed_id, hostel_id, checkout_date, checkin_date)
+        )
+        if cursor.fetchone():
+            conn.rollback()
+            raise ValueError("Essa cama nao esta mais disponivel pras datas pedidas - escolha outra.")
+
+        result = insert_fn(cursor)
+        conn.commit()
+        return result
+    finally:
+        conn.close()
+
+
 def find_available_beds(hostel_id, category_name, checkin_date, checkout_date):
     """
     Disponibilidade FUTURA (pra reserva), diferente do status
@@ -3149,10 +3263,6 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
             f"cama especifica disponivel antes de reservar."
         )
 
-    still_free = any(b["id"] == int(bed_id) for b in find_available_beds(hostel_id, category_name, checkin_date, checkout_date))
-    if not still_free:
-        raise ValueError("Essa cama nao esta mais disponivel pras datas pedidas - escolha outra.")
-
     amount = 0
     nights = 0
     try:
@@ -3162,23 +3272,36 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
     if category_row and category_row["price_per_night"]:
         amount = round(category_row["price_per_night"] * nights, 2)
 
-    reservation_id = create_reservation_record(
-        hostel_id,
-        guest_name=guest_name,
-        room_type=category_name,
-        checkin_date=checkin_date,
-        checkout_date=checkout_date,
-        source="whatsapp",
-        amount=amount,
-        status="pending",
-        phone=phone,
-    )
+    def _insert_with_bed(cursor):
+        guest_id = None
+        stripped_phone = (phone or "").strip()
+        if stripped_phone:
+            cursor.execute(
+                "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
+                (hostel_id, stripped_phone)
+            )
+            row = cursor.fetchone()
+            if row:
+                guest_id = row["id"]
 
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE reservations SET bed_id = ? WHERE id = ?", (int(bed_id), reservation_id))
-    conn.commit()
-    conn.close()
+        cursor.execute(
+            """
+            INSERT INTO reservations
+            (hostel_id, guest_id, guest_name, room_type, bed, bed_id, checkin_date,
+             checkout_date, source, payment_method, amount, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'whatsapp', ?, ?, 'pending')
+            """,
+            (hostel_id, guest_id, guest_name, category_name, "", int(bed_id),
+             checkin_date, checkout_date, "", amount)
+        )
+        return cursor.lastrowid
+
+    # Reconfere disponibilidade e insere numa unica transacao travada
+    # (ver reservar_cama_com_trava) - fecha a janela de corrida que
+    # existia aqui antes (checar com find_available_beds numa conexao,
+    # inserir noutra, sem nada impedindo duas chamadas concorrentes de
+    # passarem pela checagem e ambas inserirem pra mesma cama).
+    reservation_id = reservar_cama_com_trava(hostel_id, int(bed_id), checkin_date, checkout_date, _insert_with_bed)
 
     return {
         "reservation_id": reservation_id,
@@ -4576,6 +4699,81 @@ def save_hostel_whatsapp_config(hostel_id, phone_number_id, access_token):
 
     conn.commit()
     conn.close()
+
+
+# ===== BEDS24 (channel manager, conta master de agencia) =====
+
+def save_beds24_refresh_token(refresh_token_encrypted):
+    """Chamado uma vez, na ativacao inicial (troca do invite code)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO beds24_master_account (id, refresh_token_encrypted, updated_at)
+        VALUES (1, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(id) DO UPDATE SET
+            refresh_token_encrypted = excluded.refresh_token_encrypted,
+            updated_at = CURRENT_TIMESTAMP
+        """,
+        (refresh_token_encrypted,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def update_beds24_access_token(access_token_encrypted, expires_at):
+    """Chamado toda vez que o access token (curta duracao) e renovado."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE beds24_master_account SET access_token_encrypted = ?, access_token_expires_at = ? WHERE id = 1",
+        (access_token_encrypted, expires_at)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_beds24_master_credentials():
+    """Devolve dict com refresh_token_encrypted/access_token_encrypted/access_token_expires_at, ou None se nunca configurado."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT refresh_token_encrypted, access_token_encrypted, access_token_expires_at FROM beds24_master_account WHERE id = 1"
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_hostel_beds24_property_id(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT beds24_property_id FROM hostels WHERE id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["beds24_property_id"] if row else None
+
+
+def save_hostel_beds24_property_id(hostel_id, property_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE hostels SET beds24_property_id = ? WHERE id = ?", (property_id, hostel_id))
+    conn.commit()
+    conn.close()
+
+
+def get_hostel_id_by_beds24_property_id(property_id):
+    """
+    Resolve qual hostel e dono de uma sub-propriedade do Beds24 - usado
+    pelo webhook (que manda o propertyId, nao um hostel_id do StayFlow),
+    mesmo padrao de get_hostel_id_by_whatsapp_phone_number_id acima.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM hostels WHERE beds24_property_id = ?", (property_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["id"] if row else None
 
 
 def get_quick_replies(hostel_id):

@@ -3,10 +3,14 @@ import json
 from flask import Blueprint, jsonify, request
 from database import (
     get_connection,
+    get_hostel,
     get_hostel_whatsapp_config,
     save_hostel_whatsapp_config,
     apply_default_room_categories_if_needed,
+    get_hostel_beds24_property_id,
+    save_hostel_beds24_property_id,
 )
+import services.beds24_service as beds24_service
 from utils.tenant import require_permission
 
 
@@ -183,5 +187,39 @@ def update_settings(hostel_id):
         apply_default_room_categories_if_needed(hostel_id, data.get("hostel_type"))
 
     return jsonify({"success": True})
+
+
+@settings_bp.route("/settings/beds24", methods=["GET"])
+@require_permission("settings")
+def get_beds24_settings(hostel_id):
+    return jsonify({
+        "master_account_ready": beds24_service.is_master_account_configured(),
+        "property_id": get_hostel_beds24_property_id(hostel_id) or "",
+    })
+
+
+@settings_bp.route("/settings/beds24/activate", methods=["POST"])
+@require_permission("settings")
+def activate_beds24(hostel_id):
+    if get_hostel_beds24_property_id(hostel_id):
+        return jsonify({"success": False, "message": "A integração com canais já está ativada pra este hostel."}), 400
+
+    if not beds24_service.is_master_account_configured():
+        return jsonify({"success": False, "message": "Conta master do Beds24 ainda não foi configurada pelo StayFlow."}), 400
+
+    hostel = get_hostel(hostel_id)
+    if not hostel:
+        return jsonify({"success": False, "message": "Hostel não encontrado."}), 404
+
+    data = request.get_json(silent=True) or {}
+    currency = (data.get("currency") or "USD").strip().upper()
+
+    property_id, error = beds24_service.create_property(hostel["name"], currency=currency)
+    if error:
+        return jsonify({"success": False, "message": error}), 502
+
+    save_hostel_beds24_property_id(hostel_id, property_id)
+
+    return jsonify({"success": True, "property_id": property_id})
 
 

@@ -1,0 +1,210 @@
+"""
+Integração com a API v2 do Beds24 (channel manager) — conta master de
+agência do StayFlow. Cada cliente StayFlow é uma sub-propriedade dentro
+dessa UMA conta (modelo white-label: o cliente nunca vê a marca Beds24
+nem paga separado, ver docs/STAYFLOW_MASTER_CONTEXT.md).
+
+Autenticação da API v2: um invite code (gerado uma vez, manualmente, no
+painel do Beds24) é trocado por um refresh token (dura 30 dias, renova
+a cada uso) + um access token (dura 24h). Esse arquivo guarda o refresh
+token criptografado (ver _encrypt/_decrypt) e renova o access token sob
+demanda — sem scheduler/cron, porque o projeto não tem nenhum hoje.
+
+Nota de manutenção: os nomes exatos de alguns campos do corpo das
+requisições (ex: POST /properties, POST /inventory/rooms/calendar) vêm
+da documentação pública do Beds24, mas não foram confirmados contra uma
+resposta real da API ainda — foram marcados com "confirmar contra API
+real" abaixo. Ajustar assim que testarmos com a conta master de verdade.
+"""
+
+import os
+import datetime
+import requests
+from cryptography.fernet import Fernet
+
+import database
+
+API_BASE = "https://api.beds24.com/v2"
+REQUEST_TIMEOUT = 15
+
+
+def _get_fernet():
+    key = os.getenv("BEDS24_ENCRYPTION_KEY")
+    if not key:
+        raise RuntimeError(
+            "BEDS24_ENCRYPTION_KEY nao configurada - necessaria pra guardar/ler "
+            "a credencial mestra do Beds24 (gere uma com Fernet.generate_key())."
+        )
+    return Fernet(key.encode() if isinstance(key, str) else key)
+
+
+def _encrypt(value):
+    return _get_fernet().encrypt(value.encode()).decode()
+
+
+def _decrypt(value):
+    return _get_fernet().decrypt(value.encode()).decode()
+
+
+def setup_master_account(invite_code):
+    """
+    Troca o invite code (gerado manualmente uma vez no painel do Beds24)
+    por um refresh token, e guarda criptografado. Só precisa ser chamado
+    uma vez, na configuração inicial da conta master.
+
+    Retorna (sucesso, mensagem_de_erro_ou_None).
+    """
+    try:
+        response = requests.get(
+            f"{API_BASE}/authentication/setup",
+            headers={"code": invite_code},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code >= 400:
+            print("Erro ao configurar conta master do Beds24:", response.status_code, response.text)
+            return False, f"Beds24 recusou o invite code (HTTP {response.status_code})."
+
+        data = response.json()
+        refresh_token = data.get("refreshToken")
+        access_token = data.get("token")
+        expires_in = data.get("expiresIn", 0)
+
+        if not refresh_token:
+            print("Resposta do Beds24 sem refreshToken:", data)
+            return False, "Resposta do Beds24 nao trouxe refreshToken."
+
+        database.save_beds24_refresh_token(_encrypt(refresh_token))
+        if access_token:
+            expires_at = (datetime.datetime.utcnow() + datetime.timedelta(seconds=int(expires_in or 0))).isoformat()
+            database.update_beds24_access_token(_encrypt(access_token), expires_at)
+
+        return True, None
+    except Exception as error:
+        print("Erro de conexao ao configurar conta master do Beds24:", error)
+        return False, "Erro de conexao com o Beds24."
+
+
+def _get_valid_access_token():
+    """
+    Devolve um access token valido, renovando via refresh token se o
+    cache estiver expirado (ou perto disso) - chamado antes de toda
+    chamada de saida a API do Beds24, em vez de um job agendado.
+    """
+    creds = database.get_beds24_master_credentials()
+    if not creds or not creds.get("refresh_token_encrypted"):
+        return None
+
+    expires_at_raw = creds.get("access_token_expires_at")
+    if creds.get("access_token_encrypted") and expires_at_raw:
+        try:
+            expires_at = datetime.datetime.fromisoformat(expires_at_raw)
+            if expires_at - datetime.timedelta(minutes=5) > datetime.datetime.utcnow():
+                return _decrypt(creds["access_token_encrypted"])
+        except ValueError:
+            pass
+
+    refresh_token = _decrypt(creds["refresh_token_encrypted"])
+    try:
+        response = requests.get(
+            f"{API_BASE}/authentication/token",
+            headers={"refreshToken": refresh_token},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code >= 400:
+            print("Erro ao renovar access token do Beds24:", response.status_code, response.text)
+            return None
+
+        data = response.json()
+        access_token = data.get("token")
+        expires_in = data.get("expiresIn", 0)
+        if not access_token:
+            print("Resposta do Beds24 sem token ao renovar:", data)
+            return None
+
+        expires_at = (datetime.datetime.utcnow() + datetime.timedelta(seconds=int(expires_in or 0))).isoformat()
+        database.update_beds24_access_token(_encrypt(access_token), expires_at)
+        return access_token
+    except Exception as error:
+        print("Erro de conexao ao renovar access token do Beds24:", error)
+        return None
+
+
+def is_master_account_configured():
+    creds = database.get_beds24_master_credentials()
+    return bool(creds and creds.get("refresh_token_encrypted"))
+
+
+def create_property(hostel_name, currency="USD", property_type="hotel"):
+    """
+    Cria uma sub-propriedade nova pra um cliente StayFlow dentro da
+    conta master (modelo agencia). Retorna (property_id, erro) - so um
+    dos dois vem preenchido.
+
+    Confirmar contra API real: nomes exatos de campos aceitos por
+    POST /properties alem de name/propertyType/currency.
+    """
+    access_token = _get_valid_access_token()
+    if not access_token:
+        return None, "Conta master do Beds24 nao configurada ou token invalido."
+
+    try:
+        response = requests.post(
+            f"{API_BASE}/properties",
+            headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+            json={"name": hostel_name, "propertyType": property_type, "currency": currency},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code >= 400:
+            print("Erro ao criar propriedade no Beds24:", response.status_code, response.text)
+            return None, f"Beds24 recusou a criacao da propriedade (HTTP {response.status_code})."
+
+        data = response.json()
+        property_id = data.get("id") or data.get("propertyId")
+        if not property_id:
+            print("Resposta do Beds24 sem id de propriedade:", data)
+            return None, "Resposta do Beds24 nao trouxe o id da propriedade criada."
+
+        return str(property_id), None
+    except Exception as error:
+        print("Erro de conexao ao criar propriedade no Beds24:", error)
+        return None, "Erro de conexao com o Beds24."
+
+
+def push_availability(beds24_room_id, checkin_date, checkout_date, num_avail):
+    """
+    Atualiza a disponibilidade de um quarto no Beds24 pro intervalo de
+    datas dado - chamado toda vez que uma reserva StayFlow (manual ou
+    via WhatsApp) e criada/cancelada, pra refletir no calendario que a
+    Booking/Airbnb/Hostelworld enxergam. Nunca chamado pra reserva que
+    veio DO Beds24 (evitaria eco).
+
+    Confirmar contra API real: nome exato do campo de disponibilidade
+    (usado aqui "numAvail" por analogia com os campos de preco/minStay
+    documentados) dentro de POST /inventory/rooms/calendar.
+
+    Retorna True/False - nunca levanta excecao (mesmo padrao de
+    services/whatsapp_service.py: uma falha de sincronizacao nao pode
+    derrubar a criacao da reserva no StayFlow).
+    """
+    access_token = _get_valid_access_token()
+    if not access_token:
+        print("Push de disponibilidade pro Beds24 ignorado - conta master nao configurada.")
+        return False
+
+    try:
+        response = requests.post(
+            f"{API_BASE}/inventory/rooms/calendar",
+            headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+            json=[{
+                "roomId": beds24_room_id,
+                "calendar": [{"from": checkin_date, "to": checkout_date, "numAvail": num_avail}],
+            }],
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code >= 400:
+            print("Erro ao empurrar disponibilidade pro Beds24:", response.status_code, response.text)
+            return False
+        return True
+    except Exception as error:
+        print("Erro de conexao ao empurrar disponibilidade pro Beds24:", error)
+        return False
