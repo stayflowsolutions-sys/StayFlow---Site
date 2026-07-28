@@ -942,7 +942,6 @@ async function deleteRoleConfirm(roleId){
       <h2 id="chatTitle" data-i18n="chats.defaultTitle">Conversa</h2>
       <span id="chatMode" class="status-pill ai" data-i18n="chats.waitingConnection">Aguardando conexão</span>
       <span id="chatChance" class="status-pill cold">Score: —</span>
-      <button type="button" class="btn secondary" id="chatTakeoverBtn" style="display:none;margin-left:8px" onclick="toggleChatTakeover()" data-i18n="chats.takeoverBtn">Assumir conversa</button>
 
       <div id="chatMessages" class="messages">
         <div class="msg bot" data-i18n="chats.placeholderMsg">Quando houver conversas reais no sistema, a última troca com o hóspede será exibida aqui.</div>
@@ -951,7 +950,8 @@ async function deleteRoleConfirm(roleId){
       <div class="chat-input" style="position:relative">
         <button class="btn secondary" type="button" id="chatQuickReplyTrigger" onclick="toggleQuickReplyPicker(event)" data-i18n-title="chats.quickReplyTitle" title="Respostas rápidas" style="flex:0 0 auto">💬</button>
         <input data-i18n-placeholder="chats.inputPlaceholder" placeholder="Escrever mensagem como recepção...">
-        <button class="btn" onclick="sendMessageToGuestUI(this)" data-i18n="chats.sendBtn">Enviar</button>
+        <button class="btn green" type="button" id="chatSendBtn" data-mode="assume" onclick="chatPrimaryBtnClick(this)" data-i18n="chats.takeoverBtn">Assumir</button>
+        <button class="btn secondary" type="button" id="chatGiveBackBtn" style="display:none" onclick="giveBackChatUI()" data-i18n="chats.giveBackToAiBtn">Devolver</button>
 
         <div id="chatQuickReplyPicker" class="hostel-selector-dropdown" style="display:none;top:auto;bottom:100%;left:0;right:auto;width:280px;margin-top:0;margin-bottom:6px;"></div>
       </div>

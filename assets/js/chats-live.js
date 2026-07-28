@@ -222,11 +222,21 @@ async function loadGuestProfile(guestId) {
             }
         }
 
-        const takeoverBtn = document.getElementById("chatTakeoverBtn");
-        if (takeoverBtn) {
-            takeoverBtn.style.display = "inline-flex";
-            takeoverBtn.textContent = guest.ai_paused ? T('chats.giveBackToAiBtn', 'Devolver pra IA') : T('chats.takeoverBtn', 'Assumir conversa');
-            takeoverBtn.classList.toggle("secondary", !guest.ai_paused);
+        const sendBtn = document.getElementById("chatSendBtn");
+        const giveBackBtn = document.getElementById("chatGiveBackBtn");
+        if (sendBtn) {
+            if (guest.ai_paused) {
+                sendBtn.dataset.mode = "send";
+                sendBtn.textContent = T('chats.sendBtn', 'Enviar');
+                sendBtn.classList.remove("green");
+            } else {
+                sendBtn.dataset.mode = "assume";
+                sendBtn.textContent = T('chats.takeoverBtn', 'Assumir');
+                sendBtn.classList.add("green");
+            }
+        }
+        if (giveBackBtn) {
+            giveBackBtn.style.display = guest.ai_paused ? "inline-flex" : "none";
         }
 
         // Título da conversa
@@ -362,18 +372,21 @@ if (guestNextAction) {
 // esse hospede (mensagem/oportunidade continuam sendo salvas) - ate
 // alguem devolver clicando de novo. Recarrega o perfil pra refletir
 // o estado real vindo do backend, nao so o texto do botao.
-window.toggleChatTakeover = async function () {
+//
+// O botao de enviar mensagem faz dupla funcao: enquanto a IA esta no
+// controle ele fica verde e assume a conversa ao inves de enviar (nao
+// faz sentido digitar pra IA responder por voce); depois de assumido,
+// vira o botao azul normal de enviar, e um botao "Devolver" separado
+// aparece do lado pra passar o controle de volta.
+async function setChatAiPaused(paused) {
     if (!stayflowCurrentGuestId) return;
-
-    const btn = document.getElementById("chatTakeoverBtn");
-    const wantsToPause = btn && btn.textContent === T('chats.takeoverBtn', 'Assumir conversa');
 
     try {
         const res = await fetch(`/guests/${stayflowCurrentGuestId}/toggle-ai`, {
             method: "POST",
             credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paused: wantsToPause })
+            body: JSON.stringify({ paused })
         });
         if (!res.ok) {
             alert(T('chats.updateStateFailed', 'Não foi possível atualizar o estado da conversa.'));
@@ -382,6 +395,17 @@ window.toggleChatTakeover = async function () {
         loadGuestProfile(stayflowCurrentGuestId);
     } catch (err) {
         alert(T('chats.updateStateConnError', 'Erro de conexão ao atualizar a conversa.'));
+    }
+}
+
+window.assumeChatUI = function () { setChatAiPaused(true); };
+window.giveBackChatUI = function () { setChatAiPaused(false); };
+
+window.chatPrimaryBtnClick = function (button) {
+    if (button && button.dataset.mode === "assume") {
+        assumeChatUI();
+    } else {
+        sendMessageToGuestUI(button);
     }
 };
 

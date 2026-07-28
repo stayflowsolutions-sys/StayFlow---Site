@@ -2242,3 +2242,45 @@ Balanceamento de chaves/parênteses/colchetes conferido no
 `dashboard.html` e no `i18n-dashboard-data.js`, e checagem de
 cobertura cruzada de i18n confirmando 0 chaves faltando nos 5
 idiomas.
+
+## Décima quinta rodada: botão de assumir/devolver chat vira o próprio botão de enviar
+
+O usuário confirmou que o botão "Assumir conversa" (aba Chats, ao lado
+do Score) existia e funcionava, mas achou o visual feio — um botão
+secundário cinza solto ao lado do título, some/aparece por texto sem
+nenhuma pista de cor. Pedido: fazer o próprio botão "Enviar" cumprir
+esse papel. Enquanto a IA está no controle da conversa, esse botão
+fica **verde** e escrito "Assumir"; ao clicar, assume a conversa (não
+envia nada — não faz sentido digitar pra IA responder por você) e o
+botão vira o azul normal, escrito "Enviar". Ao lado dele aparece um
+botão "Devolver" — só visível quando a conversa está assumida por um
+humano — que devolve o controle pra IA; ao devolver, esse botão some
+de novo e o de enviar volta a ficar verde/"Assumir".
+
+Removido o antigo `#chatTakeoverBtn` (ficava ao lado do "Score: —").
+O botão de enviar (`#chatSendBtn`) ganhou um atributo `data-mode`
+("assume" ou "send") que o dispatcher `chatPrimaryBtnClick()` lê pra
+decidir se chama `assumeChatUI()` ou o `sendMessageToGuestUI()` já
+existente — evita o bug sutil que o código antigo tinha (decidir a
+ação comparando o `textContent` do botão com o texto traduzido, que
+quebraria se o idioma mudasse no meio do caminho). `toggleChatTakeover`
+foi separado em duas funções explícitas,
+`assumeChatUI()`/`giveBackChatUI()`, ambas chamando o mesmo helper
+interno `setChatAiPaused(paused)` que já existia (só que agora sem
+precisar inferir a direção a partir de texto de UI). `loadGuestProfile`
+(em `chats-live.js`) passou a alternar classe `.green` e texto do botão
+de enviar, e mostrar/esconder o botão "Devolver", a partir do campo
+real `guest.ai_paused` vindo do backend — igual já fazia antes, só que
+aplicando em dois elementos em vez de um.
+
+Reaproveitada a classe `.btn.green` que já existia no CSS (usada em
+outros botões de ação positiva) — nenhum CSS novo foi necessário.
+Os textos dos botões foram encurtados nos 5 idiomas pra caber no
+espaço apertado ao lado do campo de mensagem (ex.: "Assumir conversa"
+→ "Assumir", "Devolver pra IA" → "Devolver"), reaproveitando as
+mesmas chaves de tradução que já existiam (`chats.takeoverBtn`,
+`chats.giveBackToAiBtn`) — só o valor mudou, sem novas chaves.
+
+Balanceamento de chaves/parênteses/colchetes conferido no
+`dashboard.html` e no `chats-live.js`, e checagem de cobertura cruzada
+de i18n confirmando 0 chaves faltando nos 5 idiomas.

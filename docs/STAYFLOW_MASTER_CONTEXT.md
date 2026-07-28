@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.17.0
+\*\*Versão:\*\* 1.17.1
 
 
 
@@ -81,6 +81,8 @@
 | 1.16.0 | 28/07/2026 | Oficial | Substituídos os `alert()`/`confirm()`/`prompt()` nativos do navegador (caixa branca do sistema operacional) por um modal com a identidade visual do StayFlow (caixa azul-marinho, ícone azul). `alert()` foi sobrescrito globalmente sem tocar em nenhum call site (nenhum lugar dependia do valor de retorno); `confirm()`/`prompt()` viraram `stayflowConfirm()`/`stayflowPrompt()` (baseados em Promise, já que um modal HTML não trava a thread como os nativos travam) — os 18 pontos reais que usavam o valor de retorno foram convertidos individualmente para `await`. |
 
 | 1.17.0 | 28/07/2026 | Oficial | Redesign do Mapa de Quartos: os cinco cards fixos de criação (Modalidades, Novo quarto, Nova cama, Lista de limpeza, Devolver da lavanderia) que ocupavam metade da tela cada um foram substituídos por um único botão "☰ Ações" no card do mapa, que abre um menu com cada uma dessas opções — cada item abre seu formulário num modal central (reaproveitando o modal genérico já usado pelo painel de Equipe), deixando o mapa visual de quartos como único conteúdo permanente da página. Modais de criação não fecham sozinhos após criar um item (formulário só limpa e a lista/seletor se atualiza na hora), pensado para o fluxo real de montar um hostel do zero criando vários quartos/camas em sequência. |
+
+| 1.17.1 | 28/07/2026 | Oficial | Botão de assumir/devolver conversa (aba Chats) redesenhado: em vez de um botão secundário cinza solto ao lado do "Score", agora é o próprio botão de enviar mensagem que troca de papel — verde e "Assumir" enquanto a IA está no controle (clicar assume a conversa em vez de enviar), voltando ao azul normal "Enviar" depois de assumido; um botão "Devolver" aparece ao lado só quando a conversa está com um humano, devolvendo o controle pra IA ao ser clicado. |
 
 
 
