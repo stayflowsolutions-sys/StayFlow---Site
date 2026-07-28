@@ -2073,3 +2073,55 @@ chamada à API), idioma inválido (mesmo passthrough), tradução em lote
 simulada com resposta falsa da API confirmando o mapeamento de volta
 pros campos certos, e falha da API caindo de volta pro texto original
 sem quebrar.
+
+### Décima segunda rodada da Sessão 8 (28/07) — oportunidade avaliada
+### por conversa, não por mensagem
+
+Usuário notou (raciocínio correto, sem ser um "bug" no sentido de algo
+quebrado — mais um problema de design) que toda mensagem nova de um
+hóspede gerava uma oportunidade nova, mesmo sendo a mesma conversa
+continuando. Isso lotava o Opportunity Center com várias linhas do
+mesmo assunto e fazia o sino de alertas disparar de novo a cada
+mensagem, mesmo sem nada realmente novo ter acontecido.
+
+Causa raiz, em `decision_engine.py`: `analyze_with_ai()` recebia só a
+ÚLTIMA mensagem isolada, sem nenhum contexto da conversa — e
+`analyze_message()` sempre fazia `INSERT` de uma linha nova em
+`opportunities`, nunca verificava se já existia uma aberta pra aquele
+hóspede.
+
+**Correção, duas partes:**
+1. `analyze_with_ai()` agora recebe o histórico recente da conversa
+   (mesmo formato já usado pra IA de atendimento) e monta um bloco
+   "Conversa até agora" no prompt — o modelo julga a intenção com
+   contexto real, não uma mensagem solta ("sim" ou "pode ser dia 20"
+   só fazem sentido junto do que veio antes).
+2. `analyze_message()` agora verifica se já existe uma oportunidade
+   ABERTA do mesmo hóspede com o mesmo `type` (booking, tour, etc) —
+   se existir, faz `UPDATE` nela (description/score/urgency/
+   estimated_value/next_action, e `created_at` também é atualizado,
+   já que não é exibido como data de criação em lugar nenhum da
+   interface — funciona como "última atividade", fazendo a conversa
+   ativa subir pro topo da lista). Só cria uma linha nova quando é
+   realmente um assunto diferente (ex: pediu um tour no meio de uma
+   conversa de reserva).
+
+`routes/chat.py` ajustado pra buscar o histórico uma vez só (antes só
+buscava depois, só pra IA de atendimento) e reaproveitar pra análise
+de oportunidade e pra IA de atendimento, evitando uma segunda leitura
+da mesma conversa.
+
+Efeito prático: uma conversa inteira sobre a mesma reserva agora vira
+UMA linha no Opportunity Center que vai se atualizando (fica mais
+urgente/mais completa conforme a conversa avança), em vez de várias
+linhas duplicadas — e o sino só soa de novo quando a contagem de
+alertas abertos realmente aumenta (lógica que já existia no frontend),
+o que agora reflete assuntos de verdade, não mensagens.
+
+Testado sem gastar chamada real à IA (respostas simuladas): 3
+mensagens de teste (2 sobre reserva + 1 sobre tour) resultaram em
+exatamente 2 linhas na tabela (a de reserva foi atualizada com os
+dados da segunda mensagem, não duplicada); histórico da conversa
+confirmado presente no prompt enviado pro modelo; e teste de
+reordenação confirmando que um hóspede que voltou a escrever sobe pro
+topo da lista de oportunidades.
