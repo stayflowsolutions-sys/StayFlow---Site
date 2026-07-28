@@ -21,11 +21,28 @@ def fallback_analysis(message):
     }
 
 
-def analyze_with_ai(message):
-    prompt = f"""
-Analyze this hostel guest message and return ONLY valid JSON.
+def analyze_with_ai(message, history=None):
+    # Analisa a CONVERSA (ultimas mensagens reais, se houver), nao so a
+    # mensagem isolada que acabou de chegar - uma mensagem curta tipo
+    # "sim" ou "pode ser dia 20" so faz sentido junto do que veio antes.
+    # Sem isso, cada mensagem nova era avaliada do zero, sem contexto,
+    # e o motor achava uma "oportunidade nova" a cada mensagem da MESMA
+    # conversa em vez de entender que e a mesma intencao evoluindo.
+    conversation_block = ""
+    if history:
+        lines = []
+        for item in history[-10:]:
+            speaker = "Hospede" if item.get("role") == "user" else "Recepcao/IA"
+            lines.append(f"{speaker}: {item.get('content', '')}")
+        conversation_block = "Conversa ate agora (mais antiga primeiro):\n" + "\n".join(lines) + "\n\n"
 
-Message:
+    prompt = f"""
+Analyze this hostel guest conversation and return ONLY valid JSON.
+Judge the opportunity based on the CONVERSATION AS A WHOLE, not just
+the single latest message in isolation - a short reply like "sim" or
+"pode ser dia 20" only makes sense together with what came before.
+
+{conversation_block}Latest message just received:
 {message}
 
 Return this exact structure:
@@ -76,8 +93,8 @@ Rules:
         return fallback_analysis(message)
 
 
-def analyze_message(hostel_id, phone, message):
-    analysis = analyze_with_ai(message)
+def analyze_message(hostel_id, phone, message, history=None):
+    analysis = analyze_with_ai(message, history=history)
 
     if analysis.get("intent") == "general":
         return analysis
@@ -99,32 +116,71 @@ def analyze_message(hostel_id, phone, message):
         conn.close()
         return analysis
 
+    # Uma conversa inteira sobre o mesmo assunto (ex: "booking") deve
+    # virar UMA oportunidade que evolui, não uma nova a cada mensagem -
+    # isso lotava o Opportunity Center e disparava o sino de novo a cada
+    # mensagem da MESMA conversa. Se já existe uma oportunidade aberta
+    # deste hóspede com o mesmo tipo, atualiza os dados nela em vez de
+    # criar outra; um assunto genuinamente diferente (ex: pediu um tour
+    # no meio de uma conversa de reserva) ainda vira sua própria linha.
     cursor.execute(
         """
-        INSERT INTO opportunities
-        (
-            guest_id,
-            type,
-            description,
-            status,
-            score,
-            urgency,
-            estimated_value,
-            next_action
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        SELECT id FROM opportunities
+        WHERE guest_id = ? AND status = 'open' AND type = ?
+        ORDER BY created_at DESC LIMIT 1
         """,
-        (
-            guest["id"],
-            analysis.get("intent"),
-            analysis.get("description"),
-            "open",
-            analysis.get("score", 0),
-            analysis.get("urgency", "low"),
-            analysis.get("estimated_value", 0),
-            analysis.get("next_action")
-        )
+        (guest["id"], analysis.get("intent"))
     )
+    existing = cursor.fetchone()
+
+    if existing:
+        # created_at tambem funciona como "ultima atividade" aqui (nao e
+        # exibido como data de criacao em lugar nenhum da interface) -
+        # atualizar garante que uma conversa que acabou de responder
+        # suba pro topo da lista, em vez de ficar presa na posicao de
+        # quando foi detectada pela primeira vez.
+        cursor.execute(
+            """
+            UPDATE opportunities
+            SET description = ?, score = ?, urgency = ?, estimated_value = ?, next_action = ?, created_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (
+                analysis.get("description"),
+                analysis.get("score", 0),
+                analysis.get("urgency", "low"),
+                analysis.get("estimated_value", 0),
+                analysis.get("next_action"),
+                existing["id"]
+            )
+        )
+    else:
+        cursor.execute(
+            """
+            INSERT INTO opportunities
+            (
+                guest_id,
+                type,
+                description,
+                status,
+                score,
+                urgency,
+                estimated_value,
+                next_action
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                guest["id"],
+                analysis.get("intent"),
+                analysis.get("description"),
+                "open",
+                analysis.get("score", 0),
+                analysis.get("urgency", "low"),
+                analysis.get("estimated_value", 0),
+                analysis.get("next_action")
+            )
+        )
 
     conn.commit()
     conn.close()

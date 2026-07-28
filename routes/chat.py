@@ -27,7 +27,13 @@ def process_incoming_message(hostel_id, phone, text, send_to_whatsapp=False):
 
     save_lead(hostel_id, phone, text)
 
-    opportunity = analyze_message(hostel_id, phone, text) if is_opportunity_generation_enabled(hostel_id) else None
+    # Buscado uma vez só e reaproveitado tanto pra analise de oportunidade
+    # quanto pra IA de atendimento logo abaixo - a analise agora avalia a
+    # CONVERSA (nao a mensagem isolada), pra nao tratar cada mensagem nova
+    # da mesma conversa como uma "oportunidade" separada.
+    history = get_history(hostel_id, phone)
+
+    opportunity = analyze_message(hostel_id, phone, text, history=history) if is_opportunity_generation_enabled(hostel_id) else None
 
     # Interruptor mestre: quando desligado, a mensagem do hospede e a
     # oportunidade (acima) ainda sao salvas normalmente - so a resposta
@@ -38,8 +44,6 @@ def process_incoming_message(hostel_id, phone, text, send_to_whatsapp=False):
     # fica pulada, mas mensagem/oportunidade continuam sendo salvas.
     if not is_ai_enabled(hostel_id) or is_guest_ai_paused(hostel_id, phone):
         return None, opportunity
-
-    history = get_history(hostel_id, phone)
 
     # O telefone só é passado pra IA quando a mensagem realmente veio do
     # WhatsApp de verdade (phone != "unknown", usado no endpoint de teste
