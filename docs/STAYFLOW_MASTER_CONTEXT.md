@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.16.0
+\*\*Versão:\*\* 1.17.0
 
 
 
@@ -79,6 +79,8 @@
 | 1.15.0 | 28/07/2026 | Oficial | Motor de detecção de oportunidades (`decision_engine.py`) passa a avaliar a CONVERSA inteira (histórico recente incluído no prompt), não mais cada mensagem isolada sem contexto. Oportunidades deixam de ser criadas em duplicidade a cada mensagem: se já existe uma aberta do mesmo hóspede com o mesmo tipo, é atualizada (evolução do mesmo assunto) em vez de gerar uma linha nova — reduz ruído real no Opportunity Center e no sino de alertas, que antes disparava a cada mensagem da mesma conversa. |
 
 | 1.16.0 | 28/07/2026 | Oficial | Substituídos os `alert()`/`confirm()`/`prompt()` nativos do navegador (caixa branca do sistema operacional) por um modal com a identidade visual do StayFlow (caixa azul-marinho, ícone azul). `alert()` foi sobrescrito globalmente sem tocar em nenhum call site (nenhum lugar dependia do valor de retorno); `confirm()`/`prompt()` viraram `stayflowConfirm()`/`stayflowPrompt()` (baseados em Promise, já que um modal HTML não trava a thread como os nativos travam) — os 18 pontos reais que usavam o valor de retorno foram convertidos individualmente para `await`. |
+
+| 1.17.0 | 28/07/2026 | Oficial | Redesign do Mapa de Quartos: os cinco cards fixos de criação (Modalidades, Novo quarto, Nova cama, Lista de limpeza, Devolver da lavanderia) que ocupavam metade da tela cada um foram substituídos por um único botão "☰ Ações" no card do mapa, que abre um menu com cada uma dessas opções — cada item abre seu formulário num modal central (reaproveitando o modal genérico já usado pelo painel de Equipe), deixando o mapa visual de quartos como único conteúdo permanente da página. Modais de criação não fecham sozinhos após criar um item (formulário só limpa e a lista/seletor se atualiza na hora), pensado para o fluxo real de montar um hostel do zero criando vários quartos/camas em sequência. |
 
 
 

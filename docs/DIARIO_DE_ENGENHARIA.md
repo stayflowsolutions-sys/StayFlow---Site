@@ -2173,3 +2173,72 @@ Balanceamento de chaves/parênteses/colchetes conferido no
 `dashboard.html` depois da conversão inteira, e checagem de cobertura
 cruzada de i18n confirmando que a chave nova (`common.cancel`) existe
 nos 5 idiomas.
+
+## Décima quarta rodada: Mapa de Quartos — menu de ações em vez de caixas fixas
+
+Pedido do usuário: a aba "Mapa de Quartos" tinha, além do card do mapa
+em si, mais cinco cards fixos sempre visíveis (Modalidades de quarto,
+Novo quarto, Nova cama, Lista de limpeza do dia, Devolver da
+lavanderia) — cada um ocupando metade da largura da tela. Isso deixava
+o mapa visual dos quartos (o conteúdo que a pessoa realmente quer ver
+o tempo todo) espremido lá embaixo, depois de uma parede de
+formulários. Pedido: juntar tudo isso numa caixa só, tipo um menu
+hambúrguer, e abrir um modal central quando a pessoa escolhe o que
+quer criar — deixando o espaço da página só para os quartos.
+
+**Mudança de estrutura:** a seção `#roommap` agora tem um único card
+(`span-12`) com o mapa (legenda + grid + painel de ação de cama) e,
+no cabeçalho do card, um botão "☰ Ações" que abre um dropdown (mesmo
+componente visual `.hostel-selector-dropdown` já usado no seletor de
+hostel/idioma/usuário no topbar). Cada item do dropdown chama uma
+função nova que monta o HTML do formulário correspondente e abre no
+modal genérico já existente (`openGenericModal`/`closeGenericModal`,
+o mesmo usado pelo painel de Equipe e pelos modais de editar
+quarto/cama/modalidade): `openCreateCategoryModal()`,
+`openCreateRoomModal()` (quarto único + em lote, no mesmo modal),
+`openCreateBedModal()`, `openCleaningListModal()`,
+`openLaundryReturnModal()`.
+
+**Detalhe técnico que exigiu cuidado:** os formulários antigos viviam
+fixos dentro de `#roommap` e algumas funções JS localizavam os campos
+deles via seletor amarrado à seção (ex:
+`document.querySelectorAll("#roommap select[name='category_name']")`).
+Como agora esses formulários só existem no DOM quando o modal está
+aberto (o `innerHTML` é montado na hora), troquei esse seletor por
+IDs diretos (`#roomCategorySelect`, `#bulkRoomCategorySelect`) que
+funcionam em qualquer lugar do documento, modal aberto ou não. Como
+`getElementById`/`querySelectorAll` simplesmente não encontram nada
+quando o modal está fechado (sem lançar erro), `loadRoomMap()`
+continua rodando normal toda vez que a aba abre — só não escreve nada
+nos campos que não existem na hora, e escreve certinho quando o
+modal é aberto depois, porque o HTML de cada modal já nasce pré-
+preenchido com os dados em cache (`ROOM_CATEGORIES_CACHE`,
+`ROOM_MAP_ROOMS_CACHE`, que já são atualizados pelo `loadRoomMap()`
+sempre que a aba é aberta).
+
+**Decisão de UX:** os modais de criar categoria/quarto/cama NÃO fecham
+sozinhos depois de criar um item — o formulário só é limpo (`.reset()`)
+e a lista/seletor dentro do próprio modal se atualiza na hora. Isso é
+proposital: montar um hostel do zero envolve criar vários quartos e
+várias camas em sequência (ex: um dormitório com 8 camas), e forçar
+reabrir o menu ☰ a cada item seria pior do que o modelo antigo. Já o
+modal de "Devolver da lavanderia" também não fecha sozinho, pelo
+mesmo motivo (entradas repetidas). A lista de limpeza, dentro do seu
+próprio modal, continua se atualizando ao vivo quando uma cama é
+marcada como limpa (a função existente já escreve nos mesmos IDs,
+então funciona sem mudança nenhuma nela).
+
+Chave `roommap.emptyDesc` (texto do estado vazio do mapa) foi
+substituída por `roommap.emptyDesc2`, que menciona o novo menu "☰
+Ações" em vez de "crie modalidades e quartos abaixo" (não fazia mais
+sentido com o formulário fora da tela) — a chave antiga, órfã, foi
+removida dos 5 idiomas. Duas chaves novas (`roommap.actionsMenu.label`,
+`roommap.actionsMenu.title`) traduzidas nos 5 idiomas; todo o resto do
+conteúdo dos modais reaproveita chaves de i18n que já existiam
+(`roommap.categories.*`, `roommap.newRoom.*`, `roommap.newBed.*`,
+`roommap.cleaning.*`, `roommap.laundry.*`), sem duplicar tradução.
+
+Balanceamento de chaves/parênteses/colchetes conferido no
+`dashboard.html` e no `i18n-dashboard-data.js`, e checagem de
+cobertura cruzada de i18n confirmando 0 chaves faltando nos 5
+idiomas.

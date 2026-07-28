@@ -1136,7 +1136,22 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
 
     <div class="card span-12">
-      <h2 data-i18n="roommap.title">🗺️ Mapa de Quartos</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <h2 data-i18n="roommap.title" style="margin:0">🗺️ Mapa de Quartos</h2>
+        <div class="hostel-selector-wrap">
+          <button type="button" class="btn secondary" id="roomMapActionsBtn" onclick="toggleRoomMapMenu(event)" data-i18n-title="roommap.actionsMenu.title" title="Ações">
+            ☰ <span data-i18n="roommap.actionsMenu.label">Ações</span>
+          </button>
+          <div id="roomMapActionsDropdown" class="hostel-selector-dropdown" style="display:none;min-width:240px;left:auto;right:0">
+            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateCategoryModal()">🏷️ <span data-i18n="roommap.categories.title">Modalidades de quarto</span></button>
+            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateRoomModal()">🚪 <span data-i18n="roommap.newRoom.title">Novo quarto</span></button>
+            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateBedModal()">🛏️ <span data-i18n="roommap.newBed.title">Nova cama</span></button>
+            <div class="hostel-selector-divider"></div>
+            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCleaningListModal()">🧺 <span data-i18n="roommap.cleaning.title">Lista de limpeza do dia</span></button>
+            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openLaundryReturnModal()">🔄 <span data-i18n="roommap.laundry.title">Devolver da lavanderia</span></button>
+          </div>
+        </div>
+      </div>
       <div class="bed-map-legend">
         <span><i class="free"></i><span data-i18n="bed.status.free">Livre</span></span>
         <span><i class="occupied"></i><span data-i18n="bed.status.occupied">Ocupada</span></span>
@@ -1147,86 +1162,11 @@ async function deleteRoleConfirm(roleId){
       <div class="sf-empty" id="roomMapEmpty">
         <div>
           <strong data-i18n="roommap.emptyTitle">Nenhum quarto cadastrado ainda.</strong>
-          <span data-i18n="roommap.emptyDesc">Crie modalidades e quartos abaixo pra montar o mapa do seu hostel, hotel ou resort.</span>
+          <span data-i18n="roommap.emptyDesc2">Use o menu "☰ Ações" acima pra criar modalidades e quartos e montar o mapa do seu hostel, hotel ou resort.</span>
         </div>
       </div>
       <div class="bed-map-grid" id="roomMapGrid" style="display:none"></div>
       <div class="bed-action-panel" id="bedActionCard" style="display:none;margin-top:16px"></div>
-    </div>
-
-    <div class="card span-6">
-      <h2 data-i18n="roommap.categories.title">🏷️ Modalidades de quarto</h2>
-      <form onsubmit="submitNewRoomCategory(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
-        <input class="span-6" name="name" data-i18n-placeholder="roommap.categories.namePlaceholder" placeholder="Ex: Standard Duplo, Suíte, Dormitório Misto" required style="grid-column:span 6;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <input class="span-2" type="number" min="1" name="capacity" data-i18n-placeholder="roommap.categories.capacityPlaceholder" placeholder="Capac." style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <input class="span-2" type="number" min="0" step="0.01" name="price_per_night" data-i18n-placeholder="roommap.categories.pricePlaceholder" placeholder="Diária" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <button type="submit" class="btn span-2" data-i18n="common.create" style="grid-column:span 2;">Criar</button>
-        <input class="span-12" name="description" data-i18n-placeholder="roommap.categories.descPlaceholder" placeholder="Ex: Inclui café da manhã" style="grid-column:span 12;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-      </form>
-      <div id="roomCategoriesList" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
-    </div>
-
-    <div class="card span-6">
-      <h2 data-i18n="roommap.newRoom.title">🚪 Novo quarto</h2>
-      <form onsubmit="submitNewRoom(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
-        <input class="span-4" name="name" data-i18n-placeholder="roommap.newRoom.namePlaceholder" placeholder="Número/nome do quarto" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <select class="span-4" name="category_name" id="roomCategorySelect" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-          <option value="" data-i18n="roommap.categoryOptionalOption">Modalidade (opcional)</option>
-        </select>
-        <input class="span-4" name="floor" data-i18n-placeholder="roommap.floorOptionalPlaceholder" placeholder="Andar (opcional)" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <button type="submit" class="btn span-12" data-i18n="roommap.newRoom.submitBtn" style="grid-column:span 12;">Criar quarto</button>
-      </form>
-      <p data-i18n="roommap.bulkRooms.intro" style="font-size:12px;color:var(--muted);margin:10px 0 4px">Cadastro rápido de vários quartos (um por linha) — útil pra hotéis/resorts grandes:</p>
-      <form onsubmit="submitBulkRooms(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
-        <textarea class="span-12" name="names" rows="3" placeholder="201&#10;202&#10;203" style="grid-column:span 12;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;font-family:inherit"></textarea>
-        <select class="span-6" name="category_name" style="grid-column:span 6;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-          <option value="" data-i18n="roommap.categoryOptionalOption">Modalidade (opcional)</option>
-        </select>
-        <input class="span-3" name="floor" data-i18n-placeholder="roommap.floorPlaceholder" placeholder="Andar" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <button type="submit" class="btn span-3" data-i18n="roommap.bulkRooms.submitBtn" style="grid-column:span 3;">Criar em lote</button>
-      </form>
-    </div>
-
-    <div class="card span-6">
-      <h2 data-i18n="roommap.newBed.title">🛏️ Nova cama</h2>
-      <form onsubmit="submitNewBed(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
-        <select class="span-4" name="room_id" id="bedRoomSelect" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-          <option value="" data-i18n="roommap.roomSelectPlaceholder">Quarto...</option>
-        </select>
-        <input class="span-3" name="label" data-i18n-placeholder="roommap.newBed.labelPlaceholder" placeholder="Ex: Cama 1" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <select class="span-3" name="bed_kind" onchange="toggleBunkGroupField(this)" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-          <option value="single" data-i18n="bed.kind.single">Normal</option>
-          <option value="bunk_top" data-i18n="bed.kind.bunkTop">Beliche - Cima</option>
-          <option value="bunk_bottom" data-i18n="bed.kind.bunkBottom">Beliche - Baixo</option>
-        </select>
-        <input class="span-2" type="number" name="bunk_group" data-i18n-placeholder="roommap.newBed.groupPlaceholder" placeholder="Grupo" id="bunkGroupInput" style="display:none;grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <button type="submit" class="btn span-12" data-i18n="roommap.newBed.submitBtn" style="grid-column:span 12;">Criar cama</button>
-      </form>
-      <p data-i18n="roommap.newBed.hint" style="font-size:11px;color:var(--muted);margin-top:8px">As duas metades do mesmo beliche precisam do mesmo número de "Grupo" pra aparecerem juntas no mapa.</p>
-    </div>
-
-    <div class="card span-6">
-      <h2 data-i18n="roommap.cleaning.title">🧺 Lista de limpeza do dia</h2>
-      <div class="sf-empty" id="cleaningListEmpty">
-        <div>
-          <strong data-i18n="roommap.cleaning.emptyTitle">Nenhuma cama aguardando limpeza.</strong>
-          <span data-i18n="roommap.cleaning.emptyDesc">Quando um check-out acontecer, a cama aparece aqui automaticamente.</span>
-        </div>
-      </div>
-      <table class="table" id="cleaningListTable" style="display:none">
-        <thead><tr><th data-i18n="common.room">Quarto</th><th data-i18n="common.bed">Cama</th><th data-i18n="common.action">Ação</th></tr></thead>
-        <tbody id="cleaningListBody"></tbody>
-      </table>
-    </div>
-
-    <div class="card span-6">
-      <h2 data-i18n="roommap.laundry.title">🔄 Devolver da lavanderia</h2>
-      <form onsubmit="submitReturnFromLaundry(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
-        <input class="span-7" name="item_name" data-i18n-placeholder="roommap.laundry.itemPlaceholder" placeholder="Nome do item (ex: Lençol solteiro)" required style="grid-column:span 7;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <input class="span-3" type="number" min="1" name="quantity" data-i18n-placeholder="roommap.laundry.qtyPlaceholder" placeholder="Qtd" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-        <button type="submit" class="btn span-2" data-i18n="roommap.laundry.submitBtn" style="grid-column:span 2;">Devolver</button>
-      </form>
-      <p data-i18n="roommap.laundry.hint" style="font-size:12px;color:var(--muted);margin-top:10px">Registra que roupas de cama voltaram limpas da lavanderia, somando de volta no estoque disponível.</p>
     </div>
 
   </div>
@@ -3064,7 +3004,7 @@ function bedStatusLabel(status){
 }
 
 function fillCategorySelects(categories){
-  const selects = document.querySelectorAll("#roomCategorySelect, #roommap select[name='category_name']");
+  const selects = document.querySelectorAll("#roomCategorySelect, #bulkRoomCategorySelect");
   selects.forEach(select => {
     const current = select.value;
     select.innerHTML = `<option value="">${T('roommap.categoryOptionalOption', 'Modalidade (opcional)')}</option>` +
@@ -3642,17 +3582,7 @@ async function loadRoomMap(){
       ROOM_CATEGORIES_CACHE = categories;
       fillCategorySelects(categories);
       const listEl = document.getElementById("roomCategoriesList");
-      if(listEl){
-        listEl.innerHTML = categories.length
-          ? categories.map(c => `
-              <span style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0;padding:4px 4px 4px 10px;border:1px solid var(--line);border-radius:999px">
-                ${escapeHtml(c.name)}${c.capacity ? ` (${c.capacity})` : ""}${c.price_per_night ? ` · US$ ${Number(c.price_per_night).toFixed(2)}${T('roommap.category.perNightSuffix', '/noite')}` : ""}
-                <button type="button" onclick="editCategoryUI(${c.id})" title="${T('roommap.category.editModalTitle', 'Editar modalidade')}" style="background:none;border:0;color:#7bc2ff;cursor:pointer;font-size:12px;padding:2px">✎</button>
-                <button type="button" onclick="deleteCategoryUI(${c.id}, '${c.name.replace(/'/g, "\\'")}')" title="${T('roommap.category.deleteBtn', 'Excluir modalidade')}" style="background:none;border:0;color:#ff8b8b;cursor:pointer;font-size:12px;padding:2px">✕</button>
-              </span>
-            `).join("")
-          : T('roommap.noCategoriesYet', 'Nenhuma modalidade criada ainda.');
-      }
+      if(listEl) listEl.innerHTML = categoryPillsHtml(categories);
     }
     if(roomsRes.ok) fillRoomSelect(await roomsRes.json());
 
@@ -3666,6 +3596,120 @@ window.toggleBunkGroupField = function(select){
   const input = document.getElementById("bunkGroupInput");
   if(!input) return;
   input.style.display = select.value === "single" ? "none" : "";
+};
+
+function categoryPillsHtml(categories){
+  return categories.length
+    ? categories.map(c => `
+        <span style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0;padding:4px 4px 4px 10px;border:1px solid var(--line);border-radius:999px">
+          ${escapeHtml(c.name)}${c.capacity ? ` (${c.capacity})` : ""}${c.price_per_night ? ` · US$ ${Number(c.price_per_night).toFixed(2)}${T('roommap.category.perNightSuffix', '/noite')}` : ""}
+          <button type="button" onclick="editCategoryUI(${c.id})" title="${T('roommap.category.editModalTitle', 'Editar modalidade')}" style="background:none;border:0;color:#7bc2ff;cursor:pointer;font-size:12px;padding:2px">✎</button>
+          <button type="button" onclick="deleteCategoryUI(${c.id}, '${c.name.replace(/'/g, "\\'")}')" title="${T('roommap.category.deleteBtn', 'Excluir modalidade')}" style="background:none;border:0;color:#ff8b8b;cursor:pointer;font-size:12px;padding:2px">✕</button>
+        </span>
+      `).join("")
+    : T('roommap.noCategoriesYet', 'Nenhuma modalidade criada ainda.');
+}
+
+window.toggleRoomMapMenu = function(event){
+  if(event) event.stopPropagation();
+  const dropdown = document.getElementById("roomMapActionsDropdown");
+  if(!dropdown) return;
+  dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+};
+
+document.addEventListener("click", (event) => {
+  const dropdown = document.getElementById("roomMapActionsDropdown");
+  const trigger = document.getElementById("roomMapActionsBtn");
+  if(!dropdown || dropdown.style.display === "none") return;
+  if(!dropdown.contains(event.target) && trigger && !trigger.contains(event.target)){
+    dropdown.style.display = "none";
+  }
+});
+
+window.openCreateCategoryModal = function(){
+  openGenericModal(T('roommap.categories.title', '🏷️ Modalidades de quarto'), `
+    <form onsubmit="submitNewRoomCategory(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
+      <input class="span-6" name="name" placeholder="${T('roommap.categories.namePlaceholder', 'Ex: Standard Duplo, Suíte, Dormitório Misto')}" required style="grid-column:span 6;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+      <input class="span-2" type="number" min="1" name="capacity" placeholder="${T('roommap.categories.capacityPlaceholder', 'Capac.')}" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+      <input class="span-2" type="number" min="0" step="0.01" name="price_per_night" placeholder="${T('roommap.categories.pricePlaceholder', 'Diária')}" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+      <button type="submit" class="btn span-2" style="grid-column:span 2;">${T('common.create', 'Criar')}</button>
+      <input class="span-12" name="description" placeholder="${T('roommap.categories.descPlaceholder', 'Ex: Inclui café da manhã')}" style="grid-column:span 12;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+    </form>
+    <div id="roomCategoriesList" style="margin-top:12px;font-size:13px;color:var(--muted)">${categoryPillsHtml(ROOM_CATEGORIES_CACHE)}</div>
+  `);
+};
+
+window.openCreateRoomModal = function(){
+  const categoryOptions = ROOM_CATEGORIES_CACHE.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}${c.capacity ? ` (${c.capacity})` : ""}</option>`).join("");
+  openGenericModal(T('roommap.newRoom.title', '🚪 Novo quarto'), `
+    <form onsubmit="submitNewRoom(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
+      <input class="span-4" name="name" placeholder="${T('roommap.newRoom.namePlaceholder', 'Número/nome do quarto')}" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+      <select class="span-4" name="category_name" id="roomCategorySelect" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <option value="">${T('roommap.categoryOptionalOption', 'Modalidade (opcional)')}</option>
+        ${categoryOptions}
+      </select>
+      <input class="span-4" name="floor" placeholder="${T('roommap.floorOptionalPlaceholder', 'Andar (opcional)')}" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+      <button type="submit" class="btn span-12" style="grid-column:span 12;">${T('roommap.newRoom.submitBtn', 'Criar quarto')}</button>
+    </form>
+    <p style="font-size:12px;color:var(--muted);margin:14px 0 4px">${T('roommap.bulkRooms.intro', 'Cadastro rápido de vários quartos (um por linha) — útil pra hotéis/resorts grandes:')}</p>
+    <form onsubmit="submitBulkRooms(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
+      <textarea class="span-12" name="names" rows="3" placeholder="201&#10;202&#10;203" style="grid-column:span 12;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;font-family:inherit"></textarea>
+      <select class="span-6" name="category_name" id="bulkRoomCategorySelect" style="grid-column:span 6;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <option value="">${T('roommap.categoryOptionalOption', 'Modalidade (opcional)')}</option>
+        ${categoryOptions}
+      </select>
+      <input class="span-3" name="floor" placeholder="${T('roommap.floorPlaceholder', 'Andar')}" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+      <button type="submit" class="btn span-3" style="grid-column:span 3;">${T('roommap.bulkRooms.submitBtn', 'Criar em lote')}</button>
+    </form>
+  `);
+};
+
+window.openCreateBedModal = function(){
+  const roomOptions = ROOM_MAP_ROOMS_CACHE.map(r => `<option value="${r.id}">${escapeHtml(r.name)}${r.category_name ? " - " + escapeHtml(r.category_name) : ""}</option>`).join("");
+  openGenericModal(T('roommap.newBed.title', '🛏️ Nova cama'), `
+    <form onsubmit="submitNewBed(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
+      <select class="span-4" name="room_id" id="bedRoomSelect" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <option value="">${T('roommap.roomSelectPlaceholder', 'Quarto...')}</option>
+        ${roomOptions}
+      </select>
+      <input class="span-3" name="label" placeholder="${T('roommap.newBed.labelPlaceholder', 'Ex: Cama 1')}" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+      <select class="span-3" name="bed_kind" onchange="toggleBunkGroupField(this)" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+        <option value="single">${T('bed.kind.single', 'Normal')}</option>
+        <option value="bunk_top">${T('bed.kind.bunkTop', 'Beliche - Cima')}</option>
+        <option value="bunk_bottom">${T('bed.kind.bunkBottom', 'Beliche - Baixo')}</option>
+      </select>
+      <input class="span-2" type="number" name="bunk_group" placeholder="${T('roommap.newBed.groupPlaceholder', 'Grupo')}" id="bunkGroupInput" style="display:none;grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+      <button type="submit" class="btn span-12" style="grid-column:span 12;">${T('roommap.newBed.submitBtn', 'Criar cama')}</button>
+    </form>
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">${T('roommap.newBed.hint', 'As duas metades do mesmo beliche precisam do mesmo número de "Grupo" pra aparecerem juntas no mapa.')}</p>
+  `);
+};
+
+window.openCleaningListModal = function(){
+  openGenericModal(T('roommap.cleaning.title', '🧺 Lista de limpeza do dia'), `
+    <div class="sf-empty" id="cleaningListEmpty">
+      <div>
+        <strong>${T('roommap.cleaning.emptyTitle', 'Nenhuma cama aguardando limpeza.')}</strong>
+        <span>${T('roommap.cleaning.emptyDesc', 'Quando um check-out acontecer, a cama aparece aqui automaticamente.')}</span>
+      </div>
+    </div>
+    <table class="table" id="cleaningListTable" style="display:none">
+      <thead><tr><th>${T('common.room', 'Quarto')}</th><th>${T('common.bed', 'Cama')}</th><th>${T('common.action', 'Ação')}</th></tr></thead>
+      <tbody id="cleaningListBody"></tbody>
+    </table>
+  `);
+  loadCleaningList();
+};
+
+window.openLaundryReturnModal = function(){
+  openGenericModal(T('roommap.laundry.title', '🔄 Devolver da lavanderia'), `
+    <form onsubmit="submitReturnFromLaundry(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
+      <input class="span-7" name="item_name" placeholder="${T('roommap.laundry.itemPlaceholder', 'Nome do item (ex: Lençol solteiro)')}" required style="grid-column:span 7;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+      <input class="span-3" type="number" min="1" name="quantity" placeholder="${T('roommap.laundry.qtyPlaceholder', 'Qtd')}" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+      <button type="submit" class="btn span-2" style="grid-column:span 2;">${T('roommap.laundry.submitBtn', 'Devolver')}</button>
+    </form>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px">${T('roommap.laundry.hint', 'Registra que roupas de cama voltaram limpas da lavanderia, somando de volta no estoque disponível.')}</p>
+  `);
 };
 
 window.submitNewRoomCategory = async function(event){
