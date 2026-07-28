@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.15.0
+\*\*Versão:\*\* 1.16.0
 
 
 
@@ -77,6 +77,8 @@
 | 1.14.0 | 25/07/2026 | Oficial | Varredura completa de todo texto gerado pelo backend que sempre saía em português, independente do idioma do painel: Ask StayFlow (`/ask`) passa a receber o idioma atual e responder nele; description/next_action das oportunidades (Opportunity Center, Ações prioritárias do Dashboard, Resumo da IA no perfil do hóspede em Chats) passam por tradução em lote (`services/translation_service.py`) na hora da leitura, já que esse texto é gravado uma única vez em português no momento em que a mensagem do hóspede chega. Português continua sem nenhum custo extra (passthrough). Decisão deliberada de manter em português a mensagem sugerida de reposição a fornecedor (Estoque), por ser dirigida a um terceiro que não usa o painel. |
 
 | 1.15.0 | 28/07/2026 | Oficial | Motor de detecção de oportunidades (`decision_engine.py`) passa a avaliar a CONVERSA inteira (histórico recente incluído no prompt), não mais cada mensagem isolada sem contexto. Oportunidades deixam de ser criadas em duplicidade a cada mensagem: se já existe uma aberta do mesmo hóspede com o mesmo tipo, é atualizada (evolução do mesmo assunto) em vez de gerar uma linha nova — reduz ruído real no Opportunity Center e no sino de alertas, que antes disparava a cada mensagem da mesma conversa. |
+
+| 1.16.0 | 28/07/2026 | Oficial | Substituídos os `alert()`/`confirm()`/`prompt()` nativos do navegador (caixa branca do sistema operacional) por um modal com a identidade visual do StayFlow (caixa azul-marinho, ícone azul). `alert()` foi sobrescrito globalmente sem tocar em nenhum call site (nenhum lugar dependia do valor de retorno); `confirm()`/`prompt()` viraram `stayflowConfirm()`/`stayflowPrompt()` (baseados em Promise, já que um modal HTML não trava a thread como os nativos travam) — os 18 pontos reais que usavam o valor de retorno foram convertidos individualmente para `await`. |
 
 
 

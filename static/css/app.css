@@ -318,6 +318,89 @@ body::before{
 .generic-modal-message.success{
   color:#7bffa0;
 }
+/* Substitui alert()/confirm()/prompt() nativos (caixa branca do SO) por
+   um modal com a identidade visual do StayFlow - mesmo padrao visual
+   do generic-modal, com um icone azul no topo. */
+.sf-alert-overlay{
+  position:fixed;
+  inset:0;
+  background:#00000088;
+  z-index:200;
+  opacity:0;
+  pointer-events:none;
+  transition:.18s;
+}
+.sf-alert-overlay.open{
+  opacity:1;
+  pointer-events:auto;
+}
+.sf-alert-modal{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-48%);
+  width:380px;
+  max-width:92vw;
+  max-height:85vh;
+  overflow-y:auto;
+  background:#0d1421;
+  border:1px solid #0b84ff30;
+  border-radius:20px;
+  z-index:201;
+  opacity:0;
+  pointer-events:none;
+  transition:.18s;
+  box-shadow:0 30px 80px #000000aa, 0 0 0 1px #0b84ff14;
+  padding:22px 22px 18px;
+  text-align:center;
+}
+.sf-alert-overlay.open .sf-alert-modal{
+  opacity:1;
+  pointer-events:auto;
+  transform:translate(-50%,-50%);
+}
+.sf-alert-icon{
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  background:linear-gradient(180deg,#0f8bff30,#056ee730);
+  border:1px solid #0b84ff44;
+  color:var(--blue);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 14px;
+}
+.sf-alert-message{
+  font-size:14px;
+  line-height:1.5;
+  color:#f7fbff;
+  white-space:pre-line;
+  margin-bottom:14px;
+}
+.sf-alert-input{
+  width:100%;
+  background:#02070d;
+  border:1px solid var(--line);
+  border-radius:12px;
+  color:white;
+  padding:10px 12px;
+  font-family:inherit;
+  font-size:14px;
+  margin-bottom:14px;
+  text-align:left;
+}
+.sf-alert-actions{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+}
+.sf-alert-actions .btn,
+.sf-alert-actions .btn.secondary{
+  flex:1;
+  padding:10px 14px;
+}
+
 .permission-checkbox-list{
   display:grid;
   gap:6px;

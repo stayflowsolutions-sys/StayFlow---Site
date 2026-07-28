@@ -65,6 +65,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "common.connectionError": "Erro de conexão.",
     "common.saveFailed": "Não foi possível salvar.",
     "common.editName": "Editar nome",
+    "common.cancel": "Cancelar",
 
     // ===== Status de cama (usado no mapa de quartos e em pills) =====
     "bed.status.free": "Livre",
@@ -713,6 +714,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "common.connectionError": "Connection error.",
     "common.saveFailed": "Couldn't save.",
     "common.editName": "Edit name",
+    "common.cancel": "Cancel",
 
     "bed.status.free": "Available",
     "bed.status.occupied": "Occupied",
@@ -1346,6 +1348,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "common.connectionError": "Error de conexión.",
     "common.saveFailed": "No se pudo guardar.",
     "common.editName": "Editar nombre",
+    "common.cancel": "Cancelar",
 
     "bed.status.free": "Libre",
     "bed.status.occupied": "Ocupada",
@@ -1979,6 +1982,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "common.connectionError": "Erreur de connexion.",
     "common.saveFailed": "Impossible d'enregistrer.",
     "common.editName": "Modifier le nom",
+    "common.cancel": "Annuler",
 
     "bed.status.free": "Libre",
     "bed.status.occupied": "Occupée",
@@ -2612,6 +2616,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "common.connectionError": "Verbindungsfehler.",
     "common.saveFailed": "Speichern nicht möglich.",
     "common.editName": "Namen bearbeiten",
+    "common.cancel": "Abbrechen",
 
     "bed.status.free": "Frei",
     "bed.status.occupied": "Belegt",

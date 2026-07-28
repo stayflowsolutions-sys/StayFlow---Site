@@ -48,6 +48,90 @@ function T(key, fallback, ph){
   return text;
 }
 
+// ===== Substitui alert()/confirm()/prompt() nativos por um modal com a
+// cara do StayFlow (caixa azul, nao a caixa branca do sistema
+// operacional). window.alert vira um override direto (nenhum lugar do
+// codigo depende do valor de retorno de alert(), so de ela aparecer) -
+// stayflowConfirm/stayflowPrompt sao Promises novas porque um modal de
+// verdade nao consegue bloquear a thread como confirm()/prompt()
+// nativos bloqueiam; os poucos call-sites que usavam confirm()/prompt()
+// foram convertidos pra "await stayflowConfirm(...)"/"await
+// stayflowPrompt(...)" dentro de funcoes async.
+let sfAlertResolve = null;
+
+function sfAlertClose(value){
+  const overlay = document.getElementById("sfAlertOverlay");
+  if(overlay) overlay.classList.remove("open");
+  if(sfAlertResolve){
+    const resolve = sfAlertResolve;
+    sfAlertResolve = null;
+    resolve(value);
+  }
+}
+
+function sfAlertOpen({ message, showCancel, showInput, defaultValue, okLabel, cancelLabel }){
+  const overlay = document.getElementById("sfAlertOverlay");
+  const msgEl = document.getElementById("sfAlertMessage");
+  const inputEl = document.getElementById("sfAlertInput");
+  const actionsEl = document.getElementById("sfAlertActions");
+  if(!overlay || !msgEl || !inputEl || !actionsEl){
+    // Fallback extremo (HTML do modal nao carregou por algum motivo) -
+    // nunca deixa a acao travada sem nenhum jeito de responder.
+    if(showInput) return Promise.resolve(window.prompt(message, defaultValue));
+    if(showCancel) return Promise.resolve(window.confirm(message));
+    window.alert(message);
+    return Promise.resolve(true);
+  }
+
+  msgEl.textContent = message;
+  inputEl.style.display = showInput ? "block" : "none";
+  inputEl.value = showInput ? (defaultValue || "") : "";
+
+  actionsEl.innerHTML = "";
+  if(showCancel){
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "btn secondary";
+    cancelBtn.textContent = cancelLabel || T("common.cancel", "Cancelar");
+    cancelBtn.onclick = () => sfAlertClose(showInput ? null : false);
+    actionsEl.appendChild(cancelBtn);
+  }
+  const okBtn = document.createElement("button");
+  okBtn.type = "button";
+  okBtn.className = "btn";
+  okBtn.textContent = okLabel || "OK";
+  okBtn.onclick = () => sfAlertClose(showInput ? inputEl.value : true);
+  actionsEl.appendChild(okBtn);
+
+  if(showInput){
+    inputEl.onkeydown = (e) => { if(e.key === "Enter") sfAlertClose(inputEl.value); };
+  }
+
+  overlay.classList.add("open");
+  setTimeout(() => (showInput ? inputEl : okBtn).focus(), 50);
+
+  return new Promise(resolve => { sfAlertResolve = resolve; });
+}
+
+window.alert = function(message){
+  sfAlertOpen({ message: String(message), showCancel: false });
+};
+
+window.stayflowConfirm = function(message, opts){
+  return sfAlertOpen({ message: String(message), showCancel: true, okLabel: opts && opts.okLabel, cancelLabel: opts && opts.cancelLabel });
+};
+
+window.stayflowPrompt = function(message, defaultValue){
+  return sfAlertOpen({ message: String(message), showCancel: true, showInput: true, defaultValue });
+};
+
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape"){
+    const overlay = document.getElementById("sfAlertOverlay");
+    if(overlay && overlay.classList.contains("open")) sfAlertClose(null);
+  }
+});
+
 function openTeamPanel() {
   document.getElementById("teamOverlay").classList.add("open");
   document.getElementById("teamPanel").classList.add("open");
@@ -373,7 +457,7 @@ async function submitRoleChange(membershipId){
 }
 
 async function deactivateMember(membershipId){
-  if(!confirm(T('team.confirm.deactivate', 'Tem certeza que quer desativar esta pessoa? Ela perderá acesso ao hostel até ser reativada.'))) return;
+  if(!await stayflowConfirm(T('team.confirm.deactivate', 'Tem certeza que quer desativar esta pessoa? Ela perderá acesso ao hostel até ser reativada.'))) return;
 
   try{
     const res = await fetch(`/team/${membershipId}/deactivate`, {
@@ -561,7 +645,7 @@ async function deleteRoleConfirm(roleId){
   const role = rolesCache.find(r => r.id === roleId);
   const roleName = role ? role.name : "esta função";
 
-  if(!confirm(T('team.confirm.deleteRole', 'Tem certeza que quer apagar a função "{name}"? Isso só é possível se ninguém estiver usando ela.', { name: roleName }))) return;
+  if(!await stayflowConfirm(T('team.confirm.deleteRole', 'Tem certeza que quer apagar a função "{name}"? Isso só é possível se ninguém estiver usando ela.', { name: roleName }))) return;
 
   try{
     const res = await fetch(`/roles/${roleId}`, {
@@ -1890,6 +1974,17 @@ async function deleteRoleConfirm(roleId){
   <div id="genericModalBody" class="generic-modal-body"></div>
 </div>
 
+<div id="sfAlertOverlay" class="sf-alert-overlay">
+  <div class="sf-alert-modal" id="sfAlertModal">
+    <div class="sf-alert-icon">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5"/><path d="M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></svg>
+    </div>
+    <div class="sf-alert-message" id="sfAlertMessage"></div>
+    <input type="text" class="sf-alert-input" id="sfAlertInput" style="display:none">
+    <div class="sf-alert-actions" id="sfAlertActions"></div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -2365,7 +2460,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.deleteQuickReply = async function(id){
-    if(!confirm(T('settings.quickReplies.removeConfirm', 'Remover esta resposta rápida?'))) return;
+    if(!await stayflowConfirm(T('settings.quickReplies.removeConfirm', 'Remover esta resposta rápida?'))) return;
 
     try{
       const res = await fetch(`/quick-replies/${id}`, {
@@ -2487,7 +2582,7 @@ async function deleteRoleConfirm(roleId){
   }
 
   window.revokeSessionUI = async function(sessionId){
-    if(!confirm(T('settings.security.revokeConfirm', 'Revogar esta sessão? O dispositivo será desconectado no próximo acesso.'))) return;
+    if(!await stayflowConfirm(T('settings.security.revokeConfirm', 'Revogar esta sessão? O dispositivo será desconectado no próximo acesso.'))) return;
 
     try{
       const res = await fetch(`/security/sessions/${sessionId}`, {
@@ -2916,7 +3011,7 @@ window.submitIndefiniteStay = async function(event){
 };
 
 window.registerPaymentUI = async function(reservationId){
-  const amountStr = prompt(T('longTermStay.payment.prompt', 'Valor do pagamento recebido:'));
+  const amountStr = await stayflowPrompt(T('longTermStay.payment.prompt', 'Valor do pagamento recebido:'));
   if(!amountStr) return;
   const amount = parseFloat(amountStr.replace(",", "."));
   if(!amount || amount <= 0){
@@ -2943,7 +3038,7 @@ window.registerPaymentUI = async function(reservationId){
 };
 
 window.closeIndefiniteStayUI = async function(reservationId){
-  if(!confirm(T('longTermStay.closeConfirm', 'Confirma o encerramento dessa estadia? A cama será liberada pra limpeza.'))) return;
+  if(!await stayflowConfirm(T('longTermStay.closeConfirm', 'Confirma o encerramento dessa estadia? A cama será liberada pra limpeza.'))) return;
 
   try{
     const res = await fetch(`/reservations/${reservationId}/close-stay`, {
@@ -3161,7 +3256,7 @@ window.onBedTileClick = async function(bedId){
 };
 
 window.editBedLabelUI = async function(bedId, currentLabel){
-  const newLabel = prompt(T('roommap.bed.renamePrompt', 'Novo nome da cama:'), currentLabel);
+  const newLabel = await stayflowPrompt(T('roommap.bed.renamePrompt', 'Novo nome da cama:'), currentLabel);
   if(!newLabel || !newLabel.trim() || newLabel.trim() === currentLabel) return;
 
   try{
@@ -3184,7 +3279,7 @@ window.editBedLabelUI = async function(bedId, currentLabel){
 };
 
 window.deleteBedUI = async function(bedId){
-  if(!confirm(T('roommap.bed.deleteConfirm', 'Tem certeza que quer excluir essa cama? Essa ação não pode ser desfeita.'))) return;
+  if(!await stayflowConfirm(T('roommap.bed.deleteConfirm', 'Tem certeza que quer excluir essa cama? Essa ação não pode ser desfeita.'))) return;
 
   try{
     const res = await fetch(`/beds/${bedId}`, {
@@ -3319,7 +3414,7 @@ window.submitEditRoom = async function(roomId){
 };
 
 window.deleteRoomUI = async function(roomId, name){
-  if(!confirm(T('roommap.room.deleteConfirm', 'Excluir o quarto "{name}"? Todas as camas desse quarto também são excluídas junto. Essa ação não pode ser desfeita.', { name }))) return;
+  if(!await stayflowConfirm(T('roommap.room.deleteConfirm', 'Excluir o quarto "{name}"? Todas as camas desse quarto também são excluídas junto. Essa ação não pode ser desfeita.', { name }))) return;
 
   try{
     const res = await fetch(`/rooms/${roomId}`, { method: "DELETE", credentials: "same-origin" });
@@ -3392,7 +3487,7 @@ window.submitEditCategory = async function(categoryId){
 };
 
 window.deleteCategoryUI = async function(categoryId, name){
-  if(!confirm(T('roommap.category.deleteConfirm', 'Excluir a modalidade "{name}"? Os quartos que usam ela ficam sem modalidade (não são excluídos).', { name }))) return;
+  if(!await stayflowConfirm(T('roommap.category.deleteConfirm', 'Excluir a modalidade "{name}"? Os quartos que usam ela ficam sem modalidade (não são excluídos).', { name }))) return;
 
   try{
     const res = await fetch(`/room-categories/${categoryId}`, { method: "DELETE", credentials: "same-origin" });
@@ -3964,7 +4059,7 @@ window.submitNewOffering = async function(event){
 };
 
 window.deleteOffering = async function(offeringId){
-  if(!confirm(T('revenue.msg.deleteConfirm', 'Excluir esta oferta?'))) return;
+  if(!await stayflowConfirm(T('revenue.msg.deleteConfirm', 'Excluir esta oferta?'))) return;
   try{
     await fetch(`/offerings/${offeringId}`, {
       method: "DELETE",
@@ -4175,13 +4270,13 @@ window.submitNewInventoryItem = async function(event){
 };
 
 window.editInventoryItem = async function(itemId, currentQuantity, currentMin, currentReorder){
-  const quantity = prompt(T('inventory.edit.quantityPrompt', 'Nova quantidade atual:'), currentQuantity);
+  const quantity = await stayflowPrompt(T('inventory.edit.quantityPrompt', 'Nova quantidade atual:'), currentQuantity);
   if(quantity === null) return;
 
-  const minThreshold = prompt(T('inventory.edit.minPrompt', 'Novo mínimo (alerta):'), currentMin);
+  const minThreshold = await stayflowPrompt(T('inventory.edit.minPrompt', 'Novo mínimo (alerta):'), currentMin);
   if(minThreshold === null) return;
 
-  const reorderQuantity = prompt(T('inventory.edit.reorderPrompt', 'Nova quantidade sugerida de reposição:'), currentReorder);
+  const reorderQuantity = await stayflowPrompt(T('inventory.edit.reorderPrompt', 'Nova quantidade sugerida de reposição:'), currentReorder);
   if(reorderQuantity === null) return;
 
   try{
@@ -4216,7 +4311,7 @@ window.markInventoryItemEmpty = async function(itemId){
 };
 
 window.deleteInventoryItem = async function(itemId){
-  if(!confirm(T('inventory.msg.deleteConfirm', 'Excluir este produto do estoque?'))) return;
+  if(!await stayflowConfirm(T('inventory.msg.deleteConfirm', 'Excluir este produto do estoque?'))) return;
   try{
     await fetch(`/inventory/${itemId}`, {
       method: "DELETE",
@@ -4331,10 +4426,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const categorySelect = document.getElementById("inventoryCategorySelect");
   if(categorySelect){
-    categorySelect.addEventListener("change", () => {
+    categorySelect.addEventListener("change", async () => {
       if(categorySelect.value !== "__new_category__") return;
 
-      const newCategory = prompt(T('inventory.newCategoryPrompt', 'Nome da nova categoria:'));
+      const newCategory = await stayflowPrompt(T('inventory.newCategoryPrompt', 'Nome da nova categoria:'));
 
       if(!newCategory || !newCategory.trim()){
         categorySelect.value = "outro";
@@ -4352,10 +4447,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const roomTypeSelect = document.getElementById("reservationRoomTypeSelect");
   if(roomTypeSelect){
-    roomTypeSelect.addEventListener("change", () => {
+    roomTypeSelect.addEventListener("change", async () => {
       if(roomTypeSelect.value !== "__new_room_type__") return;
 
-      const newType = prompt(T('reservations.newRoomTypePrompt', 'Nome do novo tipo de quarto:'));
+      const newType = await stayflowPrompt(T('reservations.newRoomTypePrompt', 'Nome do novo tipo de quarto:'));
 
       if(!newType || !newType.trim()){
         roomTypeSelect.value = "";
@@ -4373,10 +4468,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const hostelTypeSelect = document.getElementById("settingsHostelTypeSelect");
   if(hostelTypeSelect){
-    hostelTypeSelect.addEventListener("change", () => {
+    hostelTypeSelect.addEventListener("change", async () => {
       if(hostelTypeSelect.value !== "__new_hostel_type__") return;
 
-      const newType = prompt(T('settings.newHostelTypePrompt', 'Nome do novo tipo de propriedade:'));
+      const newType = await stayflowPrompt(T('settings.newHostelTypePrompt', 'Nome do novo tipo de propriedade:'));
 
       if(!newType || !newType.trim()){
         hostelTypeSelect.value = "";

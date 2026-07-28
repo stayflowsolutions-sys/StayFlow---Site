@@ -2125,3 +2125,51 @@ dados da segunda mensagem, não duplicada); histórico da conversa
 confirmado presente no prompt enviado pro modelo; e teste de
 reordenação confirmando que um hóspede que voltou a escrever sobe pro
 topo da lista de oportunidades.
+
+### Décima terceira rodada da Sessão 8 (28/07) — caixas de alerta com a
+### cara do StayFlow, em vez da caixa branca do sistema operacional
+
+Usuário pediu: os `alert()`/`confirm()`/`prompt()` nativos do
+navegador (caixa branca, cara de sistema operacional) deveriam virar
+uma caixa azul com a identidade visual do StayFlow. Mapeado: 78
+`alert()`, 10 `confirm()` e 8 `prompt()` só no `dashboard.html`, mais 4
+`alert()` em `chats-live.js` — 100 pontos ao todo.
+
+**Problema técnico real por trás disso**: `confirm()`/`prompt()`
+nativos são SÍNCRONOS (travam a página até a pessoa responder, e o
+valor volta na hora) — um modal de verdade, feito com HTML/CSS/JS, não
+consegue travar a thread desse jeito. Não dá pra só "trocar a cor" do
+`confirm()` nativo; ele precisa virar assíncrono (`Promise`), e todo
+lugar que chamava `confirm()`/`prompt()` esperando o valor na hora
+precisa passar a usar `await`.
+
+**Solução, duas partes diferentes:**
+1. `alert()`: como nenhum lugar do código usa o valor de retorno nem
+   depende do bloqueio síncrono de verdade (é sempre "mostra e
+   segue"), dava pra simplesmente SOBRESCREVER `window.alert` uma
+   única vez com uma versão que abre o modal azul (sem travar nada) —
+   os 82 pontos (78 + 4) foram resolvidos de graça, sem tocar em
+   nenhum dos call sites.
+2. `confirm()`/`prompt()`: como o valor de retorno É usado de verdade
+   (`if(!confirm(...)) return;`), esses não dava pra sobrescrever sem
+   quebrar o comportamento (um `confirm()` que sempre retorna `true`
+   sem perguntar nada seria perigoso — ex: excluiria uma cama sem
+   confirmar de verdade). Criadas duas funções novas,
+   `stayflowConfirm()`/`stayflowPrompt()`, que devolvem uma Promise, e
+   os 18 pontos reais (10 confirm + 8 prompt) foram convertidos um por
+   um pra `await stayflowConfirm(...)`/`await stayflowPrompt(...)`,
+   dentro de funções `async` (a maioria já era; 3 listeners de
+   `change` em `<select>` precisaram virar `async () => {...}`).
+
+Modal novo (`#sfAlertOverlay`/`#sfAlertModal`) usa o mesmo padrão
+visual já existente do `.generic-modal` (fundo azul-marinho escuro,
+borda sutil), com um ícone circular azul no topo — não reaproveita o
+MESMO elemento DOM do modal genérico (usado pelas telas de Equipe) pra
+evitar os dois tentarem abrir ao mesmo tempo. Fecha com Esc, com clique
+fora, ou com os botões — clique fora/Esc conta como "cancelar"
+(resolve `false`/`null`, nunca `true`).
+
+Balanceamento de chaves/parênteses/colchetes conferido no
+`dashboard.html` depois da conversão inteira, e checagem de cobertura
+cruzada de i18n confirmando que a chave nova (`common.cancel`) existe
+nos 5 idiomas.
