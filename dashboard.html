@@ -1564,7 +1564,7 @@ async function deleteRoleConfirm(roleId){
         <button class="btn secondary" data-settings-target="empresa" data-i18n="settings.menu.company">Empresa</button>
         <button class="btn secondary" data-settings-target="ia" data-i18n="settings.menu.ai">IA</button>
         <button class="btn secondary" data-settings-target="comunicacao" data-i18n="settings.menu.communication">Comunicação</button>
-        <button class="btn secondary" data-settings-target="developer" data-i18n="settings.menu.integrations">Integrações</button>
+        <button class="btn secondary" data-settings-target="integracoes" data-i18n="settings.menu.integrations">Integrações</button>
         <button class="btn secondary" onclick="openTeamPanel()" data-i18n="nav.team">Equipe</button>
         <button class="btn secondary" data-settings-target="seguranca" data-i18n="settings.menu.security">Segurança</button>
         <button class="btn secondary" data-settings-target="billing">Billing</button>
@@ -1821,14 +1821,30 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card" data-settings-section="developer">
-        <h2 data-i18n="settings.developer.title">Developer</h2>
-        <div class="sf-empty">
+      <div class="card" data-settings-section="integracoes">
+        <h2 data-i18n="settings.beds24.title">🔌 Integração com canais (Booking.com, Airbnb, Hostelworld)</h2>
+
+        <div id="beds24Unavailable" class="sf-empty" style="display:none">
           <div>
-            <strong data-i18n="settings.developer.emptyTitle">Integrações — em breve</strong>
-            <span data-i18n="settings.developer.emptyDesc">Planejado: OTAs (Booking.com, Airbnb, Hostelworld) e channel managers (ex: Beds24) via e-mail ou API, quando o acesso de parceiro estiver disponível. Chaves de API para integrações próprias também ficam para essa fase — nenhuma chave é gerada ainda.</span>
+            <strong data-i18n="settings.beds24.unavailableTitle">Integração ainda não disponível</strong>
+            <span data-i18n="settings.beds24.unavailableDesc">A conexão com o channel manager está sendo configurada pelo StayFlow. Volte em breve.</span>
           </div>
         </div>
+
+        <div id="beds24NotActivated" style="display:none">
+          <p data-i18n="settings.beds24.intro" style="font-size:13px;color:var(--muted);margin:0 0 14px">Conecta seu hostel com Booking.com, Airbnb e Hostelworld — reservas feitas nesses canais caem automaticamente no seu mapa de quartos, e sua disponibilidade é mantida atualizada lá também, sem risco de overbooking entre canais.</p>
+          <button type="button" class="btn" onclick="activateBeds24Channel()" data-i18n="settings.beds24.activateBtn">Ativar integração com canais</button>
+        </div>
+
+        <div id="beds24Activated" style="display:none">
+          <p style="margin:0 0 4px">
+            <span data-i18n="settings.beds24.statusLabel">Status:</span>
+            <strong style="color:#3ddc97" data-i18n="settings.beds24.statusActive">Ativado</strong>
+          </p>
+          <p data-i18n="settings.beds24.mappingPending" style="font-size:12px;color:var(--muted)">Próximo passo: mapear cada modalidade de quarto com o quarto correspondente no channel manager (em breve nesta tela).</p>
+        </div>
+
+        <div id="beds24Message" class="generic-modal-message"></div>
       </div>
 
     </div>
@@ -2271,6 +2287,64 @@ async function deleteRoleConfirm(roleId){
       }
     }catch(e){
       console.warn("Erro ao carregar config WhatsApp:", e);
+    }
+  };
+
+  window.loadBeds24Settings = async function(){
+    const unavailableEl = document.getElementById("beds24Unavailable");
+    const notActivatedEl = document.getElementById("beds24NotActivated");
+    const activatedEl = document.getElementById("beds24Activated");
+    if(!unavailableEl || !notActivatedEl || !activatedEl) return;
+
+    try{
+      const res = await fetch("/settings/beds24", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      if(!data.master_account_ready){
+        unavailableEl.style.display = "flex";
+        notActivatedEl.style.display = "none";
+        activatedEl.style.display = "none";
+        return;
+      }
+
+      unavailableEl.style.display = "none";
+      const isActive = Boolean(data.property_id);
+      notActivatedEl.style.display = isActive ? "none" : "block";
+      activatedEl.style.display = isActive ? "block" : "none";
+    }catch(e){
+      console.warn("Erro ao carregar configuração do Beds24:", e);
+    }
+  };
+
+  window.activateBeds24Channel = async function(){
+    const msg = document.getElementById("beds24Message");
+    if(msg){
+      msg.textContent = "";
+      msg.className = "generic-modal-message";
+    }
+
+    try{
+      const res = await fetch("/settings/beds24/activate", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({})
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        if(msg){
+          msg.textContent = data.message || T('settings.beds24.activateFailed', 'Não foi possível ativar a integração.');
+          msg.classList.add("error");
+        }
+        return;
+      }
+      loadBeds24Settings();
+    }catch(e){
+      if(msg){
+        msg.textContent = T('common.connectionError', 'Erro de conexão.');
+        msg.classList.add("error");
+      }
     }
   };
 
@@ -4780,6 +4854,7 @@ async function loadGuests(){
     if (typeof loadChats === "function") loadChats();
     if (typeof hydrateSettingsFromBackend === "function") hydrateSettingsFromBackend();
     if (typeof loadWhatsappSettings === "function") loadWhatsappSettings();
+    if (typeof loadBeds24Settings === "function") loadBeds24Settings();
     if (typeof loadQuickReplies === "function") loadQuickReplies();
 
     // Gestao da propria conta (senha, sessoes, historico de login) e
@@ -4817,7 +4892,7 @@ async function loadGuests(){
     inventory: ["loadInventory", "loadSuppliers"],
     revenue: ["loadRevenue"],
     reports: ["loadReports"],
-    settings: ["hydrateSettingsFromBackend", "loadWhatsappSettings"]
+    settings: ["hydrateSettingsFromBackend", "loadWhatsappSettings", "loadBeds24Settings"]
   };
 
   function reloadDynamicContent(pageId){

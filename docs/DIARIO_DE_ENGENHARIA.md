@@ -2284,3 +2284,111 @@ mesmas chaves de tradução que já existiam (`chats.takeoverBtn`,
 Balanceamento de chaves/parênteses/colchetes conferido no
 `dashboard.html` e no `chats-live.js`, e checagem de cobertura cruzada
 de i18n confirmando 0 chaves faltando nos 5 idiomas.
+
+## Décima sexta rodada: integração com channel manager (Beds24) — Fase 1 (fundação)
+
+Início do maior projeto desta sessão: conectar o StayFlow a Booking.com,
+Airbnb e Hostelworld pra receber reserva automaticamente, sem overbooking
+entre canais. Depois de pesquisa de mercado (custo de channel managers,
+o que cada um duplicaria do StayFlow) e discussão sobre modelo de
+negócio, decisão registrada com o usuário:
+
+- **Beds24** como channel manager (API v2 aberta, webhook de reserva em
+  tempo real, preço competitivo — ~€15,90/mês base + ~€3/mês por
+  propriedade adicional).
+- **Modelo agência/white-label**: UMA conta master do StayFlow no Beds24
+  (o usuário já criou, tipo "Vários", 1000+ propriedades), onde cada
+  cliente StayFlow vira uma sub-propriedade — nunca cria conta própria,
+  nunca vê a marca Beds24, nunca paga separado. Custo absorvido pelo
+  StayFlow e embutido no próprio preço.
+- Também ficou registrado, como Fase 6 futura, um pedido do usuário:
+  webhook de saída genérico, pra clientes que já usam sistema próprio e
+  querem o StayFlow só como camada de atendimento/IA — toda reserva
+  (de qualquer origem) seria replicada pra uma URL configurável do
+  cliente. Reaproveita o mesmo gancho de "reserva criada/alterada" já
+  planejado pro push de disponibilidade — ainda não implementado.
+
+Plano completo registrado e aprovado (`EnterPlanMode`/`ExitPlanMode`),
+com investigação prévia de codebase (2 agentes Explore, backend e
+frontend) confirmando: nenhum campo de mapeamento externo existia em
+`reservations`/`rooms`/`beds`/`room_categories`; **os 3 caminhos de
+criação de reserva não tinham nenhuma trava contra condição de corrida**
+(check-then-act sem transação, em produção via gunicorn com múltiplos
+workers reais); nenhuma infraestrutura de criptografia no projeto; nenhum
+scheduler/cron.
+
+**Fase 1 implementada** (fundação — ativação da sub-propriedade, sem
+ainda receber/enviar reserva de verdade, isso fica pras próximas fases):
+
+- `database.py`: tabelas novas `beds24_master_account` (singleton — é
+  UMA conta que vale pra todos os clientes, não tem `hostel_id`),
+  `channel_room_mapping` (de-para modalidade StayFlow ↔ quarto Beds24,
+  usada na Fase 2), `channel_webhook_events` (idempotência de webhook,
+  usada na Fase 3); colunas novas `hostels.beds24_property_id` e
+  `reservations.external_booking_id`.
+- **`reservar_cama_com_trava(hostel_id, bed_id, checkin, checkout,
+  insert_fn)`** (novo, em `database.py`): usa `BEGIN IMMEDIATE` do
+  SQLite pra fechar a janela de corrida real que existia entre "checar
+  disponibilidade" e "inserir a reserva" — a trava de escrita é pega
+  na abertura da transação, não só no primeiro INSERT/UPDATE, então
+  serializa de verdade chamadas concorrentes (funciona entre threads E
+  entre processos gunicorn diferentes, porque é trava de arquivo, não
+  de memória). Aplicada imediatamente em `create_reservation_from_chat`
+  (fluxo do WhatsApp — reescrito pra reconferir disponibilidade e
+  inserir a reserva numa única transação travada, em vez de 3 conexões
+  separadas como antes) — é o outro caminho automático de alta
+  frequência que vai disputar cama com o webhook do Beds24 nas próximas
+  fases. Deliberadamente NÃO aplicada em `create_reservation_record`
+  (entrada manual da equipe, campo de cama é texto livre, baixa
+  frequência de disputa real — mudar o comportamento ali seria
+  regressão de UX pra um problema que quase não acontece na prática).
+- `services/beds24_service.py` (novo): autenticação da API v2 (troca de
+  invite code por refresh token, cache + renovação sob demanda do access
+  token — sem scheduler, já que o projeto não tem nenhum), `create_property`
+  (cria a sub-propriedade de um cliente via `POST /properties`),
+  `push_availability` (usado só na Fase 4). Refresh token guardado
+  **criptografado** (Fernet/`cryptography`, nova dependência) — único
+  desvio do padrão do projeto (token de WhatsApp fica em texto puro),
+  justificado porque um vazamento aqui expõe a reserva de TODOS os
+  clientes StayFlow de uma vez, não de um hostel só. Chave de
+  criptografia numa env var nova, `BEDS24_ENCRYPTION_KEY` — **pendente
+  de configurar no Render**, sem ela a ativação da integração falha com
+  erro claro (`RuntimeError`), não silenciosamente.
+- `routes/settings.py`: rotas novas `GET /settings/beds24` (status:
+  conta master pronta? sub-propriedade já ativada?) e `POST
+  /settings/beds24/activate` (cria a sub-propriedade pro hostel logado),
+  seguindo exatamente o padrão de `/settings/whatsapp`.
+- `dashboard.html`: botão "Integrações" do menu de Configurações (antes
+  apontava pro placeholder "em breve" da seção `developer`) agora abre
+  uma tela de verdade (`data-settings-section="integracoes"`) com três
+  estados — conta master não configurada ainda, não ativado (botão
+  "Ativar"), ativado (status). Chave i18n órfã `settings.developer.*`
+  removida dos 5 idiomas, substituída por `settings.beds24.*` novas.
+- `requirements.txt`: `cryptography==49.0.0` adicionado (única
+  dependência nova).
+
+**Nota de honestidade técnica**: alguns nomes exatos de campo do corpo
+de requisição da API do Beds24 (`POST /properties`, `POST
+/inventory/rooms/calendar`) vieram de documentação pública, não de teste
+contra a API real — marcados com comentário "confirmar contra API real"
+no código. Serão ajustados assim que testarmos com a conta master de
+verdade nas próximas fases.
+
+**Verificação**: `ast.parse` em todo `.py` novo/editado; testes isolados
+com banco SQLite de scratchpad (`STAYFLOW_DATA_DIR`) e `requests`
+mockado, cobrindo: criptografia round-trip do refresh token, troca de
+invite code, cache/renovação de access token, criação de propriedade, e
+— o mais importante — `reservar_cama_com_trava` bloqueando de verdade
+uma segunda reserva com datas sobrepostas na mesma cama, junto com um
+teste completo de regressão de `create_reservation_from_chat` (criação
+normal, não-duplicação por reafirmação, bloqueio por cama disputada,
+bloqueio por modalidade sem cama) confirmando que o retrofit da trava
+não mudou nenhum comportamento existente. Balanceamento de chaves/
+parênteses/colchetes e cobertura i18n conferidos no frontend.
+
+**Fases seguintes** (não implementadas ainda, checkpoint com o usuário
+entre cada uma): mapeamento de quarto (Fase 2), webhook de entrada de
+reserva (Fase 3), push de disponibilidade de saída (Fase 4), conectar
+OTA de verdade — ponto em aberto sobre como o cliente final autoriza a
+própria conta de Booking/Airbnb sem ver o painel geral do Beds24 (Fase
+5), webhook de saída genérico pra cliente com sistema próprio (Fase 6).

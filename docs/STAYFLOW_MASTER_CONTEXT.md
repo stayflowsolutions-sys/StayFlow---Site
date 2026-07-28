@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.17.1
+\*\*Versão:\*\* 1.18.0
 
 
 
@@ -83,6 +83,8 @@
 | 1.17.0 | 28/07/2026 | Oficial | Redesign do Mapa de Quartos: os cinco cards fixos de criação (Modalidades, Novo quarto, Nova cama, Lista de limpeza, Devolver da lavanderia) que ocupavam metade da tela cada um foram substituídos por um único botão "☰ Ações" no card do mapa, que abre um menu com cada uma dessas opções — cada item abre seu formulário num modal central (reaproveitando o modal genérico já usado pelo painel de Equipe), deixando o mapa visual de quartos como único conteúdo permanente da página. Modais de criação não fecham sozinhos após criar um item (formulário só limpa e a lista/seletor se atualiza na hora), pensado para o fluxo real de montar um hostel do zero criando vários quartos/camas em sequência. |
 
 | 1.17.1 | 28/07/2026 | Oficial | Botão de assumir/devolver conversa (aba Chats) redesenhado: em vez de um botão secundário cinza solto ao lado do "Score", agora é o próprio botão de enviar mensagem que troca de papel — verde e "Assumir" enquanto a IA está no controle (clicar assume a conversa em vez de enviar), voltando ao azul normal "Enviar" depois de assumido; um botão "Devolver" aparece ao lado só quando a conversa está com um humano, devolvendo o controle pra IA ao ser clicado. |
+
+| 1.18.0 | 28/07/2026 | Oficial | Início da integração com channel manager (Beds24) pra receber reservas de Booking.com/Airbnb/Hostelworld automaticamente — modelo agência/white-label, uma conta master do StayFlow com cada cliente virando sub-propriedade, sem custo nem conta separada pro cliente final. Fase 1 (fundação): tabelas novas de credencial mestra (criptografada) e mapeamento de quarto, serviço de autenticação da API v2 do Beds24, tela de ativação em Configurações → Integrações, e uma trava real contra condição de corrida (`reservar_cama_com_trava`, via `BEGIN IMMEDIATE` do SQLite) aplicada no fluxo de reserva do WhatsApp — fecha um risco de overbooking que já existia antes desta integração, sem trava nenhuma entre checar disponibilidade e inserir a reserva. Fases seguintes (mapeamento de quarto, webhook de entrada, push de disponibilidade, conexão real com as OTAs, webhook de saída genérico pra cliente com sistema próprio) ainda pendentes. |
 
 
 
