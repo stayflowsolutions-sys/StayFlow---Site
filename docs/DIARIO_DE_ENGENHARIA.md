@@ -2018,3 +2018,58 @@ independente do idioma escolhido no painel) provavelmente também
 afeta o campo `next_action` das oportunidades (preenchido pela IA de
 atendimento/motor de decisão) — não foi mexido nesta rodada, fica
 registrado como pendência conhecida pra próxima vez que aparecer.
+
+### Décima primeira rodada da Sessão 8 (25/07) — varredura completa de
+### todo texto gerado pelo backend que sempre saía em português
+
+Usuário, já impaciente (com razão — travamos bastante tempo nisso),
+pediu pra resolver de vez TODO lugar que sempre sai em português,
+não só o que já tinha sido corrigido. Foi feito um mapeamento
+sistemático de toda chamada à OpenAI no backend (só existiam 4 no
+projeto inteiro) e de todo texto persistido no banco que é exibido no
+Dashboard, pra fechar os buracos restantes:
+
+1. **Ask StayFlow** (`/ask`, `ask_agent_service.py`): o prompt tinha
+   "Responda em português" fixo. Agora `ask_agent()` recebe `lang` (o
+   idioma atual do Dashboard de quem está perguntando, mandado pelo
+   frontend em toda chamada) e instrui o modelo a responder nesse
+   idioma — sem depender de detecção, já que aqui (diferente do
+   hóspede no WhatsApp) o idioma de quem pergunta é sempre conhecido
+   de antemão pela própria sessão do painel.
+
+2. **Oportunidades** (`description`/`next_action`, mostrados no
+   Opportunity Center, nas "Ações prioritárias" do Dashboard e no
+   "Resumo da IA" do perfil do hóspede em Chats): esse texto é gerado
+   UMA VEZ, no momento em que a mensagem do hóspede chega (motor de
+   decisão `decision_engine.py`, sempre em português, gravado assim no
+   banco pra sempre) — diferente do resumo executivo, não dá pra só
+   "pedir em outro idioma" achar na hora, o texto já existe gravado.
+   Solução: novo `services/translation_service.py` com
+   `translate_opportunity_fields()` — na hora de LER as oportunidades
+   (`GET /opportunities` e `GET /guests/<id>`), se o idioma pedido não
+   for português, os textos são traduzidos em UMA chamada em lote à
+   OpenAI (nunca uma chamada por oportunidade, pra não multiplicar
+   custo/latência a cada carregamento de tela) antes de devolver pro
+   frontend. Pedido em português continua sem nenhum custo extra
+   (passthrough direto, sem chamar a IA de tradução). Se a tradução
+   falhar por qualquer motivo, devolve o texto original em português
+   em vez de quebrar a tela.
+
+Isso também resolve de graça o mesmo problema em qualquer oportunidade
+criada sem IA (ex: a trava de overbooking do Mapa de Quartos, que
+grava uma frase fixa em português direto no banco) — como a tradução
+acontece na leitura, não na escrita, qualquer oportunidade antiga ou
+nova passa pelo mesmo filtro.
+
+**Deixado em português de propósito** (não é lacuna, é decisão): a
+mensagem sugerida de reposição a fornecedor (Estoque → "Copiar
+mensagem"). Essa mensagem é pro FORNECEDOR ler, não pro gestor — trocar
+pro idioma do painel do gestor arriscaria mandar uma mensagem no
+idioma errado pra alguém que não usa o StayFlow (ex: gestor usando o
+painel em francês, fornecedor local que só entende português/espanhol).
+
+Testado sem gastar chamada real: passthrough de português (zero
+chamada à API), idioma inválido (mesmo passthrough), tradução em lote
+simulada com resposta falsa da API confirmando o mapeamento de volta
+pros campos certos, e falha da API caindo de volta pro texto original
+sem quebrar.
