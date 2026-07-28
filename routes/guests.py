@@ -6,6 +6,7 @@ from database import (
     send_message_to_guest_now,
     get_guest_document_file,
 )
+from services.translation_service import translate_opportunity_fields
 from utils.tenant import require_permission
 
 guests_bp = Blueprint("guests", __name__)
@@ -24,6 +25,10 @@ def guest_profile(hostel_id, guest_id):
 
     if not profile:
         return jsonify({"error": "Guest not found"}), 404
+
+    lang = request.args.get("lang", "pt")
+    if profile.get("opportunities"):
+        profile["opportunities"] = translate_opportunity_fields(profile["opportunities"], lang)
 
     return jsonify(profile)
 

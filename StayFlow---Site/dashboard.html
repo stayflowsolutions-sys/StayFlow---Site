@@ -2074,7 +2074,7 @@ async function deleteRoleConfirm(roleId){
         method:"POST",
         credentials:"same-origin",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ message: text }),
+        body:JSON.stringify({ message: text, lang: window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt" }),
         signal: controller.signal
       });
 

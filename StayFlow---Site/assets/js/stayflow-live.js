@@ -117,7 +117,8 @@ function updateOpportunityCenterTable(opportunities){
 
 async function loadOpportunities() {
   try {
-    const response = await fetch("/opportunities", { credentials: "same-origin" });
+    const lang = window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt";
+    const response = await fetch(`/opportunities?lang=${lang}`, { credentials: "same-origin" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const opportunities = await response.json();

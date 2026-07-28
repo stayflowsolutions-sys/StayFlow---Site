@@ -51,10 +51,23 @@ load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Idioma vem do seletor do Dashboard (a pessoa que esta conversando com
+# o Ask StayFlow), nao de preferencia salva - cada membro da equipe
+# pode estar usando um idioma diferente no painel no mesmo momento.
+ASK_LANGUAGE_NAMES = {
+    "pt": "Portuguese",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+}
+
 SYSTEM_PROMPT = """
 Você é o Ask StayFlow, assistente interno do painel administrativo do StayFlow, falando com um funcionário/gestor do hostel (não com um hóspede).
 
-Responda em português, de forma direta e útil. Use as ferramentas disponíveis pra buscar dado real antes de responder qualquer pergunta sobre números, reservas, hóspedes, conversas, estoque, oportunidades, financeiro ou receita — nunca invente ou estime valores. Se uma ferramenta não estiver disponível pra essa pessoa (permissão insuficiente), diga isso claramente e sugira quem ela pode procurar.
+{language_instruction}
+
+Responda de forma direta e útil. Use as ferramentas disponíveis pra buscar dado real antes de responder qualquer pergunta sobre números, reservas, hóspedes, conversas, estoque, oportunidades, financeiro ou receita — nunca invente ou estime valores. Se uma ferramenta não estiver disponível pra essa pessoa (permissão insuficiente), diga isso claramente e sugira quem ela pode procurar.
 
 Você também pode executar ações reais quando pedido: criar reserva, atualizar status de reserva, cadastrar fornecedor, ajustar quantidade de estoque.
 
@@ -724,7 +737,7 @@ def _default_json(obj):
     return str(obj)
 
 
-def ask_agent(hostel_id, user_id, history, message):
+def ask_agent(hostel_id, user_id, history, message, lang="pt"):
     """
     Agente do Ask StayFlow - responde perguntas e executa ações reais
     usando dado do hostel, via function calling de verdade (loop
@@ -733,15 +746,21 @@ def ask_agent(hostel_id, user_id, history, message):
     SEMPRE vem da sessao (nunca de argumento do modelo) - cada tool so
     executa se a permissao efetiva da pessoa incluir o dominio dela.
     Pedido a fornecedor e sempre propose -> (confirmacao do usuario) ->
-    send, nunca envia direto - ver SYSTEM_PROMPT.
+    send, nunca envia direto - ver SYSTEM_PROMPT. lang vem do idioma
+    atual do Dashboard de quem esta perguntando.
     """
     permissions = get_effective_permissions(user_id, hostel_id)
     allowed_tools = [t for t in TOOLS_CATALOG if t["permission"] in permissions]
     tools_by_name = {t["spec"]["function"]["name"]: t for t in allowed_tools}
     tool_specs = [t["spec"] for t in allowed_tools]
 
+    language_name = ASK_LANGUAGE_NAMES.get(lang, ASK_LANGUAGE_NAMES["pt"])
+    system_prompt = SYSTEM_PROMPT.format(
+        language_instruction=f"Responda sempre em {language_name}, independente do idioma dos dados internos que as ferramentas devolverem."
+    )
+
     messages = (
-        [{"role": "system", "content": SYSTEM_PROMPT}]
+        [{"role": "system", "content": system_prompt}]
         + history
         + [{"role": "user", "content": message}]
     )

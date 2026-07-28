@@ -192,7 +192,8 @@ async function loadChats() {
 
 async function loadGuestProfile(guestId) {
     try {
-        const response = await fetch(`/guests/${guestId}`);
+        const lang = window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt";
+        const response = await fetch(`/guests/${guestId}?lang=${lang}`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const data = await response.json();

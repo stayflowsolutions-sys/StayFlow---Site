@@ -20,6 +20,7 @@ def ask_history(hostel_id):
 def ask(hostel_id):
     data = request.get_json() or {}
     message = (data.get("message") or "").strip()
+    lang = data.get("lang", "pt")
 
     if not message:
         return jsonify({"success": False, "message": "message is required."}), 400
@@ -31,7 +32,7 @@ def ask(hostel_id):
 
     save_ask_message(hostel_id, user_id, "user", message)
 
-    reply = ask_agent(hostel_id, user_id, history_for_ai, message)
+    reply = ask_agent(hostel_id, user_id, history_for_ai, message, lang=lang)
 
     save_ask_message(hostel_id, user_id, "assistant", reply)
 
