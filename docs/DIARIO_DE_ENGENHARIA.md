@@ -2393,6 +2393,22 @@ real confirma que a API v2 do Beds24 espera um header próprio chamado
 `token` (`token: {access_token}`), sem "Bearer" na frente. Corrigido nos
 dois pontos.
 
+**Segundo bug real, mesmo teste**: corrigido o header, veio HTTP 400
+"Request body must be an array" — a API do Beds24 espera o corpo de
+`POST /properties` como lista, mesmo pra criar uma propriedade só
+(padrão em lote deles, igual o endpoint de disponibilidade já esperava
+certo desde o início). Corrigido, e a leitura da resposta foi endurecida
+pra aceitar formatos diferentes (lista ou objeto, com ou sem wrapper
+`"new"`), com log de debug da resposta bruta em caso de sucesso —
+evita precisar de mais uma rodada de tentativa e erro se o formato
+mudar de novo.
+
+**Confirmado funcionando em produção**: terceiro teste, botão "Ativar
+integração com canais" retornou "Status: Ativado" — a sub-propriedade
+do hostel foi criada de verdade dentro da conta master do Beds24. Fase
+1 encerrada aqui por hoje; Fases 2-6 (mapeamento de quarto, webhook de
+entrada/saída, conexão real com as OTAs) ficam pra próxima sessão.
+
 **Verificação**: `ast.parse` em todo `.py` novo/editado; testes isolados
 com banco SQLite de scratchpad (`STAYFLOW_DATA_DIR`) e `requests`
 mockado, cobrindo: criptografia round-trip do refresh token, troca de
