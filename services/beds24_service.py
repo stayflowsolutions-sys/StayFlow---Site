@@ -150,7 +150,7 @@ def create_property(hostel_name, currency="USD", property_type="hotel"):
     try:
         response = requests.post(
             f"{API_BASE}/properties",
-            headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+            headers={"token": access_token, "Content-Type": "application/json"},
             json={"name": hostel_name, "propertyType": property_type, "currency": currency},
             timeout=REQUEST_TIMEOUT,
         )
@@ -194,7 +194,7 @@ def push_availability(beds24_room_id, checkin_date, checkout_date, num_avail):
     try:
         response = requests.post(
             f"{API_BASE}/inventory/rooms/calendar",
-            headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+            headers={"token": access_token, "Content-Type": "application/json"},
             json=[{
                 "roomId": beds24_room_id,
                 "calendar": [{"from": checkin_date, "to": checkout_date, "numAvail": num_avail}],
