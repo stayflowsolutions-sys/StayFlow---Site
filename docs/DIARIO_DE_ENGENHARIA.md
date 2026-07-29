@@ -2374,6 +2374,25 @@ contra a API real — marcados com comentário "confirmar contra API real"
 no código. Serão ajustados assim que testarmos com a conta master de
 verdade nas próximas fases.
 
+**Configuração real, feita com o usuário passo a passo**: conta master
+criada no Beds24 (tipo agência, "Vários"/1000+ propriedades — confirmado
+que o painel de revendedor com "Subcontas" existe de verdade, útil pra
+fase futura de criar conta por cliente). `BEDS24_ENCRYPTION_KEY` gerada e
+configurada no Render. Invite code gerado com escopos Reservas-
+Financeiro, Inventário, Propriedades e Canais (leitura+escrita) e Contas
+(só leitura), acesso "todos pertencem à conta". `setup_beds24_master.py`
+rodado com sucesso via Shell do Render, refresh token salvo criptografado
+em produção.
+
+**Bug real encontrado no primeiro teste de ponta a ponta**: clicar em
+"Ativar integração com canais" devolveu HTTP 401 do Beds24 ao tentar
+criar a propriedade. Causa: `create_property`/`push_availability`
+mandavam o access token num header `Authorization: Bearer {token}`
+(padrão OAuth2 comum, mas não é o que o Beds24 usa) — a documentação
+real confirma que a API v2 do Beds24 espera um header próprio chamado
+`token` (`token: {access_token}`), sem "Bearer" na frente. Corrigido nos
+dois pontos.
+
 **Verificação**: `ast.parse` em todo `.py` novo/editado; testes isolados
 com banco SQLite de scratchpad (`STAYFLOW_DATA_DIR`) e `requests`
 mockado, cobrindo: criptografia round-trip do refresh token, troca de
