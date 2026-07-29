@@ -151,7 +151,7 @@ def create_property(hostel_name, currency="USD", property_type="hotel"):
         response = requests.post(
             f"{API_BASE}/properties",
             headers={"token": access_token, "Content-Type": "application/json"},
-            json={"name": hostel_name, "propertyType": property_type, "currency": currency},
+            json=[{"name": hostel_name, "propertyType": property_type, "currency": currency}],
             timeout=REQUEST_TIMEOUT,
         )
         if response.status_code >= 400:
@@ -159,7 +159,18 @@ def create_property(hostel_name, currency="USD", property_type="hotel"):
             return None, f"Beds24 recusou a criacao da propriedade (HTTP {response.status_code})."
 
         data = response.json()
-        property_id = data.get("id") or data.get("propertyId")
+        print("Resposta do Beds24 ao criar propriedade:", data)
+
+        # A API do Beds24 responde em lote (array), inclusive pra uma
+        # unica propriedade - e alguns endpoints em lote embrulham o
+        # objeto criado dentro de uma chave "new". Trata os formatos
+        # possiveis em vez de assumir um so, ja que a documentacao
+        # publica nao deixa isso 100% claro.
+        item = data[0] if isinstance(data, list) and data else data
+        if isinstance(item, dict) and isinstance(item.get("new"), dict):
+            item = item["new"]
+
+        property_id = item.get("id") or item.get("propertyId") if isinstance(item, dict) else None
         if not property_id:
             print("Resposta do Beds24 sem id de propriedade:", data)
             return None, "Resposta do Beds24 nao trouxe o id da propriedade criada."
