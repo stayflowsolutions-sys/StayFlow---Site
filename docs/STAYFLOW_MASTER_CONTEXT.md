@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.19.1
+\*\*Versão:\*\* 1.19.2
 
 
 
@@ -89,6 +89,8 @@
 | 1.19.0 | 30/07/2026 | Oficial | Fase 2 da integração Beds24: mapeamento de quarto. Tela de Configurações → Integrações ganha, pra cada modalidade de quarto do hostel, um seletor com os quartos já cadastrados na sub-propriedade do Beds24 (`GET /properties?includeAllRooms=true`) — escolher e salvar cria o vínculo; escolher "nenhum" remove. Sem esse mapeamento, uma reserva futura vinda de OTA (Fase 3) não saberia em qual modalidade cair. |
 
 | 1.19.1 | 30/07/2026 | Oficial | Ajuste real, testado ao vivo: sub-propriedade nova no Beds24 nasce sem nenhum quarto, deixando o seletor de mapeamento vazio. Adicionado botão "Criar no Beds24" que cria o quarto lá direto (`POST /properties` com `id` da propriedade + `roomTypes`) e já vincula automaticamente — fecha o fluxo sem o usuário precisar abrir o painel do Beds24 manualmente. Faxina: removidas duas cópias obsoletas do diário/master context (uma na raiz do repositório `HostelBot`, outra solta em `HostelBot/StayFlow---Site/docs/`) — só a versão em `StayFlow---Site/docs/` é a fonte de verdade. |
+
+| 1.19.2 | 30/07/2026 | Oficial | Diretriz de produto explícita do usuário, aplicada em toda a integração de canais: o cliente final nunca deve sentir que existe qualquer plataforma externa no meio, só StayFlow. Removida toda menção literal a "Beds24"/"channel manager" dos textos visíveis nos 5 idiomas (achado testando ao vivo: o tradutor automático do navegador traduzia "Beds24" cru na tela pra "Camas24"). Adicionada mensagem de sucesso clara ao criar quarto automaticamente, e o seletor de quarto passou a tolerar o quarto recém-criado ainda não aparecer na consulta seguinte ao Beds24 (consistência eventual do lado deles), evitando a aparência de falha quando na verdade só está sincronizando. |
 
 
 

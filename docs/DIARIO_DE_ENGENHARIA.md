@@ -2487,3 +2487,33 @@ repositório `HostelBot` (`docs/`, de antes da convenção atual, parada em
 excluir essa pasta da sincronização, parada em 22/07). Nenhum conteúdo
 único perdido — a versão em `StayFlow---Site/docs/` sempre teve tudo
 isso e mais.
+
+**Feedback do usuário testando ao vivo, com screenshot real**: o
+seletor de quarto apareceu com "Camas24" no lugar de "Beds24" — o
+tradutor automático do navegador traduzindo "Beds" literalmente, porque
+o nome da plataforma aparecia cru na tela. Aproveitando, o usuário
+deixou clara uma diretriz de produto pra esta integração toda: **o
+cliente final nunca deve sentir que existe qualquer outra plataforma no
+meio** — precisa parecer 100% StayFlow, mesmo sabendo (pelos nomes de
+Booking/Airbnb/Hostelworld, que continuam visíveis de propósito) que
+existe sincronização com canais de venda reais.
+
+Removida toda menção literal a "Beds24" e a "channel manager" dos
+textos visíveis, nos 5 idiomas: "Selecione o quarto no Beds24..." →
+"Selecione o quarto sincronizado...", "Criar no Beds24" → "Criar
+automaticamente", mensagens de erro reescritas no mesmo espírito.
+Nomes de função internos (`loadBeds24Settings`, `createBeds24RoomForCategory`
+etc.) e `console.warn` de depuração mantidos como estão — não são
+visíveis pro usuário, só pra manutenção do código.
+
+Também corrigidos dois problemas reais expostos pelo mesmo teste: (1)
+faltava uma mensagem de sucesso clara depois de criar o quarto
+automaticamente — o usuário não conseguia saber se tinha funcionado só
+olhando o estado da tela; adicionada `settings.beds24.createRoomSuccess`.
+(2) o seletor de quarto podia aparecer vazio/sem opção selecionada logo
+depois de criar um quarto novo, se o Beds24 demorasse um instante pra
+refletir esse quarto na consulta seguinte (`GET /properties` logo em
+seguida ao `POST` de criação, consistência eventual do lado deles) — o
+`<select>` agora injeta uma opção extra pro quarto mapeado mesmo que
+ele ainda não apareça na lista vinda do Beds24, evitando a aparência de
+"não funcionou" quando na verdade só está sincronizando.

@@ -2348,19 +2348,30 @@ async function deleteRoleConfirm(roleId){
       emptyEl.style.display = "none";
       listEl.style.display = "grid";
 
-      const roomOptions = beds24Rooms.map(r => `<option value="${escapeHtml(r.id)}">${escapeHtml(r.name)}</option>`).join("");
+      const roomsById = {};
+      beds24Rooms.forEach(r => { roomsById[String(r.id)] = r.name; });
 
-      listEl.innerHTML = categories.map(c => `
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span style="min-width:160px;font-weight:700">${escapeHtml(c.category_name)}</span>
-          <select id="beds24RoomSelect_${c.room_category_id}" style="flex:1;min-width:180px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:8px 12px;">
-            <option value="">${T('settings.beds24.selectRoomPlaceholder', 'Selecione o quarto no Beds24...')}</option>
-            ${roomOptions}
-          </select>
-          <button type="button" class="btn secondary" style="padding:8px 14px" onclick="saveBeds24RoomMapping(${c.room_category_id})">${T('common.save', 'Salvar')}</button>
-          <button type="button" class="btn secondary" style="padding:8px 14px" onclick="createBeds24RoomForCategory(${c.room_category_id}, '${c.category_name.replace(/'/g, "\\'")}')">${T('settings.beds24.createRoomBtn', 'Criar no Beds24')}</button>
-        </div>
-      `).join("");
+      listEl.innerHTML = categories.map(c => {
+        let options = beds24Rooms.map(r => `<option value="${escapeHtml(r.id)}">${escapeHtml(r.name)}</option>`).join("");
+        // Se o quarto mapeado ainda nao aparece na lista (o Beds24 pode
+        // demorar um instante pra refletir um quarto recem-criado numa
+        // consulta seguinte), injeta uma opcao extra pra ele nao sumir
+        // do seletor como se o mapeamento nao tivesse funcionado.
+        if(c.beds24_room_id && !roomsById[String(c.beds24_room_id)]){
+          options += `<option value="${escapeHtml(c.beds24_room_id)}">${escapeHtml(c.category_name)} (${T('settings.beds24.syncingLabel', 'sincronizando...')})</option>`;
+        }
+        return `
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="min-width:160px;font-weight:700">${escapeHtml(c.category_name)}</span>
+            <select id="beds24RoomSelect_${c.room_category_id}" style="flex:1;min-width:180px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:8px 12px;">
+              <option value="">${T('settings.beds24.selectRoomPlaceholder', 'Selecione o quarto sincronizado...')}</option>
+              ${options}
+            </select>
+            <button type="button" class="btn secondary" style="padding:8px 14px" onclick="saveBeds24RoomMapping(${c.room_category_id})">${T('common.save', 'Salvar')}</button>
+            <button type="button" class="btn secondary" style="padding:8px 14px" onclick="createBeds24RoomForCategory(${c.room_category_id}, '${c.category_name.replace(/'/g, "\\'")}')">${T('settings.beds24.createRoomBtn', 'Criar automaticamente')}</button>
+          </div>
+        `;
+      }).join("");
 
       categories.forEach(c => {
         if(c.beds24_room_id){
@@ -2426,10 +2437,14 @@ async function deleteRoleConfirm(roleId){
       const data = await res.json().catch(() => ({}));
       if(!res.ok || !data.success){
         if(msg){
-          msg.textContent = data.message || T('settings.beds24.createRoomFailed', 'Não foi possível criar o quarto no Beds24.');
+          msg.textContent = data.message || T('settings.beds24.createRoomFailed', 'Não foi possível criar o quarto automaticamente.');
           msg.classList.add("error");
         }
         return;
+      }
+      if(msg){
+        msg.textContent = T('settings.beds24.createRoomSuccess', 'Quarto criado e vinculado com sucesso!');
+        msg.classList.add("success");
       }
       loadBeds24RoomMapping();
     }catch(e){
