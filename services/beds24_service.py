@@ -250,6 +250,7 @@ def get_property_rooms(property_id):
             return None, f"Beds24 recusou a listagem de quartos (HTTP {response.status_code})."
 
         data = response.json()
+        print("Resposta do Beds24 ao listar quartos (propertyId=%s):" % property_id, data)
         item = data[0] if isinstance(data, list) and data else data
         room_types = item.get("roomTypes") if isinstance(item, dict) else None
         if not isinstance(room_types, list):
@@ -260,6 +261,7 @@ def get_property_rooms(property_id):
             {"id": str(rt.get("id")), "name": rt.get("name") or f"Quarto {rt.get('id')}"}
             for rt in room_types if isinstance(rt, dict) and rt.get("id")
         ]
+        print("Quartos parseados:", rooms)
         return rooms, None
     except Exception as error:
         print("Erro de conexao ao listar quartos no Beds24:", error)
