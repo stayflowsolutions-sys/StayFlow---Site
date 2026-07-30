@@ -2540,3 +2540,20 @@ Translate, Microsoft Translator no Edge) não oferecer/aplicar tradução
 automática — a tradução do StayFlow continua existindo, só que
 exclusivamente pelo seletor de idioma próprio do produto, nunca por
 inferência do navegador.
+
+**Bug real encontrado, mesmo teste**: o botão "Salvar" do mapeamento de
+quarto não dava nenhum retorno visível quando funcionava — só mostrava
+mensagem em caso de erro. Usuário salvou um mapeamento já correto (o
+mesmo id que a criação automática já tinha vinculado) e, sem nenhuma
+confirmação na tela, concluiu que "não salvou". Corrigido: sucesso
+agora mostra `settings.beds24.mappingSaveSuccess` ("Mapeamento salvo
+com sucesso!"), mesmo padrão do botão de criar quarto.
+
+Também investigando por que o seletor continuava mostrando
+"(sincronizando...)" mesmo depois de recarregar a página — mais do que
+o esperado pra uma simples demora de consistência eventual do Beds24.
+Adicionado log de depuração em `get_property_rooms` (resposta bruta da
+listagem + lista já parseada) pra comparar, nos logs do Render, o id do
+quarto capturado na hora de criar contra o id que a listagem realmente
+devolve depois — vai apontar se é só demora real ou se há uma
+divergência de formato entre os dois pontos que merece correção.

@@ -2412,6 +2412,11 @@ async function deleteRoleConfirm(roleId){
           msg.textContent = data.message || T('settings.beds24.mappingSaveFailed', 'Não foi possível salvar o mapeamento.');
           msg.classList.add("error");
         }
+        return;
+      }
+      if(msg){
+        msg.textContent = T('settings.beds24.mappingSaveSuccess', 'Mapeamento salvo com sucesso!');
+        msg.classList.add("success");
       }
     }catch(e){
       if(msg){
