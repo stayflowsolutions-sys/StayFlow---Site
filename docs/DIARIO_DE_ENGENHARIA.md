@@ -2517,3 +2517,26 @@ seguida ao `POST` de criação, consistência eventual do lado deles) — o
 `<select>` agora injeta uma opção extra pro quarto mapeado mesmo que
 ele ainda não apareça na lista vinda do Beds24, evitando a aparência de
 "não funcionou" quando na verdade só está sincronizando.
+
+**Causa raiz real da confusão (achada testando ao vivo)**: não era bug
+do StayFlow nenhum dos dois — "Compartilhado" (nome de modalidade
+gravado certinho no banco) virando "Compartmentalhado" na tela era o
+mesmo sintoma de "Beds24" virando "Camas24": o **tradutor automático do
+próprio navegador** (Edge/Chrome) reprocessando uma página que já está
+em português (ou já tem tradução própria via seletor de idioma),
+bagunçando texto estático e, possivelmente, interferindo em conteúdo
+inserido dinamicamente por JavaScript (explicaria a caixa de aviso
+aparecer vazia depois de criar o quarto).
+
+Usuário corretamente apontou que desativar a tradução só no próprio
+navegador não resolveria pra nenhum cliente real que tivesse a mesma
+configuração ligada. Correção aplicada direto no código, de uma vez pra
+sempre: `<meta name="google" content="notranslate">` no `<head>` +
+atributo `translate="no"` na tag `<html>` de `dashboard.html`,
+`Login.html`, `Register.html` e `index.html` (esse último já tinha o
+meta tag de uma sessão anterior, só faltava o atributo `translate`).
+Isso é o sinal padrão da web pra qualquer tradutor de navegador (Google
+Translate, Microsoft Translator no Edge) não oferecer/aplicar tradução
+automática — a tradução do StayFlow continua existindo, só que
+exclusivamente pelo seletor de idioma próprio do produto, nunca por
+inferência do navegador.
