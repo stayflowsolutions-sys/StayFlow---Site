@@ -181,6 +181,52 @@ def create_property(hostel_name, currency="USD", property_type="hotel"):
         return None, "Erro de conexao com o Beds24."
 
 
+def create_room_type(property_id, room_name):
+    """
+    Cria um novo tipo de quarto (roomType) dentro de uma sub-propriedade
+    ja existente no Beds24 - usado quando o hostel ainda nao tem nenhum
+    quarto cadastrado la, pra ele nunca precisar abrir o painel do
+    Beds24 manualmente. Retorna (beds24_room_id, erro).
+    """
+    access_token = _get_valid_access_token()
+    if not access_token:
+        return None, "Conta master do Beds24 nao configurada ou token invalido."
+
+    try:
+        response = requests.post(
+            f"{API_BASE}/properties",
+            headers={"token": access_token, "Content-Type": "application/json"},
+            json=[{"id": int(property_id), "roomTypes": [{"name": room_name}]}],
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code >= 400:
+            print("Erro ao criar quarto no Beds24:", response.status_code, response.text)
+            return None, f"Beds24 recusou a criacao do quarto (HTTP {response.status_code})."
+
+        data = response.json()
+        print("Resposta do Beds24 ao criar quarto:", data)
+
+        item = data[0] if isinstance(data, list) and data else data
+        if isinstance(item, dict) and isinstance(item.get("new"), dict):
+            item = item["new"]
+
+        room_types = item.get("roomTypes") if isinstance(item, dict) else None
+        if not isinstance(room_types, list) or not room_types:
+            print("Resposta do Beds24 sem roomTypes criado:", data)
+            return None, "Resposta do Beds24 nao trouxe o quarto criado."
+
+        new_room = room_types[-1]
+        room_id = new_room.get("id") if isinstance(new_room, dict) else None
+        if not room_id:
+            print("Resposta do Beds24 sem id do quarto criado:", data)
+            return None, "Resposta do Beds24 nao trouxe o id do quarto criado."
+
+        return str(room_id), None
+    except Exception as error:
+        print("Erro de conexao ao criar quarto no Beds24:", error)
+        return None, "Erro de conexao com o Beds24."
+
+
 def get_property_rooms(property_id):
     """
     Lista os tipos de quarto (roomTypes) ja cadastrados na sub-

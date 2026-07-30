@@ -272,3 +272,29 @@ def delete_beds24_room_mapping(hostel_id, room_category_id):
     return jsonify({"success": True})
 
 
+@settings_bp.route("/settings/beds24/create-room", methods=["POST"])
+@require_permission("settings")
+def create_beds24_room(hostel_id):
+    property_id = get_hostel_beds24_property_id(hostel_id)
+    if not property_id:
+        return jsonify({"success": False, "message": "Integração com canais ainda não foi ativada pra este hostel."}), 400
+
+    data = request.get_json() or {}
+    room_category_id = data.get("room_category_id")
+    room_name = (data.get("room_name") or "").strip()
+
+    if not room_category_id or not room_name:
+        return jsonify({"success": False, "message": "room_category_id e room_name são obrigatórios."}), 400
+
+    beds24_room_id, error = beds24_service.create_room_type(property_id, room_name)
+    if error:
+        return jsonify({"success": False, "message": error}), 502
+
+    try:
+        save_channel_room_mapping(hostel_id, int(room_category_id), beds24_room_id)
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+
+    return jsonify({"success": True, "beds24_room_id": beds24_room_id})
+
+
