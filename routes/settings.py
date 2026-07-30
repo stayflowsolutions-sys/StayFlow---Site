@@ -9,6 +9,9 @@ from database import (
     apply_default_room_categories_if_needed,
     get_hostel_beds24_property_id,
     save_hostel_beds24_property_id,
+    get_channel_room_mappings,
+    save_channel_room_mapping,
+    delete_channel_room_mapping,
 )
 import services.beds24_service as beds24_service
 from utils.tenant import require_permission
@@ -221,5 +224,51 @@ def activate_beds24(hostel_id):
     save_hostel_beds24_property_id(hostel_id, property_id)
 
     return jsonify({"success": True, "property_id": property_id})
+
+
+@settings_bp.route("/settings/beds24/room-mapping", methods=["GET"])
+@require_permission("settings")
+def get_beds24_room_mapping(hostel_id):
+    property_id = get_hostel_beds24_property_id(hostel_id)
+    if not property_id:
+        return jsonify({"success": False, "message": "Integração com canais ainda não foi ativada pra este hostel."}), 400
+
+    beds24_rooms, error = beds24_service.get_property_rooms(property_id)
+    if error:
+        return jsonify({"success": False, "message": error}), 502
+
+    return jsonify({
+        "success": True,
+        "categories": get_channel_room_mappings(hostel_id),
+        "beds24_rooms": beds24_rooms,
+    })
+
+
+@settings_bp.route("/settings/beds24/room-mapping", methods=["POST"])
+@require_permission("settings")
+def save_beds24_room_mapping(hostel_id):
+    if not get_hostel_beds24_property_id(hostel_id):
+        return jsonify({"success": False, "message": "Integração com canais ainda não foi ativada pra este hostel."}), 400
+
+    data = request.get_json() or {}
+    room_category_id = data.get("room_category_id")
+    beds24_room_id = (data.get("beds24_room_id") or "").strip()
+
+    if not room_category_id or not beds24_room_id:
+        return jsonify({"success": False, "message": "room_category_id e beds24_room_id são obrigatórios."}), 400
+
+    try:
+        save_channel_room_mapping(hostel_id, int(room_category_id), beds24_room_id)
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+
+    return jsonify({"success": True})
+
+
+@settings_bp.route("/settings/beds24/room-mapping/<int:room_category_id>", methods=["DELETE"])
+@require_permission("settings")
+def delete_beds24_room_mapping(hostel_id, room_category_id):
+    delete_channel_room_mapping(hostel_id, room_category_id)
+    return jsonify({"success": True})
 
 

@@ -4776,6 +4776,73 @@ def get_hostel_id_by_beds24_property_id(property_id):
     return row["id"] if row else None
 
 
+def get_channel_room_mappings(hostel_id):
+    """Modalidades do hostel + o quarto do Beds24 mapeado (se ja configurado)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT rc.id AS room_category_id, rc.name AS category_name, crm.beds24_room_id
+        FROM room_categories rc
+        LEFT JOIN channel_room_mapping crm
+          ON crm.room_category_id = rc.id AND crm.hostel_id = rc.hostel_id
+        WHERE rc.hostel_id = ?
+        ORDER BY rc.name
+        """,
+        (hostel_id,)
+    )
+    mappings = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return mappings
+
+
+def save_channel_room_mapping(hostel_id, room_category_id, beds24_room_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id FROM room_categories WHERE id = ? AND hostel_id = ?",
+        (room_category_id, hostel_id)
+    )
+    if not cursor.fetchone():
+        conn.close()
+        raise ValueError("Modalidade nao encontrada.")
+
+    cursor.execute(
+        """
+        INSERT INTO channel_room_mapping (hostel_id, room_category_id, beds24_room_id)
+        VALUES (?, ?, ?)
+        ON CONFLICT(hostel_id, room_category_id) DO UPDATE SET beds24_room_id = excluded.beds24_room_id
+        """,
+        (hostel_id, room_category_id, beds24_room_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_channel_room_mapping(hostel_id, room_category_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM channel_room_mapping WHERE hostel_id = ? AND room_category_id = ?",
+        (hostel_id, room_category_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_room_category_id_by_beds24_room_id(hostel_id, beds24_room_id):
+    """Busca inversa - usada pelo webhook de entrada (Fase 3) pra saber em qual modalidade encaixar a reserva."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT room_category_id FROM channel_room_mapping WHERE hostel_id = ? AND beds24_room_id = ?",
+        (hostel_id, str(beds24_room_id))
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row["room_category_id"] if row else None
+
+
 def get_quick_replies(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()

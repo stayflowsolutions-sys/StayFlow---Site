@@ -181,6 +181,45 @@ def create_property(hostel_name, currency="USD", property_type="hotel"):
         return None, "Erro de conexao com o Beds24."
 
 
+def get_property_rooms(property_id):
+    """
+    Lista os tipos de quarto (roomTypes) ja cadastrados na sub-
+    propriedade do hostel no Beds24 - usado pra montar o seletor de
+    mapeamento (modalidade StayFlow <-> quarto Beds24). Retorna
+    (lista_de_quartos, erro) - lista vem como [{"id":..., "name":...}].
+    """
+    access_token = _get_valid_access_token()
+    if not access_token:
+        return None, "Conta master do Beds24 nao configurada ou token invalido."
+
+    try:
+        response = requests.get(
+            f"{API_BASE}/properties",
+            headers={"token": access_token},
+            params={"propertyId": property_id, "includeAllRooms": "true"},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code >= 400:
+            print("Erro ao listar quartos da propriedade no Beds24:", response.status_code, response.text)
+            return None, f"Beds24 recusou a listagem de quartos (HTTP {response.status_code})."
+
+        data = response.json()
+        item = data[0] if isinstance(data, list) and data else data
+        room_types = item.get("roomTypes") if isinstance(item, dict) else None
+        if not isinstance(room_types, list):
+            print("Resposta do Beds24 sem roomTypes:", data)
+            return [], None
+
+        rooms = [
+            {"id": str(rt.get("id")), "name": rt.get("name") or f"Quarto {rt.get('id')}"}
+            for rt in room_types if isinstance(rt, dict) and rt.get("id")
+        ]
+        return rooms, None
+    except Exception as error:
+        print("Erro de conexao ao listar quartos no Beds24:", error)
+        return None, "Erro de conexao com o Beds24."
+
+
 def push_availability(beds24_room_id, checkin_date, checkout_date, num_avail):
     """
     Atualiza a disponibilidade de um quarto no Beds24 pro intervalo de
