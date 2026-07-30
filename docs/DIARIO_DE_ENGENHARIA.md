@@ -2464,3 +2464,26 @@ hostel, remoção, busca inversa (quarto Beds24 → modalidade StayFlow,
 já pronta pro webhook da Fase 3), e `get_property_rooms` com resposta
 mockada em lista e em objeto direto. Balanceamento de chaves/parênteses
 e cobertura i18n conferidos no frontend.
+
+**Ajuste em produção, testado ao vivo pelo usuário**: primeiro teste real
+mostrou o seletor de quarto vazio — esperado, já que a sub-propriedade
+criada na Fase 1 nasce sem nenhum quarto cadastrado no Beds24. Em vez de
+mandar o usuário criar o quarto manualmente no painel deles (quebraria a
+promessa de nunca precisar abrir o Beds24), foi adicionado
+`beds24_service.create_room_type(property_id, room_name)` — usa o mesmo
+`POST /properties`, mas com `id` da propriedade existente + `roomTypes`
+no corpo (`[{"id": ..., "roomTypes": [{"name": ...}]}]`, formato
+confirmado na documentação antes de implementar, aprendendo com os bugs
+da Fase 1). Nova rota `POST /settings/beds24/create-room` e um segundo
+botão "Criar no Beds24" ao lado de cada modalidade sem mapeamento —
+cria o quarto lá e já vincula automaticamente, fechando o fluxo sem
+sair do StayFlow.
+
+**Faxina**: encontradas (e removidas) duas cópias obsoletas do diário e
+do master context — uma commitada há muito tempo direto na raiz do
+repositório `HostelBot` (`docs/`, de antes da convenção atual, parada em
+07/07), outra solta e nunca commitada dentro de
+`HostelBot/StayFlow---Site/docs/` (sobra de antes do robocopy passar a
+excluir essa pasta da sincronização, parada em 22/07). Nenhum conteúdo
+único perdido — a versão em `StayFlow---Site/docs/` sempre teve tudo
+isso e mais.

@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.19.0
+\*\*Versão:\*\* 1.19.1
 
 
 
@@ -87,6 +87,8 @@
 | 1.18.0 | 28/07/2026 | Oficial | Início da integração com channel manager (Beds24) pra receber reservas de Booking.com/Airbnb/Hostelworld automaticamente — modelo agência/white-label, uma conta master do StayFlow com cada cliente virando sub-propriedade, sem custo nem conta separada pro cliente final. Fase 1 (fundação): tabelas novas de credencial mestra (criptografada) e mapeamento de quarto, serviço de autenticação da API v2 do Beds24, tela de ativação em Configurações → Integrações, e uma trava real contra condição de corrida (`reservar_cama_com_trava`, via `BEGIN IMMEDIATE` do SQLite) aplicada no fluxo de reserva do WhatsApp — fecha um risco de overbooking que já existia antes desta integração, sem trava nenhuma entre checar disponibilidade e inserir a reserva. Fases seguintes (mapeamento de quarto, webhook de entrada, push de disponibilidade, conexão real com as OTAs, webhook de saída genérico pra cliente com sistema próprio) ainda pendentes. Configuração real feita com o usuário (conta master no Beds24, chave de criptografia, invite code) e confirmada funcionando em produção, incluindo dois bugs reais corrigidos no processo (header de autenticação `token`, não `Authorization: Bearer`; corpo do `POST /properties` precisa ser array). |
 
 | 1.19.0 | 30/07/2026 | Oficial | Fase 2 da integração Beds24: mapeamento de quarto. Tela de Configurações → Integrações ganha, pra cada modalidade de quarto do hostel, um seletor com os quartos já cadastrados na sub-propriedade do Beds24 (`GET /properties?includeAllRooms=true`) — escolher e salvar cria o vínculo; escolher "nenhum" remove. Sem esse mapeamento, uma reserva futura vinda de OTA (Fase 3) não saberia em qual modalidade cair. |
+
+| 1.19.1 | 30/07/2026 | Oficial | Ajuste real, testado ao vivo: sub-propriedade nova no Beds24 nasce sem nenhum quarto, deixando o seletor de mapeamento vazio. Adicionado botão "Criar no Beds24" que cria o quarto lá direto (`POST /properties` com `id` da propriedade + `roomTypes`) e já vincula automaticamente — fecha o fluxo sem o usuário precisar abrir o painel do Beds24 manualmente. Faxina: removidas duas cópias obsoletas do diário/master context (uma na raiz do repositório `HostelBot`, outra solta em `HostelBot/StayFlow---Site/docs/`) — só a versão em `StayFlow---Site/docs/` é a fonte de verdade. |
 
 
 
