@@ -1841,7 +1841,15 @@ async function deleteRoleConfirm(roleId){
             <span data-i18n="settings.beds24.statusLabel">Status:</span>
             <strong style="color:#3ddc97" data-i18n="settings.beds24.statusActive">Ativado</strong>
           </p>
-          <p data-i18n="settings.beds24.mappingPending" style="font-size:12px;color:var(--muted)">Próximo passo: mapear cada modalidade de quarto com o quarto correspondente no channel manager (em breve nesta tela).</p>
+          <p data-i18n="settings.beds24.mappingIntro" style="font-size:12px;color:var(--muted);margin-bottom:14px">Associe cada modalidade de quarto do StayFlow ao quarto correspondente no channel manager, pra reservas de OTA caírem no lugar certo.</p>
+
+          <div id="beds24RoomMappingEmpty" class="sf-empty" style="display:none">
+            <div>
+              <strong data-i18n="settings.beds24.noCategoriesTitle">Nenhuma modalidade cadastrada ainda.</strong>
+              <span data-i18n="settings.beds24.noCategoriesDesc">Crie modalidades de quarto no Mapa de Quartos antes de mapear com o channel manager.</span>
+            </div>
+          </div>
+          <div id="beds24RoomMappingList" style="display:none;gap:10px"></div>
         </div>
 
         <div id="beds24Message" class="generic-modal-message"></div>
@@ -2312,8 +2320,91 @@ async function deleteRoleConfirm(roleId){
       const isActive = Boolean(data.property_id);
       notActivatedEl.style.display = isActive ? "none" : "block";
       activatedEl.style.display = isActive ? "block" : "none";
+      if(isActive) loadBeds24RoomMapping();
     }catch(e){
       console.warn("Erro ao carregar configuração do Beds24:", e);
+    }
+  };
+
+  window.loadBeds24RoomMapping = async function(){
+    const emptyEl = document.getElementById("beds24RoomMappingEmpty");
+    const listEl = document.getElementById("beds24RoomMappingList");
+    if(!emptyEl || !listEl) return;
+
+    try{
+      const res = await fetch("/settings/beds24/room-mapping", { credentials: "same-origin" });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success) return;
+
+      const categories = data.categories || [];
+      const beds24Rooms = data.beds24_rooms || [];
+
+      if(!categories.length){
+        emptyEl.style.display = "flex";
+        listEl.style.display = "none";
+        return;
+      }
+
+      emptyEl.style.display = "none";
+      listEl.style.display = "grid";
+
+      const roomOptions = beds24Rooms.map(r => `<option value="${escapeHtml(r.id)}">${escapeHtml(r.name)}</option>`).join("");
+
+      listEl.innerHTML = categories.map(c => `
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="min-width:160px;font-weight:700">${escapeHtml(c.category_name)}</span>
+          <select id="beds24RoomSelect_${c.room_category_id}" style="flex:1;min-width:180px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:8px 12px;">
+            <option value="">${T('settings.beds24.selectRoomPlaceholder', 'Selecione o quarto no Beds24...')}</option>
+            ${roomOptions}
+          </select>
+          <button type="button" class="btn secondary" style="padding:8px 14px" onclick="saveBeds24RoomMapping(${c.room_category_id})">${T('common.save', 'Salvar')}</button>
+        </div>
+      `).join("");
+
+      categories.forEach(c => {
+        if(c.beds24_room_id){
+          const select = document.getElementById(`beds24RoomSelect_${c.room_category_id}`);
+          if(select) select.value = c.beds24_room_id;
+        }
+      });
+    }catch(e){
+      console.warn("Erro ao carregar mapeamento de quarto do Beds24:", e);
+    }
+  };
+
+  window.saveBeds24RoomMapping = async function(categoryId){
+    const select = document.getElementById(`beds24RoomSelect_${categoryId}`);
+    if(!select) return;
+    const msg = document.getElementById("beds24Message");
+    if(msg){
+      msg.textContent = "";
+      msg.className = "generic-modal-message";
+    }
+
+    try{
+      let res;
+      if(!select.value){
+        res = await fetch(`/settings/beds24/room-mapping/${categoryId}`, { method: "DELETE", credentials: "same-origin" });
+      }else{
+        res = await fetch("/settings/beds24/room-mapping", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ room_category_id: categoryId, beds24_room_id: select.value })
+        });
+      }
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        if(msg){
+          msg.textContent = data.message || T('settings.beds24.mappingSaveFailed', 'Não foi possível salvar o mapeamento.');
+          msg.classList.add("error");
+        }
+      }
+    }catch(e){
+      if(msg){
+        msg.textContent = T('common.connectionError', 'Erro de conexão.');
+        msg.classList.add("error");
+      }
     }
   };
 

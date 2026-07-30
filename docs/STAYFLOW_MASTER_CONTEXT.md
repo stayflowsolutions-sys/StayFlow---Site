@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.18.0
+\*\*Versão:\*\* 1.19.0
 
 
 
@@ -84,7 +84,9 @@
 
 | 1.17.1 | 28/07/2026 | Oficial | Botão de assumir/devolver conversa (aba Chats) redesenhado: em vez de um botão secundário cinza solto ao lado do "Score", agora é o próprio botão de enviar mensagem que troca de papel — verde e "Assumir" enquanto a IA está no controle (clicar assume a conversa em vez de enviar), voltando ao azul normal "Enviar" depois de assumido; um botão "Devolver" aparece ao lado só quando a conversa está com um humano, devolvendo o controle pra IA ao ser clicado. |
 
-| 1.18.0 | 28/07/2026 | Oficial | Início da integração com channel manager (Beds24) pra receber reservas de Booking.com/Airbnb/Hostelworld automaticamente — modelo agência/white-label, uma conta master do StayFlow com cada cliente virando sub-propriedade, sem custo nem conta separada pro cliente final. Fase 1 (fundação): tabelas novas de credencial mestra (criptografada) e mapeamento de quarto, serviço de autenticação da API v2 do Beds24, tela de ativação em Configurações → Integrações, e uma trava real contra condição de corrida (`reservar_cama_com_trava`, via `BEGIN IMMEDIATE` do SQLite) aplicada no fluxo de reserva do WhatsApp — fecha um risco de overbooking que já existia antes desta integração, sem trava nenhuma entre checar disponibilidade e inserir a reserva. Fases seguintes (mapeamento de quarto, webhook de entrada, push de disponibilidade, conexão real com as OTAs, webhook de saída genérico pra cliente com sistema próprio) ainda pendentes. |
+| 1.18.0 | 28/07/2026 | Oficial | Início da integração com channel manager (Beds24) pra receber reservas de Booking.com/Airbnb/Hostelworld automaticamente — modelo agência/white-label, uma conta master do StayFlow com cada cliente virando sub-propriedade, sem custo nem conta separada pro cliente final. Fase 1 (fundação): tabelas novas de credencial mestra (criptografada) e mapeamento de quarto, serviço de autenticação da API v2 do Beds24, tela de ativação em Configurações → Integrações, e uma trava real contra condição de corrida (`reservar_cama_com_trava`, via `BEGIN IMMEDIATE` do SQLite) aplicada no fluxo de reserva do WhatsApp — fecha um risco de overbooking que já existia antes desta integração, sem trava nenhuma entre checar disponibilidade e inserir a reserva. Fases seguintes (mapeamento de quarto, webhook de entrada, push de disponibilidade, conexão real com as OTAs, webhook de saída genérico pra cliente com sistema próprio) ainda pendentes. Configuração real feita com o usuário (conta master no Beds24, chave de criptografia, invite code) e confirmada funcionando em produção, incluindo dois bugs reais corrigidos no processo (header de autenticação `token`, não `Authorization: Bearer`; corpo do `POST /properties` precisa ser array). |
+
+| 1.19.0 | 30/07/2026 | Oficial | Fase 2 da integração Beds24: mapeamento de quarto. Tela de Configurações → Integrações ganha, pra cada modalidade de quarto do hostel, um seletor com os quartos já cadastrados na sub-propriedade do Beds24 (`GET /properties?includeAllRooms=true`) — escolher e salvar cria o vínculo; escolher "nenhum" remove. Sem esse mapeamento, uma reserva futura vinda de OTA (Fase 3) não saberia em qual modalidade cair. |
 
 
 

@@ -2427,3 +2427,40 @@ reserva (Fase 3), push de disponibilidade de saída (Fase 4), conectar
 OTA de verdade — ponto em aberto sobre como o cliente final autoriza a
 própria conta de Booking/Airbnb sem ver o painel geral do Beds24 (Fase
 5), webhook de saída genérico pra cliente com sistema próprio (Fase 6).
+
+## Integração com channel manager (Beds24) — Fase 2 (mapeamento de quarto)
+
+Sessão seguinte, continuando a integração. Antes de receber reserva de
+verdade (Fase 3), o hostel precisa dizer qual modalidade do StayFlow
+corresponde a qual quarto do Beds24 — sem isso, uma reserva de OTA
+chegaria sem saber onde encaixar.
+
+Pesquisada a documentação real da API antes de implementar (aprendendo
+com os dois bugs da Fase 1): `GET /properties?propertyId=X&includeAllRooms=true`
+(header `token`, mesmo já corrigido) devolve os quartos já cadastrados
+na sub-propriedade, dentro de um campo `roomTypes` (lista de
+`{id, name}`). Novo `beds24_service.get_property_rooms(property_id)`
+busca isso, tolerando tanto resposta em lista quanto objeto direto
+(mesma cautela da Fase 1, já que o formato exato varia por endpoint).
+
+`database.py` ganhou `get_channel_room_mappings` (junta `room_categories`
+do hostel com o mapeamento existente via `LEFT JOIN`, pra sempre mostrar
+todas as modalidades mesmo as ainda não mapeadas), `save_channel_room_mapping`
+(upsert via `ON CONFLICT`, mesmo padrão já usado na Fase 1) e
+`delete_channel_room_mapping`. `routes/settings.py` ganhou
+`GET/POST /settings/beds24/room-mapping` e
+`DELETE /settings/beds24/room-mapping/<room_category_id>`.
+
+Na tela de Configurações → Integrações, a área que antes só dizia
+"Ativado" ganhou a lista de verdade: uma linha por modalidade do
+hostel, com um `<select>` das opções vindas do Beds24 e botão Salvar —
+escolher "nenhum" e salvar remove o mapeamento. Reaproveita
+`list_room_categories` que já existia (mesma função usada pelo Mapa de
+Quartos), sem duplicar consulta.
+
+**Verificação**: testes isolados cobrindo criação/atualização (upsert)
+de mapeamento, bloqueio ao mapear modalidade que não existe/não é do
+hostel, remoção, busca inversa (quarto Beds24 → modalidade StayFlow,
+já pronta pro webhook da Fase 3), e `get_property_rooms` com resposta
+mockada em lista e em objeto direto. Balanceamento de chaves/parênteses
+e cobertura i18n conferidos no frontend.
