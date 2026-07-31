@@ -359,6 +359,7 @@ def push_availability(beds24_room_id, checkin_date, checkout_date, num_avail):
         if response.status_code >= 400:
             print("Erro ao empurrar disponibilidade pro Beds24:", response.status_code, response.text)
             return False
+        print("Disponibilidade empurrada pro Beds24 com sucesso:", response.status_code, response.text)
         return True
     except Exception as error:
         print("Erro de conexao ao empurrar disponibilidade pro Beds24:", error)

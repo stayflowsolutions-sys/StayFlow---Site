@@ -5025,6 +5025,7 @@ def sync_availability_to_channel(hostel_id, category_name, checkin_date, checkou
     (mesmo principio de services/whatsapp_service.py).
     """
     if not checkin_date or not checkout_date:
+        print(f"Sync disponibilidade Beds24: ignorado (sem checkin/checkout) - categoria '{category_name}'.")
         return
 
     try:
@@ -5038,6 +5039,7 @@ def sync_availability_to_channel(hostel_id, category_name, checkin_date, checkou
         category = cursor.fetchone()
         if not category:
             conn.close()
+            print(f"Sync disponibilidade Beds24: modalidade '{category_name}' nao encontrada no hostel {hostel_id}, ignorado.")
             return
 
         cursor.execute(
@@ -5047,6 +5049,7 @@ def sync_availability_to_channel(hostel_id, category_name, checkin_date, checkou
         mapping = cursor.fetchone()
         if not mapping:
             conn.close()
+            print(f"Sync disponibilidade Beds24: modalidade '{category_name}' (hostel {hostel_id}) nao esta mapeada pro Beds24, ignorado.")
             return  # modalidade nao mapeada pro Beds24 - nada a sincronizar
 
         beds24_room_id = mapping["beds24_room_id"]
@@ -5077,8 +5080,14 @@ def sync_availability_to_channel(hostel_id, category_name, checkin_date, checkou
         print("Erro ao calcular disponibilidade pra sincronizar com o Beds24:", error)
         return
 
+    print(
+        f"Sync disponibilidade Beds24: categoria '{category_name}' (hostel {hostel_id}) -> "
+        f"beds24_room_id={beds24_room_id}, periodo {checkin_date}..{checkout_date}, "
+        f"total_camas={total_beds}, ocupadas={occupied_count}, numAvail={num_avail}"
+    )
     from services.beds24_service import push_availability
-    push_availability(beds24_room_id, checkin_date, checkout_date, num_avail)
+    result = push_availability(beds24_room_id, checkin_date, checkout_date, num_avail)
+    print(f"Sync disponibilidade Beds24: push_availability retornou {result}")
 
 
 def try_claim_webhook_event(beds24_booking_id, hostel_id, event_type, payload_json):
