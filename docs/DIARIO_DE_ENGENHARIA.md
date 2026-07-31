@@ -2635,3 +2635,43 @@ resultado dos vários cliques em "Criar automaticamente" durante as
 tentativas anteriores — inofensivo (cada um tem um id próprio, o
 seletor só fica com mais opções repetidas), mas o usuário pode limpar
 manualmente no painel do Beds24 se quiser deixar arrumado.
+
+## Integração com channel manager (Beds24) — exclusão de quarto sem uso
+
+Usuário pediu pra já construir a exclusão de quarto (em vez de só
+limpar manual dessa vez), já que vai ser necessária de qualquer forma —
+com o pedido explícito de pensar em travas de segurança e não fazer
+gambiarra.
+
+**Endpoint não confirmado contra documentação real** (a wiki pública do
+Beds24 bloqueou acesso automatizado nas tentativas de pesquisa) —
+implementado com a melhor suposição informada, seguindo o padrão já
+confirmado de outros endpoints (`DELETE /properties/rooms` com
+`propertyId`/`roomId` via query string, header `token`). Diferente das
+vezes anteriores, isso **não foi declarado como resolvido sem teste
+real** — combinado com o usuário testar uma exclusão de verdade,
+olhando a resposta crua, antes de confiar na função.
+
+**Duas travas de segurança implementadas** em `DELETE
+/settings/beds24/rooms/<beds24_room_id>`:
+1. Bloqueia apagar quarto que ainda está vinculado a uma modalidade —
+   usa `get_room_category_id_by_beds24_room_id` (já existia da Fase 2)
+   pra checar antes; força desvincular primeiro.
+2. Confere contra a lista real de quartos da propriedade
+   (`get_property_rooms`) que o quarto pedido realmente pertence a
+   **este** hostel antes de tentar apagar — importante porque a conta
+   master do Beds24 é compartilhada entre todos os clientes do
+   StayFlow; sem essa trava, um cliente poderia (por acidente ou não)
+   tentar apagar quarto de outro.
+
+**Frontend**: nova seção "Quartos sem uso" na tela de mapeamento,
+listando só os quartos do Beds24 que não estão vinculados a nenhuma
+modalidade (`beds24_rooms` menos os que aparecem em `categories`,
+calculado no backend), cada um com botão "Remover" atrás de
+`stayflowConfirm()` — mesmo padrão de confirmação de exclusão já usado
+no resto do sistema.
+
+**Verificação**: testes isolados cobrindo a chamada HTTP (parâmetros
+corretos, erro tratado) e as duas travas de segurança (banco já testado
+na Fase 2, reaproveitado aqui). A chamada real à API ainda precisa ser
+confirmada com o usuário — ver próxima entrada.
