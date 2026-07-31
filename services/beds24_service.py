@@ -227,38 +227,6 @@ def create_room_type(property_id, room_name):
         return None, "Erro de conexao com o Beds24."
 
 
-def debug_get_raw_properties_response(property_id):
-    """
-    Diagnostico temporario: chama GET /properties igual get_property_rooms,
-    mas devolve a resposta CRUA (status HTTP + corpo, sem interpretar nada)
-    - usado so pra investigar divergencia de formato de resposta da Beds24,
-    sem depender de log espalhado. Remover depois que o bug de verdade
-    (beds24_rooms vindo vazio mesmo com quartos existentes) for resolvido.
-    """
-    access_token = _get_valid_access_token()
-    if not access_token:
-        return {"error": "Conta master do Beds24 nao configurada ou token invalido."}
-
-    try:
-        response = requests.get(
-            f"{API_BASE}/properties",
-            headers={"token": access_token},
-            params={"propertyId": property_id, "includeAllRooms": "true"},
-            timeout=REQUEST_TIMEOUT,
-        )
-        try:
-            body = response.json()
-        except Exception:
-            body = response.text
-        return {
-            "status_code": response.status_code,
-            "request_url": response.url,
-            "body": body,
-        }
-    except Exception as error:
-        return {"error": str(error)}
-
-
 def get_property_rooms(property_id):
     """
     Lista os tipos de quarto (roomTypes) ja cadastrados na sub-
@@ -284,18 +252,23 @@ def get_property_rooms(property_id):
         data = response.json()
         print("Resposta do Beds24 ao listar quartos (propertyId=%s):" % property_id, data)
 
-        # A resposta real (confirmado nos logs) e a lista de quartos
-        # direto, sem vir embrulhada num objeto de propriedade com uma
-        # chave "roomTypes" dentro - diferente do que a documentacao
-        # publica dava a entender. Aceita os dois formatos possiveis
-        # pra nao quebrar se a Beds24 mudar o formato de novo.
+        # Formato real confirmado via rota de diagnostico (debug-raw):
+        # {"count":1, "data":[{...propriedade..., "roomTypes":[...]}], "success":true, ...}
+        # - o "roomTypes" fica dentro do primeiro item de "data", que por
+        # sua vez fica dentro do dict de resposta. Nenhuma das tentativas
+        # anteriores (lista direta, dict com roomTypes no topo) cobria
+        # esse formato - mantidas como fallback, sem custo, caso a Beds24
+        # varie o formato dependendo do parametro/conta.
         room_types = None
-        if isinstance(data, list) and data and isinstance(data[0], dict) and isinstance(data[0].get("roomTypes"), list):
+        if isinstance(data, dict) and isinstance(data.get("data"), list) and data["data"] \
+                and isinstance(data["data"][0], dict) and isinstance(data["data"][0].get("roomTypes"), list):
+            room_types = data["data"][0]["roomTypes"]
+        elif isinstance(data, list) and data and isinstance(data[0], dict) and isinstance(data[0].get("roomTypes"), list):
             room_types = data[0]["roomTypes"]
-        elif isinstance(data, list):
-            room_types = data
         elif isinstance(data, dict) and isinstance(data.get("roomTypes"), list):
             room_types = data["roomTypes"]
+        elif isinstance(data, list):
+            room_types = data
 
         if not isinstance(room_types, list):
             print("Resposta do Beds24 sem roomTypes:", data)

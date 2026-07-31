@@ -226,16 +226,6 @@ def activate_beds24(hostel_id):
     return jsonify({"success": True, "property_id": property_id})
 
 
-@settings_bp.route("/settings/beds24/debug-raw", methods=["GET"])
-@require_permission("settings")
-def debug_beds24_raw(hostel_id):
-    """Diagnostico temporario - ver comentario em beds24_service.debug_get_raw_properties_response."""
-    property_id = get_hostel_beds24_property_id(hostel_id)
-    if not property_id:
-        return jsonify({"success": False, "message": "Integração com canais ainda não foi ativada pra este hostel."}), 400
-    return jsonify(beds24_service.debug_get_raw_properties_response(property_id))
-
-
 @settings_bp.route("/settings/beds24/room-mapping", methods=["GET"])
 @require_permission("settings")
 def get_beds24_room_mapping(hostel_id):
