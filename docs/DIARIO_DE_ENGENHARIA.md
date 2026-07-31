@@ -3829,3 +3829,75 @@ uma conta real de Booking.com/Airbnb/Hostelworld), quando houver um
 cliente real pra testar; (4) Enter confirma/Esc cancela nas caixas de
 cadastro e aviso do dashboard (pedido novo do usuário, ainda não
 iniciado).
+
+## Fechamento das três pendências antes de partir pra Instagram/Facebook
+
+Usuário pediu explicitamente pra fechar 100% o que tinha ficado pela
+metade antes de começar a integração com Instagram/Facebook. Três
+itens da rodada anterior:
+
+### Bug real: menu do usuário nunca mostrava nome/cargo
+
+Causa raiz encontrada (a investigação da rodada anterior tinha
+descartado elemento HTML duplicado e função duplicada, mas não tinha
+chegado na causa de verdade): `hydrateUserUI` deixava a atribuição de
+`.user-name`/`.user-role`/`.user-avatar` por ÚLTIMO na função, depois
+de `populateHostelSelector(session)`, `applyPermissionVisibility(...)`,
+`hideNavItemsWithoutPermission(...)` e `restoreLastOpenPage()` (essa
+última, adicionada numa rodada recente pra persistir a aba aberta no
+F5). Qualquer exceção lançada por qualquer uma dessas quatro chamadas
+aborta a função no meio, e o menu do usuário nunca chega a ser
+preenchido - fica preso em "—" pra sempre, mesmo com a sessão
+carregada perfeitamente (explica por que a aba Equipe, que lê a sessão
+por outro caminho totalmente separado, sempre mostrou o nome certo).
+
+Corrigido: a atribuição de nome/cargo/avatar agora é a PRIMEIRA coisa
+que a função faz (logo depois do guard `if(!u) return`), e as quatro
+chamadas seguintes ganharam `try/catch` individual com log no console
+- o menu do usuário nunca mais fica órfão, mesmo se alguma dessas
+chamadas continuar falhando por outro motivo no futuro. Não foi
+possível confirmar ao vivo em navegador (sem acesso a browser neste
+ambiente) - validado estaticamente (balanceamento de chaves,
+cobertura de i18n, revisão da nova ordem de execução) e testado o
+resto do fluxo de reservas que compartilha código adjacente
+(regressão de check-in/check-out continua passando). Recomendado
+confirmar visualmente no primeiro acesso real depois do deploy.
+
+### Frente de "Ver cancelamentos" finalizada
+
+Backend já estava pronto de uma rodada anterior (`get_cancelled_reservations`,
+rota `/reservations/cancelled`). Frontend: botão "🗑️ Ver cancelamentos"
+na aba Reservas, ao lado de "+ Nova reserva"/"Morador de longa
+duração", abre o `genericModal` compartilhado com uma tabela (hóspede,
+quarto/cama, datas, origem, valor, botão "Reativar"). Reativar faz
+`PATCH /reservations/<id>` com `status: "confirmed"`, atualiza a tela
+principal (`refreshOperationalViews`) e re-renderiza a lista de
+canceladas no próprio modal (sem fechar), pra dar pra reativar várias
+em sequência. Reaproveitadas as mesmas chaves i18n de coluna já
+existentes na tabela principal (`reservations.col.*`) em vez de criar
+duplicatas - só 4 chaves novas mesmo (`cancelledBtn`, título/vazio/
+botão do modal), nos 5 idiomas. Testado ponta a ponta com
+`STAYFLOW_DATA_DIR` isolado: reserva cancelada some da lista principal
+e aparece nas canceladas; reativar faz o caminho inverso; rota real
+via `app.test_client()`.
+
+### Enter confirma / Esc cancela
+
+Investigação mostrou que quase toda "caixa de cadastro" do dashboard
+(convite de equipe, nova função, trocar função, nova reserva, morador
+de longa duração, check-in, editar quarto/cama/modalidade, cadastrar
+quarto/cama nova, etc - 19 pontos ao todo) já passa pelo MESMO
+`genericModal`/`genericModalOverlay` compartilhado, cada um sempre com
+exatamente um botão `class="btn"` (nunca "secondary"/"red") como ação
+de confirmar - convenção já seguida em todo o código, sem exceção.
+Isso tornou a implementação simples: um listener `keydown` global
+(estendendo o que já existia só pro `sfAlert`) fecha o `genericModal`
+com Esc, e aciona esse botão de confirmar com Enter sempre que o foco
+estiver num `<input>`/`<select>` dentro do corpo do modal (nunca numa
+`<textarea>`, onde Enter precisa continuar quebrando linha). O sistema
+de aviso (`sfAlert`, usado por `alert()`/`stayflowConfirm()`/
+`stayflowPrompt()`) já tinha os dois: Esc fecha desde uma rodada
+anterior, Enter já confirmava tanto no prompt (listener dedicado) 
+quanto no alert/confirm simples (o botão OK recebe foco automático ao
+abrir, e Enter num botão focado já aciona o clique nativamente) - nada
+precisou mudar ali.

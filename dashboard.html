@@ -129,7 +129,36 @@ window.stayflowPrompt = function(message, defaultValue){
 document.addEventListener("keydown", (e) => {
   if(e.key === "Escape"){
     const overlay = document.getElementById("sfAlertOverlay");
-    if(overlay && overlay.classList.contains("open")) sfAlertClose(null);
+    if(overlay && overlay.classList.contains("open")){
+      sfAlertClose(null);
+      return;
+    }
+    const genericModal = document.getElementById("genericModal");
+    if(genericModal && genericModal.classList.contains("open")){
+      closeGenericModal();
+    }
+    return;
+  }
+
+  // Enter confirma a caixa de cadastro/formulario aberta no momento
+  // (mesmo padrao ja usado no prompt do sfAlert) - so age quando o
+  // foco esta num campo de uma linha so (input/select), nunca numa
+  // textarea (Enter la precisa continuar quebrando linha). O botao
+  // "confirmar" de cada formulario e sempre o primeiro <button class="btn">
+  // dentro do corpo do modal (nunca "secondary"/"red", que sao
+  // cancelar/excluir) - convencao ja seguida em todo o dashboard.
+  if(e.key === "Enter"){
+    const active = document.activeElement;
+    if(!active || active.tagName === "TEXTAREA") return;
+
+    const modalBody = document.getElementById("genericModalBody");
+    if(modalBody && modalBody.contains(active) && (active.tagName === "INPUT" || active.tagName === "SELECT")){
+      const confirmBtn = modalBody.querySelector("button.btn:not(.secondary):not(.red)");
+      if(confirmBtn){
+        e.preventDefault();
+        confirmBtn.click();
+      }
+    }
   }
 });
 
@@ -1070,6 +1099,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-12" style="display:flex;gap:12px;flex-wrap:wrap">
       <button type="button" class="btn" onclick="openNewReservationModal()">+ <span data-i18n="reservations.newReservation.title">Nova reserva</span></button>
       <button type="button" class="btn secondary" onclick="openNewIndefiniteStayModal()">🏠 <span data-i18n="longTermStay.title">Morador de longa duração</span></button>
+      <button type="button" class="btn secondary" onclick="openCancelledReservationsModal()">🗑️ <span data-i18n="reservations.cancelledBtn">Ver cancelamentos</span></button>
     </div>
 
     <div class="card span-12">
@@ -3402,6 +3432,75 @@ window.updateReservationStatus = async function(reservationId, newStatus){
   }
 };
 
+function renderCancelledReservationsList(reservations){
+  if(!reservations.length){
+    return `<p class="generic-modal-message" style="margin:0">${T('reservations.cancelledModal.empty', 'Nenhuma reserva cancelada.')}</p>`;
+  }
+
+  const rows = reservations.map(r => `
+    <tr>
+      <td>${escapeHtml(r.guest_name || "-")}</td>
+      <td>${escapeHtml(r.room_type || "-")}${r.bed ? " · " + escapeHtml(r.bed) : ""}</td>
+      <td>${r.checkin_date || "-"} → ${r.checkout_date || "-"}</td>
+      <td>${channelDisplayLabel(r.source)}</td>
+      <td>US$ ${Number(r.amount || 0).toFixed(2)}</td>
+      <td><button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="reactivateCancelledReservationUI(${r.id})">${T('reservations.cancelledModal.reactivateBtn', 'Reativar')}</button></td>
+    </tr>
+  `).join("");
+
+  return `
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="text-align:left;color:var(--muted);font-size:12px">
+          <th style="padding:6px 8px">${T('reservations.col.guest', 'Hóspede')}</th>
+          <th style="padding:6px 8px">${T('reservations.col.room', 'Quarto')}</th>
+          <th style="padding:6px 8px">${T('reservations.col.dates', 'Datas')}</th>
+          <th style="padding:6px 8px">${T('reservations.col.source', 'Origem')}</th>
+          <th style="padding:6px 8px">${T('reservations.col.amount', 'Valor')}</th>
+          <th style="padding:6px 8px"></th>
+        </tr>
+      </thead>
+      <tbody id="cancelledReservationsTableBody">${rows}</tbody>
+    </table>
+  `;
+}
+
+window.openCancelledReservationsModal = async function(){
+  openGenericModal(T('reservations.cancelledModal.title', 'Reservas canceladas'), `<p style="color:var(--muted);font-size:13px">${T('common.loading', 'Carregando...')}</p>`, true);
+
+  try{
+    const res = await fetch("/reservations/cancelled", { credentials: "same-origin" });
+    if(!res.ok) throw new Error("request failed");
+    const reservations = await res.json();
+    document.getElementById("genericModalBody").innerHTML = renderCancelledReservationsList(reservations);
+  }catch(e){
+    console.error("Erro ao carregar reservas canceladas:", e);
+    document.getElementById("genericModalBody").innerHTML = `<p class="generic-modal-message error">${T('common.connectionError', 'Erro de conexão.')}</p>`;
+  }
+};
+
+window.reactivateCancelledReservationUI = async function(reservationId){
+  try{
+    const res = await fetch(`/reservations/${reservationId}`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ status: "confirmed" })
+    });
+    if(!res.ok){
+      alert(T('reservations.msg.updateStatusFailed', 'Não foi possível atualizar o status.'));
+      return;
+    }
+    refreshOperationalViews();
+
+    const listRes = await fetch("/reservations/cancelled", { credentials: "same-origin" });
+    const reservations = listRes.ok ? await listRes.json() : [];
+    document.getElementById("genericModalBody").innerHTML = renderCancelledReservationsList(reservations);
+  }catch(e){
+    console.error("Erro ao reativar reserva:", e);
+  }
+};
+
 window.NEW_RESERVATION_ROOMS_CACHE = [];
 
 window.openNewReservationModal = async function(){
@@ -5563,27 +5662,18 @@ window.uploadGuestDocumentUI = async function(guestId){
   function hydrateUserUI(u){
     if(!u) return;
 
-    const hostelNameEl = document.querySelector(".hostel-name");
-    const hostelMetaEl = document.querySelector(".hostel-meta");
     const session = window.STAYFLOW_SESSION || {};
 
-    if(hostelNameEl){
-      hostelNameEl.textContent = session.hostel_name || "Hostel sem nome";
-    }
-
-    populateHostelSelector(session);
-
-    applyPermissionVisibility(session.permissions || []);
-    hideNavItemsWithoutPermission(session.permissions || []);
-    restoreLastOpenPage();
-
-    if(hostelMetaEl){
-      // Decisao de design do que mostrar aqui (funcao? seletor de conta?)
-      // fica pro proximo passo (seletor de conta). Por ora, so limpa o
-      // texto estatico antigo ("Aguardando cadastro") pra nao mentir.
-      hostelMetaEl.textContent = "";
-    }
-
+    // Nome/cargo/avatar do usuario logado vem PRIMEIRO, antes de
+    // qualquer outra coisa nesta funcao - bug real observado em
+    // producao: essas linhas ficavam por ultimo, e uma excecao em
+    // restoreLastOpenPage()/populateHostelSelector() (ex: pagina salva
+    // no localStorage cujo loader falha ao recarregar) abortava a
+    // funcao no meio, deixando o menu do usuario preso em "—" pra
+    // sempre, mesmo com a sessao carregada certinha (por isso a aba
+    // Equipe, que le a sessao por outro caminho, sempre mostrava o
+    // nome certo). Colocar essas atribuicoes primeiro garante que o
+    // menu do usuario nunca fica orfao, mesmo se algo mais abaixo falhar.
     const userNameEl = document.querySelector(".user-name");
     const userRoleEl = document.querySelector(".user-role");
     const userAvatarEl = document.querySelector(".user-avatar");
@@ -5596,6 +5686,25 @@ window.uploadGuestDocumentUI = async function(guestId){
     }
     if(userAvatarEl && u.name){
       userAvatarEl.textContent = (u.name[0] || "?").toUpperCase();
+    }
+
+    const hostelNameEl = document.querySelector(".hostel-name");
+    const hostelMetaEl = document.querySelector(".hostel-meta");
+
+    if(hostelNameEl){
+      hostelNameEl.textContent = session.hostel_name || "Hostel sem nome";
+    }
+
+    try{ populateHostelSelector(session); }catch(e){ console.error("Erro ao popular seletor de hostel:", e); }
+    try{ applyPermissionVisibility(session.permissions || []); }catch(e){ console.error("Erro ao aplicar visibilidade por permissao:", e); }
+    try{ hideNavItemsWithoutPermission(session.permissions || []); }catch(e){ console.error("Erro ao esconder itens de menu sem permissao:", e); }
+    try{ restoreLastOpenPage(); }catch(e){ console.error("Erro ao restaurar ultima pagina aberta:", e); }
+
+    if(hostelMetaEl){
+      // Decisao de design do que mostrar aqui (funcao? seletor de conta?)
+      // fica pro proximo passo (seletor de conta). Por ora, so limpa o
+      // texto estatico antigo ("Aguardando cadastro") pra nao mentir.
+      hostelMetaEl.textContent = "";
     }
   }
 
