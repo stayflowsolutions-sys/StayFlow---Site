@@ -2759,3 +2759,46 @@ disponível e sem cama disponível, idempotência ponta a ponta (reenviar
 o mesmo webhook duas vezes não duplica a reserva), e o fluxo completo
 HTTP de reserva nova chegando e virando `reservations` de verdade no
 banco. Balanceamento/sintaxe conferidos nos arquivos Python novos.
+
+**Configuração real com o usuário**: variável `BEDS24_WEBHOOK_SECRET`
+gerada e configurada no Render; URL do webhook cadastrada no painel do
+Beds24 (Configurações → Propriedades → Acesso → "Webhook de Reservas"),
+versão **"2 - com dados pessoais"** escolhida deliberadamente (a versão
+sem dados pessoais não traria nome/telefone do hóspede, que o StayFlow
+precisa pra criar a reserva completa).
+
+**Teste real: reserva de teste criada direto no painel do Beds24** —
+revelou duas coisas reais de uma vez, como esperado (mesmo padrão de
+"só se aprende testando" da Fase 1-2):
+
+1. **Estrutura do payload diferente do suposto**: os dados da reserva
+   vêm dentro de uma chave `"booking"` aninhada
+   (`{"timeStamp":..., "booking": {...campos aqui...}, "invoiceItems":
+   [...]}`), não soltos no nível de cima do payload como o código
+   assumia. Sem essa correção, `bookId`/`id` nunca era encontrado e a
+   reserva era descartada com "sem id de reserva reconhecido" — mas
+   nada foi perdido de verdade, porque o payload cru já tinha sido
+   gravado antes da tentativa de interpretar (exatamente o motivo de
+   ter desenhado assim desde o início).
+2. **A Beds24 manda um webhook novo a cada alteração, não só na
+   criação** — a mesma reserva (`booking.id` igual) chegou duas vezes
+   em menos de 2 minutos: a primeira com nome/telefone do hóspede
+   vazios (reserva recém-criada, dados ainda não preenchidos no
+   formulário do painel), a segunda já com "Juliana Souza" e telefone
+   preenchidos. O desenho original da Fase 3 (idempotência simples,
+   "processa uma vez só, ignora reentrega") trataria a segunda mensagem
+   como duplicata e descartaria a atualização de nome — errado. Corrigido
+   ainda dentro da mesma rodada: chave de idempotência passou a incluir
+   o `modifiedTime` do evento (`"90711959:2026-07-31T04:25:47Z"`, não só
+   o id puro), e nova função `update_reservation_from_channel` — se já
+   existe uma reserva StayFlow pra aquele `external_booking_id`, o
+   evento vira atualização (nome, telefone, datas, status) em vez de
+   criar de novo ou ser ignorado. Reentrega EXATA do mesmo evento
+   (mesmo id + mesmo modifiedTime) continua sendo ignorada de verdade.
+
+Reteste com o payload real exato capturado nos logs de produção (não
+um mock genérico) confirmou: primeiro webhook cria a reserva com
+"Hóspede (OTA)" como nome provisório; segundo webhook atualiza pra
+"Juliana Souza" sem duplicar; reenvio do segundo evento não muda nada.
+Deploy da correção feito, teste real repetido no Beds24 pra confirmar
+de ponta a ponta em produção.
