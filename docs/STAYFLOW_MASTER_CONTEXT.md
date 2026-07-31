@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.22.0
+\*\*Versão:\*\* 1.23.0
 
 
 
@@ -113,6 +113,8 @@
 | 1.21.6 | 31/07/2026 | Oficial | Reservas criadas por qualquer canal automático (WhatsApp, Beds24/qualquer OTA — `source != 'manual'`) nas últimas 24h agora também geram alerta no sininho de Operações ("Nova reserva via {canal}: {hóspede}..."), não só reservas manuais. Pedido em aberto do usuário, ainda não iniciado: notificação nativa no aparelho (celular/PC), estilo WhatsApp, pra mensagem nova/alerta operacional/problema de IA/intervenção humana — requer infraestrutura nova (Web Push API, service worker, VAPID, inscrições por dispositivo), fica pra ser desenhado como etapa própria. |
 
 | 1.22.0 | 31/07/2026 | Oficial | Perfil completo do hóspede na aba Hóspedes: clicar no nome (antes era texto solto, sem ação) abre um modal com contato editável (nome, telefone, email, endereço, data de nascimento, nacionalidade), documento (tipo + número, editáveis, mais galeria de fotos do documento com upload manual — reaproveita o `guest_documents` já usado pelo recebimento automático via WhatsApp) e histórico completo de estadias com status/valor, incluindo saldo devedor/crédito calculado ao vivo pra estadias de longa duração (reservas fixas não têm conceito de pagamento parcial no modelo atual, mostram só o valor total). Novo `get_guest_reservations`, `update_guest_profile`, rotas `PATCH /guests/<id>` e `POST /guests/<id>/documents`; colunas novas em `guests` (`address`, `document_type`, `document_number`). Moeda/câmbio automático por país (pedido do usuário, com regra de margem de 30 pontos abaixo do câmbio real) registrado como pendência futura, a ser feito junto da configuração de formas de pagamento — não iniciado. |
+
+| 1.23.0 | 31/07/2026 | Oficial | Fase 4 da integração Beds24: saída/disponibilidade. Nova `sync_availability_to_channel(hostel_id, category_name, checkin_date, checkout_date)` calcula quantas camas de uma modalidade continuam livres pro período (total de camas menos reservas não-canceladas de qualquer origem que se cruzam com as datas, contadas por `room_type` em texto, não por `bed_id`, porque reserva manual/WhatsApp só ganha cama específica no check-in) e empurra pro Beds24 via `push_availability` (já existia, nunca tinha sido chamada). Ligada em três pontos: criação de reserva manual, criação via WhatsApp, e qualquer mudança de status (cancelar/reverter cancelamento — a função sempre recalcula do zero, então é seguro chamar em qualquer transição). Nunca chamada pra reserva vinda do próprio Beds24 (evita eco). Fecha o risco de overbooking entre canais que ainda existia (reserva feita no StayFlow não avisava as OTAs). Testado com mocks de `push_availability` (sem gastar chamada real): sem mapeamento não sincroniza, contagem correta com/sem reserva, cancelamento libera de volta, reserva de canal não ecoa. Nome exato do campo `numAvail` na API real do Beds24 ainda não confirmado contra uma resposta real — mesma ressalva de sempre nesta integração, ajustar no primeiro teste ao vivo. |
 
 
 

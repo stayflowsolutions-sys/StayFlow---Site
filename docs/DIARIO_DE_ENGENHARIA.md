@@ -3167,3 +3167,59 @@ conversão de moeda + regra de margem + fonte de câmbio ao vivo +
 identificação de país por hostel + seletor de moeda na UI + campos de
 empresa por país) pra merecer sua própria rodada de design, não pra
 encaixar de raspão em outra tarefa.
+
+## Fase 4 da integração Beds24: saída/disponibilidade
+
+Usuário pediu recapitulação de tudo que faltava na integração Beds24 e
+escolheu começar pelo item mais importante: hoje, reserva feita manual
+ou pelo WhatsApp não avisa o Beds24 - risco real de overbooking (outra
+OTA vender a mesma cama enquanto ela já está ocupada no StayFlow).
+
+`push_availability(beds24_room_id, checkin_date, checkout_date,
+num_avail)` já existia em `services/beds24_service.py` desde a Fase 1,
+mas nunca tinha sido chamada de lugar nenhum - só a peça que faltava era
+calcular CORRETAMENTE quantas unidades ainda estão livres e ligar isso
+nos pontos certos.
+
+**Decisão de design importante**: contar disponibilidade por `bed_id`
+(como o resto do sistema faz pro mapa de quartos) subestimaria a
+ocupação real, porque reserva manual/WhatsApp só recebe uma cama
+específica atribuída no momento do check-in - antes disso, `bed_id`
+fica null mesmo a reserva já estando confirmada e ocupando uma vaga da
+modalidade. Por isso `sync_availability_to_channel` conta por
+`room_type` (texto, mesma convenção já usada por `find_available_beds`
+e `create_reservation_from_chat`): `numAvail` = total de camas da
+modalidade menos reservas não-canceladas de QUALQUER origem (inclusive
+vindas do próprio Beds24) que se cruzam com o período pedido.
+
+Ligada em três pontos:
+1. `create_reservation_record` (reserva manual) - depois do insert.
+2. `create_reservation_from_chat` (WhatsApp) - depois de confirmar a
+   cama e inserir.
+3. `update_reservation_status_record` - depois de QUALQUER mudança de
+   status (não só cancelamento) - como a função sempre recalcula do
+   zero a partir do banco, chamar de novo em qualquer transição é
+   sempre seguro e correto (cobre cancelar E reverter cancelamento).
+
+**Nunca chamada** em `create_reservation_from_channel`/
+`update_reservation_from_channel` (as duas funções que processam
+reserva vinda DO Beds24) - evita ecoar de volta pra eles uma mudança
+que eles mesmos já sabem, mesmo princípio já usado no webhook de
+entrada.
+
+Testado com mocks de `services.beds24_service.push_availability` (sem
+gastar chamada real de API): sem mapeamento configurado não sincroniza
+nada; 3 camas sem reserva nenhuma dá `numAvail=3`; criar reserva manual
+sem cama atribuída já reduz pra 2 (prova que a contagem por `room_type`
+funciona mesmo sem `bed_id`); cancelar essa reserva volta pra 3;
+reserva criada via `create_reservation_from_channel` não dispara
+nenhuma chamada (sem eco); reserva via WhatsApp também sincroniza
+corretamente.
+
+**Nome exato do campo continua não confirmado contra a API real**
+(`numAvail`, por analogia com outros campos documentados do Beds24) -
+mesma ressalva de toda essa integração desde a Fase 1: só confirma de
+verdade testando ao vivo com a conta master. Próximo passo natural:
+usuário testar criando/cancelando uma reserva manual/WhatsApp de
+verdade pra uma modalidade já mapeada, e conferir no painel do Beds24
+se a disponibilidade mudou.
