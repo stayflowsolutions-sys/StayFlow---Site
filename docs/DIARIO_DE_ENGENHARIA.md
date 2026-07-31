@@ -4427,3 +4427,46 @@ seguinte).
 Testado: hóspede sem nome recebe o nome na mensagem seguinte sem
 duplicar registro; hóspede que já tem nome não é sobrescrito por um
 valor diferente vindo depois. Regressão completa sem quebra.
+
+## IA sugerindo o WhatsApp real como canal alternativo
+
+Pedido do usuário testando a conversa do Messenger: a conversa vai
+bem, mas a IA não tem o número real de WhatsApp do hostel
+(+5493883154375) - ele quer que, logo no início (boas-vindas) e de
+novo perto do fim (dúvidas/confirmações), a IA sugira ao hóspede que,
+se preferir, pode falar por WhatsApp também - só quando a conversa
+não é já pelo próprio WhatsApp (não faz sentido sugerir o canal em
+que já está).
+
+Achado investigando: `hostels.phone` já existia como coluna (usada
+internamente só pelo endpoint de teste manual, `get_hostel_id_by_number`),
+mas nunca teve rota nem campo de UI pra ser preenchida - o número real
+do hostel nunca chegou a ser salvo em lugar nenhum, por isso a IA não
+tinha como conhecê-lo.
+
+Corrigido: `save_hostel_phone(hostel_id, phone)` (novo, `database.py`).
+Campo novo "Número de WhatsApp visível pro hóspede" no card WhatsApp
+Business (Configurações → Comunicação), diferente do "Phone Number ID"
+que já existia (esse é o ID interno da Meta pra autenticar chamada de
+API, não um número legível) - salvo/lido junto no mesmo
+`GET`/`POST /settings/whatsapp`.
+
+`ask_ai` ganhou dois parâmetros novos, `channel` (explícito agora, em
+vez de inferido só pela presença de `guest_phone`) e `hostel_phone`.
+Novo bloco `{alt_channel_instruction}` no prompt, condicional: só
+aparece quando `channel != "whatsapp"` E o hostel tem
+`hostel_phone` configurado - pede pra IA mencionar o WhatsApp
+brevemente como alternativa na mensagem de boas-vindas (primeira ou
+segunda mensagem) e de novo perto do fechamento da conversa
+(dúvidas finais/confirmação), sem repetir isso em toda mensagem.
+`routes/chat.py` busca `get_hostel(hostel_id)["phone"]` e repassa pra
+`ask_ai` junto com o `channel` já resolvido.
+
+Testado: `save_hostel_phone`/`get_hostel` salvam e devolvem o número
+certo; rota `/settings/whatsapp` grava e lê `contact_phone` junto com
+os outros dois campos; instrução de canal alternativo aparece no
+prompt só na combinação certa (Messenger + número configurado),
+ausente no próprio WhatsApp e ausente quando o hostel não tem número
+cadastrado; `process_incoming_message` repassa o número certo pra
+`ask_ai`. Balanceamento de chaves/parênteses, cobertura i18n (2 chaves
+novas, 5 idiomas) e regressão completa sem quebra.
