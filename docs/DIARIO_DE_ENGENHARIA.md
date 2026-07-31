@@ -2578,3 +2578,37 @@ tempo real pro Beds24 refletir), e a mensagem de sucesso passou a
 avisar explicitamente que pode levar alguns segundos pra aparecer com o
 nome certo — a pessoa agora sabe que é uma espera esperada, não uma
 falha, sem precisar adivinhar.
+
+**Correção da correção — o diagnóstico acima estava errado.** Depois de
+esperar e recarregar várias vezes sem o "sincronizando..." nunca sair
+do lugar, ficou claro que não era demora nenhuma. Usuário pediu (com
+razão) pra parar de tentar adivinhar e investigar com dado real dos
+logs — processo feito passo a passo, isolando cada hipótese: busca por
+`Quartos parseados` (o log de sucesso) não trouxe nenhum resultado, nem
+`Erro ao listar quartos` (falha HTTP) — sobrou só
+`Resposta do Beds24 sem roomTypes`, que trouxe o corpo bruto da
+resposta e revelou a causa raiz de verdade: **a suposição de formato
+estava errada desde o início**. O código esperava um objeto de
+propriedade com uma chave `roomTypes` aninhada contendo a lista de
+quartos (é o que a documentação pública do Beds24 dava a entender); a
+API real devolve a **lista de quartos direto**, sem esse envelope — os
+dois quartos "privado" (ids 712413/712414) estavam lá o tempo todo,
+criados com sucesso, só que o parsing nunca os encontrava porque
+procurava no lugar errado.
+
+Corrigido `get_property_rooms` pra aceitar os dois formatos (lista
+direta de quartos, ou objeto de propriedade com `roomTypes` dentro),
+com testes cobrindo especificamente o formato real observado nos logs,
+o formato hipotético antigo (mantido por segurança) e propriedade sem
+nenhum quarto. `create_room_type` (a função que cria o quarto) não
+precisou de correção — a suposição de formato dela pra resposta de
+criação se confirmou certa pelos próprios ids extraídos, que bateram
+com os dois quartos reais vistos na listagem.
+
+**Lição registrada**: quando um sintoma "quase resolve mas não resolve
+de vez" depois de uma correção, vale suspeitar de causa raiz diferente
+da hipótese inicial, em vez de só reforçar a mesma explicação (nesse
+caso, "só espera mais um pouco"). Isolar por eliminação nos logs (qual
+das 3 saídas possíveis da função realmente aconteceu) achou a causa
+real em poucos passos, mais rápido do que qualquer tentativa adicional
+de ajuste de tempo de espera teria achado.
