@@ -3263,3 +3263,45 @@ do usuário já vai mostrar no log exatamente o que está acontecendo.
 Construir a sincronização de status de reserva específica (cancelamento
 + check-in) fica pra assim que confirmarmos, com log real, que a Fase 4
 básica está funcionando.
+
+## Confirmado: Fase 4 funciona de verdade contra a API real
+
+Usuário testou de novo e mandou o log - achado no meio dele:
+
+```
+Sync disponibilidade Beds24: categoria 'privado' ... numAvail=1
+Disponibilidade empurrada pro Beds24 com sucesso: 201 [{"success":true}]
+```
+
+**Confirmado**: o campo `numAvail` estava certo desde o início (a
+ressalva "confirmar contra API real" que vinha desde a Fase 1 pode ser
+removida) - o Beds24 aceitou a chamada com HTTP 201 e respondeu
+`{"success":true}`. A Fase 4 está funcionando de ponta a ponta em
+produção.
+
+No mesmo teste, o usuário reportou mais duas coisas:
+
+1. **Reserva manual (Vinicius, Compartilhado) não apareceu no painel do
+   Beds24** - esperado, mesma explicação já registrada na entrada
+   anterior: Fase 4 só ajusta quantas vagas sobram pra vender, nunca
+   cria um registro de reserva visível lá. Isso já é suficiente pra
+   evitar overbooking (a vaga fica bloqueada pra venda), só não cria a
+   sensação visual de "a reserva está lá dentro".
+
+2. **Bug real encontrado**: a reserva manual do Vinicius (modalidade
+   Compartilhado, com `price_per_night` de US$ 20.000 já configurado)
+   nasceu com US$ 0,00 na aba Reservas. Causa: `create_reservation_record`
+   (criação manual) nunca calculava o valor pelo preço da modalidade -
+   só os outros dois caminhos de criação (`create_reservation_from_chat`
+   do WhatsApp e `create_reservation_from_channel` do Beds24) já faziam
+   esse cálculo. Reserva manual dependia 100% de alguém digitar o valor
+   na mão no formulário.
+
+Corrigido: `create_reservation_record` agora calcula `amount` pelo
+`price_per_night` da modalidade × noites quando nenhum valor é
+informado explicitamente (mesma lógica dos outros dois caminhos) - só
+não sobrescreve se a equipe já digitou um valor de propósito (ex:
+desconto negociado). Testado: sem valor informado calcula certo (3
+noites × US$ 20.000 = US$ 60.000); valor informado explicitamente é
+respeitado sem ser sobrescrito; modalidade sem cadastro continua US$
+0,00 sem quebrar nada.
