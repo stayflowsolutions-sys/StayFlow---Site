@@ -245,9 +245,10 @@ async function loadRolesList() {
   }
 }
 
-function openGenericModal(title, bodyHtml){
+function openGenericModal(title, bodyHtml, wide){
   document.getElementById("genericModalTitle").textContent = title;
   document.getElementById("genericModalBody").innerHTML = bodyHtml;
+  document.getElementById("genericModal").classList.toggle("wide", !!wide);
   document.getElementById("genericModalOverlay").classList.add("open");
   document.getElementById("genericModal").classList.add("open");
 }
@@ -4967,7 +4968,7 @@ async function loadGuests(){
     guests.forEach(g => {
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td>${g.name || T('guests.noName', 'Sem nome')}</td>
+        <td><a href="#" class="guest-name-link" onclick="openGuestProfileModal(${g.id});return false;">${g.name || T('guests.noName', 'Sem nome')}</a></td>
         <td>${g.phone || "-"}</td>
         <td>${g.email || "-"}</td>
         <td><span class="status-pill ${g.message_count > 0 ? "ok" : "cold"}">${g.message_count > 0 ? T('guests.active', 'Ativo') : T('guests.noInteraction', 'Sem interação')}</span></td>
@@ -4980,6 +4981,171 @@ async function loadGuests(){
     console.warn("Erro ao carregar /guests:", e);
   }
 }
+
+window.openGuestProfileModal = async function(guestId){
+  let profile;
+  try{
+    const res = await fetch(`/guests/${guestId}`, { credentials: "same-origin" });
+    if(!res.ok) return;
+    profile = await res.json();
+  }catch(e){
+    alert(T('guests.profile.loadError', 'Erro ao carregar o perfil do hóspede.'));
+    return;
+  }
+
+  const g = profile.guest;
+  const reservations = profile.reservations || [];
+  const documents = profile.documents || [];
+
+  const reservationsHtml = reservations.length
+    ? reservations.map(r => {
+        const statusClass = reservationStatusPillClass(r.status);
+        const balanceHtml = r.stay_type === "indefinite"
+          ? (Number(r.balance) > 0
+              ? `<span style="color:#ff9caf">${T('longTermStay.owes', 'Deve US$ {amount}', { amount: Number(r.balance).toFixed(2) })}</span>`
+              : Number(r.balance) < 0
+                ? `<span style="color:#6ff0bd">${T('longTermStay.credit', 'Crédito US$ {amount}', { amount: Math.abs(Number(r.balance)).toFixed(2) })}</span>`
+                : `<span style="color:var(--muted)">${T('longTermStay.upToDate', 'Em dia')}</span>`)
+          : `US$ ${Number(r.amount || 0).toFixed(2)}`;
+        return `
+          <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #ffffff0f;font-size:13px">
+            <div>
+              <strong>${escapeHtml(r.room_type || "-")}</strong> · ${channelDisplayLabel(r.source)}<br>
+              <span style="color:var(--muted)">${r.checkin_date || "-"} → ${r.checkout_date || T('guests.profile.ongoing', 'em andamento')}</span>
+            </div>
+            <div style="text-align:right">
+              <span class="status-pill ${statusClass}">${(r.status || "-").toUpperCase()}</span><br>
+              ${balanceHtml}
+            </div>
+          </div>
+        `;
+      }).join("")
+    : `<span style="color:var(--muted);font-size:13px">${T('guests.profile.noStays', 'Nenhuma estadia registrada ainda.')}</span>`;
+
+  const docsHtml = documents.length
+    ? documents.map(d => {
+        const isImage = (d.mime_type || "").startsWith("image/");
+        return `
+          <a class="guest-doc-thumb" href="/guests/documents/${d.id}/file" target="_blank" rel="noopener">
+            ${isImage ? `<img src="/guests/documents/${d.id}/file" alt="">` : `📄<br>${(d.mime_type || "").split("/")[1] || "arquivo"}`}
+          </a>
+        `;
+      }).join("")
+    : `<span style="color:var(--muted);font-size:13px">${T('guests.profile.noDocuments', 'Nenhum documento anexado ainda.')}</span>`;
+
+  openGenericModal(g.name || T('guests.noName', 'Sem nome'), `
+    <div class="guest-profile-section" style="border-top:0;padding-top:0;margin-top:0">
+      <h4>${T('guests.profile.contactTitle', 'Contato')}</h4>
+      <div class="guest-profile-grid">
+        <div><label>${T('common.name', 'Nome')}</label><input id="gpName" value="${escapeHtml(g.name || "")}"></div>
+        <div><label>${T('common.phone', 'Telefone')}</label><input id="gpPhone" value="${escapeHtml(g.phone || "")}"></div>
+        <div><label>${T('common.email', 'Email')}</label><input id="gpEmail" value="${escapeHtml(g.email || "")}"></div>
+        <div><label>${T('guests.profile.addressLabel', 'Endereço')}</label><input id="gpAddress" value="${escapeHtml(g.address || "")}"></div>
+        <div><label>${T('guests.profile.dobLabel', 'Data de nascimento')}</label><input id="gpDob" type="date" value="${g.date_of_birth || ""}"></div>
+        <div><label>${T('guests.profile.nationalityLabel', 'Nacionalidade')}</label><input id="gpNationality" value="${escapeHtml(g.nationality || "")}"></div>
+      </div>
+    </div>
+
+    <div class="guest-profile-section">
+      <h4>${T('guests.profile.documentTitle', 'Documento')}</h4>
+      <div class="guest-profile-grid">
+        <div><label>${T('guests.profile.documentTypeLabel', 'Tipo de documento')}</label><input id="gpDocType" placeholder="${T('guests.profile.documentTypePlaceholder', 'Passaporte, RG...')}" value="${escapeHtml(g.document_type || "")}"></div>
+        <div><label>${T('guests.profile.documentNumberLabel', 'Número do documento')}</label><input id="gpDocNumber" value="${escapeHtml(g.document_number || "")}"></div>
+      </div>
+      <div id="guestProfileMessage" class="generic-modal-message"></div>
+      <button class="btn" type="button" style="margin-top:8px" onclick="saveGuestProfileEdits(${g.id})">${T('common.save', 'Salvar')}</button>
+    </div>
+
+    <div class="guest-profile-section">
+      <h4>${T('guests.profile.documentsPhotoTitle', 'Fotos do documento')}</h4>
+      <div class="guest-doc-thumbs" id="guestDocThumbs">${docsHtml}</div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="file" id="gpDocFile" accept="image/jpeg,image/png,image/webp,application/pdf">
+        <button class="btn secondary" type="button" onclick="uploadGuestDocumentUI(${g.id})">${T('guests.profile.uploadDocBtn', 'Adicionar foto/arquivo')}</button>
+      </div>
+      <div id="guestDocUploadMessage" class="generic-modal-message"></div>
+    </div>
+
+    <div class="guest-profile-section">
+      <h4>${T('guests.profile.staysTitle', 'Estadias e pagamento')}</h4>
+      ${reservationsHtml}
+    </div>
+  `, true);
+};
+
+window.saveGuestProfileEdits = async function(guestId){
+  const msg = document.getElementById("guestProfileMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  const payload = {
+    name: document.getElementById("gpName").value.trim(),
+    phone: document.getElementById("gpPhone").value.trim(),
+    email: document.getElementById("gpEmail").value.trim(),
+    address: document.getElementById("gpAddress").value.trim(),
+    date_of_birth: document.getElementById("gpDob").value,
+    nationality: document.getElementById("gpNationality").value.trim(),
+    document_type: document.getElementById("gpDocType").value.trim(),
+    document_number: document.getElementById("gpDocNumber").value.trim(),
+  };
+
+  try{
+    const res = await fetch(`/guests/${guestId}`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      msg.textContent = data.message || T('guests.profile.saveFailed', 'Não foi possível salvar o perfil.');
+      msg.classList.add("error");
+      return;
+    }
+    msg.textContent = T('guests.profile.saveSuccess', 'Perfil atualizado.');
+    msg.classList.add("success");
+    loadGuests();
+  }catch(e){
+    msg.textContent = T('guests.profile.saveConnError', 'Erro de conexão ao salvar o perfil.');
+    msg.classList.add("error");
+  }
+};
+
+window.uploadGuestDocumentUI = async function(guestId){
+  const msg = document.getElementById("guestDocUploadMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  const fileInput = document.getElementById("gpDocFile");
+  const file = fileInput.files[0];
+  if(!file){
+    msg.textContent = T('guests.profile.noFileChosen', 'Escolha um arquivo primeiro.');
+    msg.classList.add("error");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try{
+    const res = await fetch(`/guests/${guestId}/documents`, {
+      method: "POST",
+      credentials: "same-origin",
+      body: formData
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      msg.textContent = data.message || T('guests.profile.uploadFailed', 'Não foi possível enviar o arquivo.');
+      msg.classList.add("error");
+      return;
+    }
+    fileInput.value = "";
+    openGuestProfileModal(guestId);
+  }catch(e){
+    msg.textContent = T('guests.profile.uploadConnError', 'Erro de conexão ao enviar o arquivo.');
+    msg.classList.add("error");
+  }
+};
 
 // ===== CHATS: /chats =====
 // loadChats() vive em assets/js/chats-live.js (versão completa: lista

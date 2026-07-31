@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.21.6
+\*\*Versão:\*\* 1.22.0
 
 
 
@@ -111,6 +111,8 @@
 | 1.21.5 | 31/07/2026 | Oficial | Dois bugs reais corrigidos no formulário de morador de longa duração: (1) não existia seletor de cama no formulário — `create_indefinite_stay` só ocupa uma cama de verdade quando recebe `bed_id`, mas o formulário nunca mandava esse campo, então o morador nunca aparecia no Mapa de Quartos. Adicionado seletor de cama livre (`indefiniteStayBedSelect`, populado a partir do `/bed-map`). (2) morador com telefone não aparecia na aba Hóspedes — a função só *procurava* um hóspede já existente com aquele telefone, nunca *criava* um novo (diferente do resto do sistema, que usa `get_or_create_guest`); corrigido pra criar/vincular o hóspede de verdade. Aproveitado pra fechar outro gap: check-out (inclusive de estadia de longa duração) agora gera um alerta operacional de verdade em `/operations` pra cada cama aguardando limpeza — antes só virava "tarefa" na lista, sem contar no sininho de notificações nem aparecer resumido pra quem tem acesso à área de Operações (que já é avisado automaticamente no login, gate por permissão já existente). |
 
 | 1.21.6 | 31/07/2026 | Oficial | Reservas criadas por qualquer canal automático (WhatsApp, Beds24/qualquer OTA — `source != 'manual'`) nas últimas 24h agora também geram alerta no sininho de Operações ("Nova reserva via {canal}: {hóspede}..."), não só reservas manuais. Pedido em aberto do usuário, ainda não iniciado: notificação nativa no aparelho (celular/PC), estilo WhatsApp, pra mensagem nova/alerta operacional/problema de IA/intervenção humana — requer infraestrutura nova (Web Push API, service worker, VAPID, inscrições por dispositivo), fica pra ser desenhado como etapa própria. |
+
+| 1.22.0 | 31/07/2026 | Oficial | Perfil completo do hóspede na aba Hóspedes: clicar no nome (antes era texto solto, sem ação) abre um modal com contato editável (nome, telefone, email, endereço, data de nascimento, nacionalidade), documento (tipo + número, editáveis, mais galeria de fotos do documento com upload manual — reaproveita o `guest_documents` já usado pelo recebimento automático via WhatsApp) e histórico completo de estadias com status/valor, incluindo saldo devedor/crédito calculado ao vivo pra estadias de longa duração (reservas fixas não têm conceito de pagamento parcial no modelo atual, mostram só o valor total). Novo `get_guest_reservations`, `update_guest_profile`, rotas `PATCH /guests/<id>` e `POST /guests/<id>/documents`; colunas novas em `guests` (`address`, `document_type`, `document_number`). Moeda/câmbio automático por país (pedido do usuário, com regra de margem de 30 pontos abaixo do câmbio real) registrado como pendência futura, a ser feito junto da configuração de formas de pagamento — não iniciado. |
 
 
 

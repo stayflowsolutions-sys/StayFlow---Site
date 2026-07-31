@@ -3071,3 +3071,99 @@ dentro do dashboard. Isso é uma peça de infraestrutura nova e maior
 push por dispositivo/usuário, disparo no backend a cada evento
 relevante) - ainda não iniciado, fica pra ser desenhado como uma etapa
 própria, depois de fechado o que já estava em andamento nesta rodada.
+
+## Perfil completo do hóspede (clicar no nome abre tudo)
+
+Pedido do usuário, retomado de uma rodada anterior desta sessão (tinha
+sido explicitamente adiado até terminar a integração Beds24): na aba
+Hóspedes, clicar no nome deveria abrir o perfil completo - contato,
+endereço, documento (tipo/número + foto), saldo/pagamento em atraso e
+histórico de estadias.
+
+Investigação encontrou infraestrutura já pronta e nunca exposta na UI:
+- `guest_documents` (tabela) + `save_guest_document`/`list_guest_documents`/
+  `get_guest_document_file` já existiam, usados hoje só pelo recebimento
+  automático de foto de documento via WhatsApp. Reaproveitados 100% pro
+  upload manual também - `save_guest_document` já aceita
+  `whatsapp_media_id=None`, então o mesmo caminho de código serve pros
+  dois casos.
+- `get_guest_profile` já devolvia hóspede + mensagens + oportunidades +
+  documentos, só faltava reservas/saldo.
+- `get_reservation_balance` (saldo de estadia de longa duração, dias
+  ocupados x diária menos pagamentos) já existia pronto, criado numa
+  rodada anterior.
+
+**Descoberta importante sobre "pagamento atrasado"**: o modelo de dados
+atual só tem controle de pagamento parcial pra estadias de longa duração
+(`stay_type='indefinite'`, via `reservation_payments`). Reserva fixa
+normal (a maioria) tem só um campo `amount` fechado, sem conceito de
+"pago"/"não pago" nem pagamento parcial. Decisão: não inventar um status
+de atraso falso pra reserva fixa - o perfil mostra o valor total dela e,
+pra estadia de longa duração, mostra o saldo real (deve/crédito/em dia),
+igual já é feito na aba Reservas.
+
+**Backend novo**:
+- Colunas em `guests`: `address`, `document_type`, `document_number`
+  (`date_of_birth`/`nationality` já existiam).
+- `get_guest_reservations(hostel_id, guest_id)`: todas as reservas desse
+  hóspede, com `balance` calculado só quando `stay_type='indefinite'`.
+- `get_guest_profile` passou a incluir `reservations`.
+- `update_guest_profile(hostel_id, guest_id, **fields)`: lista branca
+  fixa de colunas editáveis (nunca monta SQL com nome de coluna vindo de
+  fora), erro claro (`ValueError` → 400) se o telefone novo já pertence
+  a outro hóspede do mesmo hostel (`UNIQUE(hostel_id, phone)`).
+- Rotas novas: `PATCH /guests/<id>` (edição) e
+  `POST /guests/<id>/documents` (upload manual, `multipart/form-data`,
+  mesma whitelist de mime type usada no recebimento via WhatsApp:
+  jpeg/png/webp/pdf) - essa última confere primeiro que o hóspede
+  pertence ao hostel da sessão antes de gravar qualquer arquivo,
+  fechando um caminho de escrita cross-tenant que não existia nas rotas
+  de leitura (essas já eram escopadas por `hostel_id` desde a criação).
+
+**Frontend novo**:
+- Nome na lista de Hóspedes virou link (`onclick="openGuestProfileModal"`).
+- `openGenericModal` ganhou um terceiro parâmetro opcional (`wide`) pra
+  modal mais largo (760px) só quando precisa - variante nova
+  `.generic-modal.wide` no CSS, sem mexer no tamanho padrão usado em
+  todo o resto do app.
+- Modal do perfil com 4 seções: Contato (editável), Documento
+  (tipo/número editáveis + galeria de fotos com miniaturas clicáveis,
+  abrindo o arquivo original em nova aba, mais upload de arquivo novo),
+  Estadias e pagamento (histórico completo, reaproveitando a mesma
+  lógica visual de saldo já usada na aba Reservas pra morador de longa
+  duração).
+
+Testado de ponta a ponta via `app.test_client()`: `GET /guests/<id>`
+trazendo reservas certas; `PATCH` salvando contato/documento; `PATCH`
+com telefone duplicado falhando limpo (400, mensagem clara); upload de
+documento via multipart salvando e aparecendo depois no perfil;
+`GET /guests/documents/<id>/file` devolvendo o arquivo certo (bytes
+batendo exatamente); morador de longa duração aparecendo com saldo
+calculado (`balance`) na lista de reservas do perfil.
+
+## Pendência futura anotada: moeda/câmbio automático por país
+
+Usuário pediu, em duas mensagens ao longo desta rodada, pra registrar
+como trabalho futuro (explicitamente adiado até a etapa de configurar
+formas de pagamento):
+- Hostel identificado por país no cadastro; moeda padrão = moeda local
+  desse país, com dólar americano SEMPRE disponível como opção em
+  qualquer país, além de poder escolher qualquer outra moeda.
+- Tabela/mecanismo de câmbio com atualização automática de cotação
+  (usuário supõe que existe alguma API/banco de dados externo acessível
+  pra isso - nenhuma foi escolhida ainda).
+- Regra de negócio explícita: o câmbio usado é sempre 30 pontos abaixo
+  do câmbio real de mercado, pra qualquer moeda (exemplo dado: se 1 USD
+  = 1500 ARS no mercado, o StayFlow calcula com 1 USD = 1470 ARS). Ponto
+  em aberto pra confirmar antes de implementar: se "30 pontos" é sempre
+  uma subtração fixa de 30 unidades da moeda local por dólar (como no
+  exemplo) ou um ajuste proporcional - não presumir, perguntar/confirmar
+  a matemática exata quando for implementar.
+- Área de configuração de empresa também deveria se adaptar aos campos
+  exigidos por cada país.
+
+Nada disso foi iniciado - é um recurso grande o suficiente (motor de
+conversão de moeda + regra de margem + fonte de câmbio ao vivo +
+identificação de país por hostel + seletor de moeda na UI + campos de
+empresa por país) pra merecer sua própria rodada de design, não pra
+encaixar de raspão em outra tarefa.
