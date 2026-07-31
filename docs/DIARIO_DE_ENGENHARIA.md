@@ -4401,3 +4401,29 @@ normalmente); pagamento aparece na lista de movimentações como
 do hóspede). Regressão completa de tudo (incluindo os testes de
 reserva/webhook/Beds24, que criam hóspede com e sem telefone em vários
 pontos) sem quebra.
+
+## Nome do Messenger ainda não aparecia (hóspede criado antes do fix)
+
+Testando ao vivo de novo: selo de canal funcionando certinho (roxo
+"Messenger", verde "WhatsApp"), IA respondendo de verdade (preço,
+opções de quarto) - mas o nome continuava "Sem telefone"/"Hóspede" na
+aba Chats, mesmo já com o nome automático (rodada anterior) no ar.
+
+Causa: `get_or_create_guest_by_channel` só grava o `name` recebido na
+hora de CRIAR o hóspede (branch de `INSERT`). Essa conversa específica
+já existia de um teste anterior (de antes do nome automático existir)
+- toda mensagem seguinte só encontrava a identidade de canal já
+cadastrada e devolvia o `guest_id` direto, sem passar perto do `name`
+nenhuma vez.
+
+Corrigido: no branch onde a identidade já existe, se o hóspede ainda
+está sem nome salvo E um nome foi passado nessa chamada, preenche
+retroativamente (`UPDATE guests SET name = ...`) - nunca sobrescreve um
+nome que já existe. Resolve tanto esse caso (hóspede de antes do fix)
+quanto qualquer falha transitória futura (ex: a primeira busca de
+perfil no Graph API falhar por instabilidade, autocorrige na mensagem
+seguinte).
+
+Testado: hóspede sem nome recebe o nome na mensagem seguinte sem
+duplicar registro; hóspede que já tem nome não é sobrescrito por um
+valor diferente vindo depois. Regressão completa sem quebra.
