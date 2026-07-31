@@ -4182,3 +4182,77 @@ cancelamentos, OAuth do Facebook, configurações manuais) sem quebra.
 
 Próximo passo: Instagram Login (mesmo padrão OAuth+webhook+envio, App
 diferente na Meta).
+
+## Bug real de produção: IA no Messenger caía no fallback "confirmar com a equipe"
+
+Guiei o usuário pelo teste ao vivo (webhook inscrito, mensagem enviada
+pra Página conectada) - respondeu, mas com o texto fixo "Deixa eu
+confirmar isso com a equipe e já te retorno" em vez de uma resposta de
+verdade. Usuário pediu explicitamente: quer que a IA no Messenger
+funcione EXATAMENTE igual ao WhatsApp - pergunte idioma, nome, processe
+pedido de reserva do mesmo jeito.
+
+Causa raiz: `services/ai_service.py` só liberava as ferramentas de
+reserva pro modelo (`get_room_options`, `get_available_beds`,
+`create_reservation`, `extend_reservation`, `flag_extension_for_approval`)
+quando `hostel_id and guest_phone` - e `guest_phone` só existe de
+verdade pro WhatsApp (Messenger passa `None` de propósito, pra IA não
+tratar o PSID como se fosse telefone, decisão da rodada anterior). Sem
+essas ferramentas, a IA tentava ajudar com o pedido de reserva mas não
+tinha como agir - ficava chamando `save_guest_language`/`save_guest_name`
+sem nunca "fechar" com texto, esgotava as `MAX_TOOL_ROUNDS` (4) e caía
+no fallback.
+
+Corrigido trocando o portão pra `guest_id` (que existe de verdade pra
+qualquer canal, resolvido uma vez no topo do pipeline) em vez de
+`guest_phone`. Isso expôs, em cascata, o MESMO problema estrutural já
+corrigido no pipeline de mensagem (rodada anterior) só que agora nas
+ferramentas de reserva: `create_reservation_from_chat`,
+`attempt_extend_reservation`, `flag_extension_for_approval`
+(`database.py`) resolviam o hóspede buscando de novo por
+`guests.phone` internamente - nunca funcionariam pra Messenger. As três
+mudaram de assinatura pra receber `guest_id` já resolvido em vez de
+`phone` (só um call site cada, em `ai_service.py`, risco baixo).
+
+De quebra, `create_reservation_from_chat` também tinha `source =
+'whatsapp'` HARDCODED no INSERT da reserva, não importa de qual canal
+ela realmente veio - corrigido pra usar `get_guest_channel(hostel_id,
+guest_id)` (já existia da Fase 1) como o `source` real. Isso por sua
+vez expôs mais dois lugares que só reconheciam `('manual', 'whatsapp')`
+como "essa reserva nasceu dentro do próprio StayFlow" (usado pra
+decidir se é seguro sincronizar com o Beds24 sem risco de ecoar de
+volta uma reserva que já veio de lá) - criada a constante
+`STAYFLOW_NATIVE_SOURCES = ("manual", "whatsapp", "messenger",
+"instagram")`, usada nos dois lugares (um deles precisou virar SQL
+parametrizado com `IN (?,?,?,?)` em vez do literal fixo antigo).
+
+`_flag_booking_needs_manual_setup` (dispara quando a IA tenta reservar
+uma modalidade sem nenhuma cama cadastrada) também mudou pra receber
+`guest_id` direto, mesmo motivo.
+
+Testado (6 cenários novos, com `STAYFLOW_DATA_DIR` isolado): reserva
+criada via Messenger grava `source='messenger'` e valor calculado
+certo; reafirmar o mesmo pedido não duplica (dedupe agora por
+`guest_id`+`source`+datas, não mais telefone); WhatsApp continua
+gravando `source='whatsapp'` (regressão); modalidade sem cama vira
+oportunidade vinculada ao `guest_id` certo mesmo sem telefone; extensão
+de estadia (`attempt_extend_reservation`/`flag_extension_for_approval`)
+funciona por `guest_id`; e o teste mais direto - chamando `ask_ai` de
+verdade (só o client da OpenAI mockado) e confirmando que as
+ferramentas de reserva aparecem na lista `tools` mesmo com
+`guest_phone=None`, contanto que `guest_id` exista. Regressão completa
+de tudo (incluindo o teste de eco do Beds24, que exercita bem as duas
+checagens de `STAYFLOW_NATIVE_SOURCES`) sem quebra.
+
+Adicionado log permanente em `ask_ai` (não só pra esse debug -
+qualquer ocorrência futura do fallback "confirmar com a equipe" agora
+aparece nos logs do Render com as ferramentas que o modelo tentou
+chamar em cada rodada, facilitando diagnosticar sem precisar
+reproduzir manualmente).
+
+Pendência conhecida, não crítica: `save_guest_date_of_birth`/
+`save_guest_nationality` (parte do registro pós-reserva) ainda são
+buscadas por telefone - com `guest_phone=None` no Messenger, essas
+duas ficam mudas (não travam, só não gravam) até uma próxima rodada
+de limpeza. Baixo risco (estágio avançado da conversa, depois da
+reserva já criada), registrado pra não esquecer.
