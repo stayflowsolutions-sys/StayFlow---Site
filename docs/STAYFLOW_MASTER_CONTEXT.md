@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.21.0
+\*\*Versão:\*\* 1.21.1
 
 
 
@@ -99,6 +99,8 @@
 | 1.20.1 | 31/07/2026 | Oficial | Bug real encontrado no primeiro teste ao vivo do webhook: reserva vinda do Beds24 chegava com valor US$ 0,00, porque a rota nunca extraía o campo `price` do payload — a função de criação caía pro `price_per_night` (ainda sem preço configurado) da modalidade no StayFlow. Usuário apontou a regra correta: o valor tem que vir sempre do canal/OTA, nunca recalculado pelo preço do StayFlow, já que plataformas como Booking/Airbnb podem vender com desconto. Corrigido: `amount` extraído do payload (`price`/`totalPrice`/`amount`) e repassado pra criação e atualização de reserva; `update_reservation_from_channel` ganhou parâmetro `amount` opcional (`None` preserva o valor já gravado). Confirmado em produção com reteste real: US$ 36,00 correto. |
 
 | 1.21.0 | 31/07/2026 | Oficial | Corrigido gap na aba Reservas: não havia como confirmar check-in/check-out de uma reserva por ali — só o dropdown de status (pendente/confirmada/cancelada/no-show), um conceito separado do status físico da cama. O fluxo completo (cama azul→reservada, vermelha→ocupada no check-in, amarela→limpeza no check-out, verde→livre quando a limpeza é confirmada) já existia no backend e no Mapa de Quartos, só nunca tinha sido ligado na aba Reservas. `get_reservations_with_stats` passou a fazer LEFT JOIN com `beds` e devolver `bed_status`; a aba Reservas ganhou botão "Confirmar check-in" (abre seletor de cama livre via `/bed-map`, reserva confirmada sem cama) e "Confirmar check-out" (cama ocupada), reaproveitando as rotas `/reservations/<id>/checkin` e `/checkout` já existentes do Mapa de Quartos. Push automático do check-in confirmado pro Beds24 (pedido original do usuário) fica pra próxima rodada, pendente de verificar se a API do Beds24 tem um conceito equivalente a "hóspede chegou". |
+
+| 1.21.1 | 31/07/2026 | Oficial | Bug real encontrado testando em produção: reservas vindas do Beds24/WhatsApp (que já nascem com `bed_id` preenchido, atribuído automaticamente na criação) não mostravam nenhum botão de check-in/check-out, porque a versão anterior usava a presença de `bed_id` como sinal de "já fez check-in" — ambíguo, já que `bed_id` também significa "cama reservada pro período", preenchido bem antes da chegada real. Corrigido com dois campos sem ambiguidade: `reservations.checked_in_at`/`checked_out_at` (timestamp, null até a ação física acontecer de verdade), usados agora tanto na aba Reservas quanto no filtro de "aguardando check-in" do Mapa de Quartos. Aproveitado pra resolver um pedido do usuário: já que a categoria (compartilhado/privado) e a cama já vêm decididas automaticamente na criação da reserva de canal, o check-in dessas reservas não pede mais escolha manual de cama — confirma direto na cama já atribuída; o seletor manual só aparece quando realmente não há cama nenhuma atribuída ainda. |
 
 
 

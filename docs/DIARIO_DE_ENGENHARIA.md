@@ -2872,3 +2872,51 @@ Push automático do check-in confirmado pro Beds24 (pedido original do
 usuário) fica para uma rodada seguinte — depende de confirmar antes se
 a API do Beds24 tem algum conceito de status "hóspede chegou"/"arrived"
 equivalente, o que ainda não foi verificado.
+
+## Bug real encontrado testando ao vivo: botão de check-in sumindo pra reservas de canal/WhatsApp
+
+Usuário testou em produção e reportou: os botões de check-in/check-out
+apareceram certinho pra uma reserva manual, mas duas reservas reais
+(uma vinda do WhatsApp, outra do Beds24 — "Júlia Castells" e "Juliana
+Souza") não mostravam nenhum botão.
+
+Causa raiz: `bed_id` da reserva estava sendo usado pra duas coisas ao
+mesmo tempo — (1) qual cama fica reservada pro período (preenchido
+automaticamente na criação, inclusive vindo do Beds24/WhatsApp, via
+`find_available_beds`) e (2) se o hóspede já fez check-in físico de
+verdade. Como reservas de canal/WhatsApp já nascem com `bed_id`
+preenchido, a lógica da rodada anterior (que usava `!r.bed_id` pra
+decidir se mostrava "Confirmar check-in") achava que essas reservas já
+tinham feito check-in e escondia os dois botões.
+
+Corrigido com dois campos novos e sem ambiguidade: `reservations.checked_in_at`
+e `checked_out_at` (timestamp, null até a ação real acontecer),
+preenchidos por `checkin_reservation_to_bed`/`checkout_reservation_bed`.
+A visibilidade dos botões na aba Reservas (e o filtro de "reservas
+aguardando check-in" do Mapa de Quartos) passou a usar esses dois
+campos, não mais a presença de `bed_id`.
+
+Aproveitando a correção, endereçado também um pedido explícito do
+usuário: já que o Beds24/WhatsApp já informa a categoria (compartilhado/
+privado) e o sistema já atribui automaticamente uma cama livre dessa
+categoria na criação da reserva, o check-in dessas reservas não deve
+pedir pra recepção escolher a cama de novo — `checkinReservationUI` agora
+confirma o check-in direto na cama já atribuída com um clique só quando
+`bed_id` já existe, e só abre o seletor manual de cama livre quando a
+reserva realmente não tem nenhuma atribuída ainda (reserva manual, ou
+nenhuma cama livre na categoria no momento da criação). Trocar de cama
+depois continua sendo manual (recepção ou via Ask StayFlow), não uma
+ação de check-in.
+
+Testado com um cenário que reproduz exatamente o bug real: reserva criada
+via `create_reservation_from_channel` (já nasce com `bed_id`, `checked_in_at`
+null) e depois check-in confirmado usando essa mesma cama, sem escolha
+manual — junto com o fluxo antigo (reserva manual sem cama, escolhida na
+hora do check-in). Balanceamento, sintaxe e cobertura i18n conferidos de
+novo depois da mudança.
+
+Observação separada, não é bug: apareceram duas reservas idênticas de
+"Juan" na aba Reservas (datas de 2024, uma cancelada e uma confirmada) —
+é dado de teste antigo de sessões anteriores, não algo criado por essa
+mudança. Fica pro usuário cancelar/limpar manualmente pela própria aba
+(já dá pra mudar o status pra "Cancelada" no dropdown).
