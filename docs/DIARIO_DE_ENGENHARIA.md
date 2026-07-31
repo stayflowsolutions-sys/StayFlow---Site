@@ -2557,3 +2557,24 @@ listagem + lista já parseada) pra comparar, nos logs do Render, o id do
 quarto capturado na hora de criar contra o id que a listagem realmente
 devolve depois — vai apontar se é só demora real ou se há uma
 divergência de formato entre os dois pontos que merece correção.
+
+**Causa raiz real, achada nos logs**: existiam dois quartos duplicados
+chamados "privado" no Beds24 (ids diferentes) — o usuário, vendo
+"sincronizando" persistir, concluiu (razoavelmente) que a primeira
+criação tinha falhado e clicou em "Criar automaticamente" de novo pra
+mesma modalidade, criando um segundo quarto. Não era perda de dado nem
+erro de parsing — era falta eventual de consistência real do lado do
+Beds24 (a listagem seguinte ao `POST` de criação nem sempre já reflete
+o quarto novo na hora) combinada com uma UI que convidava a repetir a
+ação.
+
+**Correção da causa raiz, não só do sintoma**: o botão "Criar
+automaticamente" agora só aparece pra modalidade que **ainda não tem
+nenhum vínculo** — uma vez mapeada (mesmo que temporariamente mostrando
+"sincronizando..."), o botão de criar some, restando só "Salvar" (útil
+se quiser trocar pra outro quarto já existente). Frontend também passou
+a esperar 3 segundos antes de recarregar a lista depois de criar (dá
+tempo real pro Beds24 refletir), e a mensagem de sucesso passou a
+avisar explicitamente que pode levar alguns segundos pra aparecer com o
+nome certo — a pessoa agora sabe que é uma espera esperada, não uma
+falha, sem precisar adivinhar.
