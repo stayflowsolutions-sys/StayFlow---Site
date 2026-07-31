@@ -4362,7 +4362,7 @@ def get_bed_map(hostel_id):
             f"""
             SELECT DISTINCT bed_id FROM reservations
             WHERE bed_id IN ({placeholders}) AND status != 'cancelled'
-              AND checkout_date >= ?
+              AND checkout_date >= ? AND checked_out_at IS NULL
             """,
             free_bed_ids + [today]
         )
