@@ -4986,6 +4986,60 @@ def get_reservation_id_by_external_booking_id(hostel_id, external_booking_id):
     return row["id"] if row else None
 
 
+def update_reservation_from_channel(hostel_id, external_booking_id, guest_name, guest_phone,
+                                      checkin_date, checkout_date, status):
+    """
+    Atualiza uma reserva ja criada anteriormente a partir de um evento
+    de webhook do Beds24 com o mesmo external_booking_id. Confirmado
+    testando ao vivo: a Beds24 manda um webhook novo a CADA alteracao
+    na reserva, nao so na criacao (o mesmo booking chegou duas vezes,
+    a segunda com nome/telefone do hospede preenchidos que a primeira
+    nao tinha) - por isso reserva repetida vira atualizacao, nao e
+    simplesmente ignorada como duplicata.
+
+    Nao reatribui cama nem revalida disponibilidade nesta rodada -
+    so atualiza os campos direto. Fica pra uma proxima rodada se
+    mudanca de data em reserva ja com cama atribuida se mostrar um
+    problema real na pratica.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id FROM reservations WHERE hostel_id = ? AND external_booking_id = ?",
+        (hostel_id, str(external_booking_id))
+    )
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return None
+
+    reservation_status = "cancelled" if "cancel" in (status or "").lower() else "confirmed"
+
+    cursor.execute(
+        """
+        UPDATE reservations
+        SET guest_name = ?, checkin_date = ?, checkout_date = ?, status = ?
+        WHERE id = ?
+        """,
+        (guest_name, checkin_date, checkout_date, reservation_status, row["id"])
+    )
+    conn.commit()
+    conn.close()
+
+    guest_phone = (guest_phone or "").strip()
+    if guest_phone:
+        guest_id = get_or_create_guest(hostel_id, guest_phone)
+        if guest_name:
+            update_guest_name(hostel_id, guest_phone, guest_name)
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE reservations SET guest_id = ? WHERE id = ?", (guest_id, row["id"]))
+        conn.commit()
+        conn.close()
+
+    return row["id"]
+
+
 def get_quick_replies(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()
