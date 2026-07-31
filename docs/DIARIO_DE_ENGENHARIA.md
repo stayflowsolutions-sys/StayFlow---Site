@@ -4296,3 +4296,45 @@ de tudo sem quebra.
 Mesma lógica se aplica ao Instagram quando o Instagram Login for
 implementado (a API do Instagram também expõe nome/username do
 perfil pelo IGSID) - só repetir o padrão de `get_messenger_user_profile`.
+
+## Selo de canal na aba Chats/perfil + nome de hóspede clicável na aba Reservas
+
+Dois pedidos do usuário nessa rodada: (1) identificar visualmente de
+onde vem cada conversa (WhatsApp/Messenger/Instagram), de forma
+discreta, na aba Chats e no perfil do hóspede; (2) nome do hóspede
+clicável na aba Reservas, abrindo o mesmo perfil já usado na aba
+Hóspedes - motivo explícito: além de facilitar o acesso, garante que
+esse perfil "precisa existir" pra qualquer reserva, inclusive morador
+de longa duração (usuário reportou não estar achando o perfil do
+morador fixo que criou pra testar o saldo devedor - fica pendente
+investigar à parte, depois desta rodada).
+
+Backend: `get_chats_list` e `get_guest_profile` (`database.py`) passaram
+a devolver `channel` - o primeiro via subquery direta em
+`guest_channel_identities` (pega a mais recente), o segundo reaproveitando
+`get_guest_channel` (já tinha fallback `'whatsapp'` pro hóspede sem
+nenhuma identidade de canal registrada, da Fase 1).
+
+Frontend: `channelBadgeHtml(channel)` (novo, `dashboard.html`) monta um
+selo pequeno e discreto (cor por canal - verde WhatsApp, roxo Messenger,
+rosa Instagram), usado em três lugares: lista de conversas (`chats-live.js`,
+ao lado do nome), título da conversa aberta (mesmo arquivo), e cabeçalho
+"Contato" do modal de perfil do hóspede (`openGuestProfileModal`,
+`dashboard.html`). `CHANNEL_DISPLAY_LABELS` ganhou entradas pra
+`messenger`/`instagram`/`api` (esse último cobre `conversations.channel`
+antigo, sempre gravado como `'api'` antes da Fase 3).
+
+`guestNameLink(guestId, guestName)` (novo) - nome de hóspede vira link
+clicável (`onclick="openGuestProfileModal(...)"`, mesma função que a
+aba Hóspedes já usa) em qualquer lugar que já tinha `guest_id`
+disponível na linha: reserva normal, morador de longa duração, e a
+lista do modal "Ver cancelamentos" - os três já traziam `guest_id` na
+consulta, só faltava usar. Cai pra texto simples se `guest_id` vier
+vazio (defesa, não deveria acontecer na prática).
+
+Testado (`get_chats_list`/`get_guest_profile` devolvendo o canal certo
+por hóspede, incluindo o fallback pro hóspede pré-integração) e
+regressão completa sem quebra. Balanceamento de chaves/parênteses e
+cobertura i18n conferidos (nomes de canal são texto fixo/marca, mesmo
+padrão já usado pra WhatsApp/Airbnb/Booking.com em `CHANNEL_DISPLAY_LABELS`,
+não precisam de tradução).
