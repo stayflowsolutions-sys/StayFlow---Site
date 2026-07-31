@@ -1108,6 +1108,48 @@ def update_guest_language(hostel_id, phone, language):
     conn.close()
 
 
+# ===== Equivalentes por guest_id das quatro funcoes acima - usadas pelo
+# pipeline de mensagem (routes/chat.py) pra canais sem telefone de
+# verdade (Instagram/Messenger), onde guests.phone fica NULL e a busca
+# "WHERE phone = ?" nunca acharia a linha certa. WhatsApp tambem vai
+# passar a usar essas versoes (guest_id ja resolvido uma vez no topo de
+# process_incoming_message), evitando manter dois caminhos de consulta
+# divergentes pro mesmo dado. =====
+
+def is_guest_ai_paused_by_id(guest_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT ai_paused FROM guests WHERE id = ?", (guest_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return bool(row["ai_paused"]) if row else False
+
+
+def get_guest_language_by_id(guest_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT language FROM guests WHERE id = ?", (guest_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["language"] if row and row["language"] else None
+
+
+def update_guest_name_by_id(guest_id, name):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE guests SET name = ? WHERE id = ?", (name, guest_id))
+    conn.commit()
+    conn.close()
+
+
+def update_guest_language_by_id(guest_id, language):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE guests SET language = ? WHERE id = ?", (language, guest_id))
+    conn.commit()
+    conn.close()
+
+
 _DOCUMENTS_MIME_EXTENSIONS = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -2104,7 +2146,14 @@ def invite_to_hostel(hostel_id, name, email, role_id, password_hash=None):
     }
 
 
-def get_or_create_conversation(guest_id):
+def get_or_create_conversation(guest_id, channel="api"):
+    """
+    channel so e usado na CRIACAO de uma conversa nova - uma conversa
+    ja existente nunca tem o canal reescrito aqui (evita apagar o
+    canal real gravado por quem criou a conversa, se essa funcao for
+    chamada de novo por outro caminho). Default 'api' preserva o
+    comportamento de todo chamador antigo que nunca passava channel.
+    """
     # guest_id já garante o isolamento por hostel, pois cada guest
     # pertence a exatamente um hostel.
     conn = get_connection()
@@ -2131,7 +2180,7 @@ def get_or_create_conversation(guest_id):
             INSERT INTO conversations (guest_id, channel)
             VALUES (?, ?)
             """,
-            (guest_id, "api")
+            (guest_id, channel)
         )
 
         conversation_id = cursor.lastrowid
@@ -2145,6 +2194,34 @@ def get_or_create_conversation(guest_id):
 def save_message_db(hostel_id, phone, sender, message):
     guest_id = get_or_create_guest(hostel_id, phone)
     conversation_id = get_or_create_conversation(guest_id)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO messages (conversation_id, sender, message)
+        VALUES (?, ?, ?)
+        """,
+        (conversation_id, sender, message)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def save_message_db_for_guest(guest_id, sender, message, channel="api"):
+    """
+    Mesmo resultado de save_message_db, mas recebe guest_id ja
+    resolvido em vez de telefone - usada pelo pipeline de mensagem
+    (routes/chat.py) pra qualquer canal, ja que Instagram/Messenger nao
+    tem telefone de verdade pra resolver guest_id de novo aqui. De
+    quebra, e a unica das duas que realmente grava o canal certo numa
+    conversa nova (save_message_db, usada pelo WhatsApp legado, continua
+    gravando 'api' - nao mexido pra nao arriscar regressao em codigo ja
+    em producao).
+    """
+    conversation_id = get_or_create_conversation(guest_id, channel=channel)
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -2405,6 +2482,32 @@ def get_or_create_guest_by_channel(hostel_id, channel, external_id, phone=None, 
         return guest_id
 
     guest_phone = phone if channel == "whatsapp" else None
+
+    # WhatsApp especificamente pode ja ter um hospede de ANTES desta
+    # integracao (criado pelo caminho antigo, so por telefone, sem
+    # nenhuma linha em guest_channel_identities ainda) - adota o
+    # guest_id existente em vez de tentar inserir um novo com o mesmo
+    # telefone, o que violaria o UNIQUE(hostel_id, phone) de guests.
+    existing_guest_id = None
+    if guest_phone:
+        cursor.execute(
+            "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
+            (hostel_id, guest_phone)
+        )
+        existing = cursor.fetchone()
+        if existing:
+            existing_guest_id = existing["id"]
+
+    if existing_guest_id:
+        guest_id = existing_guest_id
+        cursor.execute(
+            "INSERT INTO guest_channel_identities (hostel_id, guest_id, channel, external_id) VALUES (?, ?, ?, ?)",
+            (hostel_id, guest_id, channel, external_id)
+        )
+        conn.commit()
+        conn.close()
+        return guest_id
+
     cursor.execute(
         "INSERT INTO guests (hostel_id, phone, name) VALUES (?, ?, ?)",
         (hostel_id, guest_phone, name)

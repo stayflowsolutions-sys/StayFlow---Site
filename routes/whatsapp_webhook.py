@@ -118,7 +118,7 @@ def receive_message():
         if message_type == "image":
             handle_incoming_document_image(hostel_id, guest_phone, incoming.get("image", {}))
         elif text:
-            process_incoming_message(hostel_id, guest_phone, text, send_to_whatsapp=True)
+            process_incoming_message(hostel_id, guest_phone, text, channel="whatsapp", send_reply=True)
 
     except Exception as error:
         print("Erro ao processar webhook do WhatsApp:", error)

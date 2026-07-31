@@ -93,7 +93,15 @@ Rules:
         return fallback_analysis(message)
 
 
-def analyze_message(hostel_id, phone, message, history=None):
+def analyze_message(hostel_id, guest_id, message, history=None):
+    """
+    guest_id vem ja resolvido pelo chamador (routes/chat.py, via
+    get_or_create_guest_by_channel) - antes essa funcao recebia
+    telefone e procurava o hospede de novo por
+    "WHERE hostel_id = ? AND phone = ?", o que nunca acharia nada pra
+    canal sem telefone de verdade (Instagram/Messenger, onde
+    guests.phone fica NULL).
+    """
     analysis = analyze_with_ai(message, history=history)
 
     if analysis.get("intent") == "general":
@@ -101,20 +109,6 @@ def analyze_message(hostel_id, phone, message, history=None):
 
     conn = get_connection()
     cursor = conn.cursor()
-
-    # busca o hóspede SEMPRE escopado por hostel_id — sem isso,
-    # a oportunidade poderia ser gravada no hóspede errado (de
-    # outro hostel) se o telefone coincidisse.
-    cursor.execute(
-        "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
-        (hostel_id, phone)
-    )
-
-    guest = cursor.fetchone()
-
-    if not guest:
-        conn.close()
-        return analysis
 
     # Uma conversa inteira sobre o mesmo assunto (ex: "booking") deve
     # virar UMA oportunidade que evolui, não uma nova a cada mensagem -
@@ -129,7 +123,7 @@ def analyze_message(hostel_id, phone, message, history=None):
         WHERE guest_id = ? AND status = 'open' AND type = ?
         ORDER BY created_at DESC LIMIT 1
         """,
-        (guest["id"], analysis.get("intent"))
+        (guest_id, analysis.get("intent"))
     )
     existing = cursor.fetchone()
 
@@ -171,7 +165,7 @@ def analyze_message(hostel_id, phone, message, history=None):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                guest["id"],
+                guest_id,
                 analysis.get("intent"),
                 analysis.get("description"),
                 "open",
