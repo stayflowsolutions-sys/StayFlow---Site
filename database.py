@@ -4987,7 +4987,7 @@ def get_reservation_id_by_external_booking_id(hostel_id, external_booking_id):
 
 
 def update_reservation_from_channel(hostel_id, external_booking_id, guest_name, guest_phone,
-                                      checkin_date, checkout_date, status):
+                                      checkin_date, checkout_date, status, amount=None):
     """
     Atualiza uma reserva ja criada anteriormente a partir de um evento
     de webhook do Beds24 com o mesmo external_booking_id. Confirmado
@@ -4996,6 +4996,11 @@ def update_reservation_from_channel(hostel_id, external_booking_id, guest_name, 
     a segunda com nome/telefone do hospede preenchidos que a primeira
     nao tinha) - por isso reserva repetida vira atualizacao, nao e
     simplesmente ignorada como duplicata.
+
+    amount vem sempre do proprio canal (o preco real cobrado naquela
+    plataforma, que pode ser diferente do preco cadastrado na
+    modalidade do StayFlow - a OTA pode dar desconto) - None mantem o
+    valor ja gravado, sem sobrescrever com algo que o payload nao trouxe.
 
     Nao reatribui cama nem revalida disponibilidade nesta rodada -
     so atualiza os campos direto. Fica pra uma proxima rodada se
@@ -5015,14 +5020,24 @@ def update_reservation_from_channel(hostel_id, external_booking_id, guest_name, 
 
     reservation_status = "cancelled" if "cancel" in (status or "").lower() else "confirmed"
 
-    cursor.execute(
-        """
-        UPDATE reservations
-        SET guest_name = ?, checkin_date = ?, checkout_date = ?, status = ?
-        WHERE id = ?
-        """,
-        (guest_name, checkin_date, checkout_date, reservation_status, row["id"])
-    )
+    if amount is not None:
+        cursor.execute(
+            """
+            UPDATE reservations
+            SET guest_name = ?, checkin_date = ?, checkout_date = ?, status = ?, amount = ?
+            WHERE id = ?
+            """,
+            (guest_name, checkin_date, checkout_date, reservation_status, float(amount), row["id"])
+        )
+    else:
+        cursor.execute(
+            """
+            UPDATE reservations
+            SET guest_name = ?, checkin_date = ?, checkout_date = ?, status = ?
+            WHERE id = ?
+            """,
+            (guest_name, checkin_date, checkout_date, reservation_status, row["id"])
+        )
     conn.commit()
     conn.close()
 

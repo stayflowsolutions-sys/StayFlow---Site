@@ -131,12 +131,16 @@ def _process_single_booking(raw_item):
     checkin_date = _first_present(booking, "arrival", "checkIn", "firstNight", "arrivalDate")
     checkout_date = _first_present(booking, "departure", "checkOut", "lastNight", "departureDate")
     channel = (_first_present(booking, "channel", "referer", "apiSource") or "beds24").lower()
+    # Preco vem direto da Beds24 (o que o hospede realmente pagou naquele
+    # canal especifico) - mais confiavel que recalcular pelo preco
+    # cadastrado na modalidade do StayFlow, que pode nem estar preenchido.
+    amount = _first_present(booking, "price", "totalPrice", "amount") or 0
 
     if "cancel" in status or status == "deleted":
         if existing_reservation_id:
             update_reservation_from_channel(
                 hostel_id, booking_id, guest_name, guest_phone,
-                str(checkin_date or ""), str(checkout_date or ""), status,
+                str(checkin_date or ""), str(checkout_date or ""), status, amount,
             )
             finalize_webhook_event(event_key, "processed", reservation_id=existing_reservation_id)
             print(f"Webhook Beds24: reserva {booking_id} marcada como cancelada (reservation_id={existing_reservation_id}).")
@@ -152,7 +156,7 @@ def _process_single_booking(raw_item):
         if existing_reservation_id:
             reservation_id = update_reservation_from_channel(
                 hostel_id, booking_id, guest_name, guest_phone,
-                str(checkin_date), str(checkout_date), status,
+                str(checkin_date), str(checkout_date), status, amount,
             )
             print(f"Webhook Beds24: reserva {booking_id} atualizada (reservation_id={reservation_id}).")
         else:
@@ -170,6 +174,7 @@ def _process_single_booking(raw_item):
                 checkout_date=str(checkout_date),
                 external_booking_id=booking_id,
                 source=channel,
+                amount=amount,
             )
             print(f"Webhook Beds24: reserva {booking_id} criada como reservation_id={reservation_id} (hostel_id={hostel_id}).")
 
