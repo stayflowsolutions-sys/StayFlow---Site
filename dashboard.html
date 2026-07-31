@@ -1095,11 +1095,14 @@ async function deleteRoleConfirm(roleId){
       <h2 data-i18n="longTermStay.title">🏠 Morador de longa duração</h2>
       <p data-i18n="longTermStay.desc" style="margin-bottom:14px;color:var(--muted);font-size:13px">Pra quem mora fixo (ex: funcionário) sem data de saída definida — o saldo devedor acumula por dia e é abatido conforme os pagamentos forem registrados.</p>
       <form onsubmit="submitIndefiniteStay(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
-        <input class="span-3" name="guest_name" data-i18n-placeholder="longTermStay.namePlaceholder" placeholder="Nome" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-2" name="guest_name" data-i18n-placeholder="longTermStay.namePlaceholder" placeholder="Nome" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         <input class="span-2" name="phone" data-i18n-placeholder="longTermStay.phonePlaceholder" placeholder="Telefone (opcional)" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <select class="span-2" name="bed_id" id="indefiniteStayBedSelect" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <option value="" data-i18n="longTermStay.bedOptionNone">Sem cama (atribuir depois)</option>
+        </select>
         <input class="span-2" name="room_type" data-i18n-placeholder="longTermStay.roomNotePlaceholder" placeholder="Quarto/observação" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         <input class="span-2" type="date" name="checkin_date" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-2" type="number" step="0.01" name="daily_rate" data-i18n-placeholder="longTermStay.dailyRatePlaceholder" placeholder="Diária (0 = não paga)" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <input class="span-1" type="number" step="0.01" name="daily_rate" data-i18n-placeholder="longTermStay.dailyRatePlaceholder" placeholder="Diária (0 = não paga)" required style="grid-column:span 1;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         <button type="submit" class="btn span-1" data-i18n="longTermStay.submitBtn" style="grid-column:span 1;">Criar</button>
       </form>
     </div>
@@ -3306,7 +3309,8 @@ window.submitIndefiniteStay = async function(event){
     phone: form.phone.value.trim(),
     room_type: form.room_type.value.trim(),
     checkin_date: form.checkin_date.value,
-    daily_rate: form.daily_rate.value || 0
+    daily_rate: form.daily_rate.value || 0,
+    bed_id: form.bed_id.value ? Number(form.bed_id.value) : null
   };
 
   if(!payload.guest_name || !payload.checkin_date){
@@ -3404,6 +3408,22 @@ function fillRoomSelect(rooms){
   const current = select.value;
   select.innerHTML = `<option value="">${T('roommap.roomSelectPlaceholder', 'Quarto...')}</option>` +
     rooms.map(r => `<option value="${r.id}">${r.name}${r.category_name ? " - " + r.category_name : ""}</option>`).join("");
+  select.value = current;
+}
+
+// Camas livres pro formulario de morador de longa duracao - sem isso o
+// morador ficava sem cama de verdade atribuida (nao aparecia no mapa
+// nem ocupava nada), so um registro solto na aba Reservas.
+function fillIndefiniteStayBedSelect(rooms){
+  const select = document.getElementById("indefiniteStayBedSelect");
+  if(!select) return;
+  const current = select.value;
+  const freeBeds = [];
+  (rooms || []).forEach(room => (room.beds || []).forEach(bed => {
+    if(bed.status === "free") freeBeds.push({ id: bed.id, label: `${room.name} · ${bed.label}` });
+  }));
+  select.innerHTML = `<option value="">${T('longTermStay.bedOptionNone', 'Sem cama (atribuir depois)')}</option>` +
+    freeBeds.map(b => `<option value="${b.id}">${escapeHtml(b.label)}</option>`).join("");
   select.value = current;
 }
 
@@ -3960,7 +3980,11 @@ async function loadRoomMap(){
       fetch("/rooms", { credentials: "same-origin" }),
     ]);
 
-    if(mapRes.ok) renderRoomMap(await mapRes.json());
+    if(mapRes.ok){
+      const rooms = await mapRes.json();
+      renderRoomMap(rooms);
+      fillIndefiniteStayBedSelect(rooms);
+    }
     if(categoriesRes.ok){
       const categories = await categoriesRes.json();
       ROOM_CATEGORIES_CACHE = categories;

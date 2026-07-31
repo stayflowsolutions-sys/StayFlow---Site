@@ -3006,3 +3006,68 @@ na legenda do mapa e chave i18n `bed.status.long_term` nos 5 idiomas.
 Ao encerrar a estadia, a cama volta pro ciclo normal (`needs_cleaning` →
 limpeza → `free`), sem precisar de nenhum tratamento especial - testado
 com o ciclo completo (morador ocupando → encerrar estadia → cor some).
+
+## Morador de longa duração: sem cama, sem hóspede, sem aviso de limpeza no check-out
+
+Usuário criou um morador fixo pela aba Reservas e reportou três coisas
+erradas de uma vez: não entrou em nenhuma cama, não apareceu na aba
+Hóspedes, e nenhum check-out (de nenhuma reserva) gerava aviso
+operacional de limpeza.
+
+**Cama vazia**: `create_indefinite_stay` só ocupa uma cama de verdade
+quando recebe `bed_id` — mas o formulário "Residente de larga duración"
+nunca teve um seletor de cama, só um campo de texto livre "Quarto/
+observação". Ou seja, o recurso de cor roxa criado na rodada anterior
+nunca tinha como funcionar de verdade nesse formulário. Corrigido: select
+`indefiniteStayBedSelect`, populado com as camas livres a cada
+carregamento do Mapa de Quartos (`fillIndefiniteStayBedSelect`,
+reaproveitando o mesmo padrão do seletor de check-in da aba Reservas).
+
+**Sem hóspede na aba Hóspedes**: `create_indefinite_stay` só *procurava*
+um hóspede já existente com aquele telefone (`SELECT ... WHERE phone =
+?`) — nunca *criava* um novo, diferente do resto do sistema (WhatsApp,
+Beds24) que usa `get_or_create_guest`. Um morador novo com telefone novo
+nunca virava um registro na tabela `guests`, então nunca podia aparecer
+na aba (que lista direto de `guests`). Corrigido pra usar
+`get_or_create_guest` + `update_guest_name`, igual todo o resto do
+sistema já faz.
+
+**Check-out sem aviso operacional**: nenhuma cama aguardando limpeza
+contava como alerta — só aparecia como "tarefa" na página de Operações,
+sem nunca incrementar o sininho de notificações (que já dispara
+automaticamente no login pra quem tem permissão de Operações, gate já
+existente via `@require_permission("operations")`). Corrigido em
+`routes/operations.py`: cada cama em `get_cleaning_list` agora também
+vira uma linha em `alerts`, não só em `tasks`.
+
+Testado o ciclo completo: criar morador fixo com cama e telefone →
+aparece roxo no mapa e na lista de hóspedes com `guest_id` vinculado →
+encerrar a estadia → cama vira `needs_cleaning` → aparece em
+`/operations` tanto como tarefa quanto como alerta contável no sininho.
+
+## Reserva automática (WhatsApp/qualquer canal) também deve avisar no sininho
+
+Pedido seguinte do usuário: reservas vindas de qualquer canal automático
+(WhatsApp, Beds24/qualquer OTA) devem gerar aviso no sininho também, não
+só reservas manuais que a equipe já sabe que criou.
+
+Adicionado em `routes/operations.py`: reservas com `source != 'manual'`
+criadas nas últimas 24h (janela de tempo pra não acumular alerta de
+reserva antiga que a equipe já viu há dias, mesmo padrão dos outros
+alertas que são recalculados do zero a cada chamada) viram um alerta
+"Nova reserva via {canal}: {hóspede} ({checkin} → {checkout})". Testado
+com reserva manual (não gera alerta), via WhatsApp e via canal
+(`source='airbnb'`, simulando o que a Beds24 gravaria) — as duas
+automáticas geram alerta, a manual não.
+
+## Pedido em aberto: notificação nativa no aparelho (celular/PC)
+
+Usuário pediu, ainda sem escopo detalhado: que essas notificações
+(mensagem nova, alerta operacional, problema de IA, necessidade de
+intervenção humana etc) cheguem como notificação nativa do sistema
+operacional (celular ou PC), no estilo WhatsApp - não só o sininho
+dentro do dashboard. Isso é uma peça de infraestrutura nova e maior
+(Web Push API: service worker, VAPID keys, tabela de inscrições de
+push por dispositivo/usuário, disparo no backend a cada evento
+relevante) - ainda não iniciado, fica pra ser desenhado como uma etapa
+própria, depois de fechado o que já estava em andamento nesta rodada.

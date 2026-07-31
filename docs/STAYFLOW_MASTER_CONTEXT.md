@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.21.4
+\*\*Versão:\*\* 1.21.6
 
 
 
@@ -107,6 +107,10 @@
 | 1.21.3 | 31/07/2026 | Oficial | Dois ajustes reportados testando o ciclo completo em produção: (1) bug real corrigido — cama ficava presa mostrando "Reservada" (azul) mesmo depois de check-out e limpeza confirmados, porque o cálculo de cor do Mapa de Quartos não considerava se a reserva vinculada já tinha sido finalizada; corrigido exigindo `checked_out_at IS NULL` na consulta. (2) Coluna "Origem" da aba Reservas ganhou `channelDisplayLabel()` no frontend, mapeando slugs conhecidos de canal (Airbnb, Booking.com, Hostelworld, Expedia, Agoda, Vrbo, WhatsApp, Direto) pro nome formatado da plataforma, com fallback seguro pra qualquer valor não mapeado — o backend já capturava o canal real de cada reserva vinda do Beds24, só faltava a formatação de exibição. |
 
 | 1.21.4 | 31/07/2026 | Oficial | Novo status visual no Mapa de Quartos: cama ocupada por morador de longa duração (estadia indefinida ainda ativa, sem checkout registrado) aparece roxa (`long_term`) em vez de vermelha (`occupied`) — diferencia visualmente de um hóspede normal de passagem. `get_bed_map` identifica essas camas verificando `stay_type = 'indefinite' AND checkout_date IS NULL`; some da cor roxa automaticamente ao encerrar a estadia (`close_indefinite_stay`), voltando pro ciclo normal de limpeza. Legenda do mapa e i18n (5 idiomas) atualizados. |
+
+| 1.21.5 | 31/07/2026 | Oficial | Dois bugs reais corrigidos no formulário de morador de longa duração: (1) não existia seletor de cama no formulário — `create_indefinite_stay` só ocupa uma cama de verdade quando recebe `bed_id`, mas o formulário nunca mandava esse campo, então o morador nunca aparecia no Mapa de Quartos. Adicionado seletor de cama livre (`indefiniteStayBedSelect`, populado a partir do `/bed-map`). (2) morador com telefone não aparecia na aba Hóspedes — a função só *procurava* um hóspede já existente com aquele telefone, nunca *criava* um novo (diferente do resto do sistema, que usa `get_or_create_guest`); corrigido pra criar/vincular o hóspede de verdade. Aproveitado pra fechar outro gap: check-out (inclusive de estadia de longa duração) agora gera um alerta operacional de verdade em `/operations` pra cada cama aguardando limpeza — antes só virava "tarefa" na lista, sem contar no sininho de notificações nem aparecer resumido pra quem tem acesso à área de Operações (que já é avisado automaticamente no login, gate por permissão já existente). |
+
+| 1.21.6 | 31/07/2026 | Oficial | Reservas criadas por qualquer canal automático (WhatsApp, Beds24/qualquer OTA — `source != 'manual'`) nas últimas 24h agora também geram alerta no sininho de Operações ("Nova reserva via {canal}: {hóspede}..."), não só reservas manuais. Pedido em aberto do usuário, ainda não iniciado: notificação nativa no aparelho (celular/PC), estilo WhatsApp, pra mensagem nova/alerta operacional/problema de IA/intervenção humana — requer infraestrutura nova (Web Push API, service worker, VAPID, inscrições por dispositivo), fica pra ser desenhado como etapa própria. |
 
 
 
