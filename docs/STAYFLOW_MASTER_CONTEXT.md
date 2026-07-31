@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.24.3
+\*\*Versão:\*\* 1.24.4
 
 
 
@@ -113,6 +113,8 @@
 | 1.21.6 | 31/07/2026 | Oficial | Reservas criadas por qualquer canal automático (WhatsApp, Beds24/qualquer OTA — `source != 'manual'`) nas últimas 24h agora também geram alerta no sininho de Operações ("Nova reserva via {canal}: {hóspede}..."), não só reservas manuais. Pedido em aberto do usuário, ainda não iniciado: notificação nativa no aparelho (celular/PC), estilo WhatsApp, pra mensagem nova/alerta operacional/problema de IA/intervenção humana — requer infraestrutura nova (Web Push API, service worker, VAPID, inscrições por dispositivo), fica pra ser desenhado como etapa própria. |
 
 | 1.22.0 | 31/07/2026 | Oficial | Perfil completo do hóspede na aba Hóspedes: clicar no nome (antes era texto solto, sem ação) abre um modal com contato editável (nome, telefone, email, endereço, data de nascimento, nacionalidade), documento (tipo + número, editáveis, mais galeria de fotos do documento com upload manual — reaproveita o `guest_documents` já usado pelo recebimento automático via WhatsApp) e histórico completo de estadias com status/valor, incluindo saldo devedor/crédito calculado ao vivo pra estadias de longa duração (reservas fixas não têm conceito de pagamento parcial no modelo atual, mostram só o valor total). Novo `get_guest_reservations`, `update_guest_profile`, rotas `PATCH /guests/<id>` e `POST /guests/<id>/documents`; colunas novas em `guests` (`address`, `document_type`, `document_number`). Moeda/câmbio automático por país (pedido do usuário, com regra de margem de 30 pontos abaixo do câmbio real) registrado como pendência futura, a ser feito junto da configuração de formas de pagamento — não iniciado. |
+
+| 1.24.4 | 31/07/2026 | Oficial | Dois ajustes: (1) botão de check-in/check-out da aba Reservas estava quebrando linha (ficava embaixo da pill de status em vez de do lado) - envolvidos os dois num `<div style="display:flex">` sem quebra de linha. (2) F5/reload sempre voltava pro Dashboard, não importa em qual aba a pessoa estivesse - `openPage` agora grava a aba atual no `localStorage`, e o bootstrap da sessão restaura essa aba automaticamente (só se a pessoa ainda tiver permissão pra vê-la; senão fica no Dashboard). |
 
 | 1.24.3 | 31/07/2026 | Oficial | Redesign visual dos botões de check-in/check-out na aba Reservas: saíram de baixo do dropdown "Mudar status..." (botão retangular largo) e foram pra dentro da coluna Estado, ao lado da pill de status, como botão pequeno arredondado - verde sólido "Check-in", vermelho sólido "Check-out" depois de feito o check-in. Texto encurtado de "Confirmar check-in"/"Confirmar check-out" pra só "Check-in"/"Check-out" nos 5 idiomas. |
 

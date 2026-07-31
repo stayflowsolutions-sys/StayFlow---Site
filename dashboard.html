@@ -2010,6 +2010,10 @@ async function deleteRoleConfirm(roleId){
     if(!page) return;
 
     currentOpenPageId = pageId;
+    // Lembra a ultima aba aberta pra restaurar depois de um F5 - sem
+    // isso a pagina sempre voltava pro Dashboard, obrigando a pessoa a
+    // navegar de novo toda vez que recarregava.
+    try{ localStorage.setItem("stayflow_last_page", pageId); }catch(e){}
     $$(".page").forEach(p => p.classList.remove("active"));
     page.classList.add("active");
 
@@ -3106,9 +3110,11 @@ async function loadReservations(){
         <td>${r.checkin_date || "-"} → ${r.checkout_date || "-"}</td>
         <td>${channelDisplayLabel(r.source)}</td>
         <td>
-          <span class="status-pill ${statusClass}">${(r.status || "pending").toUpperCase()}</span>
-          ${r.status === "confirmed" && !r.checked_in_at ? `<button type="button" class="pill-btn checkin-pill" onclick="checkinReservationUI(${r.id}, ${r.bed_id || "null"})">${T('reservations.checkinBtn', 'Check-in')}</button>` : ""}
-          ${r.checked_in_at && !r.checked_out_at ? `<button type="button" class="pill-btn checkout-pill" onclick="checkoutReservationUI(${r.id})">${T('reservations.checkoutBtn', 'Check-out')}</button>` : ""}
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap">
+            <span class="status-pill ${statusClass}">${(r.status || "pending").toUpperCase()}</span>
+            ${r.status === "confirmed" && !r.checked_in_at ? `<button type="button" class="pill-btn checkin-pill" onclick="checkinReservationUI(${r.id}, ${r.bed_id || "null"})">${T('reservations.checkinBtn', 'Check-in')}</button>` : ""}
+            ${r.checked_in_at && !r.checked_out_at ? `<button type="button" class="pill-btn checkout-pill" onclick="checkoutReservationUI(${r.id})">${T('reservations.checkoutBtn', 'Check-out')}</button>` : ""}
+          </div>
           ${r.checked_out_at && r.bed_status === "needs_cleaning" ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${T('reservations.awaitingCleaningLabel', 'Aguardando limpeza da cama')}</div>` : ""}
         </td>
         <td>US$ ${Number(r.amount || 0).toFixed(2)}</td>
@@ -5290,6 +5296,23 @@ window.uploadGuestDocumentUI = async function(guestId){
     });
   }
 
+  // Restaura a ultima aba aberta antes de um F5/reload - sem isso a
+  // pagina sempre voltava pro Dashboard, forcando a pessoa a navegar de
+  // novo toda vez. So restaura se a pagina ainda existir e a pessoa
+  // ainda tiver permissao pra ve-la (botao do menu correspondente nao
+  // esta escondido) - senao fica no Dashboard, que e sempre permitido.
+  function restoreLastOpenPage(){
+    let savedPageId;
+    try{ savedPageId = localStorage.getItem("stayflow_last_page"); }catch(e){ return; }
+    if(!savedPageId || savedPageId === "dashboard") return;
+
+    const page = document.getElementById(savedPageId);
+    const navBtn = document.querySelector(`.menu button[data-page="${savedPageId}"]`);
+    if(!page || !navBtn || navBtn.style.display === "none") return;
+
+    openPage(savedPageId, navBtn);
+  }
+
   // Mecanismo generico de visibilidade por permissao - qualquer
   // elemento fora do menu lateral (item de menu suspenso, categoria
   // de Configuracoes, secao inteira de conteudo) some/aparece so
@@ -5318,6 +5341,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 
     applyPermissionVisibility(session.permissions || []);
     hideNavItemsWithoutPermission(session.permissions || []);
+    restoreLastOpenPage();
 
     if(hostelMetaEl){
       // Decisao de design do que mostrar aqui (funcao? seletor de conta?)

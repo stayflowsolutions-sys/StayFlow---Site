@@ -3497,3 +3497,40 @@ dos botões encurtado de "Confirmar check-in"/"Confirmar check-out" pra
 só "Check-in"/"Check-out" nos 5 idiomas (termo já universal no
 mercado hoteleiro, sem necessidade de tradução literal). Coluna Ações
 ficou só com o dropdown de mudar status, mais limpa.
+
+**Ajuste seguinte**: usuário testou e reportou que os dois ficaram um
+embaixo do outro em vez de lado a lado - o `<td>` não tinha nenhum
+container flex, então o navegador quebrava linha naturalmente quando o
+espaço não alcançava pra tudo em uma linha só. Corrigido envolvendo a
+pill de status + botão num `<div style="display:flex;align-items:center;
+gap:6px;flex-wrap:nowrap;white-space:nowrap">` - agora ficam sempre lado
+a lado na mesma linha.
+
+## F5 sempre voltava pro Dashboard
+
+Pedido do usuário: "se eu tô numa aba de reservas e aperto F5, ela
+volta pro Dashboard - quero que continue na mesma página, só que
+atualizada."
+
+Causa: `openPage(pageId, trigger)` só troca a classe `.active` entre as
+seções - nunca grava em lugar nenhum QUAL página está aberta. Como
+`#dashboard` é a única seção com `class="page active"` já no HTML
+estático, todo reload (F5, ou até fechar/abrir a aba do navegador)
+sempre começa do zero nele.
+
+Corrigido com `localStorage`: `openPage` agora grava
+`stayflow_last_page` toda vez que muda de página com sucesso; o
+bootstrap da sessão (`hydrateUserUI`, que já roda depois de confirmar
+sessão de verdade e aplicar permissões) chama `restoreLastOpenPage()`
+logo em seguida - lê o valor salvo e chama `openPage` de novo pra essa
+mesma aba, só se ela ainda existir E a pessoa ainda tiver permissão pra
+vê-la (confere se o botão do menu correspondente não está escondido por
+`hideNavItemsWithoutPermission` - reaproveita o mesmo mecanismo já
+existente de permissão por `data-page`, sem duplicar lógica). Se não
+tiver mais permissão ou a página não existir mais, fica no Dashboard
+(sempre permitido a todo mundo), sem tentar forçar uma tela que a
+pessoa não pode ver.
+
+Recurso puramente de frontend (sem chamada de API nova) - verificação
+real precisa ser feita manualmente no navegador (abrir uma aba
+diferente de Dashboard, dar F5, conferir que continua lá).
