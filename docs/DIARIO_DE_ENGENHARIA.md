@@ -3755,3 +3755,77 @@ a 841/841.
 Cama duplicada mencionada acima - fica pro usuário resolver
 manualmente pelo Mapa de Quartos, já que não há como inspecionar/editar
 dados de produção diretamente por aqui.
+
+## Fase 6 da integração de canais: webhook de saída genérico (adiantada na frente da Fase 5)
+
+Depois de aprovado um plano completo pra conectar Booking.com/Airbnb/
+Hostelworld de verdade (Fase 5, cliente autorizando a própria conta de
+OTA na sub-propriedade dele no Beds24), o usuário pediu pra inverter a
+ordem: começar pela Fase 6 (webhook de saída genérico) porque ainda não
+tem como cadastrar um cliente de verdade pra testar a Fase 5 agora.
+
+Cliente que já tem sistema próprio e usa o StayFlow só pra atendimento/
+IA, sem adotar o mapa de quartos do StayFlow como fonte de verdade,
+cadastra em Configurações → Integrações uma URL sua. Toda reserva
+criada, alterada, cancelada, ou com check-in/check-out feito - de
+QUALQUER origem (manual, WhatsApp, ou canal/Beds24, diferente de
+`sync_booking_to_channel`/`sync_availability_to_channel` da Fase 4/5,
+que só rodam pra origem manual/WhatsApp pra não ecoar de volta pro
+Beds24) - dispara um `POST` JSON assinado pra essa URL.
+
+Modelo de dados novo: colunas `hostels.outbound_webhook_url` e
+`outbound_webhook_secret` (texto puro - diferente do token master do
+Beds24, que é criptografado por expor todos os clientes de uma vez se
+vazar; esse aqui, se vazar, só permite forjar evento NO SISTEMA DO
+CLIENTE, não expõe nada do StayFlow). O secret é gerado com
+`secrets.token_hex(32)` na primeira vez que a URL é salva, e só muda se
+o usuário pedir explicitamente ("Gerar nova chave") - trocar só a URL
+nunca troca o secret sem avisar.
+
+Backend: `services/outbound_webhook_service.py` (novo) monta o corpo
+JSON (`event`, `reservation`, `sent_at`) e assina com HMAC-SHA256
+(cabeçalho `X-StayFlow-Signature: sha256=<hex>`), timeout de 5s, nunca
+levanta exceção - mesmo princípio de `services/whatsapp_service.py` e
+`services/beds24_service.py`. `database.py` ganhou
+`dispatch_reservation_webhook(hostel_id, reservation_id, event_type)`,
+que busca a URL/secret do hostel (não faz nada se não tiver
+configurado), monta o payload da reserva e chama o serviço. Ligado em
+9 pontos onde uma reserva nasce/muda/termina:
+`create_reservation_record` (created), `create_indefinite_stay`
+(created), `close_indefinite_stay` (checked_out),
+`create_reservation_from_chat` (created), `update_reservation_status_record`
+(cancelled/status_changed), `checkin_reservation_to_bed` (checked_in),
+`checkout_reservation_bed` (checked_out), `create_reservation_from_channel`
+(created), `update_reservation_from_channel` (cancelled/updated).
+
+Frontend: novo card em Configurações → Integrações, logo abaixo do
+card do Beds24 (mesmo `data-settings-section="integracoes"`) - campo
+de URL + botão salvar, e depois de ativado mostra a chave secreta
+(campo readonly, monoespaçado, com "Copiar"/"Gerar nova chave"/
+"Desativar", os dois últimos com `stayflowConfirm`). Rotas novas em
+`routes/settings.py`: `GET/POST/DELETE /settings/outbound-webhook` e
+`POST /settings/outbound-webhook/regenerate-secret`.
+
+Testado com `STAYFLOW_DATA_DIR` isolado + mocks de
+`services.outbound_webhook_service.send_webhook` (sem gastar chamada
+real): sem URL configurada não dispara nada; criar/check-in/check-out/
+cancelar reserva dispara o evento certo com payload/url/secret
+corretos; regenerar chave muda o valor; desativar limpa url e secret;
+as 4 rotas via `app.test_client()` real; `send_webhook` de verdade (sem
+mock, só o `requests.post` mockado) confirma que a assinatura HMAC
+bate byte a byte com o corpo enviado. Regressão de check-in/check-out
+já existente (`test_reservations_checkin_checkout.py`) continua
+passando sem alteração.
+
+Pendente pra próxima rodada, na ordem que o usuário pediu: (1)
+investigar por que o menu do usuário (dropdown no topbar) não mostra o
+nome/cargo de quem está logado, mesmo esse usuário aparecendo
+corretamente na aba Equipe - investigação começou, ainda sem causa raiz
+confirmada; (2) finalizar a frente do "Ver cancelamentos" (backend
+pronto: `get_cancelled_reservations`, rota `/reservations/cancelled`,
+filtro de `get_reservations_with_stats` já esconde canceladas -
+frontend, i18n e testes ainda faltam); (3) Fase 5 de verdade (conectar
+uma conta real de Booking.com/Airbnb/Hostelworld), quando houver um
+cliente real pra testar; (4) Enter confirma/Esc cancela nas caixas de
+cadastro e aviso do dashboard (pedido novo do usuário, ainda não
+iniciado).
