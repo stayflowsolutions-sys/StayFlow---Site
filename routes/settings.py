@@ -12,6 +12,7 @@ from database import (
     get_channel_room_mappings,
     save_channel_room_mapping,
     delete_channel_room_mapping,
+    get_room_category_id_by_beds24_room_id,
 )
 import services.beds24_service as beds24_service
 from utils.tenant import require_permission
@@ -237,10 +238,15 @@ def get_beds24_room_mapping(hostel_id):
     if error:
         return jsonify({"success": False, "message": error}), 502
 
+    categories = get_channel_room_mappings(hostel_id)
+    mapped_ids = {c["beds24_room_id"] for c in categories if c.get("beds24_room_id")}
+    unused_rooms = [r for r in beds24_rooms if r["id"] not in mapped_ids]
+
     return jsonify({
         "success": True,
-        "categories": get_channel_room_mappings(hostel_id),
+        "categories": categories,
         "beds24_rooms": beds24_rooms,
+        "unused_rooms": unused_rooms,
     })
 
 
@@ -269,6 +275,37 @@ def save_beds24_room_mapping(hostel_id):
 @require_permission("settings")
 def delete_beds24_room_mapping(hostel_id, room_category_id):
     delete_channel_room_mapping(hostel_id, room_category_id)
+    return jsonify({"success": True})
+
+
+@settings_bp.route("/settings/beds24/rooms/<beds24_room_id>", methods=["DELETE"])
+@require_permission("settings")
+def delete_beds24_room(hostel_id, beds24_room_id):
+    """
+    Apaga um quarto direto no Beds24 (limpeza de duplicado/sem uso).
+    Duas travas antes de tentar: (1) não deixa apagar quarto que ainda
+    está vinculado a uma modalidade - força desvincular primeiro; (2)
+    confere contra a lista real da propriedade que esse quarto
+    realmente pertence a ESTE hostel, já que a conta master é
+    compartilhada entre todos os clientes do StayFlow.
+    """
+    property_id = get_hostel_beds24_property_id(hostel_id)
+    if not property_id:
+        return jsonify({"success": False, "message": "Integração com canais ainda não foi ativada pra este hostel."}), 400
+
+    if get_room_category_id_by_beds24_room_id(hostel_id, beds24_room_id):
+        return jsonify({"success": False, "message": "Esse quarto está vinculado a uma modalidade. Desvincula antes de apagar."}), 400
+
+    beds24_rooms, error = beds24_service.get_property_rooms(property_id)
+    if error:
+        return jsonify({"success": False, "message": error}), 502
+    if not any(r["id"] == beds24_room_id for r in beds24_rooms):
+        return jsonify({"success": False, "message": "Esse quarto não pertence à sua propriedade."}), 403
+
+    success, error = beds24_service.delete_room_type(property_id, beds24_room_id)
+    if not success:
+        return jsonify({"success": False, "message": error}), 502
+
     return jsonify({"success": True})
 
 

@@ -285,6 +285,45 @@ def get_property_rooms(property_id):
         return None, "Erro de conexao com o Beds24."
 
 
+def delete_room_type(property_id, beds24_room_id):
+    """
+    Apaga um tipo de quarto (roomType) da sub-propriedade no Beds24 -
+    usado pra limpar quarto duplicado/sem uso direto do StayFlow, sem
+    precisar abrir o painel do Beds24.
+
+    ATENCAO - formato nao confirmado contra API real ainda: a
+    documentacao publica so confirma que a funcionalidade existe
+    ("delete rooms of properties by id, com propertyId e roomId"), sem
+    detalhar o metodo HTTP exato. Implementado com a melhor suposicao
+    (DELETE /properties/rooms com propertyId+roomId de query) - a
+    primeira chamada real precisa ser conferida com log antes de confiar
+    nesse caminho pra valer (ver rota que usa essa funcao).
+
+    Retorna (sucesso: bool, erro: str|None).
+    """
+    access_token = _get_valid_access_token()
+    if not access_token:
+        return False, "Conta master do Beds24 nao configurada ou token invalido."
+
+    try:
+        response = requests.delete(
+            f"{API_BASE}/properties/rooms",
+            headers={"token": access_token},
+            params={"propertyId": property_id, "roomId": beds24_room_id},
+            timeout=REQUEST_TIMEOUT,
+        )
+        print(
+            "Resposta do Beds24 ao apagar quarto (propertyId=%s, roomId=%s):" % (property_id, beds24_room_id),
+            response.status_code, response.text,
+        )
+        if response.status_code >= 400:
+            return False, f"Beds24 recusou apagar o quarto (HTTP {response.status_code})."
+        return True, None
+    except Exception as error:
+        print("Erro de conexao ao apagar quarto no Beds24:", error)
+        return False, "Erro de conexao com o Beds24."
+
+
 def push_availability(beds24_room_id, checkin_date, checkout_date, num_avail):
     """
     Atualiza a disponibilidade de um quarto no Beds24 pro intervalo de

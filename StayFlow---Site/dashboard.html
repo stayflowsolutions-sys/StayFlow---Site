@@ -1851,6 +1851,12 @@ async function deleteRoleConfirm(roleId){
             </div>
           </div>
           <div id="beds24RoomMappingList" style="display:none;gap:10px"></div>
+
+          <div id="beds24UnusedRoomsSection" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid #ffffff12">
+            <h3 data-i18n="settings.beds24.unusedRoomsTitle" style="font-size:14px;margin:0 0 8px">Quartos sem uso</h3>
+            <p data-i18n="settings.beds24.unusedRoomsDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Não estão vinculados a nenhuma modalidade — sobra de testes ou de modalidade excluída. Pode apagar sem risco.</p>
+            <div id="beds24UnusedRoomsList" style="display:grid;gap:8px"></div>
+          </div>
         </div>
 
         <div id="beds24Message" class="generic-modal-message"></div>
@@ -2327,6 +2333,57 @@ async function deleteRoleConfirm(roleId){
     }
   };
 
+  function renderBeds24UnusedRooms(unusedRooms){
+    const sectionEl = document.getElementById("beds24UnusedRoomsSection");
+    const listEl = document.getElementById("beds24UnusedRoomsList");
+    if(!sectionEl || !listEl) return;
+
+    if(!unusedRooms.length){
+      sectionEl.style.display = "none";
+      return;
+    }
+
+    sectionEl.style.display = "block";
+    listEl.innerHTML = unusedRooms.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;justify-content:space-between;padding:8px 12px;border:1px solid var(--line);border-radius:12px">
+        <span>${escapeHtml(r.name)}</span>
+        <button type="button" class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="deleteUnusedBeds24Room('${r.id}', '${r.name.replace(/'/g, "\\'")}')">${T('settings.beds24.deleteRoomBtn', 'Remover')}</button>
+      </div>
+    `).join("");
+  }
+
+  window.deleteUnusedBeds24Room = async function(beds24RoomId, roomName){
+    if(!await stayflowConfirm(T('settings.beds24.deleteRoomConfirm', 'Apagar o quarto "{name}"? Essa ação não pode ser desfeita.', { name: roomName }))) return;
+
+    const msg = document.getElementById("beds24Message");
+    if(msg){
+      msg.textContent = "";
+      msg.className = "generic-modal-message";
+    }
+
+    try{
+      const res = await fetch(`/settings/beds24/rooms/${beds24RoomId}`, { method: "DELETE", credentials: "same-origin" });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        if(msg){
+          msg.textContent = data.message || T('settings.beds24.deleteRoomFailed', 'Não foi possível apagar o quarto.');
+          msg.classList.add("error");
+        }
+        return;
+      }
+      if(msg){
+        msg.textContent = T('settings.beds24.deleteRoomSuccess', 'Quarto apagado com sucesso!');
+        msg.classList.add("success");
+      }
+      loadBeds24RoomMapping();
+    }catch(e){
+      if(msg){
+        msg.textContent = T('common.connectionError', 'Erro de conexão.');
+        msg.classList.add("error");
+      }
+    }
+  };
+
   window.loadBeds24RoomMapping = async function(){
     const emptyEl = document.getElementById("beds24RoomMappingEmpty");
     const listEl = document.getElementById("beds24RoomMappingList");
@@ -2339,6 +2396,7 @@ async function deleteRoleConfirm(roleId){
 
       const categories = data.categories || [];
       const beds24Rooms = data.beds24_rooms || [];
+      renderBeds24UnusedRooms(data.unused_rooms || []);
 
       if(!categories.length){
         emptyEl.style.display = "flex";
