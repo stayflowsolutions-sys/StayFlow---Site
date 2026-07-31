@@ -3534,3 +3534,56 @@ pessoa não pode ver.
 Recurso puramente de frontend (sem chamada de API nova) - verificação
 real precisa ser feita manualmente no navegador (abrir uma aba
 diferente de Dashboard, dar F5, conferir que continua lá).
+
+## Bug real: preço da reserva chegava US$ 0,00 no painel do Beds24
+
+Usuário criou uma reserva de teste ("ruiter") e reportou: o StayFlow
+calculou o preço certo, mas o Beds24 mostrava US$ 0,00 na lista de
+"Últimas Reservas". Pedi o log e a resposta real da API mostrou:
+
+```
+Resposta do Beds24 ao criar reserva: [{'success': True, 'new': {'id': 90722118, 'price': 350, ...}}]
+```
+
+O campo `price` **foi aceito e ecoado de volta** (350) - o que
+descartou a hipótese de a API estar rejeitando o valor. Pedi print do
+painel de "Últimas Reservas" pra comparar: TODAS as reservas criadas
+via API (Vinicius, Silvano x2, Gabriel, Ruiter) mostravam US$ 0,00,
+exceto a única criada direto no painel do Beds24 (Claudio Silva,
+US$ 36,00, origem "StayFlow" em vez de "API"). Diferença real
+encontrada comparando os dois payloads: a reserva do Claudio (criada
+por eles) tinha um `invoiceItems` de verdade
+(`{'type': 'charge', 'amount': 36, 'lineTotal': 36, ...}`) - as
+nossas, criadas via `POST /bookings`, nunca mandavam esse campo.
+
+**Conclusão**: o campo `price` no corpo da criação é só um valor de
+referência/eco - o que preenche o valor de verdade nos relatórios e
+telas do Beds24 é o item de fatura (`invoiceItems`, `type: 'charge'`).
+Corrigido em `create_booking` (`services/beds24_service.py`): agora
+manda um `invoiceItems` com `type: 'charge'`, `qty: 1` e `amount` igual
+ao preço da reserva, além do campo `price` que já era enviado. Testado
+com mock de `requests.post` conferindo o corpo exato enviado - contém
+`invoiceItems` com o valor certo.
+
+## Bug real: check-in não refletia no Mapa de Quartos
+
+No mesmo teste, usuário reportou: fez check-in do Claudio Silva pela
+aba Reservas e a cama dele não apareceu ocupada (vermelha) no Mapa de
+Quartos. Hipótese certa do próprio usuário: como a reserva (vinda do
+Beds24) já chega com uma cama atribuída automaticamente, e o check-in
+usa essa cama sem mostrar nenhuma caixa de seleção, alguma informação
+não está passando direito por aí.
+
+Isso reverte uma decisão de design de uma rodada anterior (check-in de
+reserva de canal confirmava direto na cama já atribuída, sem picker,
+por pedido explícito do próprio usuário) - mas na prática real revelou
+um ponto cego: confiar cegamente na atribuição automática, sem chance
+de conferir/corrigir, escondeu o problema até virar um bug visível.
+
+Corrigido: `checkinReservationUI` agora **sempre** mostra o seletor de
+cama livre (nunca pula direto pro check-in), com a cama já atribuída
+pré-selecionada no dropdown quando existir - a recepção só precisa
+clicar "Confirmar" se estiver tudo certo, ou trocar se não estiver.
+Pedido extra do usuário atendido: cada opção do seletor mostra
+claramente "Beliche - Cima"/"Beliche - Baixo" quando a cama faz parte
+de um beliche, não só o nome genérico da cama.
