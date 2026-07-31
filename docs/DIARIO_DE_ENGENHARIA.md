@@ -3305,3 +3305,75 @@ desconto negociado). Testado: sem valor informado calcula certo (3
 noites × US$ 20.000 = US$ 60.000); valor informado explicitamente é
 respeitado sem ser sobrescrito; modalidade sem cadastro continua US$
 0,00 sem quebrar nada.
+
+## Fase 5 da integração Beds24: reserva de verdade, "tudo em sincronia"
+
+Pedido direto do usuário depois de ver a Fase 4 funcionando: "quero que
+esteja tudo em acordo, trabalhem juntos pra ser perfeito. Quero que
+mostre o que foi criado, cancelado, check-in, check-out, tudo que for
+possível mostrar em sincronia."
+
+Até aqui, `push_availability` (Fase 4) só ajustava quantas vagas sobram
+pra vender - nunca criava a reserva de verdade dentro do Beds24. Por
+isso a reserva do Vinicius não apareceu no painel deles no teste
+anterior. Esta rodada constrói a peça que faltava: publicar a reserva
+em si.
+
+**Vantagem real que baixou o risco dessa rodada**: diferente das Fases
+1-3 (onde cada campo precisou de tentativa e erro contra a API real),
+já temos um payload REAL completo de reserva vindo do webhook (Claudio
+Silva, capturado nos logs) - `propertyId`, `roomId`, `arrival`,
+`departure`, `firstName`, `lastName`, `phone`, `email`, `status`,
+`price` são todos nomes de campo já confirmados de verdade. `create_booking`
+monta o corpo do `POST /bookings` com esses mesmos nomes. O parsing da
+resposta reaproveita o formato de lote com wrapper `"new"` já confirmado
+em `create_property`/`create_room_type` (`data[0]["new"]["id"]`) -
+alta confiança de estar certo mesmo sem ter testado esse endpoint
+especificamente ainda ao vivo.
+
+**Design da sincronização** (`sync_booking_to_channel`, `database.py`):
+- Só roda pra reserva `source in ('manual', 'whatsapp')` - reserva vinda
+  do próprio Beds24 nunca passa por aqui (evita eco, mesmo princípio já
+  usado em `sync_availability_to_channel`).
+- Reserva ainda `pending` (status padrão de toda reserva vinda do
+  WhatsApp, aguardando a equipe confirmar) NÃO publica no Beds24 ainda -
+  não faz sentido anunciar numa OTA algo que a equipe pode recusar.
+  Publica só quando o status muda pra `confirmed`.
+- Estadia de longa duração (sem `checkout_date`) fica de fora - não é
+  o tipo de ocupação que se anuncia numa OTA.
+- Primeira publicação (`external_booking_id` ainda null): cria a
+  reserva no Beds24 via `create_booking`, grava o id retornado na
+  própria reserva do StayFlow.
+- Publicações seguintes (já tem `external_booking_id`): só
+  `update_booking_status` (cancelar, reverter cancelamento) - nunca
+  cria de novo, sempre atualiza a mesma reserva lá.
+
+Ligada nos mesmos 3 pontos da Fase 4 (`create_reservation_record`,
+`create_reservation_from_chat`, `update_reservation_status_record`).
+
+**Bug relacionado encontrado e corrigido de quebra**: `create_reservation_from_chat`
+tinha o MESMO bug já corrigido em `create_indefinite_stay` numa rodada
+anterior - só *procurava* um hóspede já existente com aquele telefone,
+nunca *criava* um novo. Hóspede novo mandando a primeira mensagem pelo
+WhatsApp nunca virava registro em `guests`, então nunca aparecia na aba
+Hóspedes E nunca levava telefone/email de verdade pra sincronização com
+o Beds24 (ficava `None`/`None` na chamada de criação da reserva -
+confirmado no teste antes do fix). Corrigido pra usar `get_or_create_guest`
++ `update_guest_name`, chamado FORA da transação travada de
+`reservar_cama_com_trava` (essa função abre sua própria conexão,
+não dava pra abrir outra dentro de uma transação já travada).
+
+**Fora do escopo desta rodada, de propósito**: check-in e check-out.
+O payload real mostrou que a Beds24 guarda isso como um `infoItem`
+separado (`{'code': 'CHECKIN', ...}`), não como o `status` principal da
+reserva - mecanismo de escrita (se é que dá pra escrever via API) ainda
+não confirmado. Arriscado demais chutar sem testar - fica pra depois de
+confirmar que criação/cancelamento estão funcionando ao vivo.
+
+Testado com mocks de `create_booking`/`update_booking_status` (sem
+gastar chamada real): reserva pending do WhatsApp não publica ainda;
+confirmar publica e grava o `external_booking_id`; cancelar atualiza a
+mesma reserva (não cria outra); reserva manual já criada como
+`confirmed` publica na hora; reserva vinda do Beds24 nunca aciona nada
+daqui (sem eco); telefone/email agora chegam certos na chamada depois
+do fix do hóspede.
