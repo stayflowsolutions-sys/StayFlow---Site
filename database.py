@@ -2295,12 +2295,13 @@ def get_reservations_with_stats(hostel_id):
 
     cursor.execute(
         """
-        SELECT id, guest_id, guest_name, room_type, bed, checkin_date,
-               checkout_date, source, payment_method, amount, status,
-               bed_id, created_at, stay_type, daily_rate
-        FROM reservations
-        WHERE hostel_id = ?
-        ORDER BY checkin_date ASC, id DESC
+        SELECT r.id, r.guest_id, r.guest_name, r.room_type, r.bed, r.checkin_date,
+               r.checkout_date, r.source, r.payment_method, r.amount, r.status,
+               r.bed_id, r.created_at, r.stay_type, r.daily_rate, b.status AS bed_status
+        FROM reservations r
+        LEFT JOIN beds b ON b.id = r.bed_id
+        WHERE r.hostel_id = ?
+        ORDER BY r.checkin_date ASC, r.id DESC
         """,
         (hostel_id,)
     )
