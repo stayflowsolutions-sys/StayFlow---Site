@@ -31,6 +31,22 @@ def operations(hostel_id):
             f"{kind} de hoje ainda pendente: {row['guest_name']} (status: {row['status']})"
         )
 
+    # Chegada de hoje sem check-in FISICO feito ainda - dispara mesmo
+    # pra reserva ja confirmada (o alerta acima so cobre status !=
+    # confirmed, mas a maioria das reservas ja chega confirmada antes
+    # do dia da chegada). Avisa a recepcao que precisa atribuir uma cama
+    # e confirmar a chegada de verdade - a cama so aparece "Reservada"
+    # no mapa a partir de hoje tambem (ver get_bed_map), entao esse
+    # aviso e o lembrete equivalente pro lado operacional.
+    cursor.execute("""
+        SELECT guest_name FROM reservations
+        WHERE hostel_id = ? AND checkin_date = ? AND status != 'cancelled'
+          AND checked_in_at IS NULL
+    """, (hostel_id, today))
+
+    for row in cursor.fetchall():
+        alerts.append(f"Chegada hoje - atribuir cama e confirmar check-in: {row['guest_name']}")
+
     # Oportunidades urgentes ainda em aberto
     cursor.execute("""
         SELECT o.description, g.phone

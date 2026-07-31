@@ -2403,7 +2403,15 @@ def get_reservations_with_stats(hostel_id):
 
     conn.close()
 
-    return {"reservations": reservations, "stats": stats}
+    # Reserva com check-out ja confirmado sai da lista ativa - a estadia
+    # acabou de verdade, o historico dela continua rastreavel pelo
+    # perfil do hospede (aba Hospedes), essa lista fica só com o que
+    # ainda esta em andamento ou por vir. Stats continuam calculadas em
+    # cima do conjunto completo (nao filtrado), pra nao subtrair receita
+    # ja confirmada so porque o hospede ja foi embora.
+    visible_reservations = [r for r in reservations if not r["checked_out_at"]]
+
+    return {"reservations": visible_reservations, "stats": stats}
 
 
 def build_reorder_message(item, supplier):
@@ -2532,7 +2540,14 @@ def get_guests_list(hostel_id):
                 SELECT COALESCE(SUM(o.estimated_value), 0)
                 FROM opportunities o
                 WHERE o.guest_id = g.id
-            ) AS total_value
+            ) AS total_value,
+            (
+                SELECT r.checked_out_at
+                FROM reservations r
+                WHERE r.guest_id = g.id
+                ORDER BY r.id DESC
+                LIMIT 1
+            ) AS last_checked_out_at
         FROM guests g
         WHERE g.hostel_id = ?
         ORDER BY g.created_at DESC
@@ -4514,10 +4529,15 @@ def get_bed_map(hostel_id):
         )
         long_term_bed_ids = {row["bed_id"] for row in cursor.fetchall()}
 
-    # camas livres com uma reserva futura ja atribuida (soft hold da
-    # reserva pelo WhatsApp ou pelo Ask StayFlow) aparecem como
-    # "reserved" (azul) no mapa, em vez de "free" (verde) puro - so
-    # visual, o status real da cama continua 'free' ate o check-in.
+    # camas livres com reserva que JA CHEGOU NO DIA do check-in (nao
+    # antes disso) aparecem como "reserved" (azul) no mapa - pedido
+    # explicito do usuario: uma reserva pro mes que vem nao pode deixar
+    # a cama "ocupada visualmente" com semanas de antecedencia, senao
+    # ninguem consegue perceber que ela esta livre pra alugar antes
+    # dessa data. A trava real contra dar a mesma cama pra duas reservas
+    # continua em outro lugar (find_available_beds/reservar_cama_com_trava/
+    # sync_availability_to_channel, que sempre olham o periodo completo,
+    # nao so hoje) - isso aqui e so a cor exibida no mapa.
     free_bed_ids = [b["id"] for b in beds if b["status"] == "free"]
     reserved_bed_ids = set()
     if free_bed_ids:
@@ -4527,9 +4547,9 @@ def get_bed_map(hostel_id):
             f"""
             SELECT DISTINCT bed_id FROM reservations
             WHERE bed_id IN ({placeholders}) AND status != 'cancelled'
-              AND checkout_date >= ? AND checked_out_at IS NULL
+              AND checkin_date <= ? AND checkout_date >= ? AND checked_out_at IS NULL
             """,
-            free_bed_ids + [today]
+            free_bed_ids + [today, today]
         )
         reserved_bed_ids = {row["bed_id"] for row in cursor.fetchall()}
 
