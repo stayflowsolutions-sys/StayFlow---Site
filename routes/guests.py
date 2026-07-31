@@ -5,11 +5,15 @@ from database import (
     set_guest_ai_paused,
     send_message_to_guest_now,
     get_guest_document_file,
+    update_guest_profile,
+    save_guest_document,
 )
 from services.translation_service import translate_opportunity_fields
 from utils.tenant import require_permission
 
 guests_bp = Blueprint("guests", __name__)
+
+_ALLOWED_DOCUMENT_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
 
 
 @guests_bp.route("/guests", methods=["GET"])
@@ -71,3 +75,38 @@ def get_guest_document_file_route(hostel_id, document_id):
         return jsonify({"error": "Document not found"}), 404
 
     return send_file(document["file_path"], mimetype=document["mime_type"])
+
+
+@guests_bp.route("/guests/<int:guest_id>", methods=["PATCH"])
+@require_permission("guests")
+def update_guest_profile_route(hostel_id, guest_id):
+    data = request.get_json() or {}
+
+    try:
+        update_guest_profile(hostel_id, guest_id, **data)
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+
+    return jsonify({"success": True})
+
+
+@guests_bp.route("/guests/<int:guest_id>/documents", methods=["POST"])
+@require_permission("guests")
+def upload_guest_document_route(hostel_id, guest_id):
+    if not get_guest_profile(hostel_id, guest_id):
+        return jsonify({"success": False, "message": "Hóspede não encontrado."}), 404
+
+    file = request.files.get("file")
+    if not file or not file.filename:
+        return jsonify({"success": False, "message": "Nenhum arquivo enviado."}), 400
+
+    mime_type = file.mimetype
+    if mime_type not in _ALLOWED_DOCUMENT_MIME_TYPES:
+        return jsonify({"success": False, "message": "Formato não suportado. Envie JPG, PNG, WEBP ou PDF."}), 400
+
+    try:
+        result = save_guest_document(hostel_id, guest_id, file.read(), mime_type)
+    except Exception as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+
+    return jsonify({"success": True, **result})

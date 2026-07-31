@@ -392,6 +392,15 @@ def create_database():
     # data de nascimento, documento, nacionalidade) - texto livre.
     add_column_if_not_exists(cursor, "guests", "nationality", "TEXT")
 
+    # Endereco e dados do documento por escrito (tipo + numero, ex:
+    # "Passaporte" / "AB123456") - complementa a FOTO do documento, que
+    # ja fica em guest_documents. Tudo texto livre, preenchido manualmente
+    # no perfil do hospede (equipe) ou futuramente extraido do envio via
+    # WhatsApp.
+    add_column_if_not_exists(cursor, "guests", "address", "TEXT")
+    add_column_if_not_exists(cursor, "guests", "document_type", "TEXT")
+    add_column_if_not_exists(cursor, "guests", "document_number", "TEXT")
+
     # se for um banco antigo (criado antes do multi-tenant), migra
     if _guests_table_needs_migration(cursor):
         _migrate_guests_to_composite_unique(cursor)
@@ -906,6 +915,44 @@ def update_guest_name(hostel_id, phone, name):
     )
 
     conn.commit()
+    conn.close()
+
+
+def update_guest_profile(hostel_id, guest_id, **fields):
+    """
+    Edicao dos dados de contato/documento no perfil do hospede (aba
+    Hospedes). Só atualiza os campos realmente passados (permite salvar
+    parcial sem precisar reenviar tudo) - lista branca fixa de colunas
+    editaveis, nunca monta SQL com nome de coluna vindo de fora.
+    """
+    editable_columns = (
+        "name", "email", "phone", "address", "date_of_birth",
+        "nationality", "document_type", "document_number"
+    )
+    updates = {k: v for k, v in fields.items() if k in editable_columns}
+    if not updates:
+        return
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM guests WHERE id = ? AND hostel_id = ?", (guest_id, hostel_id))
+    if not cursor.fetchone():
+        conn.close()
+        raise ValueError("Hospede nao encontrado.")
+
+    set_clause = ", ".join(f"{col} = ?" for col in updates)
+    try:
+        cursor.execute(
+            f"UPDATE guests SET {set_clause} WHERE id = ? AND hostel_id = ?",
+            (*updates.values(), guest_id, hostel_id)
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        conn.close()
+        raise ValueError("Ja existe outro hospede com esse telefone neste hostel.")
+
     conn.close()
 
 
@@ -2503,7 +2550,8 @@ def get_guest_profile(hostel_id, guest_id):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT id, name, phone, email, language, created_at, ai_paused, date_of_birth, nationality
+        SELECT id, name, phone, email, language, created_at, ai_paused,
+               date_of_birth, nationality, address, document_type, document_number
         FROM guests
         WHERE id = ? AND hostel_id = ?
     """, (guest_id, hostel_id))
@@ -2550,8 +2598,42 @@ def get_guest_profile(hostel_id, guest_id):
         "guest": dict(guest),
         "messages": messages,
         "opportunities": opportunities,
-        "documents": documents
+        "documents": documents,
+        "reservations": get_guest_reservations(hostel_id, guest_id)
     }
+
+
+def get_guest_reservations(hostel_id, guest_id):
+    """
+    Historico de estadias desse hospede - reservas fixas (com amount
+    fechado, sem controle de pagamento parcial no modelo atual) e
+    estadias de longa duracao (saldo calculado sob demanda via
+    get_reservation_balance, que ja existe pra isso). Cada item vem com
+    um campo "balance" so quando faz sentido (stay_type='indefinite');
+    reserva fixa nao tem conceito de saldo parcial hoje - o valor total
+    e o que foi cobrado, ponto (nao ha "pago"/"nao pago" por reserva
+    fixa no modelo de dados atual).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, room_type, checkin_date, checkout_date, source, status,
+               amount, stay_type, daily_rate, external_booking_id
+        FROM reservations
+        WHERE hostel_id = ? AND guest_id = ?
+        ORDER BY checkin_date DESC, id DESC
+    """, (hostel_id, guest_id))
+
+    reservations = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    for reservation in reservations:
+        if reservation["stay_type"] == "indefinite":
+            balance_info = get_reservation_balance(hostel_id, reservation["id"])
+            reservation["balance"] = balance_info["balance"]
+
+    return reservations
 
 
 def find_guest_by_name(hostel_id, name_query):
