@@ -3094,9 +3094,9 @@ async function loadReservations(){
             <option value="cancelled" ${r.status === "cancelled" ? "disabled" : ""}>${T('reservations.status.cancelled', 'Cancelada')}</option>
             <option value="no_show" ${r.status === "no_show" ? "disabled" : ""}>${T('reservations.status.noShow', 'No-show')}</option>
           </select>
-          ${r.status === "confirmed" && !r.bed_id ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px;display:block;width:100%" onclick="checkinReservationUI(${r.id})">${T('reservations.checkinBtn', 'Confirmar check-in')}</button>` : ""}
-          ${r.bed_id && r.bed_status === "occupied" ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px;display:block;width:100%" onclick="checkoutReservationUI(${r.id})">${T('reservations.checkoutBtn', 'Confirmar check-out')}</button>` : ""}
-          ${r.bed_id && r.bed_status === "needs_cleaning" ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${T('reservations.awaitingCleaningLabel', 'Aguardando limpeza da cama')}</div>` : ""}
+          ${r.status === "confirmed" && !r.checked_in_at ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px;display:block;width:100%" onclick="checkinReservationUI(${r.id}, ${r.bed_id || "null"})">${T('reservations.checkinBtn', 'Confirmar check-in')}</button>` : ""}
+          ${r.checked_in_at && !r.checked_out_at ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px;display:block;width:100%" onclick="checkoutReservationUI(${r.id})">${T('reservations.checkoutBtn', 'Confirmar check-out')}</button>` : ""}
+          ${r.checked_out_at && r.bed_status === "needs_cleaning" ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${T('reservations.awaitingCleaningLabel', 'Aguardando limpeza da cama')}</div>` : ""}
         </td>
       `;
       bodyEl.appendChild(row);
@@ -3107,7 +3107,19 @@ async function loadReservations(){
   }
 }
 
-window.checkinReservationUI = async function(reservationId){
+window.checkinReservationUI = async function(reservationId, bedId){
+  // Reserva vinda de canal/WhatsApp ja chega com a cama certa da
+  // categoria atribuida automaticamente na criacao - check-in so
+  // confirma a chegada nessa mesma cama, sem pedir escolha manual.
+  // Trocar de cama continua sendo uma acao manual da recepcao (ou via
+  // Ask StayFlow), nao faz parte do check-in em si.
+  if(bedId){
+    await performReservationCheckin(reservationId, bedId, null);
+    return;
+  }
+
+  // Sem cama atribuida ainda (reserva manual, ou nenhuma cama livre na
+  // categoria no momento da criacao) - deixa escolher uma livre agora.
   let beds = [];
   try{
     const res = await fetch("/bed-map", { credentials: "same-origin" });
@@ -3137,28 +3149,40 @@ window.checkinReservationUI = async function(reservationId){
 };
 
 window.submitCheckinReservation = async function(reservationId){
-  const msg = document.getElementById("checkinReservationMessage");
   const select = document.getElementById("checkinReservationBedSelect");
   if(!select || !select.value) return;
+  await performReservationCheckin(reservationId, Number(select.value), document.getElementById("checkinReservationMessage"));
+};
 
+window.performReservationCheckin = async function(reservationId, bedId, msgEl){
   try{
     const res = await fetch(`/reservations/${reservationId}/checkin`, {
       method: "POST",
       credentials: "same-origin",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ bed_id: Number(select.value) })
+      body: JSON.stringify({ bed_id: bedId })
     });
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      msg.textContent = data.message || T('reservations.msg.checkinFailed', 'Não foi possível fazer o check-in.');
-      msg.classList.add("error");
+      const message = data.message || T('reservations.msg.checkinFailed', 'Não foi possível fazer o check-in.');
+      if(msgEl){
+        msgEl.textContent = message;
+        msgEl.classList.add("error");
+      }else{
+        alert(message);
+      }
       return;
     }
-    closeGenericModal();
+    if(document.getElementById("checkinReservationBedSelect")) closeGenericModal();
     loadReservations();
   }catch(e){
-    msg.textContent = T('roommap.bed.checkinConnError', 'Erro de conexão ao fazer check-in.');
-    msg.classList.add("error");
+    const message = T('roommap.bed.checkinConnError', 'Erro de conexão ao fazer check-in.');
+    if(msgEl){
+      msgEl.textContent = message;
+      msgEl.classList.add("error");
+    }else{
+      alert(message);
+    }
   }
 };
 
@@ -3509,7 +3533,7 @@ window.onBedTileClick = async function(bedId){
   try{
     const res = await fetch("/reservations", { credentials: "same-origin" });
     const data = res.ok ? await res.json() : { reservations: [] };
-    const pending = (data.reservations || []).filter(r => r.status === "confirmed" && !r.bed_id);
+    const pending = (data.reservations || []).filter(r => r.status === "confirmed" && !r.checked_in_at);
 
     if(!pending.length){
       panel.innerHTML = `<strong>${bed.label}</strong> — ${statusLabel}. ${T('roommap.bed.noPendingCheckin', 'Nenhuma reserva confirmada aguardando check-in.')}${maintenanceBtn}${manageButtons}`;

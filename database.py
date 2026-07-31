@@ -699,6 +699,15 @@ def create_database():
     # check-out (registro historico de qual cama usada).
     add_column_if_not_exists(cursor, "reservations", "bed_id", "INTEGER")
 
+    # Data/hora do check-in e check-out FISICOS de verdade (diferente de
+    # bed_id, que so indica qual cama esta reservada/atribuida pro
+    # periodo - preenchido automaticamente na criacao pra reservas vindas
+    # de canal/WhatsApp, antes de o hospede chegar). null ate a acao
+    # acontecer - e o unico jeito confiavel de saber se o check-in ja foi
+    # feito, ja que bed_id pode estar preenchido so como reserva futura.
+    add_column_if_not_exists(cursor, "reservations", "checked_in_at", "TIMESTAMP")
+    add_column_if_not_exists(cursor, "reservations", "checked_out_at", "TIMESTAMP")
+
     # Estadia de longa duracao / morador fixo (ex: funcionario que mora
     # no hostel, pagando conforme consegue) - 'fixed' (padrao, hospede
     # normal com checkout definido) ou 'indefinite' (sem checkout
@@ -2297,7 +2306,8 @@ def get_reservations_with_stats(hostel_id):
         """
         SELECT r.id, r.guest_id, r.guest_name, r.room_type, r.bed, r.checkin_date,
                r.checkout_date, r.source, r.payment_method, r.amount, r.status,
-               r.bed_id, r.created_at, r.stay_type, r.daily_rate, b.status AS bed_status
+               r.bed_id, r.created_at, r.stay_type, r.daily_rate, b.status AS bed_status,
+               r.checked_in_at, r.checked_out_at
         FROM reservations r
         LEFT JOIN beds b ON b.id = r.bed_id
         WHERE r.hostel_id = ?
@@ -4512,7 +4522,10 @@ def checkin_reservation_to_bed(hostel_id, reservation_id, bed_id):
         conn.close()
         raise ValueError(f"A cama '{bed['label']}' nao esta livre (status atual: {bed['status']}).")
 
-    cursor.execute("UPDATE reservations SET bed_id = ? WHERE id = ?", (bed_id, reservation_id))
+    cursor.execute(
+        "UPDATE reservations SET bed_id = ?, checked_in_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (bed_id, reservation_id)
+    )
     cursor.execute("UPDATE beds SET status = 'occupied' WHERE id = ?", (bed_id,))
 
     conn.commit()
@@ -4544,6 +4557,7 @@ def checkout_reservation_bed(hostel_id, reservation_id):
     bed = cursor.fetchone()
 
     cursor.execute("UPDATE beds SET status = 'needs_cleaning' WHERE id = ?", (reservation["bed_id"],))
+    cursor.execute("UPDATE reservations SET checked_out_at = CURRENT_TIMESTAMP WHERE id = ?", (reservation_id,))
 
     conn.commit()
     conn.close()
