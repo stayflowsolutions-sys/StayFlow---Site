@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 from database import (
+    get_hostel,
     get_hostel_id_by_number,
     get_hostel_whatsapp_config,
     get_hostel_facebook_config,
@@ -96,9 +97,11 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     guest_phone = external_id if channel == "whatsapp" and external_id != "unknown" else None
     guest_language = get_guest_language_by_id(guest_id)
     known_guest_name = get_guest_name_by_id(guest_id)
+    hostel_phone = (get_hostel(hostel_id) or {}).get("phone")
     answer, guest_name, guest_language_detected = ask_ai(
         history, text, guest_phone=guest_phone, hostel_id=hostel_id,
-        guest_language=guest_language, guest_id=guest_id, guest_name=known_guest_name
+        guest_language=guest_language, guest_id=guest_id, guest_name=known_guest_name,
+        channel=channel, hostel_phone=hostel_phone
     )
 
     if guest_name:

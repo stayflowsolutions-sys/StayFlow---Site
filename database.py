@@ -1386,6 +1386,23 @@ def get_hostel(hostel_id):
     return dict(row) if row else None
 
 
+def save_hostel_phone(hostel_id, phone):
+    """
+    Numero de WhatsApp oficial do hostel, em formato legivel (ex:
+    "+5493883154375") - diferente de whatsapp_phone_number_id (o ID
+    interno da Meta, usado so pra autenticar chamadas de API). Usado
+    pra: (a) resolver o hostel no endpoint de teste manual
+    (get_hostel_id_by_number), e (b) a IA sugerir esse numero pro
+    hospede em canais que nao sao WhatsApp (Messenger/Instagram),
+    como alternativa de contato.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE hostels SET phone = ? WHERE id = ?", (phone, hostel_id))
+    conn.commit()
+    conn.close()
+
+
 def get_user_by_email(email):
     """
     Retorna a identidade (pessoa) por email, ou None. O email e unico

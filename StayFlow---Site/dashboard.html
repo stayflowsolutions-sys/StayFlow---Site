@@ -1689,6 +1689,11 @@ async function deleteRoleConfirm(roleId){
             <label data-i18n="settings.whatsapp.tokenLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Access Token</label>
             <input type="password" id="whatsappAccessToken" autocomplete="off" data-i18n-placeholder="settings.whatsapp.tokenPlaceholder" placeholder="Deixe em branco pra manter o já salvo" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
           </div>
+          <div style="grid-column:span 12">
+            <label data-i18n="settings.whatsapp.contactPhoneLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Número de WhatsApp visível pro hóspede</label>
+            <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+            <div data-i18n="settings.whatsapp.contactPhoneHint" style="font-size:11px;color:var(--muted);margin-top:4px">Usado pela IA pra sugerir esse número como contato alternativo em conversas de Messenger/Instagram.</div>
+          </div>
         </div>
 
         <div id="whatsappTokenStatus" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
@@ -2312,6 +2317,7 @@ async function deleteRoleConfirm(roleId){
   window.saveWhatsappSettings = async function(){
     const phoneNumberId = document.getElementById("whatsappPhoneNumberId").value.trim();
     const accessToken = document.getElementById("whatsappAccessToken").value.trim();
+    const contactPhone = document.getElementById("whatsappContactPhone").value.trim();
 
     if(!phoneNumberId){
       alert(T('settings.whatsapp.msg.phoneIdRequired', 'Cola o Phone Number ID que a Meta te deu.'));
@@ -2323,7 +2329,7 @@ async function deleteRoleConfirm(roleId){
         method: "POST",
         credentials: "same-origin",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ phone_number_id: phoneNumberId, access_token: accessToken })
+        body: JSON.stringify({ phone_number_id: phoneNumberId, access_token: accessToken, contact_phone: contactPhone })
       });
 
       if(!res.ok){
@@ -2352,6 +2358,9 @@ async function deleteRoleConfirm(roleId){
 
       const phoneInput = document.getElementById("whatsappPhoneNumberId");
       if(phoneInput && data.phone_number_id) phoneInput.value = data.phone_number_id;
+
+      const contactPhoneInput = document.getElementById("whatsappContactPhone");
+      if(contactPhoneInput) contactPhoneInput.value = data.contact_phone || "";
 
       const statusEl = document.getElementById("whatsappTokenStatus");
       if(statusEl){

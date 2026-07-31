@@ -20,6 +20,7 @@ from database import (
     get_hostel_facebook_config,
     save_hostel_facebook_config,
     clear_hostel_facebook_config,
+    save_hostel_phone,
 )
 import services.meta_oauth_service as meta_oauth_service
 import services.beds24_service as beds24_service
@@ -62,12 +63,19 @@ _VALID_CURRENCIES = {
 @require_permission("settings")
 def get_whatsapp_settings(hostel_id):
     phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)
+    hostel = get_hostel(hostel_id)
 
     return jsonify({
         "phone_number_id": phone_number_id or "",
         # Nunca devolve o token de verdade pro frontend por segurança —
         # só indica se já existe um configurado.
-        "has_access_token": bool(access_token)
+        "has_access_token": bool(access_token),
+        # Numero de WhatsApp visivel pro hospede (formato legivel, ex:
+        # "+5493883154375") - diferente do phone_number_id acima (ID
+        # interno da Meta). A IA usa esse numero pra sugerir o WhatsApp
+        # como alternativa de contato em outros canais (Messenger/
+        # Instagram).
+        "contact_phone": (hostel or {}).get("phone") or "",
     })
 
 
@@ -78,6 +86,7 @@ def update_whatsapp_settings(hostel_id):
 
     phone_number_id = (data.get("phone_number_id") or "").strip()
     access_token = (data.get("access_token") or "").strip()
+    contact_phone = (data.get("contact_phone") or "").strip()
 
     if not phone_number_id:
         return jsonify({"success": False, "message": "phone_number_id is required."}), 400
@@ -90,6 +99,7 @@ def update_whatsapp_settings(hostel_id):
         access_token = existing_token
 
     save_hostel_whatsapp_config(hostel_id, phone_number_id, access_token)
+    save_hostel_phone(hostel_id, contact_phone or None)
 
     return jsonify({"success": True})
 

@@ -39,6 +39,8 @@ Vary your sentence structure. Never repeat the same phrasing pattern
 robotic. Mix statements, short reactions, and questions naturally like a
 human would.
 
+{alt_channel_instruction}
+
 Your goal:
 Help guests and collect reservation information through natural conversation,
 not through a rigid interrogation.
@@ -413,7 +415,29 @@ RESERVATION_TOOLS = [
 MAX_TOOL_ROUNDS = 4
 
 
-def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None):
+def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None):
+    # So sugere o WhatsApp como canal alternativo quando a conversa NAO
+    # e no proprio WhatsApp (nao faz sentido sugerir o hospede ir pro
+    # canal em que ja esta) e o hostel realmente tem um numero
+    # cadastrado pra divulgar (Configuracoes -> WhatsApp Business,
+    # campo "Numero de contato"). Pedido explicito do usuario: mencionar
+    # logo no inicio (parte das boas-vindas) e de novo perto do fim
+    # (duvidas/confirmacoes), sem repetir em toda mensagem.
+    if channel != "whatsapp" and hostel_phone:
+        alt_channel_instruction = (
+            f"ALTERNATIVE CONTACT CHANNEL — IMPORTANT: this conversation is "
+            f"happening outside WhatsApp. Early on — as part of your first or "
+            f"second message (the welcome) — briefly let the guest know they "
+            f"can also reach the hostel on WhatsApp at {hostel_phone} if they "
+            f"prefer, without making it the focus of the message. Mention it "
+            f"again near the end of the conversation (when closing, or when "
+            f"final questions/confirmations come up), so they have that "
+            f"number handy afterward. Keep both mentions short and natural — "
+            f"do not repeat it in every message."
+        )
+    else:
+        alt_channel_instruction = ""
+
     if guest_name:
         # Messenger/Instagram entregam o nome do perfil automaticamente
         # (buscado no momento em que o hospede escreve pela primeira
@@ -474,6 +498,7 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
         phone_instruction=phone_instruction,
         language_instruction=language_instruction,
         name_instruction=name_instruction,
+        alt_channel_instruction=alt_channel_instruction,
         today_date=datetime.date.today().isoformat()
     )
 
