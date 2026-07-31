@@ -3014,6 +3014,22 @@ function reservationStatusPillClass(status){
   return "cold";
 }
 
+// Nomes conhecidos de canal/OTA pra exibir na coluna Origem em vez do
+// slug cru vindo do Beds24 (ex: "bookingcom" -> "Booking.com"). Canal
+// desconhecido cai no fallback (primeira letra maiuscula), nunca quebra.
+const CHANNEL_DISPLAY_LABELS = {
+  whatsapp: "WhatsApp", manual: "Manual", direct: "Direto",
+  airbnb: "Airbnb", booking: "Booking.com", bookingcom: "Booking.com",
+  "booking.com": "Booking.com", hostelworld: "Hostelworld",
+  expedia: "Expedia", agoda: "Agoda", vrbo: "Vrbo",
+};
+function channelDisplayLabel(source){
+  const key = (source || "").toLowerCase().trim();
+  if(!key) return "-";
+  if(CHANNEL_DISPLAY_LABELS[key]) return CHANNEL_DISPLAY_LABELS[key];
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
 async function loadReservations(){
   const emptyEl = document.getElementById("reservationsEmpty");
   const tableEl = document.getElementById("reservationsTable");
@@ -3083,7 +3099,7 @@ async function loadReservations(){
         <td>${r.guest_name || "-"}</td>
         <td>${r.room_type || "-"}${r.bed ? " · " + r.bed : ""}</td>
         <td>${r.checkin_date || "-"} → ${r.checkout_date || "-"}</td>
-        <td>${r.source || "-"}</td>
+        <td>${channelDisplayLabel(r.source)}</td>
         <td><span class="status-pill ${statusClass}">${(r.status || "pending").toUpperCase()}</span></td>
         <td>US$ ${Number(r.amount || 0).toFixed(2)}</td>
         <td>
@@ -3105,6 +3121,15 @@ async function loadReservations(){
   }catch(e){
     console.warn("Erro ao carregar /reservations:", e);
   }
+}
+
+// Reservas e Mapa de Quartos mostram o mesmo estado (status da cama,
+// status da reserva) de dois jeitos diferentes - qualquer acao que mude
+// um dos dois tem que atualizar as duas telas na hora, sem precisar de
+// F5, nao importa em qual aba a acao foi disparada.
+function refreshOperationalViews(){
+  if(typeof loadRoomMap === "function") loadRoomMap();
+  if(typeof loadReservations === "function") loadReservations();
 }
 
 window.checkinReservationUI = async function(reservationId, bedId){
@@ -3174,7 +3199,7 @@ window.performReservationCheckin = async function(reservationId, bedId, msgEl){
       return;
     }
     if(document.getElementById("checkinReservationBedSelect")) closeGenericModal();
-    loadReservations();
+    refreshOperationalViews();
   }catch(e){
     const message = T('roommap.bed.checkinConnError', 'Erro de conexão ao fazer check-in.');
     if(msgEl){
@@ -3199,7 +3224,7 @@ window.checkoutReservationUI = async function(reservationId){
       alert(data.message || T('reservations.msg.checkoutFailed', 'Não foi possível fazer o check-out.'));
       return;
     }
-    loadReservations();
+    refreshOperationalViews();
   }catch(e){
     alert(T('roommap.bed.checkoutConnError', 'Erro de conexão ao fazer check-out.'));
   }
@@ -3218,7 +3243,7 @@ window.updateReservationStatus = async function(reservationId, newStatus){
       alert(T('reservations.msg.updateStatusFailed', 'Não foi possível atualizar o status.'));
       return;
     }
-    loadReservations();
+    refreshOperationalViews();
   }catch(e){
     console.error("Erro ao atualizar status da reserva:", e);
   }
@@ -3303,7 +3328,7 @@ window.submitIndefiniteStay = async function(event){
     }
 
     form.reset();
-    loadReservations();
+    refreshOperationalViews();
   }catch(e){
     alert(T('longTermStay.msg.createConnError', 'Erro de conexão ao criar a estadia de longa duração.'));
   }
@@ -3349,7 +3374,7 @@ window.closeIndefiniteStayUI = async function(reservationId){
       alert(data.message || T('longTermStay.closeFailed', 'Não foi possível encerrar a estadia.'));
       return;
     }
-    loadReservations();
+    refreshOperationalViews();
   }catch(e){
     alert(T('longTermStay.closeConnError', 'Erro de conexão ao encerrar a estadia.'));
   }
@@ -3838,8 +3863,7 @@ window.checkinBedUI = async function(bedId){
       return;
     }
     document.getElementById("bedActionCard").style.display = "none";
-    loadRoomMap();
-    if(typeof loadReservations === "function") loadReservations();
+    refreshOperationalViews();
   }catch(e){
     alert(T('roommap.bed.checkinConnError', 'Erro de conexão ao fazer check-in.'));
   }
@@ -3868,7 +3892,7 @@ window.checkoutBedUI = async function(bedId){
       return;
     }
     document.getElementById("bedActionCard").style.display = "none";
-    loadRoomMap();
+    refreshOperationalViews();
   }catch(e){
     alert(T('roommap.bed.checkoutConnError', 'Erro de conexão ao fazer check-out.'));
   }
@@ -3886,7 +3910,7 @@ window.markBedCleanedUI = async function(bedId){
       return;
     }
     document.getElementById("bedActionCard").style.display = "none";
-    loadRoomMap();
+    refreshOperationalViews();
   }catch(e){
     alert(T('roommap.bed.markCleanConnError', 'Erro de conexão ao marcar a cama como limpa.'));
   }

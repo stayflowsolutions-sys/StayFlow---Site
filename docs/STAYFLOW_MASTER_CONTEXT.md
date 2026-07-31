@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.21.1
+\*\*Versão:\*\* 1.21.3
 
 
 
@@ -101,6 +101,10 @@
 | 1.21.0 | 31/07/2026 | Oficial | Corrigido gap na aba Reservas: não havia como confirmar check-in/check-out de uma reserva por ali — só o dropdown de status (pendente/confirmada/cancelada/no-show), um conceito separado do status físico da cama. O fluxo completo (cama azul→reservada, vermelha→ocupada no check-in, amarela→limpeza no check-out, verde→livre quando a limpeza é confirmada) já existia no backend e no Mapa de Quartos, só nunca tinha sido ligado na aba Reservas. `get_reservations_with_stats` passou a fazer LEFT JOIN com `beds` e devolver `bed_status`; a aba Reservas ganhou botão "Confirmar check-in" (abre seletor de cama livre via `/bed-map`, reserva confirmada sem cama) e "Confirmar check-out" (cama ocupada), reaproveitando as rotas `/reservations/<id>/checkin` e `/checkout` já existentes do Mapa de Quartos. Push automático do check-in confirmado pro Beds24 (pedido original do usuário) fica pra próxima rodada, pendente de verificar se a API do Beds24 tem um conceito equivalente a "hóspede chegou". |
 
 | 1.21.1 | 31/07/2026 | Oficial | Bug real encontrado testando em produção: reservas vindas do Beds24/WhatsApp (que já nascem com `bed_id` preenchido, atribuído automaticamente na criação) não mostravam nenhum botão de check-in/check-out, porque a versão anterior usava a presença de `bed_id` como sinal de "já fez check-in" — ambíguo, já que `bed_id` também significa "cama reservada pro período", preenchido bem antes da chegada real. Corrigido com dois campos sem ambiguidade: `reservations.checked_in_at`/`checked_out_at` (timestamp, null até a ação física acontecer de verdade), usados agora tanto na aba Reservas quanto no filtro de "aguardando check-in" do Mapa de Quartos. Aproveitado pra resolver um pedido do usuário: já que a categoria (compartilhado/privado) e a cama já vêm decididas automaticamente na criação da reserva de canal, o check-in dessas reservas não pede mais escolha manual de cama — confirma direto na cama já atribuída; o seletor manual só aparece quando realmente não há cama nenhuma atribuída ainda. |
+
+| 1.21.2 | 31/07/2026 | Oficial | Aba Reservas e Mapa de Quartos passaram a se atualizar automaticamente uma à outra depois de qualquer ação que muda status de cama/reserva (check-in, check-out, marcar como limpa, mudar status manual, abrir/encerrar estadia de longa duração) — antes precisava de F5 pra ver a cor da cama mudar depois de uma ação feita na aba Reservas (e vice-versa). Função central `refreshOperationalViews()` chama as duas telas juntas em todo ponto de mudança de status. |
+
+| 1.21.3 | 31/07/2026 | Oficial | Dois ajustes reportados testando o ciclo completo em produção: (1) bug real corrigido — cama ficava presa mostrando "Reservada" (azul) mesmo depois de check-out e limpeza confirmados, porque o cálculo de cor do Mapa de Quartos não considerava se a reserva vinculada já tinha sido finalizada; corrigido exigindo `checked_out_at IS NULL` na consulta. (2) Coluna "Origem" da aba Reservas ganhou `channelDisplayLabel()` no frontend, mapeando slugs conhecidos de canal (Airbnb, Booking.com, Hostelworld, Expedia, Agoda, Vrbo, WhatsApp, Direto) pro nome formatado da plataforma, com fallback seguro pra qualquer valor não mapeado — o backend já capturava o canal real de cada reserva vinda do Beds24, só faltava a formatação de exibição. |
 
 
 

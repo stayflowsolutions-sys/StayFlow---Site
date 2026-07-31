@@ -2920,3 +2920,69 @@ Observação separada, não é bug: apareceram duas reservas idênticas de
 é dado de teste antigo de sessões anteriores, não algo criado por essa
 mudança. Fica pro usuário cancelar/limpar manualmente pela própria aba
 (já dá pra mudar o status pra "Cancelada" no dropdown).
+
+## Atualização automática entre Reservas e Mapa de Quartos
+
+Usuário reparou que, depois de confirmar check-in/check-out, a cor da
+cama só mudava depois de dar F5 — pedido explícito: "tudo que for
+atualização dinâmica que muda status de algo em algum lugar deveria
+entrar automaticamente".
+
+Causa: Reservas e Mapa de Quartos mostram o mesmo estado de dois jeitos
+diferentes, mas cada ação só recarregava a própria tela de origem
+(`checkinReservationUI`/`checkoutReservationUI`/`updateReservationStatus`
+na aba Reservas só chamavam `loadReservations()`; `checkoutBedUI`/
+`markBedCleanedUI` no Mapa de Quartos só chamavam `loadRoomMap()`) —
+como as duas seções ficam sempre no DOM (só uma fica visível por vez),
+dava pra atualizar as duas juntas sem custo real, só ninguém tinha
+ligado os dois lados.
+
+Corrigido com uma função central, `refreshOperationalViews()`, que
+chama `loadRoomMap()` e `loadReservations()` juntas (cada uma só roda se
+a função existir/a seção estiver carregada) - aplicada em toda ação que
+muda status de cama ou reserva, nos dois sentidos: check-in/check-out/
+mudança de status manual na aba Reservas, e check-in/check-out/marcar
+como limpa no Mapa de Quartos, além de abrir/encerrar estadia de longa
+duração (que também ocupa/libera cama). Resultado: mudar o status em
+qualquer um dos dois lugares reflete no outro na hora, sem F5.
+
+## Cama presa em "Reservada" (azul) depois do ciclo completo de teste
+
+Usuário testou check-in/check-out/limpeza em todas as reservas e uma
+cama ficou travada mostrando "Reservada" (azul) mesmo sem nenhuma
+reserva ativa.
+
+Causa: o cálculo de `display_status` no Mapa de Quartos (`get_bed_map`)
+pinta uma cama livre de azul quando existe alguma reserva não-cancelada
+com `checkout_date >= hoje` pra aquele `bed_id` — mas nunca checava se
+essa reserva já tinha sido **finalizada de verdade** (check-out
+confirmado). Como `bed_id` continua na reserva depois do check-out
+(registro histórico, não é limpo), uma reserva já 100% concluída (cuja
+data de checkout ainda não passou, ex: teste com datas futuras) continua
+"contando" como reserva ativa nesse cálculo, prendendo a cama como
+reservada mesmo depois de check-out + limpeza confirmados.
+
+Corrigido: a consulta agora também exige `checked_out_at IS NULL` (campo
+novo desta mesma rodada) — só reservas que ainda não passaram por
+check-out contam pra pintar a cama de azul. Testado com o ciclo completo
+(reserva → check-in → check-out → limpeza) confirmando que a cama volta
+pra "free" no fim, não fica presa em "reserved".
+
+## Origem da reserva mostrando "direct" em vez do nome da OTA
+
+Usuário observou que a coluna "Origem" da aba Reservas mostra o valor
+cru vindo do Beds24 (ex: "direct") em vez do nome da plataforma
+(Airbnb/Booking.com/Hostelworld). O backend já captura o canal real de
+cada reserva individualmente (campo `channel` do payload da Beds24,
+gravado em `reservations.source`) — "direct" nesse caso específico é o
+valor correto, porque a reserva de teste foi criada direto no painel do
+Beds24, não simulando vir de uma OTA real. Ainda não testado com uma
+reserva sincronizada de verdade de Airbnb/Booking/Hostelworld pra
+confirmar os nomes exatos que a Beds24 manda nesse campo.
+
+Melhorada a exibição enquanto isso: `channelDisplayLabel()` no frontend
+mapeia slugs conhecidos (`airbnb`, `booking`/`bookingcom`, `hostelworld`,
+`expedia`, `agoda`, `vrbo`, `whatsapp`, `manual`, `direct`) pro nome
+formatado da plataforma; qualquer valor desconhecido cai num fallback
+seguro (primeira letra maiúscula), nunca quebra a tela mesmo se o slug
+real de uma OTA vier diferente do esperado.
