@@ -1714,6 +1714,44 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div class="card" data-settings-section="comunicacao">
+        <h2 data-i18n="settings.facebook.title">💬 Facebook Messenger</h2>
+        <p data-i18n="settings.facebook.desc" style="margin-bottom:14px">Conecte a Página do Facebook do hostel pra atender pelo Messenger.</p>
+
+        <div id="facebookConnected" style="display:none">
+          <p style="margin:0 0 12px">
+            <span data-i18n="settings.facebook.statusLabel">Status:</span>
+            <strong style="color:#3ddc97" data-i18n="settings.facebook.statusActive">Conectado</strong>
+          </p>
+          <button type="button" class="btn red" onclick="disconnectFacebook()" data-i18n="settings.facebook.disconnectBtn">Desconectar</button>
+        </div>
+
+        <div id="facebookNotConnected">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+            <button type="button" class="btn" onclick="connectFacebook()" data-i18n="settings.facebook.connectBtn">Conectar Facebook</button>
+            <button type="button" class="btn secondary" onclick="toggleFacebookManualForm()" data-i18n="settings.facebook.manualToggle">Configurar manualmente</button>
+          </div>
+
+          <div id="facebookManualForm" style="display:none">
+            <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+              <div style="grid-column:span 6">
+                <label data-i18n="settings.facebook.pageIdLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Page ID</label>
+                <input type="text" id="facebookPageId" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+              </div>
+              <div style="grid-column:span 6">
+                <label data-i18n="settings.facebook.tokenLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Access Token</label>
+                <input type="password" id="facebookAccessToken" autocomplete="off" data-i18n-placeholder="settings.facebook.tokenPlaceholder" placeholder="Deixe em branco pra manter o já salvo" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+              </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+              <button class="btn" type="button" onclick="saveFacebookManualSettings()" data-i18n="settings.facebook.saveBtn">Salvar</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="facebookMessage" class="generic-modal-message"></div>
+      </div>
+
+      <div class="card" data-settings-section="comunicacao">
         <h2 data-i18n="settings.communication.title">Comunicação</h2>
 
         <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
@@ -2332,6 +2370,109 @@ async function deleteRoleConfirm(roleId){
     }catch(e){
       console.warn("Erro ao carregar config WhatsApp:", e);
     }
+  };
+
+  window.loadFacebookSettings = async function(){
+    const connectedEl = document.getElementById("facebookConnected");
+    const notConnectedEl = document.getElementById("facebookNotConnected");
+    if(!connectedEl || !notConnectedEl) return;
+
+    try{
+      const res = await fetch("/settings/facebook", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      connectedEl.style.display = data.connected ? "block" : "none";
+      notConnectedEl.style.display = data.connected ? "none" : "block";
+
+      const pageIdInput = document.getElementById("facebookPageId");
+      if(pageIdInput && !data.connected) pageIdInput.value = data.page_id || "";
+    }catch(e){
+      console.warn("Erro ao carregar configuração do Facebook:", e);
+    }
+  };
+
+  window.toggleFacebookManualForm = function(){
+    const form = document.getElementById("facebookManualForm");
+    if(form) form.style.display = form.style.display === "none" ? "block" : "none";
+  };
+
+  window.connectFacebook = function(){
+    window.location.href = "/oauth/facebook/connect";
+  };
+
+  window.saveFacebookManualSettings = async function(){
+    const msg = document.getElementById("facebookMessage");
+    if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+    const pageId = (document.getElementById("facebookPageId").value || "").trim();
+    const accessToken = (document.getElementById("facebookAccessToken").value || "").trim();
+
+    if(!pageId){
+      if(msg){
+        msg.textContent = T('settings.facebook.pageIdRequired', 'Informe o Page ID.');
+        msg.classList.add("error");
+      }
+      return;
+    }
+
+    try{
+      const res = await fetch("/settings/facebook", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ page_id: pageId, access_token: accessToken })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        if(msg){
+          msg.textContent = data.message || T('settings.facebook.saveFailed', 'Não foi possível salvar.');
+          msg.classList.add("error");
+        }
+        return;
+      }
+      loadFacebookSettings();
+    }catch(e){
+      if(msg){
+        msg.textContent = T('common.connectionError', 'Erro de conexão.');
+        msg.classList.add("error");
+      }
+    }
+  };
+
+  window.disconnectFacebook = async function(){
+    const confirmed = await stayflowConfirm(T('settings.facebook.disconnectConfirm', 'Desconectar o Facebook? O Messenger deixa de funcionar até reconectar.'));
+    if(!confirmed) return;
+
+    try{
+      await fetch("/settings/facebook", { method: "DELETE", credentials: "same-origin" });
+      loadFacebookSettings();
+    }catch(e){
+      console.warn("Erro ao desconectar Facebook:", e);
+    }
+  };
+
+  window.handleMetaOAuthReturn = function(){
+    const params = new URLSearchParams(window.location.search);
+    const channel = params.get("meta_oauth");
+    if(!channel) return;
+
+    const status = params.get("status");
+    const message = params.get("message") || "";
+
+    openPage("settings", document.querySelector('[data-page="settings"]'));
+    switchSettingsSection("comunicacao");
+
+    if(status === "success"){
+      alert(T('settings.facebook.connectSuccess', 'Conectado com sucesso!') + (message ? ` (${message})` : ""));
+    }else{
+      alert(message || T('settings.facebook.connectFailed', 'Não foi possível conectar.'));
+    }
+
+    // Limpa a query string pra nao reprocessar o mesmo resultado se a
+    // pessoa der refresh na pagina depois.
+    const cleanUrl = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, document.title, cleanUrl);
   };
 
   window.loadBeds24Settings = async function(){
@@ -5728,6 +5869,12 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof hydrateSettingsFromBackend === "function") hydrateSettingsFromBackend();
     if (typeof loadWhatsappSettings === "function") loadWhatsappSettings();
     if (typeof loadBeds24Settings === "function") loadBeds24Settings();
+    // As duas de baixo so estavam ligadas no reload por troca de idioma
+    // (PAGE_LOADERS.settings) - nunca rodavam no carregamento normal da
+    // pagina, entao o card ficava sempre vazio ate a pessoa trocar de
+    // idioma uma vez. Corrigido registrando aqui tambem.
+    if (typeof loadOutboundWebhookSettings === "function") loadOutboundWebhookSettings();
+    if (typeof loadFacebookSettings === "function") loadFacebookSettings();
     if (typeof loadQuickReplies === "function") loadQuickReplies();
 
     // Gestao da propria conta (senha, sessoes, historico de login) e
@@ -5735,6 +5882,8 @@ window.uploadGuestDocumentUI = async function(guestId){
     // especial - cada uma so ve/mexe na propria conta.
     if (typeof loadActiveSessions === "function") loadActiveSessions();
     if (typeof loadLoginAttempts === "function") loadLoginAttempts();
+
+    if (typeof handleMetaOAuthReturn === "function") handleMetaOAuthReturn();
   });
 </script>
 
@@ -5765,7 +5914,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     inventory: ["loadInventory", "loadSuppliers"],
     revenue: ["loadRevenue"],
     reports: ["loadReports"],
-    settings: ["hydrateSettingsFromBackend", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings"]
+    settings: ["hydrateSettingsFromBackend", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings"]
   };
 
   function reloadDynamicContent(pageId){

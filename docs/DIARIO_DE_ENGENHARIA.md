@@ -3952,8 +3952,6 @@ lá via contas de teste (limite de 25, sem revisão).
   `whatsapp_oauth_state` (as duas colunas de credencial do WhatsApp já
   existiam - o fluxo OAuth novo grava nas MESMAS colunas que o
   formulário manual já usa, não precisa de coluna extra).
-- Tabela nova `meta_app_credentials` (singleton, App Meta do StayFlow
-  inteiro - mesmo padrão de `beds24_master_account`).
 - Tabela nova `guest_channel_identities` (`hostel_id`, `guest_id`,
   `channel`, `external_id`, `UNIQUE(hostel_id, channel, external_id)`)
   - identidade multi-canal de verdade, em vez de forçar IGSID/PSID
@@ -3974,11 +3972,11 @@ lá via contas de teste (limite de 25, sem revisão).
   valor certo E já limpar, nunca reutilizável, pros três canais).
 - Testado isoladamente com `STAYFLOW_DATA_DIR`: 8 cenários (config
   vazia por padrão, salvar/resolver/limpar Facebook e Instagram, state
-  OAuth de uso único rejeitando valor errado, singleton do App Meta
-  fazendo upsert de verdade, identidade multi-canal idempotente e
-  isolada por canal, `guests.phone` só preenchido pro WhatsApp,
-  fallback de canal pra hóspede antigo, isolamento multi-tenant com o
-  mesmo `external_id` em hostels diferentes). Regressão dos testes já
+  OAuth de uso único rejeitando valor errado, identidade multi-canal
+  idempotente e isolada por canal, `guests.phone` só preenchido pro
+  WhatsApp, fallback de canal pra hóspede antigo, isolamento
+  multi-tenant com o mesmo `external_id` em hostels diferentes).
+  Regressão dos testes já
   existentes (check-in/check-out, webhook de saída, cancelamentos)
   sem quebra.
 
@@ -3986,3 +3984,81 @@ lá via contas de teste (limite de 25, sem revisão).
 usuário crie o App Meta do StayFlow e passe `app_id`/`app_secret` -
 mesmo tipo de bloqueio externo que a conta master do Beds24 teve na
 Fase 1 daquela integração.
+
+## Fase 2 (primeiro pedaço): OAuth real com o Facebook (Messenger)
+
+Usuário já tinha um App Meta criado ("StayFlow AI", mesmo usado pelo
+WhatsApp) - não precisou criar um novo, só adicionar os casos de uso
+que faltavam (a Meta trocou "Adicionar produto" por "Agregar caso de
+uso" nas versões recentes do painel - mesma coisa, nome novo).
+Confirmado por App ID/App Secret passados no chat.
+
+Decisão tomada nessa hora: guardar `META_APP_ID`/`META_APP_SECRET`
+como variável de ambiente, não numa tabela criptografada como o plano
+original previa - é um segredo do StayFlow inteiro (um App só, não um
+por hostel), mesmo padrão já usado pro `WHATSAPP_VERIFY_TOKEN`, mais
+simples e sem precisar resolver "como faço a credencial chegar no
+banco de produção" (pra isso teria que existir alguma rota
+administrativa ou script rodado direto contra o banco - desnecessário
+quando dá pra só configurar a variável de ambiente no painel do
+Render). Removida a tabela `meta_app_credentials` e as duas funções
+`save_meta_app_credentials`/`get_meta_app_credentials` que tinham sido
+criadas na Fase 1 pra esse fim, antes de qualquer código depender
+delas.
+
+Implementado: `services/meta_oauth_service.py` (novo) - troca `code`
+por token de usuário, troca por token de longa duração
+(`grant_type=fb_exchange_token`), busca a Página conectada via
+`/me/accounts` (que já devolve o token PRÓPRIO da Página de graça,
+pronto pra mandar mensagem depois) - pega a primeira Página que a
+conta administra (a grande maioria dos hostels só tem uma; escolher
+entre várias fica pra se algum dia for um problema real). Nunca
+levanta exceção, mesmo princípio de `services/beds24_service.py`.
+
+`routes/meta_oauth.py` (novo): `GET /oauth/facebook/connect` (gera um
+`state` anti-CSRF, salva no hostel, redireciona pra tela de
+consentimento da Meta) e `GET /oauth/facebook/callback` (confere o
+`state` - e já limpa, nunca reutilizável -, troca o `code` pela
+Página, salva `facebook_page_id`/`facebook_page_access_token` no
+hostel, redireciona de volta pro dashboard com o resultado numa query
+string simples `?meta_oauth=facebook&status=success|error&message=...`,
+já que esse fluxo é redirect de tela cheia, não popup - diferente do
+WhatsApp Embedded Signup, que vai precisar de outro mecanismo mais
+pra frente).
+
+Frontend: card "Facebook Messenger" em Configurações → Comunicação,
+com os dois modos lado a lado pedidos pelo usuário (decisão 1b do
+plano) - botão "Conectar Facebook" (manda pro `/oauth/facebook/connect`)
+e "Configurar manualmente" (expande um formulário Page ID + Access
+Token, mesmo layout do card do WhatsApp) - os dois caminhos gravam nas
+mesmas colunas, então o estado "conectado" não precisa saber por qual
+deles a credencial chegou. `handleMetaOAuthReturn()` roda no boot da
+sessão, detecta a query string do callback, abre Configurações →
+Comunicação automaticamente e mostra a mensagem de sucesso/erro, e
+limpa a URL depois (evita reprocessar o mesmo resultado se a pessoa
+der F5).
+
+Corrigido de quebra um bug real desta sessão: `loadOutboundWebhookSettings`
+só tinha sido registrado no `PAGE_LOADERS.settings` (reload por troca
+de idioma), nunca no listener principal de `stayflow:session-ready` -
+o card do webhook de saída (implementado numa rodada anterior) ficava
+sempre vazio no carregamento normal da página, só preenchia depois de
+trocar de idioma uma vez. Corrigido registrando nos dois lugares.
+
+Testado com a Graph API mockada (sem gastar chamada real): fluxo
+completo connect→callback→Página salva com token certo; `state`
+errado ou reutilizado é rejeitado; connect falha educadamente sem
+`META_APP_ID`/`META_APP_SECRET` configurado; rotas de configuração
+manual (`GET`/`POST`/`DELETE /settings/facebook`) - salvar, manter
+token quando o campo vem vazio, desconectar. Balanceamento de
+chaves/parênteses e cobertura i18n conferidos, sem regressão nos
+testes já existentes.
+
+Pendente pras próximas rodadas, uma de cada vez: pegar a URL de
+produção do usuário pra confirmar a Redirect URI exata que precisa
+estar cadastrada no App Meta (`https://<domínio>/oauth/facebook/callback`);
+Instagram Login (mesmo padrão, App/API diferente); WhatsApp Embedded
+Signup (via popup JS, mecanismo de callback diferente dos outros
+dois); depois disso, entrada (webhook `/webhook/meta`), saída (envio
+de mensagem), migração de identidade, e tempo real (SSE) - todas
+detalhadas no plano completo.
