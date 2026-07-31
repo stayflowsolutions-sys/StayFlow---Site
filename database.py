@@ -319,6 +319,26 @@ def create_database():
     add_column_if_not_exists(cursor, "hostels", "outbound_webhook_url", "TEXT")
     add_column_if_not_exists(cursor, "hostels", "outbound_webhook_secret", "TEXT")
 
+    # Integracao com Instagram Direct e Messenger (Facebook) - cada
+    # hostel conecta a propria Pagina (Messenger) e a propria conta
+    # Instagram (Instagram Login, sem depender da Pagina) via OAuth,
+    # ou cola a credencial manualmente (mesmo par de colunas recebe o
+    # valor nao importa qual dos dois caminhos foi usado). *_oauth_state
+    # e so o valor anti-CSRF do fluxo, descartavel apos o callback -
+    # nao e credencial de verdade.
+    add_column_if_not_exists(cursor, "hostels", "facebook_page_id", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "facebook_page_access_token", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "facebook_oauth_state", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "instagram_business_id", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "instagram_access_token", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "instagram_oauth_state", "TEXT")
+
+    # WhatsApp ja tinha whatsapp_phone_number_id/whatsapp_access_token
+    # (colunas acima, so config manual) - ganha tambem um fluxo de
+    # conexao automatica (WhatsApp Embedded Signup), que grava nas
+    # MESMAS duas colunas; so o state anti-CSRF do OAuth e novo aqui.
+    add_column_if_not_exists(cursor, "hostels", "whatsapp_oauth_state", "TEXT")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -441,6 +461,29 @@ def create_database():
     )
     """)
 
+    # Identidade externa de um hospede por canal (Instagram/Messenger/
+    # WhatsApp) - modelo de identidade multi-canal de verdade, em vez de
+    # forcar o id externo (IGSID/PSID) dentro da coluna guests.phone
+    # (que continua existindo so pra numero de telefone real). guest_id
+    # e a identidade canonica do lado do StayFlow; um mesmo hospede
+    # podera futuramente ter mais de uma linha aqui (um por canal que
+    # ele usou) - hoje cada canal ainda cria um guest_id proprio na
+    # primeira mensagem, mesclar identidades fica pra uma rodada futura
+    # (precisaria de UI de "mesclar hospede"). UNIQUE(hostel_id, channel,
+    # external_id) e o que garante idempotencia: a segunda mensagem do
+    # mesmo IGSID/PSID acha a MESMA linha em vez de criar hospede novo.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS guest_channel_identities (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        guest_id INTEGER NOT NULL,
+        channel TEXT NOT NULL,
+        external_id TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(hostel_id, channel, external_id)
+    )
+    """)
+
     # Sessao rastreada no servidor (Sessao 7) - substitui o cookie
     # assinado client-side, que carregava user_id/hostel_id direto.
     # Agora o cookie so guarda um token opaco (id), e cada requisicao
@@ -507,6 +550,22 @@ def create_database():
         refresh_token_encrypted TEXT,
         access_token_encrypted TEXT,
         access_token_expires_at TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # App Meta do StayFlow (Facebook Login for Business + Instagram
+    # Login + WhatsApp Embedded Signup) - singleton, um App so cobrindo
+    # os tres fluxos de OAuth, nao um por hostel (mesmo modelo de "conta
+    # master" do beds24_master_account acima). app_secret criptografado
+    # pelo mesmo motivo do token master do Beds24: vaza esse segredo,
+    # vaza a capacidade de agir como o App do StayFlow em nome de
+    # QUALQUER hostel conectado, nao so um.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS meta_app_credentials (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        app_id TEXT,
+        app_secret_encrypted TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
@@ -2171,6 +2230,264 @@ def get_hostel_whatsapp_config(hostel_id):
         return None, None
 
     return row["whatsapp_phone_number_id"], row["whatsapp_access_token"]
+
+
+def save_hostel_whatsapp_oauth_state(hostel_id, state):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE hostels SET whatsapp_oauth_state = ? WHERE id = ?", (state, hostel_id))
+    conn.commit()
+    conn.close()
+
+
+def consume_hostel_whatsapp_oauth_state(hostel_id, state):
+    """
+    Confere o state anti-CSRF do callback contra o que foi salvo no
+    connect, e ja limpa (nunca reutilizavel, mesmo que o callback seja
+    chamado de novo por engano). Retorna True/False.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT whatsapp_oauth_state FROM hostels WHERE id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    valid = bool(row and row["whatsapp_oauth_state"] and row["whatsapp_oauth_state"] == state)
+    cursor.execute("UPDATE hostels SET whatsapp_oauth_state = NULL WHERE id = ?", (hostel_id,))
+    conn.commit()
+    conn.close()
+    return valid
+
+
+# ===== FACEBOOK MESSENGER =====
+
+def get_hostel_id_by_facebook_page_id(page_id):
+    """Resolve qual hostel e dono de uma Pagina do Facebook - usado pelo webhook."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM hostels WHERE facebook_page_id = ?", (page_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["id"] if row else None
+
+
+def get_hostel_facebook_config(hostel_id):
+    """Retorna (page_id, access_token) do hostel, ou (None, None)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT facebook_page_id, facebook_page_access_token FROM hostels WHERE id = ?",
+        (hostel_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None, None
+    return row["facebook_page_id"], row["facebook_page_access_token"]
+
+
+def save_hostel_facebook_config(hostel_id, page_id, access_token):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET facebook_page_id = ?, facebook_page_access_token = ? WHERE id = ?",
+        (page_id, access_token, hostel_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def clear_hostel_facebook_config(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET facebook_page_id = NULL, facebook_page_access_token = NULL WHERE id = ?",
+        (hostel_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def save_hostel_facebook_oauth_state(hostel_id, state):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE hostels SET facebook_oauth_state = ? WHERE id = ?", (state, hostel_id))
+    conn.commit()
+    conn.close()
+
+
+def consume_hostel_facebook_oauth_state(hostel_id, state):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT facebook_oauth_state FROM hostels WHERE id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    valid = bool(row and row["facebook_oauth_state"] and row["facebook_oauth_state"] == state)
+    cursor.execute("UPDATE hostels SET facebook_oauth_state = NULL WHERE id = ?", (hostel_id,))
+    conn.commit()
+    conn.close()
+    return valid
+
+
+# ===== INSTAGRAM DIRECT =====
+
+def get_hostel_id_by_instagram_id(instagram_business_id):
+    """Resolve qual hostel e dono de uma conta Instagram - usado pelo webhook."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM hostels WHERE instagram_business_id = ?", (instagram_business_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["id"] if row else None
+
+
+def get_hostel_instagram_config(hostel_id):
+    """Retorna (instagram_business_id, access_token) do hostel, ou (None, None)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT instagram_business_id, instagram_access_token FROM hostels WHERE id = ?",
+        (hostel_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None, None
+    return row["instagram_business_id"], row["instagram_access_token"]
+
+
+def save_hostel_instagram_config(hostel_id, instagram_business_id, access_token):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET instagram_business_id = ?, instagram_access_token = ? WHERE id = ?",
+        (instagram_business_id, access_token, hostel_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def clear_hostel_instagram_config(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET instagram_business_id = NULL, instagram_access_token = NULL WHERE id = ?",
+        (hostel_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def save_hostel_instagram_oauth_state(hostel_id, state):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE hostels SET instagram_oauth_state = ? WHERE id = ?", (state, hostel_id))
+    conn.commit()
+    conn.close()
+
+
+def consume_hostel_instagram_oauth_state(hostel_id, state):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT instagram_oauth_state FROM hostels WHERE id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    valid = bool(row and row["instagram_oauth_state"] and row["instagram_oauth_state"] == state)
+    cursor.execute("UPDATE hostels SET instagram_oauth_state = NULL WHERE id = ?", (hostel_id,))
+    conn.commit()
+    conn.close()
+    return valid
+
+
+# ===== APP META DO STAYFLOW (singleton - Facebook Login for Business +
+# Instagram Login + WhatsApp Embedded Signup) =====
+
+def save_meta_app_credentials(app_id, app_secret_encrypted):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO meta_app_credentials (id, app_id, app_secret_encrypted, updated_at)
+        VALUES (1, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(id) DO UPDATE SET
+            app_id = excluded.app_id,
+            app_secret_encrypted = excluded.app_secret_encrypted,
+            updated_at = CURRENT_TIMESTAMP
+        """,
+        (app_id, app_secret_encrypted)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_meta_app_credentials():
+    """Devolve dict com app_id/app_secret_encrypted, ou None se nunca configurado."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT app_id, app_secret_encrypted FROM meta_app_credentials WHERE id = 1")
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_or_create_guest_by_channel(hostel_id, channel, external_id, phone=None, name=None):
+    """
+    Identidade canonica multi-canal: resolve o guest_id pela combinacao
+    (hostel_id, channel, external_id) em guest_channel_identities, em
+    vez de depender de guests.phone (que so faz sentido pra numero de
+    telefone real). WhatsApp tambem usa esta funcao (channel='whatsapp',
+    external_id=telefone) pra nao manter dois caminhos de codigo
+    divergentes - get_or_create_guest (por telefone direto) continua
+    existindo pros fluxos que nao passam por um canal de chat (ex:
+    reserva manual digitando o telefone do hospede).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT guest_id FROM guest_channel_identities WHERE hostel_id = ? AND channel = ? AND external_id = ?",
+        (hostel_id, channel, external_id)
+    )
+    identity = cursor.fetchone()
+
+    if identity:
+        guest_id = identity["guest_id"]
+        conn.close()
+        return guest_id
+
+    guest_phone = phone if channel == "whatsapp" else None
+    cursor.execute(
+        "INSERT INTO guests (hostel_id, phone, name) VALUES (?, ?, ?)",
+        (hostel_id, guest_phone, name)
+    )
+    guest_id = cursor.lastrowid
+
+    cursor.execute(
+        "INSERT INTO guest_channel_identities (hostel_id, guest_id, channel, external_id) VALUES (?, ?, ?, ?)",
+        (hostel_id, guest_id, channel, external_id)
+    )
+
+    conn.commit()
+    conn.close()
+    return guest_id
+
+
+def get_guest_channel(hostel_id, guest_id):
+    """
+    Canal do hospede, pra despacho de envio (send_message_to_guest_now)
+    e pro badge de canal na lista de Chats. Um hospede pode, em teoria,
+    ter mais de uma identidade de canal (get_or_create_guest_by_channel
+    permite) - por ora pega a mais recente, ja que mesclar hospede entre
+    canais e feature futura, nao implementada ainda. guests sem nenhuma
+    linha em guest_channel_identities (hospede antigo, cadastrado antes
+    desta integracao) cai no fallback 'whatsapp', preservando o
+    comportamento de hoje.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT channel FROM guest_channel_identities WHERE hostel_id = ? AND guest_id = ? ORDER BY id DESC LIMIT 1",
+        (hostel_id, guest_id)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row["channel"] if row else "whatsapp"
 
 
 def is_opportunity_generation_enabled(hostel_id):
