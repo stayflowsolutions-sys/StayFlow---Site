@@ -307,6 +307,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "reservations.col.status": "Status",
     "reservations.col.amount": "Valor",
     "reservations.col.actions": "Ações",
+    "reservations.cancelledBtn": "Ver cancelamentos",
+    "reservations.cancelledModal.title": "Reservas canceladas",
+    "reservations.cancelledModal.empty": "Nenhuma reserva cancelada.",
+    "reservations.cancelledModal.reactivateBtn": "Reativar",
 
     // ===== Morador de longa duração =====
     "longTermStay.title": "🏠 Morador de longa duração",
@@ -1026,6 +1030,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "reservations.col.status": "Status",
     "reservations.col.amount": "Amount",
     "reservations.col.actions": "Actions",
+    "reservations.cancelledBtn": "View cancellations",
+    "reservations.cancelledModal.title": "Cancelled reservations",
+    "reservations.cancelledModal.empty": "No cancelled reservations.",
+    "reservations.cancelledModal.reactivateBtn": "Reactivate",
 
     // ===== Long-term resident =====
     "longTermStay.title": "🏠 Long-term resident",
@@ -1734,6 +1742,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "reservations.col.status": "Estado",
     "reservations.col.amount": "Valor",
     "reservations.col.actions": "Acciones",
+    "reservations.cancelledBtn": "Ver cancelaciones",
+    "reservations.cancelledModal.title": "Reservas canceladas",
+    "reservations.cancelledModal.empty": "No hay reservas canceladas.",
+    "reservations.cancelledModal.reactivateBtn": "Reactivar",
 
     // ===== Residente de larga duración =====
     "longTermStay.title": "🏠 Residente de larga duración",
@@ -2442,6 +2454,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "reservations.col.status": "Statut",
     "reservations.col.amount": "Montant",
     "reservations.col.actions": "Actions",
+    "reservations.cancelledBtn": "Voir les annulations",
+    "reservations.cancelledModal.title": "Réservations annulées",
+    "reservations.cancelledModal.empty": "Aucune réservation annulée.",
+    "reservations.cancelledModal.reactivateBtn": "Réactiver",
 
     // ===== Résident longue durée =====
     "longTermStay.title": "🏠 Résident longue durée",
@@ -3150,6 +3166,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "reservations.col.status": "Status",
     "reservations.col.amount": "Betrag",
     "reservations.col.actions": "Aktionen",
+    "reservations.cancelledBtn": "Stornierungen anzeigen",
+    "reservations.cancelledModal.title": "Stornierte Reservierungen",
+    "reservations.cancelledModal.empty": "Keine stornierten Reservierungen.",
+    "reservations.cancelledModal.reactivateBtn": "Reaktivieren",
 
     // ===== Langzeitgast =====
     "longTermStay.title": "🏠 Langzeitgast",
