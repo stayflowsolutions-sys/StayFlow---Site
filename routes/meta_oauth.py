@@ -36,7 +36,7 @@ def _back_to_settings(channel, success, message=""):
 @meta_oauth_bp.route("/oauth/facebook/connect", methods=["GET"])
 @require_permission("settings")
 def connect_facebook(hostel_id):
-    if not meta_oauth_service.is_app_configured():
+    if not meta_oauth_service.is_facebook_login_configured():
         return _back_to_settings("facebook", False, "Integração com Facebook ainda não configurada pelo StayFlow.")
 
     state = secrets.token_urlsafe(32)

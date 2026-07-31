@@ -393,7 +393,7 @@ def get_facebook_settings(hostel_id):
         "page_id": page_id or "",
         "has_access_token": bool(access_token),
         "connected": bool(page_id and access_token),
-        "oauth_available": meta_oauth_service.is_app_configured(),
+        "oauth_available": meta_oauth_service.is_facebook_login_configured(),
     })
 
 
