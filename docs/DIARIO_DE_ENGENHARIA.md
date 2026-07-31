@@ -2612,3 +2612,26 @@ caso, "só espera mais um pouco"). Isolar por eliminação nos logs (qual
 das 3 saídas possíveis da função realmente aconteceu) achou a causa
 real em poucos passos, mais rápido do que qualquer tentativa adicional
 de ajuste de tempo de espera teria achado.
+
+**Terceira e última correção — a "causa raiz real" acima também estava
+incompleta.** Depois de subir a correção anterior, `beds24_rooms`
+continuava vindo vazio, mesmo com o deploy confirmado no ar. Usuário
+pediu explicitamente pra parar de remendar em cima de suposição e
+resolver "direito" — criada uma rota de diagnóstico temporária
+(`GET /settings/beds24/debug-raw`, removida depois de usar) que devolve
+a resposta da Beds24 **sem nenhuma interpretação**, direto no navegador.
+Isso revelou o formato real, de uma vez por todas: um dict com uma
+chave `"data"` (lista), e é dentro do primeiro item dessa lista que
+mora `"roomTypes"` — ou seja, `resposta["data"][0]["roomTypes"]`.
+Nenhuma das duas tentativas anteriores (lista direta de quartos; dict
+com `roomTypes` direto no topo) cobria esse caminho. Corrigido de vez,
+com teste cobrindo o formato real confirmado + os formatos antigos
+mantidos como fallback (não custam nada e protegem contra a Beds24
+variar o formato dependendo de parâmetro/conta no futuro).
+
+De brinde, a rota de diagnóstico também expôs que existem vários
+quartos duplicados "Compartilhado"/"privado" na propriedade de teste,
+resultado dos vários cliques em "Criar automaticamente" durante as
+tentativas anteriores — inofensivo (cada um tem um id próprio, o
+seletor só fica com mais opções repetidas), mas o usuário pode limpar
+manualmente no painel do Beds24 se quiser deixar arrumado.
