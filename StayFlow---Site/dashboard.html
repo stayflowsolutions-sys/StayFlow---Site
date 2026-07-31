@@ -3105,7 +3105,12 @@ async function loadReservations(){
         <td>${r.room_type || "-"}${r.bed ? " · " + r.bed : ""}</td>
         <td>${r.checkin_date || "-"} → ${r.checkout_date || "-"}</td>
         <td>${channelDisplayLabel(r.source)}</td>
-        <td><span class="status-pill ${statusClass}">${(r.status || "pending").toUpperCase()}</span></td>
+        <td>
+          <span class="status-pill ${statusClass}">${(r.status || "pending").toUpperCase()}</span>
+          ${r.status === "confirmed" && !r.checked_in_at ? `<button type="button" class="pill-btn checkin-pill" onclick="checkinReservationUI(${r.id}, ${r.bed_id || "null"})">${T('reservations.checkinBtn', 'Check-in')}</button>` : ""}
+          ${r.checked_in_at && !r.checked_out_at ? `<button type="button" class="pill-btn checkout-pill" onclick="checkoutReservationUI(${r.id})">${T('reservations.checkoutBtn', 'Check-out')}</button>` : ""}
+          ${r.checked_out_at && r.bed_status === "needs_cleaning" ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${T('reservations.awaitingCleaningLabel', 'Aguardando limpeza da cama')}</div>` : ""}
+        </td>
         <td>US$ ${Number(r.amount || 0).toFixed(2)}</td>
         <td>
           <select onchange="updateReservationStatus(${r.id}, this.value)" style="background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:6px 8px;font-size:12px">
@@ -3115,9 +3120,6 @@ async function loadReservations(){
             <option value="cancelled" ${r.status === "cancelled" ? "disabled" : ""}>${T('reservations.status.cancelled', 'Cancelada')}</option>
             <option value="no_show" ${r.status === "no_show" ? "disabled" : ""}>${T('reservations.status.noShow', 'No-show')}</option>
           </select>
-          ${r.status === "confirmed" && !r.checked_in_at ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px;display:block;width:100%" onclick="checkinReservationUI(${r.id}, ${r.bed_id || "null"})">${T('reservations.checkinBtn', 'Confirmar check-in')}</button>` : ""}
-          ${r.checked_in_at && !r.checked_out_at ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px;display:block;width:100%" onclick="checkoutReservationUI(${r.id})">${T('reservations.checkoutBtn', 'Confirmar check-out')}</button>` : ""}
-          ${r.checked_out_at && r.bed_status === "needs_cleaning" ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${T('reservations.awaitingCleaningLabel', 'Aguardando limpeza da cama')}</div>` : ""}
         </td>
       `;
       bodyEl.appendChild(row);

@@ -2886,7 +2886,7 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
     # configurado, ficando pra equipe lembrar de digitar na mao.
     if not amount and room_type:
         cursor.execute(
-            "SELECT price_per_night FROM room_categories WHERE hostel_id = ? AND name = ?",
+            "SELECT price_per_night FROM room_categories WHERE hostel_id = ? AND LOWER(name) = LOWER(?)",
             (hostel_id, room_type)
         )
         category_row = cursor.fetchone()
@@ -3192,7 +3192,7 @@ def find_available_beds(hostel_id, category_name, checkin_date, checkout_date):
         FROM beds b
         JOIN rooms r ON r.id = b.room_id
         LEFT JOIN room_categories rc ON rc.id = r.category_id
-        WHERE b.hostel_id = ? AND rc.name = ?
+        WHERE b.hostel_id = ? AND LOWER(rc.name) = LOWER(?)
         """,
         (hostel_id, category_name)
     )
@@ -3205,7 +3205,7 @@ def find_available_beds(hostel_id, category_name, checkin_date, checkout_date):
     # disponivel" (falso negativo real, ja observado em teste).
     if not candidates:
         cursor.execute(
-            "SELECT id FROM room_categories WHERE hostel_id = ? AND name = ?",
+            "SELECT id FROM room_categories WHERE hostel_id = ? AND LOWER(name) = LOWER(?)",
             (hostel_id, category_name)
         )
         category_exists = cursor.fetchone()
@@ -3351,7 +3351,7 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
         return {"reservation_id": existing["id"], "already_existed": True, "nights": nights}
 
     cursor.execute(
-        "SELECT price_per_night FROM room_categories WHERE hostel_id = ? AND name = ?",
+        "SELECT price_per_night FROM room_categories WHERE hostel_id = ? AND LOWER(name) = LOWER(?)",
         (hostel_id, category_name)
     )
     category_row = cursor.fetchone()
@@ -3362,7 +3362,7 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
         FROM beds b
         JOIN rooms r ON r.id = b.room_id
         JOIN room_categories rc ON rc.id = r.category_id
-        WHERE b.hostel_id = ? AND rc.name = ?
+        WHERE b.hostel_id = ? AND LOWER(rc.name) = LOWER(?)
         """,
         (hostel_id, category_name)
     )
@@ -4179,7 +4179,7 @@ def _resolve_category_id(hostel_id, category_name):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id FROM room_categories WHERE hostel_id = ? AND name = ?",
+        "SELECT id FROM room_categories WHERE hostel_id = ? AND LOWER(name) = LOWER(?)",
         (hostel_id, category_name)
     )
     row = cursor.fetchone()
@@ -5039,7 +5039,7 @@ def find_recent_unlinked_stayflow_reservation(hostel_id, room_type, guest_name, 
     cursor.execute(
         """
         SELECT id FROM reservations
-        WHERE hostel_id = ? AND room_type = ? AND guest_name = ?
+        WHERE hostel_id = ? AND LOWER(room_type) = LOWER(?) AND guest_name = ?
           AND checkin_date = ? AND checkout_date = ?
           AND source IN ('manual', 'whatsapp')
           AND external_booking_id IS NULL
@@ -5120,7 +5120,7 @@ def sync_availability_to_channel(hostel_id, category_name, checkin_date, checkou
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT id FROM room_categories WHERE hostel_id = ? AND name = ?",
+            "SELECT id FROM room_categories WHERE hostel_id = ? AND LOWER(name) = LOWER(?)",
             (hostel_id, category_name)
         )
         category = cursor.fetchone()
@@ -5154,7 +5154,7 @@ def sync_availability_to_channel(hostel_id, category_name, checkin_date, checkou
         cursor.execute(
             """
             SELECT COUNT(*) AS cnt FROM reservations
-            WHERE hostel_id = ? AND room_type = ? AND status != 'cancelled'
+            WHERE hostel_id = ? AND LOWER(room_type) = LOWER(?) AND status != 'cancelled'
               AND checkin_date < ? AND checkout_date > ?
             """,
             (hostel_id, category_name, checkout_date, checkin_date)
@@ -5237,7 +5237,7 @@ def sync_booking_to_channel(hostel_id, reservation_id):
             return
 
         cursor.execute(
-            "SELECT id FROM room_categories WHERE hostel_id = ? AND name = ?",
+            "SELECT id FROM room_categories WHERE hostel_id = ? AND LOWER(name) = LOWER(?)",
             (hostel_id, reservation["room_type"])
         )
         category = cursor.fetchone()
