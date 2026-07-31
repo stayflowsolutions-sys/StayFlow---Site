@@ -2516,6 +2516,16 @@ def get_or_create_guest_by_channel(hostel_id, channel, external_id, phone=None, 
 
     if identity:
         guest_id = identity["guest_id"]
+        # Preenche o nome retroativamente se o hospede ja existe mas
+        # ainda esta sem nome (ex: criado antes do nome automatico do
+        # Messenger entrar no ar, ou a primeira busca de perfil falhou
+        # na hora) - nunca sobrescreve um nome que ja foi salvo.
+        if name:
+            cursor.execute("SELECT name FROM guests WHERE id = ?", (guest_id,))
+            current = cursor.fetchone()
+            if current and not current["name"]:
+                cursor.execute("UPDATE guests SET name = ? WHERE id = ?", (name, guest_id))
+                conn.commit()
         conn.close()
         return guest_id
 
