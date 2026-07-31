@@ -3901,3 +3901,88 @@ anterior, Enter já confirmava tanto no prompt (listener dedicado)
 quanto no alert/confirm simples (o botão OK recebe foco automático ao
 abrir, e Enter num botão focado já aciona o clique nativamente) - nada
 precisou mudar ali.
+
+## Início da integração Instagram/Messenger - Fase 1 (fundação de dados)
+
+Duas pesquisas em paralelo antes de planejar: um agente Explore no
+backend (padrão exato do WhatsApp - `services/whatsapp_service.py`,
+`routes/whatsapp_webhook.py`, `routes/chat.py`, schema do banco) e
+outro no frontend (como a aba Chats renderiza hoje, se já existe algum
+conceito de canal). Confirmado: zero scaffolding prévio de
+Instagram/Facebook em qualquer lugar do código - só links de rodapé no
+site e uma `settings.html` estática sem JS nenhum, morta. Também
+pesquisei os requisitos reais da Meta (Instagram Messaging API,
+Messenger Platform, App Review, Business Verification) pra embasar as
+decisões de arquitetura.
+
+Usuário aprovou o plano inicial (conexão manual tipo WhatsApp, um
+único par de credencial por Página cobrindo os dois canais) e, na
+hora de sair do modo de plano, pediu pra incluir quatro coisas que eu
+tinha deixado de fora por padrão de simplicidade: OAuth de verdade (em
+vez de colar token à mão), modelo de identidade multi-canal de
+verdade (em vez de um atalho com prefixo em cima de `phone`), e
+atualização em tempo real da aba Chats - concordando que é o jeito
+mais profissional e correto, mesmo dando mais trabalho. No meio da
+implementação, pediu mais um ajuste: o WhatsApp (hoje só manual)
+também ganha o mesmo tratamento OAuth (via "WhatsApp Embedded
+Signup"), e os três canais (WhatsApp, Facebook, Instagram) mantêm um
+modo manual como alternativa, lado a lado com o botão de conexão
+automática - atualizei o plano registrado antes de continuar
+implementando.
+
+Decisões de arquitetura completas estão no plano
+(`C:\Users\User\.claude\plans\graceful-pondering-bonbon.md`), resumo
+das principais: webhook único `/webhook/meta` pra Messenger e
+Instagram (confirmado por pesquisa: os dois entregam no mesmo formato
+`entry[].messaging[]`, e o handshake de verificação é idêntico ao que
+o WhatsApp já usa - mecanismo genérico de Webhooks da Meta, não
+específico de produto); SSE em vez de WebSocket pra tempo real
+(WebSocket persistente exigiria trocar o worker do gunicorn de
+`threaded=True` pra `eventlet`/`gevent`, mudança de infraestrutura de
+produção fora do escopo de uma feature); App Review + Business
+Verification da Meta é bloqueio real de produção, não só código -
+registrado como ponto explícito que precisa de ação do usuário (criar
+o App Meta, submeter pra revisão), com testes rodando normalmente até
+lá via contas de teste (limite de 25, sem revisão).
+
+**Fase 1 implementada e testada** (só fundação, nada visível ainda):
+- `hostels` ganhou `facebook_page_id`/`facebook_page_access_token`/
+  `facebook_oauth_state`, `instagram_business_id`/
+  `instagram_access_token`/`instagram_oauth_state`, e
+  `whatsapp_oauth_state` (as duas colunas de credencial do WhatsApp já
+  existiam - o fluxo OAuth novo grava nas MESMAS colunas que o
+  formulário manual já usa, não precisa de coluna extra).
+- Tabela nova `meta_app_credentials` (singleton, App Meta do StayFlow
+  inteiro - mesmo padrão de `beds24_master_account`).
+- Tabela nova `guest_channel_identities` (`hostel_id`, `guest_id`,
+  `channel`, `external_id`, `UNIQUE(hostel_id, channel, external_id)`)
+  - identidade multi-canal de verdade, em vez de forçar IGSID/PSID
+  dentro de `guests.phone`.
+- Função canônica nova `get_or_create_guest_by_channel(hostel_id,
+  channel, external_id, phone=None, name=None)` - resolve/cria hóspede
+  pela identidade de canal; `phone` só é gravado de verdade quando
+  `channel='whatsapp'` (nos outros canais fica `NULL`, sem valor fake).
+  `get_or_create_guest` (por telefone direto) continua existindo pros
+  fluxos que não passam por chat (reserva manual). `get_guest_channel`
+  resolve o canal de um hóspede pra despacho de envio, com fallback
+  `'whatsapp'` pra hóspede antigo sem nenhuma linha em
+  `guest_channel_identities` (preserva comportamento de hoje).
+- CRUD completo de config/resolver por hostel pro Facebook e pro
+  Instagram (espelhando exatamente `get_hostel_whatsapp_config`/
+  `save_hostel_whatsapp_config`/`get_hostel_id_by_whatsapp_phone_number_id`),
+  e helpers de `oauth_state` (salvar, e consumir - conferir contra o
+  valor certo E já limpar, nunca reutilizável, pros três canais).
+- Testado isoladamente com `STAYFLOW_DATA_DIR`: 8 cenários (config
+  vazia por padrão, salvar/resolver/limpar Facebook e Instagram, state
+  OAuth de uso único rejeitando valor errado, singleton do App Meta
+  fazendo upsert de verdade, identidade multi-canal idempotente e
+  isolada por canal, `guests.phone` só preenchido pro WhatsApp,
+  fallback de canal pra hóspede antigo, isolamento multi-tenant com o
+  mesmo `external_id` em hostels diferentes). Regressão dos testes já
+  existentes (check-in/check-out, webhook de saída, cancelamentos)
+  sem quebra.
+
+**Bloqueado pra Fase 2** (rotas de OAuth de verdade): preciso que o
+usuário crie o App Meta do StayFlow e passe `app_id`/`app_secret` -
+mesmo tipo de bloqueio externo que a conta master do Beds24 teve na
+Fase 1 daquela integração.
