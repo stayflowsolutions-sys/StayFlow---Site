@@ -969,6 +969,27 @@ def get_or_create_guest(hostel_id, phone):
     return guest_id
 
 
+def create_guest_without_phone(hostel_id, name):
+    """
+    Cria um hospede so com nome, sem telefone (reserva manual/estadia
+    de longa duracao cadastrada sem numero) - sempre INSERT novo, nunca
+    reaproveita um hospede existente. Sem telefone nao ha chave nenhuma
+    pra saber que duas reservas "sem telefone" sao a mesma pessoa
+    (phone=NULL nao serve de chave de dedup, diferente de
+    get_or_create_guest); cada uma vira um hospede proprio.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO guests (hostel_id, phone, name) VALUES (?, NULL, ?)",
+        (hostel_id, name)
+    )
+    guest_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return guest_id
+
+
 def update_guest_name(hostel_id, phone, name):
     conn = get_connection()
     cursor = conn.cursor()
@@ -3180,10 +3201,24 @@ def get_finance_summary(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Estadia de longa duracao (stay_type='indefinite') nasce SEMPRE com
+    # amount=0 (nao tem valor fechado, o que existe e uma diaria
+    # acumulando saldo devedor - ver get_reservation_balance) - somar
+    # so reservations.amount deixava qualquer pagamento registrado pra
+    # morador fixo (reservation_payments) invisivel na receita, mesmo
+    # sendo dinheiro de verdade ja recebido. Reserva fixa continua
+    # usando amount normalmente (sem mudanca de comportamento).
     cursor.execute("""
-        SELECT COALESCE(SUM(amount), 0) AS total
-        FROM reservations
-        WHERE hostel_id = ? AND status = 'confirmed'
+        SELECT COALESCE(SUM(
+            CASE WHEN r.stay_type = 'indefinite' THEN COALESCE(rp.total, 0) ELSE r.amount END
+        ), 0) AS total
+        FROM reservations r
+        LEFT JOIN (
+            SELECT reservation_id, SUM(amount) AS total
+            FROM reservation_payments
+            GROUP BY reservation_id
+        ) rp ON rp.reservation_id = r.id
+        WHERE r.hostel_id = ? AND r.status = 'confirmed'
     """, (hostel_id,))
     confirmed_revenue = cursor.fetchone()["total"]
 
@@ -3233,9 +3268,21 @@ def get_finance_summary(hostel_id):
         JOIN guests g ON o.guest_id = g.id
         WHERE g.hostel_id = ?
 
+        UNION ALL
+
+        SELECT
+            'Pagamento' AS type,
+            r.guest_name || COALESCE(' - ' || NULLIF(rp.method, ''), '') AS description,
+            rp.amount AS value,
+            'confirmed' AS status,
+            rp.paid_at AS created_at
+        FROM reservation_payments rp
+        JOIN reservations r ON r.id = rp.reservation_id
+        WHERE rp.hostel_id = ?
+
         ORDER BY created_at DESC
         LIMIT 30
-    """, (hostel_id, hostel_id))
+    """, (hostel_id, hostel_id, hostel_id))
 
     movements = [dict(row) for row in cursor.fetchall()]
 
@@ -3355,12 +3402,19 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
     # create_indefinite_stay/create_reservation_from_chat: hospede novo
     # nunca virava registro em guests, entao nunca aparecia na aba
     # Hospedes nem levava telefone/email/nacionalidade pra lugar nenhum.
+    # Sem telefone (reserva so com nome), cria o hospede mesmo assim -
+    # sem isso a reserva nunca tinha guest_id nenhum, entao nao tinha
+    # perfil pra abrir (o nome ficava so como texto solto na reserva).
     phone = (phone or "").strip()
     guest_id = None
     if phone:
         guest_id = get_or_create_guest(hostel_id, phone)
         if guest_name:
             update_guest_name(hostel_id, phone, guest_name)
+    elif guest_name:
+        guest_id = create_guest_without_phone(hostel_id, guest_name)
+
+    if guest_id:
         extra_fields = {}
         if (email or "").strip():
             extra_fields["email"] = email.strip()
@@ -3450,11 +3504,16 @@ def create_indefinite_stay(hostel_id, guest_name, checkin_date, daily_rate, room
     # de cima foi fechada antes. Sem isso, morador fixo com telefone
     # nunca aparecia na aba Hospedes (guest_id ficava null porque so
     # linkava com gente que ja existia, nunca criava um registro novo).
+    # Sem telefone (comum pra morador fixo/funcionario), cria o hospede
+    # mesmo assim - sem isso a estadia nunca tinha guest_id nenhum, sem
+    # perfil pra abrir e sem jeito de aparecer na aba Hospedes.
     guest_id = None
     phone = (phone or "").strip()
     if phone:
         guest_id = get_or_create_guest(hostel_id, phone)
         update_guest_name(hostel_id, phone, guest_name)
+    else:
+        guest_id = create_guest_without_phone(hostel_id, guest_name)
 
     conn = get_connection()
     cursor = conn.cursor()
