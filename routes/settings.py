@@ -13,6 +13,10 @@ from database import (
     save_channel_room_mapping,
     delete_channel_room_mapping,
     get_room_category_id_by_beds24_room_id,
+    get_hostel_outbound_webhook,
+    save_hostel_outbound_webhook_url,
+    regenerate_hostel_outbound_webhook_secret,
+    clear_hostel_outbound_webhook,
 )
 import services.beds24_service as beds24_service
 from utils.tenant import require_permission
@@ -333,5 +337,47 @@ def create_beds24_room(hostel_id):
         return jsonify({"success": False, "message": str(error)}), 400
 
     return jsonify({"success": True, "beds24_room_id": beds24_room_id})
+
+
+@settings_bp.route("/settings/outbound-webhook", methods=["GET"])
+@require_permission("settings")
+def get_outbound_webhook_settings(hostel_id):
+    url, secret = get_hostel_outbound_webhook(hostel_id)
+    return jsonify({
+        "url": url or "",
+        "secret": secret or "",
+        "enabled": bool(url),
+    })
+
+
+@settings_bp.route("/settings/outbound-webhook", methods=["POST"])
+@require_permission("settings")
+def update_outbound_webhook_settings(hostel_id):
+    data = request.get_json() or {}
+    url = (data.get("url") or "").strip()
+
+    if not url.startswith("http://") and not url.startswith("https://"):
+        return jsonify({"success": False, "message": "A URL precisa começar com http:// ou https://."}), 400
+
+    secret = save_hostel_outbound_webhook_url(hostel_id, url)
+    return jsonify({"success": True, "secret": secret})
+
+
+@settings_bp.route("/settings/outbound-webhook/regenerate-secret", methods=["POST"])
+@require_permission("settings")
+def regenerate_outbound_webhook_secret(hostel_id):
+    url, _ = get_hostel_outbound_webhook(hostel_id)
+    if not url:
+        return jsonify({"success": False, "message": "Cadastre a URL do webhook antes de gerar uma chave."}), 400
+
+    secret = regenerate_hostel_outbound_webhook_secret(hostel_id)
+    return jsonify({"success": True, "secret": secret})
+
+
+@settings_bp.route("/settings/outbound-webhook", methods=["DELETE"])
+@require_permission("settings")
+def delete_outbound_webhook_settings(hostel_id):
+    clear_hostel_outbound_webhook(hostel_id)
+    return jsonify({"success": True})
 
 

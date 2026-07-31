@@ -1831,6 +1831,32 @@ async function deleteRoleConfirm(roleId){
         <div id="beds24Message" class="generic-modal-message"></div>
       </div>
 
+      <div class="card" data-settings-section="integracoes">
+        <h2 data-i18n="settings.outboundWebhook.title">📡 Webhook de saída</h2>
+        <p data-i18n="settings.outboundWebhook.intro" style="font-size:13px;color:var(--muted);margin:0 0 14px">Se você já tem um sistema próprio e usa o StayFlow só pra atendimento/IA, cadastre aqui uma URL sua — toda reserva criada, alterada, cancelada ou com check-in/check-out feito dispara um aviso automático (POST) pra ela, de qualquer origem (WhatsApp, manual ou canais como Booking/Airbnb).</p>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+          <input type="url" id="outboundWebhookUrl" placeholder="https://seusistema.com/webhook" style="flex:1;min-width:240px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:8px 12px;">
+          <button type="button" class="btn" onclick="saveOutboundWebhookUrl()" data-i18n="common.save">Salvar</button>
+        </div>
+
+        <div id="outboundWebhookActive" style="display:none">
+          <p style="margin:0 0 4px">
+            <span data-i18n="settings.outboundWebhook.statusLabel">Status:</span>
+            <strong style="color:#3ddc97" data-i18n="settings.outboundWebhook.statusActive">Ativado</strong>
+          </p>
+          <p data-i18n="settings.outboundWebhook.secretIntro" style="font-size:12px;color:var(--muted);margin:10px 0 6px">Chave secreta (use pra validar a assinatura HMAC-SHA256 no cabeçalho <code>X-StayFlow-Signature</code> de cada requisição):</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <input type="text" id="outboundWebhookSecret" readonly style="flex:1;min-width:240px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:var(--muted);padding:8px 12px;font-family:monospace;font-size:12px;">
+            <button type="button" class="btn secondary" onclick="copyOutboundWebhookSecret()" data-i18n="settings.outboundWebhook.copyBtn">Copiar</button>
+            <button type="button" class="btn secondary" onclick="regenerateOutboundWebhookSecret()" data-i18n="settings.outboundWebhook.regenerateBtn">Gerar nova chave</button>
+            <button type="button" class="btn red" onclick="removeOutboundWebhook()" data-i18n="settings.outboundWebhook.removeBtn">Desativar</button>
+          </div>
+        </div>
+
+        <div id="outboundWebhookMessage" class="generic-modal-message"></div>
+      </div>
+
     </div>
 
   </div>
@@ -2502,6 +2528,127 @@ async function deleteRoleConfirm(roleId){
         msg.textContent = T('common.connectionError', 'Erro de conexão.');
         msg.classList.add("error");
       }
+    }
+  };
+
+  window.loadOutboundWebhookSettings = async function(){
+    const urlInput = document.getElementById("outboundWebhookUrl");
+    const activeEl = document.getElementById("outboundWebhookActive");
+    const secretInput = document.getElementById("outboundWebhookSecret");
+    if(!urlInput || !activeEl || !secretInput) return;
+
+    try{
+      const res = await fetch("/settings/outbound-webhook", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      urlInput.value = data.url || "";
+      secretInput.value = data.secret || "";
+      activeEl.style.display = data.enabled ? "block" : "none";
+    }catch(e){
+      console.warn("Erro ao carregar webhook de saída:", e);
+    }
+  };
+
+  window.saveOutboundWebhookUrl = async function(){
+    const urlInput = document.getElementById("outboundWebhookUrl");
+    const msg = document.getElementById("outboundWebhookMessage");
+    if(msg){
+      msg.textContent = "";
+      msg.className = "generic-modal-message";
+    }
+
+    const url = (urlInput.value || "").trim();
+    if(!url){
+      if(msg){
+        msg.textContent = T('settings.outboundWebhook.urlRequired', 'Informe a URL do seu webhook.');
+        msg.classList.add("error");
+      }
+      return;
+    }
+
+    try{
+      const res = await fetch("/settings/outbound-webhook", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        if(msg){
+          msg.textContent = data.message || T('settings.outboundWebhook.saveFailed', 'Não foi possível salvar a URL.');
+          msg.classList.add("error");
+        }
+        return;
+      }
+      if(msg){
+        msg.textContent = T('settings.outboundWebhook.saveSuccess', 'Webhook salvo com sucesso!');
+        msg.classList.add("success");
+      }
+      loadOutboundWebhookSettings();
+    }catch(e){
+      if(msg){
+        msg.textContent = T('common.connectionError', 'Erro de conexão.');
+        msg.classList.add("error");
+      }
+    }
+  };
+
+  window.copyOutboundWebhookSecret = function(){
+    const secretInput = document.getElementById("outboundWebhookSecret");
+    const msg = document.getElementById("outboundWebhookMessage");
+    if(!secretInput || !secretInput.value) return;
+
+    navigator.clipboard.writeText(secretInput.value).then(() => {
+      if(msg){
+        msg.textContent = T('settings.outboundWebhook.copySuccess', 'Chave copiada!');
+        msg.className = "generic-modal-message success";
+      }
+    }).catch(() => {});
+  };
+
+  window.regenerateOutboundWebhookSecret = async function(){
+    const msg = document.getElementById("outboundWebhookMessage");
+    const confirmed = await stayflowConfirm(T('settings.outboundWebhook.regenerateConfirm', 'Gerar uma nova chave invalida a atual — você vai precisar atualizar a validação no seu sistema. Continuar?'));
+    if(!confirmed) return;
+
+    try{
+      const res = await fetch("/settings/outbound-webhook/regenerate-secret", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        if(msg){
+          msg.textContent = data.message || T('settings.outboundWebhook.saveFailed', 'Não foi possível salvar a URL.');
+          msg.className = "generic-modal-message error";
+        }
+        return;
+      }
+      loadOutboundWebhookSettings();
+      if(msg){
+        msg.textContent = T('settings.outboundWebhook.regenerateSuccess', 'Nova chave gerada com sucesso!');
+        msg.className = "generic-modal-message success";
+      }
+    }catch(e){
+      if(msg){
+        msg.textContent = T('common.connectionError', 'Erro de conexão.');
+        msg.className = "generic-modal-message error";
+      }
+    }
+  };
+
+  window.removeOutboundWebhook = async function(){
+    const confirmed = await stayflowConfirm(T('settings.outboundWebhook.removeConfirm', 'Desativar o webhook de saída? Seu sistema deixa de receber avisos de reserva.'));
+    if(!confirmed) return;
+
+    try{
+      await fetch("/settings/outbound-webhook", { method: "DELETE", credentials: "same-origin" });
+      document.getElementById("outboundWebhookUrl").value = "";
+      loadOutboundWebhookSettings();
+    }catch(e){
+      console.warn("Erro ao desativar webhook de saída:", e);
     }
   };
 
@@ -5509,7 +5656,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     inventory: ["loadInventory", "loadSuppliers"],
     revenue: ["loadRevenue"],
     reports: ["loadReports"],
-    settings: ["hydrateSettingsFromBackend", "loadWhatsappSettings", "loadBeds24Settings"]
+    settings: ["hydrateSettingsFromBackend", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings"]
   };
 
   function reloadDynamicContent(pageId){

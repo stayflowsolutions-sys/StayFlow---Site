@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 
 from database import (
     get_reservations_with_stats,
+    get_cancelled_reservations,
     create_reservation_record,
     update_reservation_status_record,
     create_indefinite_stay,
@@ -18,6 +19,12 @@ reservations_bp = Blueprint("reservations", __name__)
 @require_permission("reservations")
 def list_reservations(hostel_id):
     return jsonify(get_reservations_with_stats(hostel_id))
+
+
+@reservations_bp.route("/reservations/cancelled", methods=["GET"])
+@require_permission("reservations")
+def list_cancelled_reservations(hostel_id):
+    return jsonify(get_cancelled_reservations(hostel_id))
 
 
 @reservations_bp.route("/reservations", methods=["POST"])

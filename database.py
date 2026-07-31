@@ -306,6 +306,19 @@ def create_database():
     # acima). NULL = hostel ainda não ativou a integração de canais.
     add_column_if_not_exists(cursor, "hostels", "beds24_property_id", "TEXT")
 
+    # Webhook de saida generico (Fase 6): cliente que ja tem sistema
+    # proprio e usa o StayFlow so pra atendimento/IA, sem adotar o mapa
+    # de quartos como fonte de verdade, cadastra uma URL propria aqui.
+    # Toda reserva criada/alterada/cancelada dispara um POST assinado
+    # (outbound_webhook_secret, gerado na primeira vez que a URL e
+    # salva) pra essa URL - ver dispatch_reservation_webhook. Nao e
+    # segredo do mesmo nivel do token master do Beds24 (decisao 3 do
+    # plano): se vazar, so permite forjar eventos NO SISTEMA DO
+    # CLIENTE, nao expoe nada do StayFlow - por isso fica em texto
+    # puro, mesmo padrao do token de WhatsApp.
+    add_column_if_not_exists(cursor, "hostels", "outbound_webhook_url", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "outbound_webhook_secret", "TEXT")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2406,12 +2419,47 @@ def get_reservations_with_stats(hostel_id):
     # Reserva com check-out ja confirmado sai da lista ativa - a estadia
     # acabou de verdade, o historico dela continua rastreavel pelo
     # perfil do hospede (aba Hospedes), essa lista fica só com o que
-    # ainda esta em andamento ou por vir. Stats continuam calculadas em
-    # cima do conjunto completo (nao filtrado), pra nao subtrair receita
-    # ja confirmada so porque o hospede ja foi embora.
-    visible_reservations = [r for r in reservations if not r["checked_out_at"]]
+    # ainda esta em andamento ou por vir. Reserva cancelada tambem sai -
+    # fica acessivel so pelo botao "Ver cancelamentos"
+    # (get_cancelled_reservations), pra nao poluir a lista principal.
+    # Stats continuam calculadas em cima do conjunto completo (nao
+    # filtrado), pra nao subtrair receita ja confirmada so porque o
+    # hospede ja foi embora ou a reserva foi cancelada.
+    visible_reservations = [
+        r for r in reservations if not r["checked_out_at"] and r["status"] != "cancelled"
+    ]
 
     return {"reservations": visible_reservations, "stats": stats}
+
+
+def get_cancelled_reservations(hostel_id):
+    """
+    Reservas canceladas, escondidas da lista principal (ver
+    get_reservations_with_stats) e acessiveis so pelo botao "Ver
+    cancelamentos" - mesmo formato de linha da lista principal, sem
+    stats (nao faz sentido KPI em cima so de canceladas).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT r.id, r.guest_id, r.guest_name, r.room_type, r.bed, r.checkin_date,
+               r.checkout_date, r.source, r.payment_method, r.amount, r.status,
+               r.bed_id, r.created_at, r.stay_type, r.daily_rate, b.status AS bed_status,
+               r.checked_in_at, r.checked_out_at
+        FROM reservations r
+        LEFT JOIN beds b ON b.id = r.bed_id
+        WHERE r.hostel_id = ? AND r.status = 'cancelled'
+        ORDER BY r.checkin_date DESC, r.id DESC
+        """,
+        (hostel_id,)
+    )
+
+    reservations = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    return reservations
 
 
 def build_reorder_message(item, supplier):
@@ -2959,6 +3007,8 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
         sync_availability_to_channel(hostel_id, room_type, checkin_date, checkout_date)
         sync_booking_to_channel(hostel_id, reservation_id)
 
+    dispatch_reservation_webhook(hostel_id, reservation_id, "created")
+
     return reservation_id
 
 
@@ -3026,6 +3076,8 @@ def create_indefinite_stay(hostel_id, guest_name, checkin_date, daily_rate, room
 
     conn.commit()
     conn.close()
+
+    dispatch_reservation_webhook(hostel_id, reservation_id, "created")
 
     return reservation_id
 
@@ -3160,6 +3212,8 @@ def close_indefinite_stay(hostel_id, reservation_id, checkout_date=None):
 
     conn.commit()
     conn.close()
+
+    dispatch_reservation_webhook(hostel_id, reservation_id, "checked_out")
 
     return get_reservation_balance(hostel_id, reservation_id)
 
@@ -3467,6 +3521,7 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
 
     sync_availability_to_channel(hostel_id, category_name, checkin_date, checkout_date)
     sync_booking_to_channel(hostel_id, reservation_id)
+    dispatch_reservation_webhook(hostel_id, reservation_id, "created")
 
     return {
         "reservation_id": reservation_id,
@@ -3507,6 +3562,7 @@ def update_reservation_status_record(hostel_id, reservation_id, status):
             hostel_id, reservation["room_type"], reservation["checkin_date"], reservation["checkout_date"]
         )
     sync_booking_to_channel(hostel_id, reservation_id)
+    dispatch_reservation_webhook(hostel_id, reservation_id, "cancelled" if status == "cancelled" else "status_changed")
 
 
 def create_supplier_record(hostel_id, name, phone="", email=""):
@@ -4721,6 +4777,8 @@ def checkin_reservation_to_bed(hostel_id, reservation_id, bed_id):
     conn.commit()
     conn.close()
 
+    dispatch_reservation_webhook(hostel_id, reservation_id, "checked_in")
+
     return {"reservation_id": reservation_id, "bed_id": bed_id, "bed_label": bed["label"], "guest_name": reservation["guest_name"]}
 
 
@@ -4751,6 +4809,8 @@ def checkout_reservation_bed(hostel_id, reservation_id):
 
     conn.commit()
     conn.close()
+
+    dispatch_reservation_webhook(hostel_id, reservation_id, "checked_out")
 
     return {
         "reservation_id": reservation_id,
@@ -4965,6 +5025,112 @@ def save_hostel_beds24_property_id(hostel_id, property_id):
     cursor.execute("UPDATE hostels SET beds24_property_id = ? WHERE id = ?", (property_id, hostel_id))
     conn.commit()
     conn.close()
+
+
+def get_hostel_outbound_webhook(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT outbound_webhook_url, outbound_webhook_secret FROM hostels WHERE id = ?",
+        (hostel_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None, None
+    return row["outbound_webhook_url"], row["outbound_webhook_secret"]
+
+
+def save_hostel_outbound_webhook_url(hostel_id, url):
+    """
+    Salva/atualiza a URL do webhook de saida generico. O secret de
+    assinatura e gerado so na primeira vez (nunca trocado so por trocar
+    a URL) - troca de secret e uma acao separada e explicita
+    (regenerate_hostel_outbound_webhook_secret), pra nao invalidar sem
+    avisar a validacao que o cliente ja tenha configurado do lado dele.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT outbound_webhook_secret FROM hostels WHERE id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    secret = row["outbound_webhook_secret"] if row and row["outbound_webhook_secret"] else secrets.token_hex(32)
+    cursor.execute(
+        "UPDATE hostels SET outbound_webhook_url = ?, outbound_webhook_secret = ? WHERE id = ?",
+        (url, secret, hostel_id)
+    )
+    conn.commit()
+    conn.close()
+    return secret
+
+
+def regenerate_hostel_outbound_webhook_secret(hostel_id):
+    secret = secrets.token_hex(32)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE hostels SET outbound_webhook_secret = ? WHERE id = ?", (secret, hostel_id))
+    conn.commit()
+    conn.close()
+    return secret
+
+
+def clear_hostel_outbound_webhook(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET outbound_webhook_url = NULL, outbound_webhook_secret = NULL WHERE id = ?",
+        (hostel_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def dispatch_reservation_webhook(hostel_id, reservation_id, event_type):
+    """
+    Fase 6 da integracao de canais (saida generica): notifica o sistema
+    proprio do cliente (se ele tiver cadastrado uma URL em Configuracoes
+    -> Integracoes) toda vez que uma reserva e criada/alterada/cancelada
+    no StayFlow, de QUALQUER origem (manual, WhatsApp, Beds24) - ao
+    contrario de sync_booking_to_channel/sync_availability_to_channel
+    (que so rodam pra origem manual/whatsapp, pra nao ecoar de volta pro
+    Beds24), aqui o cliente quer saber de td, inclusive reserva que
+    chegou de uma OTA.
+
+    Nunca levanta excecao - mesmo principio de sync_booking_to_channel:
+    uma falha ao notificar o webhook do cliente nao pode derrubar a
+    acao real (criar/alterar/cancelar reserva) no StayFlow.
+    """
+    try:
+        url, secret = get_hostel_outbound_webhook(hostel_id)
+        if not url:
+            return
+
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT r.id, r.guest_name, r.room_type, r.bed, r.checkin_date, r.checkout_date,
+                   r.source, r.status, r.amount, r.external_booking_id,
+                   r.checked_in_at, r.checked_out_at, r.stay_type,
+                   g.phone, g.email
+            FROM reservations r
+            LEFT JOIN guests g ON g.id = r.guest_id
+            WHERE r.id = ? AND r.hostel_id = ?
+            """,
+            (reservation_id, hostel_id)
+        )
+        row = cursor.fetchone()
+        conn.close()
+        if not row:
+            return
+
+        payload = dict(row)
+    except Exception as error:
+        print(f"Erro ao montar payload do webhook de saida (hostel {hostel_id}, reserva {reservation_id}):", error)
+        return
+
+    from services.outbound_webhook_service import send_webhook
+    result = send_webhook(url, secret, event_type, payload)
+    print(f"Webhook de saida (hostel {hostel_id}, reserva {reservation_id}, evento {event_type}): {result}")
 
 
 def get_hostel_id_by_beds24_property_id(property_id):
@@ -5444,13 +5610,15 @@ def create_reservation_from_channel(hostel_id, room_category_id, guest_name, gue
     available = find_available_beds(hostel_id, category_name, checkin_date, checkout_date)
     if available:
         bed_id = available[0]["id"]
-        return reservar_cama_com_trava(hostel_id, bed_id, checkin_date, checkout_date, lambda cursor: _insert(cursor, bed_id))
+        reservation_id = reservar_cama_com_trava(hostel_id, bed_id, checkin_date, checkout_date, lambda cursor: _insert(cursor, bed_id))
+    else:
+        conn = get_connection()
+        cursor = conn.cursor()
+        reservation_id = _insert(cursor, None)
+        conn.commit()
+        conn.close()
 
-    conn = get_connection()
-    cursor = conn.cursor()
-    reservation_id = _insert(cursor, None)
-    conn.commit()
-    conn.close()
+    dispatch_reservation_webhook(hostel_id, reservation_id, "created")
     return reservation_id
 
 
@@ -5531,6 +5699,8 @@ def update_reservation_from_channel(hostel_id, external_booking_id, guest_name, 
         cursor.execute("UPDATE reservations SET guest_id = ? WHERE id = ?", (guest_id, row["id"]))
         conn.commit()
         conn.close()
+
+    dispatch_reservation_webhook(hostel_id, row["id"], "cancelled" if reservation_status == "cancelled" else "updated")
 
     return row["id"]
 
