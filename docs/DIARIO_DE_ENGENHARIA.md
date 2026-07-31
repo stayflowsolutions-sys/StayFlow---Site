@@ -2802,3 +2802,26 @@ um mock genérico) confirmou: primeiro webhook cria a reserva com
 "Juliana Souza" sem duplicar; reenvio do segundo evento não muda nada.
 Deploy da correção feito, teste real repetido no Beds24 pra confirmar
 de ponta a ponta em produção.
+
+**Confirmado funcionando em produção**: reserva de teste ("Juliana
+Souza", Compartilhado, 31/07→03/08) apareceu certinha no Mapa de
+Quartos (cama corretamente marcada como ocupada/reservada) e na aba
+Reservas, com status "CONFIRMED".
+
+**Bug real encontrado no mesmo teste**: reserva chegou com **US$
+0,00** de valor. Causa: `create_reservation_from_channel` recebia
+`amount` da rota do webhook, mas a rota nunca extraía o campo `price`
+do payload da Beds24 pra passar adiante — sem valor recebido, a função
+tentava calcular pelo `price_per_night` cadastrado na modalidade do
+StayFlow, que ainda não tinha preço configurado (ficou 0). Usuário
+apontou o ponto certo: o valor tem que vir **sempre do canal**, nunca
+recalculado pelo preço do StayFlow — plataformas como Booking/Airbnb
+podem vender com desconto, e o valor real cobrado do hóspede é o que
+importa pro financeiro, não o preço de tabela. Corrigido: `amount`
+agora extraído do payload (`price`/`totalPrice`/`amount`, tentando os
+três nomes) e repassado tanto pra criação quanto pra atualização de
+reserva (`update_reservation_from_channel` ganhou o parâmetro
+`amount`, opcional — `None` preserva o valor já gravado ao atualizar
+outros campos, só sobrescreve quando o payload realmente trouxe um
+preço). Retestado com o payload real: `amount: 36.0` correto nos dois
+testes (criação e atualização).
