@@ -2896,6 +2896,9 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
     conn.commit()
     conn.close()
 
+    if (room_type or "").strip():
+        sync_availability_to_channel(hostel_id, (room_type or "").strip(), checkin_date, checkout_date)
+
     return reservation_id
 
 
@@ -3399,6 +3402,8 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
     # passarem pela checagem e ambas inserirem pra mesma cama).
     reservation_id = reservar_cama_com_trava(hostel_id, int(bed_id), checkin_date, checkout_date, _insert_with_bed)
 
+    sync_availability_to_channel(hostel_id, category_name, checkin_date, checkout_date)
+
     return {
         "reservation_id": reservation_id,
         "already_existed": False,
@@ -3413,10 +3418,11 @@ def update_reservation_status_record(hostel_id, reservation_id, status):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id FROM reservations WHERE id = ? AND hostel_id = ?",
+        "SELECT room_type, checkin_date, checkout_date FROM reservations WHERE id = ? AND hostel_id = ?",
         (reservation_id, hostel_id)
     )
-    if not cursor.fetchone():
+    reservation = cursor.fetchone()
+    if not reservation:
         conn.close()
         raise ValueError("Reservation not found.")
 
@@ -3427,6 +3433,15 @@ def update_reservation_status_record(hostel_id, reservation_id, status):
 
     conn.commit()
     conn.close()
+
+    # Mudar status (cancelar, reverter cancelamento, etc) muda quantas
+    # unidades da modalidade estao realmente ocupadas nesse periodo -
+    # ressincroniza com o Beds24 sempre, nao so no cancelamento (a
+    # funcao recalcula do zero, entao chamar de novo e sempre seguro).
+    if (reservation["room_type"] or "").strip():
+        sync_availability_to_channel(
+            hostel_id, reservation["room_type"], reservation["checkin_date"], reservation["checkout_date"]
+        )
 
 
 def create_supplier_record(hostel_id, name, phone="", email=""):
@@ -4980,6 +4995,90 @@ def get_hostel_id_by_beds24_room_id(beds24_room_id):
     row = cursor.fetchone()
     conn.close()
     return row["hostel_id"] if row else None
+
+
+def sync_availability_to_channel(hostel_id, category_name, checkin_date, checkout_date):
+    """
+    Fase 4 da integracao Beds24 (saida): avisa o Beds24 quando a
+    disponibilidade de uma modalidade muda por causa de uma reserva
+    manual ou vinda do WhatsApp (criacao ou cancelamento) - fecha o
+    risco de overbooking entre canais (alguem reservar a mesma cama por
+    uma OTA enquanto ja esta ocupada no StayFlow). NUNCA chamar isso
+    pra reserva que already veio DO Beds24 (create_reservation_from_channel/
+    update_reservation_from_channel) - ecoaria de volta pra eles algo
+    que eles mesmos ja sabem.
+
+    numAvail = total de camas da modalidade menos quantas reservas
+    nao-canceladas (de QUALQUER origem, inclusive vindas do proprio
+    Beds24) se cruzam com o periodo pedido - contagem por
+    room_type (texto) em vez de bed_id especifico, porque reserva
+    manual/WhatsApp so ganha uma cama especifica atribuida no check-in
+    (bed_id fica null antes disso), entao contar so por bed_id
+    subestimaria a ocupacao real.
+
+    Escopo desta fase: so reserva com checkin/checkout definidos.
+    Estadia de longa duracao (checkout_date null) nao e sincronizada -
+    nao e o tipo de ocupacao que se espera anunciar numa OTA.
+
+    Nunca levanta excecao - uma falha ao sincronizar disponibilidade
+    nao pode derrubar a criacao/cancelamento da reserva no StayFlow
+    (mesmo principio de services/whatsapp_service.py).
+    """
+    if not checkin_date or not checkout_date:
+        return
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT id FROM room_categories WHERE hostel_id = ? AND name = ?",
+            (hostel_id, category_name)
+        )
+        category = cursor.fetchone()
+        if not category:
+            conn.close()
+            return
+
+        cursor.execute(
+            "SELECT beds24_room_id FROM channel_room_mapping WHERE hostel_id = ? AND room_category_id = ?",
+            (hostel_id, category["id"])
+        )
+        mapping = cursor.fetchone()
+        if not mapping:
+            conn.close()
+            return  # modalidade nao mapeada pro Beds24 - nada a sincronizar
+
+        beds24_room_id = mapping["beds24_room_id"]
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS cnt FROM beds b
+            JOIN rooms r ON r.id = b.room_id
+            WHERE b.hostel_id = ? AND r.category_id = ?
+            """,
+            (hostel_id, category["id"])
+        )
+        total_beds = cursor.fetchone()["cnt"]
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS cnt FROM reservations
+            WHERE hostel_id = ? AND room_type = ? AND status != 'cancelled'
+              AND checkin_date < ? AND checkout_date > ?
+            """,
+            (hostel_id, category_name, checkout_date, checkin_date)
+        )
+        occupied_count = cursor.fetchone()["cnt"]
+        conn.close()
+
+        num_avail = max(total_beds - occupied_count, 0)
+    except Exception as error:
+        print("Erro ao calcular disponibilidade pra sincronizar com o Beds24:", error)
+        return
+
+    from services.beds24_service import push_availability
+    push_availability(beds24_room_id, checkin_date, checkout_date, num_avail)
 
 
 def try_claim_webhook_event(beds24_booking_id, hostel_id, event_type, payload_json):
