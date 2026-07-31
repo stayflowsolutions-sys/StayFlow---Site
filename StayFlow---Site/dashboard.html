@@ -2361,6 +2361,13 @@ async function deleteRoleConfirm(roleId){
         if(c.beds24_room_id && !roomsById[String(c.beds24_room_id)]){
           options += `<option value="${escapeHtml(c.beds24_room_id)}">${escapeHtml(c.category_name)} (${T('settings.beds24.syncingLabel', 'sincronizando...')})</option>`;
         }
+        // So oferece "Criar automaticamente" pra quem ainda nao tem
+        // vinculo nenhum - repetir a criacao pra uma modalidade ja
+        // mapeada so gera quarto duplicado no Beds24 sem necessidade
+        // (bug real encontrado: usuario clicava de novo achando que
+        // "sincronizando" significava que a primeira criacao falhou).
+        const createBtn = c.beds24_room_id ? "" : `
+            <button type="button" class="btn secondary" style="padding:8px 14px" onclick="createBeds24RoomForCategory(${c.room_category_id}, '${c.category_name.replace(/'/g, "\\'")}')">${T('settings.beds24.createRoomBtn', 'Criar automaticamente')}</button>`;
         return `
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span style="min-width:160px;font-weight:700">${escapeHtml(c.category_name)}</span>
@@ -2368,8 +2375,7 @@ async function deleteRoleConfirm(roleId){
               <option value="">${T('settings.beds24.selectRoomPlaceholder', 'Selecione o quarto sincronizado...')}</option>
               ${options}
             </select>
-            <button type="button" class="btn secondary" style="padding:8px 14px" onclick="saveBeds24RoomMapping(${c.room_category_id})">${T('common.save', 'Salvar')}</button>
-            <button type="button" class="btn secondary" style="padding:8px 14px" onclick="createBeds24RoomForCategory(${c.room_category_id}, '${c.category_name.replace(/'/g, "\\'")}')">${T('settings.beds24.createRoomBtn', 'Criar automaticamente')}</button>
+            <button type="button" class="btn secondary" style="padding:8px 14px" onclick="saveBeds24RoomMapping(${c.room_category_id})">${T('common.save', 'Salvar')}</button>${createBtn}
           </div>
         `;
       }).join("");
@@ -2449,10 +2455,13 @@ async function deleteRoleConfirm(roleId){
         return;
       }
       if(msg){
-        msg.textContent = T('settings.beds24.createRoomSuccess', 'Quarto criado e vinculado com sucesso!');
+        msg.textContent = T('settings.beds24.createRoomSuccess', 'Quarto criado e vinculado com sucesso! Pode levar alguns segundos pra aparecer com o nome certo aqui.');
         msg.classList.add("success");
       }
-      loadBeds24RoomMapping();
+      // Espera alguns segundos antes de recarregar - o Beds24 pode
+      // demorar um instante pra refletir o quarto recem-criado na
+      // consulta seguinte (ver diario de engenharia).
+      setTimeout(loadBeds24RoomMapping, 3000);
     }catch(e){
       if(msg){
         msg.textContent = T('common.connectionError', 'Erro de conexão.');
