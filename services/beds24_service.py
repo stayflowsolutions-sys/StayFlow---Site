@@ -361,3 +361,99 @@ def push_availability(beds24_room_id, checkin_date, checkout_date, num_avail):
     except Exception as error:
         print("Erro de conexao ao empurrar disponibilidade pro Beds24:", error)
         return False
+
+
+def create_booking(property_id, beds24_room_id, first_name, last_name, phone, email,
+                    checkin_date, checkout_date, price, status="confirmed"):
+    """
+    Cria uma reserva DE VERDADE no Beds24 (nao so ajusta disponibilidade
+    agregada, ver push_availability) - usado quando uma reserva nasce no
+    StayFlow (manual ou WhatsApp) numa modalidade mapeada, pra que ela
+    tambem apareca no painel do Beds24 e bloqueie a vaga em qualquer OTA
+    conectada, nao so no calendario de disponibilidade.
+
+    Nomes de campo (propertyId, roomId, arrival, departure, firstName,
+    lastName, phone, email, status, price) sao os MESMOS ja confirmados
+    reais - vieram do payload real recebido via webhook na Fase 3, entao
+    a chance de estarem certos tambem pra criar e alta. Parsing da
+    resposta reaproveita o mesmo formato ja confirmado em
+    create_property/create_room_type (lote com wrapper "new").
+
+    Retorna o id da reserva no Beds24 (str) ou None se falhar. Nunca
+    levanta excecao.
+    """
+    access_token = _get_valid_access_token()
+    if not access_token:
+        print("Criacao de reserva no Beds24 ignorada - conta master nao configurada.")
+        return None
+
+    try:
+        response = requests.post(
+            f"{API_BASE}/bookings",
+            headers={"token": access_token, "Content-Type": "application/json"},
+            json=[{
+                "propertyId": int(property_id),
+                "roomId": int(beds24_room_id),
+                "arrival": checkin_date,
+                "departure": checkout_date,
+                "firstName": first_name or "",
+                "lastName": last_name or "",
+                "phone": phone or "",
+                "email": email or "",
+                "status": status,
+                "price": float(price or 0),
+            }],
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code >= 400:
+            print("Erro ao criar reserva no Beds24:", response.status_code, response.text)
+            return None
+
+        data = response.json()
+        print("Resposta do Beds24 ao criar reserva:", data)
+
+        item = data[0] if isinstance(data, list) and data else data
+        if isinstance(item, dict) and isinstance(item.get("new"), dict):
+            item = item["new"]
+
+        booking_id = item.get("id") if isinstance(item, dict) else None
+        if not booking_id:
+            print("Resposta do Beds24 sem id de reserva criada:", data)
+            return None
+
+        return str(booking_id)
+    except Exception as error:
+        print("Erro de conexao ao criar reserva no Beds24:", error)
+        return None
+
+
+def update_booking_status(booking_id, status):
+    """
+    Atualiza o status de uma reserva JA EXISTENTE no Beds24 (cancelar,
+    reverter cancelamento) usando o id que a propria Beds24 atribuiu -
+    upsert: POST /bookings com "id" incluido atualiza em vez de criar
+    outra reserva. Nunca chamado pra reserva vinda DO Beds24 (evitaria
+    eco - mesmo principio de push_availability).
+
+    Retorna True/False, nunca levanta excecao.
+    """
+    access_token = _get_valid_access_token()
+    if not access_token:
+        print("Atualizacao de status de reserva no Beds24 ignorada - conta master nao configurada.")
+        return False
+
+    try:
+        response = requests.post(
+            f"{API_BASE}/bookings",
+            headers={"token": access_token, "Content-Type": "application/json"},
+            json=[{"id": int(booking_id), "status": status}],
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code >= 400:
+            print("Erro ao atualizar status da reserva no Beds24:", response.status_code, response.text)
+            return False
+        print("Status da reserva atualizado no Beds24 com sucesso:", response.status_code, response.text)
+        return True
+    except Exception as error:
+        print("Erro de conexao ao atualizar status da reserva no Beds24:", error)
+        return False

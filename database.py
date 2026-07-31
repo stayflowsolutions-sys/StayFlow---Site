@@ -2918,6 +2918,7 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
 
     if room_type:
         sync_availability_to_channel(hostel_id, room_type, checkin_date, checkout_date)
+        sync_booking_to_channel(hostel_id, reservation_id)
 
     return reservation_id
 
@@ -3391,18 +3392,21 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
     if category_row and category_row["price_per_night"]:
         amount = round(category_row["price_per_night"] * nights, 2)
 
-    def _insert_with_bed(cursor):
-        guest_id = None
-        stripped_phone = (phone or "").strip()
-        if stripped_phone:
-            cursor.execute(
-                "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
-                (hostel_id, stripped_phone)
-            )
-            row = cursor.fetchone()
-            if row:
-                guest_id = row["id"]
+    # get_or_create_guest (nao so SELECT) - sem isso, hospede novo
+    # mandando a primeira mensagem nunca virava um registro em guests,
+    # entao nunca aparecia na aba Hospedes nem levava telefone/email pra
+    # sincronizacao com o Beds24 (mesmo bug ja corrigido em
+    # create_indefinite_stay). Chamado FORA de _insert_with_bed porque
+    # get_or_create_guest abre sua propria conexao - nao da pra abrir
+    # outra dentro da transacao travada de reservar_cama_com_trava.
+    guest_id = None
+    stripped_phone = (phone or "").strip()
+    if stripped_phone:
+        guest_id = get_or_create_guest(hostel_id, stripped_phone)
+        if guest_name:
+            update_guest_name(hostel_id, stripped_phone, guest_name)
 
+    def _insert_with_bed(cursor):
         cursor.execute(
             """
             INSERT INTO reservations
@@ -3423,6 +3427,7 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
     reservation_id = reservar_cama_com_trava(hostel_id, int(bed_id), checkin_date, checkout_date, _insert_with_bed)
 
     sync_availability_to_channel(hostel_id, category_name, checkin_date, checkout_date)
+    sync_booking_to_channel(hostel_id, reservation_id)
 
     return {
         "reservation_id": reservation_id,
@@ -3462,6 +3467,7 @@ def update_reservation_status_record(hostel_id, reservation_id, status):
         sync_availability_to_channel(
             hostel_id, reservation["room_type"], reservation["checkin_date"], reservation["checkout_date"]
         )
+    sync_booking_to_channel(hostel_id, reservation_id)
 
 
 def create_supplier_record(hostel_id, name, phone="", email=""):
@@ -5108,6 +5114,127 @@ def sync_availability_to_channel(hostel_id, category_name, checkin_date, checkou
     from services.beds24_service import push_availability
     result = push_availability(beds24_room_id, checkin_date, checkout_date, num_avail)
     print(f"Sync disponibilidade Beds24: push_availability retornou {result}")
+
+
+def sync_booking_to_channel(hostel_id, reservation_id):
+    """
+    Fase 5 da integracao Beds24 (saida - reserva de verdade, nao so
+    disponibilidade agregada): cria ou atualiza no Beds24 a reserva
+    correspondente a uma reserva StayFlow-origin (manual ou WhatsApp)
+    numa modalidade mapeada, pra que apareca de verdade no painel deles
+    e para que cancelar aqui cancele la tambem.
+
+    So roda pra reserva com source in ('manual', 'whatsapp') - reserva
+    com qualquer outro source veio DO Beds24 (ver
+    create_reservation_from_channel/update_reservation_from_channel) e
+    nunca deve ecoar de volta pra eles.
+
+    Primeira vez (external_booking_id ainda null): cria a reserva no
+    Beds24 e grava o id retornado nessa mesma reserva - dai em diante
+    toda mudanca de status so faz update, nunca cria de novo.
+
+    Fora do escopo por enquanto: check-in/check-out. O payload real do
+    Beds24 mostra que eles guardam isso como um infoItem separado
+    (code='CHECKIN'), nao como o status principal da reserva - mecanismo
+    de escrita ainda nao confirmado, fica pra uma proxima rodada depois
+    de testar criacao/cancelamento ao vivo.
+
+    Nunca levanta excecao - falha aqui nao pode derrubar a acao no
+    StayFlow.
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT r.guest_name, r.room_type, r.checkin_date, r.checkout_date,
+                   r.status, r.amount, r.source, r.external_booking_id,
+                   g.phone, g.email
+            FROM reservations r
+            LEFT JOIN guests g ON g.id = r.guest_id
+            WHERE r.id = ? AND r.hostel_id = ?
+            """,
+            (reservation_id, hostel_id)
+        )
+        reservation = cursor.fetchone()
+
+        if not reservation or reservation["source"] not in ("manual", "whatsapp"):
+            conn.close()
+            return
+        if not reservation["checkin_date"] or not reservation["checkout_date"]:
+            conn.close()
+            return  # estadia de longa duracao - fora do escopo, nao se anuncia numa OTA
+        # Reserva 'pending' (aguardando confirmacao da equipe - status
+        # padrao de toda reserva vinda do WhatsApp) so cria booking real
+        # no Beds24 quando a equipe de fato confirmar - nao faz sentido
+        # publicar numa OTA algo que ainda pode ser recusado. Excecao:
+        # se ja existe external_booking_id (ja foi criada antes e voltou
+        # pra pending por algum motivo), atualiza mesmo assim.
+        if reservation["status"] == "pending" and not reservation["external_booking_id"]:
+            conn.close()
+            return
+
+        cursor.execute(
+            "SELECT id FROM room_categories WHERE hostel_id = ? AND name = ?",
+            (hostel_id, reservation["room_type"])
+        )
+        category = cursor.fetchone()
+        if not category:
+            conn.close()
+            return
+
+        cursor.execute(
+            "SELECT beds24_room_id FROM channel_room_mapping WHERE hostel_id = ? AND room_category_id = ?",
+            (hostel_id, category["id"])
+        )
+        mapping = cursor.fetchone()
+        if not mapping:
+            conn.close()
+            return
+
+        cursor.execute("SELECT beds24_property_id FROM hostels WHERE id = ?", (hostel_id,))
+        hostel_row = cursor.fetchone()
+        conn.close()
+        if not hostel_row or not hostel_row["beds24_property_id"]:
+            return
+    except Exception as error:
+        print("Erro ao preparar sincronizacao de reserva com o Beds24:", error)
+        return
+
+    beds24_status = "cancelled" if reservation["status"] in ("cancelled", "no_show") else "confirmed"
+    name_parts = (reservation["guest_name"] or "").strip().split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+    from services.beds24_service import create_booking, update_booking_status
+
+    if reservation["external_booking_id"]:
+        print(f"Sync reserva Beds24: atualizando reserva ja existente id={reservation['external_booking_id']} pra status={beds24_status}")
+        update_booking_status(reservation["external_booking_id"], beds24_status)
+        return
+
+    print(
+        f"Sync reserva Beds24: criando reserva nova - propriedade={hostel_row['beds24_property_id']}, "
+        f"quarto={mapping['beds24_room_id']}, hospede='{reservation['guest_name']}', "
+        f"periodo {reservation['checkin_date']}..{reservation['checkout_date']}, status={beds24_status}"
+    )
+    new_booking_id = create_booking(
+        hostel_row["beds24_property_id"], mapping["beds24_room_id"],
+        first_name, last_name, reservation["phone"], reservation["email"],
+        reservation["checkin_date"], reservation["checkout_date"],
+        reservation["amount"], status=beds24_status,
+    )
+    if new_booking_id:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE reservations SET external_booking_id = ? WHERE id = ? AND hostel_id = ?",
+            (new_booking_id, reservation_id, hostel_id)
+        )
+        conn.commit()
+        conn.close()
+        print(f"Sync reserva Beds24: reserva StayFlow {reservation_id} vinculada ao booking Beds24 {new_booking_id}")
 
 
 def try_claim_webhook_event(beds24_booking_id, hostel_id, event_type, payload_json):
