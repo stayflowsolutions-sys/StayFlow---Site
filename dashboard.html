@@ -1158,6 +1158,7 @@ async function deleteRoleConfirm(roleId){
         <span><i class="occupied"></i><span data-i18n="bed.status.occupied">Ocupada</span></span>
         <span><i class="needs_cleaning"></i><span data-i18n="bed.status.needs_cleaning">Precisa de limpeza</span></span>
         <span><i class="reserved"></i><span data-i18n="bed.status.reserved">Reservada</span></span>
+        <span><i class="long_term"></i><span data-i18n="bed.status.long_term">Morador fixo</span></span>
         <span><i class="maintenance"></i><span data-i18n="bed.status.maintenance">Manutenção</span></span>
       </div>
       <div class="sf-empty" id="roomMapEmpty">
@@ -3382,7 +3383,7 @@ window.closeIndefiniteStayUI = async function(reservationId){
 
 // ===== MAPA DE QUARTOS: /bed-map, /room-categories, /rooms, /cleaning-list =====
 
-const BED_STATUS_LABEL_PT = { free: "Livre", occupied: "Ocupada", needs_cleaning: "Precisa de limpeza", reserved: "Reservada", maintenance: "Em manutenção" };
+const BED_STATUS_LABEL_PT = { free: "Livre", occupied: "Ocupada", needs_cleaning: "Precisa de limpeza", reserved: "Reservada", long_term: "Morador fixo", maintenance: "Em manutenção" };
 function bedStatusLabel(status){
   return T(`bed.status.${status}`, BED_STATUS_LABEL_PT[status] || status);
 }

@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.21.3
+\*\*Versão:\*\* 1.21.4
 
 
 
@@ -105,6 +105,8 @@
 | 1.21.2 | 31/07/2026 | Oficial | Aba Reservas e Mapa de Quartos passaram a se atualizar automaticamente uma à outra depois de qualquer ação que muda status de cama/reserva (check-in, check-out, marcar como limpa, mudar status manual, abrir/encerrar estadia de longa duração) — antes precisava de F5 pra ver a cor da cama mudar depois de uma ação feita na aba Reservas (e vice-versa). Função central `refreshOperationalViews()` chama as duas telas juntas em todo ponto de mudança de status. |
 
 | 1.21.3 | 31/07/2026 | Oficial | Dois ajustes reportados testando o ciclo completo em produção: (1) bug real corrigido — cama ficava presa mostrando "Reservada" (azul) mesmo depois de check-out e limpeza confirmados, porque o cálculo de cor do Mapa de Quartos não considerava se a reserva vinculada já tinha sido finalizada; corrigido exigindo `checked_out_at IS NULL` na consulta. (2) Coluna "Origem" da aba Reservas ganhou `channelDisplayLabel()` no frontend, mapeando slugs conhecidos de canal (Airbnb, Booking.com, Hostelworld, Expedia, Agoda, Vrbo, WhatsApp, Direto) pro nome formatado da plataforma, com fallback seguro pra qualquer valor não mapeado — o backend já capturava o canal real de cada reserva vinda do Beds24, só faltava a formatação de exibição. |
+
+| 1.21.4 | 31/07/2026 | Oficial | Novo status visual no Mapa de Quartos: cama ocupada por morador de longa duração (estadia indefinida ainda ativa, sem checkout registrado) aparece roxa (`long_term`) em vez de vermelha (`occupied`) — diferencia visualmente de um hóspede normal de passagem. `get_bed_map` identifica essas camas verificando `stay_type = 'indefinite' AND checkout_date IS NULL`; some da cor roxa automaticamente ao encerrar a estadia (`close_indefinite_stay`), voltando pro ciclo normal de limpeza. Legenda do mapa e i18n (5 idiomas) atualizados. |
 
 
 

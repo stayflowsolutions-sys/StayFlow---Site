@@ -2986,3 +2986,23 @@ mapeia slugs conhecidos (`airbnb`, `booking`/`bookingcom`, `hostelworld`,
 formatado da plataforma; qualquer valor desconhecido cai num fallback
 seguro (primeira letra maiúscula), nunca quebra a tela mesmo se o slug
 real de uma OTA vier diferente do esperado.
+
+## Cor roxa pra cama de morador de longa duração
+
+Pedido do usuário: diferenciar visualmente no Mapa de Quartos uma cama
+ocupada por morador fixo (estadia indefinida, ex: funcionário) de uma
+cama ocupada por hóspede normal de passagem.
+
+`get_bed_map` (`database.py`) ganhou uma consulta extra: entre as camas
+com `status = 'occupied'`, identifica quais têm uma reserva vinculada
+com `stay_type = 'indefinite' AND checkout_date IS NULL` (estadia
+indefinida ainda ativa - `checkout_date` só é preenchido quando a
+estadia é encerrada de verdade via `close_indefinite_stay`). Essas camas
+recebem `display_status = 'long_term'` em vez de `'occupied'`.
+
+Cor escolhida: roxo (`#9b5de5`), aplicada em `.bed-tile-half.long_term`
+e `.bed-map-legend i.long_term` (`static/css/app.css`), com entrada nova
+na legenda do mapa e chave i18n `bed.status.long_term` nos 5 idiomas.
+Ao encerrar a estadia, a cama volta pro ciclo normal (`needs_cleaning` →
+limpeza → `free`), sem precisar de nenhum tratamento especial - testado
+com o ciclo completo (morador ocupando → encerrar estadia → cor some).

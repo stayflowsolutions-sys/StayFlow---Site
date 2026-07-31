@@ -72,6 +72,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "bed.status.occupied": "Ocupada",
     "bed.status.needs_cleaning": "Precisa de limpeza",
     "bed.status.reserved": "Reservada",
+    "bed.status.long_term": "Morador fixo",
     "bed.status.maintenance": "Manutenção",
 
     // ===== Tipo de cama =====
@@ -749,6 +750,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "bed.status.occupied": "Occupied",
     "bed.status.needs_cleaning": "Needs cleaning",
     "bed.status.reserved": "Reserved",
+    "bed.status.long_term": "Long-term resident",
     "bed.status.maintenance": "Maintenance",
 
     "bed.kind.single": "Standard",
@@ -1412,6 +1414,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "bed.status.occupied": "Ocupada",
     "bed.status.needs_cleaning": "Necesita limpieza",
     "bed.status.reserved": "Reservada",
+    "bed.status.long_term": "Residente fijo",
     "bed.status.maintenance": "Mantenimiento",
 
     "bed.kind.single": "Normal",
@@ -2075,6 +2078,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "bed.status.occupied": "Occupée",
     "bed.status.needs_cleaning": "À nettoyer",
     "bed.status.reserved": "Réservée",
+    "bed.status.long_term": "Résident fixe",
     "bed.status.maintenance": "Maintenance",
 
     "bed.kind.single": "Simple",
@@ -2738,6 +2742,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "bed.status.occupied": "Belegt",
     "bed.status.needs_cleaning": "Reinigung nötig",
     "bed.status.reserved": "Reserviert",
+    "bed.status.long_term": "Dauerbewohner",
     "bed.status.maintenance": "Wartung",
 
     "bed.kind.single": "Normal",
