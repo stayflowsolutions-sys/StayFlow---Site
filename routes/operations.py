@@ -55,18 +55,43 @@ def operations(hostel_id):
             f"mínimo {row['min_threshold']} {row['unit']})"
         )
 
+    # Reservas criadas automaticamente (WhatsApp, Beds24/qualquer OTA -
+    # tudo que nao veio de cadastro manual da equipe) nas ultimas 24h.
+    # Janela de tempo em vez de "todas pra sempre" pra nao acumular
+    # alerta de reserva antiga que a equipe ja viu ha dias.
+    cursor.execute("""
+        SELECT guest_name, source, checkin_date, checkout_date
+        FROM reservations
+        WHERE hostel_id = ? AND source != 'manual'
+          AND created_at >= datetime('now', '-1 day')
+        ORDER BY created_at DESC
+    """, (hostel_id,))
+
+    for row in cursor.fetchall():
+        alerts.append(
+            f"Nova reserva via {row['source']}: {row['guest_name']} "
+            f"({row['checkin_date']} → {row['checkout_date']})"
+        )
+
     conn.close()
 
     # Tarefas de limpeza vem direto do Mapa de Quartos - mesma fonte de
     # verdade (camas com status 'needs_cleaning'), sem tabela duplicada.
+    cleaning_list = get_cleaning_list(hostel_id)
     tasks = [
         {
             "task": f"Limpar {item['label']} ({item['room_name']})",
             "assignee": "Equipe de limpeza",
             "status": "pending"
         }
-        for item in get_cleaning_list(hostel_id)
+        for item in cleaning_list
     ]
+
+    # Cada cama aguardando limpeza tambem conta como alerta (nao so
+    # tarefa) - sem isso, um check-out nunca incrementava o sininho de
+    # notificacoes nem aparecia pra quem loga so olhando o resumo geral.
+    for item in cleaning_list:
+        alerts.append(f"Limpeza pendente: {item['label']} ({item['room_name']})")
 
     return jsonify({
         "alerts": alerts,

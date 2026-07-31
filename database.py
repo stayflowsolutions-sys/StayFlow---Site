@@ -2850,17 +2850,20 @@ def create_indefinite_stay(hostel_id, guest_name, checkin_date, daily_rate, room
             conn.close()
             raise ValueError(f"A cama '{bed['label']}' nao esta livre (status atual: {bed['status']}).")
 
+    conn.close()
+
+    # get_or_create_guest abre/fecha sua propria conexao - por isso a
+    # de cima foi fechada antes. Sem isso, morador fixo com telefone
+    # nunca aparecia na aba Hospedes (guest_id ficava null porque so
+    # linkava com gente que ja existia, nunca criava um registro novo).
     guest_id = None
     phone = (phone or "").strip()
     if phone:
-        cursor.execute(
-            "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
-            (hostel_id, phone)
-        )
-        row = cursor.fetchone()
-        if row:
-            guest_id = row["id"]
+        guest_id = get_or_create_guest(hostel_id, phone)
+        update_guest_name(hostel_id, phone, guest_name)
 
+    conn = get_connection()
+    cursor = conn.cursor()
     cursor.execute(
         """
         INSERT INTO reservations
