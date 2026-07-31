@@ -38,6 +38,9 @@ def create_reservation(hostel_id):
             amount=data.get("amount"),
             status=data.get("status"),
             phone=data.get("phone"),
+            email=data.get("email"),
+            nationality=data.get("nationality"),
+            bed_id=data.get("bed_id"),
         )
     except ValueError as error:
         return jsonify({"success": False, "message": str(error)}), 400

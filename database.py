@@ -2853,7 +2853,8 @@ def get_reports_summary(hostel_id):
 def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
                                 checkin_date=None, checkout_date=None,
                                 source="manual", payment_method="",
-                                amount=0, status="pending", phone=""):
+                                amount=0, status="pending", phone="",
+                                email="", nationality="", bed_id=None):
     guest_name = (guest_name or "").strip()
     checkin_date = (checkin_date or "").strip()
     checkout_date = (checkout_date or "").strip()
@@ -2863,22 +2864,12 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
     if not checkin_date or not checkout_date:
         raise ValueError("checkin_date and checkout_date are required.")
 
+    amount = float(amount or 0)
+    room_type = (room_type or "").strip()
+
     conn = get_connection()
     cursor = conn.cursor()
 
-    guest_id = None
-    phone = (phone or "").strip()
-    if phone:
-        cursor.execute(
-            "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
-            (hostel_id, phone)
-        )
-        row = cursor.fetchone()
-        if row:
-            guest_id = row["id"]
-
-    amount = float(amount or 0)
-    room_type = (room_type or "").strip()
     # Se ninguem informou um valor explicito, calcula pelo preco por
     # noite cadastrado na modalidade (mesma logica ja usada em
     # create_reservation_from_chat/create_reservation_from_channel) -
@@ -2896,25 +2887,58 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
             except (ValueError, TypeError):
                 nights = 0
             amount = round(category_row["price_per_night"] * nights, 2)
-
-    cursor.execute(
-        """
-        INSERT INTO reservations
-        (hostel_id, guest_id, guest_name, room_type, bed, checkin_date,
-         checkout_date, source, payment_method, amount, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            hostel_id, guest_id, guest_name, room_type,
-            (bed or "").strip(), checkin_date, checkout_date,
-            (source or "manual").strip(), (payment_method or "").strip(),
-            amount, (status or "pending").strip(),
-        )
-    )
-
-    reservation_id = cursor.lastrowid
-    conn.commit()
     conn.close()
+
+    # get_or_create_guest (nao so SELECT) - mesmo bug ja corrigido em
+    # create_indefinite_stay/create_reservation_from_chat: hospede novo
+    # nunca virava registro em guests, entao nunca aparecia na aba
+    # Hospedes nem levava telefone/email/nacionalidade pra lugar nenhum.
+    phone = (phone or "").strip()
+    guest_id = None
+    if phone:
+        guest_id = get_or_create_guest(hostel_id, phone)
+        if guest_name:
+            update_guest_name(hostel_id, phone, guest_name)
+        extra_fields = {}
+        if (email or "").strip():
+            extra_fields["email"] = email.strip()
+        if (nationality or "").strip():
+            extra_fields["nationality"] = nationality.strip()
+        if extra_fields:
+            update_guest_profile(hostel_id, guest_id, **extra_fields)
+
+    def _insert(cursor, chosen_bed_id):
+        cursor.execute(
+            """
+            INSERT INTO reservations
+            (hostel_id, guest_id, guest_name, room_type, bed, bed_id, checkin_date,
+             checkout_date, source, payment_method, amount, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                hostel_id, guest_id, guest_name, room_type,
+                (bed or "").strip(), chosen_bed_id, checkin_date, checkout_date,
+                (source or "manual").strip(), (payment_method or "").strip(),
+                amount, (status or "pending").strip(),
+            )
+        )
+        return cursor.lastrowid
+
+    # Cama especifica escolhida na criacao (novo campo do formulario) -
+    # mesma trava contra corrida ja usada pra reserva de canal/WhatsApp,
+    # ja que agora a equipe tambem pode disputar uma cama especifica na
+    # hora de criar.
+    if bed_id:
+        reservation_id = reservar_cama_com_trava(
+            hostel_id, int(bed_id), checkin_date, checkout_date,
+            lambda cursor: _insert(cursor, int(bed_id))
+        )
+    else:
+        conn = get_connection()
+        cursor = conn.cursor()
+        reservation_id = _insert(cursor, None)
+        conn.commit()
+        conn.close()
 
     if room_type:
         sync_availability_to_channel(hostel_id, room_type, checkin_date, checkout_date)
