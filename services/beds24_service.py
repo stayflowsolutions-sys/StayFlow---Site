@@ -379,6 +379,16 @@ def create_booking(property_id, beds24_room_id, first_name, last_name, phone, em
     resposta reaproveita o mesmo formato ja confirmado em
     create_property/create_room_type (lote com wrapper "new").
 
+    Bug real corrigido apos teste ao vivo: o campo "price" sozinho e so
+    ecoado de volta na resposta da API (confirma o que foi pedido), mas
+    NAO e o que preenche o valor de verdade da reserva no painel/
+    relatorios do Beds24 - isso vem de um item de fatura (invoiceItems),
+    confirmado comparando com o payload real de uma reserva criada
+    direto no painel deles (tinha um invoiceItems com type='charge' e
+    amount preenchido). Sem mandar isso, toda reserva criada por aqui
+    aparecia com valor US$ 0,00 no lado deles, mesmo a API confirmando
+    o "price" enviado.
+
     Retorna o id da reserva no Beds24 (str) ou None se falhar. Nunca
     levanta excecao.
     """
@@ -386,6 +396,8 @@ def create_booking(property_id, beds24_room_id, first_name, last_name, phone, em
     if not access_token:
         print("Criacao de reserva no Beds24 ignorada - conta master nao configurada.")
         return None
+
+    amount = float(price or 0)
 
     try:
         response = requests.post(
@@ -401,7 +413,13 @@ def create_booking(property_id, beds24_room_id, first_name, last_name, phone, em
                 "phone": phone or "",
                 "email": email or "",
                 "status": status,
-                "price": float(price or 0),
+                "price": amount,
+                "invoiceItems": [{
+                    "type": "charge",
+                    "description": "StayFlow",
+                    "qty": 1,
+                    "amount": amount,
+                }] if amount else [],
             }],
             timeout=REQUEST_TIMEOUT,
         )

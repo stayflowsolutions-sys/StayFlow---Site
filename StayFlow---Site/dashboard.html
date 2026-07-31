@@ -3149,25 +3149,27 @@ function refreshOperationalViews(){
   if(typeof loadOperations === "function") loadOperations();
 }
 
-window.checkinReservationUI = async function(reservationId, bedId){
-  // Reserva vinda de canal/WhatsApp ja chega com a cama certa da
-  // categoria atribuida automaticamente na criacao - check-in so
-  // confirma a chegada nessa mesma cama, sem pedir escolha manual.
-  // Trocar de cama continua sendo uma acao manual da recepcao (ou via
-  // Ask StayFlow), nao faz parte do check-in em si.
-  if(bedId){
-    await performReservationCheckin(reservationId, bedId, null);
-    return;
-  }
+function bedKindSuffix(bedKind){
+  if(bedKind === "bunk_top") return ` (${T('bed.kind.bunkTop', 'Beliche - Cima')})`;
+  if(bedKind === "bunk_bottom") return ` (${T('bed.kind.bunkBottom', 'Beliche - Baixo')})`;
+  return "";
+}
 
-  // Sem cama atribuida ainda (reserva manual, ou nenhuma cama livre na
-  // categoria no momento da criacao) - deixa escolher uma livre agora.
+window.checkinReservationUI = async function(reservationId, bedId){
+  // Sempre mostra o seletor de cama livre, mesmo quando a reserva ja
+  // chega com uma cama atribuida automaticamente (canal/WhatsApp) - a
+  // recepcao confirma ou troca antes do check-in de verdade, em vez de
+  // confiar cegamente na atribuicao automatica (bug real: check-in
+  // acontecia sem a cama certa aparecer marcada no Mapa de Quartos).
+  // Cada opcao mostra claramente se e beliche de cima ou de baixo.
   let beds = [];
   try{
     const res = await fetch("/bed-map", { credentials: "same-origin" });
     const rooms = res.ok ? await res.json() : [];
     rooms.forEach(room => (room.beds || []).forEach(bed => {
-      if(bed.status === "free") beds.push({ id: bed.id, label: `${room.name} · ${bed.label}` });
+      if(bed.status === "free" || bed.id === bedId){
+        beds.push({ id: bed.id, label: `${room.name} · ${bed.label}${bedKindSuffix(bed.bed_kind)}` });
+      }
     }));
   }catch(e){
     beds = [];
@@ -3182,7 +3184,7 @@ window.checkinReservationUI = async function(reservationId, bedId){
     <div>
       <label>${T('reservations.checkinBedLabel', 'Cama')}</label>
       <select id="checkinReservationBedSelect">
-        ${beds.map(b => `<option value="${b.id}">${escapeHtml(b.label)}</option>`).join("")}
+        ${beds.map(b => `<option value="${b.id}" ${b.id === bedId ? "selected" : ""}>${escapeHtml(b.label)}</option>`).join("")}
       </select>
     </div>
     <div id="checkinReservationMessage" class="generic-modal-message"></div>
