@@ -3094,6 +3094,9 @@ async function loadReservations(){
             <option value="cancelled" ${r.status === "cancelled" ? "disabled" : ""}>${T('reservations.status.cancelled', 'Cancelada')}</option>
             <option value="no_show" ${r.status === "no_show" ? "disabled" : ""}>${T('reservations.status.noShow', 'No-show')}</option>
           </select>
+          ${r.status === "confirmed" && !r.bed_id ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px;display:block;width:100%" onclick="checkinReservationUI(${r.id})">${T('reservations.checkinBtn', 'Confirmar check-in')}</button>` : ""}
+          ${r.bed_id && r.bed_status === "occupied" ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px;display:block;width:100%" onclick="checkoutReservationUI(${r.id})">${T('reservations.checkoutBtn', 'Confirmar check-out')}</button>` : ""}
+          ${r.bed_id && r.bed_status === "needs_cleaning" ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${T('reservations.awaitingCleaningLabel', 'Aguardando limpeza da cama')}</div>` : ""}
         </td>
       `;
       bodyEl.appendChild(row);
@@ -3103,6 +3106,80 @@ async function loadReservations(){
     console.warn("Erro ao carregar /reservations:", e);
   }
 }
+
+window.checkinReservationUI = async function(reservationId){
+  let beds = [];
+  try{
+    const res = await fetch("/bed-map", { credentials: "same-origin" });
+    const rooms = res.ok ? await res.json() : [];
+    rooms.forEach(room => (room.beds || []).forEach(bed => {
+      if(bed.status === "free") beds.push({ id: bed.id, label: `${room.name} · ${bed.label}` });
+    }));
+  }catch(e){
+    beds = [];
+  }
+
+  if(!beds.length){
+    alert(T('reservations.msg.noFreeBeds', 'Não há nenhuma cama livre no momento para fazer o check-in.'));
+    return;
+  }
+
+  openGenericModal(T('reservations.checkinModalTitle', 'Confirmar check-in'), `
+    <div>
+      <label>${T('reservations.checkinBedLabel', 'Cama')}</label>
+      <select id="checkinReservationBedSelect">
+        ${beds.map(b => `<option value="${b.id}">${escapeHtml(b.label)}</option>`).join("")}
+      </select>
+    </div>
+    <div id="checkinReservationMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" onclick="submitCheckinReservation(${reservationId})">${T('reservations.checkinConfirmBtn', 'Confirmar check-in')}</button>
+  `);
+};
+
+window.submitCheckinReservation = async function(reservationId){
+  const msg = document.getElementById("checkinReservationMessage");
+  const select = document.getElementById("checkinReservationBedSelect");
+  if(!select || !select.value) return;
+
+  try{
+    const res = await fetch(`/reservations/${reservationId}/checkin`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ bed_id: Number(select.value) })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      msg.textContent = data.message || T('reservations.msg.checkinFailed', 'Não foi possível fazer o check-in.');
+      msg.classList.add("error");
+      return;
+    }
+    closeGenericModal();
+    loadReservations();
+  }catch(e){
+    msg.textContent = T('roommap.bed.checkinConnError', 'Erro de conexão ao fazer check-in.');
+    msg.classList.add("error");
+  }
+};
+
+window.checkoutReservationUI = async function(reservationId){
+  if(!await stayflowConfirm(T('reservations.checkoutConfirm', 'Confirmar check-out dessa reserva? A cama vai para a lista de limpeza.'))) return;
+
+  try{
+    const res = await fetch(`/reservations/${reservationId}/checkout`, {
+      method: "POST",
+      credentials: "same-origin"
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || T('reservations.msg.checkoutFailed', 'Não foi possível fazer o check-out.'));
+      return;
+    }
+    loadReservations();
+  }catch(e){
+    alert(T('roommap.bed.checkoutConnError', 'Erro de conexão ao fazer check-out.'));
+  }
+};
 
 window.updateReservationStatus = async function(reservationId, newStatus){
   if(!newStatus) return;

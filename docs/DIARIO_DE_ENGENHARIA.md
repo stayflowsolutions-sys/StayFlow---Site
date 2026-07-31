@@ -2825,3 +2825,50 @@ reserva (`update_reservation_from_channel` ganhou o parâmetro
 outros campos, só sobrescreve quando o payload realmente trouxe um
 preço). Retestado com o payload real: `amount: 36.0` correto nos dois
 testes (criação e atualização).
+
+**Confirmado em produção**: usuário adicionou mais um dia na reserva de
+teste no painel do Beds24 (disparando webhook novo) e o valor apareceu
+certo na aba Reservas do StayFlow: US$ 36,00 (não mais US$ 0,00).
+Fase 3 encerrada como funcional de ponta a ponta.
+
+## Gap descoberto: check-in/check-out não acessível pela aba Reservas
+
+Usuário reportou que, ao tentar mudar o status de uma reserva confirmada
+pra "check-in confirmado" (pedido original: quando confirmar o check-in
+no StayFlow, empurrar isso automaticamente pro Beds24 também), o
+dropdown "Cambiar estado" da aba Reservas só oferecia pendente/cancelada/
+no-show — nenhuma opção de check-in.
+
+Investigação mostrou que o fluxo completo já existia no backend e no
+Mapa de Quartos (cama azul=reservada → vermelha=ocupada no check-in →
+amarela=precisa limpeza no check-out → verde=livre quando a limpeza é
+confirmada), com rotas prontas (`POST /reservations/<id>/checkin`,
+`POST /reservations/<id>/checkout`, `POST /beds/<id>/mark-cleaned`) —
+só nunca tinha sido ligado na aba Reservas, que só mexe no campo
+`reservations.status` (pending/confirmed/cancelled/no_show), um conceito
+totalmente separado do status físico da cama (`beds.status`).
+
+Corrigido: `get_reservations_with_stats` (`database.py`) agora faz LEFT
+JOIN com `beds` e devolve `bed_status` junto de cada reserva. A aba
+Reservas passou a mostrar, junto do dropdown de status:
+- **"Confirmar check-in"**, se a reserva está confirmada e ainda sem
+  cama (`bed_id` nulo) — abre um seletor com as camas livres no momento
+  (via `/bed-map`) e chama a rota de check-in já existente.
+- **"Confirmar check-out"**, se a cama da reserva está `occupied` — chama
+  a rota de check-out já existente (a cama vai pra `needs_cleaning`,
+  some da lista de limpeza só quando alguém confirma a limpeza — mesmo
+  fluxo do Mapa de Quartos).
+- Aviso "Aguardando limpeza da cama", se `bed_status === needs_cleaning`
+  (sem ação aqui — confirmar a limpeza continua sendo tarefa da equipe de
+  limpeza, já coberta em outro lugar da interface).
+
+Testado com `ast.parse`, balanceamento de chaves/parênteses, cobertura
+i18n (5 idiomas) e um teste end-to-end usando `app.test_client()` real
+(sessão de verdade via `create_session`, não sessão forjada) cobrindo
+checkin → checkout → mark-cleaned e conferindo que `/reservations`
+reflete `bed_status` corretamente em cada etapa.
+
+Push automático do check-in confirmado pro Beds24 (pedido original do
+usuário) fica para uma rodada seguinte — depende de confirmar antes se
+a API do Beds24 tem algum conceito de status "hóspede chegou"/"arrived"
+equivalente, o que ainda não foi verificado.

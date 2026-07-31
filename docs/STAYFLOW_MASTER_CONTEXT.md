@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.20.0
+\*\*Versão:\*\* 1.21.0
 
 
 
@@ -95,6 +95,10 @@
 | 1.19.3 | 30/07/2026 | Oficial | Causa raiz real encontrada: o tradutor automático do navegador (não um bug do StayFlow) estava reescrevendo texto já em português na tela ("Compartilhado" → "Compartmentalhado", "Beds24" → "Camas24"), e possivelmente interferindo em conteúdo inserido por JavaScript. Corrigido de vez, em nível de código (não depende de configuração do navegador de cada pessoa): `<meta name="google" content="notranslate">` + atributo `translate="no"` em `dashboard.html`, `Login.html`, `Register.html` e `index.html` — sinal padrão da web pra nenhum tradutor de navegador atuar na página. Tradução do StayFlow continua existindo, só que exclusivamente pelo seletor de idioma próprio do produto. |
 
 | 1.20.0 | 31/07/2026 | Oficial | Fase 3 da integração Beds24: webhook de entrada. Novo `POST /webhook/beds24/<token secreto>` recebe reserva nova vinda de Booking.com/Airbnb/Hostelworld em tempo real e cria a reserva de verdade no StayFlow — com trava contra condição de corrida (Fase 1) e, diferente do fluxo do WhatsApp, sem recusar a reserva por falta de cama livre (é um compromisso já confirmado do lado da OTA; sem cama disponível, cria mesmo assim pra atribuição manual). Payload sempre gravado cru antes de qualquer interpretação, pra nunca perder reserva mesmo se o formato de campo específico estiver errado — lição direta da Fase 2. Escopo desta fase: só reserva nova; atualização de data e cancelamento ficam pra próxima rodada, após confirmar formato real com teste ao vivo. |
+
+| 1.20.1 | 31/07/2026 | Oficial | Bug real encontrado no primeiro teste ao vivo do webhook: reserva vinda do Beds24 chegava com valor US$ 0,00, porque a rota nunca extraía o campo `price` do payload — a função de criação caía pro `price_per_night` (ainda sem preço configurado) da modalidade no StayFlow. Usuário apontou a regra correta: o valor tem que vir sempre do canal/OTA, nunca recalculado pelo preço do StayFlow, já que plataformas como Booking/Airbnb podem vender com desconto. Corrigido: `amount` extraído do payload (`price`/`totalPrice`/`amount`) e repassado pra criação e atualização de reserva; `update_reservation_from_channel` ganhou parâmetro `amount` opcional (`None` preserva o valor já gravado). Confirmado em produção com reteste real: US$ 36,00 correto. |
+
+| 1.21.0 | 31/07/2026 | Oficial | Corrigido gap na aba Reservas: não havia como confirmar check-in/check-out de uma reserva por ali — só o dropdown de status (pendente/confirmada/cancelada/no-show), um conceito separado do status físico da cama. O fluxo completo (cama azul→reservada, vermelha→ocupada no check-in, amarela→limpeza no check-out, verde→livre quando a limpeza é confirmada) já existia no backend e no Mapa de Quartos, só nunca tinha sido ligado na aba Reservas. `get_reservations_with_stats` passou a fazer LEFT JOIN com `beds` e devolver `bed_status`; a aba Reservas ganhou botão "Confirmar check-in" (abre seletor de cama livre via `/bed-map`, reserva confirmada sem cama) e "Confirmar check-out" (cama ocupada), reaproveitando as rotas `/reservations/<id>/checkin` e `/checkout` já existentes do Mapa de Quartos. Push automático do check-in confirmado pro Beds24 (pedido original do usuário) fica pra próxima rodada, pendente de verificar se a API do Beds24 tem um conceito equivalente a "hóspede chegou". |
 
 
 
