@@ -4338,3 +4338,66 @@ regressão completa sem quebra. Balanceamento de chaves/parênteses e
 cobertura i18n conferidos (nomes de canal são texto fixo/marca, mesmo
 padrão já usado pra WhatsApp/Airbnb/Booking.com em `CHANNEL_DISPLAY_LABELS`,
 não precisam de tradução).
+
+## Bug real: perfil do morador fixo não existia, crédito sumido do Financeiro
+
+Usuário reportou, logo depois de eu ter implementado os nomes
+clicáveis: não achava o perfil do morador de longa duração que criou
+pra testar, e o crédito de US$ 100.000 que registrou como pagamento
+(pra testar se o saldo ia descontando por dia) não aparecia em
+Financeiro. Pediu pra eu continuar o que estava fazendo e investigar
+isso depois - investigado nesta rodada.
+
+**Causa raiz do primeiro**: `create_reservation_record` e
+`create_indefinite_stay` só criavam a linha em `guests` quando um
+TELEFONE era passado (`if phone: guest_id = get_or_create_guest(...)`)
+- reserva ou estadia cadastrada só com nome (o caso comum de morador
+fixo/funcionário, que muitas vezes nem tem telefone cadastrado) nunca
+ganhava `guest_id` nenhum. Não era só "difícil de achar" - o perfil
+literalmente não existia, `reservations.guest_id` ficava `NULL`. Meu
+`guestNameLink()` da rodada anterior já lidava bem com isso (cai pra
+texto simples sem link quando `guest_id` é vazio), mas a causa de
+verdade era essa.
+
+Corrigido com `create_guest_without_phone(hostel_id, name)` (novo,
+`database.py`) - INSERT direto, sempre cria um hóspede novo (nunca
+tenta reaproveitar um existente, já que sem telefone não há nenhuma
+chave confiável pra saber que duas reservas "sem telefone" são a
+mesma pessoa - diferente de `get_or_create_guest`, que dedupe por
+telefone). Usada nos dois pontos que antes só criavam hóspede "se
+tinha telefone".
+
+**Causa raiz do segundo**: `get_finance_summary` somava só
+`reservations.amount` pra calcular a receita confirmada - mas estadia
+de longa duração (`stay_type='indefinite'`) nasce SEMPRE com
+`amount=0` (não tem valor fechado, o que existe é uma diária
+acumulando saldo devedor, controlado à parte por
+`reservation_payments`/`get_reservation_balance`, mecanismo próprio já
+existente). Qualquer pagamento registrado contra um morador fixo era
+dinheiro de verdade recebido, mas ficava completamente invisível na
+receita.
+
+Corrigido: a soma agora usa `SUM(reservation_payments.amount)` no
+lugar de `amount` especificamente quando `stay_type='indefinite'`
+(`CASE WHEN r.stay_type = 'indefinite' THEN ... ELSE r.amount END`,
+via `LEFT JOIN` agregado) - reserva fixa continua somando `amount`
+exatamente como antes, zero mudança de comportamento pra ela. De
+quebra, adicionada uma terceira linha na `UNION ALL` de movimentações
+(`'Pagamento'`, puxando de `reservation_payments` direto) - antes só
+existiam `'Reserva'` e `'Oportunidade'` no extrato, um pagamento de
+morador fixo nunca aparecia lá nem como R$0 (a linha da reserva em si
+já mostrava R$0, mas nenhuma linha separada mostrava o pagamento de
+verdade).
+
+Testado (`STAYFLOW_DATA_DIR` isolado): reserva manual sem telefone cria
+hóspede de verdade, aparece na lista de Hóspedes e abre perfil
+normalmente (`phone=None`, não um telefone fake); estadia de longa
+duração sem telefone igual; duas reservas sem telefone (nomes
+diferentes) viram hóspedes DIFERENTES, sem colidir no mesmo registro;
+receita confirmada passa a incluir o pagamento do morador fixo
+(regressão confirmando que reserva fixa continua contando `amount`
+normalmente); pagamento aparece na lista de movimentações como
+`'Pagamento'`; saldo do perfil reflete o crédito (negativo = a favor
+do hóspede). Regressão completa de tudo (incluindo os testes de
+reserva/webhook/Beds24, que criam hóspede com e sem telefone em vários
+pontos) sem quebra.
