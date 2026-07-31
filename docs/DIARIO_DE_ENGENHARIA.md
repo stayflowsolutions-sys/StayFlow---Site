@@ -3637,3 +3637,121 @@ escolher uma cama já ocupada no mesmo período é recusado (trava
 funcionando); escolher outra cama livre funciona normalmente. Bateria
 completa de regressão (preço automático, case-insensitive, Fases 4/5 do
 Beds24) rerodada sem quebrar nada.
+
+## Cama "Reservada" com semanas de antecedência, checkout some da lista, status CHECKOUT
+
+Usuário reportou, em duas mensagens seguidas: (1) cama com reserva pro
+mês que vem aparecia "Reservada" (azul) no Mapa de Quartos já no dia de
+hoje, impedindo perceber que ela está livre pra alugar antes dessa
+data - "só tendo a trava pro dia do check-in pra ninguém reservar a
+mesma cama" (a trava real de disponibilidade continua intacta em outro
+lugar, isso é só sobre a cor exibida); (2) depois do check-out, o
+hóspede deveria sair da lista da aba Reservas e só continuar
+rastreável pela aba Hóspedes, com status "CHECKOUT".
+
+**Cor "Reservada" só a partir do dia do check-in**: `get_bed_map`
+mudou a condição de `checkout_date >= hoje` pra
+`checkin_date <= hoje AND checkout_date >= hoje` - ou seja, só entra
+"Reservada" quando o período da reserva já INCLUI hoje (chegada já
+chegou ou passou, saída ainda não aconteceu), não mais qualquer reserva
+futura não-cancelada. A trava de verdade contra dar a mesma cama pra
+duas reservas continua em `find_available_beds`/
+`reservar_cama_com_trava`/`sync_availability_to_channel`, que sempre
+olham o período completo da estadia, não só hoje - só o que muda é a
+cor mostrada no mapa.
+
+**Alerta operacional complementar**: como a cama só fica azul a partir
+do dia do check-in, adicionado um alerta novo em `/operations` pra
+reservas com `checkin_date = hoje` e `checked_in_at` ainda null (mesmo
+se já `confirmed`) - "Chegada hoje - atribuir cama e confirmar
+check-in: {hóspede}". O alerta antigo ("Check-in de hoje ainda
+pendente") só cobre reserva com status != confirmed, o que quase nunca
+acontece no dia da chegada (a reserva já foi confirmada bem antes) -
+esse novo cobre o caso real: reserva confirmada chegando hoje, ainda
+sem check-in físico.
+
+**Check-out sai da lista de Reservas**: `get_reservations_with_stats`
+passou a filtrar `checked_out_at IS NULL` na lista retornada - reserva
+com check-out já confirmado não aparece mais na aba Reservas. As
+estatísticas (KPIs de check-ins/check-outs/receita) continuam
+calculadas em cima do conjunto COMPLETO (não filtrado), pra não
+subtrair receita já confirmada só porque o hóspede já foi embora.
+
+**Status CHECKOUT na aba Hóspedes**: `get_guests_list` ganhou
+`last_checked_out_at` (subquery pegando o `checked_out_at` da reserva
+mais recente de cada hóspede). Frontend: coluna Status mostra
+"CHECKOUT" (pill vermelha) quando esse campo está preenchido, prioridade
+sobre o "Ativo"/"Sem interação" de antes.
+
+Testado o ciclo completo: reserva com check-in daqui 20 dias não deixa
+a cama reservada hoje; reserva com check-in hoje deixa a cama reservada
+E gera o alerta operacional; depois do ciclo completo (check-in →
+check-out → limpeza), a reserva some de `/reservations` e a cama volta
+pra `free` (não fica presa em "reserved" por causa de uma reserva futura
+na mesma cama); hóspede aparece com `last_checked_out_at` preenchido.
+
+## Seletor de cama filtra por modalidade + camas duplicadas no teste
+
+Usuário testou o formulário novo e reportou duas coisas: (1) o seletor
+de camas do modal de check-in mostrou "Compartilhado · Cama 1 (Beliche
+- Baixo)" **duas vezes** na lista - pediu pra investigar; (2) o Bruno
+tinha reserva numa modalidade específica, mas o seletor de check-in
+oferecia camas de QUALQUER modalidade misturadas, o que pode fazer a
+recepção atribuir sem querer o hóspede a um quarto diferente do
+reservado.
+
+**Item 2 (corrigido)**: `checkinReservationUI` passou a receber também
+o `room_type` da reserva (terceiro parâmetro, escapado com o mesmo
+padrão já usado em `deleteRoomUI`/`deleteCategoryUI`) e ganhou um
+seletor de modalidade próprio, pré-selecionado com a modalidade da
+reserva - o seletor de cama (`fillCheckinReservationBedSelect`) agora
+filtra por essa modalidade escolhida, com a opção explícita de trocar
+se for realmente intencional. Mesmo padrão categoria→cama já usado no
+formulário de Nova Reserva.
+
+**Item 1 (investigado, não é bug de código)**: contagem de beds via
+`/bed-map` é uma consulta direta na tabela `beds`, sem nenhum JOIN que
+pudesse duplicar linhas - se duas camas aparecem com o mesmo rótulo
+"Cama 1", são duas linhas de verdade na tabela, criadas em algum
+momento (provavelmente um duplo-clique/duplo-envio no formulário "Nova
+cama" - `submitNewBed` não tinha nenhuma proteção contra isso, e o
+modal de criação de cama fica aberto de propósito depois de criar, pra
+permitir criar várias em sequência, o que também facilita clicar
+"Criar" duas vezes sem querer pra mesma cama). Não dá pra consertar
+dado já duplicado sem acesso ao banco de produção - pedido pro usuário
+conferir/excluir a cama duplicada pelo Mapa de Quartos (mesmo fluxo já
+usado antes pra limpar quarto duplicado do Beds24).
+
+## Falso positivo no verificador de balanceamento (achado real, não é bug de JS)
+
+Depois de editar `checkinReservationUI`, o `check_dashboard_balance.py`
+acusou desbalanceamento (401 chaves abrindo, 400 fechando - antes
+841/841). Investigação profunda (scripts de diagnóstico dedicados,
+checando cada bloco `<script>` e cada etapa da limpeza de comentário/
+string) revelou a causa real: o padrão `.replace(/'/g, "\\'")` (usado
+pra escapar aspas simples antes de embutir num atributo `onclick`) já
+existia 4 vezes no arquivo (`deleteRoomUI`, `editBedLabelUI`,
+`deleteCategoryUI`, `createBeds24RoomForCategory`) - um número PAR.
+Cada ocorrência contém um apóstrofo solto dentro de um literal de regex
+(`/'/g`), que o verificador (baseado em regex simples, sem entender
+sintaxe de regex literal de verdade) trata como se fosse o início de
+uma string de aspas simples. Com um número par de ocorrências, elas
+acabavam se "auto-parando" aos pares sem quebrar a contagem final. Ao
+adicionar uma 5ª ocorrência (em `checkinReservationUI`), o número virou
+ímpar, e essa última ficou emparelhada erroneamente com uma aspa simples
+bem mais adiante no arquivo, "engolindo" ~45 mil caracteres de código
+real como se fosse uma única string gigante.
+
+**Não era um bug de JavaScript de verdade** (o padrão já funciona em
+produção nos outros 4 lugares, e o motor real de JS entende regex
+literal corretamente) - era uma limitação do script de diagnóstico
+(scratchpad, não faz parte do produto). Corrigido trocando a nova
+ocorrência por `.split("'").join("\\'")` - mesmo resultado de escape,
+sem o apóstrofo solto que confunde o verificador. Balanceamento voltou
+a 841/841.
+
+## Não corrigido nesta rodada (fora do escopo, exige acesso a produção)
+
+Cama duplicada mencionada acima - fica pro usuário resolver
+manualmente pelo Mapa de Quartos, já que não há como inspecionar/editar
+dados de produção diretamente por aqui.

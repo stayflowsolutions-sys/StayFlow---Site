@@ -3087,7 +3087,7 @@ async function loadReservations(){
               <option value="cancelled" ${r.status === "cancelled" ? "disabled" : ""}>${T('reservations.status.cancelled', 'Cancelada')}</option>
               <option value="no_show" ${r.status === "no_show" ? "disabled" : ""}>${T('reservations.status.noShow', 'No-show')}</option>
             </select>
-            ${r.status === "confirmed" && !r.checked_in_at ? `<button type="button" class="pill-btn checkin-pill" onclick="checkinReservationUI(${r.id}, ${r.bed_id || "null"})">${T('reservations.checkinBtn', 'Check-in')}</button>` : ""}
+            ${r.status === "confirmed" && !r.checked_in_at ? `<button type="button" class="pill-btn checkin-pill" onclick="checkinReservationUI(${r.id}, ${r.bed_id || "null"}, '${(r.room_type || "").split("'").join("\\'")}')">${T('reservations.checkinBtn', 'Check-in')}</button>` : ""}
             ${r.checked_in_at && !r.checked_out_at ? `<button type="button" class="pill-btn checkout-pill" onclick="checkoutReservationUI(${r.id})">${T('reservations.checkoutBtn', 'Check-out')}</button>` : ""}
           </div>
         </td>
@@ -3119,41 +3119,64 @@ function bedKindSuffix(bedKind){
   return "";
 }
 
-window.checkinReservationUI = async function(reservationId, bedId){
+window.checkinReservationUI = async function(reservationId, bedId, roomType){
   // Sempre mostra o seletor de cama livre, mesmo quando a reserva ja
   // chega com uma cama atribuida automaticamente (canal/WhatsApp) - a
   // recepcao confirma ou troca antes do check-in de verdade, em vez de
-  // confiar cegamente na atribuicao automatica (bug real: check-in
-  // acontecia sem a cama certa aparecer marcada no Mapa de Quartos).
-  // Cada opcao mostra claramente se e beliche de cima ou de baixo.
-  let beds = [];
+  // confiar cegamente na atribuicao automatica. Por padrao so mostra
+  // camas DA MESMA modalidade da reserva (evita trocar sem querer o
+  // hospede pra outro tipo de quarto) - selecionar outra modalidade no
+  // seletor de cima refiltra as camas, pra quando isso for realmente
+  // intencional.
+  let rooms = [];
   try{
     const res = await fetch("/bed-map", { credentials: "same-origin" });
-    const rooms = res.ok ? await res.json() : [];
-    rooms.forEach(room => (room.beds || []).forEach(bed => {
-      if(bed.status === "free" || bed.id === bedId){
-        beds.push({ id: bed.id, label: `${room.name} · ${bed.label}${bedKindSuffix(bed.bed_kind)}` });
-      }
-    }));
+    rooms = res.ok ? await res.json() : [];
   }catch(e){
-    beds = [];
+    rooms = [];
   }
+  window.CHECKIN_RESERVATION_ROOMS_CACHE = rooms;
 
-  if(!beds.length){
-    alert(T('reservations.msg.noFreeBeds', 'Não há nenhuma cama livre no momento para fazer o check-in.'));
-    return;
-  }
+  const categories = [...new Set(rooms.map(r => r.category_name).filter(Boolean))];
 
   openGenericModal(T('reservations.checkinModalTitle', 'Confirmar check-in'), `
     <div>
-      <label>${T('reservations.checkinBedLabel', 'Cama')}</label>
-      <select id="checkinReservationBedSelect">
-        ${beds.map(b => `<option value="${b.id}" ${b.id === bedId ? "selected" : ""}>${escapeHtml(b.label)}</option>`).join("")}
+      <label>${T('reservations.newReservation.roomTypeOption', 'Tipo de quarto')}</label>
+      <select id="checkinReservationCategorySelect" onchange="fillCheckinReservationBedSelect()">
+        ${categories.map(c => `<option value="${escapeHtml(c)}" ${c === roomType ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
       </select>
     </div>
+    <div style="margin-top:10px">
+      <label>${T('reservations.checkinBedLabel', 'Cama')}</label>
+      <select id="checkinReservationBedSelect"></select>
+    </div>
     <div id="checkinReservationMessage" class="generic-modal-message"></div>
-    <button class="btn" type="button" onclick="submitCheckinReservation(${reservationId})">${T('reservations.checkinConfirmBtn', 'Confirmar check-in')}</button>
-  `);
+    <button class="btn" type="button" style="margin-top:8px" onclick="submitCheckinReservation(${reservationId})">${T('reservations.checkinConfirmBtn', 'Confirmar check-in')}</button>
+  `, true);
+
+  fillCheckinReservationBedSelect(bedId);
+};
+
+window.fillCheckinReservationBedSelect = function(preselectBedId){
+  const categorySelect = document.getElementById("checkinReservationCategorySelect");
+  const bedSelect = document.getElementById("checkinReservationBedSelect");
+  if(!categorySelect || !bedSelect) return;
+
+  const categoryName = categorySelect.value;
+  const rooms = window.CHECKIN_RESERVATION_ROOMS_CACHE || [];
+  const beds = [];
+  rooms.forEach(room => {
+    if(categoryName && room.category_name !== categoryName) return;
+    (room.beds || []).forEach(bed => {
+      if(bed.status === "free" || bed.id === preselectBedId){
+        beds.push({ id: bed.id, label: `${room.name} · ${bed.label}${bedKindSuffix(bed.bed_kind)}` });
+      }
+    });
+  });
+
+  bedSelect.innerHTML = beds.length
+    ? beds.map(b => `<option value="${b.id}" ${b.id === preselectBedId ? "selected" : ""}>${escapeHtml(b.label)}</option>`).join("")
+    : `<option value="">${T('reservations.msg.noFreeBeds', 'Não há nenhuma cama livre no momento para fazer o check-in.')}</option>`;
 };
 
 window.submitCheckinReservation = async function(reservationId){
@@ -5047,7 +5070,7 @@ async function loadGuests(){
         <td><a href="#" class="guest-name-link" onclick="openGuestProfileModal(${g.id});return false;">${g.name || T('guests.noName', 'Sem nome')}</a></td>
         <td>${g.phone || "-"}</td>
         <td>${g.email || "-"}</td>
-        <td><span class="status-pill ${g.message_count > 0 ? "ok" : "cold"}">${g.message_count > 0 ? T('guests.active', 'Ativo') : T('guests.noInteraction', 'Sem interação')}</span></td>
+        <td><span class="status-pill ${g.last_checked_out_at ? "hot" : (g.message_count > 0 ? "ok" : "cold")}">${g.last_checked_out_at ? T('guests.checkedOut', 'CHECKOUT') : (g.message_count > 0 ? T('guests.active', 'Ativo') : T('guests.noInteraction', 'Sem interação'))}</span></td>
         <td>US$ ${Number(g.total_value || 0).toFixed(2)}</td>
       `;
       bodyEl.appendChild(row);

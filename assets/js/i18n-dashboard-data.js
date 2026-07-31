@@ -487,6 +487,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.newHostelTypePrompt": "Nome do novo tipo de propriedade:",
     "guests.noName": "Sem nome",
     "guests.active": "Ativo",
+    "guests.checkedOut": "CHECKOUT",
     "guests.noInteraction": "Sem interação",
 
     // ===== Operacoes =====
@@ -1184,6 +1185,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.newHostelTypePrompt": "New property type name:",
     "guests.noName": "No name",
     "guests.active": "Active",
+    "guests.checkedOut": "CHECKOUT",
     "guests.noInteraction": "No interaction",
 
     "operations.tasks.title": "🧹 Operational tasks",
@@ -1876,6 +1878,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.newHostelTypePrompt": "Nombre del nuevo tipo de propiedad:",
     "guests.noName": "Sin nombre",
     "guests.active": "Activo",
+    "guests.checkedOut": "CHECKOUT",
     "guests.noInteraction": "Sin interacción",
 
     "operations.tasks.title": "🧹 Tareas operativas",
@@ -2568,6 +2571,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.newHostelTypePrompt": "Nom du nouveau type de propriété :",
     "guests.noName": "Sans nom",
     "guests.active": "Actif",
+    "guests.checkedOut": "CHECKOUT",
     "guests.noInteraction": "Aucune interaction",
 
     "operations.tasks.title": "🧹 Tâches opérationnelles",
@@ -3260,6 +3264,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.newHostelTypePrompt": "Name des neuen Objekttyps:",
     "guests.noName": "Kein Name",
     "guests.active": "Aktiv",
+    "guests.checkedOut": "CHECKOUT",
     "guests.noInteraction": "Keine Interaktion",
 
     "operations.tasks.title": "🧹 Betriebliche Aufgaben",
