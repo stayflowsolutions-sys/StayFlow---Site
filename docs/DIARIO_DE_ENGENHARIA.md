@@ -4100,3 +4100,85 @@ padrão da integração Beds24 - só confirma o formato exato da API
 testando ao vivo).
 
 Próximo passo, um de cada vez: Instagram Login.
+
+## Messenger 100% funcional - Fase 3+4 (entrada e saída)
+
+Perguntado se era melhor conectar os três canais primeiro ou terminar
+cada um por completo antes do próximo - recomendei terminar um por
+vez (aprende a API de verdade num canal só, resultado testável mais
+cedo, risco isolado) e o usuário concordou.
+
+Comecei pelo webhook de entrada (`routes/meta_webhook.py`), copiando o
+handshake genérico do WhatsApp. Na hora de ligar no pipeline real
+(`process_incoming_message`, `routes/chat.py`), apareceu um problema
+estrutural que não tinha ficado óbvio antes: quase toda função do
+pipeline resolvia o hóspede buscando de novo por
+`WHERE hostel_id = ? AND phone = ?` - `analyze_message`
+(`decision_engine.py`), `is_guest_ai_paused`, `get_guest_language`,
+`update_guest_name`/`update_guest_language`, e o próprio
+`save_message_db` (que decide `conversation_id` a partir de um
+`get_or_create_guest(hostel_id, phone)` interno). Pra Messenger, cujo
+`guests.phone` fica `NULL` de propósito (decisão da Fase 1 - não forçar
+PSID/IGSID como telefone fake), NENHUMA dessas buscas acharia o
+hóspede certo. Sem esse achado, o Messenger teria "funcionado" só na
+aparência (mensagem chegando, mas IA nunca pausável por hóspede, nunca
+sabendo o idioma certo, nunca puxando o histórico certo, oportunidade
+nunca gravada).
+
+Resolvido resolvendo `guest_id` UMA VEZ, no topo de
+`process_incoming_message`, via `get_or_create_guest_by_channel` (já
+existia da Fase 1) - e criando equivalentes por `guest_id` de cada
+função afetada: `is_guest_ai_paused_by_id`, `get_guest_language_by_id`,
+`update_guest_name_by_id`, `update_guest_language_by_id` (`database.py`,
+novas, WHERE id = ? em vez de WHERE phone = ?, as antigas continuam
+existindo intactas pra quem ainda as chama). `analyze_message` mudou de
+assinatura pra receber `guest_id` já resolvido em vez de buscar de
+novo (só um call site, risco baixo). `save_message_db_for_guest`
+(nova) espelha `save_message_db`, mas recebe `guest_id` direto -
+`save_message_db` original fica intacta, só usada pelos poucos call
+sites legados de WhatsApp que não passam pelo pipeline principal
+(imagem de documento, mensagem de equipe). De quebra,
+`save_message_db_for_guest` é a única que realmente grava o canal
+certo em `conversations.channel` (fazia tempo que ficava sempre
+`'api'`, achado real de uma rodada anterior nunca de fato corrigido).
+
+Ponto de maior risco desta rodada: um hóspede de WhatsApp que já existia
+ANTES desta integração (criado pelo caminho antigo, sem nenhuma linha
+em `guest_channel_identities` ainda) não podia simplesmente "criar um
+hóspede novo" na primeira mensagem depois do deploy - o telefone já
+existe, e `guests` tem `UNIQUE(hostel_id, phone)`, um INSERT duplicado
+quebraria com erro de integridade. `get_or_create_guest_by_channel`
+ganhou uma checagem extra: se o canal é WhatsApp e já existe um
+hóspede com aquele telefone (sem identidade de canal ainda), ADOTA o
+`guest_id` existente e só cria a linha de identidade que faltava, em
+vez de tentar inserir de novo. Testado explicitamente (Teste 6 do
+roteiro) simulando esse cenário exato.
+
+Memória da IA (`services/memory_service.py`, arquivo JSON de
+histórico) não precisou de nenhuma mudança de código - só passou a
+receber uma chave diferente pra canais sem telefone
+(`"messenger:<psid>"` em vez do valor cru), function `_memory_key()`
+nova em `chat.py`. A chave do WhatsApp continua idêntica a sempre
+(`hostel_id:telefone`), sem risco de invalidar histórico de conversa
+já em produção.
+
+Novo `services/messenger_service.py` (`send_messenger_message`), mesmo
+contrato "nunca levanta exceção, retorna bool" de
+`services/whatsapp_service.py` - usa o token da própria Página (obtido
+no OAuth da rodada anterior) via `POST /me/messages`.
+
+Testado (8 cenários com `STAYFLOW_DATA_DIR` isolado, `ask_ai` e
+`send_messenger_message`/`send_whatsapp_message` mockados): mensagem
+via Messenger cria hóspede sem telefone fake e com identidade de
+canal; segunda mensagem do mesmo PSID reaproveita o mesmo hóspede;
+mensagens gravadas na ordem certa com `conversations.channel` correto;
+IA nunca recebe o PSID como se fosse telefone; WhatsApp continua
+gravando telefone de verdade e passando ele pra IA (regressão); hóspede
+antigo de WhatsApp adotado sem duplicar; rota real `/webhook/meta`
+(handshake + POST) processando mensagem de ponta a ponta; webhook com
+`page_id` desconhecido não quebra, só ignora. Regressão completa de
+tudo que já existia (reservas, check-in/check-out, webhook de saída,
+cancelamentos, OAuth do Facebook, configurações manuais) sem quebra.
+
+Próximo passo: Instagram Login (mesmo padrão OAuth+webhook+envio, App
+diferente na Meta).
