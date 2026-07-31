@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.24.1
+\*\*Versão:\*\* 1.24.3
 
 
 
@@ -113,6 +113,10 @@
 | 1.21.6 | 31/07/2026 | Oficial | Reservas criadas por qualquer canal automático (WhatsApp, Beds24/qualquer OTA — `source != 'manual'`) nas últimas 24h agora também geram alerta no sininho de Operações ("Nova reserva via {canal}: {hóspede}..."), não só reservas manuais. Pedido em aberto do usuário, ainda não iniciado: notificação nativa no aparelho (celular/PC), estilo WhatsApp, pra mensagem nova/alerta operacional/problema de IA/intervenção humana — requer infraestrutura nova (Web Push API, service worker, VAPID, inscrições por dispositivo), fica pra ser desenhado como etapa própria. |
 
 | 1.22.0 | 31/07/2026 | Oficial | Perfil completo do hóspede na aba Hóspedes: clicar no nome (antes era texto solto, sem ação) abre um modal com contato editável (nome, telefone, email, endereço, data de nascimento, nacionalidade), documento (tipo + número, editáveis, mais galeria de fotos do documento com upload manual — reaproveita o `guest_documents` já usado pelo recebimento automático via WhatsApp) e histórico completo de estadias com status/valor, incluindo saldo devedor/crédito calculado ao vivo pra estadias de longa duração (reservas fixas não têm conceito de pagamento parcial no modelo atual, mostram só o valor total). Novo `get_guest_reservations`, `update_guest_profile`, rotas `PATCH /guests/<id>` e `POST /guests/<id>/documents`; colunas novas em `guests` (`address`, `document_type`, `document_number`). Moeda/câmbio automático por país (pedido do usuário, com regra de margem de 30 pontos abaixo do câmbio real) registrado como pendência futura, a ser feito junto da configuração de formas de pagamento — não iniciado. |
+
+| 1.24.3 | 31/07/2026 | Oficial | Redesign visual dos botões de check-in/check-out na aba Reservas: saíram de baixo do dropdown "Mudar status..." (botão retangular largo) e foram pra dentro da coluna Estado, ao lado da pill de status, como botão pequeno arredondado - verde sólido "Check-in", vermelho sólido "Check-out" depois de feito o check-in. Texto encurtado de "Confirmar check-in"/"Confirmar check-out" pra só "Check-in"/"Check-out" nos 5 idiomas. |
+
+| 1.24.2 | 31/07/2026 | Oficial | Bug real de produção corrigido: reserva do "Otavio" (modalidade "Privado") não calculou preço nem sincronizou com o Beds24. Causa: a modalidade real do hostel se chama "privado" (minúsculo) - o formulário de nova reserva manual tem opções fixas "Privado"/"Compartilhado" (maiúsculo), e a comparação no banco (`name = ?`) é sensível a maiúsculas/minúsculas, então nunca achava a modalidade. Corrigido em todos os pontos que comparam `room_type`/nome de modalidade (cálculo de preço, `find_available_beds`, sincronização de disponibilidade e de reserva com o Beds24, dedup do eco) para usar `LOWER(name) = LOWER(?)`, resiliente a qualquer diferença de caixa. |
 
 | 1.24.1 | 31/07/2026 | Oficial | Bug real de produção corrigido: reserva do "Silvano" apareceu duplicada no Beds24 - causa era um eco da própria Fase 5 (StayFlow cria a reserva no Beds24, que manda um webhook de volta quase na hora, às vezes antes da gente terminar de gravar o `external_booking_id` na reserva original; sem saber que era a mesma reserva, o webhook criava uma segunda linha). Corrigido com `find_recent_unlinked_stayflow_reservation`/`link_external_booking_id`: antes de criar uma reserva nova a partir de um webhook, procura uma reserva StayFlow-origin recente (10 min), sem vínculo ainda, com mesma modalidade/hóspede/datas - se achar, vincula em vez de duplicar. Também corrigido: check-out (e qualquer ação operacional) agora atualiza a tela de Operações/sininho na hora (`refreshOperationalViews` ganhou `loadOperations()`) - antes só atualizava depois de recarregar a página ou abrir a aba manualmente, alerta de limpeza existia no backend mas não aparecia na hora certa. |
 

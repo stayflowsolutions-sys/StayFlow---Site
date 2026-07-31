@@ -3438,3 +3438,62 @@ banco, só não aparecia até a pessoa recarregar a página ou abrir a aba
 Operações manualmente. Corrigido adicionando `loadOperations()` à mesma
 função central - agora qualquer ação (check-in, check-out, cancelar,
 etc) atualiza as três telas juntas, sininho incluso.
+
+## Bug real: reserva do Otavio não calculou preço nem foi pro Beds24
+
+Usuário testou de novo (reserva "Otavio", modalidade "Privado") e os
+dois bugs voltaram: preço US$ 0,00 e nada sincronizado com o Beds24.
+Log revelou a causa exata:
+
+```
+Sync disponibilidade Beds24: modalidade 'Privado' nao encontrada no hostel 1, ignorado.
+```
+
+A modalidade real cadastrada nesse hostel se chama **"privado"**
+(minúsculo - confirmado também no mapeamento Beds24 e nas reservas do
+Claudio Silva, todas com "privado" minúsculo). O formulário de nova
+reserva manual, porém, tem um `<select>` com opções **fixas** no HTML
+("Privado"/"Compartilhado", maiúsculo) - nunca foi ligado às modalidades
+reais cadastradas no hostel. Como toda comparação no banco usava
+`name = ?` (sensível a maiúsculas/minúsculas no SQLite), "Privado" ≠
+"privado": nunca achava a modalidade, então nem calculava preço nem
+sincronizava disponibilidade/reserva com o Beds24 - uma causa raiz só
+explicando os dois sintomas reportados.
+
+Corrigido em TODOS os pontos onde `room_type`/nome de modalidade é
+comparado no banco (não só onde o bug apareceu, para fechar a fragilidade
+de verdade): `create_reservation_record` (cálculo de preço),
+`find_available_beds` (duas consultas), `create_reservation_from_chat`
+(cálculo de preço + contagem de camas), `_resolve_category_id`,
+`find_recent_unlinked_stayflow_reservation`, `sync_availability_to_channel`
+(duas consultas) e `sync_booking_to_channel` - todas passaram a usar
+`LOWER(name) = LOWER(?)` em vez de `name = ?`. Testado com o cenário
+exato do bug (modalidade cadastrada "privado", reserva criada com
+"Privado"): preço calculado corretamente E reserva sincronizada com o
+Beds24, mesmo com capitalização diferente. Bateria completa de testes
+Beds24 (Fases 3, 4 e 5) rerodada sem regressão.
+
+Ainda não corrigido nesta rodada (fica para reforçar depois): o
+`<select>` de "Tipo de quarto" do formulário de nova reserva continua
+com opções fixas, não dinâmicas a partir de `room_categories` - o fix
+de comparação insensível a maiúsculas resolve o sintoma, mas a causa de
+UX (dropdown desconectado das modalidades reais) continua lá.
+
+## Redesign dos botões de check-in/check-out na aba Reservas
+
+Pedido direto do usuário, olhando o resultado visual: o botão de
+check-in/check-out ficava "feio", embaixo do dropdown "Mudar status..."
+na coluna Ações, ocupando a largura toda. Pedido: tirar de baixo do
+status, colocar do lado, botão verde só com "Check-in" e, depois de
+feito, um botão vermelho do lado escrito "Check-out".
+
+Movido o botão pra dentro da própria coluna Estado, ao lado da pill de
+status (`CONFIRMED`/`PENDING`/etc), como um botão pequeno arredondado
+(`pill-btn`) em vez do botão retangular grande de antes. Classes novas
+no CSS: `.checkin-pill` (fundo verde sólido `#26e0a0`) e
+`.checkout-pill` (fundo vermelho sólido `#ff5d76`), texto escuro pra
+contraste, mesmo formato arredondado da pill de status ao lado. Texto
+dos botões encurtado de "Confirmar check-in"/"Confirmar check-out" pra
+só "Check-in"/"Check-out" nos 5 idiomas (termo já universal no
+mercado hoteleiro, sem necessidade de tradução literal). Coluna Ações
+ficou só com o dropdown de mudar status, mais limpa.

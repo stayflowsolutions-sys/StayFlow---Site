@@ -1026,6 +1026,23 @@ body::before{
 .ok{background:#26e0a020;color:#6ff0bd;border-color:#26e0a02a}
 .ai{background:#0b84ff20;color:#7bc2ff;border-color:#0b84ff2a}
 
+.pill-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:760;
+  border:1px solid transparent;
+  cursor:pointer;
+  font-family:inherit;
+}
+.pill-btn.checkin-pill{background:#26e0a0;color:#04241a;border-color:#26e0a0}
+.pill-btn.checkin-pill:hover{background:#3ff5b6}
+.pill-btn.checkout-pill{background:#ff5d76;color:#2a0308;border-color:#ff5d76}
+.pill-btn.checkout-pill:hover{background:#ff7a90}
+
 .table{
   width:100%;
   border-collapse:separate;
