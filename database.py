@@ -1150,6 +1150,15 @@ def update_guest_name_by_id(guest_id, name):
     conn.close()
 
 
+def get_guest_name_by_id(guest_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM guests WHERE id = ?", (guest_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["name"] if row and row["name"] else None
+
+
 def update_guest_language_by_id(guest_id, language):
     conn = get_connection()
     cursor = conn.cursor()

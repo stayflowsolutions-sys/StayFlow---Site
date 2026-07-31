@@ -2,8 +2,9 @@ import os
 
 from flask import Blueprint, request, jsonify
 
-from database import get_hostel_id_by_facebook_page_id
+from database import get_hostel_id_by_facebook_page_id, get_hostel_facebook_config
 from routes.chat import process_incoming_message
+from services.messenger_service import get_messenger_user_profile
 
 meta_webhook_bp = Blueprint("meta_webhook", __name__)
 
@@ -67,7 +68,18 @@ def receive_message():
                 text = message.get("text")
 
                 if psid and text:
-                    process_incoming_message(hostel_id, psid, text, channel="messenger", send_reply=True)
+                    # Busca o nome do perfil do Messenger a cada mensagem -
+                    # so e realmente GRAVADO na primeira vez (get_or_create_
+                    # guest_by_channel so usa "name" ao CRIAR o hospede), o
+                    # custo de buscar de novo em mensagens seguintes e so
+                    # uma chamada a mais ao Graph, sem persistir nada errado.
+                    _, access_token = get_hostel_facebook_config(hostel_id)
+                    first_name, last_name = get_messenger_user_profile(access_token, psid)
+                    guest_name = " ".join(part for part in [first_name, last_name] if part) or None
+
+                    process_incoming_message(
+                        hostel_id, psid, text, channel="messenger", send_reply=True, name=guest_name
+                    )
 
     except Exception as error:
         print("Erro ao processar webhook do Meta (Messenger):", error)

@@ -7,6 +7,7 @@ from database import (
     get_or_create_guest_by_channel,
     is_guest_ai_paused_by_id,
     get_guest_language_by_id,
+    get_guest_name_by_id,
     update_guest_name_by_id,
     update_guest_language_by_id,
     is_opportunity_generation_enabled,
@@ -46,7 +47,7 @@ def _dispatch_send(hostel_id, channel, external_id, answer):
         print(f"Sem envio configurado pro canal '{channel}' ainda.")
 
 
-def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", send_reply=False):
+def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", send_reply=False, name=None):
     """
     Núcleo do processamento de uma mensagem recebida — guest, memória,
     IA, persistência, lead e oportunidade. Reaproveitado pelo endpoint
@@ -55,9 +56,12 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     (/webhook/meta), pra nunca ter duas versões da mesma lógica
     desalinhadas. `external_id` é o identificador do hóspede NO CANAL
     (telefone pro WhatsApp, PSID pro Messenger, IGSID pro Instagram).
+    `name`, quando informado (Messenger/Instagram entregam o nome do
+    perfil automaticamente), só é gravado na criação do hóspede - a IA
+    já sabe usar sem perguntar de novo (ver guest_name em ask_ai).
     """
     guest_phone_for_record = external_id if channel == "whatsapp" else None
-    guest_id = get_or_create_guest_by_channel(hostel_id, channel, external_id, phone=guest_phone_for_record)
+    guest_id = get_or_create_guest_by_channel(hostel_id, channel, external_id, phone=guest_phone_for_record, name=name)
 
     memory_key = _memory_key(channel, external_id)
 
@@ -91,9 +95,10 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     # ja usa quando nao tem telefone disponivel).
     guest_phone = external_id if channel == "whatsapp" and external_id != "unknown" else None
     guest_language = get_guest_language_by_id(guest_id)
+    known_guest_name = get_guest_name_by_id(guest_id)
     answer, guest_name, guest_language_detected = ask_ai(
         history, text, guest_phone=guest_phone, hostel_id=hostel_id,
-        guest_language=guest_language, guest_id=guest_id
+        guest_language=guest_language, guest_id=guest_id, guest_name=known_guest_name
     )
 
     if guest_name:

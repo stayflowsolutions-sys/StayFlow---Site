@@ -164,10 +164,7 @@ CONTACT NUMBER — IMPORTANT:
 {phone_instruction}
 
 GUEST NAME — IMPORTANT:
-As soon as the guest tells you their name, call the save_guest_name function
-with it. Do this silently — it's a background action, never mention it or
-narrate it to the guest. Call it only once per conversation, the first time
-the name is clearly stated.
+{name_instruction}
 
 EXTENDING A STAY — IMPORTANT:
 If the guest already has a reservation and asks to extend their stay for
@@ -416,7 +413,30 @@ RESERVATION_TOOLS = [
 MAX_TOOL_ROUNDS = 4
 
 
-def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None):
+def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None):
+    if guest_name:
+        # Messenger/Instagram entregam o nome do perfil automaticamente
+        # (buscado no momento em que o hospede escreve pela primeira
+        # vez, ver routes/meta_webhook.py) - a IA nao precisa perguntar
+        # de novo, so usar naturalmente. WhatsApp continua sem isso (o
+        # numero de telefone nao revela o nome), pergunta na conversa
+        # como sempre - por isso o guest_name so chega aqui preenchido
+        # quando ja se sabe de verdade, nunca inventado.
+        name_instruction = (
+            f"You already know the guest's name: {guest_name}. Do NOT ask "
+            f"for it again — just use it naturally in the conversation (e.g. "
+            f"greeting them by name). No need to call save_guest_name for a "
+            f"name you already have."
+        )
+    else:
+        name_instruction = (
+            "As soon as the guest tells you their name, call the "
+            "save_guest_name function with it. Do this silently — it's a "
+            "background action, never mention it or narrate it to the "
+            "guest. Call it only once per conversation, the first time the "
+            "name is clearly stated."
+        )
+
     if guest_phone:
         phone_instruction = (
             f"The guest is messaging from WhatsApp number {guest_phone}. "
@@ -453,6 +473,7 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
     system_prompt = SYSTEM_PROMPT.format(
         phone_instruction=phone_instruction,
         language_instruction=language_instruction,
+        name_instruction=name_instruction,
         today_date=datetime.date.today().isoformat()
     )
 
