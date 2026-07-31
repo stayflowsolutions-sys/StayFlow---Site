@@ -554,22 +554,6 @@ def create_database():
     )
     """)
 
-    # App Meta do StayFlow (Facebook Login for Business + Instagram
-    # Login + WhatsApp Embedded Signup) - singleton, um App so cobrindo
-    # os tres fluxos de OAuth, nao um por hostel (mesmo modelo de "conta
-    # master" do beds24_master_account acima). app_secret criptografado
-    # pelo mesmo motivo do token master do Beds24: vaza esse segredo,
-    # vaza a capacidade de agir como o App do StayFlow em nome de
-    # QUALQUER hostel conectado, nao so um.
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS meta_app_credentials (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        app_id TEXT,
-        app_secret_encrypted TEXT,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
     # De-para entre uma modalidade de quarto do StayFlow (room_categories)
     # e o "room" correspondente dentro da propriedade daquele hostel no
     # Beds24 - sem isso, uma reserva vinda de OTA não tem como saber em
@@ -2393,37 +2377,6 @@ def consume_hostel_instagram_oauth_state(hostel_id, state):
     conn.commit()
     conn.close()
     return valid
-
-
-# ===== APP META DO STAYFLOW (singleton - Facebook Login for Business +
-# Instagram Login + WhatsApp Embedded Signup) =====
-
-def save_meta_app_credentials(app_id, app_secret_encrypted):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        """
-        INSERT INTO meta_app_credentials (id, app_id, app_secret_encrypted, updated_at)
-        VALUES (1, ?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(id) DO UPDATE SET
-            app_id = excluded.app_id,
-            app_secret_encrypted = excluded.app_secret_encrypted,
-            updated_at = CURRENT_TIMESTAMP
-        """,
-        (app_id, app_secret_encrypted)
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_meta_app_credentials():
-    """Devolve dict com app_id/app_secret_encrypted, ou None se nunca configurado."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT app_id, app_secret_encrypted FROM meta_app_credentials WHERE id = 1")
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
 
 
 def get_or_create_guest_by_channel(hostel_id, channel, external_id, phone=None, name=None):

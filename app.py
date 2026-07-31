@@ -21,6 +21,7 @@ from routes.operations import operations_bp
 from routes.revenue import revenue_bp
 from routes.whatsapp_webhook import whatsapp_webhook_bp
 from routes.beds24_webhook import beds24_webhook_bp
+from routes.meta_oauth import meta_oauth_bp
 from routes.team import team_bp
 from routes.quick_replies import quick_replies_bp
 from routes.security import security_bp
@@ -58,6 +59,7 @@ app.register_blueprint(operations_bp)
 app.register_blueprint(revenue_bp)
 app.register_blueprint(whatsapp_webhook_bp)
 app.register_blueprint(beds24_webhook_bp)
+app.register_blueprint(meta_oauth_bp)
 app.register_blueprint(team_bp)
 app.register_blueprint(quick_replies_bp)
 app.register_blueprint(security_bp)

@@ -17,7 +17,11 @@ from database import (
     save_hostel_outbound_webhook_url,
     regenerate_hostel_outbound_webhook_secret,
     clear_hostel_outbound_webhook,
+    get_hostel_facebook_config,
+    save_hostel_facebook_config,
+    clear_hostel_facebook_config,
 )
+import services.meta_oauth_service as meta_oauth_service
 import services.beds24_service as beds24_service
 from utils.tenant import require_permission
 
@@ -378,6 +382,51 @@ def regenerate_outbound_webhook_secret(hostel_id):
 @require_permission("settings")
 def delete_outbound_webhook_settings(hostel_id):
     clear_hostel_outbound_webhook(hostel_id)
+    return jsonify({"success": True})
+
+
+@settings_bp.route("/settings/facebook", methods=["GET"])
+@require_permission("settings")
+def get_facebook_settings(hostel_id):
+    page_id, access_token = get_hostel_facebook_config(hostel_id)
+    return jsonify({
+        "page_id": page_id or "",
+        "has_access_token": bool(access_token),
+        "connected": bool(page_id and access_token),
+        "oauth_available": meta_oauth_service.is_app_configured(),
+    })
+
+
+@settings_bp.route("/settings/facebook", methods=["POST"])
+@require_permission("settings")
+def update_facebook_settings(hostel_id):
+    """
+    Configuracao manual (decisao 1b do plano) - alternativa ao botao
+    "Conectar Facebook" (OAuth), pro hostel que ja tem a Pagina/token
+    prontos ou prefere nao passar pela tela de consentimento da Meta.
+    Mesmo contrato de /settings/whatsapp: token vazio no POST = mantem
+    o que ja estava salvo.
+    """
+    data = request.get_json() or {}
+
+    page_id = (data.get("page_id") or "").strip()
+    access_token = (data.get("access_token") or "").strip()
+
+    if not page_id:
+        return jsonify({"success": False, "message": "page_id is required."}), 400
+
+    if not access_token:
+        _, existing_token = get_hostel_facebook_config(hostel_id)
+        access_token = existing_token
+
+    save_hostel_facebook_config(hostel_id, page_id, access_token)
+    return jsonify({"success": True})
+
+
+@settings_bp.route("/settings/facebook", methods=["DELETE"])
+@require_permission("settings")
+def delete_facebook_settings(hostel_id):
+    clear_hostel_facebook_config(hostel_id)
     return jsonify({"success": True})
 
 
