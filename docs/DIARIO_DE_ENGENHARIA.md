@@ -4062,3 +4062,41 @@ Signup (via popup JS, mecanismo de callback diferente dos outros
 dois); depois disso, entrada (webhook `/webhook/meta`), saída (envio
 de mensagem), migração de identidade, e tempo real (SSE) - todas
 detalhadas no plano completo.
+
+## Configuração ao vivo com o usuário - achado real e confirmação
+
+Guiei o usuário passo a passo pelo painel da Meta (achado dele: a
+Meta trocou "Adicionar produto" por "Agregar caso de uso" nas versões
+recentes). App Meta já existia ("StayFlow AI", mesmo do WhatsApp) -
+só precisou adicionar os casos de uso de Messenger e Instagram
+("Mensajes comerciales"). App ID (`2039319673644412`) e App Secret
+passados no chat - configurados como `META_APP_ID`/`META_APP_SECRET`
+no Render.
+
+Achado real na hora de configurar o Facebook Login: esse App usa o
+modo "Facebook Login for Business" com Configuration (não o Facebook
+Login clássico que o código original assumia) - as permissões
+(`pages_show_list`/`pages_messaging`/`pages_manage_metadata`) ficam
+empacotadas numa "Configuración" própria, que gera um Configuration
+ID (`1632026542144059`), usado na URL de autorização via `config_id`
+em vez de `scope` solto. Corrigido `get_facebook_authorize_url`
+(`services/meta_oauth_service.py`) e as duas checagens de
+"App configurado" (`routes/meta_oauth.py`, `routes/settings.py`) pra
+exigir `FACEBOOK_CONFIG_ID` também, não só `META_APP_ID`/`META_APP_SECRET`.
+Testes atualizados pra cobrir o `config_id` na URL e o novo requisito
+de configuração - todos passando.
+
+Também precisou cadastrar a Redirect URI
+(`https://stayflowsolutions.com/oauth/facebook/callback`) na tela
+"Configurar" (separada da tela "Configuraciones" com o Configuration
+ID) - campo "URI de redireccionamiento de OAuth válidos", dentro de
+"Configuración del cliente de OAuth".
+
+**Confirmado funcionando de ponta a ponta em produção**: botão
+"Conectar Facebook" no StayFlow → tela de consentimento da Meta →
+callback → Página salva no hostel, usuário reportou "conectado com
+sucesso". Fecha o ponto que o plano tinha deixado em aberto (mesmo
+padrão da integração Beds24 - só confirma o formato exato da API
+testando ao vivo).
+
+Próximo passo, um de cada vez: Instagram Login.
