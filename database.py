@@ -4843,6 +4843,149 @@ def get_room_category_id_by_beds24_room_id(hostel_id, beds24_room_id):
     return row["room_category_id"] if row else None
 
 
+def get_hostel_id_by_beds24_room_id(beds24_room_id):
+    """
+    Resolve qual hostel e dono de um quarto do Beds24 sem precisar
+    saber o hostel_id de antemao - usado pelo webhook de entrada, que
+    recebe um roomId mas nao necessariamente um propertyId explicito.
+    Cada beds24_room_id so pode estar mapeado a um hostel por vez (o
+    quarto pertence fisicamente a uma unica sub-propriedade).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT hostel_id FROM channel_room_mapping WHERE beds24_room_id = ? LIMIT 1",
+        (str(beds24_room_id),)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row["hostel_id"] if row else None
+
+
+def try_claim_webhook_event(beds24_booking_id, hostel_id, event_type, payload_json):
+    """
+    Registra esse evento de webhook como "em processamento" - se o
+    Beds24 reentregar o mesmo evento (rede lenta, timeout do lado
+    deles), a segunda tentativa esbarra na constraint UNIQUE e essa
+    funcao devolve False, evitando duplicar a reserva. Devolve True
+    apenas na primeira vez (deve seguir em frente com o processamento).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            INSERT INTO channel_webhook_events
+            (beds24_booking_id, hostel_id, event_type, payload_json, status)
+            VALUES (?, ?, ?, ?, 'processing')
+            """,
+            (str(beds24_booking_id), hostel_id, event_type, payload_json)
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def finalize_webhook_event(beds24_booking_id, status, error_message=None, reservation_id=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE channel_webhook_events
+        SET status = ?, error_message = ?, reservation_id = ?
+        WHERE beds24_booking_id = ?
+        """,
+        (status, error_message, reservation_id, str(beds24_booking_id))
+    )
+    conn.commit()
+    conn.close()
+
+
+def create_reservation_from_channel(hostel_id, room_category_id, guest_name, guest_phone,
+                                      checkin_date, checkout_date, external_booking_id, source, amount=0):
+    """
+    Cria uma reserva a partir de uma notificacao de reserva vinda de um
+    channel manager (Beds24) - Booking.com/Airbnb/Hostelworld. Diferente
+    do fluxo do WhatsApp (que recusa reservar se nao houver cama livre),
+    aqui a reserva ja e um compromisso confirmado do lado da OTA - nao
+    da pra simplesmente recusar por falta de cama. Tenta atribuir uma
+    cama disponivel de verdade (com a mesma trava contra corrida da
+    Fase 1); se nao houver nenhuma livre/cadastrada, cria a reserva
+    mesmo assim sem cama especifica, pra equipe atribuir manualmente -
+    perder o registro da reserva seria pior que deixar sem cama.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT name, price_per_night FROM room_categories WHERE id = ? AND hostel_id = ?",
+        (room_category_id, hostel_id)
+    )
+    category = cursor.fetchone()
+    conn.close()
+    if not category:
+        raise ValueError("Modalidade nao encontrada.")
+
+    category_name = category["name"]
+    checkin_date = (checkin_date or "").strip()
+    checkout_date = (checkout_date or "").strip()
+
+    nights = 0
+    try:
+        nights = max((datetime.date.fromisoformat(checkout_date) - datetime.date.fromisoformat(checkin_date)).days, 0)
+    except (ValueError, TypeError):
+        pass
+    if not amount and category["price_per_night"]:
+        amount = round(category["price_per_night"] * nights, 2)
+
+    guest_phone = (guest_phone or "").strip()
+    guest_id = None
+    if guest_phone:
+        guest_id = get_or_create_guest(hostel_id, guest_phone)
+        if guest_name:
+            update_guest_name(hostel_id, guest_phone, guest_name)
+
+    def _insert(cursor, bed_id):
+        cursor.execute(
+            """
+            INSERT INTO reservations
+            (hostel_id, guest_id, guest_name, room_type, bed, bed_id, checkin_date,
+             checkout_date, source, amount, status, external_booking_id)
+            VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?, 'confirmed', ?)
+            """,
+            (hostel_id, guest_id, guest_name, category_name, bed_id,
+             checkin_date, checkout_date, source, amount, str(external_booking_id))
+        )
+        return cursor.lastrowid
+
+    available = find_available_beds(hostel_id, category_name, checkin_date, checkout_date)
+    if available:
+        bed_id = available[0]["id"]
+        return reservar_cama_com_trava(hostel_id, bed_id, checkin_date, checkout_date, lambda cursor: _insert(cursor, bed_id))
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    reservation_id = _insert(cursor, None)
+    conn.commit()
+    conn.close()
+    return reservation_id
+
+
+def get_reservation_id_by_external_booking_id(hostel_id, external_booking_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id FROM reservations WHERE hostel_id = ? AND external_booking_id = ?",
+        (hostel_id, str(external_booking_id))
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row["id"] if row else None
+
+
 def get_quick_replies(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()
