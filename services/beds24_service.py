@@ -227,6 +227,38 @@ def create_room_type(property_id, room_name):
         return None, "Erro de conexao com o Beds24."
 
 
+def debug_get_raw_properties_response(property_id):
+    """
+    Diagnostico temporario: chama GET /properties igual get_property_rooms,
+    mas devolve a resposta CRUA (status HTTP + corpo, sem interpretar nada)
+    - usado so pra investigar divergencia de formato de resposta da Beds24,
+    sem depender de log espalhado. Remover depois que o bug de verdade
+    (beds24_rooms vindo vazio mesmo com quartos existentes) for resolvido.
+    """
+    access_token = _get_valid_access_token()
+    if not access_token:
+        return {"error": "Conta master do Beds24 nao configurada ou token invalido."}
+
+    try:
+        response = requests.get(
+            f"{API_BASE}/properties",
+            headers={"token": access_token},
+            params={"propertyId": property_id, "includeAllRooms": "true"},
+            timeout=REQUEST_TIMEOUT,
+        )
+        try:
+            body = response.json()
+        except Exception:
+            body = response.text
+        return {
+            "status_code": response.status_code,
+            "request_url": response.url,
+            "body": body,
+        }
+    except Exception as error:
+        return {"error": str(error)}
+
+
 def get_property_rooms(property_id):
     """
     Lista os tipos de quarto (roomTypes) ja cadastrados na sub-
