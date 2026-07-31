@@ -93,7 +93,7 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     guest_language = get_guest_language_by_id(guest_id)
     answer, guest_name, guest_language_detected = ask_ai(
         history, text, guest_phone=guest_phone, hostel_id=hostel_id,
-        guest_language=guest_language
+        guest_language=guest_language, guest_id=guest_id
     )
 
     if guest_name:

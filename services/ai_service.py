@@ -416,7 +416,7 @@ RESERVATION_TOOLS = [
 MAX_TOOL_ROUNDS = 4
 
 
-def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None):
+def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None):
     if guest_phone:
         phone_instruction = (
             f"The guest is messaging from WhatsApp number {guest_phone}. "
@@ -462,18 +462,21 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
         + [{"role": "user", "content": message}]
     )
 
-    # As ferramentas de reserva/preco/cama precisam de hostel_id+telefone
+    # As ferramentas de reserva/preco/cama precisam de hostel_id+guest_id
     # reais pra saber de qual hospede/hostel se trata - sem isso (ex:
-    # endpoint de teste manual sem hostel_id), elas nem aparecem pro modelo.
+    # endpoint de teste manual sem hostel_id), elas nem aparecem pro
+    # modelo. guest_id (nao guest_phone) porque funciona pra qualquer
+    # canal - Messenger/Instagram nunca tem guest_phone de verdade, mas
+    # sempre tem guest_id resolvido pelo chamador.
     tools = [SAVE_GUEST_NAME_TOOL, SAVE_GUEST_LANGUAGE_TOOL]
-    if hostel_id and guest_phone:
+    if hostel_id and guest_id:
         tools = tools + RESERVATION_TOOLS
 
     extracted_name = None
     extracted_language = None
     final_text = None
 
-    for _ in range(MAX_TOOL_ROUNDS):
+    for round_number in range(MAX_TOOL_ROUNDS):
         kwargs = dict(model="gpt-4.1-mini", temperature=0.6, messages=messages)
         if tools:
             kwargs["tools"] = tools
@@ -485,6 +488,12 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
         if not response_message.tool_calls:
             final_text = response_message.content
             break
+
+        # Ajuda a diagnosticar o fallback "confirmar com a equipe" (linha
+        # abaixo, dispara quando o loop de tool-calling esgota
+        # MAX_TOOL_ROUNDS sem nunca produzir texto final) - mostra quais
+        # ferramentas o modelo tentou chamar em cada rodada.
+        print(f"ask_ai rodada {round_number + 1}/{MAX_TOOL_ROUNDS}: tool_calls =", [tc.function.name for tc in response_message.tool_calls])
 
         messages.append(response_message)
 
@@ -509,7 +518,7 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             elif name == "extend_reservation":
                 try:
                     result = attempt_extend_reservation(
-                        hostel_id, guest_phone, args.get("new_checkout_date")
+                        hostel_id, guest_id, args.get("new_checkout_date")
                     )
                     tool_content = json.dumps(result, ensure_ascii=False)
                 except ValueError as error:
@@ -517,7 +526,7 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             elif name == "flag_extension_for_approval":
                 try:
                     result = flag_extension_for_approval(
-                        hostel_id, guest_phone, args.get("note", "")
+                        hostel_id, guest_id, args.get("note", "")
                     )
                     tool_content = json.dumps(result, ensure_ascii=False)
                 except ValueError as error:
@@ -546,7 +555,7 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             elif name == "create_reservation":
                 try:
                     result = create_reservation_from_chat(
-                        hostel_id, guest_phone,
+                        hostel_id, guest_id,
                         args.get("guest_name"), args.get("category_name"),
                         args.get("checkin_date"), args.get("checkout_date"),
                         bed_id=args.get("bed_id")
@@ -566,6 +575,7 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             })
 
     if final_text is None:
+        print(f"ask_ai: MAX_TOOL_ROUNDS ({MAX_TOOL_ROUNDS}) esgotado sem texto final - hostel_id={hostel_id}, guest_phone={guest_phone!r}, tools_disponiveis={[t['function']['name'] for t in tools]}")
         fallback_by_language = {
             "pt": "Deixa eu confirmar isso com a equipe e já te retorno, tá bom?",
             "en": "Let me confirm that with the team and I'll get back to you shortly.",

@@ -8,6 +8,14 @@ from utils.permissions import ALL_PERMISSIONS_STR
 
 DATABASE = os.path.join(os.getenv("STAYFLOW_DATA_DIR", "."), "stayflow.db")
 
+# reservations.source cujo valor significa "essa reserva nasceu dentro
+# do proprio StayFlow" (manual, ou qualquer canal de chat que a IA
+# atende) - distingue de reserva vinda de um canal externo/OTA (ex:
+# Beds24), usado nos dois lugares que precisam saber se e seguro
+# sincronizar pro Beds24 sem risco de ecoar de volta uma reserva que
+# JA veio de la.
+STAYFLOW_NATIVE_SOURCES = ("manual", "whatsapp", "messenger", "instagram")
+
 
 def _normalize_text(text):
     """
@@ -3722,7 +3730,7 @@ def get_offerings_for_chat(hostel_id):
     return offerings
 
 
-def _flag_booking_needs_manual_setup(hostel_id, phone, guest_name, category_name, checkin_date, checkout_date):
+def _flag_booking_needs_manual_setup(hostel_id, guest_id, guest_name, category_name, checkin_date, checkout_date):
     """
     Quando a modalidade pedida nao tem NENHUMA cama cadastrada, nao da
     pra confirmar disponibilidade automaticamente - reservar as cegas
@@ -3736,18 +3744,8 @@ def _flag_booking_needs_manual_setup(hostel_id, phone, guest_name, category_name
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
-        (hostel_id, phone)
-    )
-    guest = cursor.fetchone()
-
-    if not guest:
-        conn.close()
-        return
-
-    cursor.execute(
         "SELECT id FROM opportunities WHERE guest_id = ? AND type = 'booking' AND status = 'open'",
-        (guest["id"],)
+        (guest_id,)
     )
     if cursor.fetchone():
         conn.close()
@@ -3760,7 +3758,7 @@ def _flag_booking_needs_manual_setup(hostel_id, phone, guest_name, category_name
         VALUES (?, 'booking', ?, 'open', 90, 'high', 0, ?)
         """,
         (
-            guest["id"],
+            guest_id,
             f"{guest_name} quer reservar '{category_name}' de {checkin_date} a {checkout_date}, mas essa "
             f"modalidade ainda nao tem nenhuma cama cadastrada - nao da pra confirmar disponibilidade automaticamente.",
             "Cadastrar as camas dessa modalidade no Mapa de Quartos e confirmar a reserva manualmente com o hospede."
@@ -3771,13 +3769,17 @@ def _flag_booking_needs_manual_setup(hostel_id, phone, guest_name, category_name
     conn.close()
 
 
-def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, checkin_date, checkout_date, bed_id=None):
+def create_reservation_from_chat(hostel_id, guest_id, guest_name, category_name, checkin_date, checkout_date, bed_id=None):
     """
     Cria a reserva automaticamente a partir da conversa da IA de
-    atendimento com o hospede pelo WhatsApp - sempre status 'pending'
-    (a equipe confirma depois, igual ja fazia manualmente). O valor e
-    SEMPRE calculado a partir do price_per_night real da modalidade
-    (nunca aceito como argumento do modelo).
+    atendimento - sempre status 'pending' (a equipe confirma depois,
+    igual ja fazia manualmente). O valor e SEMPRE calculado a partir do
+    price_per_night real da modalidade (nunca aceito como argumento do
+    modelo). guest_id ja vem resolvido pelo chamador (routes/chat.py,
+    via get_or_create_guest_by_channel) - funciona pra qualquer canal
+    (WhatsApp, Messenger, Instagram), nao so WhatsApp; o canal real do
+    hospede (get_guest_channel) vira o `source` da reserva, em vez de
+    'whatsapp' hardcoded.
 
     Protecao contra overbooking: se a modalidade nao tem NENHUMA cama
     cadastrada, a reserva NAO e criada - vira oportunidade pra equipe
@@ -3792,18 +3794,21 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
     """
     checkin_date = (checkin_date or "").strip()
     checkout_date = (checkout_date or "").strip()
+    channel = get_guest_channel(hostel_id, guest_id)
+
+    if guest_name:
+        update_guest_name_by_id(guest_id, guest_name)
 
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute(
         """
-        SELECT r.id FROM reservations r
-        JOIN guests g ON g.id = r.guest_id
-        WHERE r.hostel_id = ? AND g.phone = ? AND r.source = 'whatsapp'
-          AND r.status = 'pending' AND r.checkin_date = ? AND r.checkout_date = ?
+        SELECT id FROM reservations
+        WHERE hostel_id = ? AND guest_id = ? AND source = ?
+          AND status = 'pending' AND checkin_date = ? AND checkout_date = ?
         """,
-        (hostel_id, phone, checkin_date, checkout_date)
+        (hostel_id, guest_id, channel, checkin_date, checkout_date)
     )
     existing = cursor.fetchone()
 
@@ -3836,7 +3841,7 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
     conn.close()
 
     if bed_count == 0:
-        _flag_booking_needs_manual_setup(hostel_id, phone, guest_name, category_name, checkin_date, checkout_date)
+        _flag_booking_needs_manual_setup(hostel_id, guest_id, guest_name, category_name, checkin_date, checkout_date)
         raise ValueError(
             f"A modalidade '{category_name}' ainda nao tem nenhuma cama cadastrada, entao nao da pra confirmar "
             f"disponibilidade com seguranca. O pedido foi registrado como oportunidade de alta prioridade pra "
@@ -3858,30 +3863,16 @@ def create_reservation_from_chat(hostel_id, phone, guest_name, category_name, ch
     if category_row and category_row["price_per_night"]:
         amount = round(category_row["price_per_night"] * nights, 2)
 
-    # get_or_create_guest (nao so SELECT) - sem isso, hospede novo
-    # mandando a primeira mensagem nunca virava um registro em guests,
-    # entao nunca aparecia na aba Hospedes nem levava telefone/email pra
-    # sincronizacao com o Beds24 (mesmo bug ja corrigido em
-    # create_indefinite_stay). Chamado FORA de _insert_with_bed porque
-    # get_or_create_guest abre sua propria conexao - nao da pra abrir
-    # outra dentro da transacao travada de reservar_cama_com_trava.
-    guest_id = None
-    stripped_phone = (phone or "").strip()
-    if stripped_phone:
-        guest_id = get_or_create_guest(hostel_id, stripped_phone)
-        if guest_name:
-            update_guest_name(hostel_id, stripped_phone, guest_name)
-
     def _insert_with_bed(cursor):
         cursor.execute(
             """
             INSERT INTO reservations
             (hostel_id, guest_id, guest_name, room_type, bed, bed_id, checkin_date,
              checkout_date, source, payment_method, amount, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'whatsapp', ?, ?, 'pending')
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
             """,
             (hostel_id, guest_id, guest_name, category_name, "", int(bed_id),
-             checkin_date, checkout_date, "", amount)
+             checkin_date, checkout_date, channel, "", amount)
         )
         return cursor.lastrowid
 
@@ -4414,21 +4405,11 @@ def _create_extension_opportunity(guest_id, description, next_action, estimated_
     conn.close()
 
 
-def attempt_extend_reservation(hostel_id, phone, new_checkout_date):
+def attempt_extend_reservation(hostel_id, guest_id, new_checkout_date):
     import datetime
 
     conn = get_connection()
     cursor = conn.cursor()
-
-    cursor.execute(
-        "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
-        (hostel_id, phone)
-    )
-    guest = cursor.fetchone()
-
-    if not guest:
-        conn.close()
-        raise ValueError("Hospede nao encontrado.")
 
     cursor.execute(
         """
@@ -4438,7 +4419,7 @@ def attempt_extend_reservation(hostel_id, phone, new_checkout_date):
         ORDER BY checkout_date DESC
         LIMIT 1
         """,
-        (hostel_id, guest["id"])
+        (hostel_id, guest_id)
     )
     reservation = cursor.fetchone()
     conn.close()
@@ -4464,7 +4445,7 @@ def attempt_extend_reservation(hostel_id, phone, new_checkout_date):
 
     if not rate_known:
         _create_extension_opportunity(
-            guest["id"],
+            guest_id,
             description=f"Hospede pediu extensao ate {new_checkout_date}, mas nao foi possivel calcular a diaria com seguranca pra estender automaticamente.",
             next_action="Confirmar manualmente a extensao e o valor com o hospede.",
         )
@@ -4499,22 +4480,9 @@ def attempt_extend_reservation(hostel_id, phone, new_checkout_date):
     }
 
 
-def flag_extension_for_approval(hostel_id, phone, note):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        "SELECT id FROM guests WHERE hostel_id = ? AND phone = ?",
-        (hostel_id, phone)
-    )
-    guest = cursor.fetchone()
-    conn.close()
-
-    if not guest:
-        raise ValueError("Hospede nao encontrado.")
-
+def flag_extension_for_approval(hostel_id, guest_id, note):
     _create_extension_opportunity(
-        guest["id"],
+        guest_id,
         description=f"Hospede pediu extensao de estadia em condicoes diferentes: {note}",
         next_action="Revisar pedido de extensao manualmente com o hospede.",
     )
@@ -5619,18 +5587,19 @@ def find_recent_unlinked_stayflow_reservation(hostel_id, room_type, guest_name, 
     """
     conn = get_connection()
     cursor = conn.cursor()
+    placeholders = ",".join("?" for _ in STAYFLOW_NATIVE_SOURCES)
     cursor.execute(
-        """
+        f"""
         SELECT id FROM reservations
         WHERE hostel_id = ? AND LOWER(room_type) = LOWER(?) AND guest_name = ?
           AND checkin_date = ? AND checkout_date = ?
-          AND source IN ('manual', 'whatsapp')
+          AND source IN ({placeholders})
           AND external_booking_id IS NULL
           AND status != 'cancelled'
           AND created_at >= datetime('now', '-10 minutes')
         ORDER BY id DESC LIMIT 1
         """,
-        (hostel_id, room_type, guest_name, checkin_date, checkout_date)
+        (hostel_id, room_type, guest_name, checkin_date, checkout_date, *STAYFLOW_NATIVE_SOURCES)
     )
     row = cursor.fetchone()
     conn.close()
@@ -5803,7 +5772,7 @@ def sync_booking_to_channel(hostel_id, reservation_id):
         )
         reservation = cursor.fetchone()
 
-        if not reservation or reservation["source"] not in ("manual", "whatsapp"):
+        if not reservation or reservation["source"] not in STAYFLOW_NATIVE_SOURCES:
             conn.close()
             return
         if not reservation["checkin_date"] or not reservation["checkout_date"]:
