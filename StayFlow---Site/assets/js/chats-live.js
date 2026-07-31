@@ -148,7 +148,7 @@ async function loadChats() {
 
             item.innerHTML = `
                 <div class="chat-name">
-                    <span>${flag ? flag + " " : ""}${chat.name || chat.phone || T('chats.noPhone', 'Sem telefone')}</span>
+                    <span>${flag ? flag + " " : ""}${chat.name || chat.phone || T('chats.noPhone', 'Sem telefone')} ${channelBadgeHtml(chat.channel)}</span>
                     <span class="status-pill ${urgency}">
                         ${intent} · ${score}/100
                     </span>
@@ -243,7 +243,8 @@ async function loadGuestProfile(guestId) {
         const chatTitle = document.getElementById("chatTitle");
         if (chatTitle) {
             const flag = stayflowCountryFlag(guest.phone);
-            chatTitle.textContent = `${T('chats.defaultTitle', 'Conversa')} · ${flag ? flag + " " : ""}${guest.name || guest.phone || T('chats.guestFallback', 'Hóspede')}`;
+            const titleText = `${T('chats.defaultTitle', 'Conversa')} · ${flag ? flag + " " : ""}${guest.name || guest.phone || T('chats.guestFallback', 'Hóspede')}`;
+            chatTitle.innerHTML = `${escapeHtml(titleText)} ${channelBadgeHtml(guest.channel)}`;
         }
 
         // Mensagens

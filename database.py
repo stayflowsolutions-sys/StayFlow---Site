@@ -3015,6 +3015,9 @@ def get_guest_profile(hostel_id, guest_id):
         conn.close()
         return None
 
+    guest_dict = dict(guest)
+    guest_dict["channel"] = get_guest_channel(hostel_id, guest_id)
+
     cursor.execute("""
         SELECT m.sender, m.message, m.created_at
         FROM messages m
@@ -3048,7 +3051,7 @@ def get_guest_profile(hostel_id, guest_id):
     conn.close()
 
     return {
-        "guest": dict(guest),
+        "guest": guest_dict,
         "messages": messages,
         "opportunities": opportunities,
         "documents": documents,
@@ -3119,6 +3122,12 @@ def get_chats_list(hostel_id):
             g.id AS guest_id,
             g.phone,
             g.name,
+            (
+                SELECT ci.channel
+                FROM guest_channel_identities ci
+                WHERE ci.hostel_id = g.hostel_id AND ci.guest_id = g.id
+                ORDER BY ci.id DESC LIMIT 1
+            ) AS channel,
             m.message AS last_message,
             m.sender AS last_sender,
             m.created_at AS last_activity,

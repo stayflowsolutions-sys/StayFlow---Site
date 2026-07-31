@@ -3313,12 +3313,36 @@ const CHANNEL_DISPLAY_LABELS = {
   airbnb: "Airbnb", booking: "Booking.com", bookingcom: "Booking.com",
   "booking.com": "Booking.com", hostelworld: "Hostelworld",
   expedia: "Expedia", agoda: "Agoda", vrbo: "Vrbo",
+  messenger: "Messenger", instagram: "Instagram", api: "WhatsApp",
 };
 function channelDisplayLabel(source){
   const key = (source || "").toLowerCase().trim();
   if(!key) return "-";
   if(CHANNEL_DISPLAY_LABELS[key]) return CHANNEL_DISPLAY_LABELS[key];
   return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+// Selo discreto de canal (WhatsApp/Messenger/Instagram) - usado na
+// lista de Chats e no perfil do hospede. Cores so pra diferenciar
+// rapido visualmente, sem exigir leitura do texto.
+const CHANNEL_BADGE_COLORS = {
+  whatsapp: "#3ddc97", messenger: "#7b61ff", instagram: "#e1306c", api: "#3ddc97",
+};
+function channelBadgeHtml(channel){
+  const key = (channel || "whatsapp").toLowerCase().trim();
+  const color = CHANNEL_BADGE_COLORS[key] || "#7bc2ff";
+  return `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.02em;color:${color};border:1px solid ${color}55;background:${color}18;border-radius:999px;padding:2px 8px;white-space:nowrap">${channelDisplayLabel(key)}</span>`;
+}
+
+// Nome do hospede clicavel (Reservas -> abre o mesmo perfil usado na
+// aba Hospedes) - pedido explicito do usuario: alem de facilitar o
+// acesso, garante que esse perfil "precisa existir" pra qualquer
+// reserva (inclusive morador de longa duracao), ja que reforca o
+// mesmo guest_id em vez de so mostrar o guest_name solto.
+function guestNameLink(guestId, guestName){
+  const label = escapeHtml(guestName || "-");
+  if(!guestId) return label;
+  return `<a href="javascript:void(0)" onclick="openGuestProfileModal(${guestId})" style="color:#7bc2ff;text-decoration:underline;cursor:pointer">${label}</a>`;
 }
 
 async function loadReservations(){
@@ -3371,7 +3395,7 @@ async function loadReservations(){
             : `<span style="color:var(--muted)">${T('longTermStay.upToDate', 'Em dia')}</span>`;
 
         row.innerHTML = `
-          <td>${r.guest_name || "-"}</td>
+          <td>${guestNameLink(r.guest_id, r.guest_name)}</td>
           <td>${r.room_type || "-"}${r.bed ? " · " + r.bed : ""}</td>
           <td>${T('longTermStay.since', 'Desde')} ${r.checkin_date || "-"}${r.checkout_date ? " " + T('longTermStay.until', 'até') + " " + r.checkout_date : ""} (${r.days_occupied ?? 0}${T('longTermStay.daysUnit', 'd')})</td>
           <td>${T('longTermStay.fixedResidentLabel', 'morador fixo')}</td>
@@ -3387,7 +3411,7 @@ async function loadReservations(){
       }
 
       row.innerHTML = `
-        <td>${r.guest_name || "-"}</td>
+        <td>${guestNameLink(r.guest_id, r.guest_name)}</td>
         <td>${r.room_type || "-"}${r.bed ? " · " + r.bed : ""}</td>
         <td>${r.checkin_date || "-"} → ${r.checkout_date || "-"}</td>
         <td>${channelDisplayLabel(r.source)}</td>
@@ -3580,7 +3604,7 @@ function renderCancelledReservationsList(reservations){
 
   const rows = reservations.map(r => `
     <tr>
-      <td>${escapeHtml(r.guest_name || "-")}</td>
+      <td>${guestNameLink(r.guest_id, r.guest_name)}</td>
       <td>${escapeHtml(r.room_type || "-")}${r.bed ? " · " + escapeHtml(r.bed) : ""}</td>
       <td>${r.checkin_date || "-"} → ${r.checkout_date || "-"}</td>
       <td>${channelDisplayLabel(r.source)}</td>
@@ -5521,7 +5545,7 @@ window.openGuestProfileModal = async function(guestId){
 
   openGenericModal(g.name || T('guests.noName', 'Sem nome'), `
     <div class="guest-profile-section" style="border-top:0;padding-top:0;margin-top:0">
-      <h4>${T('guests.profile.contactTitle', 'Contato')}</h4>
+      <h4>${T('guests.profile.contactTitle', 'Contato')} ${channelBadgeHtml(g.channel)}</h4>
       <div class="guest-profile-grid">
         <div><label>${T('common.name', 'Nome')}</label><input id="gpName" value="${escapeHtml(g.name || "")}"></div>
         <div><label>${T('common.phone', 'Telefone')}</label><input id="gpPhone" value="${escapeHtml(g.phone || "")}"></div>
