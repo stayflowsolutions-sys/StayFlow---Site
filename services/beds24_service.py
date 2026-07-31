@@ -251,8 +251,20 @@ def get_property_rooms(property_id):
 
         data = response.json()
         print("Resposta do Beds24 ao listar quartos (propertyId=%s):" % property_id, data)
-        item = data[0] if isinstance(data, list) and data else data
-        room_types = item.get("roomTypes") if isinstance(item, dict) else None
+
+        # A resposta real (confirmado nos logs) e a lista de quartos
+        # direto, sem vir embrulhada num objeto de propriedade com uma
+        # chave "roomTypes" dentro - diferente do que a documentacao
+        # publica dava a entender. Aceita os dois formatos possiveis
+        # pra nao quebrar se a Beds24 mudar o formato de novo.
+        room_types = None
+        if isinstance(data, list) and data and isinstance(data[0], dict) and isinstance(data[0].get("roomTypes"), list):
+            room_types = data[0]["roomTypes"]
+        elif isinstance(data, list):
+            room_types = data
+        elif isinstance(data, dict) and isinstance(data.get("roomTypes"), list):
+            room_types = data["roomTypes"]
+
         if not isinstance(room_types, list):
             print("Resposta do Beds24 sem roomTypes:", data)
             return [], None
