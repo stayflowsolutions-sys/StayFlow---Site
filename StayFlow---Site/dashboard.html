@@ -3135,6 +3135,10 @@ async function loadReservations(){
 function refreshOperationalViews(){
   if(typeof loadRoomMap === "function") loadRoomMap();
   if(typeof loadReservations === "function") loadReservations();
+  // Sem isso, o alerta de limpeza (e o contador do sininho) so
+  // aparecia depois de recarregar a pagina ou abrir a aba Operacoes -
+  // um check-out feito agora precisa avisar na hora, nao só depois.
+  if(typeof loadOperations === "function") loadOperations();
 }
 
 window.checkinReservationUI = async function(reservationId, bedId){

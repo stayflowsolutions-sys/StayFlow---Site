@@ -34,7 +34,10 @@ from database import (
     get_hostel_id_by_beds24_property_id,
     get_hostel_id_by_beds24_room_id,
     get_room_category_id_by_beds24_room_id,
+    get_room_category_name,
     get_reservation_id_by_external_booking_id,
+    find_recent_unlinked_stayflow_reservation,
+    link_external_booking_id,
     try_claim_webhook_event,
     finalize_webhook_event,
     create_reservation_from_channel,
@@ -108,21 +111,6 @@ def _process_single_booking(raw_item):
         print("Webhook Beds24: nao foi possivel identificar o hostel dono dessa reserva:", raw_item)
         return
 
-    # Chave de idempotencia inclui o modifiedTime - cada alteracao real
-    # na reserva (comprovado testando: nome/telefone preenchidos depois
-    # da criacao chegam como um evento novo) precisa ser processada,
-    # so uma reentrega EXATA do mesmo estado deve ser ignorada.
-    modified_time = _first_present(booking, "modifiedTime", "bookingTime") or ""
-    event_key = f"{booking_id}:{modified_time}" if modified_time else booking_id
-
-    payload_json = json.dumps(raw_item, ensure_ascii=False)
-    existing_reservation_id = get_reservation_id_by_external_booking_id(hostel_id, booking_id)
-    event_type = "update" if existing_reservation_id else "booking"
-
-    if not try_claim_webhook_event(event_key, hostel_id, event_type, payload_json):
-        print(f"Webhook Beds24: evento {event_key} ja processado antes (reentrega exata), ignorando.")
-        return
-
     status = (_first_present(booking, "status") or "").lower()
     first_name = _first_present(booking, "firstName", "guestFirstName") or ""
     last_name = _first_present(booking, "lastName", "guestLastName") or ""
@@ -135,6 +123,46 @@ def _process_single_booking(raw_item):
     # canal especifico) - mais confiavel que recalcular pelo preco
     # cadastrado na modalidade do StayFlow, que pode nem estar preenchido.
     amount = _first_present(booking, "price", "totalPrice", "amount") or 0
+
+    room_category_id = get_room_category_id_by_beds24_room_id(hostel_id, str(room_id)) if room_id else None
+    existing_reservation_id = get_reservation_id_by_external_booking_id(hostel_id, booking_id)
+
+    # Fecha o eco causado pela propria Fase 5 (saida - StayFlow cria a
+    # reserva no Beds24): a Beds24 as vezes manda esse webhook de volta
+    # quase na hora, antes da gente terminar de gravar o
+    # external_booking_id na reserva original - sem essa checagem, o
+    # webhook nao tem como saber que e a MESMA reserva e cria uma linha
+    # duplicada (bug real observado em producao: "Silvano" apareceu
+    # duas vezes identicas). Se achar uma reserva StayFlow-origin
+    # recente e sem vinculo com mesma modalidade/hospede/datas, vincula
+    # em vez de tratar como reserva nova.
+    if not existing_reservation_id and room_category_id and checkin_date and checkout_date:
+        category_name = get_room_category_name(hostel_id, room_category_id)
+        if category_name:
+            matched_id = find_recent_unlinked_stayflow_reservation(
+                hostel_id, category_name, guest_name, str(checkin_date), str(checkout_date)
+            )
+            if matched_id:
+                link_external_booking_id(hostel_id, matched_id, booking_id)
+                existing_reservation_id = matched_id
+                print(
+                    f"Webhook Beds24: reserva {booking_id} e o eco de uma reserva ja criada aqui "
+                    f"(reservation_id={matched_id}) - vinculada em vez de duplicada."
+                )
+
+    # Chave de idempotencia inclui o modifiedTime - cada alteracao real
+    # na reserva (comprovado testando: nome/telefone preenchidos depois
+    # da criacao chegam como um evento novo) precisa ser processada,
+    # so uma reentrega EXATA do mesmo estado deve ser ignorada.
+    modified_time = _first_present(booking, "modifiedTime", "bookingTime") or ""
+    event_key = f"{booking_id}:{modified_time}" if modified_time else booking_id
+
+    payload_json = json.dumps(raw_item, ensure_ascii=False)
+    event_type = "update" if existing_reservation_id else "booking"
+
+    if not try_claim_webhook_event(event_key, hostel_id, event_type, payload_json):
+        print(f"Webhook Beds24: evento {event_key} ja processado antes (reentrega exata), ignorando.")
+        return
 
     if "cancel" in status or status == "deleted":
         if existing_reservation_id:
@@ -160,7 +188,6 @@ def _process_single_booking(raw_item):
             )
             print(f"Webhook Beds24: reserva {booking_id} atualizada (reservation_id={reservation_id}).")
         else:
-            room_category_id = get_room_category_id_by_beds24_room_id(hostel_id, str(room_id)) if room_id else None
             if not room_category_id:
                 finalize_webhook_event(event_key, "failed", error_message=f"Quarto do Beds24 (roomId={room_id}) nao esta mapeado a nenhuma modalidade do StayFlow.")
                 return

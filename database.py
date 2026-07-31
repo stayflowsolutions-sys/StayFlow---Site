@@ -5004,6 +5004,67 @@ def get_room_category_id_by_beds24_room_id(hostel_id, beds24_room_id):
     return row["room_category_id"] if row else None
 
 
+def get_room_category_name(hostel_id, room_category_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT name FROM room_categories WHERE hostel_id = ? AND id = ?",
+        (hostel_id, room_category_id)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row["name"] if row else None
+
+
+def find_recent_unlinked_stayflow_reservation(hostel_id, room_type, guest_name, checkin_date, checkout_date):
+    """
+    Fecha o eco causado pela Fase 5 (saida - reserva real): quando o
+    StayFlow cria uma reserva de verdade no Beds24
+    (sync_booking_to_channel), a Beds24 as vezes manda o webhook de
+    volta quase instantaneamente - se chegar antes da gente terminar de
+    gravar o external_booking_id na reserva original, o webhook nao tem
+    como saber que essa reserva "nova" e a MESMA que acabamos de criar,
+    e cria uma linha duplicada (bug real observado em producao: reserva
+    do Silvano apareceu duas vezes identicas).
+
+    Busca uma reserva StayFlow-origin (manual/whatsapp) recente (ultimos
+    10 minutos), ainda sem external_booking_id, com mesma modalidade,
+    nome do hospede e datas - se achar, e quase certamente o eco da
+    propria reserva que acabamos de criar, nao uma reserva nova de
+    verdade. Janela de 10 minutos e o casamento exato de
+    modalidade+nome+datas tornam colisao por coincidencia improvavel.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT id FROM reservations
+        WHERE hostel_id = ? AND room_type = ? AND guest_name = ?
+          AND checkin_date = ? AND checkout_date = ?
+          AND source IN ('manual', 'whatsapp')
+          AND external_booking_id IS NULL
+          AND status != 'cancelled'
+          AND created_at >= datetime('now', '-10 minutes')
+        ORDER BY id DESC LIMIT 1
+        """,
+        (hostel_id, room_type, guest_name, checkin_date, checkout_date)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row["id"] if row else None
+
+
+def link_external_booking_id(hostel_id, reservation_id, beds24_booking_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE reservations SET external_booking_id = ? WHERE id = ? AND hostel_id = ?",
+        (str(beds24_booking_id), reservation_id, hostel_id)
+    )
+    conn.commit()
+    conn.close()
+
+
 def get_hostel_id_by_beds24_room_id(beds24_room_id):
     """
     Resolve qual hostel e dono de um quarto do Beds24 sem precisar
