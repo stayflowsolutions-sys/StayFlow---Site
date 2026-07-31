@@ -3223,3 +3223,43 @@ verdade testando ao vivo com a conta master. Próximo passo natural:
 usuário testar criando/cancelando uma reserva manual/WhatsApp de
 verdade pra uma modalidade já mapeada, e conferir no painel do Beds24
 se a disponibilidade mudou.
+
+## Teste real: cancelamento não apareceu no painel do Beds24
+
+Usuário cancelou a reserva da Juliana pela aba Reservas do StayFlow e
+foi conferir no Calendário do Beds24 - a reserva dela continuava lá
+(`Compartilhado` mostrando "0" disponível nas datas, barra da Juliana
+ainda desenhada no calendário).
+
+Duas coisas descobertas:
+
+1. **Não é bug, é limitação esperada da Fase 4 como desenhada**: `push_availability`
+   só mexe no CALENDÁRIO/INVENTÁRIO (quantas unidades ainda podem ser
+   vendidas), não na reserva específica em si. A reserva da Juliana é um
+   registro de booking de verdade dentro do Beds24 (foi criada lá,
+   espelhada pro StayFlow via webhook) - cancelar no StayFlow nunca
+   tocaria nesse registro, só ajustaria "quantas vagas sobraram pra
+   vender". São duas APIs/conceitos diferentes do Beds24. Fica claro que
+   o próximo passo real é sincronizar o STATUS DA RESERVA especÍfica de
+   volta pro Beds24 (usando `external_booking_id`), não só disponibilidade
+   agregada - isso generaliza o pedido antigo de "avisar check-in
+   confirmado" pra também cobrir cancelamento.
+
+2. **Bug real de observabilidade**: mesmo se a disponibilidade tivesse
+   sido sincronizada corretamente, não daria pra confirmar isso pelos
+   logs - `sync_availability_to_channel`/`push_availability` só tinham
+   `print()` no caminho de ERRO, nunca no de sucesso ou nos "no-op"
+   (sem checkin/checkout, modalidade não encontrada, modalidade não
+   mapeada). Conferindo o log real do Render no horário exato do
+   `PATCH /reservations/5` (a reserva da Juliana, confirmado pelo id),
+   não apareceu rastro nenhum da sincronização - impossível saber se
+   rodou, se foi ignorada, ou se falhou.
+
+Corrigido: `print()` adicionado em todo caminho de `sync_availability_to_channel`
+(sem data, categoria não encontrada, sem mapeamento, cálculo completo
+com os números exatos usados) e em `push_availability` (sucesso além de
+erro, com a resposta completa do Beds24). Deploy feito - próximo teste
+do usuário já vai mostrar no log exatamente o que está acontecendo.
+Construir a sincronização de status de reserva específica (cancelamento
++ check-in) fica pra assim que confirmarmos, com log real, que a Fase 4
+básica está funcionando.
