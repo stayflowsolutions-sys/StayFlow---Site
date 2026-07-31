@@ -317,7 +317,8 @@ def delete_room_type(property_id, beds24_room_id):
             response.status_code, response.text,
         )
         if response.status_code >= 400:
-            return False, f"Beds24 recusou apagar o quarto (HTTP {response.status_code})."
+            detail = (response.text or "")[:200]
+            return False, f"Beds24 recusou apagar o quarto (HTTP {response.status_code}): {detail}"
         return True, None
     except Exception as error:
         print("Erro de conexao ao apagar quarto no Beds24:", error)

@@ -1855,7 +1855,7 @@ async function deleteRoleConfirm(roleId){
           <div id="beds24UnusedRoomsSection" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid #ffffff12">
             <h3 data-i18n="settings.beds24.unusedRoomsTitle" style="font-size:14px;margin:0 0 8px">Quartos sem uso</h3>
             <p data-i18n="settings.beds24.unusedRoomsDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Não estão vinculados a nenhuma modalidade — sobra de testes ou de modalidade excluída. Pode apagar sem risco.</p>
-            <div id="beds24UnusedRoomsList" style="display:grid;gap:8px"></div>
+            <div id="beds24UnusedRoomsList"></div>
           </div>
         </div>
 
@@ -2344,11 +2344,12 @@ async function deleteRoleConfirm(roleId){
     }
 
     sectionEl.style.display = "block";
+    listEl.style.display = "block";
     listEl.innerHTML = unusedRooms.map(r => `
-      <div style="display:flex;align-items:center;gap:10px;justify-content:space-between;padding:8px 12px;border:1px solid var(--line);border-radius:12px">
-        <span>${escapeHtml(r.name)}</span>
-        <button type="button" class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="deleteUnusedBeds24Room('${r.id}', '${r.name.replace(/'/g, "\\'")}')">${T('settings.beds24.deleteRoomBtn', 'Remover')}</button>
-      </div>
+      <span style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0;padding:4px 4px 4px 10px;border:1px solid var(--line);border-radius:999px">
+        ${escapeHtml(r.name)}
+        <button type="button" onclick="deleteUnusedBeds24Room('${r.id}', '${r.name.replace(/'/g, "\\'")}')" title="${T('settings.beds24.deleteRoomBtn', 'Remover')}" style="background:none;border:0;color:#ff8b8b;cursor:pointer;font-size:12px;padding:2px">✕</button>
+      </span>
     `).join("");
   }
 
