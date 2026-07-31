@@ -4256,3 +4256,43 @@ buscadas por telefone - com `guest_phone=None` no Messenger, essas
 duas ficam mudas (não travam, só não gravam) até uma próxima rodada
 de limpeza. Baixo risco (estágio avançado da conversa, depois da
 reserva já criada), registrado pra não esquecer.
+
+## Nome automático do hóspede no Messenger (e Instagram, quando chegar)
+
+Pedido do usuário: diferente do WhatsApp (o número de telefone não
+revela quem é a pessoa), Messenger e Instagram já entregam a conversa
+identificada de verdade - a IA não deveria perguntar o nome, já deveria
+usar ele naturalmente, inclusive na própria mensagem de boas-vindas
+("Olá Caio!").
+
+Novo `get_messenger_user_profile(page_access_token, psid)`
+(`services/messenger_service.py`) - `GET /{psid}?fields=first_name,last_name`
+na Graph API, mesmo contrato nunca-levanta-exceção dos outros serviços.
+Chamado em `routes/meta_webhook.py` a cada mensagem recebida (custo
+desprezível - só é de fato GRAVADO na primeira vez, já que
+`get_or_create_guest_by_channel` só usa o parâmetro `name` na hora de
+CRIAR o hóspede, mensagens seguintes acham o hóspede já existente e
+ignoram). `process_incoming_message` ganhou um parâmetro `name` pra
+receber isso; e passou a buscar o nome já salvo do hóspede
+(`get_guest_name_by_id`, nova) pra informar pra IA em toda mensagem,
+não só na criação.
+
+`ask_ai` ganhou `guest_name` e um `{name_instruction}` novo no prompt
+(mesmo padrão já usado pra idioma/telefone) - quando o nome já é
+conhecido, troca a instrução de "pergunte o nome quando ele disser,
+chame save_guest_name" pra "você já sabe o nome, use naturalmente,
+NÃO pergunte de novo, não precisa chamar save_guest_name". Como a
+busca do perfil acontece ANTES de gerar a resposta, isso já funciona
+na primeiríssima mensagem da conversa - não precisa de uma segunda
+mensagem pra "aprender" o nome.
+
+Testado: nome do perfil buscado e gravado certo no hóspede novo (sem
+forçar telefone fake); `ask_ai` recebe `guest_name` já na primeira
+mensagem via webhook real; o prompt monta a instrução certa nos dois
+casos (nome conhecido vs desconhecido); WhatsApp sem nome ainda salvo
+continua pedindo do jeito de sempre (regressão). Regressão completa
+de tudo sem quebra.
+
+Mesma lógica se aplica ao Instagram quando o Instagram Login for
+implementado (a API do Instagram também expõe nome/username do
+perfil pelo IGSID) - só repetir o padrão de `get_messenger_user_profile`.
