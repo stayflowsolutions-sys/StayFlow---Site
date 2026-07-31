@@ -4349,6 +4349,21 @@ def get_bed_map(hostel_id):
         for row in cursor.fetchall():
             guest_by_bed[row["bed_id"]] = row["guest_name"]
 
+    # cama ocupada por morador de longa duracao (estadia ainda ativa,
+    # sem checkout registrado) aparece roxa no mapa em vez de vermelha -
+    # visualmente diferente de um hospede normal de passagem.
+    long_term_bed_ids = set()
+    if occupied_bed_ids:
+        placeholders = ",".join("?" * len(occupied_bed_ids))
+        cursor.execute(
+            f"""
+            SELECT DISTINCT bed_id FROM reservations
+            WHERE bed_id IN ({placeholders}) AND stay_type = 'indefinite' AND checkout_date IS NULL
+            """,
+            occupied_bed_ids
+        )
+        long_term_bed_ids = {row["bed_id"] for row in cursor.fetchall()}
+
     # camas livres com uma reserva futura ja atribuida (soft hold da
     # reserva pelo WhatsApp ou pelo Ask StayFlow) aparecem como
     # "reserved" (azul) no mapa, em vez de "free" (verde) puro - so
@@ -4373,7 +4388,12 @@ def get_bed_map(hostel_id):
     beds_by_room = {}
     for bed in beds:
         bed["guest_name"] = guest_by_bed.get(bed["id"])
-        bed["display_status"] = "reserved" if bed["id"] in reserved_bed_ids else bed["status"]
+        if bed["id"] in long_term_bed_ids:
+            bed["display_status"] = "long_term"
+        elif bed["id"] in reserved_bed_ids:
+            bed["display_status"] = "reserved"
+        else:
+            bed["display_status"] = bed["status"]
         beds_by_room.setdefault(bed["room_id"], []).append(bed)
 
     for room in rooms:
