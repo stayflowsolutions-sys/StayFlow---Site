@@ -2699,3 +2699,63 @@ i18n órfãs correspondentes também removidas dos 5 idiomas.
 si já está pronta e testada, só falta o endpoint certo confirmado, pra
 não precisar refazer esse trabalho quando isso for retomado (via
 suporte oficial do Beds24, se virar necessidade recorrente).
+
+## Integração com channel manager (Beds24) — Fase 3 (webhook de entrada)
+
+Usuário confirmou seguir mesma madrugada pra Fase 3: receber reserva de
+verdade vinda de Booking.com/Airbnb/Hostelworld via webhook do Beds24.
+
+**Desenho pensado pra nunca perder dado mesmo com formato de payload
+desconhecido** (lição direta da Fase 2, onde o formato real só foi
+descoberto testando): toda notificação recebida grava o payload cru em
+`channel_webhook_events.payload_json` **antes** de qualquer tentativa
+de interpretar. Se a extração de campo estiver errada, nada se perde —
+dá pra corrigir o parsing depois olhando o payload real guardado, sem
+repetir o processo de descoberta às cegas que consumiu boa parte da
+Fase 2.
+
+**Novo `routes/beds24_webhook.py`**: `POST
+/webhook/beds24/<secret_token>` — autenticação por token secreto no
+próprio path (Beds24 não manda assinatura HMAC nativa como o
+WhatsApp/Meta manda), configurado como env var `BEDS24_WEBHOOK_SECRET`.
+Resolve o hostel dono da reserva por `propertyId` (se vier no payload)
+ou por `roomId` (nova função `get_hostel_id_by_beds24_room_id`, busca
+inversa que não depende de já saber o hostel de antemão — diferente da
+busca de mapeamento de quarto da Fase 2, que exige hostel_id como
+filtro). Extração de campo tolerante a variação de nome
+(`_first_present`, tenta várias grafias comuns: `bookId`/`id`/
+`bookingId`, `arrival`/`checkIn`/`firstNight`, etc.) — outra lição da
+Fase 2, onde nomes de campo divergiam do esperado. Sempre responde 200
+(mesmo padrão do webhook do WhatsApp), erro interno vira
+`status='failed'` no evento salvo, nunca derruba a notificação.
+
+**`database.py`**: `get_hostel_id_by_beds24_room_id`,
+`try_claim_webhook_event`/`finalize_webhook_event` (idempotência via
+`UNIQUE(beds24_booking_id)` + `INSERT` que falha limpo em reentrega —
+mesma ideia de constraint já usada em outras tabelas do projeto, sem
+lógica de deduplicação manual), e `create_reservation_from_channel`
+— a peça central: diferente do fluxo do WhatsApp (que recusa reservar
+sem cama livre), aqui a reserva **já é um compromisso confirmado do
+lado da OTA**, então não dá pra simplesmente recusar por falta de cama.
+Tenta atribuir uma cama disponível de verdade, com a mesma trava contra
+condição de corrida da Fase 1 (`reservar_cama_com_trava`); se não
+houver nenhuma livre/cadastrada, cria a reserva mesmo assim sem cama
+específica, pra equipe atribuir manualmente depois — perder o registro
+da reserva seria bem pior que deixar sem cama atribuída.
+
+**Escopo desta fase, deliberadamente**: só reserva **nova** (criação).
+Atualização de data e cancelamento ficam pra próxima rodada, depois de
+ver um payload real de teste — tentar adivinhar o formato desses dois
+eventos também, sem nenhum dado real pra validar contra, repetiria o
+mesmo erro que já custou tempo demais na Fase 2. Por enquanto, um
+webhook de cancelamento chega, é reconhecido pelo campo `status`, e
+fica marcado como eventos `ignored` no banco (não cria nem cancela
+reserva nenhuma) — visível nos logs pra northear a próxima rodada.
+
+**Verificação**: suite de testes cobrindo, com Flask `test_client()`
+real (não só função isolada): token secreto errado bloqueado com 403,
+resolução de hostel via `roomId`, criação de reserva com cama
+disponível e sem cama disponível, idempotência ponta a ponta (reenviar
+o mesmo webhook duas vezes não duplica a reserva), e o fluxo completo
+HTTP de reserva nova chegando e virando `reservations` de verdade no
+banco. Balanceamento/sintaxe conferidos nos arquivos Python novos.
