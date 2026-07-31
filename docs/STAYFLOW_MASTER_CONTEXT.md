@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.24.5
+\*\*Versão:\*\* 1.25.0
 
 
 
@@ -113,6 +113,8 @@
 | 1.21.6 | 31/07/2026 | Oficial | Reservas criadas por qualquer canal automático (WhatsApp, Beds24/qualquer OTA — `source != 'manual'`) nas últimas 24h agora também geram alerta no sininho de Operações ("Nova reserva via {canal}: {hóspede}..."), não só reservas manuais. Pedido em aberto do usuário, ainda não iniciado: notificação nativa no aparelho (celular/PC), estilo WhatsApp, pra mensagem nova/alerta operacional/problema de IA/intervenção humana — requer infraestrutura nova (Web Push API, service worker, VAPID, inscrições por dispositivo), fica pra ser desenhado como etapa própria. |
 
 | 1.22.0 | 31/07/2026 | Oficial | Perfil completo do hóspede na aba Hóspedes: clicar no nome (antes era texto solto, sem ação) abre um modal com contato editável (nome, telefone, email, endereço, data de nascimento, nacionalidade), documento (tipo + número, editáveis, mais galeria de fotos do documento com upload manual — reaproveita o `guest_documents` já usado pelo recebimento automático via WhatsApp) e histórico completo de estadias com status/valor, incluindo saldo devedor/crédito calculado ao vivo pra estadias de longa duração (reservas fixas não têm conceito de pagamento parcial no modelo atual, mostram só o valor total). Novo `get_guest_reservations`, `update_guest_profile`, rotas `PATCH /guests/<id>` e `POST /guests/<id>/documents`; colunas novas em `guests` (`address`, `document_type`, `document_number`). Moeda/câmbio automático por país (pedido do usuário, com regra de margem de 30 pontos abaixo do câmbio real) registrado como pendência futura, a ser feito junto da configuração de formas de pagamento — não iniciado. |
+
+| 1.25.0 | 31/07/2026 | Oficial | Redesign do formulário de nova reserva/morador de longa duração na aba Reservas: os dois formulários fixos (ocupando espaço permanente na tela) viraram botões que abrem modal, mesmo padrão já usado no Mapa de Quartos. Campos novos na criação manual: nome/sobrenome separados, email, nacionalidade (gravados de verdade no hóspede via `get_or_create_guest` - mesmo bug "só procura, nunca cria" já corrigido em outros pontos, corrigido aqui também) e seletor de cama de verdade (dependente da modalidade escolhida, com trava contra condição de corrida igual reserva de canal/WhatsApp, sufixo "Beliche - Cima"/"Beliche - Baixo" quando aplicável). Tipo de quarto deixou de ser lista fixa "Privado"/"Compartilhado" e passou a listar as modalidades reais cadastradas no hostel. Status "Pendente" removido da criação manual - toda reserva criada manualmente já nasce confirmada (WhatsApp continua nascendo pending, aguardando confirmação da equipe - isso não mudou). |
 
 | 1.24.5 | 31/07/2026 | Oficial | Dois bugs reais de produção corrigidos: (1) reserva criada no StayFlow aparecia com valor US$ 0,00 no painel do Beds24 mesmo a API confirmando o `price` enviado - causa: o campo `price` sozinho é só ecoado na resposta, o valor de verdade vem de um `invoiceItems` (item de fatura) separado, confirmado comparando com o payload real de uma reserva criada direto no painel deles. `create_booking` agora manda `invoiceItems` junto. (2) check-in de uma reserva não refletia no Mapa de Quartos - `checkinReservationUI` confiava cegamente na cama atribuída automaticamente (canal/WhatsApp) sem mostrar seletor; agora sempre mostra o seletor de cama livre (pré-selecionando a já atribuída, se houver), com sufixo claro "Beliche - Cima"/"Beliche - Baixo" quando aplicável. |
 

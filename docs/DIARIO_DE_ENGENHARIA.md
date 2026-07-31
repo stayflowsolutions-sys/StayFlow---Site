@@ -3587,3 +3587,53 @@ clicar "Confirmar" se estiver tudo certo, ou trocar se não estiver.
 Pedido extra do usuário atendido: cada opção do seletor mostra
 claramente "Beliche - Cima"/"Beliche - Baixo" quando a cama faz parte
 de um beliche, não só o nome genérico da cama.
+
+## Redesign do formulário de Nova Reserva / Morador de longa duração
+
+Usuário pediu pra tirar os dois formulários fixos da aba Reservas (que
+ficavam sempre ocupando espaço na tela) e virarem botão + modal, além
+de repensar os campos. Argumento pra tirar o status "Pendente" da
+criação manual: "não entendo o sentido de haver pendente, se quando uma
+reserva é feita ela já é confirmada" - faz sentido pra criação manual
+(a equipe digitando é um compromisso já certo), diferente da reserva
+via WhatsApp (a IA cria automaticamente, `pending` até a equipe
+confirmar - esse caso continua existindo, não mudou).
+
+Campos pedidos: nome e sobrenome (separados), telefone, email,
+nacionalidade, data, tipo de quarto, cama.
+
+**Frontend**: os dois `<div class="card span-12">` com formulário fixo
+viraram um único card com dois botões ("+ Nova reserva" e "🏠 Morador de
+longa duração"), cada um chamando `openNewReservationModal()`/
+`openNewIndefiniteStayModal()` (`openGenericModal` variante `wide`).
+Removido de quebra o handler de "+ Novo tipo..." do antigo select fixo
+de tipo de quarto (`reservationRoomTypeSelect`) - código morto, já que
+o select novo (`nrRoomType`) lista as modalidades REAIS cadastradas no
+hostel (`/room-categories`), não precisa mais de escape hatch pra
+"criar tipo novo na hora". Seletor de cama (`nrBedId`) filtra pela
+modalidade escolhida (`fillNewReservationBedSelect`, reagindo ao
+`onchange` do tipo de quarto) e reaproveita o sufixo "Beliche - Cima/
+Baixo" criado na correção anterior. Formulário de morador de longa
+duração manteve os mesmos campos de antes, só movido pro modal - o
+seletor de cama dele (`indefiniteStayBedSelect`) já existia, só passou
+a ser populado na abertura do modal em vez de a cada `loadRoomMap()`
+(elemento não existe mais permanentemente no DOM).
+
+**Backend**: `create_reservation_record` ganhou os parâmetros `email`,
+`nationality`, `bed_id`. Corrigido de quebra o MESMO bug já corrigido em
+`create_indefinite_stay`/`create_reservation_from_chat` nesta sessão:
+essa função só *procurava* um hóspede já existente pelo telefone, nunca
+*criava* um novo - hóspede novo pela criação manual nunca aparecia na
+aba Hóspedes. Agora usa `get_or_create_guest` + `update_guest_profile`
+(reaproveitando a função já criada pro perfil do hóspede) pra gravar
+email/nacionalidade de verdade. Quando uma cama específica é escolhida
+na criação, passa a usar `reservar_cama_com_trava` (mesma trava contra
+condição de corrida já usada pra reserva de canal/WhatsApp) - antes a
+criação manual nunca escolhia cama nenhuma, então nunca precisou dessa
+proteção; agora que oferece essa opção, precisa da mesma segurança.
+
+Testado: hóspede com email/nacionalidade grava certo na tabela `guests`;
+escolher uma cama já ocupada no mesmo período é recusado (trava
+funcionando); escolher outra cama livre funciona normalmente. Bateria
+completa de regressão (preço automático, case-insensitive, Fases 4/5 do
+Beds24) rerodada sem quebrar nada.

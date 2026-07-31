@@ -1067,45 +1067,9 @@ async function deleteRoleConfirm(roleId){
       <div class="note" data-i18n="reservations.kpi.noShowNote">Nenhuma perda registrada</div>
     </div>
 
-    <div class="card span-12">
-      <h2 data-i18n="reservations.newReservation.title">+ Nova reserva</h2>
-      <form onsubmit="submitNewReservation(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
-        <input class="span-3" name="guest_name" data-i18n-placeholder="reservations.newReservation.guestNamePlaceholder" placeholder="Nome do hóspede" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-2" name="phone" data-i18n-placeholder="reservations.newReservation.phonePlaceholder" placeholder="Telefone" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <select class="span-2" name="room_type" id="reservationRoomTypeSelect" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          <option value="" data-i18n="reservations.newReservation.roomTypeOption">Tipo de quarto</option>
-          <option value="Privado" data-i18n="reservations.newReservation.roomTypePrivate">Privado</option>
-          <option value="Compartilhado" data-i18n="reservations.newReservation.roomTypeShared">Compartilhado</option>
-          <option value="__new_room_type__" data-i18n="reservations.newReservation.newRoomTypeOption">+ Novo tipo...</option>
-        </select>
-        <input class="span-2" type="date" name="checkin_date" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-2" type="date" name="checkout_date" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-1" type="number" step="0.01" name="amount" data-i18n-placeholder="reservations.newReservation.amountPlaceholder" placeholder="Valor" style="grid-column:span 1;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <select name="status" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          <option value="pending" data-i18n="reservations.status.pending">Pendente</option>
-          <option value="confirmed" data-i18n="reservations.status.confirmed">Confirmada</option>
-          <option value="cancelled" data-i18n="reservations.status.cancelled">Cancelada</option>
-          <option value="no_show" data-i18n="reservations.status.noShow">No-show</option>
-        </select>
-        <input type="hidden" name="source" value="manual">
-        <button type="submit" class="btn span-2" data-i18n="reservations.newReservation.submitBtn" style="grid-column:span 2;">Criar reserva</button>
-      </form>
-    </div>
-
-    <div class="card span-12">
-      <h2 data-i18n="longTermStay.title">🏠 Morador de longa duração</h2>
-      <p data-i18n="longTermStay.desc" style="margin-bottom:14px;color:var(--muted);font-size:13px">Pra quem mora fixo (ex: funcionário) sem data de saída definida — o saldo devedor acumula por dia e é abatido conforme os pagamentos forem registrados.</p>
-      <form onsubmit="submitIndefiniteStay(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
-        <input class="span-2" name="guest_name" data-i18n-placeholder="longTermStay.namePlaceholder" placeholder="Nome" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-2" name="phone" data-i18n-placeholder="longTermStay.phonePlaceholder" placeholder="Telefone (opcional)" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <select class="span-2" name="bed_id" id="indefiniteStayBedSelect" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          <option value="" data-i18n="longTermStay.bedOptionNone">Sem cama (atribuir depois)</option>
-        </select>
-        <input class="span-2" name="room_type" data-i18n-placeholder="longTermStay.roomNotePlaceholder" placeholder="Quarto/observação" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-2" type="date" name="checkin_date" required style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <input class="span-1" type="number" step="0.01" name="daily_rate" data-i18n-placeholder="longTermStay.dailyRatePlaceholder" placeholder="Diária (0 = não paga)" required style="grid-column:span 1;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        <button type="submit" class="btn span-1" data-i18n="longTermStay.submitBtn" style="grid-column:span 1;">Criar</button>
-      </form>
+    <div class="card span-12" style="display:flex;gap:12px;flex-wrap:wrap">
+      <button type="button" class="btn" onclick="openNewReservationModal()">+ <span data-i18n="reservations.newReservation.title">Nova reserva</span></button>
+      <button type="button" class="btn secondary" onclick="openNewIndefiniteStayModal()">🏠 <span data-i18n="longTermStay.title">Morador de longa duração</span></button>
     </div>
 
     <div class="card span-12">
@@ -3268,25 +3232,103 @@ window.updateReservationStatus = async function(reservationId, newStatus){
   }
 };
 
-window.submitNewReservation = async function(event){
-  event.preventDefault();
-  const form = event.target;
+window.NEW_RESERVATION_ROOMS_CACHE = [];
 
-  const payload = {
-    guest_name: form.guest_name.value.trim(),
-    phone: form.phone.value.trim(),
-    room_type: form.room_type.value.trim(),
-    checkin_date: form.checkin_date.value,
-    checkout_date: form.checkout_date.value,
-    source: form.source.value.trim() || "manual",
-    amount: form.amount.value || 0,
-    status: form.status.value || "pending"
-  };
+window.openNewReservationModal = async function(){
+  let categories = [];
+  let rooms = [];
+  try{
+    const [catRes, mapRes] = await Promise.all([
+      fetch("/room-categories", { credentials: "same-origin" }),
+      fetch("/bed-map", { credentials: "same-origin" }),
+    ]);
+    categories = catRes.ok ? await catRes.json() : [];
+    rooms = mapRes.ok ? await mapRes.json() : [];
+  }catch(e){
+    categories = [];
+    rooms = [];
+  }
+  window.NEW_RESERVATION_ROOMS_CACHE = rooms;
 
-  if(!payload.guest_name || !payload.checkin_date || !payload.checkout_date){
-    alert(T('reservations.msg.fillRequiredFields', 'Preencha ao menos hóspede, check-in e check-out.'));
+  openGenericModal(T('reservations.newReservation.title', 'Nova reserva'), `
+    <div class="guest-profile-grid">
+      <div><label>${T('reservations.newReservation.firstNameLabel', 'Nome')}</label><input id="nrFirstName"></div>
+      <div><label>${T('reservations.newReservation.lastNameLabel', 'Sobrenome')}</label><input id="nrLastName"></div>
+      <div><label>${T('reservations.newReservation.phonePlaceholder', 'Telefone')}</label><input id="nrPhone"></div>
+      <div><label>${T('common.email', 'Email')}</label><input id="nrEmail" type="email"></div>
+      <div><label>${T('guests.profile.nationalityLabel', 'Nacionalidade')}</label><input id="nrNationality"></div>
+      <div></div>
+      <div><label>${T('reservations.newReservation.checkinLabel', 'Check-in')}</label><input id="nrCheckin" type="date"></div>
+      <div><label>${T('reservations.newReservation.checkoutLabel', 'Check-out')}</label><input id="nrCheckout" type="date"></div>
+      <div>
+        <label>${T('reservations.newReservation.roomTypeOption', 'Tipo de quarto')}</label>
+        <select id="nrRoomType" onchange="fillNewReservationBedSelect()">
+          <option value="">${T('reservations.newReservation.roomTypeOption', 'Tipo de quarto')}</option>
+          ${categories.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join("")}
+        </select>
+      </div>
+      <div>
+        <label>${T('reservations.newReservation.bedLabel', 'Cama')}</label>
+        <select id="nrBedId">
+          <option value="">${T('longTermStay.bedOptionNone', 'Sem cama (atribuir depois)')}</option>
+        </select>
+      </div>
+      <div><label>${T('reservations.newReservation.amountPlaceholder', 'Valor')}</label><input id="nrAmount" type="number" step="0.01" placeholder="${T('reservations.newReservation.amountAutoPlaceholder', 'Calculado automaticamente se vazio')}"></div>
+    </div>
+    <div id="newReservationMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" style="margin-top:8px" onclick="submitNewReservationModal()">${T('reservations.newReservation.submitBtn', 'Criar reserva')}</button>
+  `, true);
+};
+
+window.fillNewReservationBedSelect = function(){
+  const categorySelect = document.getElementById("nrRoomType");
+  const bedSelect = document.getElementById("nrBedId");
+  if(!categorySelect || !bedSelect) return;
+
+  const categoryName = categorySelect.value;
+  const rooms = window.NEW_RESERVATION_ROOMS_CACHE || [];
+  const beds = [];
+  rooms.forEach(room => {
+    if(categoryName && room.category_name !== categoryName) return;
+    (room.beds || []).forEach(bed => {
+      if(bed.status === "free") beds.push({ id: bed.id, label: `${room.name} · ${bed.label}${bedKindSuffix(bed.bed_kind)}` });
+    });
+  });
+
+  bedSelect.innerHTML = `<option value="">${T('longTermStay.bedOptionNone', 'Sem cama (atribuir depois)')}</option>` +
+    beds.map(b => `<option value="${b.id}">${escapeHtml(b.label)}</option>`).join("");
+};
+
+window.submitNewReservationModal = async function(){
+  const msg = document.getElementById("newReservationMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  const firstName = document.getElementById("nrFirstName").value.trim();
+  const lastName = document.getElementById("nrLastName").value.trim();
+  const guestName = `${firstName} ${lastName}`.trim();
+  const checkinDate = document.getElementById("nrCheckin").value;
+  const checkoutDate = document.getElementById("nrCheckout").value;
+
+  if(!guestName || !checkinDate || !checkoutDate){
+    msg.textContent = T('reservations.msg.fillRequiredFields', 'Preencha ao menos hóspede, check-in e check-out.');
+    msg.classList.add("error");
     return;
   }
+
+  const payload = {
+    guest_name: guestName,
+    phone: document.getElementById("nrPhone").value.trim(),
+    email: document.getElementById("nrEmail").value.trim(),
+    nationality: document.getElementById("nrNationality").value.trim(),
+    room_type: document.getElementById("nrRoomType").value,
+    checkin_date: checkinDate,
+    checkout_date: checkoutDate,
+    amount: document.getElementById("nrAmount").value || 0,
+    bed_id: document.getElementById("nrBedId").value ? Number(document.getElementById("nrBedId").value) : null,
+    source: "manual",
+    status: "confirmed",
+  };
 
   try{
     const res = await fetch("/reservations", {
@@ -3297,41 +3339,80 @@ window.submitNewReservation = async function(event){
     });
 
     if(res.status === 401){
-      alert(T('reservations.msg.sessionExpired', 'Sua sessão expirou. Faça login novamente.'));
+      msg.textContent = T('reservations.msg.sessionExpired', 'Sua sessão expirou. Faça login novamente.');
+      msg.classList.add("error");
       window.location.href = "/Login.html";
       return;
     }
 
+    const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(T('reservations.msg.createFailed', 'Não foi possível criar a reserva.'));
+      msg.textContent = data.message || T('reservations.msg.createFailed', 'Não foi possível criar a reserva.');
+      msg.classList.add("error");
       return;
     }
 
-    form.reset();
-    loadReservations();
+    closeGenericModal();
+    refreshOperationalViews();
   }catch(e){
-    console.error("Erro ao criar reserva:", e);
-    alert(T('reservations.msg.createConnError', 'Erro de conexão ao criar reserva.'));
+    msg.textContent = T('reservations.msg.createConnError', 'Erro de conexão ao criar reserva.');
+    msg.classList.add("error");
   }
 };
 
-window.submitIndefiniteStay = async function(event){
-  event.preventDefault();
-  const form = event.target;
+window.openNewIndefiniteStayModal = async function(){
+  openGenericModal(T('longTermStay.title', 'Morador de longa duração'), `
+    <p style="color:var(--muted);font-size:13px;margin:0 0 4px">${T('longTermStay.desc', 'Pra quem mora fixo (ex: funcionário) sem data de saída definida — o saldo devedor acumula por dia e é abatido conforme os pagamentos forem registrados.')}</p>
+    <div class="guest-profile-grid">
+      <div><label>${T('longTermStay.namePlaceholder', 'Nome')}</label><input id="ltGuestName"></div>
+      <div><label>${T('common.phone', 'Telefone')}</label><input id="ltPhone"></div>
+      <div>
+        <label>${T('reservations.newReservation.bedLabel', 'Cama')}</label>
+        <select id="indefiniteStayBedSelect">
+          <option value="">${T('longTermStay.bedOptionNone', 'Sem cama (atribuir depois)')}</option>
+        </select>
+      </div>
+      <div><label>${T('longTermStay.roomNotePlaceholder', 'Quarto/observação')}</label><input id="ltRoomType"></div>
+      <div><label>${T('reservations.newReservation.checkinLabel', 'Check-in')}</label><input id="ltCheckin" type="date"></div>
+      <div><label>${T('longTermStay.dailyRatePlaceholder', 'Diária (0 = não paga)')}</label><input id="ltDailyRate" type="number" step="0.01"></div>
+    </div>
+    <div id="newIndefiniteStayMessage" class="generic-modal-message"></div>
+    <button class="btn" type="button" style="margin-top:8px" onclick="submitIndefiniteStayModal()">${T('longTermStay.submitBtn', 'Criar')}</button>
+  `, true);
 
-  const payload = {
-    guest_name: form.guest_name.value.trim(),
-    phone: form.phone.value.trim(),
-    room_type: form.room_type.value.trim(),
-    checkin_date: form.checkin_date.value,
-    daily_rate: form.daily_rate.value || 0,
-    bed_id: form.bed_id.value ? Number(form.bed_id.value) : null
-  };
+  if(ROOM_MAP_ROOMS_CACHE && ROOM_MAP_ROOMS_CACHE.length){
+    fillIndefiniteStayBedSelect(ROOM_MAP_ROOMS_CACHE);
+  }else{
+    try{
+      const res = await fetch("/bed-map", { credentials: "same-origin" });
+      if(res.ok) fillIndefiniteStayBedSelect(await res.json());
+    }catch(e){}
+  }
+};
 
-  if(!payload.guest_name || !payload.checkin_date){
-    alert(T('longTermStay.msg.fillRequiredFields', 'Preencha ao menos nome e data de início.'));
+window.submitIndefiniteStayModal = async function(){
+  const msg = document.getElementById("newIndefiniteStayMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  const guestName = document.getElementById("ltGuestName").value.trim();
+  const checkinDate = document.getElementById("ltCheckin").value;
+
+  if(!guestName || !checkinDate){
+    msg.textContent = T('longTermStay.msg.fillRequiredFields', 'Preencha ao menos nome e data de início.');
+    msg.classList.add("error");
     return;
   }
+
+  const bedSelect = document.getElementById("indefiniteStayBedSelect");
+  const payload = {
+    guest_name: guestName,
+    phone: document.getElementById("ltPhone").value.trim(),
+    room_type: document.getElementById("ltRoomType").value.trim(),
+    checkin_date: checkinDate,
+    daily_rate: document.getElementById("ltDailyRate").value || 0,
+    bed_id: bedSelect && bedSelect.value ? Number(bedSelect.value) : null,
+  };
 
   try{
     const res = await fetch("/reservations/indefinite", {
@@ -3343,14 +3424,16 @@ window.submitIndefiniteStay = async function(event){
 
     const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      alert(data.message || T('longTermStay.msg.createFailed', 'Não foi possível criar a estadia.'));
+      msg.textContent = data.message || T('longTermStay.msg.createFailed', 'Não foi possível criar a estadia.');
+      msg.classList.add("error");
       return;
     }
 
-    form.reset();
+    closeGenericModal();
     refreshOperationalViews();
   }catch(e){
-    alert(T('longTermStay.msg.createConnError', 'Erro de conexão ao criar a estadia de longa duração.'));
+    msg.textContent = T('longTermStay.msg.createConnError', 'Erro de conexão ao criar a estadia de longa duração.');
+    msg.classList.add("error");
   }
 };
 
@@ -4909,27 +4992,6 @@ document.addEventListener("DOMContentLoaded", () => {
       opt.textContent = value;
       categorySelect.insertBefore(opt, categorySelect.querySelector('option[value="__new_category__"]'));
       categorySelect.value = value;
-    });
-  }
-
-  const roomTypeSelect = document.getElementById("reservationRoomTypeSelect");
-  if(roomTypeSelect){
-    roomTypeSelect.addEventListener("change", async () => {
-      if(roomTypeSelect.value !== "__new_room_type__") return;
-
-      const newType = await stayflowPrompt(T('reservations.newRoomTypePrompt', 'Nome do novo tipo de quarto:'));
-
-      if(!newType || !newType.trim()){
-        roomTypeSelect.value = "";
-        return;
-      }
-
-      const value = newType.trim();
-      const opt = document.createElement("option");
-      opt.value = value;
-      opt.textContent = value;
-      roomTypeSelect.insertBefore(opt, roomTypeSelect.querySelector('option[value="__new_room_type__"]'));
-      roomTypeSelect.value = value;
     });
   }
 
