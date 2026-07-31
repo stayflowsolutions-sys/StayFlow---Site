@@ -2343,47 +2343,19 @@ async function deleteRoleConfirm(roleId){
       return;
     }
 
+    // Exclusao automatica no Beds24 ainda nao confirmada contra a API
+    // real (endpoint tentado devolveu HTTP 500 sem detalhe nenhum) -
+    // lista fica so informativa por enquanto, sem botao de acao. Ver
+    // diario de engenharia pra retomar quando o endpoint certo for
+    // confirmado (ex: suporte do Beds24).
     sectionEl.style.display = "block";
     listEl.style.display = "block";
     listEl.innerHTML = unusedRooms.map(r => `
-      <span style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0;padding:4px 4px 4px 10px;border:1px solid var(--line);border-radius:999px">
+      <span style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0;padding:4px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted)">
         ${escapeHtml(r.name)}
-        <button type="button" onclick="deleteUnusedBeds24Room('${r.id}', '${r.name.replace(/'/g, "\\'")}')" title="${T('settings.beds24.deleteRoomBtn', 'Remover')}" style="background:none;border:0;color:#ff8b8b;cursor:pointer;font-size:12px;padding:2px">✕</button>
       </span>
     `).join("");
   }
-
-  window.deleteUnusedBeds24Room = async function(beds24RoomId, roomName){
-    if(!await stayflowConfirm(T('settings.beds24.deleteRoomConfirm', 'Apagar o quarto "{name}"? Essa ação não pode ser desfeita.', { name: roomName }))) return;
-
-    const msg = document.getElementById("beds24Message");
-    if(msg){
-      msg.textContent = "";
-      msg.className = "generic-modal-message";
-    }
-
-    try{
-      const res = await fetch(`/settings/beds24/rooms/${beds24RoomId}`, { method: "DELETE", credentials: "same-origin" });
-      const data = await res.json().catch(() => ({}));
-      if(!res.ok || !data.success){
-        if(msg){
-          msg.textContent = data.message || T('settings.beds24.deleteRoomFailed', 'Não foi possível apagar o quarto.');
-          msg.classList.add("error");
-        }
-        return;
-      }
-      if(msg){
-        msg.textContent = T('settings.beds24.deleteRoomSuccess', 'Quarto apagado com sucesso!');
-        msg.classList.add("success");
-      }
-      loadBeds24RoomMapping();
-    }catch(e){
-      if(msg){
-        msg.textContent = T('common.connectionError', 'Erro de conexão.');
-        msg.classList.add("error");
-      }
-    }
-  };
 
   window.loadBeds24RoomMapping = async function(){
     const emptyEl = document.getElementById("beds24RoomMappingEmpty");

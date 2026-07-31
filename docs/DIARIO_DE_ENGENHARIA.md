@@ -2675,3 +2675,27 @@ no resto do sistema.
 corretos, erro tratado) e as duas travas de segurança (banco já testado
 na Fase 2, reaproveitado aqui). A chamada real à API ainda precisa ser
 confirmada com o usuário — ver próxima entrada.
+
+**Teste real: `DELETE /properties/rooms` não funciona.** Duas
+tentativas, a segunda já com log melhorado pra trazer o corpo da
+resposta da Beds24 — ambas HTTP 500, e a segunda confirmou que o corpo
+da resposta vem **vazio**, sem nenhum detalhe de erro pra investigar.
+Não é erro de parâmetro (esses normalmente vêm com mensagem); tudo
+indica que o endpoint tentado nem existe do jeito suposto — só a
+documentação oficial ou o suporte da Beds24 resolveriam com certeza
+essa dúvida, e ambos ficaram inacessíveis pra mim nesta sessão.
+
+**Decisão, com o usuário de acordo**: parar de tentar adivinhar
+endpoint de exclusão às cegas — cada tentativa falha sem dar pista
+nova, só custa tempo e frustração sem necessidade real (a funcionalidade
+principal, mapeamento, já funciona). Botão "Remover" retirado da UI (um
+botão que não funciona é pior que não ter botão) — a seção "Quartos sem
+uso" continua existindo, mas só como informativo, mostrando o que
+sobrou pra limpeza manual no painel do Beds24. `deleteUnusedBeds24Room`
+(frontend) removida por estar morta sem nenhuma chamada; as 4 chaves de
+i18n órfãs correspondentes também removidas dos 5 idiomas.
+`delete_room_type`/rota `DELETE /settings/beds24/rooms/<id>`
+(backend, com as travas de segurança) mantidos como estão — a lógica em
+si já está pronta e testada, só falta o endpoint certo confirmado, pra
+não precisar refazer esse trabalho quando isso for retomado (via
+suporte oficial do Beds24, se virar necessidade recorrente).
