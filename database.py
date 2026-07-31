@@ -2877,6 +2877,26 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
         if row:
             guest_id = row["id"]
 
+    amount = float(amount or 0)
+    room_type = (room_type or "").strip()
+    # Se ninguem informou um valor explicito, calcula pelo preco por
+    # noite cadastrado na modalidade (mesma logica ja usada em
+    # create_reservation_from_chat/create_reservation_from_channel) -
+    # sem isso toda reserva manual nascia com US$ 0,00 mesmo com preco
+    # configurado, ficando pra equipe lembrar de digitar na mao.
+    if not amount and room_type:
+        cursor.execute(
+            "SELECT price_per_night FROM room_categories WHERE hostel_id = ? AND name = ?",
+            (hostel_id, room_type)
+        )
+        category_row = cursor.fetchone()
+        if category_row and category_row["price_per_night"]:
+            try:
+                nights = max((datetime.date.fromisoformat(checkout_date) - datetime.date.fromisoformat(checkin_date)).days, 0)
+            except (ValueError, TypeError):
+                nights = 0
+            amount = round(category_row["price_per_night"] * nights, 2)
+
     cursor.execute(
         """
         INSERT INTO reservations
@@ -2885,10 +2905,10 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            hostel_id, guest_id, guest_name, (room_type or "").strip(),
+            hostel_id, guest_id, guest_name, room_type,
             (bed or "").strip(), checkin_date, checkout_date,
             (source or "manual").strip(), (payment_method or "").strip(),
-            float(amount or 0), (status or "pending").strip(),
+            amount, (status or "pending").strip(),
         )
     )
 
@@ -2896,8 +2916,8 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
     conn.commit()
     conn.close()
 
-    if (room_type or "").strip():
-        sync_availability_to_channel(hostel_id, (room_type or "").strip(), checkin_date, checkout_date)
+    if room_type:
+        sync_availability_to_channel(hostel_id, room_type, checkin_date, checkout_date)
 
     return reservation_id
 

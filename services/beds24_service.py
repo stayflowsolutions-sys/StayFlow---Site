@@ -10,11 +10,9 @@ a cada uso) + um access token (dura 24h). Esse arquivo guarda o refresh
 token criptografado (ver _encrypt/_decrypt) e renova o access token sob
 demanda — sem scheduler/cron, porque o projeto não tem nenhum hoje.
 
-Nota de manutenção: os nomes exatos de alguns campos do corpo das
-requisições (ex: POST /properties, POST /inventory/rooms/calendar) vêm
-da documentação pública do Beds24, mas não foram confirmados contra uma
-resposta real da API ainda — foram marcados com "confirmar contra API
-real" abaixo. Ajustar assim que testarmos com a conta master de verdade.
+Nota de manutenção: todos os campos usados aqui (POST /properties,
+POST /inventory/rooms/calendar) já foram confirmados contra respostas
+reais da API em produção com a conta master de verdade.
 """
 
 import os
@@ -333,9 +331,8 @@ def push_availability(beds24_room_id, checkin_date, checkout_date, num_avail):
     Booking/Airbnb/Hostelworld enxergam. Nunca chamado pra reserva que
     veio DO Beds24 (evitaria eco).
 
-    Confirmar contra API real: nome exato do campo de disponibilidade
-    (usado aqui "numAvail" por analogia com os campos de preco/minStay
-    documentados) dentro de POST /inventory/rooms/calendar.
+    Campo "numAvail" confirmado contra a API real em producao (HTTP 201,
+    {"success":true}) - deixou de ser suposicao.
 
     Retorna True/False - nunca levanta excecao (mesmo padrao de
     services/whatsapp_service.py: uma falha de sincronizacao nao pode
