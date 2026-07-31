@@ -3377,3 +3377,64 @@ mesma reserva (não cria outra); reserva manual já criada como
 `confirmed` publica na hora; reserva vinda do Beds24 nunca aciona nada
 daqui (sem eco); telefone/email agora chegam certos na chamada depois
 do fix do hóspede.
+
+## Bug real em produção: reserva duplicada (eco da própria Fase 5)
+
+Usuário testou de verdade e mandou print do painel do Beds24: a reserva
+do "Silvano" apareceu **duas vezes**, idênticas (mesma modalidade, nome,
+datas, valor), ambas via origem "API". Confirmou explicitamente que não
+criou duas vezes - já tinha visto duplicação antes (o caso do "Juan",
+mas aquilo era dado de teste antigo de sessões passadas, sem relação).
+Essa aqui é nova, e é bug de verdade.
+
+**Causa raiz**: a própria Fase 5 recém-construída. Sequência real:
+1. StayFlow cria a reserva do Silvano manualmente.
+2. `sync_booking_to_channel` dispara, chama `create_booking` - Beds24
+   cria a reserva e devolve o id.
+3. StayFlow grava esse id em `reservations.external_booking_id` -
+   MAS isso é uma segunda operação separada, depois da chamada HTTP já
+   ter voltado.
+4. A Beds24, ao criar a reserva, manda um webhook de confirmação de
+   volta pro StayFlow - **quase instantaneamente**, às vezes chegando
+   antes do passo 3 terminar.
+5. Quando esse webhook chega, `get_reservation_id_by_external_booking_id`
+   ainda não encontra nada (o vínculo do passo 3 ainda não foi salvo) -
+   o webhook não tem como saber que essa "reserva nova" é a MESMA que
+   acabou de ser criada, e cria uma linha duplicada via
+   `create_reservation_from_channel`.
+
+Um eco clássico: a Fase 5 manda uma ação pro Beds24, e o próprio
+mecanismo de entrada (Fase 3) que já existia reage a essa ação como se
+fosse notícia nova de fora.
+
+**Corrigido** com uma checagem de deduplicação antes de criar qualquer
+reserva nova a partir de um webhook: `find_recent_unlinked_stayflow_reservation`
+(`database.py`) procura uma reserva `source in ('manual','whatsapp')`,
+criada nos últimos 10 minutos, ainda sem `external_booking_id`, com a
+MESMA modalidade + nome do hóspede + datas de check-in/check-out do
+booking que chegou no webhook. Se achar, `link_external_booking_id`
+vincula essa reserva existente em vez de criar outra -
+`routes/beds24_webhook.py` foi reordenado pra fazer essa checagem antes
+de decidir se cria ou atualiza. Janela de 10 minutos + casamento exato
+de 4 campos torna colisão por coincidência real praticamente impossível.
+
+Testado simulando a corrida de verdade: cria reserva → apaga
+manualmente o `external_booking_id` que acabou de ser gravado (simula o
+webhook chegando ANTES desse gravar) → manda o payload de eco → confirma
+que continua existindo só 1 reserva, não 2. Confirmado também que um
+booking genuinamente novo vindo de fora (sem nenhuma reserva StayFlow
+correspondente) continua sendo criado normalmente, sem ser
+"engolido" por engano pela checagem nova.
+
+## Alerta de limpeza não aparecia na hora certa
+
+No mesmo teste, usuário reportou: fez um check-out e não apareceu
+nenhum aviso de limpeza em Operações/sininho. O alerta em si já existia
+no backend (corrigido numa rodada anterior) - o problema era só que
+`refreshOperationalViews()` (a função central que reatualiza as telas
+depois de qualquer ação operacional) nunca chamava `loadOperations()`,
+só `loadRoomMap()`/`loadReservations()`. O alerta ficava certinho no
+banco, só não aparecia até a pessoa recarregar a página ou abrir a aba
+Operações manualmente. Corrigido adicionando `loadOperations()` à mesma
+função central - agora qualquer ação (check-in, check-out, cancelar,
+etc) atualiza as três telas juntas, sininho incluso.
