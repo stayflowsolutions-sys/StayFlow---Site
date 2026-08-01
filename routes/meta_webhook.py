@@ -91,7 +91,7 @@ def _fetch_instagram_message_text(mid, access_token):
     campo certo se a primeira tentativa nao acertar.
     """
     if not mid or not access_token:
-        return None
+        return None, None
     import requests as _requests
     try:
         res = _requests.get(
@@ -102,11 +102,13 @@ def _fetch_instagram_message_text(mid, access_token):
         )
         print(f"Webhook Meta: busca de mensagem por mid - status={res.status_code} body={res.text}")
         if res.status_code >= 400:
-            return None
-        return res.json().get("message")
+            return None, None
+        body = res.json()
+        sender_id = (body.get("from") or {}).get("id")
+        return body.get("message"), sender_id
     except Exception as error:
         print("Webhook Meta: erro ao buscar mensagem por mid:", error)
-        return None
+        return None, None
 
 
 def _resolve_instagram_hostel(entry_id):
@@ -232,21 +234,22 @@ def receive_message():
 
             for event in entry.get("messaging", []):
                 message = event.get("message")
+                fetched_sender_id = None
 
                 # TEMPORARIO/investigacao: confirmado ao vivo que, pelo
                 # menos entre duas contas testadoras do mesmo app (antes
                 # do App Review), o Instagram as vezes entrega a mensagem
                 # nova como um evento "message_edit" (num_edit=0) em vez
-                # do evento "message" padrao - sem o texto, so o `mid`.
-                # Busca o conteudo de verdade por esse mid via API como
-                # fallback, so pro Instagram.
+                # do evento "message" padrao - sem texto e sem "sender"
+                # nenhum, so o `mid`. Busca o conteudo (texto + quem
+                # mandou) de verdade por esse mid via API como fallback,
+                # so pro Instagram.
                 message_edit = event.get("message_edit")
                 if not message and message_edit and channel == "instagram":
                     mid = message_edit.get("mid")
-                    fallback_sender_id = event.get("sender", {}).get("id")
-                    if mid and fallback_sender_id:
+                    if mid:
                         fallback_config = adapter["get_config"](hostel_id)
-                        fetched_text = _fetch_instagram_message_text(mid, fallback_config.get("access_token"))
+                        fetched_text, fetched_sender_id = _fetch_instagram_message_text(mid, fallback_config.get("access_token"))
                         if fetched_text:
                             message = {"text": fetched_text}
 
@@ -256,7 +259,7 @@ def receive_message():
                 if not message or message.get("is_echo"):
                     continue
 
-                sender_id = event.get("sender", {}).get("id")
+                sender_id = event.get("sender", {}).get("id") or fetched_sender_id
                 text = message.get("text")
                 attachments = message.get("attachments") or []
                 image_attachment = next((a for a in attachments if a.get("type") == "image"), None)
