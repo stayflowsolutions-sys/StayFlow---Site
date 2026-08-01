@@ -200,9 +200,8 @@ def exchange_code_for_instagram_account(code, redirect_uri):
 
         token_data = token_res.json()
         short_token = token_data.get("access_token")
-        instagram_business_id = token_data.get("user_id")
-        if not short_token or not instagram_business_id:
-            print("Resposta sem access_token/user_id (Instagram):", token_res.text)
+        if not short_token:
+            print("Resposta sem access_token (Instagram):", token_res.text)
             return None, None, None, "Resposta do Instagram não trouxe um token de acesso válido."
 
         long_res = requests.get(
@@ -220,17 +219,32 @@ def exchange_code_for_instagram_account(code, redirect_uri):
 
         long_token = long_res.json().get("access_token", short_token)
 
-        username = None
-        try:
-            profile_res = requests.get(
-                f"https://graph.instagram.com/{INSTAGRAM_API_VERSION}/me",
-                params={"fields": "username", "access_token": long_token},
-                timeout=REQUEST_TIMEOUT,
-            )
-            if profile_res.status_code < 400:
-                username = profile_res.json().get("username")
-        except requests.RequestException:
-            pass
+        # O `user_id` devolvido na troca de code->token acima e um "ID
+        # com escopo de app" (ex: 280...) - NAO e o mesmo ID que chega
+        # de verdade no campo entry.id do payload de webhook nem o que
+        # a Send API espera na URL (/{IG_ID}/messages). O ID certo pra
+        # essas duas coisas e o "user_id" CLASSICO (ex: 1784...),
+        # devolvido por /me?fields=user_id - confirmado testando ao vivo
+        # (webhook chegou com o ID classico, nao com o de escopo de
+        # app) e documentado em developers.facebook.com/docs/instagram-
+        # platform/instagram-api-with-instagram-login/get-started
+        # ("This ID is [the] value of the `id` field received in
+        # webhook notifications for this account").
+        profile_res = requests.get(
+            f"https://graph.instagram.com/{INSTAGRAM_API_VERSION}/me",
+            params={"fields": "user_id,username", "access_token": long_token},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if profile_res.status_code >= 400:
+            print("Erro ao buscar user_id classico (Instagram):", profile_res.status_code, profile_res.text)
+            return None, None, None, "Não foi possível confirmar a conta Instagram conectada."
+
+        profile_data = profile_res.json()
+        instagram_business_id = profile_data.get("user_id")
+        username = profile_data.get("username")
+        if not instagram_business_id:
+            print("Resposta de /me sem user_id (Instagram):", profile_res.text)
+            return None, None, None, "Não foi possível confirmar a conta Instagram conectada."
 
         return str(instagram_business_id), long_token, username, None
     except requests.RequestException as error:
