@@ -66,20 +66,25 @@ def _resolve_messenger_hostel(entry_id):
     return get_hostel_id_by_facebook_page_id(entry_id)
 
 
-# TEMPORARIO: em modo de desenvolvimento (sem App Review aprovado pro
-# escopo instagram_business_manage_messages), a Meta entrega o evento
-# de webhook usando sempre o ID da conta de teste do PROPRIO
-# desenvolvedor como entry.id - confirmado ao vivo (mesmo respondendo
-# pela conta do hostel, o entry.id continuou sendo o da conta pessoal
-# do dev usada como testadora), independente da direcao real da
-# conversa. Isso nao deve acontecer em producao, com o app aprovado -
-# ali o entry.id deve vir como o ID real da conta comercial conectada
-# (ja tratado normalmente via get_hostel_id_by_instagram_id). Mapeamento
-# hardcoded so pra permitir testar o pipeline inteiro (IA respondendo,
-# envio de volta) enquanto a revisao nao sai - remover quando a app for
-# aprovada pra Acesso Avancado.
+# TEMPORARIO/HARDCODED (so pra esta conta): confirmado ao vivo que a
+# "Instagram API with Instagram Login" tem DOIS IDs diferentes pra
+# mesma conta - o `user_id` devolvido na troca de token OAuth (formato
+# novo, prefixo "2800...", o que salvamos em hostels.instagram_business_id
+# e usamos pra montar a URL de envio) e o "Instagram Business Account
+# ID" classico (formato antigo, prefixo "1784...", o mesmo que aparece
+# no Business Manager e na tabela "Generar tokens de acceso" do painel)
+# - e e ESSE SEGUNDO formato que chega de verdade no campo entry.id do
+# payload de webhook, nao o primeiro. Por isso o lookup direto no banco
+# nunca batia. Mapeamento manual so pra essa conta enquanto nao
+# implementamos guardar os dois IDs na conexao (TODO: capturar o ID
+# classico tambem no momento do OAuth, ex. via GET .../me com o token
+# de Facebook Login, e salvar os dois no banco - aí este dict deixa de
+# ser necessario pra qualquer hostel novo). Inclui tambem o ID da conta
+# de teste do proprio desenvolvedor (usada como segunda testadora),
+# que apareceu num dos testes ao vivo.
 _DEV_MODE_INSTAGRAM_ID_ALIASES = {
-    "17841477942485091": "28000058579630962",  # conta de teste do dev -> stayflowsolutions
+    "17841416924089707": "28000058579630962",  # stayflowsolutions, ID classico -> ID novo (OAuth)
+    "17841477942485091": "28000058579630962",  # conta de teste do dev, usada como segunda testadora
 }
 
 
@@ -179,6 +184,7 @@ def receive_message():
     interno falhar - senao a Meta pode desativar o webhook.
     """
     payload = request.get_json(silent=True) or {}
+    print("Webhook Meta: payload bruto recebido:", payload)
 
     try:
         object_type = payload.get("object")
@@ -233,12 +239,16 @@ def receive_message():
                     # seguintes e so uma chamada a mais ao Graph, sem
                     # persistir nada errado.
                     guest_name = adapter["profile"](config, sender_id)
+                    print(f"Webhook Meta: chamando process_incoming_message hostel_id={hostel_id} channel={channel} sender_id={sender_id} text={text!r} guest_name={guest_name!r}")
 
                     process_incoming_message(
                         hostel_id, sender_id, text, channel=channel, send_reply=True, name=guest_name
                     )
+                    print("Webhook Meta: process_incoming_message terminou sem excecao")
 
-    except Exception as error:
-        print("Erro ao processar webhook do Meta (Messenger/Instagram):", error)
+    except Exception:
+        import traceback
+        print("Erro ao processar webhook do Meta (Messenger/Instagram):")
+        traceback.print_exc()
 
     return jsonify({"status": "ok"}), 200
