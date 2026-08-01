@@ -554,7 +554,7 @@ def debug_instagram_settings(hostel_id):
     return jsonify(result)
 
 
-@settings_bp.route("/settings/instagram/subscribe", methods=["POST"])
+@settings_bp.route("/settings/instagram/subscribe", methods=["GET", "POST"])
 @require_permission("settings")
 def subscribe_instagram_webhook(hostel_id):
     """
