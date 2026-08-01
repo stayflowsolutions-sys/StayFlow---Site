@@ -4470,3 +4470,119 @@ ausente no próprio WhatsApp e ausente quando o hostel não tem número
 cadastrado; `process_incoming_message` repassa o número certo pra
 `ask_ai`. Balanceamento de chaves/parênteses, cobertura i18n (2 chaves
 novas, 5 idiomas) e regressão completa sem quebra.
+
+## Perfil do hóspede: leitura por padrão, e Reservas leva pra Hóspedes
+
+Usuário mandou um print: clicou no nome do hóspede numa reserva vinda
+do Messenger e abriu o modal de perfil com todos os campos vazios,
+apesar de ter mandado nome, documento e foto pelo chat. Ele queria
+outra coisa nesse clique - não abrir um cadastro em branco ali mesmo,
+e sim: clicar no nome na aba Reservas leva pra aba Hóspedes; dentro da
+aba Hóspedes, clicar no hóspede mostra um perfil de **leitura** (campo
+fixo com o que já existe), não um formulário aberto pra cadastrar -
+com um botão explícito "Editar" pra quem quiser mudar algo.
+
+`guestNameLink()` (usada em Reservas, morador de longa duração e no
+modal de cancelamentos) trocou `onclick="openGuestProfileModal(...)"`
+por `onclick="goToGuestProfile(...)"` (nova) - troca de aba pra
+"guests", recarrega a lista (`loadGuests()`) e dá scroll + destaque
+visual temporário (`.guest-row-highlight`, 2s, `@keyframes`) na linha
+do hóspede certo, usando um `data-guest-row-id` novo que `loadGuests()`
+passou a gravar em cada `<tr>`.
+
+`openGuestProfileModal()` foi reescrita: agora guarda o perfil já
+buscado em `window._currentGuestProfile` (evita rebuscar ao alternar
+entre ler/editar) e delega o desenho pra `renderGuestProfileModal(
+profile, editMode)`, que monta o MESMO conteúdo em dois modos -
+leitura (`guestReadonlyField()`, caixa fixa estilizada pra parecer um
+input desabilitado, mostrando "—" quando vazio) ou edição (o grid de
+`<input>` de sempre, com Salvar/Cancelar). Chamada sem `editMode` (uso
+direto na aba Hóspedes) abre em leitura; o botão "✏️ Editar" troca pra
+edição; "Cancelar" volta pra leitura sem perder o que já tinha; salvar
+com sucesso invalida o cache, recarrega a lista de hóspedes em segundo
+plano e reabre o modal em leitura já mostrando o valor novo salvo.
+
+Testado: navegação Reservas → Hóspedes chega na aba certa, com scroll
+e destaque na linha certa; perfil abre em leitura por padrão; alternar
+leitura ↔ edição preserva os dados; salvar atualiza a lista e reabre em
+leitura com o valor novo. Regressão completa sem quebra.
+
+## Nacionalidade/data de nascimento não salvavam no Messenger, e documento sem tratamento nenhum
+
+Duas causas raiz diferentes, achadas investigando o mesmo print acima
+(perfil vazio apesar do hóspede ter mandado tudo pelo chat):
+
+**Causa 1** - `save_guest_date_of_birth`/`save_guest_nationality`
+(`database.py`) faziam `UPDATE guests SET ... WHERE phone = ?`. Como
+`guests.phone` é sempre `NULL` de propósito pra Messenger/Instagram
+(decisão já tomada na integração de canais - não força um ID de canal
+como se fosse telefone), qualquer chamada da IA pra salvar
+nacionalidade ou data de nascimento nesses canais afetava
+silenciosamente ZERO linhas - sem erro nenhum, só não fazia nada.
+Corrigido com `save_guest_date_of_birth_by_id`/`save_guest_nationality_by_id`
+(novo, `WHERE id = ?`), usadas pelos handlers de tool-call
+correspondentes em `ask_ai` (`services/ai_service.py`).
+
+**Causa 2** - Messenger nunca teve NENHUM tratamento de imagem/
+documento, diferente do WhatsApp (que já tinha
+`handle_incoming_document_image` desde o começo). A Send API do
+Messenger entrega o anexo com uma URL de CDN já pronta pra baixar
+direto (`message.attachments[].payload.url`) - mais simples que o
+WhatsApp, que exige trocar um `media_id` por URL temporária antes.
+Novo `download_messenger_attachment(url)` (`services/messenger_service.py`,
+`requests.get` simples, nunca levanta exceção) e
+`handle_incoming_document_image(hostel_id, psid, attachment_url,
+access_token)` (`routes/meta_webhook.py`, mesmo padrão do equivalente
+WhatsApp: resolve/cria o hóspede, salva o documento, grava uma
+mensagem placeholder na conversa, confirma o recebimento por texto
+direto). O loop principal do webhook (`receive_message`) agora separa
+mensagem com anexo de imagem (vai pro tratamento de documento) de
+mensagem de texto normal (segue pro pipeline de IA de sempre).
+
+Testado: nacionalidade/data de nascimento salvas certo por `guest_id`
+mesmo sem telefone; `ask_ai` chamando as versões `_by_id` certas via
+tool-call; documento do Messenger recebido, salvo com o `guest_id`
+certo, mensagem placeholder gravada na conversa e confirmação enviada;
+falha ao baixar o anexo avisa o hóspede sem derrubar o webhook.
+Regressão completa sem quebra.
+
+## Mapa de Quartos: "Novo quarto"/"Nova cama" pareciam sem reação ao clique
+
+Usuário reportou que, no menu "☰ Ações" do Mapa de Quartos, os itens
+"Novo quarto" e "Nova cama" não respondiam ao clique. Investigação
+inicial (leitura de código) não achou nada óbvio - as duas funções
+existiam, o HTML dos botões era idêntico aos outros itens do mesmo
+menu que funcionavam, e não havia erro de sintaxe JS (confirmado
+isolando as duas funções e validando com um parser JS de verdade).
+
+Como a investigação estática não convergia, subi o servidor local com
+um banco de teste e testei o clique de verdade num navegador headless
+(Playwright, recém-instalado no ambiente). O teste confirmou o
+sintoma - clicar no botão "Novo quarto" não abria o modal - e revelou
+a causa exata: no ponto exato do botão, o elemento que realmente
+recebia o clique não era o botão, e sim `#roomMapGrid` (a grade de
+quartos/camas abaixo do menu), mesmo o dropdown tendo `z-index:20`.
+
+Causa raiz: `.card>*{position:relative;z-index:1}` - regra genérica que
+existe pra por o conteúdo de qualquer `.card` acima dos gradientes
+decorativos de fundo (`.card::before`/`.card::after`) - dá o MESMO
+`z-index:1` a TODOS os filhos diretos de um `.card`, sem distinção.
+No card do Mapa de Quartos, a linha do cabeçalho (que contém o
+dropdown "Ações") e `#roomMapGrid` são ambos filhos diretos do mesmo
+`.card` - empatam em `z-index:1`, e o desempate entre elementos com
+z-index igual é por ordem no DOM: `#roomMapGrid` vem depois, então
+pinta por cima. O `z-index:20` do dropdown nunca chegava a ser
+comparado com o do grid, porque só vale DENTRO do próprio contexto de
+empilhamento que a linha do cabeçalho criou (o dropdown é filho da
+linha do cabeçalho, não do `.card` diretamente) - a comparação real que
+decide quem fica por cima acontece um nível acima, entre a linha do
+cabeçalho inteira e o grid, e aí os dois estão empatados em 1.
+
+Corrigido dando à `<div>` da linha do cabeçalho um `z-index:2` inline -
+suficiente pra vencer o empate contra o `1` do grid no nível do
+`.card`, sem mexer na regra genérica `.card>*` (que existe por um
+motivo válido e é usada em toda a aplicação).
+
+Testado: clique de verdade (sem `force`) nos dois botões agora abre o
+modal certo, confirmado via Playwright; sem erros de console;
+balanceamento de chaves/parênteses do `dashboard.html` inalterado.
