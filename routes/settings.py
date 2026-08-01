@@ -529,6 +529,25 @@ def debug_instagram_settings(hostel_id):
     except Exception as error:
         result["profile_error"] = str(error)
 
+    subscribed_apps_data = (result.get("subscribed_apps_body") or {}).get("data") or []
+    result["subscribed_app_identities"] = []
+    for app_entry in subscribed_apps_data:
+        app_id = app_entry.get("id")
+        identity = {"id": app_id, "subscribed_fields": app_entry.get("subscribed_fields")}
+        try:
+            app_res = _requests.get(
+                f"https://graph.facebook.com/v20.0/{app_id}",
+                params={"fields": "name", "access_token": access_token},
+                timeout=15,
+            )
+            identity["lookup_status"] = app_res.status_code
+            identity["lookup_body"] = app_res.json() if app_res.text else None
+        except Exception as error:
+            identity["lookup_error"] = str(error)
+        result["subscribed_app_identities"].append(identity)
+
+    result["our_instagram_app_id_env"] = meta_oauth_service._instagram_app_id()
+
     return jsonify(result)
 
 
