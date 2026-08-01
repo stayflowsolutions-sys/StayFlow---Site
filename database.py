@@ -4048,6 +4048,128 @@ def update_reservation_status_record(hostel_id, reservation_id, status):
     sync_booking_to_channel(hostel_id, reservation_id)
     dispatch_reservation_webhook(hostel_id, reservation_id, "cancelled" if status == "cancelled" else "status_changed")
 
+    # Pedido do usuario: reserva vinda do chat (Messenger/WhatsApp) fica
+    # pendente ate a equipe confirmar manualmente - o hospede precisa
+    # saber o resultado sem ter que perguntar. Nunca deixa uma falha de
+    # rede/envio derrubar a mudanca de status em si (que ja foi
+    # commitada acima).
+    try:
+        notify_guest_reservation_status(hostel_id, reservation_id, status)
+    except Exception as error:
+        print("Erro ao notificar hospede sobre mudanca de status da reserva:", error)
+
+
+_RESERVATION_CONFIRMED_TEMPLATES = {
+    "pt": "Sua reserva foi confirmada! ✅",
+    "en": "Your reservation has been confirmed! ✅",
+    "es": "¡Tu reserva fue confirmada! ✅",
+    "fr": "Votre réservation a été confirmée ! ✅",
+    "de": "Ihre Reservierung wurde bestätigt! ✅",
+}
+_RESERVATION_CANCELLED_TEMPLATES = {
+    "pt": "Sua reserva foi cancelada. Se quiser reagendar ou tiver alguma dúvida, é só chamar por aqui.",
+    "en": "Your reservation has been cancelled. If you'd like to rebook or have any questions, just message us here.",
+    "es": "Tu reserva fue cancelada. Si querés reagendar o tenés alguna duda, escribinos por acá.",
+    "fr": "Votre réservation a été annulée. Si vous souhaitez la reprogrammer ou avez des questions, écrivez-nous ici.",
+    "de": "Ihre Reservierung wurde storniert. Wenn Sie neu buchen möchten oder Fragen haben, schreiben Sie uns einfach hier.",
+}
+_RESERVATION_CHECKIN_LABEL = {"pt": "Check-in", "en": "Check-in", "es": "Check-in", "fr": "Arrivée", "de": "Check-in"}
+_RESERVATION_CHECKOUT_LABEL = {"pt": "Check-out", "en": "Check-out", "es": "Check-out", "fr": "Départ", "de": "Check-out"}
+_RESERVATION_ADDRESS_LABEL = {"pt": "Endereço", "en": "Address", "es": "Dirección", "fr": "Adresse", "de": "Adresse"}
+_RESERVATION_FROM_LABEL = {"pt": "a partir das", "en": "from", "es": "a partir de las", "fr": "à partir de", "de": "ab"}
+
+
+def notify_guest_reservation_status(hostel_id, reservation_id, status):
+    """
+    Avisa o hospede de volta, no mesmo canal onde ele esta conversando
+    (WhatsApp ou Messenger), quando uma reserva e confirmada ou
+    cancelada pela equipe - ja passando horario de check-in/check-out e
+    endereco do hostel na confirmacao. So dispara pra hospede com canal
+    de chat identificavel (guest_id presente e telefone/PSID
+    resolvivel) - reserva sem hospede vinculado (ex: cadastro manual so
+    com nome) nao tem pra onde mandar, sai em silencio.
+    """
+    if status not in ("confirmed", "cancelled"):
+        return
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT guest_id, checkin_date, checkout_date FROM reservations WHERE id = ? AND hostel_id = ?",
+        (reservation_id, hostel_id)
+    )
+    reservation = cursor.fetchone()
+    if not reservation or not reservation["guest_id"]:
+        conn.close()
+        return
+
+    guest_id = reservation["guest_id"]
+
+    cursor.execute(
+        "SELECT channel, external_id FROM guest_channel_identities WHERE hostel_id = ? AND guest_id = ? ORDER BY id DESC LIMIT 1",
+        (hostel_id, guest_id)
+    )
+    identity = cursor.fetchone()
+    if identity:
+        channel, target = identity["channel"], identity["external_id"]
+    else:
+        cursor.execute("SELECT phone FROM guests WHERE id = ?", (guest_id,))
+        guest_row = cursor.fetchone()
+        channel, target = "whatsapp", (guest_row["phone"] if guest_row else None)
+
+    cursor.execute("SELECT address, checkin FROM settings WHERE hostel_id = ?", (hostel_id,))
+    settings_row = cursor.fetchone()
+    conn.close()
+
+    # Instagram ainda nao tem envio implementado (fica pra quando o
+    # Instagram Login entrar) - por ora so WhatsApp e Messenger mandam
+    # de verdade.
+    if not target or channel not in ("whatsapp", "messenger"):
+        return
+
+    lang = get_guest_language_by_id(guest_id) or "pt"
+    if lang not in _RESERVATION_CONFIRMED_TEMPLATES:
+        lang = "pt"
+
+    address = (settings_row["address"] if settings_row else None) or ""
+    checkin_time = (settings_row["checkin"] if settings_row else None) or ""
+
+    if status == "confirmed":
+        lines = [_RESERVATION_CONFIRMED_TEMPLATES[lang]]
+        if reservation["checkin_date"]:
+            line = f"{_RESERVATION_CHECKIN_LABEL[lang]}: {reservation['checkin_date']}"
+            if checkin_time:
+                line += f" ({_RESERVATION_FROM_LABEL[lang]} {checkin_time})"
+            lines.append(line)
+        if reservation["checkout_date"]:
+            lines.append(f"{_RESERVATION_CHECKOUT_LABEL[lang]}: {reservation['checkout_date']}")
+        if address:
+            lines.append(f"{_RESERVATION_ADDRESS_LABEL[lang]}: {address}")
+        message = "\n".join(lines)
+    else:
+        message = _RESERVATION_CANCELLED_TEMPLATES[lang]
+
+    _dispatch_reservation_status_message(hostel_id, guest_id, channel, target, message)
+
+
+def _dispatch_reservation_status_message(hostel_id, guest_id, channel, target, message):
+    from services.memory_service import save_message as save_memory_message
+
+    if channel == "whatsapp":
+        from services.whatsapp_service import send_whatsapp_message
+        phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)
+        sent = send_whatsapp_message(phone_number_id, access_token, target, message)
+        memory_key = target
+    else:
+        from services.messenger_service import send_messenger_message
+        _, access_token = get_hostel_facebook_config(hostel_id)
+        sent = send_messenger_message(access_token, target, message)
+        memory_key = f"messenger:{target}"
+
+    if sent:
+        save_memory_message(hostel_id, memory_key, "assistant", message)
+        save_message_db_for_guest(guest_id, "staff", message, channel=channel)
+
 
 def create_supplier_record(hostel_id, name, phone="", email=""):
     name = (name or "").strip()
