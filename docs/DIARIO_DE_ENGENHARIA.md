@@ -4700,3 +4700,128 @@ não impede o status de ser salvo normalmente. Regressão completa (12
 scripts cobrindo Messenger, WhatsApp, Beds24, Financeiro, perfil de
 hóspede, canal, reservas canceladas e alertas de nova reserva) sem
 quebra.
+
+## Instagram Direct conectado - terceiro canal
+
+Pedido do usuário: "vamos conectar o instagram". Antes de codar,
+entrei em modo de planejamento (WhatsApp e Messenger já funcionam
+100%, faltava só o Instagram). Investigação de código (agente Explore)
+confirmou uma coisa boa: a base de dados já estava pronta desde a
+integração do Facebook - colunas `instagram_business_id`/
+`instagram_access_token`/`instagram_oauth_state` em `hostels`, e as 6
+funções de CRUD/oauth-state em `database.py`, espelhando exatamente o
+padrão do Facebook - só nunca tinham sido ligadas a rota nenhuma,
+porque na época ficou combinado que Instagram usaria um metodo de
+login diferente ("Instagram API with Instagram Login", sem depender de
+Página do Facebook) e isso ficou pra rodada seguinte.
+
+**Achado que mudou a suposição inicial**: uma pesquisa dedicada
+(agente Plan, com busca na documentação atual da Meta) confirmou que
+esse método NÃO é uma variação do fluxo Facebook já implementado - é
+uma stack praticamente paralela, com host/credencial/formato
+diferentes em quase todo passo:
+
+- **App ID/Secret próprios** (`INSTAGRAM_APP_ID`/`INSTAGRAM_APP_SECRET`,
+  variáveis novas) - não dá pra reaproveitar `META_APP_ID`/
+  `META_APP_SECRET` que o Facebook já usa.
+- **Autorização**: `www.instagram.com/oauth/authorize` com `scope`
+  direto na URL (`instagram_business_basic,instagram_business_manage_messages`
+  - atenção: a Meta descontinuou os nomes de escopo antigos sem o
+  prefixo `instagram_` em 27/01/2025), sem `config_id` (isso é
+  específico do Facebook Login for Business).
+- **Troca do `code` por token**: **POST** em `api.instagram.com/oauth/access_token`
+  (o Facebook usa GET em `graph.facebook.com`).
+- **Token de longa duração**: GET em `graph.instagram.com/access_token?grant_type=ig_exchange_token`
+  (host ainda diferente do passo anterior - terceiro host na mesma
+  sequência).
+- **Envio de mensagem**: POST `graph.instagram.com/v20.0/<IG_BUSINESS_ID>/messages`,
+  token no **header** `Authorization: Bearer` - diferente do Messenger,
+  que manda o token como query param em `/me/messages`.
+- **Vantagem real do método**: não exige Página do Facebook vinculada.
+
+Dava pra reaproveitar a FORMA dos arquivos já existentes
+(`meta_oauth_service.py`, `messenger_service.py`, `meta_oauth.py`,
+`meta_webhook.py`) como molde de organização, mas o conteúdo de cada
+chamada HTTP precisou ser escrito do zero, não copiado.
+
+**Implementação** (fases com checkpoint, plano salvo e seguido):
+
+- `services/meta_oauth_service.py`: `get_instagram_authorize_url`/
+  `exchange_code_for_instagram_account` (as 3 chamadas certas: code→
+  token curto via POST, token curto→longa duração, tentativa best-effort
+  de buscar o username - se falhar, segue só com o ID, sem bloquear a
+  conexão).
+- `routes/meta_oauth.py`: `/oauth/instagram/connect`/`/callback`,
+  espelhando exatamente o padrão do Facebook (`_back_to_settings`,
+  `save_hostel_instagram_oauth_state`/`consume_...`/`save_hostel_instagram_config`
+  já existiam).
+- `routes/settings.py`: `GET/POST/DELETE /settings/instagram`, mesmo
+  contrato do `/settings/facebook` (form manual como alternativa ao
+  OAuth, pra quem já tem as credenciais prontas).
+- `services/instagram_service.py` (novo): `send_instagram_message`,
+  `get_instagram_user_profile` (best-effort - a documentação da Meta
+  não confirma um endpoint de perfil pra esse fluxo especificamente;
+  se falhar, devolve `None` e a IA pergunta o nome, igual já faz no
+  WhatsApp, sem quebrar nada), `download_instagram_attachment`.
+- `routes/meta_webhook.py`: generalizado pra um dicionário de
+  adaptadores por canal (`_CHANNEL_ADAPTERS`), evitando duplicar o loop
+  inteiro de eventos (texto/imagem/perfil) uma vez por canal - resolve
+  o canal do evento pelo campo `object` do payload da Meta (`"page"` →
+  Messenger, `"instagram"` → Instagram), com fallback tentando os dois
+  lookups de hostel se o campo vier ausente ou inesperado (não
+  confirmado com 100% de certeza na doc primária da Meta, só em fontes
+  secundárias consistentes - mesma ressalva de sempre, só um teste ao
+  vivo confirma).
+
+  **Detalhe de implementação que rendeu um bug real, achado só ao
+  rodar os testes**: a primeira versão guardava a referência direta
+  das funções de envio/download (`download_messenger_attachment` etc)
+  como valor no dicionário `_CHANNEL_ADAPTERS`, criado uma vez no
+  carregamento do módulo. Isso captura o OBJETO da função no momento em
+  que o dict é montado - um teste que faz `patch("routes.meta_webhook.
+  download_messenger_attachment")` depois disso rebate o NOME no
+  módulo, mas o dict já guardou o objeto antigo, então o mock nunca era
+  chamado (o teste falhava silenciosamente tentando uma requisição de
+  rede de verdade). Corrigido envolvendo cada entrada do dict numa
+  função-wrapper pequena que chama o nome pelo módulo (mesmo padrão que
+  as funções de envio/perfil já usavam sem querer, por acidente de
+  escrita) - aí o mock funciona porque a busca do nome acontece em
+  tempo de chamada, não em tempo de importação.
+
+- `database.py`: `_dispatch_reservation_status_message` (da notificação
+  de reserva confirmada/cancelada, v1.36.0) ganhou um branch pro
+  Instagram, e o gate de canais permitidos passou a incluir
+  `"instagram"`.
+- Frontend: terceiro card clicável em Comunicação (mesmo padrão dos
+  outros), modal espelhando o do Facebook (Conectar/manual).
+  **Corrigido de brinde, achado nesta rodada**: `handleMetaOAuthReturn`
+  sempre mostrava a mensagem de retorno rotulada "Facebook" (chaves
+  `settings.facebook.connectSuccess`/`connectFailed` fixas), não
+  importava o canal que realmente tinha voltado do OAuth - trocado pra
+  chaves genéricas `settings.metaOauth.connectSuccess`/`connectFailed`,
+  compartilhadas entre os canais (e prontas pro WhatsApp Embedded
+  Signup, quando existir).
+
+Testado: 18 scripts de regressão completa (incluindo os já existentes
+de Messenger/WhatsApp/Beds24/Facebook, pra garantir que a
+generalização do webhook não quebrou nada que já funcionava), mais 4
+cenários novos específicos de Instagram (mensagem de texto roteada
+certo pelo `object`, documento recebido/salvo/confirmado no canal
+certo, fallback sem `object`, reserva confirmada notificando pelo
+Direct com endereço/horário). Teste real de clique em navegador
+(Playwright): os três cards de Comunicação (WhatsApp/Facebook/
+Instagram) abrem os modais certos, salvar configuração manual do
+Instagram funciona e persiste, sem erro de console.
+
+**Bloqueio de negócio, não de código** (mesmo padrão já visto com
+Beds24 e Facebook App Review nesta sessão): falta o usuário criar o
+produto "Instagram" no App Meta existente, pegar o Instagram App
+ID/Secret em "API setup with Instagram login" e conectar uma conta de
+teste - até lá, o botão "Conectar Instagram" redireciona com uma
+mensagem de erro educada, sem quebrar nada. Pontos que a pesquisa não
+conseguiu confirmar com certeza absoluta na documentação oficial da
+Meta ficam marcados como "a confirmar no primeiro teste ao vivo":
+disponibilidade de nome/username do remetente nesse fluxo específico,
+formato exato do payload do webhook, se a assinatura do webhook no
+painel é uma seção separada da do Messenger, e exigência de Business
+Verification pra esse escopo de permissão.

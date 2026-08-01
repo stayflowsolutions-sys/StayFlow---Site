@@ -1696,6 +1696,16 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openInstagramSettingsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.instagram.title">📷 Instagram Direct</h2>
+            <p class="settings-summary-desc" id="instagramSummaryDesc" data-i18n="settings.instagram.desc">Conecte a conta profissional do Instagram do hostel pra atender pelo Direct.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <div class="card" data-settings-section="comunicacao">
         <h2 data-i18n="settings.communication.title">Comunicação</h2>
 
@@ -2290,6 +2300,46 @@ async function deleteRoleConfirm(roleId){
     loadFacebookSettings();
   };
 
+  window.openInstagramSettingsModal = function(){
+    openGenericModal(T('settings.instagram.title', '📷 Instagram Direct'), `
+      <p style="margin-bottom:14px">${T('settings.instagram.desc', 'Conecte a conta profissional do Instagram do hostel pra atender pelo Direct.')}</p>
+
+      <div id="instagramConnected" style="display:none">
+        <p style="margin:0 0 12px">
+          <span>${T('settings.instagram.statusLabel', 'Status:')}</span>
+          <strong style="color:#3ddc97">${T('settings.instagram.statusActive', 'Conectado')}</strong>
+        </p>
+        <button type="button" class="btn red" onclick="disconnectInstagram()">${T('settings.instagram.disconnectBtn', 'Desconectar')}</button>
+      </div>
+
+      <div id="instagramNotConnected">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <button type="button" class="btn" onclick="connectInstagram()">${T('settings.instagram.connectBtn', 'Conectar Instagram')}</button>
+          <button type="button" class="btn secondary" onclick="toggleInstagramManualForm()">${T('settings.instagram.manualToggle', 'Configurar manualmente')}</button>
+        </div>
+
+        <div id="instagramManualForm" style="display:none">
+          <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+            <div style="grid-column:span 6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.instagram.businessIdLabel', 'Instagram Business ID')}</label>
+              <input type="text" id="instagramBusinessId" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+            </div>
+            <div style="grid-column:span 6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.instagram.tokenLabel', 'Access Token')}</label>
+              <input type="password" id="instagramAccessToken" autocomplete="off" placeholder="${T('settings.instagram.tokenPlaceholder', 'Deixe em branco pra manter o já salvo')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:14px">
+            <button class="btn" type="button" onclick="saveInstagramManualSettings()">${T('settings.instagram.saveBtn', 'Salvar')}</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="instagramMessage" class="generic-modal-message"></div>
+    `);
+    loadInstagramSettings();
+  };
+
   window.saveWhatsappSettings = async function(){
     const phoneNumberId = document.getElementById("whatsappPhoneNumberId").value.trim();
     const accessToken = document.getElementById("whatsappAccessToken").value.trim();
@@ -2454,6 +2504,93 @@ async function deleteRoleConfirm(roleId){
     }
   };
 
+  window.loadInstagramSettings = async function(){
+    try{
+      const res = await fetch("/settings/instagram", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const summaryDesc = document.getElementById("instagramSummaryDesc");
+      if(summaryDesc){
+        summaryDesc.textContent = data.connected
+          ? T('settings.instagram.summaryConnected', '✅ Conectado')
+          : T('settings.instagram.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+      }
+
+      const connectedEl = document.getElementById("instagramConnected");
+      const notConnectedEl = document.getElementById("instagramNotConnected");
+      if(!connectedEl || !notConnectedEl) return;
+
+      connectedEl.style.display = data.connected ? "block" : "none";
+      notConnectedEl.style.display = data.connected ? "none" : "block";
+
+      const businessIdInput = document.getElementById("instagramBusinessId");
+      if(businessIdInput && !data.connected) businessIdInput.value = data.instagram_business_id || "";
+    }catch(e){
+      console.warn("Erro ao carregar configuração do Instagram:", e);
+    }
+  };
+
+  window.toggleInstagramManualForm = function(){
+    const form = document.getElementById("instagramManualForm");
+    if(form) form.style.display = form.style.display === "none" ? "block" : "none";
+  };
+
+  window.connectInstagram = function(){
+    window.location.href = "/oauth/instagram/connect";
+  };
+
+  window.saveInstagramManualSettings = async function(){
+    const msg = document.getElementById("instagramMessage");
+    if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+    const instagramBusinessId = (document.getElementById("instagramBusinessId").value || "").trim();
+    const accessToken = (document.getElementById("instagramAccessToken").value || "").trim();
+
+    if(!instagramBusinessId){
+      if(msg){
+        msg.textContent = T('settings.instagram.businessIdRequired', 'Informe o Instagram Business ID.');
+        msg.classList.add("error");
+      }
+      return;
+    }
+
+    try{
+      const res = await fetch("/settings/instagram", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ instagram_business_id: instagramBusinessId, access_token: accessToken })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        if(msg){
+          msg.textContent = data.message || T('settings.instagram.saveFailed', 'Não foi possível salvar.');
+          msg.classList.add("error");
+        }
+        return;
+      }
+      loadInstagramSettings();
+    }catch(e){
+      if(msg){
+        msg.textContent = T('common.connectionError', 'Erro de conexão.');
+        msg.classList.add("error");
+      }
+    }
+  };
+
+  window.disconnectInstagram = async function(){
+    const confirmed = await stayflowConfirm(T('settings.instagram.disconnectConfirm', 'Desconectar o Instagram? O Direct deixa de funcionar até reconectar.'));
+    if(!confirmed) return;
+
+    try{
+      await fetch("/settings/instagram", { method: "DELETE", credentials: "same-origin" });
+      loadInstagramSettings();
+    }catch(e){
+      console.warn("Erro ao desconectar Instagram:", e);
+    }
+  };
+
   window.handleMetaOAuthReturn = function(){
     const params = new URLSearchParams(window.location.search);
     const channel = params.get("meta_oauth");
@@ -2466,9 +2603,9 @@ async function deleteRoleConfirm(roleId){
     switchSettingsSection("comunicacao");
 
     if(status === "success"){
-      alert(T('settings.facebook.connectSuccess', 'Conectado com sucesso!') + (message ? ` (${message})` : ""));
+      alert(T('settings.metaOauth.connectSuccess', 'Conectado com sucesso!') + (message ? ` (${message})` : ""));
     }else{
-      alert(message || T('settings.facebook.connectFailed', 'Não foi possível conectar.'));
+      alert(message || T('settings.metaOauth.connectFailed', 'Não foi possível conectar.'));
     }
 
     // Limpa a query string pra nao reprocessar o mesmo resultado se a
@@ -6031,6 +6168,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     // idioma uma vez. Corrigido registrando aqui tambem.
     if (typeof loadOutboundWebhookSettings === "function") loadOutboundWebhookSettings();
     if (typeof loadFacebookSettings === "function") loadFacebookSettings();
+    if (typeof loadInstagramSettings === "function") loadInstagramSettings();
     if (typeof loadQuickReplies === "function") loadQuickReplies();
 
     // Gestao da propria conta (senha, sessoes, historico de login) e
@@ -6070,7 +6208,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     inventory: ["loadInventory", "loadSuppliers"],
     revenue: ["loadRevenue"],
     reports: ["loadReports"],
-    settings: ["hydrateSettingsFromBackend", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings"]
+    settings: ["hydrateSettingsFromBackend", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings"]
   };
 
   function reloadDynamicContent(pageId){
