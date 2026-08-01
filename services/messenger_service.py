@@ -65,3 +65,26 @@ def get_messenger_user_profile(page_access_token, psid):
     except requests.RequestException as error:
         print("Erro de conexão ao buscar perfil do Messenger:", error)
         return None, None
+
+
+def download_messenger_attachment(url):
+    """
+    Baixa uma foto/arquivo enviado pelo hospede no Messenger - a Send
+    API entrega uma URL da CDN da Meta ja pronta pra baixar direto
+    (diferente do WhatsApp, que exige um passo intermediario pra trocar
+    media_id por URL temporaria antes). Retorna (bytes, mime_type), com
+    (None, None) se falhar - nunca levanta excecao.
+    """
+    if not url:
+        return None, None
+
+    try:
+        response = requests.get(url, timeout=REQUEST_TIMEOUT)
+        if response.status_code >= 400:
+            print("Erro ao baixar anexo do Messenger:", response.status_code)
+            return None, None
+        mime_type = response.headers.get("Content-Type", "").split(";")[0].strip() or "image/jpeg"
+        return response.content, mime_type
+    except requests.RequestException as error:
+        print("Erro de conexão ao baixar anexo do Messenger:", error)
+        return None, None

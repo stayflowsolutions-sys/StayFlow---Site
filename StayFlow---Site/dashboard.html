@@ -1135,7 +1135,7 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
 
     <div class="card span-12">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;position:relative;z-index:2">
         <h2 data-i18n="roommap.title" style="margin:0">🗺️ Mapa de Quartos</h2>
         <div class="hostel-selector-wrap">
           <button type="button" class="btn secondary" id="roomMapActionsBtn" onclick="toggleRoomMapMenu(event)" data-i18n-title="roommap.actionsMenu.title" title="Ações">
@@ -3343,16 +3343,28 @@ function channelBadgeHtml(channel){
   return `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.02em;color:${color};border:1px solid ${color}55;background:${color}18;border-radius:999px;padding:2px 8px;white-space:nowrap">${channelDisplayLabel(key)}</span>`;
 }
 
-// Nome do hospede clicavel (Reservas -> abre o mesmo perfil usado na
-// aba Hospedes) - pedido explicito do usuario: alem de facilitar o
-// acesso, garante que esse perfil "precisa existir" pra qualquer
-// reserva (inclusive morador de longa duracao), ja que reforca o
-// mesmo guest_id em vez de so mostrar o guest_name solto.
+// Nome do hospede clicavel (Reservas -> manda pra aba Hospedes, onde o
+// perfil de verdade vive) - pedido explicito do usuario: alem de
+// facilitar o acesso, garante que esse perfil "precisa existir" pra
+// qualquer reserva (inclusive morador de longa duracao), ja que
+// reforca o mesmo guest_id em vez de so mostrar o guest_name solto.
 function guestNameLink(guestId, guestName){
   const label = escapeHtml(guestName || "-");
   if(!guestId) return label;
-  return `<a href="javascript:void(0)" onclick="openGuestProfileModal(${guestId})" style="color:#7bc2ff;text-decoration:underline;cursor:pointer">${label}</a>`;
+  return `<a href="javascript:void(0)" onclick="goToGuestProfile(${guestId})" style="color:#7bc2ff;text-decoration:underline;cursor:pointer">${label}</a>`;
 }
+
+window.goToGuestProfile = async function(guestId){
+  const navBtn = document.querySelector('.menu button[data-page="guests"]');
+  openPage("guests", navBtn);
+  if(typeof loadGuests === "function") await loadGuests();
+  const row = document.querySelector(`tr[data-guest-row-id="${guestId}"]`);
+  if(row){
+    row.scrollIntoView({ behavior: "smooth", block: "center" });
+    row.classList.add("guest-row-highlight");
+    setTimeout(() => row.classList.remove("guest-row-highlight"), 2000);
+  }
+};
 
 async function loadReservations(){
   const emptyEl = document.getElementById("reservationsEmpty");
@@ -5486,6 +5498,7 @@ async function loadGuests(){
 
     guests.forEach(g => {
       const row = document.createElement("tr");
+      row.dataset.guestRowId = g.id;
       row.innerHTML = `
         <td><a href="#" class="guest-name-link" onclick="openGuestProfileModal(${g.id});return false;">${g.name || T('guests.noName', 'Sem nome')}</a></td>
         <td>${g.phone || "-"}</td>
@@ -5501,17 +5514,35 @@ async function loadGuests(){
   }
 }
 
-window.openGuestProfileModal = async function(guestId){
-  let profile;
-  try{
-    const res = await fetch(`/guests/${guestId}`, { credentials: "same-origin" });
-    if(!res.ok) return;
-    profile = await res.json();
-  }catch(e){
-    alert(T('guests.profile.loadError', 'Erro ao carregar o perfil do hóspede.'));
-    return;
-  }
+window._currentGuestProfile = null;
 
+window.openGuestProfileModal = async function(guestId, editMode){
+  let profile = window._currentGuestProfile;
+  if(!profile || profile.guest.id !== guestId){
+    try{
+      const res = await fetch(`/guests/${guestId}`, { credentials: "same-origin" });
+      if(!res.ok) return;
+      profile = await res.json();
+      window._currentGuestProfile = profile;
+    }catch(e){
+      alert(T('guests.profile.loadError', 'Erro ao carregar o perfil do hóspede.'));
+      return;
+    }
+  }
+  renderGuestProfileModal(profile, !!editMode);
+};
+
+// Campo somente-leitura (valor "—" quando vazio) - usado no modo padrao
+// do perfil do hospede, que abre em modo VISUALIZACAO, nao cadastro
+// aberto pra edicao. Botao "Editar" troca pro grid de <input> de sempre.
+function guestReadonlyField(value){
+  const text = (value || "").toString().trim();
+  return text
+    ? `<div class="guest-profile-readonly">${escapeHtml(text)}</div>`
+    : `<div class="guest-profile-readonly empty">—</div>`;
+}
+
+function renderGuestProfileModal(profile, editMode){
   const g = profile.guest;
   const reservations = profile.reservations || [];
   const documents = profile.documents || [];
@@ -5552,27 +5583,40 @@ window.openGuestProfileModal = async function(guestId){
       }).join("")
     : `<span style="color:var(--muted);font-size:13px">${T('guests.profile.noDocuments', 'Nenhum documento anexado ainda.')}</span>`;
 
+  const contactAndDocumentHtml = editMode ? `
+    <div class="guest-profile-grid">
+      <div><label>${T('common.name', 'Nome')}</label><input id="gpName" value="${escapeHtml(g.name || "")}"></div>
+      <div><label>${T('common.phone', 'Telefone')}</label><input id="gpPhone" value="${escapeHtml(g.phone || "")}"></div>
+      <div><label>${T('common.email', 'Email')}</label><input id="gpEmail" value="${escapeHtml(g.email || "")}"></div>
+      <div><label>${T('guests.profile.addressLabel', 'Endereço')}</label><input id="gpAddress" value="${escapeHtml(g.address || "")}"></div>
+      <div><label>${T('guests.profile.dobLabel', 'Data de nascimento')}</label><input id="gpDob" type="date" value="${g.date_of_birth || ""}"></div>
+      <div><label>${T('guests.profile.nationalityLabel', 'Nacionalidade')}</label><input id="gpNationality" value="${escapeHtml(g.nationality || "")}"></div>
+      <div><label>${T('guests.profile.documentTypeLabel', 'Tipo de documento')}</label><input id="gpDocType" placeholder="${T('guests.profile.documentTypePlaceholder', 'Passaporte, RG...')}" value="${escapeHtml(g.document_type || "")}"></div>
+      <div><label>${T('guests.profile.documentNumberLabel', 'Número do documento')}</label><input id="gpDocNumber" value="${escapeHtml(g.document_number || "")}"></div>
+    </div>
+    <div id="guestProfileMessage" class="generic-modal-message"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" type="button" onclick="saveGuestProfileEdits(${g.id})">${T('common.save', 'Salvar')}</button>
+      <button class="btn secondary" type="button" onclick="renderGuestProfileModal(window._currentGuestProfile, false)">${T('common.cancel', 'Cancelar')}</button>
+    </div>
+  ` : `
+    <div class="guest-profile-grid">
+      <div><label>${T('common.name', 'Nome')}</label>${guestReadonlyField(g.name)}</div>
+      <div><label>${T('common.phone', 'Telefone')}</label>${guestReadonlyField(g.phone)}</div>
+      <div><label>${T('common.email', 'Email')}</label>${guestReadonlyField(g.email)}</div>
+      <div><label>${T('guests.profile.addressLabel', 'Endereço')}</label>${guestReadonlyField(g.address)}</div>
+      <div><label>${T('guests.profile.dobLabel', 'Data de nascimento')}</label>${guestReadonlyField(g.date_of_birth)}</div>
+      <div><label>${T('guests.profile.nationalityLabel', 'Nacionalidade')}</label>${guestReadonlyField(g.nationality)}</div>
+      <div><label>${T('guests.profile.documentTypeLabel', 'Tipo de documento')}</label>${guestReadonlyField(g.document_type)}</div>
+      <div><label>${T('guests.profile.documentNumberLabel', 'Número do documento')}</label>${guestReadonlyField(g.document_number)}</div>
+    </div>
+    <button class="btn secondary" type="button" style="margin-top:12px" onclick="renderGuestProfileModal(window._currentGuestProfile, true)">✏️ ${T('guests.profile.editBtn', 'Editar')}</button>
+  `;
+
   openGenericModal(g.name || T('guests.noName', 'Sem nome'), `
     <div class="guest-profile-section" style="border-top:0;padding-top:0;margin-top:0">
       <h4>${T('guests.profile.contactTitle', 'Contato')} ${channelBadgeHtml(g.channel)}</h4>
-      <div class="guest-profile-grid">
-        <div><label>${T('common.name', 'Nome')}</label><input id="gpName" value="${escapeHtml(g.name || "")}"></div>
-        <div><label>${T('common.phone', 'Telefone')}</label><input id="gpPhone" value="${escapeHtml(g.phone || "")}"></div>
-        <div><label>${T('common.email', 'Email')}</label><input id="gpEmail" value="${escapeHtml(g.email || "")}"></div>
-        <div><label>${T('guests.profile.addressLabel', 'Endereço')}</label><input id="gpAddress" value="${escapeHtml(g.address || "")}"></div>
-        <div><label>${T('guests.profile.dobLabel', 'Data de nascimento')}</label><input id="gpDob" type="date" value="${g.date_of_birth || ""}"></div>
-        <div><label>${T('guests.profile.nationalityLabel', 'Nacionalidade')}</label><input id="gpNationality" value="${escapeHtml(g.nationality || "")}"></div>
-      </div>
-    </div>
-
-    <div class="guest-profile-section">
-      <h4>${T('guests.profile.documentTitle', 'Documento')}</h4>
-      <div class="guest-profile-grid">
-        <div><label>${T('guests.profile.documentTypeLabel', 'Tipo de documento')}</label><input id="gpDocType" placeholder="${T('guests.profile.documentTypePlaceholder', 'Passaporte, RG...')}" value="${escapeHtml(g.document_type || "")}"></div>
-        <div><label>${T('guests.profile.documentNumberLabel', 'Número do documento')}</label><input id="gpDocNumber" value="${escapeHtml(g.document_number || "")}"></div>
-      </div>
-      <div id="guestProfileMessage" class="generic-modal-message"></div>
-      <button class="btn" type="button" style="margin-top:8px" onclick="saveGuestProfileEdits(${g.id})">${T('common.save', 'Salvar')}</button>
+      ${contactAndDocumentHtml}
     </div>
 
     <div class="guest-profile-section">
@@ -5590,7 +5634,7 @@ window.openGuestProfileModal = async function(guestId){
       ${reservationsHtml}
     </div>
   `, true);
-};
+}
 
 window.saveGuestProfileEdits = async function(guestId){
   const msg = document.getElementById("guestProfileMessage");
@@ -5621,9 +5665,9 @@ window.saveGuestProfileEdits = async function(guestId){
       msg.classList.add("error");
       return;
     }
-    msg.textContent = T('guests.profile.saveSuccess', 'Perfil atualizado.');
-    msg.classList.add("success");
+    window._currentGuestProfile = null;
     loadGuests();
+    await openGuestProfileModal(guestId, false);
   }catch(e){
     msg.textContent = T('guests.profile.saveConnError', 'Erro de conexão ao salvar o perfil.');
     msg.classList.add("error");
@@ -5659,6 +5703,7 @@ window.uploadGuestDocumentUI = async function(guestId){
       return;
     }
     fileInput.value = "";
+    window._currentGuestProfile = null;
     openGuestProfileModal(guestId);
   }catch(e){
     msg.textContent = T('guests.profile.uploadConnError', 'Erro de conexão ao enviar o arquivo.');

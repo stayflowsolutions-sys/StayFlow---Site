@@ -11,8 +11,8 @@ from database import (
     list_room_categories,
     find_available_beds,
     get_offerings_for_chat,
-    save_guest_date_of_birth,
-    save_guest_nationality,
+    save_guest_date_of_birth_by_id,
+    save_guest_nationality_by_id,
 )
 
 load_dotenv()
@@ -610,9 +610,9 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
                 except ValueError as error:
                     tool_content = json.dumps({"error": str(error)}, ensure_ascii=False)
             elif name == "save_guest_date_of_birth":
-                save_guest_date_of_birth(hostel_id, guest_phone, args.get("date_of_birth"))
+                save_guest_date_of_birth_by_id(guest_id, args.get("date_of_birth"))
             elif name == "save_guest_nationality":
-                save_guest_nationality(hostel_id, guest_phone, args.get("nationality"))
+                save_guest_nationality_by_id(guest_id, args.get("nationality"))
 
             messages.append({
                 "role": "tool",

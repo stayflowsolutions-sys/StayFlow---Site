@@ -2,9 +2,16 @@ import os
 
 from flask import Blueprint, request, jsonify
 
-from database import get_hostel_id_by_facebook_page_id, get_hostel_facebook_config
+from database import (
+    get_hostel_id_by_facebook_page_id,
+    get_hostel_facebook_config,
+    get_or_create_guest_by_channel,
+    save_guest_document,
+    save_message_db_for_guest,
+)
 from routes.chat import process_incoming_message
-from services.messenger_service import get_messenger_user_profile
+from services.memory_service import save_message
+from services.messenger_service import get_messenger_user_profile, download_messenger_attachment, send_messenger_message
 
 meta_webhook_bp = Blueprint("meta_webhook", __name__)
 
@@ -14,6 +21,34 @@ meta_webhook_bp = Blueprint("meta_webhook", __name__)
 # WhatsApp) porque e uma inscricao de webhook separada na Meta, mesmo
 # que o valor escolhido possa ser o mesmo texto.
 VERIFY_TOKEN = os.getenv("META_WEBHOOK_VERIFY_TOKEN", "stayflow-verify-token")
+
+
+def handle_incoming_document_image(hostel_id, psid, attachment_url, access_token):
+    """
+    Processa uma foto enviada pelo hospede no Messenger (ex: documento
+    de identidade) - baixa o arquivo de verdade, grava no disco e no
+    banco, e confirma o recebimento por texto direto (sem passar pela
+    IA de conversa, ja que ela nao analisa o conteudo da imagem) -
+    mesmo padrao ja usado pro WhatsApp
+    (routes/whatsapp_webhook.py:handle_incoming_document_image).
+    """
+    file_bytes, mime_type = download_messenger_attachment(attachment_url)
+
+    if not file_bytes:
+        send_messenger_message(access_token, psid, "Não consegui receber sua foto agora, pode tentar mandar de novo?")
+        return
+
+    guest_id = get_or_create_guest_by_channel(hostel_id, "messenger", psid)
+    save_guest_document(hostel_id, guest_id, file_bytes, mime_type)
+
+    # Registra na conversa normal (visivel no historico/Chats), igual
+    # uma mensagem de texto - so pra equipe saber que uma foto chegou
+    # sem precisar abrir a pasta de documentos.
+    placeholder = "[Hóspede enviou uma foto de documento]"
+    save_message(hostel_id, f"messenger:{psid}", "user", placeholder)
+    save_message_db_for_guest(guest_id, "user", placeholder, channel="messenger")
+
+    send_messenger_message(access_token, psid, "Recebi seu documento, obrigado! 📄✅")
 
 
 @meta_webhook_bp.route("/webhook/meta", methods=["GET"])
@@ -59,15 +94,25 @@ def receive_message():
             for event in entry.get("messaging", []):
                 # Eventos sem "message" (delivery/read receipts,
                 # postbacks de botao, etc) sao ignorados por enquanto -
-                # so texto de verdade e processado nesta rodada.
+                # so texto/imagem de verdade sao processados nesta rodada.
                 message = event.get("message")
                 if not message or message.get("is_echo"):
                     continue
 
                 psid = event.get("sender", {}).get("id")
                 text = message.get("text")
+                attachments = message.get("attachments") or []
+                image_attachment = next((a for a in attachments if a.get("type") == "image"), None)
 
-                if psid and text:
+                if not psid:
+                    continue
+
+                if image_attachment:
+                    url = (image_attachment.get("payload") or {}).get("url")
+                    if url:
+                        _, access_token = get_hostel_facebook_config(hostel_id)
+                        handle_incoming_document_image(hostel_id, psid, url, access_token)
+                elif text:
                     # Busca o nome do perfil do Messenger a cada mensagem -
                     # so e realmente GRAVADO na primeira vez (get_or_create_
                     # guest_by_channel so usa "name" ao CRIAR o hospede), o

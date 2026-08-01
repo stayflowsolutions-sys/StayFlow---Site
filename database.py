@@ -1105,6 +1105,22 @@ def save_guest_nationality(hostel_id, phone, nationality):
     conn.close()
 
 
+def save_guest_date_of_birth_by_id(guest_id, date_of_birth):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE guests SET date_of_birth = ? WHERE id = ?", (date_of_birth, guest_id))
+    conn.commit()
+    conn.close()
+
+
+def save_guest_nationality_by_id(guest_id, nationality):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE guests SET nationality = ? WHERE id = ?", (nationality, guest_id))
+    conn.commit()
+    conn.close()
+
+
 def get_guest_language(hostel_id, phone):
     """
     Idioma ja confirmado numa mensagem anterior desse hospede, se houver -

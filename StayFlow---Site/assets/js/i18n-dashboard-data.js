@@ -386,6 +386,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "guests.profile.noStays": "Nenhuma estadia registrada ainda.",
     "guests.profile.noDocuments": "Nenhum documento anexado ainda.",
     "guests.profile.saveSuccess": "Perfil atualizado.",
+    "guests.profile.editBtn": "Editar",
     "guests.profile.saveFailed": "Não foi possível salvar o perfil.",
     "guests.profile.saveConnError": "Erro de conexão ao salvar o perfil.",
 
@@ -1125,6 +1126,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "guests.profile.noStays": "No stays registered yet.",
     "guests.profile.noDocuments": "No documents attached yet.",
     "guests.profile.saveSuccess": "Profile updated.",
+    "guests.profile.editBtn": "Edit",
     "guests.profile.saveFailed": "Couldn't save the profile.",
     "guests.profile.saveConnError": "Connection error saving the profile.",
 
@@ -1855,6 +1857,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "guests.profile.noStays": "Ninguna estadía registrada todavía.",
     "guests.profile.noDocuments": "Ningún documento adjuntado todavía.",
     "guests.profile.saveSuccess": "Perfil actualizado.",
+    "guests.profile.editBtn": "Editar",
     "guests.profile.saveFailed": "No se pudo guardar el perfil.",
     "guests.profile.saveConnError": "Error de conexión al guardar el perfil.",
 
@@ -2585,6 +2588,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "guests.profile.noStays": "Aucun séjour enregistré pour le moment.",
     "guests.profile.noDocuments": "Aucun document joint pour le moment.",
     "guests.profile.saveSuccess": "Profil mis à jour.",
+    "guests.profile.editBtn": "Modifier",
     "guests.profile.saveFailed": "Impossible d'enregistrer le profil.",
     "guests.profile.saveConnError": "Erreur de connexion lors de l'enregistrement du profil.",
 
@@ -3315,6 +3319,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "guests.profile.noStays": "Noch kein Aufenthalt registriert.",
     "guests.profile.noDocuments": "Noch kein Dokument angehängt.",
     "guests.profile.saveSuccess": "Profil aktualisiert.",
+    "guests.profile.editBtn": "Bearbeiten",
     "guests.profile.saveFailed": "Profil konnte nicht gespeichert werden.",
     "guests.profile.saveConnError": "Verbindungsfehler beim Speichern des Profils.",
 
