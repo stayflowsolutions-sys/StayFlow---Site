@@ -1676,84 +1676,24 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card" data-settings-section="comunicacao">
-        <h2 data-i18n="settings.whatsapp.title">📱 WhatsApp Business</h2>
-        <p data-i18n="settings.whatsapp.desc" style="margin-bottom:14px">Conecte o número oficial do hostel no WhatsApp (Meta Cloud API).</p>
-
-        <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
-          <div style="grid-column:span 6">
-            <label data-i18n="settings.whatsapp.phoneIdLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Phone Number ID (da Meta)</label>
-            <input type="text" id="whatsappPhoneNumberId" autocomplete="off" placeholder="ex: 123456789012345" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openWhatsappSettingsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.whatsapp.title">📱 WhatsApp Business</h2>
+            <p class="settings-summary-desc" id="whatsappSummaryDesc" data-i18n="settings.whatsapp.desc">Conecte o número oficial do hostel no WhatsApp (Meta Cloud API).</p>
           </div>
-          <div style="grid-column:span 6">
-            <label data-i18n="settings.whatsapp.tokenLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Access Token</label>
-            <input type="password" id="whatsappAccessToken" autocomplete="off" data-i18n-placeholder="settings.whatsapp.tokenPlaceholder" placeholder="Deixe em branco pra manter o já salvo" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          </div>
-          <div style="grid-column:span 12">
-            <label data-i18n="settings.whatsapp.contactPhoneLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Número de WhatsApp visível pro hóspede</label>
-            <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <div data-i18n="settings.whatsapp.contactPhoneHint" style="font-size:11px;color:var(--muted);margin-top:4px">Usado pela IA pra sugerir esse número como contato alternativo em conversas de Messenger/Instagram.</div>
-          </div>
-        </div>
-
-        <div id="whatsappTokenStatus" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
-
-        <div style="margin-top:14px;padding:14px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff05">
-          <div data-i18n="settings.whatsapp.webhookIntro" style="font-size:12px;color:var(--muted);margin-bottom:6px">
-            Configure isso no painel da Meta, na seção Webhooks do seu app WhatsApp Business:
-          </div>
-          <div data-i18n="settings.whatsapp.callbackUrlLabel" style="font-size:13px;font-weight:700">Callback URL:</div>
-          <code id="whatsappWebhookUrl" style="display:block;margin:4px 0 10px;word-break:break-all;color:#7bc2ff">carregando...</code>
-          <div data-i18n="settings.whatsapp.verifyTokenLabel" style="font-size:13px;font-weight:700">Verify Token:</div>
-          <code style="display:block;margin-top:4px;color:#7bc2ff">stayflow-verify-token</code>
-          <div data-i18n="settings.whatsapp.localWarning" style="font-size:11px;color:var(--muted);margin-top:10px">
-            ⚠️ Se ainda estiver testando local (127.0.0.1), a Meta não consegue acessar essa URL —
-            você vai precisar de uma ferramenta como o ngrok pra criar um link público temporário
-            até o servidor estar hospedado de vez.
-          </div>
-        </div>
-
-        <div style="display:flex;justify-content:flex-end;margin-top:14px">
-          <button class="btn" type="button" onclick="saveWhatsappSettings()" data-i18n="settings.whatsapp.saveBtn">Salvar WhatsApp</button>
+          <span class="settings-summary-chevron">›</span>
         </div>
       </div>
 
-      <div class="card" data-settings-section="comunicacao">
-        <h2 data-i18n="settings.facebook.title">💬 Facebook Messenger</h2>
-        <p data-i18n="settings.facebook.desc" style="margin-bottom:14px">Conecte a Página do Facebook do hostel pra atender pelo Messenger.</p>
-
-        <div id="facebookConnected" style="display:none">
-          <p style="margin:0 0 12px">
-            <span data-i18n="settings.facebook.statusLabel">Status:</span>
-            <strong style="color:#3ddc97" data-i18n="settings.facebook.statusActive">Conectado</strong>
-          </p>
-          <button type="button" class="btn red" onclick="disconnectFacebook()" data-i18n="settings.facebook.disconnectBtn">Desconectar</button>
-        </div>
-
-        <div id="facebookNotConnected">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-            <button type="button" class="btn" onclick="connectFacebook()" data-i18n="settings.facebook.connectBtn">Conectar Facebook</button>
-            <button type="button" class="btn secondary" onclick="toggleFacebookManualForm()" data-i18n="settings.facebook.manualToggle">Configurar manualmente</button>
+      <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openFacebookSettingsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.facebook.title">💬 Facebook Messenger</h2>
+            <p class="settings-summary-desc" id="facebookSummaryDesc" data-i18n="settings.facebook.desc">Conecte a Página do Facebook do hostel pra atender pelo Messenger.</p>
           </div>
-
-          <div id="facebookManualForm" style="display:none">
-            <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
-              <div style="grid-column:span 6">
-                <label data-i18n="settings.facebook.pageIdLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Page ID</label>
-                <input type="text" id="facebookPageId" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-              </div>
-              <div style="grid-column:span 6">
-                <label data-i18n="settings.facebook.tokenLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Access Token</label>
-                <input type="password" id="facebookAccessToken" autocomplete="off" data-i18n-placeholder="settings.facebook.tokenPlaceholder" placeholder="Deixe em branco pra manter o já salvo" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-              </div>
-            </div>
-            <div style="display:flex;justify-content:flex-end;margin-top:14px">
-              <button class="btn" type="button" onclick="saveFacebookManualSettings()" data-i18n="settings.facebook.saveBtn">Salvar</button>
-            </div>
-          </div>
+          <span class="settings-summary-chevron">›</span>
         </div>
-
-        <div id="facebookMessage" class="generic-modal-message"></div>
       </div>
 
       <div class="card" data-settings-section="comunicacao">
@@ -1864,70 +1804,24 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card" data-settings-section="integracoes">
-        <h2 data-i18n="settings.beds24.title">🔌 Integração com canais (Booking.com, Airbnb, Hostelworld)</h2>
-
-        <div id="beds24Unavailable" class="sf-empty" style="display:none">
+      <div class="card settings-summary-card" data-settings-section="integracoes" onclick="openBeds24SettingsModal()">
+        <div class="settings-summary-row">
           <div>
-            <strong data-i18n="settings.beds24.unavailableTitle">Integração ainda não disponível</strong>
-            <span data-i18n="settings.beds24.unavailableDesc">A conexão com o channel manager está sendo configurada pelo StayFlow. Volte em breve.</span>
+            <h2 data-i18n="settings.beds24.title">🔌 Integração com canais (Booking.com, Airbnb, Hostelworld)</h2>
+            <p class="settings-summary-desc" id="beds24SummaryDesc" data-i18n="settings.beds24.intro">Conecta seu hostel com Booking.com, Airbnb e Hostelworld — reservas feitas nesses canais caem automaticamente no seu mapa de quartos, e sua disponibilidade é mantida atualizada lá também, sem risco de overbooking entre canais.</p>
           </div>
+          <span class="settings-summary-chevron">›</span>
         </div>
-
-        <div id="beds24NotActivated" style="display:none">
-          <p data-i18n="settings.beds24.intro" style="font-size:13px;color:var(--muted);margin:0 0 14px">Conecta seu hostel com Booking.com, Airbnb e Hostelworld — reservas feitas nesses canais caem automaticamente no seu mapa de quartos, e sua disponibilidade é mantida atualizada lá também, sem risco de overbooking entre canais.</p>
-          <button type="button" class="btn" onclick="activateBeds24Channel()" data-i18n="settings.beds24.activateBtn">Ativar integração com canais</button>
-        </div>
-
-        <div id="beds24Activated" style="display:none">
-          <p style="margin:0 0 4px">
-            <span data-i18n="settings.beds24.statusLabel">Status:</span>
-            <strong style="color:#3ddc97" data-i18n="settings.beds24.statusActive">Ativado</strong>
-          </p>
-          <p data-i18n="settings.beds24.mappingIntro" style="font-size:12px;color:var(--muted);margin-bottom:14px">Associe cada modalidade de quarto do StayFlow ao quarto correspondente no channel manager, pra reservas de OTA caírem no lugar certo.</p>
-
-          <div id="beds24RoomMappingEmpty" class="sf-empty" style="display:none">
-            <div>
-              <strong data-i18n="settings.beds24.noCategoriesTitle">Nenhuma modalidade cadastrada ainda.</strong>
-              <span data-i18n="settings.beds24.noCategoriesDesc">Crie modalidades de quarto no Mapa de Quartos antes de mapear com o channel manager.</span>
-            </div>
-          </div>
-          <div id="beds24RoomMappingList" style="display:none;gap:10px"></div>
-
-          <div id="beds24UnusedRoomsSection" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid #ffffff12">
-            <h3 data-i18n="settings.beds24.unusedRoomsTitle" style="font-size:14px;margin:0 0 8px">Quartos sem uso</h3>
-            <p data-i18n="settings.beds24.unusedRoomsDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Não estão vinculados a nenhuma modalidade — sobra de testes ou de modalidade excluída. Pode apagar sem risco.</p>
-            <div id="beds24UnusedRoomsList"></div>
-          </div>
-        </div>
-
-        <div id="beds24Message" class="generic-modal-message"></div>
       </div>
 
-      <div class="card" data-settings-section="integracoes">
-        <h2 data-i18n="settings.outboundWebhook.title">📡 Webhook de saída</h2>
-        <p data-i18n="settings.outboundWebhook.intro" style="font-size:13px;color:var(--muted);margin:0 0 14px">Se você já tem um sistema próprio e usa o StayFlow só pra atendimento/IA, cadastre aqui uma URL sua — toda reserva criada, alterada, cancelada ou com check-in/check-out feito dispara um aviso automático (POST) pra ela, de qualquer origem (WhatsApp, manual ou canais como Booking/Airbnb).</p>
-
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
-          <input type="url" id="outboundWebhookUrl" placeholder="https://seusistema.com/webhook" style="flex:1;min-width:240px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:8px 12px;">
-          <button type="button" class="btn" onclick="saveOutboundWebhookUrl()" data-i18n="common.save">Salvar</button>
-        </div>
-
-        <div id="outboundWebhookActive" style="display:none">
-          <p style="margin:0 0 4px">
-            <span data-i18n="settings.outboundWebhook.statusLabel">Status:</span>
-            <strong style="color:#3ddc97" data-i18n="settings.outboundWebhook.statusActive">Ativado</strong>
-          </p>
-          <p data-i18n="settings.outboundWebhook.secretIntro" style="font-size:12px;color:var(--muted);margin:10px 0 6px">Chave secreta (use pra validar a assinatura HMAC-SHA256 no cabeçalho <code>X-StayFlow-Signature</code> de cada requisição):</p>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <input type="text" id="outboundWebhookSecret" readonly style="flex:1;min-width:240px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:var(--muted);padding:8px 12px;font-family:monospace;font-size:12px;">
-            <button type="button" class="btn secondary" onclick="copyOutboundWebhookSecret()" data-i18n="settings.outboundWebhook.copyBtn">Copiar</button>
-            <button type="button" class="btn secondary" onclick="regenerateOutboundWebhookSecret()" data-i18n="settings.outboundWebhook.regenerateBtn">Gerar nova chave</button>
-            <button type="button" class="btn red" onclick="removeOutboundWebhook()" data-i18n="settings.outboundWebhook.removeBtn">Desativar</button>
+      <div class="card settings-summary-card" data-settings-section="integracoes" onclick="openOutboundWebhookSettingsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.outboundWebhook.title">📡 Webhook de saída</h2>
+            <p class="settings-summary-desc" id="outboundWebhookSummaryDesc" data-i18n="settings.outboundWebhook.intro">Se você já tem um sistema próprio e usa o StayFlow só pra atendimento/IA, cadastre aqui uma URL sua — toda reserva criada, alterada, cancelada ou com check-in/check-out feito dispara um aviso automático (POST) pra ela, de qualquer origem (WhatsApp, manual ou canais como Booking/Airbnb).</p>
           </div>
+          <span class="settings-summary-chevron">›</span>
         </div>
-
-        <div id="outboundWebhookMessage" class="generic-modal-message"></div>
       </div>
 
     </div>
@@ -2314,6 +2208,88 @@ async function deleteRoleConfirm(roleId){
     input.value = value;
   }
 
+  // Caixas de "cadastro" (Comunicacao/Integracoes) ficam colapsadas por
+  // padrao, mostrando so titulo+status - clicar abre o formulario
+  // completo no mesmo genericModal usado em toda a StayFlow. Os IDs dos
+  // campos (whatsappPhoneNumberId etc.) sao os MESMOS de sempre, so que
+  // agora so existem no DOM enquanto o modal esta aberto.
+  window.openWhatsappSettingsModal = function(){
+    openGenericModal(T('settings.whatsapp.title', '📱 WhatsApp Business'), `
+      <p style="margin-bottom:14px">${T('settings.whatsapp.desc', 'Conecte o número oficial do hostel no WhatsApp (Meta Cloud API).')}</p>
+      <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.phoneIdLabel', 'Phone Number ID (da Meta)')}</label>
+          <input type="text" id="whatsappPhoneNumberId" autocomplete="off" placeholder="ex: 123456789012345" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.tokenLabel', 'Access Token')}</label>
+          <input type="password" id="whatsappAccessToken" autocomplete="off" placeholder="${T('settings.whatsapp.tokenPlaceholder', 'Deixe em branco pra manter o já salvo')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 12">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.contactPhoneLabel', 'Número de WhatsApp visível pro hóspede')}</label>
+          <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.contactPhoneHint', 'Usado pela IA pra sugerir esse número como contato alternativo em conversas de Messenger/Instagram.')}</div>
+        </div>
+      </div>
+
+      <div id="whatsappTokenStatus" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
+
+      <div style="margin-top:14px;padding:14px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff05">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${T('settings.whatsapp.webhookIntro', 'Configure isso no painel da Meta, na seção Webhooks do seu app WhatsApp Business:')}</div>
+        <div style="font-size:13px;font-weight:700">${T('settings.whatsapp.callbackUrlLabel', 'Callback URL:')}</div>
+        <code id="whatsappWebhookUrl" style="display:block;margin:4px 0 10px;word-break:break-all;color:#7bc2ff">carregando...</code>
+        <div style="font-size:13px;font-weight:700">${T('settings.whatsapp.verifyTokenLabel', 'Verify Token:')}</div>
+        <code style="display:block;margin-top:4px;color:#7bc2ff">stayflow-verify-token</code>
+        <div style="font-size:11px;color:var(--muted);margin-top:10px">${T('settings.whatsapp.localWarning', '⚠️ Se ainda estiver testando local (127.0.0.1), a Meta não consegue acessar essa URL — você vai precisar de uma ferramenta como o ngrok pra criar um link público temporário até o servidor estar hospedado de vez.')}</div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="saveWhatsappSettings()">${T('settings.whatsapp.saveBtn', 'Salvar WhatsApp')}</button>
+      </div>
+    `);
+    loadWhatsappSettings();
+  };
+
+  window.openFacebookSettingsModal = function(){
+    openGenericModal(T('settings.facebook.title', '💬 Facebook Messenger'), `
+      <p style="margin-bottom:14px">${T('settings.facebook.desc', 'Conecte a Página do Facebook do hostel pra atender pelo Messenger.')}</p>
+
+      <div id="facebookConnected" style="display:none">
+        <p style="margin:0 0 12px">
+          <span>${T('settings.facebook.statusLabel', 'Status:')}</span>
+          <strong style="color:#3ddc97">${T('settings.facebook.statusActive', 'Conectado')}</strong>
+        </p>
+        <button type="button" class="btn red" onclick="disconnectFacebook()">${T('settings.facebook.disconnectBtn', 'Desconectar')}</button>
+      </div>
+
+      <div id="facebookNotConnected">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <button type="button" class="btn" onclick="connectFacebook()">${T('settings.facebook.connectBtn', 'Conectar Facebook')}</button>
+          <button type="button" class="btn secondary" onclick="toggleFacebookManualForm()">${T('settings.facebook.manualToggle', 'Configurar manualmente')}</button>
+        </div>
+
+        <div id="facebookManualForm" style="display:none">
+          <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+            <div style="grid-column:span 6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.facebook.pageIdLabel', 'Page ID')}</label>
+              <input type="text" id="facebookPageId" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+            </div>
+            <div style="grid-column:span 6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.facebook.tokenLabel', 'Access Token')}</label>
+              <input type="password" id="facebookAccessToken" autocomplete="off" placeholder="${T('settings.facebook.tokenPlaceholder', 'Deixe em branco pra manter o já salvo')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:14px">
+            <button class="btn" type="button" onclick="saveFacebookManualSettings()">${T('settings.facebook.saveBtn', 'Salvar')}</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="facebookMessage" class="generic-modal-message"></div>
+    `);
+    loadFacebookSettings();
+  };
+
   window.saveWhatsappSettings = async function(){
     const phoneNumberId = document.getElementById("whatsappPhoneNumberId").value.trim();
     const accessToken = document.getElementById("whatsappAccessToken").value.trim();
@@ -2369,12 +2345,22 @@ async function deleteRoleConfirm(roleId){
           : T('settings.whatsapp.tokenMissing', '⚠️ Nenhum Access Token salvo ainda.');
       }
 
+      const connected = Boolean(data.phone_number_id) && data.has_access_token;
+
       const whatsappPill = document.getElementById("statusWhatsappPill");
       if(whatsappPill){
-        const connected = Boolean(data.phone_number_id) && data.has_access_token;
         whatsappPill.textContent = connected ? T('settings.systemStatus.whatsappConnected', 'WhatsApp conectado') : T('settings.systemStatus.whatsappNotConnected', 'WhatsApp não conectado');
         whatsappPill.classList.remove(connected ? "cold" : "ok");
         whatsappPill.classList.add(connected ? "ok" : "cold");
+      }
+
+      const summaryDesc = document.getElementById("whatsappSummaryDesc");
+      if(summaryDesc){
+        let text = connected
+          ? T('settings.whatsapp.summaryConnected', '✅ Conectado')
+          : T('settings.whatsapp.summaryNotConnected', 'Não configurado ainda — clique pra conectar');
+        if(connected && data.contact_phone) text += ` (${data.contact_phone})`;
+        summaryDesc.textContent = text;
       }
     }catch(e){
       console.warn("Erro ao carregar config WhatsApp:", e);
@@ -2382,14 +2368,21 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.loadFacebookSettings = async function(){
-    const connectedEl = document.getElementById("facebookConnected");
-    const notConnectedEl = document.getElementById("facebookNotConnected");
-    if(!connectedEl || !notConnectedEl) return;
-
     try{
       const res = await fetch("/settings/facebook", { credentials: "same-origin" });
       if(!res.ok) return;
       const data = await res.json();
+
+      const summaryDesc = document.getElementById("facebookSummaryDesc");
+      if(summaryDesc){
+        summaryDesc.textContent = data.connected
+          ? T('settings.facebook.summaryConnected', '✅ Conectado')
+          : T('settings.facebook.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+      }
+
+      const connectedEl = document.getElementById("facebookConnected");
+      const notConnectedEl = document.getElementById("facebookNotConnected");
+      if(!connectedEl || !notConnectedEl) return;
 
       connectedEl.style.display = data.connected ? "block" : "none";
       notConnectedEl.style.display = data.connected ? "none" : "block";
@@ -2484,16 +2477,94 @@ async function deleteRoleConfirm(roleId){
     window.history.replaceState({}, document.title, cleanUrl);
   };
 
-  window.loadBeds24Settings = async function(){
-    const unavailableEl = document.getElementById("beds24Unavailable");
-    const notActivatedEl = document.getElementById("beds24NotActivated");
-    const activatedEl = document.getElementById("beds24Activated");
-    if(!unavailableEl || !notActivatedEl || !activatedEl) return;
+  window.openBeds24SettingsModal = function(){
+    openGenericModal(T('settings.beds24.title', '🔌 Integração com canais (Booking.com, Airbnb, Hostelworld)'), `
+      <div id="beds24Unavailable" class="sf-empty" style="display:none">
+        <div>
+          <strong>${T('settings.beds24.unavailableTitle', 'Integração ainda não disponível')}</strong>
+          <span>${T('settings.beds24.unavailableDesc', 'A conexão com o channel manager está sendo configurada pelo StayFlow. Volte em breve.')}</span>
+        </div>
+      </div>
 
+      <div id="beds24NotActivated" style="display:none">
+        <p style="font-size:13px;color:var(--muted);margin:0 0 14px">${T('settings.beds24.intro', 'Conecta seu hostel com Booking.com, Airbnb e Hostelworld — reservas feitas nesses canais caem automaticamente no seu mapa de quartos, e sua disponibilidade é mantida atualizada lá também, sem risco de overbooking entre canais.')}</p>
+        <button type="button" class="btn" onclick="activateBeds24Channel()">${T('settings.beds24.activateBtn', 'Ativar integração com canais')}</button>
+      </div>
+
+      <div id="beds24Activated" style="display:none">
+        <p style="margin:0 0 4px">
+          <span>${T('settings.beds24.statusLabel', 'Status:')}</span>
+          <strong style="color:#3ddc97">${T('settings.beds24.statusActive', 'Ativado')}</strong>
+        </p>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px">${T('settings.beds24.mappingIntro', 'Associe cada modalidade de quarto do StayFlow ao quarto correspondente no channel manager, pra reservas de OTA caírem no lugar certo.')}</p>
+
+        <div id="beds24RoomMappingEmpty" class="sf-empty" style="display:none">
+          <div>
+            <strong>${T('settings.beds24.noCategoriesTitle', 'Nenhuma modalidade cadastrada ainda.')}</strong>
+            <span>${T('settings.beds24.noCategoriesDesc', 'Crie modalidades de quarto no Mapa de Quartos antes de mapear com o channel manager.')}</span>
+          </div>
+        </div>
+        <div id="beds24RoomMappingList" style="display:none;gap:10px"></div>
+
+        <div id="beds24UnusedRoomsSection" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid #ffffff12">
+          <h3 style="font-size:14px;margin:0 0 8px">${T('settings.beds24.unusedRoomsTitle', 'Quartos sem uso')}</h3>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">${T('settings.beds24.unusedRoomsDesc', 'Não estão vinculados a nenhuma modalidade — sobra de testes ou de modalidade excluída. Pode apagar sem risco.')}</p>
+          <div id="beds24UnusedRoomsList"></div>
+        </div>
+      </div>
+
+      <div id="beds24Message" class="generic-modal-message"></div>
+    `);
+    loadBeds24Settings();
+  };
+
+  window.openOutboundWebhookSettingsModal = function(){
+    openGenericModal(T('settings.outboundWebhook.title', '📡 Webhook de saída'), `
+      <p style="font-size:13px;color:var(--muted);margin:0 0 14px">${T('settings.outboundWebhook.intro', 'Se você já tem um sistema próprio e usa o StayFlow só pra atendimento/IA, cadastre aqui uma URL sua — toda reserva criada, alterada, cancelada ou com check-in/check-out feito dispara um aviso automático (POST) pra ela, de qualquer origem (WhatsApp, manual ou canais como Booking/Airbnb).')}</p>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+        <input type="url" id="outboundWebhookUrl" placeholder="https://seusistema.com/webhook" style="flex:1;min-width:240px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:8px 12px;">
+        <button type="button" class="btn" onclick="saveOutboundWebhookUrl()">${T('common.save', 'Salvar')}</button>
+      </div>
+
+      <div id="outboundWebhookActive" style="display:none">
+        <p style="margin:0 0 4px">
+          <span>${T('settings.outboundWebhook.statusLabel', 'Status:')}</span>
+          <strong style="color:#3ddc97">${T('settings.outboundWebhook.statusActive', 'Ativado')}</strong>
+        </p>
+        <p style="font-size:12px;color:var(--muted);margin:10px 0 6px">${T('settings.outboundWebhook.secretIntro', 'Chave secreta (use pra validar a assinatura HMAC-SHA256 no cabeçalho <code>X-StayFlow-Signature</code> de cada requisição):')}</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="outboundWebhookSecret" readonly style="flex:1;min-width:240px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:var(--muted);padding:8px 12px;font-family:monospace;font-size:12px;">
+          <button type="button" class="btn secondary" onclick="copyOutboundWebhookSecret()">${T('settings.outboundWebhook.copyBtn', 'Copiar')}</button>
+          <button type="button" class="btn secondary" onclick="regenerateOutboundWebhookSecret()">${T('settings.outboundWebhook.regenerateBtn', 'Gerar nova chave')}</button>
+          <button type="button" class="btn red" onclick="removeOutboundWebhook()">${T('settings.outboundWebhook.removeBtn', 'Desativar')}</button>
+        </div>
+      </div>
+
+      <div id="outboundWebhookMessage" class="generic-modal-message"></div>
+    `);
+    loadOutboundWebhookSettings();
+  };
+
+  window.loadBeds24Settings = async function(){
     try{
       const res = await fetch("/settings/beds24", { credentials: "same-origin" });
       if(!res.ok) return;
       const data = await res.json();
+
+      const summaryDesc = document.getElementById("beds24SummaryDesc");
+      if(summaryDesc){
+        summaryDesc.textContent = !data.master_account_ready
+          ? T('settings.beds24.summaryUnavailable', 'Ainda não disponível')
+          : data.property_id
+            ? T('settings.beds24.summaryActive', '✅ Ativado')
+            : T('settings.beds24.summaryNotActive', 'Não ativado ainda — clique para ativar');
+      }
+
+      const unavailableEl = document.getElementById("beds24Unavailable");
+      const notActivatedEl = document.getElementById("beds24NotActivated");
+      const activatedEl = document.getElementById("beds24Activated");
+      if(!unavailableEl || !notActivatedEl || !activatedEl) return;
 
       if(!data.master_account_ready){
         unavailableEl.style.display = "flex";
@@ -2712,15 +2783,22 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.loadOutboundWebhookSettings = async function(){
-    const urlInput = document.getElementById("outboundWebhookUrl");
-    const activeEl = document.getElementById("outboundWebhookActive");
-    const secretInput = document.getElementById("outboundWebhookSecret");
-    if(!urlInput || !activeEl || !secretInput) return;
-
     try{
       const res = await fetch("/settings/outbound-webhook", { credentials: "same-origin" });
       if(!res.ok) return;
       const data = await res.json();
+
+      const summaryDesc = document.getElementById("outboundWebhookSummaryDesc");
+      if(summaryDesc){
+        summaryDesc.textContent = data.enabled
+          ? T('settings.outboundWebhook.summaryActive', '✅ Ativado')
+          : T('settings.outboundWebhook.summaryNotActive', 'Não configurado ainda — clique pra configurar');
+      }
+
+      const urlInput = document.getElementById("outboundWebhookUrl");
+      const activeEl = document.getElementById("outboundWebhookActive");
+      const secretInput = document.getElementById("outboundWebhookSecret");
+      if(!urlInput || !activeEl || !secretInput) return;
 
       urlInput.value = data.url || "";
       secretInput.value = data.secret || "";

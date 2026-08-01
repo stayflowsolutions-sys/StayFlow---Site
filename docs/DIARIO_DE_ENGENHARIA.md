@@ -4586,3 +4586,57 @@ motivo válido e é usada em toda a aplicação).
 Testado: clique de verdade (sem `force`) nos dois botões agora abre o
 modal certo, confirmado via Playwright; sem erros de console;
 balanceamento de chaves/parênteses do `dashboard.html` inalterado.
+
+## Caixas de "cadastro" clicáveis em Comunicação e Integrações
+
+Retomada a feature que tinha sido iniciada e revertida numa rodada
+anterior (ficou num estado inconsistente - cards duplicados/ocultos -
+quando um bug mais urgente interrompeu o trabalho). Pedido original do
+usuário: em Configurações → Comunicação, "transforme tudo que for
+cadastro em caixa também, assim fica só a caixa clicável de cada meio,
+e suas configurações ocultas na caixa" - e replicar "em toda StayFlow
+onde faça sentido".
+
+Desta vez, os quatro cards que são claramente "cadastro de um canal/
+integração" (WhatsApp Business e Facebook Messenger em Comunicação;
+integração com canais/Beds24 e Webhook de saída em Integrações)
+viraram caixas resumidas (`.settings-summary-card`, CSS que já tinha
+sido criado na tentativa anterior e ficou sem uso até agora): título +
+uma linha de status ("✅ Conectado", "Não configurado ainda - clique
+pra conectar", etc.) + um chevron. O card "Comunicação" geral (sininho
+de alertas, horário de silêncio, respostas rápidas) ficou de fora de
+propósito - não é um cadastro de canal, é configuração de uso comum.
+
+Diferente da tentativa anterior (que tentou reescrever a estrutura
+inteira de uma vez e acabou deixando IDs duplicados pra trás), a
+abordagem desta vez foi a mais segura possível: cada card clicável
+chama uma função nova (`openWhatsappSettingsModal()`,
+`openFacebookSettingsModal()`, `openBeds24SettingsModal()`,
+`openOutboundWebhookSettingsModal()`) que monta o EXATO mesmo HTML que
+o card tinha antes (mesmos IDs de campo, mesmos `onclick` pras funções
+de salvar/conectar/desconectar de sempre) dentro do `genericModal` já
+usado em toda a aplicação, e então chama a função de carregamento
+correspondente (`loadWhatsappSettings()` etc.) pra preencher os campos
+com os dados já salvos. Nenhuma função de salvar/carregar precisou ser
+reescrita - só passaram a rodar contra elementos que existem enquanto o
+modal está aberto, em vez de sempre.
+
+Isso expôs um bug de ordem em `loadFacebookSettings`/
+`loadBeds24Settings`/`loadOutboundWebhookSettings`: as três tinham um
+guard no topo (`if(!elX || !elY) return`) que saía ANTES de chegar em
+qualquer lógica - como esses elementos agora só existem com o modal
+aberto, essa saída antecipada aconteceria sempre que a função rodasse
+em segundo plano (ex: no carregamento da sessão), e o texto de status
+da caixa resumida (que devia aparecer mesmo com o modal fechado) nunca
+seria atualizado. Corrigido movendo a atualização do texto de status
+pra ANTES do guard nas três funções (WhatsApp já não tinha esse guard
+logo no início, só precisou do texto de status adicionado).
+
+Testado com clique de verdade num navegador (Playwright): as quatro
+caixas abrem o modal certo com os campos certos, sem erro de console;
+preencher e salvar dados do WhatsApp pelo modal, fechar e reabrir
+mostra o valor persistido; o texto de status de cada caixa aparece
+correto (inclusive o estado "não conectado"/"ainda não disponível")
+assim que a página carrega, sem precisar abrir o modal nenhuma vez.
+Balanceamento de chaves/parênteses e cobertura i18n (14 chaves novas,
+5 idiomas) sem quebra.
