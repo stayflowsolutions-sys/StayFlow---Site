@@ -4640,3 +4640,63 @@ correto (inclusive o estado "não conectado"/"ainda não disponível")
 assim que a página carrega, sem precisar abrir o modal nenhuma vez.
 Balanceamento de chaves/parênteses e cobertura i18n (14 chaves novas,
 5 idiomas) sem quebra.
+
+## Hóspede avisado de volta no chat quando a reserva é confirmada/cancelada
+
+Pedido do usuário: "as reservas que vem do messenger vem como
+pendentes, quero que quando ela seja confirmada ou cancelada, seja
+comunicado de volta ao hospede no chat também, já passando pra ele
+horário de check in, endereço, etc". Reserva vinda de um canal de chat
+(Messenger, e também WhatsApp) fica com `status='pending'` até a
+equipe confirmar manualmente na aba Reservas - até agora, esse
+resultado nunca voltava pro hóspede, que ficava sem saber se a reserva
+tinha sido aceita ou não a menos que perguntasse de novo.
+
+Novo `notify_guest_reservation_status(hostel_id, reservation_id,
+status)` (`database.py`), chamado no fim de
+`update_reservation_status_record` - o único ponto por onde uma
+mudança de status passa hoje (`PATCH /reservations/<id>`, usado pela
+aba Reservas). Só age quando o novo status é `confirmed` ou
+`cancelled` (ex: reverter pra `pending` não dispara nada). A chamada
+fica dentro de um `try/except` que só imprime o erro - importante
+porque o `UPDATE`/commit do status já aconteceu ANTES dessa chamada, e
+uma falha de rede ao mandar WhatsApp/Messenger não pode fazer parecer
+que a reserva não foi confirmada de verdade.
+
+Resolução do canal de volta: busca a linha mais recente do hóspede em
+`guest_channel_identities` (mesma fonte que já alimenta o badge de
+canal na aba Chats) - se existir, usa `channel`+`external_id` direto
+(o `external_id` do WhatsApp já É o telefone, então não precisa buscar
+`guests.phone` separado); se não existir nenhuma linha (hóspede antigo,
+de antes da integração multi-canal), cai no fallback de telefone puro
+como WhatsApp - mesmo padrão de fallback que `get_guest_channel` já
+usa em outros lugares. Reserva sem `guest_id` vinculado (cadastro
+manual só com nome, sem telefone/canal) ou sem telefone/PSID
+resolvível sai em silêncio - não tem pra onde mandar. Instagram fica de
+fora por enquanto (não tem função de envio implementada ainda).
+
+Mensagem de confirmação inclui check-in (com o horário padrão
+configurado em Configurações → Empresa, se o hostel tiver preenchido)
+check-out e endereço do hostel (idem, se preenchido) - mensagem de
+cancelamento é mais simples, sem esses detalhes, convidando a
+reagendar ou tirar dúvida por ali mesmo. Texto varia por idioma
+(`get_guest_language_by_id`, mesmos pt/en/es/fr/de que o resto da IA
+usa), com fallback pt se o idioma do hóspede ainda não foi detectado
+ou não é um dos suportados. Mensagem enviada é gravada tanto na
+memória da IA (`memory_service.save_message`, role "assistant" - pra
+não confundir a IA numa conversa futura) quanto no histórico visível
+na aba Chats (`save_message_db_for_guest`, sender "staff" - mesmo
+padrão que `send_message_to_guest_now`, o envio manual, já usa pra
+distinguir de mensagem gerada pela IA).
+
+Testado (5 cenários): reserva confirmada via Messenger manda a
+mensagem certa pro PSID certo, com data de check-in/check-out, horário
+e endereço do hostel embutidos, e a mensagem fica gravada na conversa;
+reserva cancelada via WhatsApp manda a mensagem de cancelamento pro
+telefone certo; reserva sem hóspede vinculado (só nome, sem telefone)
+não tenta enviar nada e não quebra; mudar status pra "pending" não
+dispara notificação nenhuma; falha simulada no envio (exceção forçada)
+não impede o status de ser salvo normalmente. Regressão completa (12
+scripts cobrindo Messenger, WhatsApp, Beds24, Financeiro, perfil de
+hóspede, canal, reservas canceladas e alertas de nova reserva) sem
+quebra.
