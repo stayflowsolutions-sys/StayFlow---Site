@@ -67,24 +67,18 @@ def _resolve_messenger_hostel(entry_id):
 
 
 # TEMPORARIO/HARDCODED (so pra esta conta): confirmado ao vivo que a
-# "Instagram API with Instagram Login" tem DOIS IDs diferentes pra
-# mesma conta - o `user_id` devolvido na troca de token OAuth (formato
-# novo, prefixo "2800...", o que salvamos em hostels.instagram_business_id
-# e usamos pra montar a URL de envio) e o "Instagram Business Account
-# ID" classico (formato antigo, prefixo "1784...", o mesmo que aparece
-# no Business Manager e na tabela "Generar tokens de acceso" do painel)
-# - e e ESSE SEGUNDO formato que chega de verdade no campo entry.id do
-# payload de webhook, nao o primeiro. Por isso o lookup direto no banco
-# nunca batia. Mapeamento manual so pra essa conta enquanto nao
-# implementamos guardar os dois IDs na conexao (TODO: capturar o ID
-# classico tambem no momento do OAuth, ex. via GET .../me com o token
-# de Facebook Login, e salvar os dois no banco - aí este dict deixa de
-# ser necessario pra qualquer hostel novo). Inclui tambem o ID da conta
-# de teste do proprio desenvolvedor (usada como segunda testadora),
-# que apareceu num dos testes ao vivo.
+# O bug do ID classico vs ID de escopo de app ja foi corrigido na raiz
+# (services/meta_oauth_service.py agora salva o ID classico direto,
+# confirmado - hostels.instagram_business_id ja esta com "1784...").
+# Ainda sobra este mapeamento pra UM caso: quando a conta de TESTE do
+# proprio desenvolvedor (usada como segunda testadora, pra poder testar
+# sem "cuenta privada") manda mensagem, o entry.id do webhook vem com o
+# ID dela mesma, nao o do hostel - comportamento de sandbox entre duas
+# contas testadoras do mesmo app, so deve acontecer em modo
+# desenvolvimento (sem App Review). Mapeia pro ID JA CORRIGIDO do
+# hostel (nao mais o antigo 2800...).
 _DEV_MODE_INSTAGRAM_ID_ALIASES = {
-    "17841416924089707": "28000058579630962",  # stayflowsolutions, ID classico -> ID novo (OAuth)
-    "17841477942485091": "28000058579630962",  # conta de teste do dev, usada como segunda testadora
+    "17841477942485091": "17841416924089707",  # conta de teste do dev -> stayflowsolutions
 }
 
 
