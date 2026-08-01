@@ -88,6 +88,33 @@ _DEV_MODE_INSTAGRAM_ID_ALIASES = {
 }
 
 
+def _fetch_instagram_message_text(mid, access_token):
+    """
+    Busca o conteudo de uma mensagem do Instagram pelo `mid` - usado
+    como fallback quando o evento chega como "message_edit" em vez de
+    "message" (ver comentario no loop de eventos). Retorna o texto ou
+    None se nao conseguir. Loga a resposta bruta pra ajustar o nome do
+    campo certo se a primeira tentativa nao acertar.
+    """
+    if not mid or not access_token:
+        return None
+    import requests as _requests
+    try:
+        res = _requests.get(
+            f"https://graph.instagram.com/v20.0/{mid}",
+            params={"fields": "from,to,message"},
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        print(f"Webhook Meta: busca de mensagem por mid - status={res.status_code} body={res.text}")
+        if res.status_code >= 400:
+            return None
+        return res.json().get("message")
+    except Exception as error:
+        print("Webhook Meta: erro ao buscar mensagem por mid:", error)
+        return None
+
+
 def _resolve_instagram_hostel(entry_id):
     hostel_id = get_hostel_id_by_instagram_id(entry_id)
     if not hostel_id and entry_id in _DEV_MODE_INSTAGRAM_ID_ALIASES:
@@ -210,10 +237,28 @@ def receive_message():
             adapter = _CHANNEL_ADAPTERS[channel]
 
             for event in entry.get("messaging", []):
+                message = event.get("message")
+
+                # TEMPORARIO/investigacao: confirmado ao vivo que, pelo
+                # menos entre duas contas testadoras do mesmo app (antes
+                # do App Review), o Instagram as vezes entrega a mensagem
+                # nova como um evento "message_edit" (num_edit=0) em vez
+                # do evento "message" padrao - sem o texto, so o `mid`.
+                # Busca o conteudo de verdade por esse mid via API como
+                # fallback, so pro Instagram.
+                message_edit = event.get("message_edit")
+                if not message and message_edit and channel == "instagram":
+                    mid = message_edit.get("mid")
+                    fallback_sender_id = event.get("sender", {}).get("id")
+                    if mid and fallback_sender_id:
+                        fallback_config = adapter["get_config"](hostel_id)
+                        fetched_text = _fetch_instagram_message_text(mid, fallback_config.get("access_token"))
+                        if fetched_text:
+                            message = {"text": fetched_text}
+
                 # Eventos sem "message" (delivery/read receipts,
                 # postbacks de botao, etc) sao ignorados por enquanto -
                 # so texto/imagem de verdade sao processados nesta rodada.
-                message = event.get("message")
                 if not message or message.get("is_echo"):
                     continue
 
