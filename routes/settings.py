@@ -554,3 +554,32 @@ def debug_instagram_settings(hostel_id):
     return jsonify(result)
 
 
+@settings_bp.route("/settings/instagram/subscribe", methods=["POST"])
+@require_permission("settings")
+def subscribe_instagram_webhook(hostel_id):
+    """
+    Rota de diagnostico TEMPORARIA - chama a Graph API pra inscrever
+    NOSSO app de verdade nos eventos de mensagem dessa conta Instagram,
+    usando o token ja salvo (confirmado funcionando). Suspeita: o botao
+    "Suscripcion al webhook: Activado" no painel da Meta nao registrou
+    o nosso app como inscrito de verdade - so o app fez isso via API
+    conta oficialmente. Remover depois de resolver.
+    """
+    import requests as _requests
+
+    instagram_business_id, access_token = get_hostel_instagram_config(hostel_id)
+    if not instagram_business_id or not access_token:
+        return jsonify({"error": "Instagram nao conectado pra esse hostel."}), 400
+
+    try:
+        res = _requests.post(
+            f"https://graph.instagram.com/v20.0/{instagram_business_id}/subscribed_apps",
+            headers={"Authorization": f"Bearer {access_token}"},
+            params={"subscribed_fields": "messages"},
+            timeout=15,
+        )
+        return jsonify({"status": res.status_code, "body": res.json() if res.text else None})
+    except Exception as error:
+        return jsonify({"error": str(error)}), 500
+
+
