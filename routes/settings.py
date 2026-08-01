@@ -20,6 +20,9 @@ from database import (
     get_hostel_facebook_config,
     save_hostel_facebook_config,
     clear_hostel_facebook_config,
+    get_hostel_instagram_config,
+    save_hostel_instagram_config,
+    clear_hostel_instagram_config,
     save_hostel_phone,
 )
 import services.meta_oauth_service as meta_oauth_service
@@ -437,6 +440,51 @@ def update_facebook_settings(hostel_id):
 @require_permission("settings")
 def delete_facebook_settings(hostel_id):
     clear_hostel_facebook_config(hostel_id)
+    return jsonify({"success": True})
+
+
+@settings_bp.route("/settings/instagram", methods=["GET"])
+@require_permission("settings")
+def get_instagram_settings(hostel_id):
+    instagram_business_id, access_token = get_hostel_instagram_config(hostel_id)
+    return jsonify({
+        "instagram_business_id": instagram_business_id or "",
+        "has_access_token": bool(access_token),
+        "connected": bool(instagram_business_id and access_token),
+        "oauth_available": meta_oauth_service.is_instagram_login_configured(),
+    })
+
+
+@settings_bp.route("/settings/instagram", methods=["POST"])
+@require_permission("settings")
+def update_instagram_settings(hostel_id):
+    """
+    Configuracao manual - alternativa ao botao "Conectar Instagram"
+    (OAuth), pro hostel que ja tem o ID/token prontos ou prefere nao
+    passar pela tela de consentimento da Meta. Mesmo contrato de
+    /settings/facebook: token vazio no POST = mantem o que ja estava
+    salvo.
+    """
+    data = request.get_json() or {}
+
+    instagram_business_id = (data.get("instagram_business_id") or "").strip()
+    access_token = (data.get("access_token") or "").strip()
+
+    if not instagram_business_id:
+        return jsonify({"success": False, "message": "instagram_business_id is required."}), 400
+
+    if not access_token:
+        _, existing_token = get_hostel_instagram_config(hostel_id)
+        access_token = existing_token
+
+    save_hostel_instagram_config(hostel_id, instagram_business_id, access_token)
+    return jsonify({"success": True})
+
+
+@settings_bp.route("/settings/instagram", methods=["DELETE"])
+@require_permission("settings")
+def delete_instagram_settings(hostel_id):
+    clear_hostel_instagram_config(hostel_id)
     return jsonify({"success": True})
 
 

@@ -4082,12 +4082,12 @@ _RESERVATION_FROM_LABEL = {"pt": "a partir das", "en": "from", "es": "a partir d
 def notify_guest_reservation_status(hostel_id, reservation_id, status):
     """
     Avisa o hospede de volta, no mesmo canal onde ele esta conversando
-    (WhatsApp ou Messenger), quando uma reserva e confirmada ou
-    cancelada pela equipe - ja passando horario de check-in/check-out e
-    endereco do hostel na confirmacao. So dispara pra hospede com canal
-    de chat identificavel (guest_id presente e telefone/PSID
-    resolvivel) - reserva sem hospede vinculado (ex: cadastro manual so
-    com nome) nao tem pra onde mandar, sai em silencio.
+    (WhatsApp, Messenger ou Instagram), quando uma reserva e confirmada
+    ou cancelada pela equipe - ja passando horario de check-in/check-out
+    e endereco do hostel na confirmacao. So dispara pra hospede com
+    canal de chat identificavel (guest_id presente e telefone/PSID/
+    IGSID resolvivel) - reserva sem hospede vinculado (ex: cadastro
+    manual so com nome) nao tem pra onde mandar, sai em silencio.
     """
     if status not in ("confirmed", "cancelled"):
         return
@@ -4121,10 +4121,7 @@ def notify_guest_reservation_status(hostel_id, reservation_id, status):
     settings_row = cursor.fetchone()
     conn.close()
 
-    # Instagram ainda nao tem envio implementado (fica pra quando o
-    # Instagram Login entrar) - por ora so WhatsApp e Messenger mandam
-    # de verdade.
-    if not target or channel not in ("whatsapp", "messenger"):
+    if not target or channel not in ("whatsapp", "messenger", "instagram"):
         return
 
     lang = get_guest_language_by_id(guest_id) or "pt"
@@ -4160,6 +4157,11 @@ def _dispatch_reservation_status_message(hostel_id, guest_id, channel, target, m
         phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)
         sent = send_whatsapp_message(phone_number_id, access_token, target, message)
         memory_key = target
+    elif channel == "instagram":
+        from services.instagram_service import send_instagram_message
+        instagram_business_id, access_token = get_hostel_instagram_config(hostel_id)
+        sent = send_instagram_message(access_token, instagram_business_id, target, message)
+        memory_key = f"instagram:{target}"
     else:
         from services.messenger_service import send_messenger_message
         _, access_token = get_hostel_facebook_config(hostel_id)

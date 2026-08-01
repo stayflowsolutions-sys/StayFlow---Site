@@ -5,6 +5,8 @@ from flask import Blueprint, request, jsonify
 from database import (
     get_hostel_id_by_facebook_page_id,
     get_hostel_facebook_config,
+    get_hostel_id_by_instagram_id,
+    get_hostel_instagram_config,
     get_or_create_guest_by_channel,
     save_guest_document,
     save_message_db_for_guest,
@@ -12,6 +14,7 @@ from database import (
 from routes.chat import process_incoming_message
 from services.memory_service import save_message
 from services.messenger_service import get_messenger_user_profile, download_messenger_attachment, send_messenger_message
+from services.instagram_service import get_instagram_user_profile, download_instagram_attachment, send_instagram_message
 
 meta_webhook_bp = Blueprint("meta_webhook", __name__)
 
@@ -23,32 +26,106 @@ meta_webhook_bp = Blueprint("meta_webhook", __name__)
 VERIFY_TOKEN = os.getenv("META_WEBHOOK_VERIFY_TOKEN", "stayflow-verify-token")
 
 
-def handle_incoming_document_image(hostel_id, psid, attachment_url, access_token):
+def _messenger_config(hostel_id):
+    _, access_token = get_hostel_facebook_config(hostel_id)
+    return {"access_token": access_token}
+
+
+def _messenger_send(config, recipient_id, message):
+    return send_messenger_message(config["access_token"], recipient_id, message)
+
+
+def _messenger_profile(config, recipient_id):
+    first_name, last_name = get_messenger_user_profile(config["access_token"], recipient_id)
+    return " ".join(part for part in [first_name, last_name] if part) or None
+
+
+def _instagram_config(hostel_id):
+    instagram_business_id, access_token = get_hostel_instagram_config(hostel_id)
+    return {"access_token": access_token, "instagram_business_id": instagram_business_id}
+
+
+def _instagram_send(config, recipient_id, message):
+    return send_instagram_message(config["access_token"], config["instagram_business_id"], recipient_id, message)
+
+
+def _instagram_profile(config, recipient_id):
+    name, username = get_instagram_user_profile(config["access_token"], recipient_id)
+    return name or username or None
+
+
+def _messenger_download(url):
+    return download_messenger_attachment(url)
+
+
+def _instagram_download(url):
+    return download_instagram_attachment(url)
+
+
+def _resolve_messenger_hostel(entry_id):
+    return get_hostel_id_by_facebook_page_id(entry_id)
+
+
+def _resolve_instagram_hostel(entry_id):
+    return get_hostel_id_by_instagram_id(entry_id)
+
+
+# Messenger e Instagram Direct chegam no MESMO endpoint, com o mesmo
+# formato de payload (entry[].messaging[]) - o que muda por canal e so
+# de onde vem a config (Pagina vs conta Instagram) e qual API chamar
+# pra enviar/buscar perfil. Isso evita duplicar o loop de eventos
+# inteiro uma vez por canal. Os valores do dict sao funcoes-wrapper (nao
+# a referencia direta de send_messenger_message/download_messenger_
+# attachment/etc) de proposito - um dict de modulo captura o OBJETO da
+# funcao no momento em que e criado, entao um mock que substitui o nome
+# no modulo depois (ex: em teste, patch("routes.meta_webhook.
+# download_messenger_attachment")) nao teria efeito nenhum aqui dentro
+# sem esse nivel de indirecao.
+_CHANNEL_ADAPTERS = {
+    "messenger": {
+        "resolve_hostel": _resolve_messenger_hostel,
+        "get_config": _messenger_config,
+        "send": _messenger_send,
+        "profile": _messenger_profile,
+        "download": _messenger_download,
+    },
+    "instagram": {
+        "resolve_hostel": _resolve_instagram_hostel,
+        "get_config": _instagram_config,
+        "send": _instagram_send,
+        "profile": _instagram_profile,
+        "download": _instagram_download,
+    },
+}
+
+
+def handle_incoming_document_image(hostel_id, channel, external_id, attachment_url, adapter, config):
     """
-    Processa uma foto enviada pelo hospede no Messenger (ex: documento
-    de identidade) - baixa o arquivo de verdade, grava no disco e no
+    Processa uma foto enviada pelo hospede (ex: documento de
+    identidade) - baixa o arquivo de verdade, grava no disco e no
     banco, e confirma o recebimento por texto direto (sem passar pela
     IA de conversa, ja que ela nao analisa o conteudo da imagem) -
     mesmo padrao ja usado pro WhatsApp
     (routes/whatsapp_webhook.py:handle_incoming_document_image).
+    Generica por canal (Messenger/Instagram) via `adapter`.
     """
-    file_bytes, mime_type = download_messenger_attachment(attachment_url)
+    file_bytes, mime_type = adapter["download"](attachment_url)
 
     if not file_bytes:
-        send_messenger_message(access_token, psid, "Não consegui receber sua foto agora, pode tentar mandar de novo?")
+        adapter["send"](config, external_id, "Não consegui receber sua foto agora, pode tentar mandar de novo?")
         return
 
-    guest_id = get_or_create_guest_by_channel(hostel_id, "messenger", psid)
+    guest_id = get_or_create_guest_by_channel(hostel_id, channel, external_id)
     save_guest_document(hostel_id, guest_id, file_bytes, mime_type)
 
     # Registra na conversa normal (visivel no historico/Chats), igual
     # uma mensagem de texto - so pra equipe saber que uma foto chegou
     # sem precisar abrir a pasta de documentos.
     placeholder = "[Hóspede enviou uma foto de documento]"
-    save_message(hostel_id, f"messenger:{psid}", "user", placeholder)
-    save_message_db_for_guest(guest_id, "user", placeholder, channel="messenger")
+    save_message(hostel_id, f"{channel}:{external_id}", "user", placeholder)
+    save_message_db_for_guest(guest_id, "user", placeholder, channel=channel)
 
-    send_messenger_message(access_token, psid, "Recebi seu documento, obrigado! 📄✅")
+    adapter["send"](config, external_id, "Recebi seu documento, obrigado! 📄✅")
 
 
 @meta_webhook_bp.route("/webhook/meta", methods=["GET"])
@@ -71,25 +148,40 @@ def verify_webhook():
 @meta_webhook_bp.route("/webhook/meta", methods=["POST"])
 def receive_message():
     """
-    Webhook real do Messenger (Facebook) - Instagram Direct entra numa
-    rodada seguinte, quando o Instagram Login estiver conectado. Formato
-    do payload: {"entry": [{"id": <page_id ou instagram_id>, "messaging":
-    [{"sender": {"id": psid}, "message": {"text": "..."}}]}]}. Sempre
-    responde 200 rapido pra Meta, mesmo se algo interno falhar - senao a
-    Meta pode desativar o webhook.
+    Webhook real do Messenger e do Instagram Direct (mesmo endpoint pra
+    os dois). Formato do payload: {"object": "page"|"instagram",
+    "entry": [{"id": <page_id ou instagram_business_id>, "messaging":
+    [{"sender": {"id": psid_ou_igsid}, "message": {"text": "..."}}]}]}.
+    O campo "object" indica o canal (nao 100% confirmado na doc
+    primaria da Meta ate o primeiro teste ao vivo - por isso tem
+    fallback abaixo tentando os dois lookups se vier ausente/
+    inesperado). Sempre responde 200 rapido pra Meta, mesmo se algo
+    interno falhar - senao a Meta pode desativar o webhook.
     """
     payload = request.get_json(silent=True) or {}
 
     try:
+        object_type = payload.get("object")
         entries = payload.get("entry", [])
 
         for entry in entries:
-            page_id = entry.get("id")
-            hostel_id = get_hostel_id_by_facebook_page_id(page_id)
+            entry_id = entry.get("id")
+
+            channel = {"page": "messenger", "instagram": "instagram"}.get(object_type)
+            hostel_id = _CHANNEL_ADAPTERS[channel]["resolve_hostel"](entry_id) if channel else None
 
             if not hostel_id:
-                print(f"Webhook Meta: page_id desconhecido: {page_id}")
+                for candidate_channel, candidate_adapter in _CHANNEL_ADAPTERS.items():
+                    resolved = candidate_adapter["resolve_hostel"](entry_id)
+                    if resolved:
+                        channel, hostel_id = candidate_channel, resolved
+                        break
+
+            if not hostel_id:
+                print(f"Webhook Meta: id desconhecido (object={object_type}): {entry_id}")
                 continue
+
+            adapter = _CHANNEL_ADAPTERS[channel]
 
             for event in entry.get("messaging", []):
                 # Eventos sem "message" (delivery/read receipts,
@@ -99,34 +191,34 @@ def receive_message():
                 if not message or message.get("is_echo"):
                     continue
 
-                psid = event.get("sender", {}).get("id")
+                sender_id = event.get("sender", {}).get("id")
                 text = message.get("text")
                 attachments = message.get("attachments") or []
                 image_attachment = next((a for a in attachments if a.get("type") == "image"), None)
 
-                if not psid:
+                if not sender_id:
                     continue
+
+                config = adapter["get_config"](hostel_id)
 
                 if image_attachment:
                     url = (image_attachment.get("payload") or {}).get("url")
                     if url:
-                        _, access_token = get_hostel_facebook_config(hostel_id)
-                        handle_incoming_document_image(hostel_id, psid, url, access_token)
+                        handle_incoming_document_image(hostel_id, channel, sender_id, url, adapter, config)
                 elif text:
-                    # Busca o nome do perfil do Messenger a cada mensagem -
-                    # so e realmente GRAVADO na primeira vez (get_or_create_
-                    # guest_by_channel so usa "name" ao CRIAR o hospede), o
-                    # custo de buscar de novo em mensagens seguintes e so
-                    # uma chamada a mais ao Graph, sem persistir nada errado.
-                    _, access_token = get_hostel_facebook_config(hostel_id)
-                    first_name, last_name = get_messenger_user_profile(access_token, psid)
-                    guest_name = " ".join(part for part in [first_name, last_name] if part) or None
+                    # Busca o nome do perfil a cada mensagem - so e
+                    # realmente GRAVADO na primeira vez (get_or_create_
+                    # guest_by_channel so usa "name" ao CRIAR o
+                    # hospede), o custo de buscar de novo em mensagens
+                    # seguintes e so uma chamada a mais ao Graph, sem
+                    # persistir nada errado.
+                    guest_name = adapter["profile"](config, sender_id)
 
                     process_incoming_message(
-                        hostel_id, psid, text, channel="messenger", send_reply=True, name=guest_name
+                        hostel_id, sender_id, text, channel=channel, send_reply=True, name=guest_name
                     )
 
     except Exception as error:
-        print("Erro ao processar webhook do Meta (Messenger):", error)
+        print("Erro ao processar webhook do Meta (Messenger/Instagram):", error)
 
     return jsonify({"status": "ok"}), 200

@@ -8,6 +8,9 @@ from database import (
     save_hostel_facebook_oauth_state,
     consume_hostel_facebook_oauth_state,
     save_hostel_facebook_config,
+    save_hostel_instagram_oauth_state,
+    consume_hostel_instagram_oauth_state,
+    save_hostel_instagram_config,
 )
 from utils.tenant import require_permission
 
@@ -16,6 +19,10 @@ meta_oauth_bp = Blueprint("meta_oauth", __name__)
 
 def _facebook_redirect_uri():
     return f"{request.url_root.rstrip('/')}/oauth/facebook/callback"
+
+
+def _instagram_redirect_uri():
+    return f"{request.url_root.rstrip('/')}/oauth/instagram/callback"
 
 
 def _back_to_settings(channel, success, message=""):
@@ -67,3 +74,39 @@ def facebook_callback(hostel_id):
 
     save_hostel_facebook_config(hostel_id, page_id, page_access_token)
     return _back_to_settings("facebook", True, page_name or "")
+
+
+@meta_oauth_bp.route("/oauth/instagram/connect", methods=["GET"])
+@require_permission("settings")
+def connect_instagram(hostel_id):
+    if not meta_oauth_service.is_instagram_login_configured():
+        return _back_to_settings("instagram", False, "Integração com Instagram ainda não configurada pelo StayFlow.")
+
+    state = secrets.token_urlsafe(32)
+    save_hostel_instagram_oauth_state(hostel_id, state)
+
+    url = meta_oauth_service.get_instagram_authorize_url(_instagram_redirect_uri(), state)
+    return redirect(url)
+
+
+@meta_oauth_bp.route("/oauth/instagram/callback", methods=["GET"])
+@require_permission("settings")
+def instagram_callback(hostel_id):
+    oauth_error = request.args.get("error")
+    if oauth_error:
+        return _back_to_settings("instagram", False, request.args.get("error_description", oauth_error))
+
+    code = request.args.get("code")
+    state = request.args.get("state")
+
+    if not code or not state or not consume_hostel_instagram_oauth_state(hostel_id, state):
+        return _back_to_settings("instagram", False, "Solicitação inválida ou expirada — tente conectar de novo.")
+
+    instagram_business_id, access_token, username, error = meta_oauth_service.exchange_code_for_instagram_account(
+        code, _instagram_redirect_uri()
+    )
+    if error:
+        return _back_to_settings("instagram", False, error)
+
+    save_hostel_instagram_config(hostel_id, instagram_business_id, access_token)
+    return _back_to_settings("instagram", True, username or "")
