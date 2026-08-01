@@ -488,3 +488,47 @@ def delete_instagram_settings(hostel_id):
     return jsonify({"success": True})
 
 
+@settings_bp.route("/settings/instagram/debug", methods=["GET"])
+@require_permission("settings")
+def debug_instagram_settings(hostel_id):
+    """
+    Rota de diagnostico TEMPORARIA - consulta a Graph API direto com o
+    token de verdade ja salvo (nao um token colado manualmente, que
+    corrompe facil ao copiar/colar) pra ver o estado real da assinatura
+    do webhook desse hostel. Remover depois de confirmar a causa do
+    Instagram nao entregar mensagem pro nosso webhook.
+    """
+    import requests as _requests
+
+    instagram_business_id, access_token = get_hostel_instagram_config(hostel_id)
+    if not instagram_business_id or not access_token:
+        return jsonify({"error": "Instagram nao conectado pra esse hostel."}), 400
+
+    result = {"instagram_business_id": instagram_business_id}
+
+    try:
+        subs_res = _requests.get(
+            f"https://graph.instagram.com/v20.0/{instagram_business_id}/subscribed_apps",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=15,
+        )
+        result["subscribed_apps_status"] = subs_res.status_code
+        result["subscribed_apps_body"] = subs_res.json() if subs_res.text else None
+    except Exception as error:
+        result["subscribed_apps_error"] = str(error)
+
+    try:
+        profile_res = _requests.get(
+            f"https://graph.instagram.com/v20.0/{instagram_business_id}",
+            params={"fields": "username,name"},
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=15,
+        )
+        result["profile_status"] = profile_res.status_code
+        result["profile_body"] = profile_res.json() if profile_res.text else None
+    except Exception as error:
+        result["profile_error"] = str(error)
+
+    return jsonify(result)
+
+
