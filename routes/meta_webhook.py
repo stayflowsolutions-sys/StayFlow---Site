@@ -66,8 +66,28 @@ def _resolve_messenger_hostel(entry_id):
     return get_hostel_id_by_facebook_page_id(entry_id)
 
 
+# TEMPORARIO: em modo de desenvolvimento (sem App Review aprovado pro
+# escopo instagram_business_manage_messages), a Meta entrega o evento
+# de webhook usando sempre o ID da conta de teste do PROPRIO
+# desenvolvedor como entry.id - confirmado ao vivo (mesmo respondendo
+# pela conta do hostel, o entry.id continuou sendo o da conta pessoal
+# do dev usada como testadora), independente da direcao real da
+# conversa. Isso nao deve acontecer em producao, com o app aprovado -
+# ali o entry.id deve vir como o ID real da conta comercial conectada
+# (ja tratado normalmente via get_hostel_id_by_instagram_id). Mapeamento
+# hardcoded so pra permitir testar o pipeline inteiro (IA respondendo,
+# envio de volta) enquanto a revisao nao sai - remover quando a app for
+# aprovada pra Acesso Avancado.
+_DEV_MODE_INSTAGRAM_ID_ALIASES = {
+    "17841477942485091": "28000058579630962",  # conta de teste do dev -> stayflowsolutions
+}
+
+
 def _resolve_instagram_hostel(entry_id):
-    return get_hostel_id_by_instagram_id(entry_id)
+    hostel_id = get_hostel_id_by_instagram_id(entry_id)
+    if not hostel_id and entry_id in _DEV_MODE_INSTAGRAM_ID_ALIASES:
+        hostel_id = get_hostel_id_by_instagram_id(_DEV_MODE_INSTAGRAM_ID_ALIASES[entry_id])
+    return hostel_id
 
 
 # Messenger e Instagram Direct chegam no MESMO endpoint, com o mesmo
