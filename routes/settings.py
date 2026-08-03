@@ -488,3 +488,35 @@ def delete_instagram_settings(hostel_id):
     return jsonify({"success": True})
 
 
+@settings_bp.route("/settings/instagram/subscribe", methods=["POST"])
+@require_permission("settings")
+def subscribe_instagram_webhook(hostel_id):
+    """
+    Rota de diagnostico TEMPORARIA (2a rodada, 03/08/2026) - reinscreve
+    de verdade nosso app nos eventos de mensagem dessa conta Instagram
+    via API. Motivo de existir de novo: a inscricao feita manualmente
+    em 31/07/2026 (mesma chamada) nao se provou permanente - mensagem
+    de teste voltou a cair so na caixa da Meta Business Suite, sem
+    bater no nosso webhook. Remover de novo assim que confirmarmos se
+    a causa e mesmo perda de inscricao (e nao virar habito deixar isso
+    exposto com a permissao "settings", que o convidado de revisao vai
+    ter).
+    """
+    import requests as _requests
+
+    instagram_business_id, access_token = get_hostel_instagram_config(hostel_id)
+    if not instagram_business_id or not access_token:
+        return jsonify({"error": "Instagram nao conectado pra esse hostel."}), 400
+
+    try:
+        res = _requests.post(
+            f"https://graph.instagram.com/v25.0/{instagram_business_id}/subscribed_apps",
+            headers={"Authorization": f"Bearer {access_token}"},
+            params={"subscribed_fields": "messages"},
+            timeout=15,
+        )
+        return jsonify({"status": res.status_code, "body": res.json() if res.text else None})
+    except Exception as error:
+        return jsonify({"error": str(error)}), 500
+
+
