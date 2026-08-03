@@ -94,8 +94,12 @@ def _fetch_instagram_message_text(mid, access_token):
         return None, None
     import requests as _requests
     try:
+        # v25.0, nao v20.0 (ver comentario em services/meta_oauth_service.py
+        # sobre INSTAGRAM_API_VERSION) - a doc oficial da Conversations API
+        # do Instagram so mostra exemplo com v25.0+ pra esse mesmo formato
+        # de chamada (GET /<MESSAGE_ID>?fields=...,from,to,message).
         res = _requests.get(
-            f"https://graph.instagram.com/v20.0/{mid}",
+            f"https://graph.instagram.com/v25.0/{mid}",
             params={"fields": "from,to,message"},
             headers={"Authorization": f"Bearer {access_token}"},
             timeout=10,

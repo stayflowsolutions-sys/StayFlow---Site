@@ -32,7 +32,16 @@ import os
 import requests
 
 API_BASE = "https://graph.facebook.com/v20.0"
-INSTAGRAM_API_VERSION = "v20.0"
+# Versao mais atual que a do Facebook/Messenger acima de proposito -
+# investigacao de 02/08/2026 achou que a documentacao oficial da
+# "Conversations API" do Instagram (graph.instagram.com) so usa
+# exemplos em v25.0+; v20.0 (lancada em 05/2024) ainda responde sem
+# erro de versao expirada, mas pode ter comportamento defasado em
+# endpoints mais novos como o de conteudo de mensagem - suspeita
+# levantada como possivel causa do "message_edit" com corpo vazio ao
+# buscar por mid. Nao mexe na versao do Facebook (linha acima) de
+# proposito - Messenger/WhatsApp ja funcionam, sem motivo pra arriscar.
+INSTAGRAM_API_VERSION = "v25.0"
 REQUEST_TIMEOUT = 15
 
 

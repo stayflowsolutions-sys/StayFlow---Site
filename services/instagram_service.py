@@ -11,7 +11,7 @@ Authorization em vez de query param.
 
 import requests
 
-API_BASE = "https://graph.instagram.com/v20.0"
+API_BASE = "https://graph.instagram.com/v25.0"
 REQUEST_TIMEOUT = 10
 
 
