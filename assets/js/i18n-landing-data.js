@@ -13,7 +13,7 @@ const STAYFLOW_LANDING_I18N = {
 
     "hero.eyebrow": "AI active for hospitality operations",
     "hero.title": "More bookings.<br><span class=\"gradient-text\">Less work.</span>",
-    "hero.text": "StayFlow is an <strong>AI Digital Manager</strong> for hostels, hotels and pousadas. It helps your team answer guests, detect booking opportunities, reduce manual work and turn daily conversations into revenue.",
+    "hero.text": "StayFlow is an <strong>AI Digital Manager</strong> for hospitality businesses of every kind — hotels, resorts, hostels and guesthouses. It helps your team answer guests, detect booking opportunities, reduce manual work and turn daily conversations into revenue.",
 
     "cta.demo": "Free trial →",
     "cta.dashboard": "View Dashboard",
@@ -78,7 +78,7 @@ const STAYFLOW_LANDING_I18N = {
     "future.ai.text": "Multilingual support that helps guests, reception and managers make faster decisions 24/7.",
 
     "final.title": "Ready to turn guest conversations into revenue?",
-    "final.text": "Book a demo and see how StayFlow can help your hostel or hotel answer faster, sell more and operate with less chaos.",
+    "final.text": "Book a demo and see how StayFlow can help your property answer faster, sell more and operate with less chaos.",
     "footer.brand": "StayFlow — AI Digital Manager for Hospitality",
     "footer.rights": "© 2026 StayFlow. All rights reserved."
   },
@@ -93,7 +93,7 @@ const STAYFLOW_LANDING_I18N = {
 
     "hero.eyebrow": "IA ativa para operações de hotelaria",
     "hero.title": "Mais reservas.<br><span class=\"gradient-text\">Menos trabalho.</span>",
-    "hero.text": "A StayFlow é um <strong>Gerente Digital com IA</strong> para hostels, hotéis e pousadas. Ela ajuda sua equipe a responder hóspedes, identificar oportunidades de reserva, reduzir trabalho manual e transformar conversas diárias em receita.",
+    "hero.text": "A StayFlow é um <strong>Gerente Digital com IA</strong> para hospedagens de todo tipo — hotéis, resorts, hostels e pousadas. Ela ajuda sua equipe a responder hóspedes, identificar oportunidades de reserva, reduzir trabalho manual e transformar conversas diárias em receita.",
 
     "cta.demo": "Teste grátis →",
     "cta.dashboard": "Ver Dashboard",
@@ -158,7 +158,7 @@ const STAYFLOW_LANDING_I18N = {
     "future.ai.text": "Suporte multilíngue que ajuda hóspedes, recepção e gerentes a tomar decisões mais rápidas 24/7.",
 
     "final.title": "Pronto para transformar conversas em receita?",
-    "final.text": "Agende uma demo e veja como a StayFlow pode ajudar seu hostel ou hotel a responder mais rápido, vender mais e operar com menos caos.",
+    "final.text": "Agende uma demo e veja como a StayFlow pode ajudar sua hospedagem a responder mais rápido, vender mais e operar com menos caos.",
     "footer.brand": "StayFlow — Gerente Digital com IA para Hotelaria",
     "footer.rights": "© 2026 StayFlow. Todos os direitos reservados."
   },
@@ -173,7 +173,7 @@ const STAYFLOW_LANDING_I18N = {
 
     "hero.eyebrow": "IA activa para operaciones hoteleras",
     "hero.title": "Más reservas.<br><span class=\"gradient-text\">Menos trabajo.</span>",
-    "hero.text": "StayFlow es un <strong>Gerente Digital con IA</strong> para hostels, hoteles y posadas. Ayuda a tu equipo a responder huéspedes, detectar oportunidades de reserva, reducir trabajo manual y transformar conversaciones diarias en ingresos.",
+    "hero.text": "StayFlow es un <strong>Gerente Digital con IA</strong> para alojamientos de todo tipo — hoteles, resorts, hostels y posadas. Ayuda a tu equipo a responder huéspedes, detectar oportunidades de reserva, reducir trabajo manual y transformar conversaciones diarias en ingresos.",
 
     "cta.demo": "Teste grátis →",
     "cta.dashboard": "Ver Dashboard",
@@ -238,7 +238,7 @@ const STAYFLOW_LANDING_I18N = {
     "future.ai.text": "Soporte multilingüe que ayuda a huéspedes, recepción y gerentes a tomar decisiones más rápidas 24/7.",
 
     "final.title": "¿Listo para transformar conversaciones en ingresos?",
-    "final.text": "Agenda una demo y mira cómo StayFlow puede ayudar a tu hostel u hotel a responder más rápido, vender más y operar con menos caos.",
+    "final.text": "Agenda una demo y mira cómo StayFlow puede ayudar a tu alojamiento a responder más rápido, vender más y operar con menos caos.",
     "footer.brand": "StayFlow — Gerente Digital con IA para Hotelería",
     "footer.rights": "© 2026 StayFlow. Todos los derechos reservados."
   },
@@ -253,7 +253,7 @@ const STAYFLOW_LANDING_I18N = {
 
     "hero.eyebrow": "IA active pour les opérations hôtelières",
     "hero.title": "Plus de réservations.<br><span class=\"gradient-text\">Moins de travail.</span>",
-    "hero.text": "StayFlow est un <strong>Gestionnaire Digital IA</strong> pour hostels, hôtels et pousadas. Il aide votre équipe à répondre aux clients, détecter les opportunités de réservation, réduire le travail manuel et transformer les conversations quotidiennes en revenus.",
+    "hero.text": "StayFlow est un <strong>Gestionnaire Digital IA</strong> pour tous les types d'hébergements — hôtels, resorts, hostels et pousadas. Il aide votre équipe à répondre aux clients, détecter les opportunités de réservation, réduire le travail manuel et transformer les conversations quotidiennes en revenus.",
 
     "cta.demo": "Essai gratuit →",
     "cta.dashboard": "Voir le Dashboard",
@@ -318,7 +318,7 @@ const STAYFLOW_LANDING_I18N = {
     "future.ai.text": "Support multilingue qui aide les clients, la réception et les managers à prendre des décisions plus rapides 24/7.",
 
     "final.title": "Prêt à transformer les conversations clients en revenus ?",
-    "final.text": "Réservez une démo et découvrez comment StayFlow peut aider votre hostel ou hôtel à répondre plus vite, vendre plus et opérer avec moins de chaos.",
+    "final.text": "Réservez une démo et découvrez comment StayFlow peut aider votre établissement à répondre plus vite, vendre plus et opérer avec moins de chaos.",
     "footer.brand": "StayFlow — Gestionnaire Digital IA pour l'Hôtellerie",
     "footer.rights": "© 2026 StayFlow. Tous droits réservés."
   },
@@ -333,7 +333,7 @@ const STAYFLOW_LANDING_I18N = {
 
     "hero.eyebrow": "KI aktiv für Hotelbetrieb",
     "hero.title": "Mehr Buchungen.<br><span class=\"gradient-text\">Weniger Arbeit.</span>",
-    "hero.text": "StayFlow ist ein <strong>KI Digital Manager</strong> für Hostels, Hotels und Pousadas. Es hilft Ihrem Team, Gästen zu antworten, Buchungschancen zu erkennen, manuelle Arbeit zu reduzieren und tägliche Gespräche in Umsatz zu verwandeln.",
+    "hero.text": "StayFlow ist ein <strong>KI Digital Manager</strong> für Beherbergungsbetriebe jeder Art — Hotels, Resorts, Hostels und Pousadas. Es hilft Ihrem Team, Gästen zu antworten, Buchungschancen zu erkennen, manuelle Arbeit zu reduzieren und tägliche Gespräche in Umsatz zu verwandeln.",
 
     "cta.demo": "Kostenlos testen →",
     "cta.dashboard": "Dashboard ansehen",
@@ -398,7 +398,7 @@ const STAYFLOW_LANDING_I18N = {
     "future.ai.text": "Mehrsprachiger Support, der Gästen, Rezeption und Managern hilft, rund um die Uhr schnellere Entscheidungen zu treffen.",
 
     "final.title": "Bereit, Gästegespräche in Umsatz zu verwandeln?",
-    "final.text": "Buchen Sie eine Demo und sehen Sie, wie StayFlow Ihrem Hostel oder Hotel helfen kann, schneller zu antworten, mehr zu verkaufen und mit weniger Chaos zu arbeiten.",
+    "final.text": "Buchen Sie eine Demo und sehen Sie, wie StayFlow Ihrer Unterkunft helfen kann, schneller zu antworten, mehr zu verkaufen und mit weniger Chaos zu arbeiten.",
     "footer.brand": "StayFlow — KI Digital Manager für die Hotellerie",
     "footer.rights": "© 2026 StayFlow. Alle Rechte vorbehalten."
   }
