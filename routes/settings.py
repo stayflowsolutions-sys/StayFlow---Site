@@ -520,3 +520,58 @@ def subscribe_instagram_webhook(hostel_id):
         return jsonify({"error": str(error)}), 500
 
 
+@settings_bp.route("/settings/instagram/conversations", methods=["GET"])
+@require_permission("settings")
+def debug_instagram_conversations(hostel_id):
+    """
+    Rota de diagnostico TEMPORARIA (03/08/2026) - tenta buscar o
+    conteudo de mensagem pela Conversations API oficial do Instagram
+    (GET /{ig_id}/conversations, depois GET /{conversation_id}?
+    fields=messages{message,from,to}), em vez de GET /{mid} direto
+    (que voltou corpo vazio nos testes anteriores). Hipotese: o
+    endpoint usado antes pode nao ser o formato certo pra conta
+    conectada via Instagram Login. Remover depois de confirmar.
+    """
+    import requests as _requests
+
+    instagram_business_id, access_token = get_hostel_instagram_config(hostel_id)
+    if not instagram_business_id or not access_token:
+        return jsonify({"error": "Instagram nao conectado pra esse hostel."}), 400
+
+    result = {}
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    try:
+        conv_res = _requests.get(
+            f"https://graph.instagram.com/v25.0/{instagram_business_id}/conversations",
+            headers=headers,
+            timeout=15,
+        )
+        result["conversations_status"] = conv_res.status_code
+        result["conversations_body"] = conv_res.json() if conv_res.text else None
+    except Exception as error:
+        result["conversations_error"] = str(error)
+        return jsonify(result)
+
+    conversations = ((result.get("conversations_body") or {}).get("data")) or []
+    result["messages_by_conversation"] = []
+    for conversation in conversations[:5]:
+        conversation_id = conversation.get("id")
+        try:
+            msg_res = _requests.get(
+                f"https://graph.instagram.com/v25.0/{conversation_id}",
+                params={"fields": "messages{message,from,to,created_time}"},
+                headers=headers,
+                timeout=15,
+            )
+            result["messages_by_conversation"].append({
+                "conversation_id": conversation_id,
+                "status": msg_res.status_code,
+                "body": msg_res.json() if msg_res.text else None,
+            })
+        except Exception as error:
+            result["messages_by_conversation"].append({"conversation_id": conversation_id, "error": str(error)})
+
+    return jsonify(result)
+
+
