@@ -49,6 +49,40 @@ function T(key, fallback, ph){
   return text;
 }
 
+// ===== Moeda configurada em Configuracoes > Empresa - antes disso o
+// app inteiro mostrava "US$" fixo em todo lugar, ignorando a moeda
+// escolhida (bug real reportado pelo usuario: selecionar peso
+// argentino continuava tratando os valores como dolar). window.
+// STAYFLOW_CURRENCY comeca em USD (mesmo padrao anterior) ate
+// loadCurrencySetting() confirmar a moeda real do hostel, chamado bem
+// no inicio do stayflow:session-ready, antes de qualquer loadX() que
+// exiba valor monetario.
+const STAYFLOW_CURRENCY_SYMBOLS = {
+  ARS: "AR$", CLP: "CL$", BRL: "R$", PEN: "S/", BOB: "Bs", COP: "COL$", USD: "US$"
+};
+window.STAYFLOW_CURRENCY = "USD";
+
+window.currencySymbol = function(){
+  return STAYFLOW_CURRENCY_SYMBOLS[window.STAYFLOW_CURRENCY] || STAYFLOW_CURRENCY_SYMBOLS.USD;
+};
+
+window.formatMoney = function(value){
+  return `${currencySymbol()} ${Number(value || 0).toFixed(2)}`;
+};
+
+window.loadCurrencySetting = async function(){
+  try{
+    const res = await fetch("/settings", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data && data.currency && STAYFLOW_CURRENCY_SYMBOLS[data.currency]){
+      window.STAYFLOW_CURRENCY = data.currency;
+    }
+  }catch(e){
+    console.warn("Erro ao carregar moeda configurada:", e);
+  }
+};
+
 // ===== Substitui alert()/confirm()/prompt() nativos por um modal com a
 // cara do StayFlow (caixa azul, nao a caixa branca do sistema
 // operacional). window.alert vira um override direto (nenhum lugar do
@@ -860,7 +894,7 @@ async function deleteRoleConfirm(roleId){
       </div>
       <div>
         <div class="label" data-i18n="home.kpi.revenueLabel">Receita</div>
-        <div class="value" id="kpiRevenue">US$ 0</div>
+        <div class="value" id="kpiRevenue">0</div>
         <div class="note" data-i18n="home.kpi.revenueNote">Aguardando reservas</div>
       </div>
     </div>
@@ -1426,23 +1460,8 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
     <div class="card kpi">
       <div class="label" data-i18n="finance.kpi.confirmedLabel">Receita confirmada</div>
-      <div class="value" id="kpiFinConfirmed">US$ 0</div>
+      <div class="value" id="kpiFinConfirmed">0</div>
       <div class="note" data-i18n="finance.kpi.confirmedNote">Aguardando reservas reais</div>
-    </div>
-    <div class="card kpi">
-      <div class="label" data-i18n="finance.kpi.recoveredLabel">Recuperada pela IA</div>
-      <div class="value" id="kpiFinRecovered">US$ 0</div>
-      <div class="note" data-i18n="finance.kpi.recoveredNote">Nenhuma recuperação registrada</div>
-    </div>
-    <div class="card kpi">
-      <div class="label" data-i18n="finance.kpi.atRiskLabel">Receita em risco</div>
-      <div class="value" id="kpiFinAtRisk">US$ 0</div>
-      <div class="note" data-i18n="finance.kpi.atRiskNote">Nenhuma oportunidade em risco</div>
-    </div>
-    <div class="card kpi">
-      <div class="label" data-i18n="finance.kpi.recoverableLabel">Recuperável</div>
-      <div class="value" id="kpiFinRecoverable">US$ 0</div>
-      <div class="note" data-i18n="finance.kpi.recoverableNote">Aguardando recomendações da IA</div>
     </div>
 
     <div class="card span-12">
@@ -1450,7 +1469,7 @@ async function deleteRoleConfirm(roleId){
       <div class="sf-empty" id="financeEmpty">
         <div>
           <strong data-i18n="finance.emptyTitle">Nenhuma movimentação financeira registrada.</strong>
-          <span data-i18n="finance.emptyDesc">Quando a primeira hospedagem começar a operar no StayFlow, receitas, recebimentos pendentes e oportunidades financeiras aparecerão aqui.</span>
+          <span data-i18n="finance.emptyDesc">Quando a primeira hospedagem começar a operar no StayFlow, receitas e pagamentos reais aparecerão aqui. Oportunidades ficam no Opportunity Center.</span>
         </div>
       </div>
       <table class="table" id="financeTable" style="display:none">
@@ -1551,7 +1570,7 @@ async function deleteRoleConfirm(roleId){
 
     <div class="card span-4">
       <h2 data-i18n="revenue.extraTitle">💰 Receita extra</h2>
-      <div class="value" style="font-size:34px;font-weight:900;color:var(--blue)" id="kpiExtraRevenue">US$ 0</div>
+      <div class="value" style="font-size:34px;font-weight:900;color:var(--blue)" id="kpiExtraRevenue">0</div>
       <p data-i18n="revenue.extraDesc">Soma das oportunidades abertas de tour/upsell identificadas pela IA.</p>
     </div>
 
@@ -2243,9 +2262,17 @@ async function deleteRoleConfirm(roleId){
         body:JSON.stringify(data)
       });
       if(res.ok){
+        const currencyChanged = data.currency && data.currency !== window.STAYFLOW_CURRENCY;
         alert(T('settings.msg.saved', 'Configurações salvas.'));
         closeGenericModal();
         if(typeof loadGeneralSettingsSummary === "function") loadGeneralSettingsSummary();
+        if(currencyChanged){
+          // Moeda afeta valores ja renderizados em varias paginas (Reservas,
+          // Financeiro, Receitas, RoomMap...) - mais simples e confiavel
+          // recarregar a pagina do que sair recarregando cada loadX() na
+          // mao. Delay curto so pra dar tempo do alerta aparecer antes.
+          setTimeout(() => window.location.reload(), 600);
+        }
       }else if(res.status === 401){
         alert(T('reservations.msg.sessionExpired', 'Sua sessão expirou. Faça login novamente.'));
         window.location.href = "/Login.html";
@@ -3721,7 +3748,7 @@ async function loadReservations(){
     setKpi("kpiNoShow", stats.no_show);
     setKpi("kpiReservations", stats.total);
     const kpiRevenue = document.getElementById("kpiRevenue");
-    if(kpiRevenue) kpiRevenue.textContent = `US$ ${Number(stats.confirmed_revenue || 0).toFixed(2)}`;
+    if(kpiRevenue) kpiRevenue.textContent = formatMoney(stats.confirmed_revenue);
 
     if(!reservations.length){
       if(emptyEl) emptyEl.style.display = "flex";
@@ -3742,9 +3769,9 @@ async function loadReservations(){
         // saldo positivo = deve pra gente; negativo = pagou a mais,
         // fica com credito acumulado pra abater depois.
         const balanceLabel = balance > 0
-          ? `<span style="color:#ff9caf">${T('longTermStay.owes', 'Deve US$ {amount}', { amount: balance.toFixed(2) })}</span>`
+          ? `<span style="color:#ff9caf">${T('longTermStay.owes', 'Deve {amount}', { amount: formatMoney(balance) })}</span>`
           : balance < 0
-            ? `<span style="color:#6ff0bd">${T('longTermStay.credit', 'Crédito US$ {amount}', { amount: Math.abs(balance).toFixed(2) })}</span>`
+            ? `<span style="color:#6ff0bd">${T('longTermStay.credit', 'Crédito {amount}', { amount: formatMoney(Math.abs(balance)) })}</span>`
             : `<span style="color:var(--muted)">${T('longTermStay.upToDate', 'Em dia')}</span>`;
 
         row.innerHTML = `
@@ -3772,7 +3799,7 @@ async function loadReservations(){
           <span class="status-pill ${statusClass}">${(r.status || "pending").toUpperCase()}</span>
           ${r.checked_out_at && r.bed_status === "needs_cleaning" ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${T('reservations.awaitingCleaningLabel', 'Aguardando limpeza da cama')}</div>` : ""}
         </td>
-        <td>US$ ${Number(r.amount || 0).toFixed(2)}</td>
+        <td>${formatMoney(r.amount)}</td>
         <td>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap">
             <select onchange="updateReservationStatus(${r.id}, this.value)" style="background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:6px 8px;font-size:12px">
@@ -3961,7 +3988,7 @@ function renderCancelledReservationsList(reservations){
       <td>${escapeHtml(r.room_type || "-")}${r.bed ? " · " + escapeHtml(r.bed) : ""}</td>
       <td>${r.checkin_date || "-"} → ${r.checkout_date || "-"}</td>
       <td>${channelDisplayLabel(r.source)}</td>
-      <td>US$ ${Number(r.amount || 0).toFixed(2)}</td>
+      <td>${formatMoney(r.amount)}</td>
       <td><button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="reactivateCancelledReservationUI(${r.id})">${T('reservations.cancelledModal.reactivateBtn', 'Reativar')}</button></td>
     </tr>
   `).join("");
@@ -4673,7 +4700,7 @@ window.editCategoryUI = function(categoryId){
       <input id="editCatCapacity" type="number" min="1" value="${category.capacity || ""}">
     </div>
     <div>
-      <label>${T('roommap.category.priceLabel', 'Diária (US$)')}</label>
+      <label>${T('roommap.category.priceLabel', 'Diária')} (${currencySymbol()})</label>
       <input id="editCatPrice" type="number" min="0" step="0.01" value="${category.price_per_night || ""}">
     </div>
     <div>
@@ -4895,7 +4922,7 @@ function categoryPillsHtml(categories){
   return categories.length
     ? categories.map(c => `
         <span style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0;padding:4px 4px 4px 10px;border:1px solid var(--line);border-radius:999px">
-          ${escapeHtml(c.name)}${c.capacity ? ` (${c.capacity})` : ""}${c.price_per_night ? ` · US$ ${Number(c.price_per_night).toFixed(2)}${T('roommap.category.perNightSuffix', '/noite')}` : ""}
+          ${escapeHtml(c.name)}${c.capacity ? ` (${c.capacity})` : ""}${c.price_per_night ? ` · ${formatMoney(c.price_per_night)}${T('roommap.category.perNightSuffix', '/noite')}` : ""}
           <button type="button" onclick="editCategoryUI(${c.id})" title="${T('roommap.category.editModalTitle', 'Editar modalidade')}" style="background:none;border:0;color:#7bc2ff;cursor:pointer;font-size:12px;padding:2px">✎</button>
           <button type="button" onclick="deleteCategoryUI(${c.id}, '${c.name.replace(/'/g, "\\'")}')" title="${T('roommap.category.deleteBtn', 'Excluir modalidade')}" style="background:none;border:0;color:#ff8b8b;cursor:pointer;font-size:12px;padding:2px">✕</button>
         </span>
@@ -5168,7 +5195,7 @@ async function loadReports(){
         channelBody.innerHTML = "";
         byChannel.forEach(c => {
           const row = document.createElement("tr");
-          row.innerHTML = `<td>${c.channel}</td><td>US$ ${Number(c.revenue || 0).toFixed(2)}</td>`;
+          row.innerHTML = `<td>${c.channel}</td><td>${formatMoney(c.revenue)}</td>`;
           channelBody.appendChild(row);
         });
       }
@@ -5218,14 +5245,8 @@ async function loadFinance(){
 
     const data = await res.json();
 
-    const setKpi = (id, value) => {
-      const el = document.getElementById(id);
-      if(el) el.textContent = `US$ ${Number(value || 0).toFixed(2)}`;
-    };
-    setKpi("kpiFinConfirmed", data.confirmed_revenue);
-    setKpi("kpiFinRecovered", data.recovered);
-    setKpi("kpiFinAtRisk", data.at_risk);
-    setKpi("kpiFinRecoverable", data.recoverable);
+    const kpiEl = document.getElementById("kpiFinConfirmed");
+    if(kpiEl) kpiEl.textContent = formatMoney(data.confirmed_revenue);
 
     const movements = data.movements || [];
 
@@ -5245,7 +5266,7 @@ async function loadFinance(){
       row.innerHTML = `
         <td>${m.type}</td>
         <td>${m.description || "-"}</td>
-        <td>US$ ${Number(m.value || 0).toFixed(2)}</td>
+        <td>${formatMoney(m.value)}</td>
         <td><span class="status-pill ${statusClass}">${(m.status || "-").toUpperCase()}</span></td>
       `;
       bodyEl.appendChild(row);
@@ -6092,7 +6113,7 @@ window.openNewOfferingModal = function(){
         </select>
       </div>
       <div style="grid-column:span 6">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('revenue.priceLabel', 'Preço (US$)')}</label>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('revenue.priceLabel', 'Preço')} (${currencySymbol()})</label>
         <input name="price" type="number" step="0.01" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
       </div>
       <div style="grid-column:span 12;display:flex;justify-content:flex-end">
@@ -6164,7 +6185,7 @@ async function loadRevenue(){
     const data = await res.json();
 
     const kpiExtra = document.getElementById("kpiExtraRevenue");
-    if(kpiExtra) kpiExtra.textContent = `US$ ${Number(data.extra_revenue || 0).toFixed(2)}`;
+    if(kpiExtra) kpiExtra.textContent = formatMoney(data.extra_revenue);
 
     // Catálogo de ofertas
     const offerings = data.offerings || [];
@@ -6185,7 +6206,7 @@ async function loadRevenue(){
           row.innerHTML = `
             <td>${o.name}</td>
             <td>${offeringTypeLabel(o.type)}</td>
-            <td>US$ ${Number(o.price || 0).toFixed(2)}</td>
+            <td>${formatMoney(o.price)}</td>
             <td><button class="btn red" style="padding:6px 10px;font-size:12px" onclick="deleteOffering(${o.id})">${T('common.delete', 'Excluir')}</button></td>
           `;
           offeringsBody.appendChild(row);
@@ -6213,7 +6234,7 @@ async function loadRevenue(){
             <td>${o.phone || "-"}</td>
             <td>${offeringTypeLabel(o.type)}</td>
             <td>${o.description || "-"}</td>
-            <td>US$ ${Number(o.estimated_value || 0).toFixed(2)}</td>
+            <td>${formatMoney(o.estimated_value)}</td>
             <td>${o.next_action || "-"}</td>
           `;
           revBody.appendChild(row);
@@ -6641,7 +6662,7 @@ async function loadGuests(){
         <td>${g.phone || "-"}</td>
         <td>${g.email || "-"}</td>
         <td><span class="status-pill ${g.last_checked_out_at ? "hot" : (g.message_count > 0 ? "ok" : "cold")}">${g.last_checked_out_at ? T('guests.checkedOut', 'CHECKOUT') : (g.message_count > 0 ? T('guests.active', 'Ativo') : T('guests.noInteraction', 'Sem interação'))}</span></td>
-        <td>US$ ${Number(g.total_value || 0).toFixed(2)}</td>
+        <td>${formatMoney(g.total_value)}</td>
       `;
       bodyEl.appendChild(row);
     });
@@ -6689,11 +6710,11 @@ function renderGuestProfileModal(profile, editMode){
         const statusClass = reservationStatusPillClass(r.status);
         const balanceHtml = r.stay_type === "indefinite"
           ? (Number(r.balance) > 0
-              ? `<span style="color:#ff9caf">${T('longTermStay.owes', 'Deve US$ {amount}', { amount: Number(r.balance).toFixed(2) })}</span>`
+              ? `<span style="color:#ff9caf">${T('longTermStay.owes', 'Deve {amount}', { amount: formatMoney(r.balance) })}</span>`
               : Number(r.balance) < 0
-                ? `<span style="color:#6ff0bd">${T('longTermStay.credit', 'Crédito US$ {amount}', { amount: Math.abs(Number(r.balance)).toFixed(2) })}</span>`
+                ? `<span style="color:#6ff0bd">${T('longTermStay.credit', 'Crédito {amount}', { amount: formatMoney(Math.abs(Number(r.balance))) })}</span>`
                 : `<span style="color:var(--muted)">${T('longTermStay.upToDate', 'Em dia')}</span>`)
-          : `US$ ${Number(r.amount || 0).toFixed(2)}`;
+          : formatMoney(r.amount);
         return `
           <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #ffffff0f;font-size:13px">
             <div>
@@ -7064,8 +7085,12 @@ window.uploadGuestDocumentUI = async function(guestId){
     }
   }
 
-  document.addEventListener("stayflow:session-ready", () => {
+  document.addEventListener("stayflow:session-ready", async () => {
     hydrateUserUI(window.STAYFLOW_USER);
+    // Carrega a moeda configurada ANTES de qualquer loadX() que exiba
+    // valor monetario - senao a primeira renderizacao de cada pagina
+    // sai em USD (default) e so corrige na proxima troca de idioma.
+    if (typeof loadCurrencySetting === "function") await loadCurrencySetting();
     // Só carrega dados depois de confirmar sessão de verdade —
     // evita bater nas rotas protegidas antes de saber se está logado.
     if (typeof loadOpportunities === "function") loadOpportunities();
