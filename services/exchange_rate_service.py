@@ -59,10 +59,13 @@ def get_usd_ars_blue_rate():
         _cache["fetched_at"] = now
 
         return {"rate": rate, "updated_at": updated_at, "source": "finanzasargy.com"}
-    except Exception:
+    except Exception as error:
         # Site fora do ar ou mudou de layout - devolve o ultimo valor bom
         # conhecido (mesmo vencido) em vez de quebrar a tela. Sem nenhum
         # valor em cache ainda, devolve rate=None e quem chamou trata.
+        # DEBUG TEMPORARIO: "debug_error" exposto pra diagnosticar por que
+        # funciona local e falha em producao - remover depois de achar a
+        # causa (suspeita: Cloudflare bloqueando IP de datacenter do Render).
         if _cache["rate"] is not None:
             return {"rate": _cache["rate"], "updated_at": _cache["updated_at"], "source": "finanzasargy.com"}
-        return {"rate": None, "updated_at": None, "source": "finanzasargy.com"}
+        return {"rate": None, "updated_at": None, "source": "finanzasargy.com", "debug_error": f"{type(error).__name__}: {error}"}
