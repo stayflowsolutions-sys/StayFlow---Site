@@ -1572,6 +1572,91 @@ body::before{
   grid-template-columns:repeat(12,minmax(0,1fr));
   gap:var(--gap);
 }
+/* ===== Campos de formulario (select/date/time/text) - tema global
+   StayFlow, MESMO visual ja usado dentro de #settings (fundo escuro,
+   borda azul no foco) - generalizado pra fora do Configuracoes,
+   porque .field/.form-grid (usados em Escala e outras telas novas)
+   nao tinham NENHUM CSS proprio antes disso e caiam no visual padrao
+   do navegador (branco, "cara de sistema"). Como isso e so a base
+   (sem !important), qualquer input com estilo inline proprio (como
+   os dos modais de Configuracoes) continua podendo sobrescrever sem
+   problema - nao afeta nada que ja estava estilizado. ===== */
+select,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input:not([type]),
+textarea{
+  background:#02070d;
+  border:1px solid var(--line);
+  border-radius:12px;
+  color:var(--text);
+  padding:10px 12px;
+  font-family:inherit;
+  font-size:14px;
+  outline:none;
+  color-scheme:dark;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+select:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus,
+input:not([type]):focus,
+textarea:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px #0b84ff26;
+}
+select{
+  appearance:none;
+  -webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b84ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+  background-size:16px;
+  padding-right:34px;
+  cursor:pointer;
+}
+select option{
+  background:#0a1420;
+  color:var(--text);
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator{
+  filter:invert(48%) sepia(90%) saturate(2000%) hue-rotate(190deg) brightness(1.05);
+  cursor:pointer;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:14px;
+}
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.field label{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:600;
+}
+.field select,
+.field input,
+.field textarea{
+  width:100%;
+}
+
 #settings .span-8 > .grid > .card{
   min-height:120px;
 }
