@@ -722,6 +722,21 @@ async function deleteRoleConfirm(roleId){
     <button data-page="operations" onclick="openPage('operations',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span><span data-i18n="nav.operations">Operações</span>
     </button>
+    <button data-page="kitchen" data-required-permission="kitchen" onclick="openPage('kitchen',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v3c0 4 3.5 7 8 7s8-3 8-7V8"/><path d="M9 19v1"/><path d="M15 19v1"/></svg></span><span data-i18n="nav.kitchen">Cozinha</span>
+    </button>
+    <button data-page="maintenance" data-required-permission="maintenance" onclick="openPage('maintenance',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4l-2.5 2.5-2-2z"/></svg></span><span data-i18n="nav.maintenance">Manutenção</span>
+    </button>
+    <button data-page="patrimonialSecurity" data-required-permission="patrimonial_security" onclick="openPage('patrimonialSecurity',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></span><span data-i18n="nav.patrimonialSecurity">Segurança Patrimonial</span>
+    </button>
+    <button data-page="parking" data-required-permission="parking" onclick="openPage('parking',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M6 9V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><circle cx="7.5" cy="18" r="1.3"/><circle cx="16.5" cy="18" r="1.3"/></svg></span><span data-i18n="nav.parking">Estacionamento</span>
+    </button>
+    <button data-page="scheduling" data-required-permission="scheduling" onclick="openPage('scheduling',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 3v3"/><path d="M16 3v3"/></svg></span><span data-i18n="nav.scheduling">Escala</span>
+    </button>
     <button type="button" data-required-permission="team" onclick="openTeamPanel()">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span><span data-i18n="nav.team">Equipe</span>
     </button>
@@ -1208,6 +1223,171 @@ async function deleteRoleConfirm(roleId){
         <!-- preenchido pelo backend -->
       </ul>
     </div>
+  </div>
+</section>
+
+<!-- KITCHEN -->
+<section id="kitchen" class="page">
+  <div class="card">
+    <h2 data-i18n="kitchen.orders.title">🍽️ Pedidos em aberto</h2>
+    <div class="sf-empty" id="kitchenOrdersEmpty">
+      <div>
+        <strong data-i18n="kitchen.orders.emptyTitle">Nenhum pedido em aberto.</strong>
+        <span data-i18n="kitchen.orders.emptyDesc">Pedidos feitos pelo hóspede via chat, ou lançados manualmente, aparecem aqui.</span>
+      </div>
+    </div>
+    <table class="table" id="kitchenOrdersTable" style="display:none">
+      <thead>
+        <tr>
+          <th data-i18n="kitchen.orders.col.location">Local</th>
+          <th data-i18n="kitchen.orders.col.items">Itens</th>
+          <th data-i18n="kitchen.orders.col.status">Status</th>
+          <th data-i18n="common.action">Ação</th>
+        </tr>
+      </thead>
+      <tbody id="kitchenOrdersBody"><!-- preenchido por live --></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- MAINTENANCE -->
+<section id="maintenance" class="page">
+  <div class="card">
+    <h2 data-i18n="maintenance.tickets.title">🔧 Chamados em aberto</h2>
+    <div class="sf-empty" id="maintenanceEmpty">
+      <div>
+        <strong data-i18n="maintenance.tickets.emptyTitle">Nenhum chamado em aberto.</strong>
+        <span data-i18n="maintenance.tickets.emptyDesc">Problemas relatados pelo hóspede via chat, ou lançados manualmente, aparecem aqui.</span>
+      </div>
+    </div>
+    <table class="table" id="maintenanceTable" style="display:none">
+      <thead>
+        <tr>
+          <th data-i18n="common.location">Local</th>
+          <th data-i18n="common.description">Descrição</th>
+          <th data-i18n="common.urgency">Urgência</th>
+          <th data-i18n="guests.col.status">Status</th>
+          <th data-i18n="common.action">Ação</th>
+        </tr>
+      </thead>
+      <tbody id="maintenanceBody"><!-- preenchido por live --></tbody>
+    </table>
+  </div>
+  <div class="card" id="maintenanceRecurringCard" style="display:none">
+    <h2 data-i18n="maintenance.recurring.title">⚠️ Padrão recorrente</h2>
+    <ul id="maintenanceRecurringList" style="margin:0;padding-left:16px;color:var(--muted);font-size:14px;line-height:1.5"></ul>
+  </div>
+</section>
+
+<!-- PATRIMONIAL SECURITY -->
+<section id="patrimonialSecurity" class="page">
+  <div class="card">
+    <h2 data-i18n="patrimonialSecurity.incidents.title">🛡️ Incidentes em aberto</h2>
+    <div class="sf-empty" id="patrimonialSecurityEmpty">
+      <div>
+        <strong data-i18n="patrimonialSecurity.incidents.emptyTitle">Nenhum incidente em aberto.</strong>
+        <span data-i18n="patrimonialSecurity.incidents.emptyDesc">Ocorrências relatadas pelo hóspede via chat, ou registradas pela equipe, aparecem aqui.</span>
+      </div>
+    </div>
+    <table class="table" id="patrimonialSecurityTable" style="display:none">
+      <thead>
+        <tr>
+          <th data-i18n="common.location">Local</th>
+          <th data-i18n="common.description">Descrição</th>
+          <th data-i18n="common.urgency">Urgência</th>
+          <th data-i18n="guests.col.status">Status</th>
+          <th data-i18n="common.action">Ação</th>
+        </tr>
+      </thead>
+      <tbody id="patrimonialSecurityBody"><!-- preenchido por live --></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- PARKING -->
+<section id="parking" class="page">
+  <div class="card">
+    <h2 data-i18n="parking.vehicles.title">🚗 Veículos no estacionamento</h2>
+    <div class="sf-empty" id="parkingVehiclesEmpty">
+      <div>
+        <strong data-i18n="parking.vehicles.emptyTitle">Nenhum veículo registrado.</strong>
+        <span data-i18n="parking.vehicles.emptyDesc">Veículos com entrada registrada (manobrista ou autoatendimento) aparecem aqui.</span>
+      </div>
+    </div>
+    <table class="table" id="parkingVehiclesTable" style="display:none">
+      <thead>
+        <tr>
+          <th data-i18n="parking.col.plate">Placa</th>
+          <th data-i18n="parking.col.model">Modelo</th>
+          <th data-i18n="parking.col.guest">Hóspede</th>
+          <th data-i18n="parking.col.service">Serviço</th>
+          <th data-i18n="common.action">Ação</th>
+        </tr>
+      </thead>
+      <tbody id="parkingVehiclesBody"><!-- preenchido por live --></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2 data-i18n="parking.valet.title">🔑 Solicitações de manobrista</h2>
+    <div class="sf-empty" id="parkingValetEmpty">
+      <div>
+        <strong data-i18n="parking.valet.emptyTitle">Nenhuma solicitação pendente.</strong>
+        <span data-i18n="parking.valet.emptyDesc">Pedidos de "traga meu carro" pelo chat, ou registrados manualmente, aparecem aqui.</span>
+      </div>
+    </div>
+    <table class="table" id="parkingValetTable" style="display:none">
+      <thead>
+        <tr>
+          <th data-i18n="common.description">Descrição</th>
+          <th data-i18n="guests.col.status">Status</th>
+          <th data-i18n="common.action">Ação</th>
+        </tr>
+      </thead>
+      <tbody id="parkingValetBody"><!-- preenchido por live --></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SCHEDULING -->
+<section id="scheduling" class="page">
+  <div class="card">
+    <h2 data-i18n="scheduling.onDuty.title">🕐 Quem está de plantão agora</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th data-i18n="scheduling.col.department">Departamento</th>
+          <th data-i18n="scheduling.col.onDuty">De plantão</th>
+        </tr>
+      </thead>
+      <tbody id="schedulingOnDutyBody"><!-- preenchido por live --></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2 data-i18n="scheduling.newShift.title">➕ Novo turno</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label data-i18n="scheduling.field.department">Departamento</label>
+        <select id="newShiftDepartment">
+          <option value="kitchen" data-i18n="nav.kitchen">Cozinha</option>
+          <option value="maintenance" data-i18n="nav.maintenance">Manutenção</option>
+          <option value="patrimonial_security" data-i18n="nav.patrimonialSecurity">Segurança Patrimonial</option>
+          <option value="parking" data-i18n="nav.parking">Estacionamento</option>
+        </select>
+      </div>
+      <div class="field">
+        <label data-i18n="scheduling.field.date">Data</label>
+        <input type="date" id="newShiftDate">
+      </div>
+      <div class="field">
+        <label data-i18n="scheduling.field.start">Início</label>
+        <input type="time" id="newShiftStart">
+      </div>
+      <div class="field">
+        <label data-i18n="scheduling.field.end">Fim</label>
+        <input type="time" id="newShiftEnd">
+      </div>
+    </div>
+    <button type="button" class="btn primary" style="margin-top:12px" onclick="createShiftUI()" data-i18n="scheduling.newShift.submit">Criar turno (pra mim)</button>
   </div>
 </section>
 
@@ -1942,6 +2122,11 @@ async function deleteRoleConfirm(roleId){
     reservations: ["nav.reservations",  "topbar.subtitle.reservations"],
     roommap:      ["nav.roommap",       "topbar.subtitle.roommap"],
     operations:   ["nav.operations",    "topbar.subtitle.operations"],
+    kitchen:      ["nav.kitchen",       "topbar.subtitle.kitchen"],
+    maintenance:  ["nav.maintenance",   "topbar.subtitle.maintenance"],
+    patrimonialSecurity: ["nav.patrimonialSecurity", "topbar.subtitle.patrimonialSecurity"],
+    parking:      ["nav.parking",       "topbar.subtitle.parking"],
+    scheduling:   ["nav.scheduling",    "topbar.subtitle.scheduling"],
     guests:       ["nav.guests",        "topbar.subtitle.guests"],
     finance:      ["nav.finance",       "topbar.subtitle.finance"],
     inventory:    ["nav.inventory",     "topbar.subtitle.inventory"],
@@ -5241,6 +5426,384 @@ async function loadOperations(){
   }
 }
 
+// ===== MODULOS OPERACIONAIS NOVOS (Sessao 9): Cozinha, Manutencao,
+// Seguranca Patrimonial, Estacionamento, Escala - todos compartilham
+// o mesmo "chamado" generico no backend, entao os helpers de urgencia/
+// status abaixo sao usados pelos 4 primeiros. =====
+
+function urgencyPillClass(urgency){
+  if(urgency === "urgent" || urgency === "high") return "hot";
+  if(urgency === "low") return "cold";
+  return "warm";
+}
+
+function urgencyLabel(urgency){
+  const map = {
+    urgent: T('common.urgency.urgent', 'Urgente'),
+    high: T('common.urgency.high', 'Alta'),
+    normal: T('common.urgency.normal', 'Normal'),
+    low: T('common.urgency.low', 'Baixa'),
+  };
+  return map[urgency] || urgency || "-";
+}
+
+function ticketStatusLabel(status){
+  const map = {
+    open: T('common.ticketStatus.open', 'Aberto'),
+    assigned: T('common.ticketStatus.assigned', 'Atribuído'),
+    in_progress: T('common.ticketStatus.inProgress', 'Em andamento'),
+    resolved: T('common.ticketStatus.resolved', 'Resolvido'),
+  };
+  return map[status] || status || "-";
+}
+
+// ----- Cozinha -----
+
+async function loadKitchen(){
+  const emptyEl = document.getElementById("kitchenOrdersEmpty");
+  const tableEl = document.getElementById("kitchenOrdersTable");
+  const bodyEl = document.getElementById("kitchenOrdersBody");
+
+  try{
+    const res = await fetch("/kitchen/orders", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const orders = await res.json();
+
+    if(!orders.length){
+      if(emptyEl) emptyEl.style.display = "flex";
+      if(tableEl) tableEl.style.display = "none";
+      return;
+    }
+    if(emptyEl) emptyEl.style.display = "none";
+    if(tableEl) tableEl.style.display = "table";
+    if(bodyEl) bodyEl.innerHTML = "";
+
+    const statusPillMap = {pending:"warm", partially_ready:"warm", ready:"ok", delivered:"cold"};
+    const statusLabelMap = {
+      pending: T('kitchen.status.pending', 'Pendente'),
+      partially_ready: T('kitchen.status.partiallyReady', 'Parcialmente pronto'),
+      ready: T('kitchen.status.ready', 'Pronto'),
+      delivered: T('kitchen.status.delivered', 'Entregue'),
+    };
+
+    orders.forEach(o => {
+      const items = o.items || [];
+      const itemsLabel = items.map(i => `${i.quantity}x ${i.menu_item_name}`).join(", ");
+      const nextItem = items.find(i => i.status !== "delivered");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${o.location || "-"}</td>
+        <td>${itemsLabel || "-"}</td>
+        <td><span class="status-pill ${statusPillMap[o.aggregate_status] || 'warm'}">${statusLabelMap[o.aggregate_status] || o.aggregate_status}</span></td>
+        <td>${nextItem ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="advanceKitchenItem(${o.id}, ${nextItem.id}, '${nextItem.status}')">${T('kitchen.orders.advanceBtn', 'Avançar status')}</button>` : "-"}</td>
+      `;
+      bodyEl.appendChild(row);
+    });
+  }catch(e){
+    console.warn("Erro ao carregar /kitchen/orders:", e);
+  }
+}
+
+const KITCHEN_ITEM_STATUS_SEQUENCE = ["pending", "preparing", "ready", "delivered"];
+
+window.advanceKitchenItem = async function(ticketId, itemId, currentStatus){
+  const idx = KITCHEN_ITEM_STATUS_SEQUENCE.indexOf(currentStatus);
+  const nextStatus = KITCHEN_ITEM_STATUS_SEQUENCE[Math.min(idx + 1, KITCHEN_ITEM_STATUS_SEQUENCE.length - 1)];
+  try{
+    await fetch(`/kitchen/orders/${ticketId}/items/${itemId}/status`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ status: nextStatus })
+    });
+    loadKitchen();
+  }catch(e){
+    console.warn("Erro ao avançar status do item:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+// ----- Manutencao -----
+
+async function loadMaintenance(){
+  const emptyEl = document.getElementById("maintenanceEmpty");
+  const tableEl = document.getElementById("maintenanceTable");
+  const bodyEl = document.getElementById("maintenanceBody");
+
+  try{
+    const res = await fetch("/maintenance/tickets", { credentials: "same-origin" });
+    if(res.ok){
+      const tickets = await res.json();
+      if(!tickets.length){
+        if(emptyEl) emptyEl.style.display = "flex";
+        if(tableEl) tableEl.style.display = "none";
+      }else{
+        if(emptyEl) emptyEl.style.display = "none";
+        if(tableEl) tableEl.style.display = "table";
+        if(bodyEl) bodyEl.innerHTML = "";
+        tickets.forEach(t => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${t.location || "-"}</td>
+            <td>${t.description || "-"}</td>
+            <td><span class="status-pill ${urgencyPillClass(t.base_urgency)}">${urgencyLabel(t.base_urgency)}</span></td>
+            <td>${ticketStatusLabel(t.status)}</td>
+            <td><button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="resolveMaintenanceTicket(${t.id})">${T('common.resolveBtn', 'Resolver')}</button></td>
+          `;
+          bodyEl.appendChild(row);
+        });
+      }
+    }
+  }catch(e){
+    console.warn("Erro ao carregar /maintenance/tickets:", e);
+  }
+
+  const recurringCard = document.getElementById("maintenanceRecurringCard");
+  const recurringList = document.getElementById("maintenanceRecurringList");
+  try{
+    const res2 = await fetch("/maintenance/recurring-alerts", { credentials: "same-origin" });
+    if(res2.ok){
+      const alerts = await res2.json();
+      if(!alerts.length){
+        if(recurringCard) recurringCard.style.display = "none";
+      }else{
+        if(recurringCard) recurringCard.style.display = "block";
+        if(recurringList){
+          recurringList.innerHTML = "";
+          alerts.forEach(a => {
+            const li = document.createElement("li");
+            li.textContent = T('maintenance.recurring.item', '{location}: {count} chamados nos últimos 30 dias', { location: a.location, count: a.occurrences });
+            recurringList.appendChild(li);
+          });
+        }
+      }
+    }
+  }catch(e){
+    console.warn("Erro ao carregar /maintenance/recurring-alerts:", e);
+  }
+}
+
+window.resolveMaintenanceTicket = async function(ticketId){
+  try{
+    await fetch(`/maintenance/tickets/${ticketId}/resolve`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({})
+    });
+    loadMaintenance();
+  }catch(e){
+    console.warn("Erro ao resolver chamado:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+// ----- Seguranca Patrimonial -----
+
+async function loadPatrimonialSecurity(){
+  const emptyEl = document.getElementById("patrimonialSecurityEmpty");
+  const tableEl = document.getElementById("patrimonialSecurityTable");
+  const bodyEl = document.getElementById("patrimonialSecurityBody");
+
+  try{
+    const res = await fetch("/patrimonial-security/incidents", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const incidents = await res.json();
+
+    if(!incidents.length){
+      if(emptyEl) emptyEl.style.display = "flex";
+      if(tableEl) tableEl.style.display = "none";
+      return;
+    }
+    if(emptyEl) emptyEl.style.display = "none";
+    if(tableEl) tableEl.style.display = "table";
+    if(bodyEl) bodyEl.innerHTML = "";
+
+    incidents.forEach(t => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${t.location || "-"}</td>
+        <td>${t.description || "-"}</td>
+        <td><span class="status-pill ${urgencyPillClass(t.base_urgency)}">${urgencyLabel(t.base_urgency)}</span></td>
+        <td>${ticketStatusLabel(t.status)}</td>
+        <td><button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="resolveSecurityIncident(${t.id})">${T('common.resolveBtn', 'Resolver')}</button></td>
+      `;
+      bodyEl.appendChild(row);
+    });
+  }catch(e){
+    console.warn("Erro ao carregar /patrimonial-security/incidents:", e);
+  }
+}
+
+window.resolveSecurityIncident = async function(ticketId){
+  try{
+    await fetch(`/patrimonial-security/incidents/${ticketId}/resolve`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({})
+    });
+    loadPatrimonialSecurity();
+  }catch(e){
+    console.warn("Erro ao resolver incidente:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+// ----- Estacionamento -----
+
+async function loadParking(){
+  const vEmptyEl = document.getElementById("parkingVehiclesEmpty");
+  const vTableEl = document.getElementById("parkingVehiclesTable");
+  const vBodyEl = document.getElementById("parkingVehiclesBody");
+
+  try{
+    const res = await fetch("/parking/vehicles", { credentials: "same-origin" });
+    if(res.ok){
+      const vehicles = await res.json();
+      if(!vehicles.length){
+        if(vEmptyEl) vEmptyEl.style.display = "flex";
+        if(vTableEl) vTableEl.style.display = "none";
+      }else{
+        if(vEmptyEl) vEmptyEl.style.display = "none";
+        if(vTableEl) vTableEl.style.display = "table";
+        if(vBodyEl) vBodyEl.innerHTML = "";
+        vehicles.forEach(v => {
+          const serviceLabel = v.service_type === "manobrista" ? T('parking.service.valet', 'Manobrista') : T('parking.service.selfPark', 'Autoatendimento');
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${v.plate || "-"}</td>
+            <td>${v.model || "-"}${v.color ? " · " + v.color : ""}</td>
+            <td>${v.guest_name || "-"}</td>
+            <td>${serviceLabel}</td>
+            <td><button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="checkoutVehicleUI(${v.id})">${T('parking.checkoutBtn', 'Registrar saída')}</button></td>
+          `;
+          vBodyEl.appendChild(row);
+        });
+      }
+    }
+  }catch(e){
+    console.warn("Erro ao carregar /parking/vehicles:", e);
+  }
+
+  const rEmptyEl = document.getElementById("parkingValetEmpty");
+  const rTableEl = document.getElementById("parkingValetTable");
+  const rBodyEl = document.getElementById("parkingValetBody");
+
+  try{
+    const res2 = await fetch("/parking/valet-requests", { credentials: "same-origin" });
+    if(res2.ok){
+      const requests = await res2.json();
+      if(!requests.length){
+        if(rEmptyEl) rEmptyEl.style.display = "flex";
+        if(rTableEl) rTableEl.style.display = "none";
+      }else{
+        if(rEmptyEl) rEmptyEl.style.display = "none";
+        if(rTableEl) rTableEl.style.display = "table";
+        if(rBodyEl) rBodyEl.innerHTML = "";
+        requests.forEach(r => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${r.description || "-"}</td>
+            <td>${ticketStatusLabel(r.status)}</td>
+            <td><button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="resolveValetRequest(${r.id})">${T('parking.valet.doneBtn', 'Concluir')}</button></td>
+          `;
+          rBodyEl.appendChild(row);
+        });
+      }
+    }
+  }catch(e){
+    console.warn("Erro ao carregar /parking/valet-requests:", e);
+  }
+}
+
+window.checkoutVehicleUI = async function(vehicleId){
+  try{
+    await fetch(`/parking/vehicles/${vehicleId}/checkout`, { method: "POST", credentials: "same-origin" });
+    loadParking();
+  }catch(e){
+    console.warn("Erro ao registrar saída do veículo:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+window.resolveValetRequest = async function(ticketId){
+  try{
+    await fetch(`/parking/valet-requests/${ticketId}/resolve`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({})
+    });
+    loadParking();
+  }catch(e){
+    console.warn("Erro ao concluir solicitação de manobrista:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+// ----- Escala -----
+
+const SCHEDULING_DEPARTMENTS = [
+  { key: "kitchen", labelKey: "nav.kitchen", labelFallback: "Cozinha" },
+  { key: "maintenance", labelKey: "nav.maintenance", labelFallback: "Manutenção" },
+  { key: "patrimonial_security", labelKey: "nav.patrimonialSecurity", labelFallback: "Segurança Patrimonial" },
+  { key: "parking", labelKey: "nav.parking", labelFallback: "Estacionamento" },
+];
+
+async function loadScheduling(){
+  const bodyEl = document.getElementById("schedulingOnDutyBody");
+  if(!bodyEl) return;
+  bodyEl.innerHTML = "";
+
+  for(const dept of SCHEDULING_DEPARTMENTS){
+    let onDutyLabel = T('scheduling.noOneOnDuty', 'Ninguém de plantão');
+    let pillClass = "cold";
+    try{
+      const res = await fetch(`/scheduling/on-duty?department=${dept.key}`, { credentials: "same-origin" });
+      if(res.ok){
+        const staff = await res.json();
+        if(staff.length){
+          onDutyLabel = staff.map(s => s.name).join(", ");
+          pillClass = "ok";
+        }
+      }
+    }catch(e){
+      console.warn(`Erro ao carregar plantão de ${dept.key}:`, e);
+    }
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${T(dept.labelKey, dept.labelFallback)}</td>
+      <td><span class="status-pill ${pillClass}">${onDutyLabel}</span></td>
+    `;
+    bodyEl.appendChild(row);
+  }
+}
+
+window.createShiftUI = async function(){
+  const department = document.getElementById("newShiftDepartment")?.value;
+  const date = document.getElementById("newShiftDate")?.value;
+  const start = document.getElementById("newShiftStart")?.value;
+  const end = document.getElementById("newShiftEnd")?.value;
+
+  if(!department || !date || !start || !end){
+    alert(T('scheduling.newShift.missingFields', 'Preencha departamento, data, início e fim.'));
+    return;
+  }
+
+  try{
+    const res = await fetch("/scheduling/shifts", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ department, shift_date: date, start_time: start, end_time: end })
+    });
+    if(!res.ok){
+      alert(T('common.error.generic', 'Erro de conexão.'));
+      return;
+    }
+    loadScheduling();
+  }catch(e){
+    console.warn("Erro ao criar turno:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
 // ===== RECEITAS: /revenue e /offerings =====
 
 window.submitNewOffering = async function(event){
@@ -6157,6 +6720,11 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadSuppliers === "function") loadSuppliers();
     if (typeof loadInventory === "function") loadInventory();
     if (typeof loadOperations === "function") loadOperations();
+    if (typeof loadKitchen === "function") loadKitchen();
+    if (typeof loadMaintenance === "function") loadMaintenance();
+    if (typeof loadPatrimonialSecurity === "function") loadPatrimonialSecurity();
+    if (typeof loadParking === "function") loadParking();
+    if (typeof loadScheduling === "function") loadScheduling();
     if (typeof loadRevenue === "function") loadRevenue();
     if (typeof loadChats === "function") loadChats();
     if (typeof hydrateSettingsFromBackend === "function") hydrateSettingsFromBackend();
@@ -6203,6 +6771,11 @@ window.uploadGuestDocumentUI = async function(guestId){
     reservations: ["loadReservations"],
     roommap: ["loadRoomMap"],
     operations: ["loadOperations"],
+    kitchen: ["loadKitchen"],
+    maintenance: ["loadMaintenance"],
+    patrimonialSecurity: ["loadPatrimonialSecurity"],
+    parking: ["loadParking"],
+    scheduling: ["loadScheduling"],
     guests: ["loadGuests"],
     finance: ["loadFinance"],
     inventory: ["loadInventory", "loadSuppliers"],
