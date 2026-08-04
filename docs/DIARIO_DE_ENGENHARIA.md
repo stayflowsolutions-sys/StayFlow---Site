@@ -4825,3 +4825,218 @@ disponibilidade de nome/username do remetente nesse fluxo específico,
 formato exato do payload do webhook, se a assinatura do webhook no
 painel é uma seção separada da do Messenger, e exigência de Business
 Verification pra esse escopo de permissão.
+
+## Depuração ao vivo do Instagram Direct: quatro causas reais de configuração, uma de cada vez
+
+Usuário tentou conectar a conta real logo depois da fundação da rodada
+anterior. Nenhuma delas era bug de código - cada uma só apareceu
+testando ao vivo com a Meta de verdade, na mesma linha das descobertas
+já registradas nas integrações do Beds24 e do Facebook:
+
+1. **Redirect URI truncada** ao colar no painel da Meta - erro de
+   cópia, não bug de código, mas custou uma rodada de diagnóstico até
+   ficar claro que a URL cadastrada estava incompleta.
+2. **Instagram App Secret truncado** (19-20 caracteres em vez dos 32
+   esperados) - também erro de cópia do painel da Meta, causando a
+   troca de código falhar sempre com a mesma mensagem
+   (`exchange_code_for_instagram_account` devolvendo "A Meta recusou o
+   código de autorização do Instagram.").
+3. **Faltava adicionar a conta como "Instagram tester" no App Meta** -
+   e especificamente com o papel **"Evaluador de Instagram"**, não o
+   "Evaluador" genérico (que só aceita identidade resolvível via
+   Facebook, sem servir pra uma conta puramente Instagram). Aceito pelo
+   lado do Instagram em Configuración → Centro de cuentas → Tu
+   información y permisos → Conexiones de apps → "Apps y sitios web" →
+   aba "Invitaciones de prueba".
+4. **Conta de teste precisou virar pública + profissional** - estava
+   privada, o que bloqueava a geração de token mesmo com o convite de
+   tester já aceito.
+5. **Assinatura do webhook não registrava de verdade via toggle do
+   painel** - corrigido chamando `POST
+   /{ig_id}/subscribed_apps?subscribed_fields=messages` diretamente via
+   API, através de uma rota de diagnóstico temporária criada só pra
+   isso (commits `4042298`, `5c576af`, `de4b175`, `6b609fa`, `093bdbd` -
+   ver limpeza dessas rotas mais abaixo).
+
+De quebra, o próprio fluxo de "Publicar" do painel da Meta passou a
+exigir uma página de política de privacidade publicada **antes mesmo**
+de exigir App Review completo - `privacy.html` criado (referenciando
+LGPD), servido automaticamente pela rota genérica `/<page_name>.html`
+já existente, sem precisar de rota nova (commit `19f69c0`, espelhando
+o que já tinha sido adicionado no frontend).
+
+## Bug raiz encontrado e corrigido: mismatch de esquema de ID do Instagram
+
+Depois das cinco causas de configuração acima resolvidas, a conexão
+completava mas as mensagens reais nunca chegavam no webhook do jeito
+esperado. Investigação encontrou a causa raiz de verdade, mais
+profunda que qualquer ajuste de painel: a troca OAuth
+(`exchange_code_for_instagram_account`, `services/meta_oauth_service.py`)
+devolvia um **"ID com escopo de app"** (ex: `28000058579630962`) no
+campo `user_id` da resposta de troca de token - só que o `entry.id`
+real que chega no payload do webhook, e o ID que a Send API
+(`/{IG_ID}/messages`) espera na URL, usam um **"ID clássico"**
+completamente diferente (ex: `17841416924089707`). Confirmado via
+pesquisa citando a documentação oficial da Meta ("This ID is [the]
+value of the `id` field received in webhook notifications for this
+account") e o fórum da comunidade Meta, com múltiplos desenvolvedores
+relatando o mesmo sintoma.
+
+Corrigido chamando `GET
+https://graph.instagram.com/{INSTAGRAM_API_VERSION}/me?fields=user_id,username`
+logo após a troca de token, e usando ESSE `user_id` (o clássico) como
+`instagram_business_id` salvo em `hostels`, em vez do `user_id` que já
+vinha na resposta da troca de token em si. Enquanto a causa raiz não
+estava confirmada, um mapeamento temporário (`4c0f8cb`, "mapeia ID de
+teste do dev pro hostel real") serviu de ponte pra continuar testando
+o resto do fluxo - removido assim que o fix de verdade
+(`a0d04ef`/`a383f48`) entrou, com o mapeamento temporário corrigido
+pro ID já correto em `136d297`.
+
+## Instagram manda `message_edit` em vez de `message` entre contas de teste
+
+Descoberta no meio da mesma rodada de depuração: mensagens novas de
+verdade, trocadas entre duas contas testadoras do mesmo App em
+Development Mode, às vezes chegavam no webhook como um evento
+`message_edit` (`{"mid": ..., "num_edit": 0}`) em vez de `message` com
+texto - e, pior, sem nenhum campo `sender`, o que quebraria a
+resolução normal de quem mandou a mensagem.
+
+Implementado `_fetch_instagram_message_text(mid, access_token)`
+(`routes/meta_webhook.py`) como fallback: quando o evento chega assim,
+busca o texto (e o remetente) da mensagem por `mid` direto na API, em
+vez de depender do payload do webhook trazer tudo pronto. Corrigido em
+duas rodadas (`e3462f0` implementou o fallback inicial pro texto;
+`f368171` corrigiu o fato de que esse evento também não traz `sender`,
+então o remetente também precisa ser buscado pelo `mid`, não só o
+texto).
+
+## Decisão de produto: StayFlow não é (e nunca foi) um SaaS de nicho hostel
+
+Por instrução explícita do usuário, `index.html` (hero e CTA final da
+landing page) e `privacy.html` foram reescritos pra parar de descrever
+a StayFlow como "SaaS para hostels, hotels and pousadas" e passar a
+usar linguagem de hospedagens de todo tipo e porte (hospitality
+businesses of every kind), com hostel citado só como exemplo, nunca
+como definição ou teto do produto. Commits `89286f6` (HostelBot,
+espelho do frontend) e `d300d6e` (StayFlow---Site, origem).
+
+Isso não é só um ajuste de texto de marketing - é registrado aqui como
+**decisão de produto/filosofia** porque vale pra qualquer descrição
+futura da StayFlow (marketing, texto de App Review, documentação
+técnica), não só essas duas páginas: hostel é apenas a primeira
+categoria de hospedagens atacada, por ser a que o usuário tem acesso
+direto agora pra validar a operação de verdade - a ambição real do
+produto é ser o maior e mais completo software de hotelaria que
+existe, mirando hotéis e resorts de todo porte, não uma ferramenta de
+nicho. O texto do pacote de submissão do App Review (ver mais abaixo)
+já foi escrito respeitando essa mesma diretriz.
+
+## Limpeza de segurança e atualização de versão de API do Instagram
+
+**Limpeza de rotas de diagnóstico**: as duas rotas temporárias criadas
+pra depurar a conexão do Instagram (`/settings/instagram/debug`,
+`/settings/instagram/subscribe`) foram criadas e removidas de
+`routes/settings.py` várias vezes ao longo dos dois dias de depuração
+- reabertas cada vez que surgia mais um teste necessário, e removidas
+de novo logo em seguida, antes de dar acesso total a uma conta de
+revisor externo (o revisor do App Review da Meta, que precisaria de
+permissão de equipe pra acompanhar a configuração). Verificado nesse
+processo, como checagem de segurança explícita: **nenhuma rota de
+Configurações** (WhatsApp/Facebook/Instagram/Beds24) jamais devolve o
+token de acesso bruto pro frontend - todas seguem o mesmo padrão
+`"has_access_token": bool(access_token)` já usado desde a primeira
+integração (WhatsApp), confirmado revisando as quatro rotas de
+`GET /settings/<canal>` uma por uma. Ao final da sessão de depuração
+(02-03/08), nenhuma rota de diagnóstico do Instagram permanece no
+código - removidas definitivamente no commit `f24fb4a`, depois de a
+causa raiz real (ver próxima entrada) já estar confirmada e não
+precisar mais delas.
+
+**Atualização de versão de API**: chamadas do Instagram migradas de
+v20.0 pra v25.0 em `services/instagram_service.py` (`API_BASE`),
+`services/meta_oauth_service.py` (`INSTAGRAM_API_VERSION`) e
+`routes/meta_webhook.py` (`_fetch_instagram_message_text`) - commit
+`820841f`, suspeita de que a versão antiga (lançada em 05/2024)
+pudesse ter comportamento defasado em endpoints mais novos. As
+chamadas do Facebook/Messenger/WhatsApp (`API_BASE` de
+`meta_oauth_service.py`, ainda v20.0) **não foram tocadas** de
+propósito, já que esses canais já funcionam de ponta a ponta.
+
+**Inscrição do webhook não é permanente**: descoberto em 02/08 que a
+inscrição feita manualmente dias antes (via a rota de diagnóstico) já
+tinha se perdido - precisou ser refeita do zero pela mesma rota
+temporária, que devolveu `{"success": true}` da própria Meta de novo
+(commit `9810935`, "Reinclui rota temporaria de reinscricao do webhook
+do Instagram").
+
+## Causa raiz confirmada: restrição de Standard Access da Meta bloqueia o Instagram
+
+Com todas as causas dependentes de código já corrigidas (mapeamento de
+ID, versão de API, inscrição de webhook, fallback de `message_edit`) e
+o sintoma ainda persistindo (mensagens reais não apareciam de forma
+consistente), foi criada mais uma rota de diagnóstico temporária
+(commit `2c4fe0e`) pra chamar o endpoint oficial da **Conversations
+API** do Instagram (`GET /{instagram_business_id}/conversations`)
+direto, com o token salvo de verdade, sem nenhuma camada do StayFlow
+no meio.
+
+**Resultado, com prova técnica definitiva**: a resposta veio `HTTP
+200` com `"data": []` - zero conversas retornadas, mesmo com mensagens
+reais acontecendo naquela conta no exato mesmo momento (visíveis
+direto na caixa de entrada do Instagram/Meta). Isso é prova direta de
+que o problema é uma restrição de **"Standard Access"** da própria
+Meta (confirmado também por pesquisa: "Standard Access only covers
+accounts you own... some features may not work properly until
+Advanced Access"), e não um bug de código - só o **App Review**
+(Advanced Access) resolve isso de verdade. Todas as causas que
+dependiam de código foram testadas e corrigidas ao longo da sessão sem
+resolver o sintoma; só uma restrição de plataforma explica o resultado
+observado.
+
+Com a causa raiz confirmada, a rota de diagnóstico que a revelou (e as
+demais criadas ao longo da depuração) foram removidas em definitivo -
+commit `f24fb4a`, fechando a limpeza de segurança mencionada na
+entrada anterior.
+
+## Pacote de submissão do App Review preparado (Instagram) - ainda não submetido
+
+Com a causa raiz confirmada como uma restrição de plataforma, o
+próximo passo real deixa de ser depuração de código e passa a ser a
+submissão formal do App Review da Meta - preparada nesta sessão, mas
+**ainda não submetida** (ação do usuário, pendente pra 04/08 em
+diante):
+
+- Descrição do caso de uso e justificativas específicas pras duas
+  permissões necessárias (`instagram_business_basic`,
+  `instagram_business_manage_messages`).
+- Passo a passo pro revisor da Meta usando uma **conta de teste
+  dedicada** (`review_meta@gmail.com`), criada via convite de equipe
+  com permissão total - especificamente pra o revisor nunca precisar
+  ter acesso à conta pessoal do usuário.
+- Roteiro de vídeo **honesto**: mostra o fluxo equivalente já
+  funcionando de ponta a ponta no WhatsApp/Messenger, em vez de fingir
+  uma resposta via Instagram que hoje é tecnicamente impossível por
+  causa da restrição de Standard Access confirmada acima.
+- Texto inteiro escrito respeitando a decisão de posicionamento
+  registrada mais acima (nunca descrever a StayFlow como "SaaS de
+  hostel").
+- Um parágrafo explica que a IA já reúne toda a informação necessária
+  pra confirmar uma reserva sozinha, e é tecnicamente capaz disso, mas
+  por escolha deliberada de produto
+  (`create_reservation_from_chat`, `database.py`, sempre cria a
+  reserva com `status='pending'`) a confirmação final fica com a
+  equipe humana, como proteção contra overbooking - configurável por
+  hospedagem, e não uma limitação técnica da IA.
+
+## Primeira validação de mercado fora do nicho hostel: Diplomatic Hotel (Mendoza)
+
+Marco de negócio, não de código: o usuário conectou com uma pessoa que
+trabalha no **Diplomatic Hotel** (Mendoza, Argentina) - um hotel de
+grande porte, não um hostel - que quer apresentar a StayFlow pro hotel
+como piloto. Reunião direta com quem decide está sendo marcada a
+partir de 04/08/2026. Primeira validação concreta de mercado fora do
+nicho hostel, reforçando na prática a decisão de posicionamento
+registrada mais acima (a StayFlow foi desenhada desde o início pra
+hospedagem de qualquer porte, não só pequenos hostels - hostel foi só
+o ponto de partida operacional).

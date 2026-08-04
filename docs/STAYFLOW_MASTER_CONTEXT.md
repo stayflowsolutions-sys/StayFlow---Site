@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.26.0
+\*\*Versão:\*\* 1.38.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 23/07/2026
+\*\*Última atualização:\*\* 03/08/2026
 
 
 
@@ -163,6 +163,7 @@
 | 1.35.0 | 31/07/2026 | Oficial | Retomada a feature pedida pelo usuário (iniciada e revertida numa rodada anterior por falta de tempo): em Configurações → Comunicação e Integrações, os cards de WhatsApp Business, Facebook Messenger, integração com canais (Beds24) e Webhook de saída viraram caixas resumidas e clicáveis (título + status, ex. "✅ Conectado" ou "Não configurado ainda — clique pra conectar"), em vez de formulários sempre abertos na tela. Clicar na caixa abre o formulário completo de sempre dentro do `genericModal` já usado em toda a StayFlow, com os MESMOS IDs de campo e as MESMAS funções de sempre (`saveWhatsappSettings`, `connectFacebook`, `activateBeds24Channel`, etc.) — só passam a existir no DOM enquanto o modal está aberto, em vez de sempre. As quatro funções `loadWhatsappSettings`/`loadFacebookSettings`/`loadBeds24Settings`/`loadOutboundWebhookSettings` (chamadas globalmente ao carregar a sessão) ganharam um trecho novo que atualiza o texto de status da caixa resumida (`whatsappSummaryDesc` etc.) ANTES do guard que existia (`if(!elX) return`) — sem esse reordenamento, o texto de status nunca apareceria fora do modal, já que os elementos do formulário só existem quando ele está aberto. Testado com clique de verdade (Playwright): as 4 caixas abrem o modal certo com os campos certos; salvar dados no modal, fechar e reabrir mostra o valor persistido; texto de status aparece correto (inclusive "não conectado") sem precisar abrir o modal, logo ao carregar a página. Balanceamento de chaves/parênteses e cobertura i18n (14 chaves novas × 5 idiomas) sem quebra. |
 | 1.36.0 | 31/07/2026 | Oficial | Pedido do usuário: reservas vindas do chat (Messenger/WhatsApp) ficam pendentes até a equipe confirmar manualmente — quando confirmada ou cancelada, o hóspede precisa ser avisado de volta no mesmo chat, já com horário de check-in e endereço na confirmação. Novo `notify_guest_reservation_status(hostel_id, reservation_id, status)` (`database.py`), chamado no fim de `update_reservation_status_record` (dentro de `try/except` — falha no envio nunca derruba a mudança de status, que já foi commitada antes). Resolve o canal de volta do hóspede pela linha mais recente em `guest_channel_identities` (com fallback pro telefone em `guests.phone`, pra hóspede antigo sem identidade de canal registrada); só dispara pra WhatsApp e Messenger (Instagram ainda não tem envio implementado). Mensagem de confirmação inclui check-in (com o horário padrão configurado em Configurações → Empresa, se houver), check-out e endereço do hostel (idem); mensagem de cancelamento é mais simples, convidando a reagendar. Texto varia por idioma (`get_guest_language_by_id`, mesmos 5 idiomas do resto da IA), com fallback pt. Reserva sem hóspede vinculado (cadastro manual só com nome) ou sem telefone/PSID resolvível sai em silêncio, sem tentar enviar. Testado (5 cenários: confirmação via Messenger com endereço/horário na mensagem certa e gravada na conversa; cancelamento via WhatsApp; reserva sem canal resolvível não tenta enviar; mudar pra "pending" não notifica; falha simulada no envio não impede o status de ser atualizado) e regressão completa (12 scripts) sem quebra. |
 | 1.37.0 | 31/07/2026 | Oficial | Terceiro canal conectado: Instagram Direct. A base de dados já estava pronta (colunas em `hostels` e 6 funções de CRUD/oauth-state em `database.py`, deixadas prontas quando o Facebook foi feito, mas nunca ligadas a nada). Pesquisa dedicada (documentação atual da Meta) confirmou que o "Instagram API with Instagram Login" é uma stack praticamente paralela ao "Facebook Login for Business" já usado pro Messenger — não uma variação dele: App ID/Secret próprios (`INSTAGRAM_APP_ID`/`INSTAGRAM_APP_SECRET`, variáveis novas, não reaproveitam `META_APP_ID`/`META_APP_SECRET`), autorização em `www.instagram.com/oauth/authorize` com `scope` direto (sem `config_id`), troca de código por token via **POST** em `api.instagram.com` (não GET como o Facebook), token de longa duração e envio de mensagem em `graph.instagram.com` — este último com o token no **header** `Authorization: Bearer` em vez de query param, e endpoint `/<IG_BUSINESS_ID>/messages` em vez de `/me/messages`. Não exige Página do Facebook vinculada (vantagem real do método novo). Novo `services/instagram_service.py` (`send_instagram_message`, `get_instagram_user_profile` — busca de nome é best-effort, sem confirmação oficial de que o endpoint existe pra esse fluxo, cai pra `None` sem quebrar nada — e `download_instagram_attachment`); `services/meta_oauth_service.py` ganhou `get_instagram_authorize_url`/`exchange_code_for_instagram_account`; `routes/meta_oauth.py` ganhou `/oauth/instagram/connect`/`callback`; `routes/settings.py` ganhou `GET/POST/DELETE /settings/instagram` (mesmo contrato do Facebook: form manual como alternativa ao OAuth). `routes/meta_webhook.py` foi generalizado pra um dicionário de adaptadores por canal (`_CHANNEL_ADAPTERS`, com wrappers de indireção pra continuar mockável em teste — capturar a função direto no dict quebraria o patch do nome no módulo) — resolve o canal pelo campo `object` do payload (`"page"` → Messenger, `"instagram"` → Instagram), com fallback tentando os dois lookups de hostel se o campo vier ausente/inesperado; o loop de eventos (texto, imagem, perfil) passou a ser o mesmo código pros dois canais. `database.py`: gate de canais permitidos na notificação automática de reserva confirmada/cancelada (`notify_guest_reservation_status`, v1.36.0) ganhou `"instagram"`. Frontend: terceiro card clicável em Comunicação (mesmo padrão dos outros), modal com os dois modos (Conectar/manual) espelhando o do Facebook; corrigido de brinde um bug real no retorno do OAuth (`handleMetaOAuthReturn` mostrava sempre a mensagem rotulada "Facebook", não importa o canal — trocado pra chaves genéricas `settings.metaOauth.*`). Testado (18 scripts de regressão incluindo 4 novos cenários específicos de Instagram: mensagem de texto roteada certo por `object`, documento salvo e confirmado no canal certo, fallback sem `object`, e reserva confirmada notificando pelo Direct) e teste real de clique em navegador (Playwright) nos três cards de Comunicação juntos, sem erro de console. Pontos que a pesquisa não confirmou com certeza na documentação oficial da Meta (marcados como "a confirmar no primeiro teste ao vivo", mesmo padrão já usado nesta sessão pro Beds24/`config_id` do Facebook): disponibilidade de nome/username do remetente pra esse fluxo específico; formato exato literal do payload do webhook (`object`/`entry.id`); se a assinatura do webhook no painel da Meta é uma seção separada da do Messenger; exigência de Business Verification pra esse escopo. Bloqueio de negócio (não é código): usuário precisa criar o produto "Instagram" no App Meta existente, pegar Instagram App ID/Secret em "API setup with Instagram login", e conectar uma conta de teste — sem isso, o botão "Conectar Instagram" redireciona com erro educado, sem quebrar nada. |
+| 1.38.0 | 03/08/2026 | Oficial | Auditoria completa e correção do Documento Mestre (protocolo de revisão integral, linha a linha, mesmo padrão já aplicado na versão 1.3.0), motivada por uma sessão anterior de Claude não conseguir identificar funcionalidades reais do produto a partir deste documento. Achados e correções principais: (1) catálogo de permissões estava documentado em 12 chaves em três pontos (Capítulo 12, 16.21, 16.22) — `utils/permissions.py` já tinha 14 há algumas versões (`security` e `billing` adicionadas junto com a construção das telas de Segurança e Billing em Configurações, nunca refletidas aqui); (2) Capítulo 16 (Funcionalidades) e Capítulo 17 (Roadmap) ainda descreviam como "não implementado"/"planejado" um conjunto de capacidades já construídas e em produção há várias versões: Mapa de Quartos (housekeeping completo), Ask StayFlow como agente real (34 ferramentas, function calling multi-rodada — o Roadmap ainda dizia "simulação de conversa, sem conexão real com o Backend"), integração com Channel Manager (Beds24, 6 fases completas) e módulo de Segurança (troca de senha, sessões ativas, tentativas de login); (3) módulos inteiros sem nenhum registro no documento: integração com Messenger e Instagram Direct (identidade multi-canal, `guest_channel_identities`), Respostas Rápidas (Quick Replies) na aba Chats, hóspede de Longa Duração, perfil de hóspede com modo leitura/edição e documentos. Confirmado por testes reais: a Conversations API do Instagram (`GET /{instagram_business_id}/conversations`) devolve lista vazia mesmo com mensagens reais acontecendo — restrição de "Standard Access" da própria Meta (contas sem "Advanced Access" em `instagram_business_basic`/`instagram_business_manage_messages` não veem conteúdo de mensagem por essa API até passar por App Review), não um bug do StayFlow; conexão de conta e envio de mensagem continuam funcionando normalmente. Registrado como padrão de segurança estabelecido: nenhuma rota `GET /settings/*` (WhatsApp, Facebook, Instagram, Beds24) devolve o valor bruto de um token de acesso ao Frontend, sempre um booleano (`has_access_token`). Registrada a decisão permanente de posicionamento (já aplicada em `index.html`/`privacy.html`): a StayFlow nunca deve ser descrita como produto nichado em hostel — hostel é a primeira categoria de hospedagem atacada para validar a operação, não o mercado-alvo final, que é hospedagens de todo porte. |
 
 
 
@@ -458,6 +459,26 @@ A plataforma foi concebida para trabalhar ao lado do gestor, ampliando sua capac
 
 
 
+\## Mercado-alvo: hospedagens de todo porte, não um nicho
+
+
+
+\*\*Decisão permanente de posicionamento (registrada em 02/08/2026):\*\* a StayFlow nunca deve ser descrita, em nenhum material voltado para fora da empresa (marketing, App Review, documentação institucional, apresentações comerciais), como um produto nichado em hostels.
+
+
+
+Hostel é apenas a \*\*primeira categoria de hospedagem atacada\*\* — por ser aquela a que o fundador tem acesso direto hoje para validar a operação com um cliente real. A ambição declarada do produto é ser o maior e mais completo software de hotelaria que existe, servindo hospedagens de todo porte: hostels, hotéis, pousadas e resorts, pequenos e grandes.
+
+
+
+Essa decisão já foi aplicada na landing page (`index.html`) e na política de privacidade (`privacy.html`), substituindo linguagem nichada ("for hostels, hotels and pousadas") por linguagem abrangente ("hospitality businesses of every kind"). O piloto comercial em validação a partir de agosto de 2026 é, propositalmente, um hotel de grande porte (fora do nicho hostel), para comprovar essa ambição na prática.
+
+
+
+\---
+
+
+
 \## O que a StayFlow não é
 
 
@@ -531,6 +552,8 @@ Esses pilares orientam permanentemente todas as decisões relacionadas ao produt
 \- O objetivo do produto é transformar dados em decisões.
 
 \- A evolução do software é contínua.
+
+\- A StayFlow serve hospedagens de todo porte; hostel é a primeira categoria atacada, não o mercado-alvo final — nunca deve ser descrita como produto nichado em hostel.
 
 \- Este Documento Mestre representa a principal fonte de verdade da StayFlow.
 
@@ -3301,9 +3324,17 @@ StayFlow---Site/
 
 ├── dashboard.html      (aplicação principal — single-page, abas internas:
 
-│                         dashboard, chats, configurações, reservas,
+│                         dashboard, chats, reservas, mapa de quartos,
 
-│                         financeiro, estoque, operações, receitas)
+│                         opportunity center, hóspedes, operações,
+
+│                         financeiro, estoque, receitas, relatórios,
+
+│                         configurações (com sub-abas, incluindo
+
+│                         segurança e billing) — equipe acessível pelo
+
+│                         menu do avatar no topbar)
 
 ├── Login.html
 
@@ -3797,7 +3828,7 @@ hostels sem necessidade de novo login.
 
 
 Cada hostel define suas próprias funções em `Roles` (nome + lista
-configurável de permissões, de um catálogo de 12 chaves — ver 13.3 e
+configurável de permissões, de um catálogo de 14 chaves — ver 13.3 e
 16.22 — não existem funções fixas no sistema, apenas a função "Admin"
 com todas as permissões e "Staff" sem nenhuma permissão por padrão,
 criadas automaticamente durante a migração de dados existentes).
@@ -3818,6 +3849,91 @@ imediatamente, sem esperar novo login.
 migração de dados e todas as APIs consumidoras (login com múltiplos
 hostels, CRUD de funções e vínculos, exceções individuais) estão
 publicados e validados em produção — ver Capítulo 16, seção 16.22.
+
+
+
+\---
+
+
+
+\### Rooms, Room\_Categories e Beds
+
+
+
+Sustentam o Mapa de Quartos: `room\_categories` armazena as modalidades de
+quarto configuráveis por propriedade (com padrão automático por tipo de
+hospedagem), `rooms` os quartos cadastrados e `beds` cada cama
+individual, com status real (livre, ocupada, precisa de limpeza,
+reservada, manutenção, na lavanderia) e suporte a camas pareadas
+(beliche). `linen\_kits`/`linen\_kit\_items` sustentam o ciclo de
+lavanderia (desconto de roupa de cama limpa no check-out, devolução ao
+estoque quando a lavanderia retorna). Ver Capítulo 16.
+
+
+
+\---
+
+
+
+\### Guest\_Channel\_Identities
+
+
+
+Modelo de identidade multi-canal de verdade: associa um `guest\_id` a um
+identificador externo por canal (`UNIQUE(hostel\_id, channel,
+external\_id)` — telefone no WhatsApp, PSID no Messenger, IGSID no
+Instagram), permitindo que o mesmo hóspede seja reconhecido
+independentemente de por qual canal está conversando. Ver Capítulo 16.
+
+
+
+\---
+
+
+
+\### Beds24\_Master\_Account, Channel\_Room\_Mapping e Channel\_Webhook\_Events
+
+
+
+Sustentam a integração com o Channel Manager (Beds24): credencial
+mestra criptografada (modelo agência/white-label, uma conta StayFlow
+com cada cliente virando sub-propriedade), mapeamento de modalidade de
+quarto para o quarto correspondente na sub-propriedade do Beds24, e
+registro cru de todo evento de webhook recebido antes de qualquer
+interpretação (com proteção de idempotência). Ver Capítulo 16.
+
+
+
+\---
+
+
+
+\### Guest\_Documents e Reservation\_Payments
+
+
+
+`guest\_documents` armazena a galeria de documentos de identidade do
+hóspede (recebidos via WhatsApp/Messenger/Instagram ou upload manual).
+`reservation\_payments` sustenta o saldo devedor/crédito de hóspedes de
+Longa Duração, controlado à parte do valor de reservas fixas. Ver
+Capítulo 16.
+
+
+
+\---
+
+
+
+\### Sessions, Login\_Attempts, Quick\_Replies, Billing e API\_Keys
+
+
+
+`sessions`/`login\_attempts` sustentam o módulo de Segurança (sessões
+ativas revogáveis, histórico de tentativas de login). `quick\_replies`
+sustenta as Respostas Rápidas da aba Chats. `billing` guarda o modelo de
+cobrança por hostel (ainda em definição comercial). `api\_keys` sustenta
+o webhook de saída assinado (Fase 6 da integração de canais). Ver
+Capítulo 16.
 
 
 
@@ -4077,7 +4193,7 @@ Exemplos:
 
 \- Dashboard
 
-\- Chats
+\- Chats, Quick Replies (respostas rápidas)
 
 \- Guests
 
@@ -4087,7 +4203,11 @@ Exemplos:
 
 \- Executive Summary
 
+\- Ask StayFlow (`/ask`, agente conversacional com function calling)
+
 \- Reservations
+
+\- Rooms / Bed Map (Mapa de Quartos, camas, check-in/check-out, lavanderia)
 
 \- Finance
 
@@ -4099,11 +4219,17 @@ Exemplos:
 
 \- Revenue (catálogo de upsells)
 
-\- Settings
+\- Settings (WhatsApp, Facebook, Instagram, Beds24, webhook de saída)
 
 \- Team e Roles (gestão de equipe, funções e permissões individuais)
 
+\- Security (troca de senha, sessões, tentativas de login)
+
 \- WhatsApp Webhook (integração com a Meta Cloud API)
+
+\- Meta Webhook (Messenger e Instagram Direct, endpoint compartilhado)
+
+\- Beds24 Webhook (entrada de reservas de OTAs via Channel Manager)
 
 
 
@@ -4191,6 +4317,13 @@ A responsabilidade pela segurança pertence ao Backend.
 
 
 
+\*\*Padrão estabelecido (credenciais de integração):\*\* nenhuma rota
+`GET /settings/*` (WhatsApp, Facebook, Instagram, Beds24) devolve o
+valor bruto de um token de acesso para o Frontend — sempre apenas um
+booleano (`has\_access\_token`). Ver também Capítulo 16, seção 16.28.
+
+
+
 \---
 
 
@@ -4207,8 +4340,6 @@ A arquitetura das APIs foi projetada para permitir futuras integrações com:
 
 \- PMS;
 
-\- Channel Managers;
-
 \- motores de reserva;
 
 \- plataformas de pagamento;
@@ -4216,6 +4347,14 @@ A arquitetura das APIs foi projetada para permitir futuras integrações com:
 \- parceiros estratégicos;
 
 \- serviços de Inteligência Artificial.
+
+
+
+Channel Managers (Beds24) já deixou de ser integração futura: está
+
+implementado e validado em produção desde a versão 1.18.0, com seis
+
+fases concluídas (ver Capítulo 16, seção 16.25).
 
 
 
@@ -4697,13 +4836,15 @@ Na versão atual, os principais módulos são:
 
 \- Opportunities;
 
-\- Chats;
+\- Chats (com Respostas Rápidas);
 
 \- Guest Profile;
 
 \- Recent Activity;
 
 \- Reservas;
+
+\- Mapa de Quartos (housekeeping);
 
 \- Financeiro;
 
@@ -4715,7 +4856,11 @@ Na versão atual, os principais módulos são:
 
 \- Receitas (catálogo de upsells);
 
+\- Equipe (gestão de funções e permissões);
+
 \- Configurações;
+
+\- Ask StayFlow (agente conversacional flutuante);
 
 \- Navegação Principal.
 
@@ -4799,17 +4944,23 @@ Entre as evoluções previstas estão:
 
   implementado, ver Capítulo 16);
 
-\- Ocupação em tempo real;
-
-\- Housekeeping (Mapa de Camas);
+\- Ocupação em tempo real (o Mapa de Quartos já cobre o status físico
+  de cada cama — falta uma visão agregada de ocupação por período);
 
 \- Calendário Operacional;
 
-\- Notificações Inteligentes;
-
-\- Comandos por IA;
+\- Notificações Inteligentes nativas no aparelho (Web Push API, service
+  worker, VAPID) — deliberadamente adiadas; o alerta operacional dentro
+  do próprio Dashboard (sino do topbar) já está implementado (ver
+  Capítulo 16);
 
 \- Indicadores personalizados.
+
+
+
+Já implementados nesta frente, portanto removidos da lista de futuro:
+Housekeeping (Mapa de Camas — ver 16.24) e Comandos por IA (Ask
+StayFlow como agente real — ver 16.27).
 
 
 
@@ -5062,7 +5213,23 @@ Concentrar informações relevantes sobre cada hóspede.
 
 
 
-\- dados cadastrais;
+\- perfil completo do hóspede (atualizado em 31/07/2026, versão 1.22.0
+  em diante): contato editável (nome, telefone, email, endereço, data
+  de nascimento, nacionalidade), documento (tipo + número, editáveis) e
+  galeria de fotos do documento, com upload manual ou recebimento
+  automático via WhatsApp/Messenger;
+
+\- abre em modo leitura por padrão (campos fixos, "—" quando vazio), com
+  botão explícito "Editar" para alternar ao formulário;
+
+\- histórico completo de estadias com status e valor, incluindo saldo
+  devedor/crédito calculado ao vivo para hóspedes de Longa Duração;
+
+\- selo discreto do canal de origem (WhatsApp/Messenger/Instagram);
+
+\- acessível por clique no nome do hóspede em qualquer lugar do sistema
+  que já exiba `guest\_id` (aba Hóspedes, Reservas, morador de Longa
+  Duração, lista de reservas canceladas);
 
 \- histórico de conversas;
 
@@ -5092,21 +5259,29 @@ Persistência de:
 
 
 
-\- hostels (multi-tenant, com credenciais de WhatsApp por unidade);
+\- hostels (multi-tenant, com credenciais de WhatsApp, Facebook Messenger, Instagram Direct e Beds24 por unidade);
 
-\- hóspedes;
+\- identidade única de pessoa, funções por hostel e exceções individuais de permissão;
 
-\- mensagens (com timestamp por mensagem);
+\- hóspedes, com identidade multi-canal e documentos de identidade;
+
+\- mensagens (com timestamp por mensagem) e respostas rápidas (Quick Replies);
 
 \- oportunidades;
 
-\- reservas;
+\- reservas, incluindo hóspede de Longa Duração com saldo devedor/crédito;
+
+\- Mapa de Quartos (modalidades, quartos, camas, ciclo de lavanderia);
+
+\- credenciais e mapeamento do Channel Manager Beds24, com log cru de webhooks recebidos;
 
 \- configurações do hostel;
 
 \- fornecedores e itens de estoque;
 
-\- catálogo de experiências/upsells (offerings).
+\- catálogo de experiências/upsells (offerings);
+
+\- sessões ativas e tentativas de login.
 
 
 
@@ -5136,6 +5311,8 @@ O banco representa a memória operacional da plataforma.
 
 \- Chats;
 
+\- Quick Replies (respostas rápidas);
+
 \- Guests;
 
 \- Opportunities;
@@ -5144,7 +5321,12 @@ O banco representa a memória operacional da plataforma.
 
 \- Executive Summary;
 
+\- Ask StayFlow (`/ask`, agente conversacional com histórico próprio);
+
 \- Reservations;
+
+\- Rooms / Bed Map (Mapa de Quartos: modalidades, quartos, camas,
+  check-in/check-out, lavanderia);
 
 \- Finance;
 
@@ -5156,9 +5338,19 @@ O banco representa a memória operacional da plataforma.
 
 \- Revenue;
 
-\- Settings;
+\- Team e Roles (gestão de equipe, funções e permissões);
 
-\- WhatsApp Webhook.
+\- Security (troca de senha, sessões ativas, tentativas de login);
+
+\- Settings (inclui Beds24, Meta OAuth de Facebook/Instagram);
+
+\- WhatsApp Webhook;
+
+\- Meta Webhook (Messenger e Instagram Direct, endpoint compartilhado);
+
+\- Beds24 Webhook (entrada de reservas de OTAs via Channel Manager);
+
+\- Webhook de saída (notificação assinada para sistemas de clientes).
 
 
 
@@ -5276,7 +5468,10 @@ Essa limitação é relevante para o produto por afetar hóspedes brasileiros de
 
 
 
-Gerenciar as reservas dos hóspedes de cada hostel.
+Gerenciar as reservas dos hóspedes de cada hostel, de qualquer origem
+(manual, WhatsApp, Messenger, Instagram ou OTA via Beds24), com o mesmo
+nível de controle da equipe sobre o ciclo completo (pendente até
+check-out).
 
 
 
@@ -5284,13 +5479,41 @@ Gerenciar as reservas dos hóspedes de cada hostel.
 
 
 
-\- listagem e criação de reservas;
+\- listagem e criação de reservas, com seletor de cama real (dependente
+  da modalidade escolhida, sufixo "Beliche - Cima/Baixo" quando
+  aplicável) e cálculo automático de valor pelo preço configurado (sem
+  sobrescrever valor digitado manualmente, ex.: desconto negociado);
 
-\- atualização de status (pendente, confirmada, check-in, check-out,
+\- botões "Check-in"/"Check-out" na própria linha da reserva,
+  reaproveitando as mesmas rotas do Mapa de Quartos — confirmam a
+  mudança de status físico da cama (`checked\_in\_at`/`checked\_out\_at`),
+  distinto do status comercial da reserva;
 
-  cancelada) diretamente na tabela;
+\- coluna de Origem com selo formatado por canal (Airbnb, Booking.com,
+  Hostelworld, WhatsApp, Direto etc.);
 
-\- vínculo com o hóspede correspondente.
+\- nome do hóspede clicável, levando ao perfil completo (ver 16.5);
+
+\- modal "Ver cancelamentos", com opção de reativar sem sair da tela;
+
+\- \*\*reserva criada por WhatsApp/Messenger/Instagram nasce sempre como
+  `pending`\*\* — a IA já reúne toda a informação necessária (datas,
+  modalidade, cama disponível, preço) e é tecnicamente capaz de
+  confirmar sozinha, mas essa é uma escolha deliberada de produto
+  (controle da equipe, proteção contra overbooking), não uma limitação
+  técnica; reserva criada manualmente nasce já confirmada;
+
+\- ao confirmar ou cancelar uma reserva originada de chat, o hóspede é
+  avisado de volta no mesmo canal (`notify\_guest\_reservation\_status`),
+  com horário de check-in e endereço na confirmação (WhatsApp e
+  Messenger; Instagram ainda sem envio de mensagem implementado);
+
+\- suporte a hóspede de Longa Duração (estadia sem data de saída fixa,
+  saldo devedor/crédito calculado sob demanda — ver 16.6);
+
+\- sincronização bidirecional com o Beds24 quando a reserva/estadia não é
+  de Longa Duração (ver Integração com Channel Manager, mais adiante
+  neste capítulo).
 
 
 
@@ -5322,7 +5545,14 @@ na plataforma.
 
 \- reaproveita dados de Reservas e Opportunities, sem duplicar informação
 
-  em tabela própria.
+  em tabela própria;
+
+\- inclui pagamentos de hóspede de Longa Duração (`reservation\_payments`)
+  na receita confirmada — valor de reserva fixa continua vindo de
+  `reservations.amount`, já que são modelos de cobrança diferentes;
+
+\- extrato de movimentações com linha própria para pagamento de estadia
+  de Longa Duração.
 
 
 
@@ -5420,17 +5650,24 @@ Agregar alertas operacionais do dia a dia em um único lugar.
 
 
 
-\- alertas de check-in/check-out pendente;
+\- alertas de check-in/check-out pendente, incluindo chegada do dia sem
+  check-in físico ainda confirmado;
 
 \- alertas de oportunidade urgente sem resposta;
 
-\- alertas de estoque baixo.
+\- alertas de estoque baixo;
 
+\- tarefas de limpeza (housekeeping) espelhadas em tempo real do Mapa de
+  Quartos: toda cama que sai do check-out entra automaticamente na lista
+  de limpeza, com contagem no sininho de notificações do topbar (ver
+  Mapa de Quartos, mais adiante neste capítulo);
 
+\- alerta de nova reserva vinda de qualquer canal automático (WhatsApp,
+  Messenger, Instagram, Beds24/qualquer OTA) nas últimas 24h;
 
-Tarefas de limpeza (housekeeping) permanecem vazias intencionalmente —
-
-dependem do Mapa de Camas, ainda não implementado (ver Roadmap Oficial).
+\- atualização automática entre Operações e Mapa de Quartos após qualquer
+  ação que muda status de cama/reserva (check-in, check-out, marcar
+  como limpa), sem precisar recarregar a página.
 
 
 
@@ -5698,7 +5935,7 @@ acessível tanto pelo menu principal quanto pelo atalho da barra lateral.
   específica;
 \- desativação e reativação de acesso, sem apagar histórico;
 \- aba dedicada de gestão de Funções: criar, editar (nome e permissões)
-  e apagar funções do hostel, com seleção das 12 permissões disponíveis
+  e apagar funções do hostel, com seleção das 14 permissões disponíveis
   por checkbox.
 
 
@@ -5740,16 +5977,19 @@ da equipe pode ver e fazer na plataforma.
 
 
 
-\- catálogo de 12 permissões, uma por seção principal do produto
+\- catálogo de 14 permissões, uma por seção principal do produto
   (dashboard, chats, opportunities, reservations, operations, guests,
-  finance, reports, inventory, revenue, settings, team), centralizado
-  numa única fonte de verdade reutilizada por todas as camadas do
-  sistema (migração de dados, controle de acesso das rotas, interface);
+  finance, reports, inventory, revenue, settings, team, security,
+  billing — as duas últimas adicionadas junto com a construção das
+  telas de Segurança e Billing dentro de Configurações), centralizado
+  numa única fonte de verdade (`utils/permissions.py`) reutilizada por
+  todas as camadas do sistema (migração de dados, controle de acesso
+  das rotas, interface);
 \- toda rota protegida da plataforma exige a permissão específica
   correspondente à sua área, verificada a cada requisição — nunca
   apenas "estar logado";
 \- funções totalmente configuráveis por hostel (o administrador decide
-  quais das 12 permissões cada função concede, sem funções fixas
+  quais das 14 permissões cada função concede, sem funções fixas
   impostas pelo sistema além dos padrões "Admin" e "Staff" criados
   automaticamente na migração);
 \- exceções de permissão por pessoa individual, por cima do padrão da
@@ -5822,10 +6062,356 @@ sem depender de alteração de código.
 O controle de "resposta automática" permanece desabilitado na
 interface, com aviso explícito ao administrador. Este controle só
 poderá ser implementado de forma real quando existir um mecanismo de
-revisão humana antes do envio de mensagens (ver "Ask StayFlow como
-agente de ação", Capítulo 17) — sem esse mecanismo, desativar a
-resposta automática significaria simplesmente parar de responder o
-hóspede, o que não é o comportamento pretendido pelo controle.
+revisão humana antes do envio de mensagens de atendimento — o padrão
+propor→aprovar→enviar já existe para ações proativas específicas
+(pedido de reposição a fornecedor, aviso proativo a hóspede — ver 16.27)
+mas ainda não cobre o fluxo geral de resposta automática do chat. Sem
+esse mecanismo, desativar a resposta automática significaria
+simplesmente parar de responder o hóspede, o que não é o comportamento
+pretendido pelo controle.
+
+
+
+\---
+
+
+
+\## 16.24 Mapa de Quartos (Room Map / Housekeeping)
+
+
+
+\*\*Status:\*\* Implementado e validado em produção
+
+
+
+\### Objetivo
+
+
+
+Dar visibilidade em tempo real do status físico de cada cama da
+propriedade e automatizar o ciclo operacional de limpeza e lavanderia,
+eliminando controle manual em papel ou planilha.
+
+
+
+\### Capacidades atuais
+
+
+
+\- modalidades de quarto configuráveis por propriedade (`room\_categories`),
+  com padrão automático por tipo de hospedagem (hostel ganha
+  Privado/Compartilhado, hotel/pousada/resort ganham Standard/Luxo);
+
+\- cadastro de quartos em lote e camas normais ou pareadas (beliche,
+  com sufixo "Cima"/"Baixo"), com edição e exclusão (bloqueada se a
+  cama estiver ocupada);
+
+\- cinco estados visuais reais, refletidos em mapa colorido: livre,
+  ocupada (vermelha), ocupada por hóspede de Longa Duração (roxa,
+  distinta da ocupação comum), precisa de limpeza (amarela), reservada
+  (azul — só a partir do dia do check-in, não semanas antes) e em
+  manutenção;
+
+\- ciclo completo de lavanderia: check-out move a cama para a lista de
+  limpeza automaticamente; marcar como limpa desconta roupa de cama
+  limpa do estoque e move para "na lavanderia"; ação de devolução ao
+  estoque quando a lavanderia retorna;
+
+\- check-in/check-out confirmados a partir do próprio Mapa de Quartos ou
+  da aba Reservas (mesmas rotas), com seletor de cama livre que
+  pré-seleciona a já atribuída automaticamente por canal/WhatsApp;
+
+\- lista de limpeza espelhada em tempo real na aba Operações e no
+  sininho de notificações do topbar;
+
+\- ações de criação (categoria, quarto, cama) organizadas em um único
+  menu "☰ Ações" no card do mapa, abrindo modal central, deixando o
+  mapa visual como conteúdo permanente da tela.
+
+
+
+\---
+
+
+
+\## 16.25 Integração com Channel Manager (Beds24)
+
+
+
+\*\*Status:\*\* Implementado e validado em produção (6 fases concluídas)
+
+
+
+\### Objetivo
+
+
+
+Receber e sincronizar reservas de OTAs (Booking.com, Airbnb,
+Hostelworld, Expedia, Agoda, Vrbo) automaticamente, sem exigir que o
+hóspede fale com o hostel para reservar por fora do StayFlow, e sem
+expor ao cliente final nenhuma plataforma terceira no meio do processo.
+
+
+
+\### Capacidades atuais
+
+
+
+\- modelo agência/white-label: uma conta master do StayFlow no Beds24,
+  cada hostel-cliente vira uma sub-propriedade, sem custo nem conta
+  separada para o cliente final;
+
+\- mapeamento de cada modalidade de quarto para o quarto correspondente
+  na sub-propriedade do Beds24, com opção de criar o quarto lá direto
+  pela própria StayFlow;
+
+\- \*\*webhook de entrada\*\* (`POST /webhook/beds24/<secret>`) recebe em
+  tempo real toda notificação de reserva nova ou alterada vinda de
+  qualquer OTA conectada; grava o payload cru em `channel\_webhook\_events`
+  antes de qualquer interpretação (nunca perde uma reserva por erro de
+  formato de campo); protegido por idempotência
+  (`try\_claim\_webhook\_event`/`finalize\_webhook\_event`, chave inclui
+  `modifiedTime`) e por proteção contra duplicação por eco (quando a
+  StayFlow cria a reserva primeiro e o Beds24 ecoa de volta quase na
+  hora — `find\_recent\_unlinked\_stayflow\_reservation` vincula em vez de
+  duplicar);
+
+\- cria (`create\_reservation\_from\_channel`) ou atualiza
+  (`update\_reservation\_from\_channel`) a reserva local automaticamente,
+  sempre usando o valor vindo do canal/OTA (nunca recalculado pelo
+  preço do StayFlow, já que a OTA pode vender com desconto);
+
+\- \*\*saída/disponibilidade\*\*: toda criação, cancelamento ou reversão de
+  cancelamento de reserva recalcula e empurra a disponibilidade real da
+  modalidade para o Beds24 (`sync\_availability\_to\_channel`), fechando o
+  risco de overbooking entre canais;
+
+\- \*\*reserva de verdade\*\* (não só disponibilidade agregada):
+  `sync\_booking\_to\_channel` cria a reserva no Beds24 na primeira vez que
+  a origem é manual/WhatsApp/Messenger/Instagram e a reserva sai de
+  `pending` (nunca publica reserva ainda pendente, nunca roda para
+  reserva vinda do próprio Beds24, nunca roda para hóspede de Longa
+  Duração);
+
+\- \*\*webhook de saída genérico\*\*: cliente com sistema próprio cadastra
+  uma URL em Configurações → Integrações e recebe um `POST` JSON
+  assinado (`X-StayFlow-Signature`, HMAC-SHA256) para toda reserva
+  criada, alterada, cancelada ou com check-in/check-out feito, de
+  qualquer origem;
+
+\- \*\*proteção multi-canal contra overbooking já em produção, não apenas
+  planejada\*\*: `find\_available\_beds` (mecanismo de disponibilidade
+  usado pela IA de atendimento) já considera reservas vindas de
+  qualquer canal — IA, painel manual ou OTA via Beds24 — no mesmo
+  cálculo.
+
+
+
+\---
+
+
+
+\## 16.26 Integração com Messenger e Instagram Direct
+
+
+
+\*\*Status:\*\* Messenger implementado e validado em produção; Instagram
+Direct conectado e funcional para envio, com uma limitação de
+plataforma conhecida no recebimento via API de conversas
+
+
+
+\### Objetivo
+
+
+
+Estender o mesmo atendimento por Inteligência Artificial já validado no
+WhatsApp para os outros canais de mensagem que o hóspede já usa no
+dia a dia, com uma única identidade de conversa por hóspede
+independente do canal.
+
+
+
+\### Capacidades atuais
+
+
+
+\- modelo de identidade multi-canal de verdade (`guest\_channel\_identities`,
+  `UNIQUE(hostel\_id, channel, external\_id)`), em vez de forçar PSID/IGSID
+  dentro de `guests.phone`; hóspede de WhatsApp criado antes da
+  integração é adotado pelo telefone já existente, sem duplicar;
+
+\- conexão via OAuth real para os dois canais (Facebook Login for
+  Business com Configuration para Messenger; Instagram API with
+  Instagram Login, stack separada com App ID/Secret próprios, para
+  Instagram), com alternativa de configuração manual (Page/Business ID
+  + Access Token) para os dois;
+
+\- webhook único `/webhook/meta` para os dois canais, resolvido pelo
+  campo `object` do payload (`"page"` = Messenger, `"instagram"` =
+  Instagram), processado pelo mesmo pipeline de IA do WhatsApp;
+
+\- Messenger/Instagram já entregam a conversa identificada — a IA usa o
+  nome do perfil automaticamente na primeira mensagem, sem precisar
+  perguntar (diferente do WhatsApp, onde o número não revela
+  identidade);
+
+\- recebimento de documento/imagem enviado pelo hóspede (Messenger via
+  CDN da Send API, Instagram via `download\_instagram\_attachment`);
+
+\- selo colorido do canal de origem na aba Chats, no título da conversa e
+  no perfil do hóspede;
+
+\- notificação automática de reserva confirmada/cancelada (ver 16.10)
+  chega também por Messenger e Instagram;
+
+\- IA sugere o número real de WhatsApp do hostel como contato
+  alternativo quando a conversa acontece por um canal que não é o
+  WhatsApp.
+
+
+
+\### Limitação de plataforma conhecida (Instagram)
+
+
+
+A Conversations API oficial do Instagram (`GET
+/{instagram\_business\_id}/conversations`) devolve `HTTP 200` com `"data":
+[]` (lista vazia) mesmo havendo mensagens reais acontecendo na conta —
+confirmado por evidência técnica direta, não é bug de código do
+StayFlow (versão de API, reinscrição de webhook e endpoint oficial já
+descartados como causa). É uma restrição de "Standard Access" da
+própria Meta: contas de teste/desenvolvimento não têm acesso total ao
+conteúdo de mensagem por essa API até o aplicativo passar por App
+Review e ganhar "Advanced Access" para as permissões
+`instagram\_business\_basic` e `instagram\_business\_manage\_messages`.
+Conexão de conta, assinatura de webhook e envio de mensagem continuam
+funcionando normalmente — a submissão de App Review está preparada,
+pendente de envio pelo usuário.
+
+
+
+\---
+
+
+
+\## 16.27 Ask StayFlow — Agente Conversacional Real
+
+
+
+\*\*Status:\*\* Implementado e validado em produção
+
+
+
+\### Objetivo
+
+
+
+Permitir que o gestor converse em linguagem natural com a operação do
+próprio hostel — não apenas visualizar dados, mas fazer a IA executar
+consultas e ações reais sobre eles.
+
+
+
+\### Capacidades atuais
+
+
+
+\- agente real com function calling multi-rodada (não mais uma
+  simulação de conversa), autenticado, com 34 ferramentas escopadas
+  pela permissão de quem está perguntando;
+
+\- endpoint `/ask` com histórico de conversa próprio, persistido em SQL
+  (`ask\_messages`), separado do histórico de conversa com hóspedes;
+
+\- fase de ações reais: pedido de reposição a fornecedor e aviso
+  proativo a hóspede, ambos com fluxo propor→aprovar→enviar via
+  WhatsApp Business antes de qualquer mensagem sair para fora do
+  sistema;
+
+\- responde no idioma atual selecionado no painel.
+
+
+
+\---
+
+
+
+\## 16.28 Segurança
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Dar ao usuário controle e visibilidade sobre o próprio acesso à
+plataforma.
+
+
+
+\### Capacidades atuais
+
+
+
+\- troca de senha (`POST /security/change-password`);
+
+\- listagem de sessões ativas por dispositivo/navegador, com opção de
+  revogar uma sessão específica (`GET`/`DELETE /security/sessions`),
+  bloqueando o próximo acesso dela imediatamente;
+
+\- histórico das últimas tentativas de login, com indicação de sucesso
+  ou falha (`GET /security/login-attempts`);
+
+\- autenticação em duas etapas (2FA): ainda não implementada, sinalizada
+  como "Em breve" na própria interface.
+
+
+
+\### Padrão de segurança estabelecido
+
+
+
+Nenhuma rota `GET /settings/*` (WhatsApp, Facebook, Instagram, Beds24)
+devolve o valor bruto de um `access\_token` para o Frontend — sempre
+apenas um booleano (`has\_access\_token`). Essa é uma propriedade de
+design consistente em todo o sistema, não uma decisão isolada de um
+único canal.
+
+
+
+\---
+
+
+
+\## 16.29 Respostas Rápidas (Quick Replies)
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Permitir que a equipe responda perguntas frequentes na aba Chats sem
+digitar o mesmo texto repetidamente.
+
+
+
+\### Capacidades atuais
+
+
+
+\- listagem, criação e exclusão de respostas rápidas por hostel
+  (`GET`/`POST`/`DELETE /quick-replies`), protegidas pela permissão de
+  `chats`.
 
 
 
@@ -5943,7 +6529,13 @@ Ele representa o planejamento oficial da StayFlow.
 
 
 
-Plataforma Base em desenvolvimento.
+Plataforma multi-canal (WhatsApp, Messenger, Instagram Direct) com
+
+Channel Manager (Beds24), Mapa de Quartos, agente conversacional real
+
+(Ask StayFlow) e sistema de permissões multi-hostel em produção. Em
+
+validação comercial fora do nicho hostel (ver Capítulo 1).
 
 
 
@@ -5951,7 +6543,13 @@ Plataforma Base em desenvolvimento.
 
 
 
-Consolidar a primeira versão operacional da StayFlow com todos os componentes principais integrados.
+Validar a StayFlow em um piloto de hospedagem de grande porte fora do
+
+nicho hostel (primeiro cliente potencial fora da validação inicial),
+
+consolidando as frentes de atendimento multi-canal e integração com
+
+Channel Manager que sustentam essa apresentação.
 
 
 
@@ -5959,75 +6557,73 @@ Prioridades atuais:
 
 
 
-\- corrigir a responsividade da plataforma para dispositivos móveis —
+\- \*\*Instagram Direct — App Review da Meta\*\*: submissão preparada,
 
-  \*\*confirmação do fix de navbar concluída em 13/07/2026\*\*: testado
+  pendente de envio pelo usuário, para obter "Advanced Access" às
 
-  fisicamente em Safari iOS real (não apenas ferramenta headless),
+  permissões `instagram\_business\_basic`/`instagram\_business\_manage\_messages`
 
-  navbar permanece estável durante scroll rápido, sem piscar. Pendente:
+  e destravar a Conversations API (ver Capítulo 16, seção 16.26);
 
-  correção de um seletor de idioma que aparece cortado fora da tela em
+\- \*\*modelo de cobrança (Billing)\*\*: única categoria do menu de
 
-  telas mobile estreitas (bug real confirmado, correção adiada de
+  Configurações ainda sem construção real — tela hoje mostra apenas
 
-  propósito para a fase de lapidação visual completa, já que o layout
+  estado vazio ("Modelo de cobrança em definição"), sem processador de
 
-  mobile do cabeçalho será reorganizado por completo);
+  pagamento nem plano ativo integrado;
 
-\- \*\*terminar de concluir o menu de Configurações\*\* — as categorias
+\- \*\*notificações nativas no aparelho\*\* (Web Push API, service worker,
 
-  Equipe (16.21/16.22) e IA (16.23) já estão 100% funcionais. Restam as
+  VAPID) — deliberadamente adiadas para depois da validação comercial
 
-  5 categorias vazias (Empresa, Comunicação, Integrações além do
+  atual; o alerta operacional dentro do próprio Dashboard já cobre a
 
-  WhatsApp, Segurança, Billing, Developer), que continuam sendo apenas
+  necessidade imediata;
 
-  botões visuais, sem decisão tomada sobre construir cada uma ou
+\- \*\*moeda/câmbio automático por país\*\* — pedido do usuário registrado
 
-  remover;
+  desde a versão 1.22.0 (regra de margem de 30 pontos abaixo do câmbio
 
-\- \*\*criação de reserva via modal flutuante\*\* — reaproveitando o sistema
+  real), ainda não iniciado;
 
-  de modal genérico já construído para o painel de Equipe, em vez de
+\- \*\*autenticação em duas etapas (2FA)\*\* — sinalizada como "Em breve" na
 
-  exigir navegação para outra tela;
-
-\- \*\*corrigir a arquitetura de tradução do Dashboard\*\* — a landing page
-
-  (`index.html`) já possui um sistema central de tradução (PT/EN/ES);
-
-  o Dashboard não segue o mesmo padrão de forma consistente, com partes
-
-  traduzidas e partes que permanecem no idioma original independente da
-
-  seleção. Correção priorizada antes de adicionar francês, alemão e
-
-  possivelmente japonês ao seletor de idioma, para não multiplicar a
-
-  inconsistência existente;
-
-\- cadastrar o Hostel Lagares como o primeiro hostel-cliente real de
-
-  produção, com cadastro, login e número de WhatsApp próprios — separado
-
-  da conta de demonstração de vendas atualmente em uso pelo fundador;
+  própria interface de Segurança, ainda não implementada;
 
 \- avaliar estratégia de atendimento para hóspedes localizados no Brasil,
 
-  dada a limitação de mensageria descrita no Capítulo 16 — decisão já
+  dada a limitação de mensageria do WhatsApp descrita no Capítulo 16 —
 
-  tomada de registrar uma segunda conta de WhatsApp Business localizada
+  decisão já tomada de registrar uma segunda conta de WhatsApp Business
 
-  no Brasil, implementação pendente;
+  localizada no Brasil, implementação pendente;
 
-\- concluir a experiência completa do frontend;
+\- separação definitiva de infraestrutura de deploy (ver 17.3) — dívida
 
-\- consolidar os Motores de Inteligência;
+  técnica conhecida, ainda ativa;
 
 \- ampliar automações operacionais;
 
 \- evoluir continuamente a experiência do usuário.
+
+
+
+\*\*Concluído desde a última grande revisão deste capítulo\*\* (não repetir
+
+como pendência): responsividade mobile da navbar; menu de Configurações
+
+com Empresa, Comunicação (WhatsApp/Messenger/Instagram), Integrações
+
+(Beds24 e webhook de saída) e Segurança todos funcionais — resta apenas
+
+Billing; arquitetura de tradução do Dashboard unificada (i18n-core.js,
+
+5 idiomas, ~570 chaves); criação de reserva via modal flutuante; Ask
+
+StayFlow como agente real; Mapa de Quartos completo; integração com
+
+Channel Manager (Beds24, 6 fases).
 
 
 
@@ -6059,59 +6655,35 @@ Entre elas:
 
 \- Agenda Operacional;
 
-\- Housekeeping (Mapa de Camas e fluxo de limpeza);
-
 \- Gestão Financeira avançada (fluxo de caixa, projeções — a consolidação
 
   básica já está implementada, ver Capítulo 16);
 
-\- \*\*Ask StayFlow como agente de ação\*\* — hoje esse botão flutuante do
+\- conexão direta com Booking.com/Airbnb via parceria de API própria —
 
-  Dashboard é uma simulação de conversa, sem conexão real com o Backend.
+  pesquisa de 13/07/2026 confirmou acesso fechado a desenvolvedores
 
-  Visão registrada em 19/07/2026: usar o mesmo mecanismo de function
+  independentes; hoje contornado via Channel Manager (Beds24, ver
 
-  calling já validado na captura do nome do hóspede (ver Capítulo 16,
+  Capítulo 16, seção 16.25), que já resolve a necessidade prática de
 
-  seção 16.19) para permitir que o usuário converse com a IA sobre a
+  receber e sincronizar reservas dessas OTAs. Conexão direta permanece
 
-  própria operação e ela execute ações reais (ex.: relatar a chegada de
-
-  uma compra e a IA atualizar o estoque correspondente sozinha), além de
-
-  responder perguntas com contexto real da operação;
-
-\- Motor de Reservas avançado, incluindo integração com Channel Managers —
-
-  pesquisa realizada em 13/07/2026 confirmou que os principais canais de
-
-  distribuição (Booking.com, Airbnb) mantêm hoje acesso de API fechado
-
-  para desenvolvedores independentes/pequenos. Estratégia decidida: como
-
-  primeiro passo, captura de reservas via leitura automatizada dos
-
-  e-mails de confirmação que essas plataformas já enviam ao hostel
-
-  (extração de dados estruturados via Inteligência Artificial, mesmo
-
-  padrão já usado na captura de mensagens de WhatsApp), sem dependência
-
-  de aprovação de parceria. A conexão via channel manager terceirizado
-
-  (parceiro já certificado pelas OTAs) permanece como alternativa
-
-  avaliável no futuro, condicionada a validação de custo e escopo de
-
-  acesso. Esta frente fica deliberadamente represada até a conclusão
-
-  total do menu de Configurações (ver 17.2);
+  como alternativa avaliável no futuro, condicionada a custo/escopo;
 
 \- Relatórios Inteligentes avançados (a versão básica de receita por
 
   canal e funil de conversão já está implementada, ver Capítulo 16);
 
-\- Notificações Inteligentes;
+\- moeda/câmbio automático por país (ver 17.2);
+
+\- notificações nativas no aparelho (ver 17.2);
+
+\- autenticação em duas etapas — 2FA (ver 17.2);
+
+\- modelo de cobrança (Billing) real, com processador de pagamento e
+
+  plano ativo (ver 17.2);
 
 \- Automações Operacionais;
 
@@ -7048,6 +7620,98 @@ do hostel passa a ter controle real, não apenas aparente, sobre a
 geração automática de oportunidades comerciais pela Inteligência
 Artificial — um dos dois controles do card de IA em Configurações
 sai do estado de dívida técnica identificado na versão 1.4.0.
+
+
+
+\---
+
+
+
+\*\*Nota sobre continuidade deste registro:\*\* entre a versão 1.6.0 e a
+versão 1.38.0 abaixo, o produto avançou por mais de trinta versões
+(sistema completo de Mapa de Quartos, hóspede de Longa Duração, Ask
+StayFlow como agente real, integração completa com Beds24, integração
+com Messenger e Instagram Direct, módulo de Segurança, entre outras),
+todas registradas de forma resumida na tabela de Controle de Versões no
+início deste documento, mas sem entrada narrativa completa
+(Versão/Data/Área/Descrição/Motivação/Impacto) neste capítulo. Esse é um
+gap conhecido deste registro, sinalizado explicitamente aqui para não
+passar como esquecimento silencioso — a reconstrução retroativa de cada
+uma dessas entradas fica como pendência separada, priorizável sob
+demanda.
+
+
+
+\### Versão 1.38.0
+
+
+
+\*\*Data\*\*
+
+
+
+03/08/2026
+
+
+
+\*\*Área\*\*
+
+
+
+Documentação Oficial (auditoria e correção integral do próprio
+Documento Mestre)
+
+
+
+\*\*Descrição\*\*
+
+
+
+Auditoria completa do Documento Mestre, linha a linha (protocolo
+formal de revisão integral, mesmo padrão já aplicado na versão 1.3.0),
+motivada por uma sessão de Claude Code diferente não ter conseguido
+identificar, a partir deste documento, várias funcionalidades reais já
+em produção. Correções principais: catálogo de permissões corrigido de
+12 para 14 chaves nos três pontos onde estava desatualizado (Capítulo
+12, seções 16.21 e 16.22 do Capítulo 16); Capítulo 16 e Capítulo 17
+corrigidos onde descreviam como "não implementado" ou "planejado"
+capacidades já construídas (Mapa de Quartos, Ask StayFlow como agente
+real, Channel Manager Beds24, módulo de Segurança); seis novas seções
+criadas no Capítulo 16 para módulos que não tinham nenhum registro
+(Mapa de Quartos, Integração com Beds24, Integração com Messenger e
+Instagram Direct, Ask StayFlow, Segurança, Respostas Rápidas);
+Capítulo 12 (Banco de Dados) e seção 16.6 expandidos com as entidades
+reais que sustentam essas funcionalidades. Registrada, pela primeira
+vez de forma explícita, a decisão permanente de posicionamento de
+produto: a StayFlow nunca deve ser descrita como nichada em hostel —
+hostel é a primeira categoria de hospedagem atacada, não o mercado-alvo
+final.
+
+
+
+\*\*Motivação\*\*
+
+
+
+O Documento Mestre é a fonte de verdade oficial usada para orientar
+qualquer sessão de trabalho, incluindo apresentações comerciais — uma
+divergência entre o que o documento descreve e o que o produto
+realmente faz compromete tanto o desenvolvimento quanto a comunicação
+externa da empresa. A auditoria foi motivada diretamente por essa
+divergência ter sido observada na prática.
+
+
+
+\*\*Impacto\*\*
+
+
+
+O Documento Mestre volta a refletir com precisão o estado real da
+plataforma antes de uma apresentação comercial estratégica (piloto fora
+do nicho hostel). Fica registrado como gap conhecido (ver nota acima) a
+ausência de entradas narrativas completas para as versões 1.7.0 a
+1.37.0 neste capítulo — a tabela de Controle de Versões no início do
+documento permanece completa e atualizada para todo esse intervalo.
 
 
 
