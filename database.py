@@ -7391,6 +7391,28 @@ def get_active_vehicle_for_guest(hostel_id, guest_id):
     return dict(row) if row else None
 
 
+def list_active_vehicles(hostel_id):
+    """
+    Todo veiculo ainda no estacionamento (sem saida registrada) -
+    usado pela tela de Estacionamento no dashboard.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT v.*, g.name AS guest_name
+        FROM vehicles v
+        LEFT JOIN guests g ON g.id = v.guest_id
+        WHERE v.hostel_id = ? AND v.checked_out_at IS NULL
+        ORDER BY v.checked_in_at DESC
+        """,
+        (hostel_id,)
+    )
+    vehicles = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return vehicles
+
+
 def check_in_vehicle(hostel_id, guest_id, plate=None, model=None, color=None,
                       spot_number=None, service_type="autoatendimento", reservation_id=None):
     conn = get_connection()

@@ -8,8 +8,9 @@ from database import (
     get_on_duty_staff,
     request_shift_coverage,
     accept_shift_coverage,
+    get_membership,
 )
-from utils.tenant import require_permission
+from utils.tenant import require_permission, get_current_user_id
 
 scheduling_bp = Blueprint("scheduling", __name__)
 
@@ -52,15 +53,26 @@ def list_shifts_route(hostel_id):
 @scheduling_bp.route("/scheduling/shifts", methods=["POST"])
 @require_permission("scheduling")
 def create_shift_route(hostel_id):
+    """
+    membership_id e opcional - se nao vier no corpo, resolve pro
+    vinculo da propria pessoa logada (caso de uso do dashboard: "criar
+    turno pra mim"). O frontend nao tem acesso a membership_id na
+    sessao hoje, so a rota resolve isso, em vez de expor esse campo
+    novo em toda sessao so por causa desse formulario.
+    """
     data = request.get_json() or {}
-    required = ["membership_id", "department", "shift_date", "start_time", "end_time"]
-    missing = [field for field in required if not data.get(field)]
 
-    if missing:
-        return jsonify({"success": False, "message": f"Campos obrigatórios faltando: {', '.join(missing)}."}), 400
+    membership_id = data.get("membership_id")
+    if not membership_id:
+        membership = get_membership(get_current_user_id(), hostel_id)
+        membership_id = membership["membership_id"] if membership else None
+
+    required_present = membership_id and data.get("department") and data.get("shift_date") and data.get("start_time") and data.get("end_time")
+    if not required_present:
+        return jsonify({"success": False, "message": "Campos obrigatórios faltando (department, shift_date, start_time, end_time)."}), 400
 
     shift_id = create_staff_shift(
-        hostel_id, data["membership_id"], data["department"],
+        hostel_id, membership_id, data["department"],
         data["shift_date"], data["start_time"], data["end_time"],
         section_id=data.get("section_id"),
     )

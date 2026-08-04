@@ -3,15 +3,23 @@ from flask import Blueprint, request, jsonify
 from database import (
     check_in_vehicle,
     check_out_vehicle,
+    list_active_vehicles,
     request_valet,
     get_hostel_parking_settings,
     set_hostel_parking_settings,
     get_open_tickets,
     notify_on_duty_staff_for_ticket,
+    resolve_ticket,
 )
 from utils.tenant import require_permission
 
 parking_bp = Blueprint("parking", __name__)
+
+
+@parking_bp.route("/parking/vehicles", methods=["GET"])
+@require_permission("parking")
+def list_active_vehicles_route(hostel_id):
+    return jsonify(list_active_vehicles(hostel_id))
 
 
 @parking_bp.route("/parking/vehicles", methods=["POST"])
@@ -65,6 +73,16 @@ def request_valet_route(hostel_id, vehicle_id):
 @require_permission("parking")
 def list_valet_requests(hostel_id):
     return jsonify(get_open_tickets(hostel_id, ticket_type="valet_request"))
+
+
+@parking_bp.route("/parking/valet-requests/<int:ticket_id>/resolve", methods=["POST"])
+@require_permission("parking")
+def resolve_valet_request_route(hostel_id, ticket_id):
+    data = request.get_json() or {}
+    updated = resolve_ticket(hostel_id, ticket_id, resolution_notes=data.get("resolution_notes"))
+    if not updated:
+        return jsonify({"success": False, "message": "Solicitação não encontrada."}), 404
+    return jsonify({"success": True})
 
 
 @parking_bp.route("/parking/settings", methods=["GET"])
