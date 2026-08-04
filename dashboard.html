@@ -4979,15 +4979,31 @@ document.addEventListener("click", (event) => {
 
 window.openCreateCategoryModal = function(){
   openGenericModal(T('roommap.categories.title', '🏷️ Modalidades de quarto'), `
-    <form onsubmit="submitNewRoomCategory(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
-      <input class="span-6" name="name" placeholder="${T('roommap.categories.namePlaceholder', 'Ex: Standard Duplo, Suíte, Dormitório Misto')}" required style="grid-column:span 6;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-      <input class="span-2" type="number" min="1" name="capacity" placeholder="${T('roommap.categories.capacityPlaceholder', 'Capac.')}" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-      <input class="span-2" type="number" min="0" step="0.01" name="price_per_night" placeholder="${T('roommap.categories.pricePlaceholder', 'Diária')}" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
-      <button type="submit" class="btn span-2" style="grid-column:span 2;">${T('common.create', 'Criar')}</button>
-      <input class="span-12" name="description" placeholder="${T('roommap.categories.descPlaceholder', 'Ex: Inclui café da manhã')}" style="grid-column:span 12;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
+    <p style="margin-bottom:14px">${T('roommap.categories.modalDesc', 'Defina os tipos de acomodação da sua hospedagem (dormitório, suíte, etc.) para organizar quartos e preços.')}</p>
+    <form onsubmit="submitNewRoomCategory(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('roommap.categories.nameLabel', 'Nome da modalidade')}</label>
+        <input name="name" placeholder="${T('roommap.categories.namePlaceholder', 'Ex: Standard Duplo, Suíte, Dormitório Misto')}" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 3">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('roommap.categories.capacityLabel', 'Capacidade (pessoas)')}</label>
+        <input type="number" min="1" name="capacity" placeholder="${T('roommap.categories.capacityPlaceholder', 'Ex: 4')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 3">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('roommap.categories.priceLabel', 'Diária')}</label>
+        <input type="number" min="0" step="0.01" name="price_per_night" placeholder="0.00" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('roommap.categories.descLabel', 'Descrição (opcional)')}</label>
+        <input name="description" placeholder="${T('roommap.categories.descPlaceholder', 'Ex: Inclui café da manhã')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 12;display:flex;justify-content:flex-end">
+        <button type="submit" class="btn">${T('roommap.categories.createBtn', 'Criar modalidade')}</button>
+      </div>
     </form>
-    <div id="roomCategoriesList" style="margin-top:12px;font-size:13px;color:var(--muted)">${categoryPillsHtml(ROOM_CATEGORIES_CACHE)}</div>
-  `);
+    <h3 style="margin:20px 0 10px;font-size:14px;border-top:1px solid var(--line);padding-top:16px">${T('roommap.categories.listTitle', 'Modalidades cadastradas')}</h3>
+    <div id="roomCategoriesList" style="font-size:13px;color:var(--muted)">${categoryPillsHtml(ROOM_CATEGORIES_CACHE)}</div>
+  `, true);
 };
 
 window.openCreateRoomModal = function(){
