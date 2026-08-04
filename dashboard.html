@@ -5312,20 +5312,45 @@ window.loadExchangeSummary = async function(){
 window.updateExchangePreview = function(){
   const preview = document.getElementById("exchangePreview");
   if(!preview) return;
+
   const amount = parseFloat(document.getElementById("newExchangeAmount")?.value || "0") || 0;
-  const rate = parseFloat(document.getElementById("newExchangeRate")?.value || "0") || 0;
-  preview.textContent = (amount > 0 && rate > 0)
-    ? T('finance.exchange.previewText', 'Equivale a {amount}', { amount: formatMoney(amount * rate) })
-    : "";
+  const marketRate = parseFloat(document.getElementById("newExchangeMarketRate")?.value || "0") || 0;
+  const usedRate = parseFloat(document.getElementById("newExchangeRate")?.value || "0") || 0;
+
+  if(!(amount > 0) || !(usedRate > 0)){
+    preview.innerHTML = "";
+    return;
+  }
+
+  const credited = amount * usedRate;
+  const parts = [T('finance.exchange.previewCredited', 'Creditado: {amount}', { amount: formatMoney(credited) })];
+  if(marketRate > 0){
+    const profit = amount * (marketRate - usedRate);
+    parts.push(T('finance.exchange.previewProfit', 'Lucro: {amount}', { amount: formatMoney(profit) }));
+  }
+  preview.innerHTML = parts.join(" &nbsp;·&nbsp; ");
 };
 
-window.openExchangeModal = function(){
+window.openExchangeModal = async function(){
   const options = FINANCE_EXCHANGE_CURRENCIES.map(code =>
     `<option value="${code}">${code} - ${STAYFLOW_CURRENCY_SYMBOLS[code] || code}</option>`
   ).join("");
 
+  let guestOptions = `<option value="">${T('finance.exchange.noGuestOption', 'Nenhum hóspede vinculado')}</option>`;
+  try{
+    const res = await fetch("/guests", { credentials: "same-origin" });
+    if(res.ok){
+      const guests = await res.json();
+      guestOptions += guests.map(g =>
+        `<option value="${g.id}">${escapeHtml(g.name)}${g.phone ? " · " + escapeHtml(g.phone) : ""}</option>`
+      ).join("");
+    }
+  }catch(e){
+    console.warn("Erro ao carregar hóspedes pro câmbio:", e);
+  }
+
   openGenericModal(T('finance.exchange.title', '💱 Câmbio (pagamento em moeda estrangeira)'), `
-    <p style="margin-bottom:14px">${T('finance.exchange.modalDesc', 'O valor convertido entra automaticamente na receita confirmada.')}</p>
+    <p style="margin-bottom:14px">${T('finance.exchange.modalDesc', 'Cotação usada mais baixa que a atual gera lucro pro hostel na diferença.')}</p>
     <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 4">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('finance.exchange.currencyLabel', 'Moeda recebida')}</label>
@@ -5336,7 +5361,16 @@ window.openExchangeModal = function(){
         <input type="number" step="0.01" min="0" id="newExchangeAmount" oninput="updateExchangePreview()" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
       </div>
       <div style="grid-column:span 4">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('finance.exchange.rateLabel', 'Cotação usada')}</label>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('finance.exchange.guestLabel', 'Hóspede (opcional)')}</label>
+        <select id="newExchangeGuest" style="width:100%">${guestOptions}</select>
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('finance.exchange.marketRateLabel', 'Cotação atual')}</label>
+        <input type="number" step="0.0001" min="0" id="newExchangeMarketRate" oninput="updateExchangePreview()" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <span id="exchangeRateReference" style="display:block;margin-top:4px;font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('finance.exchange.rateLabel', 'Cotação usada (com o hóspede)')}</label>
         <input type="number" step="0.0001" min="0" id="newExchangeRate" oninput="updateExchangePreview()" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
       </div>
       <div style="grid-column:span 12">
@@ -5344,7 +5378,6 @@ window.openExchangeModal = function(){
         <input type="text" id="newExchangeDescription" autocomplete="off" placeholder="${T('finance.exchange.descPlaceholder', 'Ex: Hóspede do quarto 4')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
       </div>
     </div>
-    <div id="exchangeRateReference" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
     <p id="exchangePreview" style="margin-top:10px;font-size:13px;color:var(--muted)"></p>
     <div style="display:flex;justify-content:flex-end;margin-top:14px">
       <button class="btn" type="button" onclick="submitNewExchange()">${T('common.save', 'Salvar')}</button>
@@ -5360,27 +5393,31 @@ window.openExchangeModal = function(){
 
 window.onExchangeCurrencyChange = async function(){
   const refEl = document.getElementById("exchangeRateReference");
-  if(!refEl) return;
+  const marketInput = document.getElementById("newExchangeMarketRate");
+  if(!refEl || !marketInput) return;
 
   const currency = document.getElementById("newExchangeCurrency")?.value;
   // A referencia so existe pra USD->ARS hoje (unica fonte que temos) -
-  // qualquer outra combinacao simplesmente nao mostra nada, sem quebrar.
+  // qualquer outra combinacao simplesmente nao preenche nada, sem quebrar
+  // (o campo continua editavel manualmente).
   if(currency !== "USD" || window.STAYFLOW_CURRENCY !== "ARS"){
-    refEl.innerHTML = "";
+    refEl.textContent = "";
     return;
   }
 
   refEl.textContent = T('finance.exchange.rateLoading', 'Buscando cotação atual...');
   try{
     const res = await fetch("/finance/exchange-rate?currency=USD", { credentials: "same-origin" });
-    if(!res.ok){ refEl.innerHTML = ""; return; }
+    if(!res.ok){ refEl.textContent = ""; return; }
     const data = await res.json();
-    if(!data.rate){ refEl.innerHTML = ""; return; }
+    if(!data.rate){ refEl.textContent = ""; return; }
 
-    refEl.innerHTML = `${T('finance.exchange.rateReference', 'Dólar blue agora: {rate} (compra, {source})', { rate: formatMoney(data.rate), source: data.source })} — <a href="#" onclick="event.preventDefault(); document.getElementById('newExchangeRate').value=${data.rate}; updateExchangePreview();">${T('finance.exchange.useRateLink', 'usar esta cotação')}</a>`;
+    marketInput.value = data.rate;
+    refEl.textContent = T('finance.exchange.rateReference', 'Preenchido automaticamente ({source})', { source: data.source });
+    updateExchangePreview();
   }catch(e){
     console.warn("Erro ao carregar cotação de referência:", e);
-    refEl.innerHTML = "";
+    refEl.textContent = "";
   }
 };
 
@@ -5403,12 +5440,20 @@ window.loadExchangeModalContent = async function(){
     exchanges.forEach(ex => {
       const row = document.createElement("div");
       row.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:10px;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:10px 12px;";
+      const when = ex.created_at ? new Date(ex.created_at.replace(" ", "T") + "Z").toLocaleString() : "-";
+      const profitHtml = ex.market_rate
+        ? `<div style="font-size:12px;color:${ex.profit >= 0 ? '#6ff0bd' : '#ff9caf'}">${T('finance.exchange.profitLabel', 'Lucro')}: ${formatMoney(ex.profit)}</div>`
+        : "";
       row.innerHTML = `
         <div>
           <div style="font-weight:600">${escapeHtml(ex.description || (ex.foreign_currency + " " + T('finance.exchange.cashSuffix', 'em dinheiro')))}</div>
-          <div style="font-size:12px;color:var(--muted)">${Number(ex.foreign_amount).toFixed(2)} ${ex.foreign_currency} · ${T('finance.exchange.rateLabel', 'Cotação usada')}: ${ex.exchange_rate}</div>
+          <div style="font-size:12px;color:var(--muted)">${when} · ${escapeHtml(ex.operator_name || "-")}</div>
+          <div style="font-size:12px;color:var(--muted)">${Number(ex.foreign_amount).toFixed(2)} ${ex.foreign_currency} · ${T('finance.exchange.marketRateLabel', 'Cotação atual')}: ${ex.market_rate ?? "-"} · ${T('finance.exchange.rateLabel', 'Cotação usada')}: ${ex.exchange_rate}</div>
         </div>
-        <div style="font-weight:700">${formatMoney(ex.local_amount)}</div>
+        <div style="text-align:right">
+          <div style="font-weight:700">${formatMoney(ex.local_amount)}</div>
+          ${profitHtml}
+        </div>
       `;
       listEl.appendChild(row);
     });
@@ -5423,11 +5468,14 @@ window.submitNewExchange = async function(){
 
   const foreignCurrency = document.getElementById("newExchangeCurrency")?.value;
   const foreignAmount = parseFloat(document.getElementById("newExchangeAmount")?.value || "0");
+  const marketRateRaw = document.getElementById("newExchangeMarketRate")?.value;
+  const marketRate = marketRateRaw ? parseFloat(marketRateRaw) : null;
   const exchangeRate = parseFloat(document.getElementById("newExchangeRate")?.value || "0");
+  const guestId = document.getElementById("newExchangeGuest")?.value || null;
   const description = (document.getElementById("newExchangeDescription")?.value || "").trim();
 
   if(!foreignCurrency || !(foreignAmount > 0) || !(exchangeRate > 0)){
-    if(msg){ msg.textContent = T('finance.exchange.missingFields', 'Preencha moeda, valor e cotação.'); msg.classList.add("error"); }
+    if(msg){ msg.textContent = T('finance.exchange.missingFields', 'Preencha moeda, valor e cotação usada.'); msg.classList.add("error"); }
     return;
   }
 
@@ -5435,7 +5483,11 @@ window.submitNewExchange = async function(){
     const res = await fetch("/finance/exchanges", {
       method: "POST", credentials: "same-origin",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ foreign_currency: foreignCurrency, foreign_amount: foreignAmount, exchange_rate: exchangeRate, description })
+      body: JSON.stringify({
+        foreign_currency: foreignCurrency, foreign_amount: foreignAmount,
+        exchange_rate: exchangeRate, market_rate: marketRate,
+        guest_id: guestId, description
+      })
     });
     if(!res.ok){
       if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
@@ -5444,8 +5496,9 @@ window.submitNewExchange = async function(){
     document.getElementById("newExchangeAmount").value = "";
     document.getElementById("newExchangeRate").value = "";
     document.getElementById("newExchangeDescription").value = "";
+    document.getElementById("newExchangeGuest").value = "";
     const preview = document.getElementById("exchangePreview");
-    if(preview) preview.textContent = "";
+    if(preview) preview.innerHTML = "";
     loadExchangeModalContent();
     loadFinance();
   }catch(e){
@@ -6881,6 +6934,7 @@ function renderGuestProfileModal(profile, editMode){
   const g = profile.guest;
   const reservations = profile.reservations || [];
   const documents = profile.documents || [];
+  const exchanges = profile.exchanges || [];
 
   const reservationsHtml = reservations.length
     ? reservations.map(r => {
@@ -6906,6 +6960,27 @@ function renderGuestProfileModal(profile, editMode){
         `;
       }).join("")
     : `<span style="color:var(--muted);font-size:13px">${T('guests.profile.noStays', 'Nenhuma estadia registrada ainda.')}</span>`;
+
+  const exchangesHtml = exchanges.length
+    ? exchanges.map(ex => {
+        const when = ex.created_at ? new Date(ex.created_at.replace(" ", "T") + "Z").toLocaleString() : "-";
+        const profitHtml = ex.market_rate
+          ? `<span style="color:${ex.profit >= 0 ? '#6ff0bd' : '#ff9caf'}">${T('finance.exchange.profitLabel', 'Lucro')}: ${formatMoney(ex.profit)}</span>`
+          : "";
+        return `
+          <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #ffffff0f;font-size:13px">
+            <div>
+              <strong>${Number(ex.foreign_amount).toFixed(2)} ${ex.foreign_currency}</strong> · ${T('finance.exchange.rateLabel', 'Cotação usada')}: ${ex.exchange_rate}<br>
+              <span style="color:var(--muted)">${when}${ex.operator_name ? " · " + escapeHtml(ex.operator_name) : ""}</span>
+            </div>
+            <div style="text-align:right">
+              <div style="font-weight:700">${formatMoney(ex.local_amount)}</div>
+              ${profitHtml}
+            </div>
+          </div>
+        `;
+      }).join("")
+    : `<span style="color:var(--muted);font-size:13px">${T('finance.exchange.empty', 'Nenhum câmbio registrado ainda.')}</span>`;
 
   const docsHtml = documents.length
     ? documents.map(d => {
@@ -6967,6 +7042,11 @@ function renderGuestProfileModal(profile, editMode){
     <div class="guest-profile-section">
       <h4>${T('guests.profile.staysTitle', 'Estadias e pagamento')}</h4>
       ${reservationsHtml}
+    </div>
+
+    <div class="guest-profile-section">
+      <h4>${T('finance.exchange.title', '💱 Câmbio (pagamento em moeda estrangeira)')}</h4>
+      ${exchangesHtml}
     </div>
   `, true);
 }
