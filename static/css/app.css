@@ -835,6 +835,38 @@ body::before{
   flex-shrink:0;
 }
 
+/* Abas horizontais dentro de uma pagina (ex: Operacoes -> Visao Geral/
+   Cozinha/Manutencao/Seguranca Patrimonial/Estacionamento) - mesmas
+   secoes que antes eram paginas separadas no menu lateral, agora
+   organizadas como abas de uma unica pagina. overflow-x:auto pra nao
+   quebrar em telas estreitas quando muitas abas cabem. */
+.ops-tabs{
+  display:flex;
+  gap:4px;
+  margin-bottom:20px;
+  border-bottom:1px solid var(--line);
+  overflow-x:auto;
+}
+.ops-tab{
+  background:none;
+  border:none;
+  color:var(--muted);
+  font-weight:700;
+  font-size:13px;
+  padding:12px 16px;
+  cursor:pointer;
+  white-space:nowrap;
+  border-bottom:2px solid transparent;
+  transition:color .15s ease, border-color .15s ease;
+}
+.ops-tab:hover{
+  color:var(--text);
+}
+.ops-tab.active{
+  color:var(--blue2);
+  border-bottom-color:var(--blue);
+}
+
 .span-3{grid-column:span 3}
 .span-4{grid-column:span 4}
 .span-5{grid-column:span 5}

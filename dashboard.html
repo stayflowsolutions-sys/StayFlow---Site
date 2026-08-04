@@ -756,18 +756,6 @@ async function deleteRoleConfirm(roleId){
     <button data-page="operations" onclick="openPage('operations',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span><span data-i18n="nav.operations">Operações</span>
     </button>
-    <button data-page="kitchen" data-required-permission="kitchen" onclick="openPage('kitchen',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v3c0 4 3.5 7 8 7s8-3 8-7V8"/><path d="M9 19v1"/><path d="M15 19v1"/></svg></span><span data-i18n="nav.kitchen">Cozinha</span>
-    </button>
-    <button data-page="maintenance" data-required-permission="maintenance" onclick="openPage('maintenance',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4l-2.5 2.5-2-2z"/></svg></span><span data-i18n="nav.maintenance">Manutenção</span>
-    </button>
-    <button data-page="patrimonialSecurity" data-required-permission="patrimonial_security" onclick="openPage('patrimonialSecurity',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></span><span data-i18n="nav.patrimonialSecurity">Segurança Patrimonial</span>
-    </button>
-    <button data-page="parking" data-required-permission="parking" onclick="openPage('parking',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M6 9V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><circle cx="7.5" cy="18" r="1.3"/><circle cx="16.5" cy="18" r="1.3"/></svg></span><span data-i18n="nav.parking">Estacionamento</span>
-    </button>
     <button data-page="scheduling" data-required-permission="scheduling" onclick="openPage('scheduling',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 3v3"/><path d="M16 3v3"/></svg></span><span data-i18n="nav.scheduling">Escala</span>
     </button>
@@ -1239,8 +1227,16 @@ async function deleteRoleConfirm(roleId){
 
 <!-- OPERATIONS -->
 <section id="operations" class="page">
-  <div class="grid">
-    <div class="card span-6">
+  <div class="ops-tabs">
+    <button type="button" class="ops-tab active" data-ops-tab="overview" onclick="switchOperationsTab('overview')" data-i18n="operations.tab.overview">📋 Visão Geral</button>
+    <button type="button" class="ops-tab" data-ops-tab="kitchen" data-required-permission="kitchen" onclick="switchOperationsTab('kitchen')" data-i18n="nav.kitchen">Cozinha</button>
+    <button type="button" class="ops-tab" data-ops-tab="maintenance" data-required-permission="maintenance" onclick="switchOperationsTab('maintenance')" data-i18n="nav.maintenance">Manutenção</button>
+    <button type="button" class="ops-tab" data-ops-tab="patrimonialSecurity" data-required-permission="patrimonial_security" onclick="switchOperationsTab('patrimonialSecurity')" data-i18n="nav.patrimonialSecurity">Segurança Patrimonial</button>
+    <button type="button" class="ops-tab" data-ops-tab="parking" data-required-permission="parking" onclick="switchOperationsTab('parking')" data-i18n="nav.parking">Estacionamento</button>
+  </div>
+
+  <div data-ops-section="overview" class="grid">
+    <div class="card span-12">
       <h2 data-i18n="operations.tasks.title">🧹 Tarefas operacionais</h2>
       <div class="sf-empty" id="opsTasksEmpty">
         <div>
@@ -1261,161 +1257,145 @@ async function deleteRoleConfirm(roleId){
         </tbody>
       </table>
     </div>
-    <div class="card span-6">
-      <h2 data-i18n="operations.alerts.title">⚠️ Alertas</h2>
-      <div class="sf-empty" id="opsAlertsEmpty">
+  </div>
+
+  <div data-ops-section="kitchen" style="display:none">
+    <div class="card settings-summary-card" onclick="openMenuModal()">
+      <div class="settings-summary-row">
         <div>
-          <strong data-i18n="operations.alerts.emptyTitle">Nenhum alerta ativo.</strong>
-          <span data-i18n="operations.alerts.emptyDesc">Riscos de overbooking, atrasos de limpeza, pendências de pagamento e outros alertas serão listados aqui automaticamente.</span>
+          <h2 data-i18n="kitchen.menu.title">📋 Cardápio</h2>
+          <p class="settings-summary-desc" id="menuSummaryDesc" data-i18n="kitchen.menu.desc">Itens que a IA usa pra tirar pedido pelo chat.</p>
+        </div>
+        <span class="settings-summary-chevron">›</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="kitchen.orders.title">🍽️ Pedidos em aberto</h2>
+      <div class="sf-empty" id="kitchenOrdersEmpty">
+        <div>
+          <strong data-i18n="kitchen.orders.emptyTitle">Nenhum pedido em aberto.</strong>
+          <span data-i18n="kitchen.orders.emptyDesc">Pedidos feitos pelo hóspede via chat, ou lançados manualmente, aparecem aqui.</span>
         </div>
       </div>
-      <ul id="opsAlertsList" style="margin:0;padding-left:16px;display:none;color:var(--muted);font-size:14px;line-height:1.5">
-        <!-- preenchido pelo backend -->
-      </ul>
+      <table class="table" id="kitchenOrdersTable" style="display:none">
+        <thead>
+          <tr>
+            <th data-i18n="kitchen.orders.col.location">Local</th>
+            <th data-i18n="kitchen.orders.col.items">Itens</th>
+            <th data-i18n="kitchen.orders.col.status">Status</th>
+            <th data-i18n="common.action">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="kitchenOrdersBody"><!-- preenchido por live --></tbody>
+      </table>
     </div>
   </div>
-</section>
 
-<!-- KITCHEN -->
-<section id="kitchen" class="page">
-  <div class="card settings-summary-card" onclick="openMenuModal()">
-    <div class="settings-summary-row">
-      <div>
-        <h2 data-i18n="kitchen.menu.title">📋 Cardápio</h2>
-        <p class="settings-summary-desc" id="menuSummaryDesc" data-i18n="kitchen.menu.desc">Itens que a IA usa pra tirar pedido pelo chat.</p>
+  <div data-ops-section="maintenance" style="display:none">
+    <div class="card">
+      <h2 data-i18n="maintenance.tickets.title">🔧 Chamados em aberto</h2>
+      <div class="sf-empty" id="maintenanceEmpty">
+        <div>
+          <strong data-i18n="maintenance.tickets.emptyTitle">Nenhum chamado em aberto.</strong>
+          <span data-i18n="maintenance.tickets.emptyDesc">Problemas relatados pelo hóspede via chat, ou lançados manualmente, aparecem aqui.</span>
+        </div>
       </div>
-      <span class="settings-summary-chevron">›</span>
+      <table class="table" id="maintenanceTable" style="display:none">
+        <thead>
+          <tr>
+            <th data-i18n="common.location">Local</th>
+            <th data-i18n="common.description">Descrição</th>
+            <th data-i18n="common.urgency">Urgência</th>
+            <th data-i18n="guests.col.status">Status</th>
+            <th data-i18n="common.action">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="maintenanceBody"><!-- preenchido por live --></tbody>
+      </table>
+    </div>
+    <div class="card" id="maintenanceRecurringCard" style="display:none">
+      <h2 data-i18n="maintenance.recurring.title">⚠️ Padrão recorrente</h2>
+      <ul id="maintenanceRecurringList" style="margin:0;padding-left:16px;color:var(--muted);font-size:14px;line-height:1.5"></ul>
     </div>
   </div>
-  <div class="card">
-    <h2 data-i18n="kitchen.orders.title">🍽️ Pedidos em aberto</h2>
-    <div class="sf-empty" id="kitchenOrdersEmpty">
-      <div>
-        <strong data-i18n="kitchen.orders.emptyTitle">Nenhum pedido em aberto.</strong>
-        <span data-i18n="kitchen.orders.emptyDesc">Pedidos feitos pelo hóspede via chat, ou lançados manualmente, aparecem aqui.</span>
-      </div>
-    </div>
-    <table class="table" id="kitchenOrdersTable" style="display:none">
-      <thead>
-        <tr>
-          <th data-i18n="kitchen.orders.col.location">Local</th>
-          <th data-i18n="kitchen.orders.col.items">Itens</th>
-          <th data-i18n="kitchen.orders.col.status">Status</th>
-          <th data-i18n="common.action">Ação</th>
-        </tr>
-      </thead>
-      <tbody id="kitchenOrdersBody"><!-- preenchido por live --></tbody>
-    </table>
-  </div>
-</section>
 
-<!-- MAINTENANCE -->
-<section id="maintenance" class="page">
-  <div class="card">
-    <h2 data-i18n="maintenance.tickets.title">🔧 Chamados em aberto</h2>
-    <div class="sf-empty" id="maintenanceEmpty">
-      <div>
-        <strong data-i18n="maintenance.tickets.emptyTitle">Nenhum chamado em aberto.</strong>
-        <span data-i18n="maintenance.tickets.emptyDesc">Problemas relatados pelo hóspede via chat, ou lançados manualmente, aparecem aqui.</span>
+  <div data-ops-section="patrimonialSecurity" style="display:none">
+    <div class="card">
+      <h2 data-i18n="patrimonialSecurity.incidents.title">🛡️ Incidentes em aberto</h2>
+      <div class="sf-empty" id="patrimonialSecurityEmpty">
+        <div>
+          <strong data-i18n="patrimonialSecurity.incidents.emptyTitle">Nenhum incidente em aberto.</strong>
+          <span data-i18n="patrimonialSecurity.incidents.emptyDesc">Ocorrências relatadas pelo hóspede via chat, ou registradas pela equipe, aparecem aqui.</span>
+        </div>
+      </div>
+      <table class="table" id="patrimonialSecurityTable" style="display:none">
+        <thead>
+          <tr>
+            <th data-i18n="common.location">Local</th>
+            <th data-i18n="common.description">Descrição</th>
+            <th data-i18n="common.urgency">Urgência</th>
+            <th data-i18n="guests.col.status">Status</th>
+            <th data-i18n="common.action">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="patrimonialSecurityBody"><!-- preenchido por live --></tbody>
+      </table>
+    </div>
+    <div class="card settings-summary-card" onclick="openCameraSettingsModal()">
+      <div class="settings-summary-row">
+        <div>
+          <h2 data-i18n="patrimonialSecurity.integrations.title">🎥 Câmeras de vigilância</h2>
+          <p class="settings-summary-desc" id="cameraFeedSummaryDesc" data-i18n="patrimonialSecurity.integrations.desc">Cadastre a URL de acesso ao sistema de câmeras quando a hospedagem tiver um configurado.</p>
+        </div>
+        <span class="settings-summary-chevron">›</span>
       </div>
     </div>
-    <table class="table" id="maintenanceTable" style="display:none">
-      <thead>
-        <tr>
-          <th data-i18n="common.location">Local</th>
-          <th data-i18n="common.description">Descrição</th>
-          <th data-i18n="common.urgency">Urgência</th>
-          <th data-i18n="guests.col.status">Status</th>
-          <th data-i18n="common.action">Ação</th>
-        </tr>
-      </thead>
-      <tbody id="maintenanceBody"><!-- preenchido por live --></tbody>
-    </table>
   </div>
-  <div class="card" id="maintenanceRecurringCard" style="display:none">
-    <h2 data-i18n="maintenance.recurring.title">⚠️ Padrão recorrente</h2>
-    <ul id="maintenanceRecurringList" style="margin:0;padding-left:16px;color:var(--muted);font-size:14px;line-height:1.5"></ul>
-  </div>
-</section>
 
-<!-- PATRIMONIAL SECURITY -->
-<section id="patrimonialSecurity" class="page">
-  <div class="card">
-    <h2 data-i18n="patrimonialSecurity.incidents.title">🛡️ Incidentes em aberto</h2>
-    <div class="sf-empty" id="patrimonialSecurityEmpty">
-      <div>
-        <strong data-i18n="patrimonialSecurity.incidents.emptyTitle">Nenhum incidente em aberto.</strong>
-        <span data-i18n="patrimonialSecurity.incidents.emptyDesc">Ocorrências relatadas pelo hóspede via chat, ou registradas pela equipe, aparecem aqui.</span>
+  <div data-ops-section="parking" style="display:none">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="parking.vehicles.title">🚗 Veículos no estacionamento</h2>
+        <button type="button" class="btn primary" onclick="openAddVehicleModal()" data-i18n="parking.vehicles.addBtn">➕ Adicionar veículo</button>
       </div>
-    </div>
-    <table class="table" id="patrimonialSecurityTable" style="display:none">
-      <thead>
-        <tr>
-          <th data-i18n="common.location">Local</th>
-          <th data-i18n="common.description">Descrição</th>
-          <th data-i18n="common.urgency">Urgência</th>
-          <th data-i18n="guests.col.status">Status</th>
-          <th data-i18n="common.action">Ação</th>
-        </tr>
-      </thead>
-      <tbody id="patrimonialSecurityBody"><!-- preenchido por live --></tbody>
-    </table>
-  </div>
-  <div class="card settings-summary-card" onclick="openCameraSettingsModal()">
-    <div class="settings-summary-row">
-      <div>
-        <h2 data-i18n="patrimonialSecurity.integrations.title">🎥 Câmeras de vigilância</h2>
-        <p class="settings-summary-desc" id="cameraFeedSummaryDesc" data-i18n="patrimonialSecurity.integrations.desc">Cadastre a URL de acesso ao sistema de câmeras quando a hospedagem tiver um configurado.</p>
+      <div class="sf-empty" id="parkingVehiclesEmpty">
+        <div>
+          <strong data-i18n="parking.vehicles.emptyTitle">Nenhum veículo registrado.</strong>
+          <span data-i18n="parking.vehicles.emptyDesc">Veículos com entrada registrada (manobrista ou autoatendimento) aparecem aqui.</span>
+        </div>
       </div>
-      <span class="settings-summary-chevron">›</span>
+      <table class="table" id="parkingVehiclesTable" style="display:none">
+        <thead>
+          <tr>
+            <th data-i18n="parking.col.plate">Placa</th>
+            <th data-i18n="parking.col.model">Modelo</th>
+            <th data-i18n="parking.col.guest">Hóspede</th>
+            <th data-i18n="parking.col.service">Serviço</th>
+            <th data-i18n="common.action">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="parkingVehiclesBody"><!-- preenchido por live --></tbody>
+      </table>
     </div>
-  </div>
-</section>
-
-<!-- PARKING -->
-<section id="parking" class="page">
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-      <h2 style="margin:0" data-i18n="parking.vehicles.title">🚗 Veículos no estacionamento</h2>
-      <button type="button" class="btn primary" onclick="openAddVehicleModal()" data-i18n="parking.vehicles.addBtn">➕ Adicionar veículo</button>
-    </div>
-    <div class="sf-empty" id="parkingVehiclesEmpty">
-      <div>
-        <strong data-i18n="parking.vehicles.emptyTitle">Nenhum veículo registrado.</strong>
-        <span data-i18n="parking.vehicles.emptyDesc">Veículos com entrada registrada (manobrista ou autoatendimento) aparecem aqui.</span>
+    <div class="card">
+      <h2 data-i18n="parking.valet.title">🔑 Solicitações de manobrista</h2>
+      <div class="sf-empty" id="parkingValetEmpty">
+        <div>
+          <strong data-i18n="parking.valet.emptyTitle">Nenhuma solicitação pendente.</strong>
+          <span data-i18n="parking.valet.emptyDesc">Pedidos de "traga meu carro" pelo chat, ou registrados manualmente, aparecem aqui.</span>
+        </div>
       </div>
+      <table class="table" id="parkingValetTable" style="display:none">
+        <thead>
+          <tr>
+            <th data-i18n="common.description">Descrição</th>
+            <th data-i18n="guests.col.status">Status</th>
+            <th data-i18n="common.action">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="parkingValetBody"><!-- preenchido por live --></tbody>
+      </table>
     </div>
-    <table class="table" id="parkingVehiclesTable" style="display:none">
-      <thead>
-        <tr>
-          <th data-i18n="parking.col.plate">Placa</th>
-          <th data-i18n="parking.col.model">Modelo</th>
-          <th data-i18n="parking.col.guest">Hóspede</th>
-          <th data-i18n="parking.col.service">Serviço</th>
-          <th data-i18n="common.action">Ação</th>
-        </tr>
-      </thead>
-      <tbody id="parkingVehiclesBody"><!-- preenchido por live --></tbody>
-    </table>
-  </div>
-  <div class="card">
-    <h2 data-i18n="parking.valet.title">🔑 Solicitações de manobrista</h2>
-    <div class="sf-empty" id="parkingValetEmpty">
-      <div>
-        <strong data-i18n="parking.valet.emptyTitle">Nenhuma solicitação pendente.</strong>
-        <span data-i18n="parking.valet.emptyDesc">Pedidos de "traga meu carro" pelo chat, ou registrados manualmente, aparecem aqui.</span>
-      </div>
-    </div>
-    <table class="table" id="parkingValetTable" style="display:none">
-      <thead>
-        <tr>
-          <th data-i18n="common.description">Descrição</th>
-          <th data-i18n="guests.col.status">Status</th>
-          <th data-i18n="common.action">Ação</th>
-        </tr>
-      </thead>
-      <tbody id="parkingValetBody"><!-- preenchido por live --></tbody>
-    </table>
   </div>
 </section>
 
@@ -2053,10 +2033,6 @@ async function deleteRoleConfirm(roleId){
     reservations: ["nav.reservations",  "topbar.subtitle.reservations"],
     roommap:      ["nav.roommap",       "topbar.subtitle.roommap"],
     operations:   ["nav.operations",    "topbar.subtitle.operations"],
-    kitchen:      ["nav.kitchen",       "topbar.subtitle.kitchen"],
-    maintenance:  ["nav.maintenance",   "topbar.subtitle.maintenance"],
-    patrimonialSecurity: ["nav.patrimonialSecurity", "topbar.subtitle.patrimonialSecurity"],
-    parking:      ["nav.parking",       "topbar.subtitle.parking"],
     scheduling:   ["nav.scheduling",    "topbar.subtitle.scheduling"],
     guests:       ["nav.guests",        "topbar.subtitle.guests"],
     finance:      ["nav.finance",       "topbar.subtitle.finance"],
@@ -5581,9 +5557,32 @@ function updateAlertBadge(){
   }
 }
 
+// Cozinha/Manutencao/Seguranca Patrimonial/Estacionamento nao sao mais
+// paginas proprias no menu lateral - viraram abas dentro de Operacoes,
+// pra nao espalhar 4 itens de menu que a maioria dos hostels pequenos
+// nem usa todos. Cada aba mantem seus proprios IDs/loadX() de sempre,
+// so a secao que os envolve mudou de <section class="page"> pra
+// <div data-ops-section>.
+window.switchOperationsTab = function(tabId){
+  document.querySelectorAll("#operations [data-ops-section]").forEach(el => {
+    el.style.display = el.dataset.opsSection === tabId ? "" : "none";
+  });
+  document.querySelectorAll("#operations .ops-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.opsTab === tabId);
+  });
+
+  const loaders = {
+    overview: loadOperations,
+    kitchen: () => typeof loadKitchen === "function" && loadKitchen(),
+    maintenance: () => typeof loadMaintenance === "function" && loadMaintenance(),
+    patrimonialSecurity: () => typeof loadPatrimonialSecurity === "function" && loadPatrimonialSecurity(),
+    parking: () => typeof loadParking === "function" && loadParking(),
+  };
+  const loader = loaders[tabId];
+  if(loader) loader();
+};
+
 async function loadOperations(){
-  const alertsEmptyEl = document.getElementById("opsAlertsEmpty");
-  const alertsListEl = document.getElementById("opsAlertsList");
   const tasksEmptyEl = document.getElementById("opsTasksEmpty");
   const tasksTableEl = document.getElementById("opsTasksTable");
 
@@ -5595,24 +5594,12 @@ async function loadOperations(){
     const alerts = data.alerts || [];
     const tasks = data.tasks || [];
 
+    // Alertas nao tem mais bloco proprio nesta pagina (ja aparecem no
+    // sino de notificacoes e no Opportunity Center - mostrar duas vezes
+    // era redundante) - o /operations continua sendo a fonte da
+    // contagem do sino, so a exibicao em lista aqui que saiu.
     window.STAYFLOW_LAST_ALERT_COUNT = alerts.length;
     updateAlertBadge();
-
-    if(!alerts.length){
-      if(alertsEmptyEl) alertsEmptyEl.style.display = "flex";
-      if(alertsListEl) alertsListEl.style.display = "none";
-    }else{
-      if(alertsEmptyEl) alertsEmptyEl.style.display = "none";
-      if(alertsListEl){
-        alertsListEl.style.display = "block";
-        alertsListEl.innerHTML = "";
-        alerts.forEach(a => {
-          const li = document.createElement("li");
-          li.textContent = a;
-          alertsListEl.appendChild(li);
-        });
-      }
-    }
 
     // Tarefas vem do Mapa de Quartos (camas aguardando limpeza).
     if(!tasks.length){
@@ -7445,11 +7432,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     opportunities: ["loadOpportunities"],
     reservations: ["loadReservations"],
     roommap: ["loadRoomMap"],
-    operations: ["loadOperations"],
-    kitchen: ["loadKitchen"],
-    maintenance: ["loadMaintenance"],
-    patrimonialSecurity: ["loadPatrimonialSecurity"],
-    parking: ["loadParking"],
+    operations: ["loadOperations", "loadKitchen", "loadMaintenance", "loadPatrimonialSecurity", "loadParking"],
     scheduling: ["loadScheduling"],
     guests: ["loadGuests"],
     finance: ["loadFinance", "loadExchangeSummary"],

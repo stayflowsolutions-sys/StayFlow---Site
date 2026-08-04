@@ -12,6 +12,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "operations.tab.overview": "📋 Visão Geral",
     "roommap.categories.modalDesc": "Defina os tipos de acomodação da sua hospedagem (dormitório, suíte, etc.) para organizar quartos e preços.",
     "roommap.categories.nameLabel": "Nome da modalidade",
     "roommap.categories.capacityLabel": "Capacidade (pessoas)",
@@ -927,6 +928,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "operations.tab.overview": "📋 Overview",
     "roommap.categories.modalDesc": "Define your property's accommodation types (dorm, suite, etc.) to organize rooms and pricing.",
     "roommap.categories.nameLabel": "Category name",
     "roommap.categories.capacityLabel": "Capacity (people)",
@@ -1825,6 +1827,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "operations.tab.overview": "📋 Visión general",
     "roommap.categories.modalDesc": "Defina los tipos de alojamiento de su propiedad (dormitorio, suite, etc.) para organizar habitaciones y precios.",
     "roommap.categories.nameLabel": "Nombre de la modalidad",
     "roommap.categories.capacityLabel": "Capacidad (personas)",
@@ -2723,6 +2726,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "operations.tab.overview": "📋 Vue d'ensemble",
     "roommap.categories.modalDesc": "Définissez les types d'hébergement de votre établissement (dortoir, suite, etc.) pour organiser chambres et tarifs.",
     "roommap.categories.nameLabel": "Nom de la catégorie",
     "roommap.categories.capacityLabel": "Capacité (personnes)",
@@ -3621,6 +3625,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "operations.tab.overview": "📋 Übersicht",
     "roommap.categories.modalDesc": "Definieren Sie die Unterkunftsarten Ihrer Immobilie (Schlafsaal, Suite usw.), um Zimmer und Preise zu organisieren.",
     "roommap.categories.nameLabel": "Name der Kategorie",
     "roommap.categories.capacityLabel": "Kapazität (Personen)",
