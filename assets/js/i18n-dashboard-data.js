@@ -12,6 +12,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "settings.general.summaryDesc": "Nome da hospedagem e tipo de propriedade.",
+    "settings.general.summaryFilled": "{name} · {type}",
     "scheduling.newShift.desc": "Cadastre um turno de trabalho pra você ou pra equipe.",
     "scheduling.department.reception": "Recepção",
     "scheduling.department.housekeeping": "Limpeza",
@@ -892,6 +894,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "settings.general.summaryDesc": "Property name and property type.",
+    "settings.general.summaryFilled": "{name} · {type}",
     "scheduling.newShift.desc": "Register a work shift for yourself or the team.",
     "scheduling.department.reception": "Reception",
     "scheduling.department.housekeeping": "Housekeeping",
@@ -1755,6 +1759,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "settings.general.summaryDesc": "Nombre del alojamiento y tipo de propiedad.",
+    "settings.general.summaryFilled": "{name} · {type}",
     "scheduling.newShift.desc": "Registre un turno de trabajo para usted o para el equipo.",
     "scheduling.department.reception": "Recepción",
     "scheduling.department.housekeeping": "Limpieza",
@@ -2618,6 +2624,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "settings.general.summaryDesc": "Nom de l'établissement et type de propriété.",
+    "settings.general.summaryFilled": "{name} · {type}",
     "scheduling.newShift.desc": "Enregistrez un créneau de travail pour vous ou pour l'équipe.",
     "scheduling.department.reception": "Réception",
     "scheduling.department.housekeeping": "Ménage",
@@ -3481,6 +3489,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "settings.general.summaryDesc": "Name der Unterkunft und Art der Immobilie.",
+    "settings.general.summaryFilled": "{name} · {type}",
     "scheduling.newShift.desc": "Erfassen Sie eine Arbeitsschicht für sich oder das Team.",
     "scheduling.department.reception": "Rezeption",
     "scheduling.department.housekeeping": "Reinigung",
