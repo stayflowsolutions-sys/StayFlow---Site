@@ -1758,7 +1758,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   }
   .mobile-menu{
     display:inline-flex;
-    margin-bottom:8px;
   }
   .collapse-menu{
     display:flex;
@@ -1769,29 +1768,46 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     min-height:44px;
   }
 
-  /* Fix real do bug reportado: titulo e acoes desalinhavam ao
-     encolher a janela. Causa - nenhum dos dois lados do topbar tinha
-     min-width:0, entao um <h1> comprido (ex: "Segurança Patrimonial")
-     nunca encolhia e forcava layout quebrado; .actions tambem nao
-     tinha limite de largura pro nome da hospedagem, que podia ser
-     longo. Agora o titulo trunca com reticencias e as acoes ficam
-     numa fileira compacta a direita, quebrando pra proxima linha
-     inteira (nao empilhada verticalmente, que e o que causava a
-     coluna estreita e torta vista no relato). */
+  /* Fix real do bug reportado (2a rodada - a 1a tentativa nao
+     resolveu de verdade). Causa raiz encontrada: .topbar era um flex
+     ROW com so 2 filhos (bloco do titulo + .actions); quando
+     quebrava linha, o filho com flex-grow (o titulo) tomava todo o
+     espaco extra disponivel na conta do flex-grow, deixando .actions
+     (flex-grow:0) espremido num espaco minusculo - pequeno demais ate
+     pros PROPRIOS filhos dele (hostel/sino/idioma/avatar) caberem
+     lado a lado, entao cada um quebrava pra sua propria linha dentro
+     desse espaco apertado. Resultado: coluna estreita e torta.
+     Fix: .topbar vira coluna de verdade com 2 linhas fixas (bloco do
+     titulo, depois .actions) - cada uma ocupando 100% da largura por
+     definicao propria, sem depender de calculo de flex-grow. Dentro
+     de .actions, flex-wrap:nowrap garante que sino/idioma/avatar
+     NUNCA quebram linha entre si - ficam sempre numa fileira unica
+     alinhada a direita. */
   .topbar{
-    flex-wrap:wrap;
+    flex-direction:column;
+    align-items:stretch;
     row-gap:10px;
     min-height:auto;
   }
   .topbar>div:first-child{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    column-gap:10px;
+    row-gap:2px;
     min-width:0;
-    flex:1 1 200px;
+  }
+  .topbar>div:first-child p{
+    flex-basis:100%;
+    margin:0;
   }
   .topbar h1{
+    margin:0;
     font-size:22px;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
+    min-width:0;
   }
   .topbar p{
     overflow:hidden;
@@ -1799,12 +1815,17 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     white-space:nowrap;
   }
   .actions{
-    min-width:0;
-    flex:0 0 auto;
+    width:100%;
+    flex-wrap:nowrap;
     justify-content:flex-end;
+    min-width:0;
+  }
+  .actions>*{
+    min-width:0;
+    flex-shrink:1;
   }
   .actions .hostel-mini .profile-copy{
-    max-width:120px;
+    max-width:90px;
   }
 
   .chat-layout{
