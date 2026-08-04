@@ -5329,7 +5329,7 @@ window.openExchangeModal = function(){
     <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 4">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('finance.exchange.currencyLabel', 'Moeda recebida')}</label>
-        <select id="newExchangeCurrency" style="width:100%">${options}</select>
+        <select id="newExchangeCurrency" onchange="onExchangeCurrencyChange()" style="width:100%">${options}</select>
       </div>
       <div style="grid-column:span 4">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('finance.exchange.amountLabel', 'Valor recebido')}</label>
@@ -5344,6 +5344,7 @@ window.openExchangeModal = function(){
         <input type="text" id="newExchangeDescription" autocomplete="off" placeholder="${T('finance.exchange.descPlaceholder', 'Ex: Hóspede do quarto 4')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
       </div>
     </div>
+    <div id="exchangeRateReference" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
     <p id="exchangePreview" style="margin-top:10px;font-size:13px;color:var(--muted)"></p>
     <div style="display:flex;justify-content:flex-end;margin-top:14px">
       <button class="btn" type="button" onclick="submitNewExchange()">${T('common.save', 'Salvar')}</button>
@@ -5354,6 +5355,33 @@ window.openExchangeModal = function(){
     <div id="exchangeList" style="display:flex;flex-direction:column;gap:8px"></div>
   `, true);
   loadExchangeModalContent();
+  onExchangeCurrencyChange();
+};
+
+window.onExchangeCurrencyChange = async function(){
+  const refEl = document.getElementById("exchangeRateReference");
+  if(!refEl) return;
+
+  const currency = document.getElementById("newExchangeCurrency")?.value;
+  // A referencia so existe pra USD->ARS hoje (unica fonte que temos) -
+  // qualquer outra combinacao simplesmente nao mostra nada, sem quebrar.
+  if(currency !== "USD" || window.STAYFLOW_CURRENCY !== "ARS"){
+    refEl.innerHTML = "";
+    return;
+  }
+
+  refEl.textContent = T('finance.exchange.rateLoading', 'Buscando cotação atual...');
+  try{
+    const res = await fetch("/finance/exchange-rate?currency=USD", { credentials: "same-origin" });
+    if(!res.ok){ refEl.innerHTML = ""; return; }
+    const data = await res.json();
+    if(!data.rate){ refEl.innerHTML = ""; return; }
+
+    refEl.innerHTML = `${T('finance.exchange.rateReference', 'Dólar blue agora: {rate} (compra, {source})', { rate: formatMoney(data.rate), source: data.source })} — <a href="#" onclick="event.preventDefault(); document.getElementById('newExchangeRate').value=${data.rate}; updateExchangePreview();">${T('finance.exchange.useRateLink', 'usar esta cotação')}</a>`;
+  }catch(e){
+    console.warn("Erro ao carregar cotação de referência:", e);
+    refEl.innerHTML = "";
+  }
 };
 
 window.loadExchangeModalContent = async function(){
