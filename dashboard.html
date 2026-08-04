@@ -488,7 +488,7 @@ async function submitRoleChange(membershipId){
 }
 
 async function deactivateMember(membershipId){
-  if(!await stayflowConfirm(T('team.confirm.deactivate', 'Tem certeza que quer desativar esta pessoa? Ela perderá acesso ao hostel até ser reativada.'))) return;
+  if(!await stayflowConfirm(T('team.confirm.deactivate', 'Tem certeza que quer desativar esta pessoa? Ela perderá acesso à hospedagem até ser reativada.'))) return;
 
   try{
     const res = await fetch(`/team/${membershipId}/deactivate`, {
@@ -756,10 +756,10 @@ async function deleteRoleConfirm(roleId){
   </div>
   <div class="actions">
     <div class="hostel-selector-wrap">
-      <div class="hostel-mini" onclick="toggleHostelSelector(event)" data-i18n-title="topbar.hostelSwitch.title" title="Trocar de hostel">
+      <div class="hostel-mini" onclick="toggleHostelSelector(event)" data-i18n-title="topbar.hostelSwitch.title" title="Trocar de hospedagem">
         <div class="hostel-avatar">🏨</div>
         <div class="profile-copy">
-          <div class="hostel-name">Nenhum hostel</div>
+          <div class="hostel-name">Nenhuma hospedagem</div>
           <div class="hostel-meta"></div>
         </div>
       </div>
@@ -768,7 +768,7 @@ async function deleteRoleConfirm(roleId){
         <div id="hostelSelectorList"></div>
         <div class="hostel-selector-divider"></div>
         <button type="button" class="hostel-selector-settings-link" onclick="toggleHostelSelector(); openPage('settings', document.querySelector('[data-page=settings]'))">
-          <span data-i18n="topbar.hostelSwitch.settingsLink">⚙ Configurações do hostel</span>
+          <span data-i18n="topbar.hostelSwitch.settingsLink">⚙ Configurações da hospedagem</span>
         </button>
       </div>
     </div>
@@ -879,7 +879,7 @@ async function deleteRoleConfirm(roleId){
       <div class="brief-header">
         <div>
           <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span><span data-i18n="home.brief.title">Resumo Executivo da IA</span></h2>
-          <p data-i18n="home.brief.defaultText">A StayFlow vai gerar este resumo automaticamente assim que existirem conversas, reservas e tarefas reais no seu hostel.</p>
+          <p data-i18n="home.brief.defaultText">A StayFlow vai gerar este resumo automaticamente assim que existirem conversas, reservas e tarefas reais na sua hospedagem.</p>
         </div>
         <button class="btn" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]'))" data-i18n="home.brief.viewOpportunitiesBtn">Ver oportunidades</button>
       </div>
@@ -1162,7 +1162,7 @@ async function deleteRoleConfirm(roleId){
       <div class="sf-empty" id="roomMapEmpty">
         <div>
           <strong data-i18n="roommap.emptyTitle">Nenhum quarto cadastrado ainda.</strong>
-          <span data-i18n="roommap.emptyDesc2">Use o menu "☰ Ações" acima pra criar modalidades e quartos e montar o mapa do seu hostel, hotel ou resort.</span>
+          <span data-i18n="roommap.emptyDesc2">Use o menu "☰ Ações" acima pra criar modalidades e quartos e montar o mapa da sua propriedade.</span>
         </div>
       </div>
       <div class="bed-map-grid" id="roomMapGrid" style="display:none"></div>
@@ -1267,7 +1267,7 @@ async function deleteRoleConfirm(roleId){
       <div class="sf-empty" id="financeEmpty">
         <div>
           <strong data-i18n="finance.emptyTitle">Nenhuma movimentação financeira registrada.</strong>
-          <span data-i18n="finance.emptyDesc">Quando o primeiro hostel começar a operar no StayFlow, receitas, recebimentos pendentes e oportunidades financeiras aparecerão aqui.</span>
+          <span data-i18n="finance.emptyDesc">Quando a primeira hospedagem começar a operar no StayFlow, receitas, recebimentos pendentes e oportunidades financeiras aparecerão aqui.</span>
         </div>
       </div>
       <table class="table" id="financeTable" style="display:none">
@@ -1437,7 +1437,7 @@ async function deleteRoleConfirm(roleId){
       <div class="sf-empty" id="offeringsEmpty">
         <div>
           <strong data-i18n="revenue.emptyOfferingsTitle">Nenhuma experiência ou upsell cadastrado.</strong>
-          <span data-i18n="revenue.emptyOfferingsDesc">Cadastre tours, late checkout, aluguel de toalha e outras ofertas do seu hostel.</span>
+          <span data-i18n="revenue.emptyOfferingsDesc">Cadastre tours, late checkout, aluguel de toalha e outras ofertas da sua hospedagem.</span>
         </div>
       </div>
       <table class="table" id="offeringsTable" style="display:none">
@@ -1555,7 +1555,7 @@ async function deleteRoleConfirm(roleId){
       <div class="sf-empty">
         <div>
           <strong data-i18n="settings.menuHint.title">Menu de configuração</strong>
-          <span data-i18n="settings.menuHint.desc">Escolha uma categoria para ajustar como o StayFlow opera no seu hostel.</span>
+          <span data-i18n="settings.menuHint.desc">Escolha uma categoria para ajustar como o StayFlow opera na sua hospedagem.</span>
         </div>
       </div>
 
@@ -1611,7 +1611,7 @@ async function deleteRoleConfirm(roleId){
 
         <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
           <div class="span-6">
-            <input type="text" data-setting="hostel_name" data-i18n-placeholder="settings.general.hostelNamePlaceholder" placeholder="Nome do hostel">
+            <input type="text" data-setting="hostel_name" data-i18n-placeholder="settings.general.hostelNamePlaceholder" placeholder="Nome da hospedagem">
           </div>
           <div class="span-6">
             <select data-setting="hostel_type" id="settingsHostelTypeSelect">
@@ -1629,7 +1629,7 @@ async function deleteRoleConfirm(roleId){
 
       <div class="card" data-settings-section="empresa">
         <h2 data-i18n="settings.company.title">Empresa</h2>
-        <p data-i18n="settings.company.desc" style="margin-bottom:14px">Dados legais, horários padrão e identidade visual do hostel.</p>
+        <p data-i18n="settings.company.desc" style="margin-bottom:14px">Dados legais, horários padrão e identidade visual da hospedagem.</p>
 
         <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
           <div class="span-6">
@@ -1680,7 +1680,7 @@ async function deleteRoleConfirm(roleId){
         <div class="settings-summary-row">
           <div>
             <h2 data-i18n="settings.whatsapp.title">📱 WhatsApp Business</h2>
-            <p class="settings-summary-desc" id="whatsappSummaryDesc" data-i18n="settings.whatsapp.desc">Conecte o número oficial do hostel no WhatsApp (Meta Cloud API).</p>
+            <p class="settings-summary-desc" id="whatsappSummaryDesc" data-i18n="settings.whatsapp.desc">Conecte o número oficial da hospedagem no WhatsApp (Meta Cloud API).</p>
           </div>
           <span class="settings-summary-chevron">›</span>
         </div>
@@ -1690,7 +1690,7 @@ async function deleteRoleConfirm(roleId){
         <div class="settings-summary-row">
           <div>
             <h2 data-i18n="settings.facebook.title">💬 Facebook Messenger</h2>
-            <p class="settings-summary-desc" id="facebookSummaryDesc" data-i18n="settings.facebook.desc">Conecte a Página do Facebook do hostel pra atender pelo Messenger.</p>
+            <p class="settings-summary-desc" id="facebookSummaryDesc" data-i18n="settings.facebook.desc">Conecte a Página do Facebook da hospedagem pra atender pelo Messenger.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
         </div>
@@ -1700,7 +1700,7 @@ async function deleteRoleConfirm(roleId){
         <div class="settings-summary-row">
           <div>
             <h2 data-i18n="settings.instagram.title">📷 Instagram Direct</h2>
-            <p class="settings-summary-desc" id="instagramSummaryDesc" data-i18n="settings.instagram.desc">Conecte a conta profissional do Instagram do hostel pra atender pelo Direct.</p>
+            <p class="settings-summary-desc" id="instagramSummaryDesc" data-i18n="settings.instagram.desc">Conecte a conta profissional do Instagram da hospedagem pra atender pelo Direct.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
         </div>
@@ -1818,7 +1818,7 @@ async function deleteRoleConfirm(roleId){
         <div class="settings-summary-row">
           <div>
             <h2 data-i18n="settings.beds24.title">🔌 Integração com canais (Booking.com, Airbnb, Hostelworld)</h2>
-            <p class="settings-summary-desc" id="beds24SummaryDesc" data-i18n="settings.beds24.intro">Conecta seu hostel com Booking.com, Airbnb e Hostelworld — reservas feitas nesses canais caem automaticamente no seu mapa de quartos, e sua disponibilidade é mantida atualizada lá também, sem risco de overbooking entre canais.</p>
+            <p class="settings-summary-desc" id="beds24SummaryDesc" data-i18n="settings.beds24.intro">Conecta sua hospedagem com Booking.com, Airbnb e Hostelworld — reservas feitas nesses canais caem automaticamente no seu mapa de quartos, e sua disponibilidade é mantida atualizada lá também, sem risco de overbooking entre canais.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
         </div>
@@ -1849,7 +1849,7 @@ async function deleteRoleConfirm(roleId){
   <div class="ask-head">
     <div>
       <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span><span data-i18n="ask.title">Pergunte à StayFlow</span></h2>
-      <p data-i18n="ask.subtitle">IA interna do seu hostel</p>
+      <p data-i18n="ask.subtitle">IA interna da sua hospedagem</p>
     </div>
     <button class="close-btn" onclick="closeAskStayFlow()">×</button>
   </div>
@@ -2225,7 +2225,7 @@ async function deleteRoleConfirm(roleId){
   // agora so existem no DOM enquanto o modal esta aberto.
   window.openWhatsappSettingsModal = function(){
     openGenericModal(T('settings.whatsapp.title', '📱 WhatsApp Business'), `
-      <p style="margin-bottom:14px">${T('settings.whatsapp.desc', 'Conecte o número oficial do hostel no WhatsApp (Meta Cloud API).')}</p>
+      <p style="margin-bottom:14px">${T('settings.whatsapp.desc', 'Conecte o número oficial da hospedagem no WhatsApp (Meta Cloud API).')}</p>
       <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
         <div style="grid-column:span 6">
           <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.phoneIdLabel', 'Phone Number ID (da Meta)')}</label>
@@ -2262,7 +2262,7 @@ async function deleteRoleConfirm(roleId){
 
   window.openFacebookSettingsModal = function(){
     openGenericModal(T('settings.facebook.title', '💬 Facebook Messenger'), `
-      <p style="margin-bottom:14px">${T('settings.facebook.desc', 'Conecte a Página do Facebook do hostel pra atender pelo Messenger.')}</p>
+      <p style="margin-bottom:14px">${T('settings.facebook.desc', 'Conecte a Página do Facebook da hospedagem pra atender pelo Messenger.')}</p>
 
       <div id="facebookConnected" style="display:none">
         <p style="margin:0 0 12px">
@@ -2302,7 +2302,7 @@ async function deleteRoleConfirm(roleId){
 
   window.openInstagramSettingsModal = function(){
     openGenericModal(T('settings.instagram.title', '📷 Instagram Direct'), `
-      <p style="margin-bottom:14px">${T('settings.instagram.desc', 'Conecte a conta profissional do Instagram do hostel pra atender pelo Direct.')}</p>
+      <p style="margin-bottom:14px">${T('settings.instagram.desc', 'Conecte a conta profissional do Instagram da hospedagem pra atender pelo Direct.')}</p>
 
       <div id="instagramConnected" style="display:none">
         <p style="margin:0 0 12px">
@@ -2624,7 +2624,7 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div id="beds24NotActivated" style="display:none">
-        <p style="font-size:13px;color:var(--muted);margin:0 0 14px">${T('settings.beds24.intro', 'Conecta seu hostel com Booking.com, Airbnb e Hostelworld — reservas feitas nesses canais caem automaticamente no seu mapa de quartos, e sua disponibilidade é mantida atualizada lá também, sem risco de overbooking entre canais.')}</p>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 14px">${T('settings.beds24.intro', 'Conecta sua hospedagem com Booking.com, Airbnb e Hostelworld — reservas feitas nesses canais caem automaticamente no seu mapa de quartos, e sua disponibilidade é mantida atualizada lá também, sem risco de overbooking entre canais.')}</p>
         <button type="button" class="btn" onclick="activateBeds24Channel()">${T('settings.beds24.activateBtn', 'Ativar integração com canais')}</button>
       </div>
 
@@ -6033,13 +6033,13 @@ window.uploadGuestDocumentUI = async function(guestId){
       });
       const data = await res.json();
       if(!res.ok || !data.success){
-        alert(data.message || "Nao foi possivel trocar de hostel.");
+        alert(data.message || "Nao foi possivel trocar de hospedagem.");
         return;
       }
       window.location.href = "/app";
     }catch(e){
-      console.error("Erro ao trocar de hostel:", e);
-      alert("Erro de conexao ao trocar de hostel.");
+      console.error("Erro ao trocar de hospedagem:", e);
+      alert("Erro de conexao ao trocar de hospedagem.");
     }
   };
 
@@ -6126,10 +6126,10 @@ window.uploadGuestDocumentUI = async function(guestId){
     const hostelMetaEl = document.querySelector(".hostel-meta");
 
     if(hostelNameEl){
-      hostelNameEl.textContent = session.hostel_name || "Hostel sem nome";
+      hostelNameEl.textContent = session.hostel_name || "Hospedagem sem nome";
     }
 
-    try{ populateHostelSelector(session); }catch(e){ console.error("Erro ao popular seletor de hostel:", e); }
+    try{ populateHostelSelector(session); }catch(e){ console.error("Erro ao popular seletor de hospedagem:", e); }
     try{ applyPermissionVisibility(session.permissions || []); }catch(e){ console.error("Erro ao aplicar visibilidade por permissao:", e); }
     try{ hideNavItemsWithoutPermission(session.permissions || []); }catch(e){ console.error("Erro ao esconder itens de menu sem permissao:", e); }
     try{ restoreLastOpenPage(); }catch(e){ console.error("Erro ao restaurar ultima pagina aberta:", e); }
