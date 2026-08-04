@@ -1302,18 +1302,13 @@ async function deleteRoleConfirm(roleId){
       <tbody id="patrimonialSecurityBody"><!-- preenchido por live --></tbody>
     </table>
   </div>
-  <div class="card">
-    <h2 data-i18n="patrimonialSecurity.integrations.title">🎥 Câmeras de vigilância</h2>
-    <p style="color:var(--muted);font-size:14px;margin-bottom:14px" data-i18n="patrimonialSecurity.integrations.desc">Cadastre a URL de acesso ao sistema de câmeras quando a hospedagem tiver um configurado. Sem isso, a segurança patrimonial segue funcionando normalmente pelo modo manual (aviso pra quem está de plantão), só sem o atalho direto.</p>
-    <div class="form-grid">
-      <div class="field">
-        <label data-i18n="patrimonialSecurity.integrations.urlLabel">URL de acesso às câmeras</label>
-        <input type="text" id="cameraFeedUrl" placeholder="https://...">
+  <div class="card settings-summary-card" onclick="openCameraSettingsModal()">
+    <div class="settings-summary-row">
+      <div>
+        <h2 data-i18n="patrimonialSecurity.integrations.title">🎥 Câmeras de vigilância</h2>
+        <p class="settings-summary-desc" id="cameraFeedSummaryDesc" data-i18n="patrimonialSecurity.integrations.desc">Cadastre a URL de acesso ao sistema de câmeras quando a hospedagem tiver um configurado.</p>
       </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-      <button type="button" class="btn primary" onclick="saveCameraIntegration()" data-i18n="common.save">Salvar</button>
-      <a id="openCamerasLink" href="#" target="_blank" rel="noopener" class="btn secondary" style="display:none" data-i18n="patrimonialSecurity.integrations.openBtn">Abrir câmeras ↗</a>
+      <span class="settings-summary-chevron">›</span>
     </div>
   </div>
 </section>
@@ -5666,26 +5661,65 @@ window.resolveSecurityIncident = async function(ticketId){
 // Cameras de vigilancia - capacidade "camera_feed" do adaptador de
 // integracoes (mesmo padrao "preparado pra tudo" usado pro resto da
 // seguranca patrimonial: sem URL configurada, so guarda vazio e nao
-// trava nada; assim que a hospedagem tiver o sistema de cameras,
-// so cola a URL aqui).
-async function loadCameraIntegration(){
-  const urlInput = document.getElementById("cameraFeedUrl");
-  const openLink = document.getElementById("openCamerasLink");
-  if(!urlInput) return;
+// trava nada; assim que a hospedagem tiver o sistema de cameras, so
+// cola a URL aqui). Mesmo padrao de "caixa clicavel + modal" ja usado
+// pro resto de Configuracoes (WhatsApp/Facebook/Instagram/Beds24) -
+// loadCameraIntegration atualiza tanto o resumo do card (sempre)
+// quanto os campos do modal (so quando ele esta aberto, por isso os
+// guards de elemento nulo).
+window.openCameraSettingsModal = function(){
+  openGenericModal(T('patrimonialSecurity.integrations.title', '🎥 Câmeras de vigilância'), `
+    <p style="margin-bottom:14px">${T('patrimonialSecurity.integrations.desc', 'Cadastre a URL de acesso ao sistema de câmeras quando a hospedagem tiver um configurado. Sem isso, a segurança patrimonial segue funcionando normalmente pelo modo manual (aviso pra quem está de plantão), só sem o atalho direto.')}</p>
+    <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('patrimonialSecurity.integrations.urlLabel', 'URL de acesso às câmeras')}</label>
+        <input type="text" id="cameraFeedUrl" autocomplete="off" placeholder="https://..." style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px">
+      <a id="openCamerasLink" href="#" target="_blank" rel="noopener" class="btn secondary" style="display:none">${T('patrimonialSecurity.integrations.openBtn', 'Abrir câmeras ↗')}</a>
+      <button class="btn" type="button" onclick="saveCameraIntegration()">${T('common.save', 'Salvar')}</button>
+    </div>
+    <div id="cameraFeedPreviewWrap" style="display:none;margin-top:16px">
+      <iframe id="cameraFeedPreview" style="width:100%;height:380px;border:1px solid var(--line);border-radius:12px;background:#000"></iframe>
+      <p style="color:var(--muted);font-size:12px;margin-top:8px">${T('patrimonialSecurity.integrations.previewNote', 'Alguns sistemas de câmera não permitem ser exibidos dentro de outro site — se a prévia acima ficar em branco, use o botão "Abrir câmeras".')}</p>
+    </div>
+    <div id="cameraFeedMessage" class="generic-modal-message"></div>
+  `);
+  loadCameraIntegration();
+};
 
+async function loadCameraIntegration(){
   try{
     const res = await fetch("/patrimonial-security/integrations/camera_feed", { credentials: "same-origin" });
     if(!res.ok) return;
     const data = await res.json();
     const url = data.config && data.config.url ? data.config.url : "";
+
+    const summaryDesc = document.getElementById("cameraFeedSummaryDesc");
+    if(summaryDesc){
+      summaryDesc.textContent = url
+        ? T('patrimonialSecurity.integrations.summaryConfigured', '✅ Configurado')
+        : T('patrimonialSecurity.integrations.summaryNotConfigured', 'Não configurado — clique pra adicionar a URL das câmeras');
+    }
+
+    const urlInput = document.getElementById("cameraFeedUrl");
+    if(!urlInput) return; // modal fechado, so o resumo do card importa
+
     urlInput.value = url;
-    if(openLink){
-      if(url){
-        openLink.href = url;
-        openLink.style.display = "inline-flex";
-      }else{
-        openLink.style.display = "none";
-      }
+
+    const openLink = document.getElementById("openCamerasLink");
+    const previewWrap = document.getElementById("cameraFeedPreviewWrap");
+    const previewFrame = document.getElementById("cameraFeedPreview");
+
+    if(url){
+      if(openLink){ openLink.href = url; openLink.style.display = "inline-flex"; }
+      if(previewWrap) previewWrap.style.display = "block";
+      if(previewFrame) previewFrame.src = url;
+    }else{
+      if(openLink) openLink.style.display = "none";
+      if(previewWrap) previewWrap.style.display = "none";
+      if(previewFrame) previewFrame.src = "";
     }
   }catch(e){
     console.warn("Erro ao carregar integração de câmeras:", e);
@@ -5693,6 +5727,9 @@ async function loadCameraIntegration(){
 }
 
 window.saveCameraIntegration = async function(){
+  const msg = document.getElementById("cameraFeedMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
   const url = (document.getElementById("cameraFeedUrl")?.value || "").trim();
   try{
     const res = await fetch("/patrimonial-security/integrations/camera_feed", {
@@ -5704,13 +5741,14 @@ window.saveCameraIntegration = async function(){
       })
     });
     if(!res.ok){
-      alert(T('common.error.generic', 'Erro de conexão.'));
+      if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
       return;
     }
+    if(msg){ msg.textContent = T('common.savedMessage', 'Salvo!'); msg.classList.add("success"); }
     loadCameraIntegration();
   }catch(e){
     console.warn("Erro ao salvar integração de câmeras:", e);
-    alert(T('common.error.generic', 'Erro de conexão.'));
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
   }
 };
 

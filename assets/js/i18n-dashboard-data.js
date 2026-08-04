@@ -12,6 +12,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "patrimonialSecurity.integrations.summaryConfigured": "✅ Configurado",
+    "patrimonialSecurity.integrations.summaryNotConfigured": "Não configurado — clique pra adicionar a URL das câmeras",
+    "patrimonialSecurity.integrations.previewNote": "Alguns sistemas de câmera não permitem ser exibidos dentro de outro site — se a prévia acima ficar em branco, use o botão \"Abrir câmeras\".",
+    "common.savedMessage": "Salvo!",
     "patrimonialSecurity.integrations.title": "🎥 Câmeras de vigilância",
     "patrimonialSecurity.integrations.desc": "Cadastre a URL de acesso ao sistema de câmeras quando a hospedagem tiver um configurado. Sem isso, a segurança patrimonial segue funcionando normalmente pelo modo manual (aviso pra quem está de plantão), só sem o atalho direto.",
     "patrimonialSecurity.integrations.urlLabel": "URL de acesso às câmeras",
@@ -858,6 +862,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "patrimonialSecurity.integrations.summaryConfigured": "✅ Configured",
+    "patrimonialSecurity.integrations.summaryNotConfigured": "Not configured — click to add the camera URL",
+    "patrimonialSecurity.integrations.previewNote": "Some camera systems don't allow being shown inside another site — if the preview above stays blank, use the \"Open cameras\" button.",
+    "common.savedMessage": "Saved!",
     "patrimonialSecurity.integrations.title": "🎥 Surveillance cameras",
     "patrimonialSecurity.integrations.desc": "Register the access URL for the camera system once the property has one set up. Without it, property security keeps working normally through the manual mode (alerts whoever's on duty), just without the direct shortcut.",
     "patrimonialSecurity.integrations.urlLabel": "Camera access URL",
@@ -1687,6 +1695,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "patrimonialSecurity.integrations.summaryConfigured": "✅ Configurado",
+    "patrimonialSecurity.integrations.summaryNotConfigured": "No configurado — haga clic para agregar la URL de las cámaras",
+    "patrimonialSecurity.integrations.previewNote": "Algunos sistemas de cámaras no permiten mostrarse dentro de otro sitio — si la vista previa queda en blanco, use el botón \"Abrir cámaras\".",
+    "common.savedMessage": "¡Guardado!",
     "patrimonialSecurity.integrations.title": "🎥 Cámaras de vigilancia",
     "patrimonialSecurity.integrations.desc": "Registre la URL de acceso al sistema de cámaras cuando el alojamiento tenga uno configurado. Sin eso, la seguridad patrimonial sigue funcionando normalmente por el modo manual (avisa a quien esté de guardia), solo sin el atajo directo.",
     "patrimonialSecurity.integrations.urlLabel": "URL de acceso a las cámaras",
@@ -2516,6 +2528,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "patrimonialSecurity.integrations.summaryConfigured": "✅ Configuré",
+    "patrimonialSecurity.integrations.summaryNotConfigured": "Non configuré — cliquez pour ajouter l'URL des caméras",
+    "patrimonialSecurity.integrations.previewNote": "Certains systèmes de caméras ne permettent pas d'être affichés dans un autre site — si l'aperçu ci-dessus reste vide, utilisez le bouton \"Ouvrir les caméras\".",
+    "common.savedMessage": "Enregistré !",
     "patrimonialSecurity.integrations.title": "🎥 Caméras de surveillance",
     "patrimonialSecurity.integrations.desc": "Enregistrez l'URL d'accès au système de caméras dès que l'établissement en a un configuré. Sans cela, la sécurité de l'établissement continue de fonctionner normalement en mode manuel (avertit la personne de garde), juste sans le raccourci direct.",
     "patrimonialSecurity.integrations.urlLabel": "URL d'accès aux caméras",
@@ -3345,6 +3361,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "patrimonialSecurity.integrations.summaryConfigured": "✅ Konfiguriert",
+    "patrimonialSecurity.integrations.summaryNotConfigured": "Nicht konfiguriert — klicken, um die Kamera-URL hinzuzufügen",
+    "patrimonialSecurity.integrations.previewNote": "Manche Kamerasysteme lassen sich nicht innerhalb einer anderen Website anzeigen — bleibt die Vorschau oben leer, nutzen Sie die Schaltfläche \"Kameras öffnen\".",
+    "common.savedMessage": "Gespeichert!",
     "patrimonialSecurity.integrations.title": "🎥 Überwachungskameras",
     "patrimonialSecurity.integrations.desc": "Erfassen Sie die Zugangs-URL zum Kamerasystem, sobald die Unterkunft eines eingerichtet hat. Ohne sie funktioniert die Objektsicherheit weiterhin normal über den manuellen Modus (Benachrichtigung des Diensthabenden), nur ohne die direkte Abkürzung.",
     "patrimonialSecurity.integrations.urlLabel": "Zugangs-URL zu den Kameras",
