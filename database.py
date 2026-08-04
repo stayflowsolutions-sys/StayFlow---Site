@@ -926,9 +926,23 @@ def create_database():
         foreign_amount REAL NOT NULL,
         exchange_rate REAL NOT NULL,
         local_amount REAL NOT NULL,
+        market_rate REAL,
+        profit REAL NOT NULL DEFAULT 0,
+        operator_user_id INTEGER,
+        operator_name TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    # Colunas adicionadas depois da criacao original da tabela (cambio
+    # como operacao de casa de cambio de verdade: cotacao atual de
+    # mercado vs cotacao usada com o hospede, lucro da diferenca, e quem
+    # operou) - add_column_if_not_exists cobre tanto banco novo quanto
+    # banco que ja tinha currency_exchanges sem essas colunas.
+    add_column_if_not_exists(cursor, "currency_exchanges", "market_rate", "REAL")
+    add_column_if_not_exists(cursor, "currency_exchanges", "profit", "REAL NOT NULL DEFAULT 0")
+    add_column_if_not_exists(cursor, "currency_exchanges", "operator_user_id", "INTEGER")
+    add_column_if_not_exists(cursor, "currency_exchanges", "operator_name", "TEXT")
+    add_column_if_not_exists(cursor, "currency_exchanges", "guest_id", "INTEGER")
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS suppliers (
@@ -3472,6 +3486,16 @@ def get_guest_profile(hostel_id, guest_id):
 
     documents = [dict(row) for row in cursor.fetchall()]
 
+    cursor.execute("""
+        SELECT foreign_currency, foreign_amount, exchange_rate, market_rate,
+               local_amount, profit, operator_name, created_at
+        FROM currency_exchanges
+        WHERE hostel_id = ? AND guest_id = ?
+        ORDER BY created_at DESC
+    """, (hostel_id, guest_id))
+
+    exchanges = [dict(row) for row in cursor.fetchall()]
+
     conn.close()
 
     return {
@@ -3479,7 +3503,8 @@ def get_guest_profile(hostel_id, guest_id):
         "messages": messages,
         "opportunities": opportunities,
         "documents": documents,
-        "reservations": get_guest_reservations(hostel_id, guest_id)
+        "reservations": get_guest_reservations(hostel_id, guest_id),
+        "exchanges": exchanges
     }
 
 
@@ -3625,8 +3650,12 @@ def get_finance_summary(hostel_id):
     """, (hostel_id,))
     confirmed_revenue = cursor.fetchone()["total"]
 
+    # local_amount = valor creditado ao hospede na cotacao usada;
+    # profit = lucro do hostel na diferenca pra cotacao atual de mercado
+    # (0 quando nao ha cotacao de referencia informada). Os dois juntos
+    # sao o valor real que o cambio gerou de receita.
     cursor.execute(
-        "SELECT COALESCE(SUM(local_amount), 0) AS total FROM currency_exchanges WHERE hostel_id = ?",
+        "SELECT COALESCE(SUM(local_amount + profit), 0) AS total FROM currency_exchanges WHERE hostel_id = ?",
         (hostel_id,)
     )
     confirmed_revenue += cursor.fetchone()["total"]
@@ -3664,7 +3693,7 @@ def get_finance_summary(hostel_id):
         SELECT
             'Câmbio' AS type,
             COALESCE(NULLIF(description, ''), foreign_currency || ' em dinheiro') AS description,
-            local_amount AS value,
+            local_amount + profit AS value,
             'confirmed' AS status,
             created_at
         FROM currency_exchanges
@@ -3684,17 +3713,33 @@ def get_finance_summary(hostel_id):
     }
 
 
-def create_currency_exchange(hostel_id, description, foreign_currency, foreign_amount, exchange_rate):
+def create_currency_exchange(
+    hostel_id, description, foreign_currency, foreign_amount, exchange_rate,
+    market_rate=None, operator_user_id=None, operator_name=None, guest_id=None
+):
+    """
+    Cambio como operacao de casa de cambio de verdade: exchange_rate e
+    a cotacao USADA (o que foi de fato dado ao hospede - normalmente
+    mais baixa que o mercado), market_rate e a cotacao ATUAL de
+    referencia no momento (ex: dolar blue via Bluelytics). profit e a
+    diferenca que fica de lucro pro hostel - so existe quando
+    market_rate foi informado, senao fica 0 (cambio registrado sem
+    referencia de mercado, sem lucro calculado).
+    """
     local_amount = foreign_amount * exchange_rate
+    profit = foreign_amount * (market_rate - exchange_rate) if market_rate is not None else 0
+
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
         """
         INSERT INTO currency_exchanges
-            (hostel_id, description, foreign_currency, foreign_amount, exchange_rate, local_amount)
-        VALUES (?, ?, ?, ?, ?, ?)
+            (hostel_id, description, foreign_currency, foreign_amount, exchange_rate,
+             local_amount, market_rate, profit, operator_user_id, operator_name, guest_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (hostel_id, description, foreign_currency, foreign_amount, exchange_rate, local_amount)
+        (hostel_id, description, foreign_currency, foreign_amount, exchange_rate,
+         local_amount, market_rate, profit, operator_user_id, operator_name, guest_id)
     )
     exchange_id = cursor.lastrowid
     conn.commit()
