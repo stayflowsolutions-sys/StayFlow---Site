@@ -3607,30 +3607,12 @@ def get_finance_summary(hostel_id):
     """, (hostel_id,))
     confirmed_revenue = cursor.fetchone()["total"]
 
-    cursor.execute("""
-        SELECT COALESCE(SUM(o.estimated_value), 0) AS total
-        FROM opportunities o
-        JOIN guests g ON o.guest_id = g.id
-        WHERE g.hostel_id = ? AND o.status = 'open' AND o.urgency = 'high'
-    """, (hostel_id,))
-    at_risk = cursor.fetchone()["total"]
-
-    cursor.execute("""
-        SELECT COALESCE(SUM(o.estimated_value), 0) AS total
-        FROM opportunities o
-        JOIN guests g ON o.guest_id = g.id
-        WHERE g.hostel_id = ? AND o.status = 'open'
-    """, (hostel_id,))
-    recoverable = cursor.fetchone()["total"]
-
-    cursor.execute("""
-        SELECT COALESCE(SUM(o.estimated_value), 0) AS total
-        FROM opportunities o
-        JOIN guests g ON o.guest_id = g.id
-        WHERE g.hostel_id = ? AND o.status = 'closed'
-    """, (hostel_id,))
-    recovered = cursor.fetchone()["total"]
-
+    # Financeiro mostra so o que realmente entrou na empresa - reserva
+    # confirmada e pagamento de verdade. Oportunidade (estimativa, ainda
+    # nao fechada) fica de fora de proposito: ela ja tem casa propria no
+    # Opportunity Center (get_opportunities_list), nao faz sentido
+    # aparecer duas vezes com significados diferentes (estimativa vs
+    # dinheiro reconciliado).
     cursor.execute("""
         SELECT
             'Reserva' AS type,
@@ -3639,19 +3621,7 @@ def get_finance_summary(hostel_id):
             status,
             created_at
         FROM reservations
-        WHERE hostel_id = ?
-
-        UNION ALL
-
-        SELECT
-            'Oportunidade' AS type,
-            o.description AS description,
-            o.estimated_value AS value,
-            o.status,
-            o.created_at
-        FROM opportunities o
-        JOIN guests g ON o.guest_id = g.id
-        WHERE g.hostel_id = ?
+        WHERE hostel_id = ? AND status = 'confirmed'
 
         UNION ALL
 
@@ -3667,7 +3637,7 @@ def get_finance_summary(hostel_id):
 
         ORDER BY created_at DESC
         LIMIT 30
-    """, (hostel_id, hostel_id, hostel_id))
+    """, (hostel_id, hostel_id))
 
     movements = [dict(row) for row in cursor.fetchall()]
 
@@ -3675,9 +3645,6 @@ def get_finance_summary(hostel_id):
 
     return {
         "confirmed_revenue": confirmed_revenue,
-        "recovered": recovered,
-        "at_risk": at_risk,
-        "recoverable": recoverable,
         "movements": movements
     }
 

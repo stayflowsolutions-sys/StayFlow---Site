@@ -4,10 +4,10 @@
 // - KPIs do dashboard (kpiOpportunities, metricAlmostClosed, metricProbableRevenue)
 // - Ações prioritárias (#liveActivityBody)
 
-function formatCurrencyBRL(value){
-  if (isNaN(value)) value = 0;
-  return `R$ ${Number(value).toFixed(2)}`;
-}
+// formatMoney() vem de dashboard.html (usa a moeda configurada em
+// Configuracoes > Empresa) - script carregado depois, formatMoney ja
+// existe no window quando as funcoes abaixo rodam (so no evento
+// stayflow:session-ready, nunca antes).
 
 function updateDashboardFromOpportunities(opportunities){
   const totalOpps = opportunities.length;
@@ -27,7 +27,7 @@ function updateDashboardFromOpportunities(opportunities){
 
   const metricProbableRevenue = document.getElementById("metricProbableRevenue");
   if (metricProbableRevenue) {
-    metricProbableRevenue.textContent = totalOpps ? formatCurrencyBRL(probableRevenue) : "—";
+    metricProbableRevenue.textContent = totalOpps ? formatMoney(probableRevenue) : "—";
   }
   // metricHumanReplies e metricRisk ficam como estão (não temos esses dados aqui)
 }
@@ -53,7 +53,7 @@ function updatePriorityActionsFromOpportunities(opportunities){
     const urgency = (opportunity.urgency || "low").toLowerCase();
     const estimatedValue = Number(opportunity.estimated_value || 0);
     const actionLabel = opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.');
-    const impactLabel = estimatedValue > 0 ? formatCurrencyBRL(estimatedValue) : "—";
+    const impactLabel = estimatedValue > 0 ? formatMoney(estimatedValue) : "—";
 
     row.innerHTML = `
       <td>${actionLabel}</td>
@@ -107,7 +107,7 @@ function updateOpportunityCenterTable(opportunities){
       </td>
       <td>${opportunity.type || "opportunity"}</td>
       <td>${score}/100</td>
-      <td>${formatCurrencyBRL(estimatedValue)}</td>
+      <td>${formatMoney(estimatedValue)}</td>
       <td>${opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.')}</td>
     `;
 
