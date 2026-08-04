@@ -28,6 +28,11 @@ from routes.quick_replies import quick_replies_bp
 from routes.security import security_bp
 from routes.ask import ask_bp
 from routes.rooms import rooms_bp
+from routes.kitchen import kitchen_bp
+from routes.maintenance import maintenance_bp
+from routes.patrimonial_security import patrimonial_security_bp
+from routes.parking import parking_bp
+from routes.scheduling import scheduling_bp
 
 app = Flask(__name__, static_folder=None)
 
@@ -67,6 +72,11 @@ app.register_blueprint(quick_replies_bp)
 app.register_blueprint(security_bp)
 app.register_blueprint(ask_bp)
 app.register_blueprint(rooms_bp)
+app.register_blueprint(kitchen_bp)
+app.register_blueprint(maintenance_bp)
+app.register_blueprint(patrimonial_security_bp)
+app.register_blueprint(parking_bp)
+app.register_blueprint(scheduling_bp)
 
 # Caminho do frontend: por padrão assume que a pasta do site fica ao lado
 # da pasta do backend (ex: C:\StayFlow\backend + C:\StayFlow\StayFlow---Site).

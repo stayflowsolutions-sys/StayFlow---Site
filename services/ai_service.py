@@ -13,6 +13,14 @@ from database import (
     get_offerings_for_chat,
     save_guest_date_of_birth_by_id,
     save_guest_nationality_by_id,
+    get_menu_items,
+    find_menu_item_by_name,
+    create_kitchen_order,
+    create_maintenance_ticket,
+    create_security_incident,
+    get_active_vehicle_for_guest,
+    request_valet,
+    notify_on_duty_staff_for_ticket,
 )
 
 load_dotenv()
@@ -29,10 +37,13 @@ relative dates to actual YYYY-MM-DD dates based on it, never guess.
 LANGUAGE — IMPORTANT, DO NOT SWITCH MID-CONVERSATION:
 {language_instruction}
 
-You are the virtual assistant of Hostel Lagares in Mendoza.
+You are the virtual assistant of {hostel_name}, a {hostel_type_label}.
 
-You are a warm, easygoing hostel receptionist — not a form to fill out.
-Write like a real person texting on WhatsApp: short messages, casual tone,
+You are a warm, attentive receptionist — not a form to fill out. Match your
+tone to the property type stated above: relaxed and casual for a hostel,
+more polished and professional for a hotel or resort, but always
+personable, never robotic.
+Write like a real person texting on WhatsApp: short messages, natural tone,
 occasional light warmth (an emoji here and there is fine, don't overdo it).
 Vary your sentence structure. Never repeat the same phrasing pattern
 ("Perfect! ... Could you...?") over and over — that's what makes you sound
@@ -55,9 +66,9 @@ Information you're gathering, in a natural order (not a strict script):
 - email
 - whether they'd like towels, extra blankets, or tour recommendations
 
-AFTER THE RESERVATION IS CREATED — HOSTEL REGISTRATION (IMPORTANT):
+AFTER THE RESERVATION IS CREATED — GUEST REGISTRATION (IMPORTANT):
 The moment create_reservation succeeds, treat that as the trigger to start
-the hostel's legal guest registration — this is a required checklist, not
+the property's legal guest registration — this is a required checklist, not
 optional small talk, even though you still ask for it warmly and one or two
 items per message (never dump the whole list in one message). Go through
 these, in order, skipping anything you've already collected earlier in the
@@ -82,7 +93,7 @@ until you've gone through all six of these at least once.
 PRICING AND ROOM OPTIONS — IMPORTANT:
 Never invent a price or say a room type is available without checking first.
 As soon as the guest asks about room types, prices, or what's included, call
-get_room_options to see the real categories this hostel actually has
+get_room_options to see the real categories this property actually has
 configured (name, price per night, capacity, description/what's included).
 Quote the real price_per_night and multiply by the number of nights to give
 the total for their stay. NEVER count nights yourself by subtracting dates in
@@ -93,7 +104,7 @@ price_per_night. If a category has no price configured yet, say pricing
 needs to be confirmed by the team instead of guessing a number.
 NEVER rescale or reformat the number — if price_per_night is 20000, say
 "20.000" (or "20000"), never "200" or "R$200". Don't guess a currency
-symbol either; just state the plain number, since the hostel's actual
+symbol either; just state the plain number, since the property's actual
 currency isn't ARS/BRL/USD-labeled in the data — say "20.000 por noite"
 without inventing a symbol, unless the guest tells you their currency.
 If the guest asks about extras (towel, blanket, etc.), call get_addons and
@@ -179,6 +190,28 @@ that isn't simply "more nights, same everything", do NOT call
 extend_reservation — call flag_extension_for_approval instead, summarizing
 what they asked for, and tell the guest the team will confirm shortly
 (reception needs to review that one manually).
+
+DURING-STAY REQUESTS — ROOM SERVICE, MAINTENANCE, SECURITY, VALET:
+These are separate from the reservation flow above and can come up any time
+in the conversation, from a first-time guest or a returning one:
+- Food/drink order (room service or restaurant): call get_menu first to see
+  real items and prices, confirm what the guest wants and their room/table,
+  then call create_kitchen_order. Runs automatically, no approval needed.
+- A problem with the room/property (broken shower, AC, etc.): call
+  report_maintenance_issue. Ask how urgent it feels to the guest, but you
+  still set base_urgency yourself from the fixed list — see the tool's own
+  description for how to judge it.
+- Anything safety-related (suspicious activity, feeling unsafe, a lost/
+  stolen item): call report_security_concern. If it sounds like an active
+  emergency, also tell the guest to contact the front desk or local
+  emergency services directly — don't treat chat as the only channel for
+  something time-critical.
+- Asking for their parked car: call request_valet (no arguments needed, it
+  resolves the guest's vehicle automatically). If it errors, tell the guest
+  to check with the front desk instead of retrying.
+For all four, always tell the guest their request was received and the
+right team has been notified — never leave it unacknowledged, and never
+invent an ETA you don't actually have.
 
 WHEN YOU'RE DONE:
 Once you've naturally covered all the information above and the guest has
@@ -273,7 +306,7 @@ RESERVATION_TOOLS = [
             "description": (
                 "Registers that the guest wants to extend their stay under "
                 "different conditions (different room, discount, etc.) so the "
-                "hostel team can review it manually. Use this instead of "
+                "property team can review it manually. Use this instead of "
                 "extend_reservation whenever the request isn't simply "
                 "'same everything, more nights'."
             ),
@@ -294,7 +327,7 @@ RESERVATION_TOOLS = [
         "function": {
             "name": "get_room_options",
             "description": (
-                "Returns the hostel's real room categories, with price per "
+                "Returns the property's real room categories, with price per "
                 "night, capacity and description (e.g. what's included). "
                 "Always call this before quoting a price or describing room "
                 "options to a guest."
@@ -380,7 +413,7 @@ RESERVATION_TOOLS = [
             "name": "save_guest_date_of_birth",
             "description": (
                 "Call this as soon as the guest states their date of birth "
-                "(part of hostel registration, asked after the reservation "
+                "(part of guest registration, asked after the reservation "
                 "is created), so it can be saved to their profile."
             ),
             "parameters": {
@@ -398,7 +431,7 @@ RESERVATION_TOOLS = [
             "name": "save_guest_nationality",
             "description": (
                 "Call this as soon as the guest states their nationality "
-                "(part of hostel registration, asked after the reservation "
+                "(part of guest registration, asked after the reservation "
                 "is created), so it can be saved to their profile."
             ),
             "parameters": {
@@ -412,10 +445,138 @@ RESERVATION_TOOLS = [
     }
 ]
 
+# Ferramentas dos modulos operacionais novos (Sessao 9): cozinha/room
+# service, manutencao, seguranca patrimonial e manobrista. Mesmo
+# padrao das RESERVATION_TOOLS - ligadas so quando hostel_id+guest_id
+# existem (ver `tools = ...` mais abaixo).
+OPERATIONAL_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_menu",
+            "description": (
+                "Returns the property's real food/drink menu items, with "
+                "price and category. Always call this before quoting a menu "
+                "item or its price to a guest - never invent an item or a "
+                "price. If this comes back empty, the property has no menu "
+                "configured yet - tell the guest room service isn't "
+                "available through chat right now."
+            ),
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_kitchen_order",
+            "description": (
+                "Places a food/drink order with the kitchen once the guest "
+                "has confirmed what they want and their room/table. Only "
+                "use item names that came back from get_menu. This is "
+                "confirmed automatically - no approval needed - but always "
+                "tell the guest their order was received and give a rough "
+                "sense that it's being prepared, never promise an exact "
+                "delivery time."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "Room number or table where the order should be delivered."
+                    },
+                    "items": {
+                        "type": "array",
+                        "description": "Items being ordered.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string", "description": "Menu item name, exactly as returned by get_menu."},
+                                "quantity": {"type": "integer"},
+                                "notes": {"type": "string", "description": "Optional, e.g. 'no onions'."}
+                            },
+                            "required": ["name", "quantity"]
+                        }
+                    }
+                },
+                "required": ["location", "items"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "report_maintenance_issue",
+            "description": (
+                "Opens a maintenance ticket for a problem the guest reports "
+                "(broken shower, AC not working, etc.). Ask the guest how "
+                "urgent it feels to them and pass that as guest_reported_urgency "
+                "in their own words - but YOU still choose base_urgency from the "
+                "fixed list (urgent/high/normal/low) based on the nature of the "
+                "problem, weighed against how it compares to what a property "
+                "normally deals with (a water leak or no AC in hot weather is "
+                "'urgent'/'high' even if the guest downplays it; a burnt-out "
+                "lightbulb is 'low' even if the guest calls it urgent). This "
+                "runs automatically, no approval needed - always tell the guest "
+                "the team has been notified."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {"type": "string", "description": "Room number or area with the problem."},
+                    "description": {"type": "string", "description": "What's wrong, in the guest's own words."},
+                    "category": {"type": "string", "description": "Short category, e.g. 'plumbing', 'electrical', 'air conditioning', 'furniture'."},
+                    "guest_reported_urgency": {"type": "string", "description": "How urgent the guest says this is, in their own words."},
+                    "base_urgency": {"type": "string", "enum": ["urgent", "high", "normal", "low"], "description": "Your own assessment, used to order the property's ticket queue."}
+                },
+                "required": ["location", "description", "base_urgency"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "report_security_concern",
+            "description": (
+                "Opens a security/safety incident when a guest reports "
+                "something concerning (suspicious person, unsafe situation, "
+                "lost/stolen item, etc.). Runs automatically, no approval "
+                "needed - always tell the guest the team has been notified, "
+                "and if it sounds like an active emergency, tell them to also "
+                "contact the front desk or local emergency services directly, "
+                "don't rely on chat alone for anything time-critical."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {"type": "string", "description": "Where this is happening/happened."},
+                    "description": {"type": "string", "description": "What the guest reported, in their own words."},
+                    "incident_type": {"type": "string", "description": "Short category, e.g. 'suspicious_activity', 'theft', 'unsafe_situation'."}
+                },
+                "required": ["location", "description"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "request_valet",
+            "description": (
+                "Requests the guest's parked vehicle be brought around (valet "
+                "retrieval). Only offer this if the guest has a vehicle "
+                "checked in with valet service - if this tool returns an "
+                "error saying no vehicle was found, tell the guest to check "
+                "with the front desk instead of retrying."
+            ),
+            "parameters": {"type": "object", "properties": {}}
+        }
+    }
+]
+
 MAX_TOOL_ROUNDS = 4
 
 
-def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None):
+def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None, hostel_name=None, hostel_type=None):
     # So sugere o WhatsApp como canal alternativo quando a conversa NAO
     # e no proprio WhatsApp (nao faz sentido sugerir o hospede ir pro
     # canal em que ja esta) e o hostel realmente tem um numero
@@ -428,7 +589,7 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             f"ALTERNATIVE CONTACT CHANNEL — IMPORTANT: this conversation is "
             f"happening outside WhatsApp. Early on — as part of your first or "
             f"second message (the welcome) — briefly let the guest know they "
-            f"can also reach the hostel on WhatsApp at {hostel_phone} if they "
+            f"can also reach the property on WhatsApp at {hostel_phone} if they "
             f"prefer, without making it the focus of the message. Mention it "
             f"again near the end of the conversation (when closing, or when "
             f"final questions/confirmations come up), so they have that "
@@ -494,12 +655,27 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             "for the rest of the conversation, never switching on your own."
         )
 
+    # hostel_type e um campo livre (Configuracoes > Empresa aceita "+ Novo
+    # tipo..."), entao so usamos os rotulos conhecidos pra deixar o texto
+    # natural em ingles ("a hostel", "a hotel") - qualquer tipo customizado
+    # cai no generico "hospitality property", que ainda funciona bem na frase.
+    _HOSTEL_TYPE_LABELS = {
+        "hostel": "hostel",
+        "hotel": "hotel",
+        "pousada": "guesthouse",
+        "resort": "resort",
+        "flat": "serviced apartment",
+    }
+    hostel_type_label = _HOSTEL_TYPE_LABELS.get((hostel_type or "").strip().lower(), "hospitality property")
+
     system_prompt = SYSTEM_PROMPT.format(
         phone_instruction=phone_instruction,
         language_instruction=language_instruction,
         name_instruction=name_instruction,
         alt_channel_instruction=alt_channel_instruction,
-        today_date=datetime.date.today().isoformat()
+        today_date=datetime.date.today().isoformat(),
+        hostel_name=hostel_name or "the property",
+        hostel_type_label=hostel_type_label
     )
 
     messages = (
@@ -516,7 +692,7 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
     # sempre tem guest_id resolvido pelo chamador.
     tools = [SAVE_GUEST_NAME_TOOL, SAVE_GUEST_LANGUAGE_TOOL]
     if hostel_id and guest_id:
-        tools = tools + RESERVATION_TOOLS
+        tools = tools + RESERVATION_TOOLS + OPERATIONAL_TOOLS
 
     extracted_name = None
     extracted_language = None
@@ -613,6 +789,70 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
                 save_guest_date_of_birth_by_id(guest_id, args.get("date_of_birth"))
             elif name == "save_guest_nationality":
                 save_guest_nationality_by_id(guest_id, args.get("nationality"))
+            elif name == "get_menu":
+                try:
+                    result = get_menu_items(hostel_id)
+                    tool_content = json.dumps(result, ensure_ascii=False)
+                except Exception as error:
+                    tool_content = json.dumps({"error": "Erro ao buscar cardápio."}, ensure_ascii=False)
+            elif name == "create_kitchen_order":
+                # Resolve nome->menu_item_id ANTES de criar o pedido - so
+                # chama create_kitchen_order (que ja da baixa de estoque)
+                # se TODOS os itens baterem com exatamente um item do
+                # cardapio, pra nunca criar um pedido parcial/errado.
+                resolved_items = []
+                resolution_errors = []
+                for requested_item in args.get("items", []):
+                    matches = find_menu_item_by_name(hostel_id, requested_item.get("name", ""))
+                    if len(matches) == 1:
+                        resolved_items.append({
+                            "menu_item_id": matches[0]["id"],
+                            "quantity": requested_item.get("quantity", 1),
+                            "notes": requested_item.get("notes"),
+                        })
+                    elif not matches:
+                        resolution_errors.append(f"Item não encontrado no cardápio: '{requested_item.get('name')}'.")
+                    else:
+                        resolution_errors.append(f"Mais de um item do cardápio bate com '{requested_item.get('name')}' - seja mais específico.")
+
+                if resolution_errors:
+                    tool_content = json.dumps({"error": " ".join(resolution_errors)}, ensure_ascii=False)
+                else:
+                    try:
+                        ticket_id = create_kitchen_order(
+                            hostel_id, args.get("location"), resolved_items,
+                            reported_by_guest_id=guest_id, channel=channel,
+                        )
+                        notify_on_duty_staff_for_ticket(hostel_id, ticket_id, "kitchen", channel=channel)
+                        tool_content = json.dumps({"success": True, "ticket_id": ticket_id}, ensure_ascii=False)
+                    except ValueError as error:
+                        tool_content = json.dumps({"error": str(error)}, ensure_ascii=False)
+            elif name == "report_maintenance_issue":
+                ticket_id = create_maintenance_ticket(
+                    hostel_id, args.get("location"), args.get("description"),
+                    category=args.get("category"),
+                    guest_reported_urgency=args.get("guest_reported_urgency"),
+                    base_urgency=args.get("base_urgency", "normal"),
+                    reported_by_guest_id=guest_id, channel=channel,
+                )
+                notify_on_duty_staff_for_ticket(hostel_id, ticket_id, "maintenance", channel=channel)
+                tool_content = json.dumps({"success": True, "ticket_id": ticket_id}, ensure_ascii=False)
+            elif name == "report_security_concern":
+                ticket_id = create_security_incident(
+                    hostel_id, args.get("location"), args.get("description"),
+                    incident_type=args.get("incident_type"), reported_via="guest_chat",
+                    reported_by_guest_id=guest_id, channel=channel,
+                )
+                notify_on_duty_staff_for_ticket(hostel_id, ticket_id, "patrimonial_security", channel=channel)
+                tool_content = json.dumps({"success": True, "ticket_id": ticket_id}, ensure_ascii=False)
+            elif name == "request_valet":
+                vehicle = get_active_vehicle_for_guest(hostel_id, guest_id)
+                if not vehicle:
+                    tool_content = json.dumps({"error": "Nenhum veículo com manobrista encontrado pra esse hóspede."}, ensure_ascii=False)
+                else:
+                    ticket_id = request_valet(hostel_id, vehicle["id"], reported_by_guest_id=guest_id, channel=channel)
+                    notify_on_duty_staff_for_ticket(hostel_id, ticket_id, "parking", channel=channel)
+                    tool_content = json.dumps({"success": True, "ticket_id": ticket_id}, ensure_ascii=False)
 
             messages.append({
                 "role": "tool",

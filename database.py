@@ -289,6 +289,48 @@ def _backfill_security_billing_for_full_access_roles(cursor):
         )
 
 
+# As 14 chaves que existiam antes das 5 novas de Sessao 9 (kitchen,
+# maintenance, patrimonial_security, parking, scheduling) - mesmo
+# raciocinio de _LEGACY_FULL_ACCESS_PERMISSIONS acima, fixo aqui de
+# proposito (nao le de utils.permissions.ALL_PERMISSIONS, que ja inclui
+# as chaves novas e nao serviria pra detectar quem era "acesso total"
+# no esquema anterior a esta sessao).
+_PRE_SESSION9_FULL_ACCESS_PERMISSIONS = {
+    "dashboard", "chats", "opportunities", "reservations", "operations",
+    "guests", "finance", "reports", "inventory", "revenue", "settings",
+    "team", "security", "billing",
+}
+
+_SESSION9_NEW_PERMISSIONS = {"kitchen", "maintenance", "patrimonial_security", "parking", "scheduling"}
+
+
+def _backfill_operational_modules_for_full_access_roles(cursor):
+    """
+    Mesmo problema de sempre (ver _backfill_security_billing_for_full_
+    access_roles): role criada antes desta sessao guarda string
+    congelada, entao os 5 modulos operacionais novos (cozinha,
+    manutencao, seguranca patrimonial, estacionamento, escala) nao
+    chegam sozinhos em quem ja tinha acesso total no esquema anterior.
+    """
+    cursor.execute("SELECT id, permissions FROM roles")
+    roles = cursor.fetchall()
+
+    for role in roles:
+        current = set(p for p in (role["permissions"] or "").split(",") if p)
+
+        if not _PRE_SESSION9_FULL_ACCESS_PERMISSIONS.issubset(current):
+            continue
+
+        if _SESSION9_NEW_PERMISSIONS.issubset(current):
+            continue
+
+        updated = current | _SESSION9_NEW_PERMISSIONS
+        cursor.execute(
+            "UPDATE roles SET permissions = ? WHERE id = ?",
+            (",".join(sorted(updated)), role["id"])
+        )
+
+
 def create_database():
     conn = get_connection()
     cursor = conn.cursor()
@@ -450,6 +492,7 @@ def create_database():
         _migrate_users_to_memberships(cursor)
 
     _backfill_security_billing_for_full_access_roles(cursor)
+    _backfill_operational_modules_for_full_access_roles(cursor)
 
     # Documentos de identidade (foto de passaporte/RG) enviados pelo
     # hospede via WhatsApp como imagem - arquivo fica no mesmo disco
@@ -927,6 +970,221 @@ def create_database():
         name TEXT NOT NULL,
         price REAL DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # ===== Camada compartilhada: Cozinha/Manutencao/Seguranca
+    # Patrimonial/Estacionamento (Sessao 9) =====
+    #
+    # As quatro areas operacionais novas (cozinha, manutencao, seguranca
+    # patrimonial, estacionamento) compartilham o mesmo miolo: alguem
+    # relata algo (hospede ou equipe), vira um "chamado" com dono e
+    # status, e a pessoa certa de plantao naquele setor e notificada -
+    # em vez de reconstruir essa logica 4 vezes, ela existe uma vez
+    # (sections/staff_shifts/tickets/ticket_notifications) e cada area
+    # so acrescenta a tabela de detalhe especifica dela.
+
+    # Substitui "texto livre" de setor/area (ex: "Salao A" digitado
+    # diferente em dias diferentes quebraria a busca de "quem esta de
+    # plantao aqui") por um cadastro real, com FK.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sections (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        department TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # A grade de escala - quem cobre qual setor, quando. Fonte de
+    # verdade unica de "quem esta de plantao agora", consultada por
+    # todo o resto (cozinha, manutencao, seguranca, estacionamento) na
+    # hora de decidir quem notificar.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS staff_shifts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        membership_id INTEGER NOT NULL,
+        department TEXT NOT NULL,
+        section_id INTEGER,
+        shift_date TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'scheduled',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Troca/cobertura de turno - separado de staff_shifts de proposito,
+    # pra manter a grade limpa (so "quem cobre o que, quando") e isolar
+    # o processo de pedir/aceitar substituicao, com trilha de quem
+    # pediu e quem assumiu.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS shift_coverage_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        shift_id INTEGER NOT NULL,
+        requested_by_membership_id INTEGER NOT NULL,
+        covering_membership_id INTEGER,
+        status TEXT NOT NULL DEFAULT 'pending',
+        requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        resolved_at TIMESTAMP
+    )
+    """)
+
+    # O "chamado" generico - pedido de cozinha, chamado de manutencao e
+    # incidente de seguranca sao so "tipos" dele (cada um com sua
+    # tabela de detalhe especifica, ligada por ticket_id). Sem coluna
+    # de prioridade fixa de proposito: a prioridade efetiva (base_urgency
+    # + tempo de espera + peso da categoria) e calculada na hora de
+    # ordenar/consultar, nao gravada uma vez e esquecida - um chamado
+    # "medio" parado ha 3 dias tem que furar fila na frente de um
+    # "medio" aberto ha 3 minutos, e isso so funciona se for recalculado
+    # a cada consulta.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS tickets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        reported_by_guest_id INTEGER,
+        reported_by_membership_id INTEGER,
+        location TEXT,
+        description TEXT,
+        base_urgency TEXT NOT NULL DEFAULT 'normal',
+        status TEXT NOT NULL DEFAULT 'open',
+        assigned_to_membership_id INTEGER,
+        channel TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        assigned_at TIMESTAMP,
+        resolved_at TIMESTAMP,
+        resolution_notes TEXT
+    )
+    """)
+
+    # Log de notificacao - sem isso nao da pra provar (nem ajustar)
+    # que a pessoa certa foi avisada e quando, o que e o ponto central
+    # de nao deixar isso virar um monte de notificacao solta.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS ticket_notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_id INTEGER NOT NULL,
+        membership_id INTEGER NOT NULL,
+        notified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        channel TEXT,
+        acknowledged_at TIMESTAMP
+    )
+    """)
+
+    # ===== Cozinha / Room Service =====
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS menu_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        price REAL NOT NULL DEFAULT 0,
+        station TEXT NOT NULL DEFAULT 'cozinha',
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # A "receita" - liga item do cardapio ao estoque ja existente
+    # (inventory), pra dar baixa automatica sem precisar de nenhum
+    # controle de estoque exclusivo da cozinha.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS menu_item_ingredients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        menu_item_id INTEGER NOT NULL,
+        inventory_item_id INTEGER NOT NULL,
+        quantity REAL NOT NULL DEFAULT 1
+    )
+    """)
+
+    # Status por ITEM, nao so pelo pedido inteiro - bebida sai antes de
+    # comida num servico de mesa de verdade; o status do ticket geral e
+    # derivado destes (ver get_kitchen_order_status).
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS kitchen_order_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_id INTEGER NOT NULL,
+        menu_item_id INTEGER NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        unit_price REAL NOT NULL DEFAULT 0,
+        notes TEXT,
+        status TEXT NOT NULL DEFAULT 'pending'
+    )
+    """)
+
+    # ===== Manutencao =====
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS maintenance_issues (
+        ticket_id INTEGER PRIMARY KEY,
+        category TEXT,
+        guest_reported_urgency TEXT
+    )
+    """)
+
+    # ===== Seguranca Patrimonial =====
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS security_incidents (
+        ticket_id INTEGER PRIMARY KEY,
+        incident_type TEXT,
+        reported_via TEXT
+    )
+    """)
+
+    # Um hotel pode ter mais de um sistema (camera de um fornecedor,
+    # controle de acesso de outro, telefonia de um terceiro) - uma
+    # linha POR CAPACIDADE, nao uma so pro hotel inteiro, exatamente
+    # pra nao travar em "so funciona se o hotel tiver X sistema
+    # especifico". provider='manual_fallback' (sem api) e o padrao
+    # seguro de lancamento - so vira 'api' quando o hotel confirmar de
+    # verdade o sistema que usa.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS hostel_system_integrations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        capability TEXT NOT NULL,
+        provider TEXT NOT NULL DEFAULT 'manual_fallback',
+        config TEXT,
+        fallback_phone_number TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(hostel_id, capability)
+    )
+    """)
+
+    # ===== Estacionamento =====
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS vehicles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        guest_id INTEGER NOT NULL,
+        reservation_id INTEGER,
+        plate TEXT,
+        model TEXT,
+        color TEXT,
+        spot_number TEXT,
+        service_type TEXT NOT NULL DEFAULT 'autoatendimento',
+        checked_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        checked_out_at TIMESTAMP
+    )
+    """)
+
+    # Cobranca de estacionamento independente do tipo de servico
+    # (manobrista/autoatendimento e cobranca sao dois eixos separados) -
+    # preparado pros 3 modelos vistos no mercado: incluso pra todo
+    # mundo, cobrado a parte, ou gratis so por categoria de quarto.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS hostel_parking_settings (
+        hostel_id INTEGER PRIMARY KEY,
+        pricing_model TEXT NOT NULL DEFAULT 'incluso',
+        daily_rate REAL DEFAULT 0,
+        included_for_categories TEXT
     )
     """)
 
@@ -2647,6 +2905,22 @@ def is_opportunity_generation_enabled(hostel_id):
         return True
 
     return bool(row["opportunity_generation"])
+
+
+def get_hostel_type(hostel_id):
+    """
+    Tipo de propriedade (hostel/hotel/pousada/resort/flat/customizado),
+    o mesmo campo configurado em Configuracoes > Empresa - usado pela IA
+    pra ajustar o proprio tom de atendimento (ver services/ai_service.py),
+    pra nao soar como recepcionista de hostel casual falando com hospede
+    de resort 5 estrelas, e vice-versa.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT hostel_type FROM settings WHERE hostel_id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["hostel_type"] if row and row["hostel_type"] else None
 
 
 def is_ai_enabled(hostel_id):
@@ -6353,6 +6627,876 @@ def get_hostel_id_by_number(whatsapp_number):
     conn.close()
 
     return row["id"] if row else None
+
+
+# ===== Camada compartilhada: Cozinha/Manutencao/Seguranca
+# Patrimonial/Estacionamento (Sessao 9) =====
+#
+# "Chamado" generico (tickets) + escala (staff_shifts) + notificacao
+# (ticket_notifications), reaproveitados pelos 4 modulos operacionais
+# novos - ver comentario da criacao das tabelas em create_database()
+# pro raciocinio completo.
+
+_TICKET_URGENCY_WEIGHT = {"urgent": 0, "high": 1, "normal": 2, "low": 3}
+
+
+def _minutes_since(timestamp_str):
+    """
+    Minutos desde um TIMESTAMP do SQLite (formato 'YYYY-MM-DD
+    HH:MM:SS', sempre UTC por vir de CURRENT_TIMESTAMP) ate agora.
+    Usado so pra ordenar por espera dentro do mesmo nivel de urgencia -
+    nao precisa ser exato ao segundo.
+    """
+    if not timestamp_str:
+        return 0
+    try:
+        created = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return 0
+    return max(0, (datetime.datetime.utcnow() - created).total_seconds() / 60)
+
+
+def _ticket_priority_rank(ticket_row):
+    """
+    Prioridade EFETIVA, calculada na hora (nao gravada) - urgencia
+    define o "andar" (um "urgent" sempre fica na frente de um
+    "normal"), tempo de espera desempata DENTRO do mesmo andar (um
+    "normal" parado ha 3 dias fura fila na frente de um "normal" aberto
+    ha 3 minutos). Quanto MENOR o numero, maior a prioridade.
+    """
+    weight = _TICKET_URGENCY_WEIGHT.get(ticket_row["base_urgency"], 2)
+    waited = _minutes_since(ticket_row["created_at"])
+    return weight * 100000 - waited
+
+
+def create_ticket(hostel_id, ticket_type, location=None, description=None,
+                   base_urgency="normal", reported_by_guest_id=None,
+                   reported_by_membership_id=None, channel=None):
+    """
+    Cria um chamado generico - usado como base por cozinha (pedido),
+    manutencao e seguranca patrimonial (incidente). base_urgency e o
+    sinal BRUTO recebido (do hospede ou padrao do sistema) - a
+    prioridade efetiva de fila e calculada depois, na consulta (ver
+    _ticket_priority_rank), nunca gravada aqui.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO tickets (
+            hostel_id, type, reported_by_guest_id, reported_by_membership_id,
+            location, description, base_urgency, channel
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, ticket_type, reported_by_guest_id, reported_by_membership_id,
+         location, description, base_urgency or "normal", channel)
+    )
+    ticket_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return ticket_id
+
+
+def get_ticket(hostel_id, ticket_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM tickets WHERE id = ? AND hostel_id = ?",
+        (ticket_id, hostel_id)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_open_tickets(hostel_id, ticket_type=None):
+    """
+    Chamados abertos (open/assigned/in_progress), ordenados pela
+    prioridade efetiva calculada agora - nao pela ordem de criacao.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM tickets WHERE hostel_id = ? AND status IN ('open', 'assigned', 'in_progress')"
+    params = [hostel_id]
+    if ticket_type:
+        query += " AND type = ?"
+        params.append(ticket_type)
+
+    cursor.execute(query, params)
+    tickets = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    tickets.sort(key=_ticket_priority_rank)
+    return tickets
+
+
+def assign_ticket(hostel_id, ticket_id, membership_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE tickets SET status = 'assigned', assigned_to_membership_id = ?,
+            assigned_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND hostel_id = ?
+        """,
+        (membership_id, ticket_id, hostel_id)
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def update_ticket_status(hostel_id, ticket_id, status):
+    """
+    Transicao generica de status (ex: 'in_progress') - resolve_ticket
+    existe a parte pra 'resolved' porque esse caso tambem grava
+    resolution_notes e resolved_at.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE tickets SET status = ? WHERE id = ? AND hostel_id = ?",
+        (status, ticket_id, hostel_id)
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def resolve_ticket(hostel_id, ticket_id, resolution_notes=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE tickets SET status = 'resolved', resolved_at = CURRENT_TIMESTAMP,
+            resolution_notes = ?
+        WHERE id = ? AND hostel_id = ?
+        """,
+        (resolution_notes, ticket_id, hostel_id)
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def get_on_duty_staff(hostel_id, department, section_id=None):
+    """
+    Quem esta de plantao AGORA nesse departamento (e, se informado,
+    setor) - consulta a grade de escala pela data e hora atuais.
+    Fonte de verdade unica usada por cozinha/manutencao/seguranca/
+    estacionamento pra decidir quem notificar. Nao trata turno que
+    atravessa a meia-noite (start_time > end_time) como caso especial -
+    fica pra uma proxima rodada se algum hostel precisar.
+    """
+    now = datetime.datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    now_time = now.strftime("%H:%M")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = """
+        SELECT s.id AS shift_id, s.membership_id, s.section_id, u.id AS user_id, u.name
+        FROM staff_shifts s
+        JOIN hostel_memberships m ON m.id = s.membership_id
+        JOIN users u ON u.id = m.user_id
+        WHERE s.hostel_id = ? AND s.department = ? AND s.status = 'scheduled'
+          AND s.shift_date = ? AND s.start_time <= ? AND s.end_time > ?
+    """
+    params = [hostel_id, department, today, now_time, now_time]
+
+    if section_id is not None:
+        query += " AND s.section_id = ?"
+        params.append(section_id)
+
+    cursor.execute(query, params)
+    staff = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return staff
+
+
+def log_ticket_notification(ticket_id, membership_id, channel=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO ticket_notifications (ticket_id, membership_id, channel) VALUES (?, ?, ?)",
+        (ticket_id, membership_id, channel)
+    )
+    notification_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return notification_id
+
+
+def acknowledge_ticket_notification(notification_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE ticket_notifications SET acknowledged_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (notification_id,)
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def notify_on_duty_staff_for_ticket(hostel_id, ticket_id, department, section_id=None, channel="dashboard"):
+    """
+    Combina get_on_duty_staff + log_ticket_notification - ponto unico
+    que cozinha/manutencao/seguranca chamam pra "avisar quem tem que
+    ser avisado, e so essa pessoa". Se ninguem estiver de plantao
+    (buraco na escala), o chamado fica sem notificacao mas continua
+    existindo - aparece pra qualquer um que olhar a fila de chamados
+    abertos.
+    """
+    staff = get_on_duty_staff(hostel_id, department, section_id)
+    for person in staff:
+        log_ticket_notification(ticket_id, person["membership_id"], channel)
+    return staff
+
+
+def create_staff_shift(hostel_id, membership_id, department, shift_date, start_time, end_time, section_id=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO staff_shifts (hostel_id, membership_id, department, section_id, shift_date, start_time, end_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, membership_id, department, section_id, shift_date, start_time, end_time)
+    )
+    shift_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return shift_id
+
+
+def get_staff_shifts(hostel_id, start_date=None, end_date=None):
+    """
+    Grade de escala pro periodo pedido - usada pra desenhar a visao
+    semanal (linha=funcionario, coluna=dia) no dashboard.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = """
+        SELECT s.*, u.name AS staff_name, sec.name AS section_name
+        FROM staff_shifts s
+        JOIN hostel_memberships m ON m.id = s.membership_id
+        JOIN users u ON u.id = m.user_id
+        LEFT JOIN sections sec ON sec.id = s.section_id
+        WHERE s.hostel_id = ? AND s.status = 'scheduled'
+    """
+    params = [hostel_id]
+    if start_date:
+        query += " AND s.shift_date >= ?"
+        params.append(start_date)
+    if end_date:
+        query += " AND s.shift_date <= ?"
+        params.append(end_date)
+    query += " ORDER BY s.shift_date, s.start_time"
+
+    cursor.execute(query, params)
+    shifts = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return shifts
+
+
+def request_shift_coverage(shift_id, requested_by_membership_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO shift_coverage_requests (shift_id, requested_by_membership_id) VALUES (?, ?)",
+        (shift_id, requested_by_membership_id)
+    )
+    request_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return request_id
+
+
+def accept_shift_coverage(request_id, covering_membership_id):
+    """
+    Alguem aceita cobrir o turno - so troca o dono do turno de verdade
+    (staff_shifts.membership_id) quando o pedido esta 'pending', pra
+    nao aceitar duas vezes por engano.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT shift_id, status FROM shift_coverage_requests WHERE id = ?",
+        (request_id,)
+    )
+    row = cursor.fetchone()
+    if not row or row["status"] != "pending":
+        conn.close()
+        return False
+
+    cursor.execute(
+        """
+        UPDATE shift_coverage_requests SET status = 'approved',
+            covering_membership_id = ?, resolved_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (covering_membership_id, request_id)
+    )
+    cursor.execute(
+        "UPDATE staff_shifts SET membership_id = ? WHERE id = ?",
+        (covering_membership_id, row["shift_id"])
+    )
+    conn.commit()
+    conn.close()
+    return True
+
+
+def create_section(hostel_id, name, department):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO sections (hostel_id, name, department) VALUES (?, ?, ?)",
+        (hostel_id, name, department)
+    )
+    section_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return section_id
+
+
+def get_sections(hostel_id, department=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM sections WHERE hostel_id = ?"
+    params = [hostel_id]
+    if department:
+        query += " AND department = ?"
+        params.append(department)
+    query += " ORDER BY name"
+    cursor.execute(query, params)
+    sections = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return sections
+
+
+# ===== Cozinha / Room Service =====
+
+
+def create_menu_item(hostel_id, name, category, price, station="cozinha"):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO menu_items (hostel_id, name, category, price, station) VALUES (?, ?, ?, ?, ?)",
+        (hostel_id, name, category, price, station)
+    )
+    menu_item_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return menu_item_id
+
+
+def get_menu_items(hostel_id, active_only=True):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM menu_items WHERE hostel_id = ?"
+    params = [hostel_id]
+    if active_only:
+        query += " AND active = 1"
+    query += " ORDER BY category, name"
+    cursor.execute(query, params)
+    items = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return items
+
+
+def find_menu_item_by_name(hostel_id, name_query):
+    """
+    Mesmo padrao de find_inventory_item_by_name - usado pela IA (via
+    chat) pra resolver o nome que o hospede/modelo digitou pro
+    menu_item_id real, sem exigir que o modelo saiba IDs internos.
+    """
+    items = get_menu_items(hostel_id, active_only=True)
+    query_norm = _normalize_text(name_query)
+    return [item for item in items if query_norm in _normalize_text(item["name"])]
+
+
+def set_menu_item_active(hostel_id, menu_item_id, active):
+    """
+    Tirar item do ar (ex: acabou o ingrediente) sem apagar historico de
+    pedidos antigos que ja usaram esse item.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE menu_items SET active = ? WHERE id = ? AND hostel_id = ?",
+        (1 if active else 0, menu_item_id, hostel_id)
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def set_menu_item_ingredient(menu_item_id, inventory_item_id, quantity):
+    """
+    Define (cria ou atualiza) quanto de um item de estoque a "receita"
+    de um item do cardapio consome - base da baixa automatica.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id FROM menu_item_ingredients WHERE menu_item_id = ? AND inventory_item_id = ?",
+        (menu_item_id, inventory_item_id)
+    )
+    existing = cursor.fetchone()
+
+    if existing:
+        cursor.execute(
+            "UPDATE menu_item_ingredients SET quantity = ? WHERE id = ?",
+            (quantity, existing["id"])
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO menu_item_ingredients (menu_item_id, inventory_item_id, quantity) VALUES (?, ?, ?)",
+            (menu_item_id, inventory_item_id, quantity)
+        )
+
+    conn.commit()
+    conn.close()
+
+
+def _deduct_ingredients_for_menu_item(cursor, menu_item_id, order_quantity):
+    """
+    Interno - da baixa no estoque (inventory_items) pra cada ingrediente
+    da receita de um item do cardapio, multiplicado pela quantidade
+    pedida. Nunca deixa quantidade negativa (mesma trava de
+    adjust_inventory_quantity_by_name). Roda dentro da MESMA
+    transacao/cursor de create_kitchen_order - se o pedido falhar,
+    a baixa tambem nao acontece.
+    """
+    cursor.execute(
+        "SELECT inventory_item_id, quantity FROM menu_item_ingredients WHERE menu_item_id = ?",
+        (menu_item_id,)
+    )
+    for ingredient in cursor.fetchall():
+        needed = ingredient["quantity"] * order_quantity
+        cursor.execute(
+            "UPDATE inventory_items SET quantity = MAX(0, quantity - ?) WHERE id = ?",
+            (needed, ingredient["inventory_item_id"])
+        )
+
+
+def create_kitchen_order(hostel_id, location, items, reported_by_guest_id=None,
+                          reported_by_membership_id=None, channel=None, base_urgency="normal"):
+    """
+    Cria o pedido de cozinha completo - ticket generico + um
+    kitchen_order_item por item pedido (preco travado no momento do
+    pedido, nao recalculado se o cardapio mudar depois) + baixa de
+    estoque automatica pela receita de cada item. A IA confirma pedido
+    de cozinha sozinha (decisao de produto - diferente de reserva, que
+    fica sempre pending) - por isso o ticket ja nasce pronto pra
+    cozinha ver, sem etapa de aprovacao manual.
+
+    items: lista de dicts {"menu_item_id": int, "quantity": int, "notes": str opcional}
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO tickets (
+            hostel_id, type, reported_by_guest_id, reported_by_membership_id,
+            location, description, base_urgency, channel
+        ) VALUES (?, 'kitchen_order', ?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, reported_by_guest_id, reported_by_membership_id,
+         location, f"{len(items)} item(ns)", base_urgency, channel)
+    )
+    ticket_id = cursor.lastrowid
+
+    for item in items:
+        cursor.execute(
+            "SELECT price FROM menu_items WHERE id = ? AND hostel_id = ?",
+            (item["menu_item_id"], hostel_id)
+        )
+        menu_item = cursor.fetchone()
+        if not menu_item:
+            conn.rollback()
+            conn.close()
+            raise ValueError(f"Item de cardapio {item['menu_item_id']} nao encontrado.")
+
+        quantity = item.get("quantity", 1)
+        cursor.execute(
+            """
+            INSERT INTO kitchen_order_items (ticket_id, menu_item_id, quantity, unit_price, notes)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (ticket_id, item["menu_item_id"], quantity, menu_item["price"], item.get("notes"))
+        )
+        _deduct_ingredients_for_menu_item(cursor, item["menu_item_id"], quantity)
+
+    conn.commit()
+    conn.close()
+    return ticket_id
+
+
+def get_kitchen_order_items(ticket_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT koi.*, mi.name AS menu_item_name, mi.station
+        FROM kitchen_order_items koi
+        JOIN menu_items mi ON mi.id = koi.menu_item_id
+        WHERE koi.ticket_id = ?
+        """,
+        (ticket_id,)
+    )
+    items = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return items
+
+
+def update_kitchen_order_item_status(ticket_id, item_id, status):
+    """
+    Status POR ITEM (pending/preparing/ready/delivered) - bebida sai
+    antes de comida num servico de mesa de verdade. O status do pedido
+    como um todo (get_kitchen_order_aggregate_status) e derivado disso,
+    nao gravado separado.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE kitchen_order_items SET status = ? WHERE id = ? AND ticket_id = ?",
+        (status, item_id, ticket_id)
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def get_kitchen_order_aggregate_status(ticket_id):
+    """
+    'pending' (nada pronto ainda), 'partially_ready' (so parte),
+    'ready' (tudo pronto, nada entregue ainda) ou 'delivered' (tudo
+    entregue) - derivado do status de cada kitchen_order_item, na hora,
+    nunca gravado.
+    """
+    items = get_kitchen_order_items(ticket_id)
+    if not items:
+        return "pending"
+
+    statuses = {item["status"] for item in items}
+    if statuses == {"delivered"}:
+        return "delivered"
+    if statuses <= {"ready", "delivered"}:
+        return "ready"
+    if "ready" in statuses or "delivered" in statuses:
+        return "partially_ready"
+    return "pending"
+
+
+# ===== Manutencao =====
+
+
+def create_maintenance_ticket(hostel_id, location, description, category=None,
+                               guest_reported_urgency=None, reported_by_guest_id=None,
+                               reported_by_membership_id=None, channel=None, base_urgency="normal"):
+    """
+    guest_reported_urgency e o sinal BRUTO que o hospede deu (pode
+    divergir de base_urgency, que e o que a equipe/IA decidiu usar de
+    fato pra fila - modelo hibrido: pergunta pro hospede, mas o sistema
+    ainda pode reordenar comparado aos outros chamados abertos).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO tickets (
+            hostel_id, type, reported_by_guest_id, reported_by_membership_id,
+            location, description, base_urgency, channel
+        ) VALUES (?, 'maintenance', ?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, reported_by_guest_id, reported_by_membership_id,
+         location, description, base_urgency, channel)
+    )
+    ticket_id = cursor.lastrowid
+
+    cursor.execute(
+        "INSERT INTO maintenance_issues (ticket_id, category, guest_reported_urgency) VALUES (?, ?, ?)",
+        (ticket_id, category, guest_reported_urgency)
+    )
+
+    conn.commit()
+    conn.close()
+    return ticket_id
+
+
+def get_recurring_maintenance_alerts(hostel_id, window_days=30, threshold=3):
+    """
+    Locais com 3+ (threshold) chamados de manutencao na mesma
+    localizacao nos ultimos window_days dias - vira dado sempre
+    (relatorio) e alerta ativo quando bate o limite, sem precisar de
+    tabela/mecanismo proprio: e so uma consulta.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT location, COUNT(*) AS occurrences, MAX(created_at) AS last_occurrence
+        FROM tickets
+        WHERE hostel_id = ? AND type = 'maintenance'
+          AND location IS NOT NULL AND location != ''
+          AND created_at >= datetime('now', ?)
+        GROUP BY location
+        HAVING COUNT(*) >= ?
+        ORDER BY occurrences DESC
+        """,
+        (hostel_id, f"-{window_days} days", threshold)
+    )
+    alerts = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return alerts
+
+
+# ===== Seguranca Patrimonial =====
+
+
+def create_security_incident(hostel_id, location, description, incident_type=None,
+                              reported_via="guest_chat", reported_by_guest_id=None,
+                              reported_by_membership_id=None, channel=None, base_urgency="high"):
+    """
+    Urgencia padrao mais alta que os outros tipos (incidente de
+    seguranca comeca em 'high', nao 'normal') - reflete que um relato
+    de seguranca tipicamente nao deveria esperar na mesma fila que um
+    pedido de cozinha.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO tickets (
+            hostel_id, type, reported_by_guest_id, reported_by_membership_id,
+            location, description, base_urgency, channel
+        ) VALUES (?, 'security_incident', ?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, reported_by_guest_id, reported_by_membership_id,
+         location, description, base_urgency, channel)
+    )
+    ticket_id = cursor.lastrowid
+
+    cursor.execute(
+        "INSERT INTO security_incidents (ticket_id, incident_type, reported_via) VALUES (?, ?, ?)",
+        (ticket_id, incident_type, reported_via)
+    )
+
+    conn.commit()
+    conn.close()
+    return ticket_id
+
+
+def set_hostel_system_integration(hostel_id, capability, provider="manual_fallback", config=None, fallback_phone_number=None):
+    """
+    Cria ou atualiza o adaptador de UMA capacidade (ex: 'call_dispatch',
+    'camera_feed', 'access_control') - um hotel pode ter varias linhas,
+    uma por capacidade, cada uma com seu proprio fornecedor. provider
+    'manual_fallback' (sem API) e o padrao seguro - so vira 'api' quando
+    o hotel confirmar de verdade o sistema que usa.
+    """
+    import json as _json
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    config_json = _json.dumps(config) if config is not None else None
+
+    cursor.execute(
+        "SELECT id FROM hostel_system_integrations WHERE hostel_id = ? AND capability = ?",
+        (hostel_id, capability)
+    )
+    existing = cursor.fetchone()
+
+    if existing:
+        cursor.execute(
+            """
+            UPDATE hostel_system_integrations SET provider = ?, config = ?, fallback_phone_number = ?
+            WHERE id = ?
+            """,
+            (provider, config_json, fallback_phone_number, existing["id"])
+        )
+    else:
+        cursor.execute(
+            """
+            INSERT INTO hostel_system_integrations (hostel_id, capability, provider, config, fallback_phone_number)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (hostel_id, capability, provider, config_json, fallback_phone_number)
+        )
+
+    conn.commit()
+    conn.close()
+
+
+def get_hostel_system_integration(hostel_id, capability):
+    """
+    Devolve o adaptador configurado pra essa capacidade, ou um
+    'manual_fallback' implicito (sem linha no banco) se o hotel nunca
+    configurou nada - garante que quem chama SEMPRE tem um caminho
+    valido (notificar quem esta de plantao + numero de contato), nunca
+    trava por falta de configuracao.
+    """
+    import json as _json
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM hostel_system_integrations WHERE hostel_id = ? AND capability = ?",
+        (hostel_id, capability)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return {"hostel_id": hostel_id, "capability": capability, "provider": "manual_fallback",
+                "config": None, "fallback_phone_number": None}
+
+    result = dict(row)
+    result["config"] = _json.loads(result["config"]) if result["config"] else None
+    return result
+
+
+# ===== Estacionamento =====
+
+
+def get_active_vehicle_for_guest(hostel_id, guest_id):
+    """
+    Veiculo do hospede ainda sem saida registrada - usado pelo pedido
+    de manobrista via chat (a IA nao precisa saber vehicle_id, so pede
+    o carro "do hospede que esta falando", resolvido aqui).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM vehicles WHERE hostel_id = ? AND guest_id = ? AND checked_out_at IS NULL ORDER BY checked_in_at DESC LIMIT 1",
+        (hostel_id, guest_id)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def check_in_vehicle(hostel_id, guest_id, plate=None, model=None, color=None,
+                      spot_number=None, service_type="autoatendimento", reservation_id=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO vehicles (hostel_id, guest_id, reservation_id, plate, model, color, spot_number, service_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, guest_id, reservation_id, plate, model, color, spot_number, service_type)
+    )
+    vehicle_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return vehicle_id
+
+
+def check_out_vehicle(hostel_id, vehicle_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE vehicles SET checked_out_at = CURRENT_TIMESTAMP WHERE id = ? AND hostel_id = ? AND checked_out_at IS NULL",
+        (vehicle_id, hostel_id)
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def request_valet(hostel_id, vehicle_id, reported_by_guest_id=None, channel=None):
+    """
+    "Traz meu carro" - so faz sentido pra service_type='manobrista'; vira
+    um ticket generico (type='valet_request'), notificado pelo mesmo
+    caminho de escala/plantao (department='estacionamento') que os
+    outros modulos.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT plate, model, color FROM vehicles WHERE id = ? AND hostel_id = ?",
+        (vehicle_id, hostel_id)
+    )
+    vehicle = cursor.fetchone()
+    description = None
+    if vehicle:
+        description = f"Placa {vehicle['plate'] or '?'} - {vehicle['model'] or ''} {vehicle['color'] or ''}".strip()
+
+    cursor.execute(
+        """
+        INSERT INTO tickets (hostel_id, type, reported_by_guest_id, location, description, base_urgency, channel)
+        VALUES (?, 'valet_request', ?, 'Estacionamento', ?, 'normal', ?)
+        """,
+        (hostel_id, reported_by_guest_id, description, channel)
+    )
+    ticket_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return ticket_id
+
+
+def get_hostel_parking_settings(hostel_id):
+    import json as _json
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM hostel_parking_settings WHERE hostel_id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return {"hostel_id": hostel_id, "pricing_model": "incluso", "daily_rate": 0, "included_for_categories": None}
+
+    result = dict(row)
+    result["included_for_categories"] = _json.loads(result["included_for_categories"]) if result["included_for_categories"] else None
+    return result
+
+
+def set_hostel_parking_settings(hostel_id, pricing_model, daily_rate=0, included_for_categories=None):
+    """
+    included_for_categories: lista de room_category_id (so usada
+    quando pricing_model == 'por_categoria') - gravada como JSON.
+    """
+    import json as _json
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    categories_json = _json.dumps(included_for_categories) if included_for_categories is not None else None
+
+    cursor.execute(
+        "SELECT hostel_id FROM hostel_parking_settings WHERE hostel_id = ?",
+        (hostel_id,)
+    )
+    if cursor.fetchone():
+        cursor.execute(
+            "UPDATE hostel_parking_settings SET pricing_model = ?, daily_rate = ?, included_for_categories = ? WHERE hostel_id = ?",
+            (pricing_model, daily_rate, categories_json, hostel_id)
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO hostel_parking_settings (hostel_id, pricing_model, daily_rate, included_for_categories) VALUES (?, ?, ?, ?)",
+            (hostel_id, pricing_model, daily_rate, categories_json)
+        )
+
+    conn.commit()
+    conn.close()
 
 
 if __name__ == "__main__":

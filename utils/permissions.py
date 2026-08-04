@@ -20,6 +20,16 @@ ALL_PERMISSIONS = [
     "team",
     "security",
     "billing",
+    # Sessao 9 - modulos operacionais novos (cozinha, manutencao,
+    # seguranca patrimonial, estacionamento, escala). "patrimonial_security"
+    # (nao "security") de proposito - "security" ja significa seguranca
+    # da CONTA (trocar senha/sessoes), nada a ver com seguranca fisica
+    # do predio; usar o mesmo nome colidiria com o que ja existe.
+    "kitchen",
+    "maintenance",
+    "patrimonial_security",
+    "parking",
+    "scheduling",
 ]
 
 ALL_PERMISSIONS_STR = ",".join(ALL_PERMISSIONS)
@@ -39,4 +49,9 @@ PERMISSION_LABELS = {
     "team": "Equipe",
     "security": "Segurança",
     "billing": "Billing",
+    "kitchen": "Cozinha",
+    "maintenance": "Manutenção",
+    "patrimonial_security": "Segurança Patrimonial",
+    "parking": "Estacionamento",
+    "scheduling": "Escala",
 }

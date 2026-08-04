@@ -13,6 +13,7 @@ from database import (
     update_guest_language_by_id,
     is_opportunity_generation_enabled,
     is_ai_enabled,
+    get_hostel_type,
 )
 from services.ai_service import ask_ai
 from services.memory_service import save_message, get_history
@@ -97,11 +98,14 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     guest_phone = external_id if channel == "whatsapp" and external_id != "unknown" else None
     guest_language = get_guest_language_by_id(guest_id)
     known_guest_name = get_guest_name_by_id(guest_id)
-    hostel_phone = (get_hostel(hostel_id) or {}).get("phone")
+    hostel_record = get_hostel(hostel_id) or {}
+    hostel_phone = hostel_record.get("phone")
+    hostel_name = hostel_record.get("name")
+    hostel_type = get_hostel_type(hostel_id)
     answer, guest_name, guest_language_detected = ask_ai(
         history, text, guest_phone=guest_phone, hostel_id=hostel_id,
         guest_language=guest_language, guest_id=guest_id, guest_name=known_guest_name,
-        channel=channel, hostel_phone=hostel_phone
+        channel=channel, hostel_phone=hostel_phone, hostel_name=hostel_name, hostel_type=hostel_type
     )
 
     if guest_name:
