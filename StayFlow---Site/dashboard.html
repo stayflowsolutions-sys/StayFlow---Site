@@ -196,31 +196,24 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-function openTeamPanel() {
-  document.getElementById("teamOverlay").classList.add("open");
-  document.getElementById("teamPanel").classList.add("open");
-  loadTeamList();
-}
-
-function closeTeamPanel() {
-  document.getElementById("teamOverlay").classList.remove("open");
-  document.getElementById("teamPanel").classList.remove("open");
-}
-
-function switchTeamTab(tab){
-  document.querySelectorAll(".team-tab").forEach(btn => {
+// Equipe deixou de ser painel lateral (era um "ask-panel" que abria por
+// cima da tela) e virou pagina completa com abas, mesmo padrao usado em
+// Operacoes - Escala mora aqui dentro tambem agora (aba propria, com
+// sua permissao especifica ainda respeitada).
+window.switchTeamTab = function(tab){
+  document.querySelectorAll("#team [data-team-section]").forEach(el => {
+    el.style.display = el.dataset.teamSection === tab ? "" : "none";
+  });
+  document.querySelectorAll("#team .ops-tab").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.teamTab === tab);
   });
-  // Usa "" (nao "block") pra nao sobrescrever o display:grid definido
-  // em .ask-body no CSS - forcar "block" quebraria o espacamento
-  // entre os cards.
-  document.getElementById("teamTabMembers").style.display = tab === "members" ? "" : "none";
-  document.getElementById("teamTabRoles").style.display = tab === "roles" ? "" : "none";
 
   if(tab === "roles"){
     loadRolesList();
+  }else if(tab === "scheduling" && typeof loadScheduling === "function"){
+    loadScheduling();
   }
-}
+};
 
 async function loadTeamList() {
   const container = document.getElementById("teamListContainer");
@@ -756,10 +749,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="operations" onclick="openPage('operations',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span><span data-i18n="nav.operations">Operações</span>
     </button>
-    <button data-page="scheduling" data-required-permission="scheduling" onclick="openPage('scheduling',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 3v3"/><path d="M16 3v3"/></svg></span><span data-i18n="nav.scheduling">Escala</span>
-    </button>
-    <button type="button" data-required-permission="team" onclick="openTeamPanel()">
+    <button data-page="team" data-required-permission="team,scheduling" onclick="openPage('team',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span><span data-i18n="nav.team">Equipe</span>
     </button>
     <button data-page="finance" onclick="openPage('finance',this)">
@@ -835,7 +825,7 @@ async function deleteRoleConfirm(roleId){
           <div class="user-role">—</div>
         </div>
         <div class="hostel-selector-divider"></div>
-        <button type="button" id="userMenuEquipeItem" data-required-permission="team" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openTeamPanel()">
+        <button type="button" id="userMenuEquipeItem" data-required-permission="team,scheduling" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openPage('team', document.querySelector('[data-page=team]'))">
           <span data-i18n="topbar.userMenu.team">👥 Equipe</span>
         </button>
         <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
@@ -1400,30 +1390,6 @@ async function deleteRoleConfirm(roleId){
 </section>
 
 <!-- SCHEDULING -->
-<section id="scheduling" class="page">
-  <div class="card">
-    <h2 data-i18n="scheduling.onDuty.title">🕐 Quem está de plantão agora</h2>
-    <table class="table">
-      <thead>
-        <tr>
-          <th data-i18n="scheduling.col.department">Departamento</th>
-          <th data-i18n="scheduling.col.onDuty">De plantão</th>
-        </tr>
-      </thead>
-      <tbody id="schedulingOnDutyBody"><!-- preenchido por live --></tbody>
-    </table>
-  </div>
-  <div class="card settings-summary-card" onclick="openNewShiftModal()">
-    <div class="settings-summary-row">
-      <div>
-        <h2 data-i18n="scheduling.newShift.title">➕ Novo turno</h2>
-        <p class="settings-summary-desc" data-i18n="scheduling.newShift.desc">Cadastre um turno de trabalho pra você ou pra equipe.</p>
-      </div>
-      <span class="settings-summary-chevron">›</span>
-    </div>
-  </div>
-</section>
-
 <!-- GUESTS -->
 <section id="guests" class="page">
   <div class="card">
@@ -1686,7 +1652,7 @@ async function deleteRoleConfirm(roleId){
         <button class="btn secondary" data-settings-target="ia" data-i18n="settings.menu.ai">IA</button>
         <button class="btn secondary" data-settings-target="comunicacao" data-i18n="settings.menu.communication">Comunicação</button>
         <button class="btn secondary" data-settings-target="integracoes" data-i18n="settings.menu.integrations">Integrações</button>
-        <button class="btn secondary" onclick="openTeamPanel()" data-i18n="nav.team">Equipe</button>
+        <button class="btn secondary" onclick="openPage('team', document.querySelector('[data-page=team]'))" data-i18n="nav.team">Equipe</button>
         <button class="btn secondary" data-settings-target="seguranca" data-i18n="settings.menu.security">Segurança</button>
         <button class="btn secondary" data-settings-target="billing">Billing</button>
       </div>
@@ -1968,36 +1934,60 @@ async function deleteRoleConfirm(roleId){
   <span class="brand-logo-mask" role="img" aria-label="StayFlow"></span>
 </button>
 
-<div id="teamOverlay" class="ask-overlay" onclick="closeTeamPanel()"></div>
+<!-- TEAM -->
+<section id="team" class="page">
+  <div class="ops-tabs">
+    <button type="button" class="ops-tab active" data-team-tab="members" onclick="switchTeamTab('members')" data-i18n="team.tab.members">Equipe</button>
+    <button type="button" class="ops-tab" data-team-tab="roles" onclick="switchTeamTab('roles')" data-i18n="team.tab.roles">Funções</button>
+    <button type="button" class="ops-tab" data-team-tab="scheduling" data-required-permission="scheduling" onclick="switchTeamTab('scheduling')" data-i18n="nav.scheduling">Escala</button>
+  </div>
 
-<aside id="teamPanel" class="ask-panel">
-  <div class="ask-head">
-    <div>
-      <h2 data-i18n="nav.team">Equipe</h2>
-      <p data-i18n="team.panel.subtitle">Gerencie quem tem acesso e o que cada pessoa pode ver</p>
+  <div data-team-section="members" class="grid">
+    <div class="card span-12">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="team.tab.members">Equipe</h2>
+        <button class="btn primary" type="button" onclick="openInviteForm()" data-i18n="team.inviteBtn">+ Convidar</button>
+      </div>
+      <div id="teamListContainer"></div>
     </div>
-    <button class="close-btn" onclick="closeTeamPanel()">×</button>
   </div>
 
-  <div class="team-tabs">
-    <button type="button" class="team-tab active" data-team-tab="members" onclick="switchTeamTab('members')" data-i18n="team.tab.members">Equipe</button>
-    <button type="button" class="team-tab" data-team-tab="roles" onclick="switchTeamTab('roles')" data-i18n="team.tab.roles">Funções</button>
-  </div>
-
-  <div id="teamTabMembers" class="ask-body team-tab-content">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-      <button class="btn" type="button" onclick="openInviteForm()" data-i18n="team.inviteBtn">+ Convidar</button>
+  <div data-team-section="roles" class="grid" style="display:none">
+    <div class="card span-12">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="team.tab.roles">Funções</h2>
+        <button class="btn primary" type="button" onclick="openNewRoleForm()" data-i18n="team.newRoleBtn">+ Nova função</button>
+      </div>
+      <div id="rolesListContainer"></div>
     </div>
-    <div id="teamListContainer"></div>
   </div>
 
-  <div id="teamTabRoles" class="ask-body team-tab-content" style="display:none">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-      <button class="btn" type="button" onclick="openNewRoleForm()" data-i18n="team.newRoleBtn">+ Nova função</button>
+  <div data-team-section="scheduling" class="grid" style="display:none">
+    <div class="card span-12">
+      <h2 data-i18n="scheduling.onDuty.title">🕐 Quem está de plantão agora</h2>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="scheduling.col.department">Departamento</th>
+              <th data-i18n="scheduling.col.onDuty">De plantão</th>
+            </tr>
+          </thead>
+          <tbody id="schedulingOnDutyBody"><!-- preenchido por live --></tbody>
+        </table>
+      </div>
     </div>
-    <div id="rolesListContainer"></div>
+    <div class="card span-12 settings-summary-card" onclick="openNewShiftModal()">
+      <div class="settings-summary-row">
+        <div>
+          <h2 data-i18n="scheduling.newShift.title">➕ Novo turno</h2>
+          <p class="settings-summary-desc" data-i18n="scheduling.newShift.desc">Cadastre um turno de trabalho pra você ou pra equipe.</p>
+        </div>
+        <span class="settings-summary-chevron">›</span>
+      </div>
+    </div>
   </div>
-</aside>
+</section>
 
 <div id="genericModalOverlay" class="generic-modal-overlay" onclick="closeGenericModal()"></div>
 <div id="genericModal" class="generic-modal">
@@ -2033,7 +2023,7 @@ async function deleteRoleConfirm(roleId){
     reservations: ["nav.reservations",  "topbar.subtitle.reservations"],
     roommap:      ["nav.roommap",       "topbar.subtitle.roommap"],
     operations:   ["nav.operations",    "topbar.subtitle.operations"],
-    scheduling:   ["nav.scheduling",    "topbar.subtitle.scheduling"],
+    team:         ["nav.team",          "topbar.subtitle.team"],
     guests:       ["nav.guests",        "topbar.subtitle.guests"],
     finance:      ["nav.finance",       "topbar.subtitle.finance"],
     inventory:    ["nav.inventory",     "topbar.subtitle.inventory"],
@@ -7271,14 +7261,20 @@ window.uploadGuestDocumentUI = async function(guestId){
     }
   });
 
+  // key pode ser uma unica permissao ("team") ou uma lista separada por
+  // virgula ("team,scheduling") pra "qualquer uma das duas libera" -
+  // caso do item Equipe do menu, que agora tambem abriga a Escala (nem
+  // toda funcao com acesso a Escala tem obrigatoriamente acesso a
+  // Equipe, e vice-versa).
+  function hasAnyPermission(key, permissions){
+    if(!key) return true;
+    return key.split(",").some(k => permissions.includes(k.trim()));
+  }
+
   function hideNavItemsWithoutPermission(permissions){
     document.querySelectorAll(".menu button").forEach(btn => {
       const key = btn.dataset.requiredPermission || btn.dataset.page;
-      if(key && !permissions.includes(key)){
-        btn.style.display = "none";
-      }else{
-        btn.style.display = "";
-      }
+      btn.style.display = hasAnyPermission(key, permissions) ? "" : "none";
     });
   }
 
@@ -7307,8 +7303,7 @@ window.uploadGuestDocumentUI = async function(guestId){
   function applyPermissionVisibility(permissions){
     document.querySelectorAll("[data-required-permission]").forEach(el => {
       if(el.closest(".menu")) return;
-      const key = el.dataset.requiredPermission;
-      el.style.display = permissions.includes(key) ? "" : "none";
+      el.style.display = hasAnyPermission(el.dataset.requiredPermission, permissions) ? "" : "none";
     });
   }
 
@@ -7386,6 +7381,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadPatrimonialSecurity === "function") loadPatrimonialSecurity();
     if (typeof loadParking === "function") loadParking();
     if (typeof loadScheduling === "function") loadScheduling();
+    if (typeof loadTeamList === "function") loadTeamList();
     if (typeof loadRevenue === "function") loadRevenue();
     if (typeof loadChats === "function") loadChats();
     if (typeof hydrateSettingsFromBackend === "function") hydrateSettingsFromBackend();
@@ -7433,7 +7429,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     reservations: ["loadReservations"],
     roommap: ["loadRoomMap"],
     operations: ["loadOperations", "loadKitchen", "loadMaintenance", "loadPatrimonialSecurity", "loadParking"],
-    scheduling: ["loadScheduling"],
+    team: ["loadTeamList", "loadRolesList", "loadScheduling"],
     guests: ["loadGuests"],
     finance: ["loadFinance", "loadExchangeSummary"],
     inventory: ["loadInventory", "loadSuppliers"],

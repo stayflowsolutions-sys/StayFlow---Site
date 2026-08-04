@@ -213,27 +213,6 @@ body::before{
 .hostel-selector-settings-link:hover{
   background:#ffffff0d;
 }
-.team-tabs{
-  display:flex;
-  gap:8px;
-  padding:12px 18px 0;
-}
-.team-tab{
-  flex:1;
-  padding:8px 10px;
-  border-radius:12px;
-  border:1px solid #ffffff14;
-  background:transparent;
-  color:var(--muted);
-  cursor:pointer;
-  font-weight:700;
-  font-size:13px;
-}
-.team-tab.active{
-  background:rgba(11,132,255,.14);
-  color:#dce9fb;
-  border-color:rgba(11,132,255,.3);
-}
 .settings-menu .btn.secondary.active{
   background:rgba(11,132,255,.14);
   color:#dce9fb;
