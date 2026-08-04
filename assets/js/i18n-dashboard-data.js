@@ -12,6 +12,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "patrimonialSecurity.integrations.title": "🎥 Câmeras de vigilância",
+    "patrimonialSecurity.integrations.desc": "Cadastre a URL de acesso ao sistema de câmeras quando a hospedagem tiver um configurado. Sem isso, a segurança patrimonial segue funcionando normalmente pelo modo manual (aviso pra quem está de plantão), só sem o atalho direto.",
+    "patrimonialSecurity.integrations.urlLabel": "URL de acesso às câmeras",
+    "patrimonialSecurity.integrations.openBtn": "Abrir câmeras ↗",
     "nav.kitchen": "Cozinha",
     "nav.maintenance": "Manutenção",
     "nav.patrimonialSecurity": "Segurança Patrimonial",
@@ -854,6 +858,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "patrimonialSecurity.integrations.title": "🎥 Surveillance cameras",
+    "patrimonialSecurity.integrations.desc": "Register the access URL for the camera system once the property has one set up. Without it, property security keeps working normally through the manual mode (alerts whoever's on duty), just without the direct shortcut.",
+    "patrimonialSecurity.integrations.urlLabel": "Camera access URL",
+    "patrimonialSecurity.integrations.openBtn": "Open cameras ↗",
     "nav.kitchen": "Kitchen",
     "nav.maintenance": "Maintenance",
     "nav.patrimonialSecurity": "Property Security",
@@ -1679,6 +1687,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "patrimonialSecurity.integrations.title": "🎥 Cámaras de vigilancia",
+    "patrimonialSecurity.integrations.desc": "Registre la URL de acceso al sistema de cámaras cuando el alojamiento tenga uno configurado. Sin eso, la seguridad patrimonial sigue funcionando normalmente por el modo manual (avisa a quien esté de guardia), solo sin el atajo directo.",
+    "patrimonialSecurity.integrations.urlLabel": "URL de acceso a las cámaras",
+    "patrimonialSecurity.integrations.openBtn": "Abrir cámaras ↗",
     "nav.kitchen": "Cocina",
     "nav.maintenance": "Mantenimiento",
     "nav.patrimonialSecurity": "Seguridad Patrimonial",
@@ -2504,6 +2516,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "patrimonialSecurity.integrations.title": "🎥 Caméras de surveillance",
+    "patrimonialSecurity.integrations.desc": "Enregistrez l'URL d'accès au système de caméras dès que l'établissement en a un configuré. Sans cela, la sécurité de l'établissement continue de fonctionner normalement en mode manuel (avertit la personne de garde), juste sans le raccourci direct.",
+    "patrimonialSecurity.integrations.urlLabel": "URL d'accès aux caméras",
+    "patrimonialSecurity.integrations.openBtn": "Ouvrir les caméras ↗",
     "nav.kitchen": "Cuisine",
     "nav.maintenance": "Maintenance",
     "nav.patrimonialSecurity": "Sécurité de l'établissement",
@@ -3329,6 +3345,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "patrimonialSecurity.integrations.title": "🎥 Überwachungskameras",
+    "patrimonialSecurity.integrations.desc": "Erfassen Sie die Zugangs-URL zum Kamerasystem, sobald die Unterkunft eines eingerichtet hat. Ohne sie funktioniert die Objektsicherheit weiterhin normal über den manuellen Modus (Benachrichtigung des Diensthabenden), nur ohne die direkte Abkürzung.",
+    "patrimonialSecurity.integrations.urlLabel": "Zugangs-URL zu den Kameras",
+    "patrimonialSecurity.integrations.openBtn": "Kameras öffnen ↗",
     "nav.kitchen": "Küche",
     "nav.maintenance": "Wartung",
     "nav.patrimonialSecurity": "Objektsicherheit",

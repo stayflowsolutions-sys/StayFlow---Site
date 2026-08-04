@@ -1302,6 +1302,20 @@ async function deleteRoleConfirm(roleId){
       <tbody id="patrimonialSecurityBody"><!-- preenchido por live --></tbody>
     </table>
   </div>
+  <div class="card">
+    <h2 data-i18n="patrimonialSecurity.integrations.title">🎥 Câmeras de vigilância</h2>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:14px" data-i18n="patrimonialSecurity.integrations.desc">Cadastre a URL de acesso ao sistema de câmeras quando a hospedagem tiver um configurado. Sem isso, a segurança patrimonial segue funcionando normalmente pelo modo manual (aviso pra quem está de plantão), só sem o atalho direto.</p>
+    <div class="form-grid">
+      <div class="field">
+        <label data-i18n="patrimonialSecurity.integrations.urlLabel">URL de acesso às câmeras</label>
+        <input type="text" id="cameraFeedUrl" placeholder="https://...">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button type="button" class="btn primary" onclick="saveCameraIntegration()" data-i18n="common.save">Salvar</button>
+      <a id="openCamerasLink" href="#" target="_blank" rel="noopener" class="btn secondary" style="display:none" data-i18n="patrimonialSecurity.integrations.openBtn">Abrir câmeras ↗</a>
+    </div>
+  </div>
 </section>
 
 <!-- PARKING -->
@@ -5599,6 +5613,8 @@ window.resolveMaintenanceTicket = async function(ticketId){
 // ----- Seguranca Patrimonial -----
 
 async function loadPatrimonialSecurity(){
+  loadCameraIntegration();
+
   const emptyEl = document.getElementById("patrimonialSecurityEmpty");
   const tableEl = document.getElementById("patrimonialSecurityTable");
   const bodyEl = document.getElementById("patrimonialSecurityBody");
@@ -5643,6 +5659,57 @@ window.resolveSecurityIncident = async function(ticketId){
     loadPatrimonialSecurity();
   }catch(e){
     console.warn("Erro ao resolver incidente:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+// Cameras de vigilancia - capacidade "camera_feed" do adaptador de
+// integracoes (mesmo padrao "preparado pra tudo" usado pro resto da
+// seguranca patrimonial: sem URL configurada, so guarda vazio e nao
+// trava nada; assim que a hospedagem tiver o sistema de cameras,
+// so cola a URL aqui).
+async function loadCameraIntegration(){
+  const urlInput = document.getElementById("cameraFeedUrl");
+  const openLink = document.getElementById("openCamerasLink");
+  if(!urlInput) return;
+
+  try{
+    const res = await fetch("/patrimonial-security/integrations/camera_feed", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const data = await res.json();
+    const url = data.config && data.config.url ? data.config.url : "";
+    urlInput.value = url;
+    if(openLink){
+      if(url){
+        openLink.href = url;
+        openLink.style.display = "inline-flex";
+      }else{
+        openLink.style.display = "none";
+      }
+    }
+  }catch(e){
+    console.warn("Erro ao carregar integração de câmeras:", e);
+  }
+}
+
+window.saveCameraIntegration = async function(){
+  const url = (document.getElementById("cameraFeedUrl")?.value || "").trim();
+  try{
+    const res = await fetch("/patrimonial-security/integrations/camera_feed", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        provider: url ? "api" : "manual_fallback",
+        config: url ? { url } : null,
+      })
+    });
+    if(!res.ok){
+      alert(T('common.error.generic', 'Erro de conexão.'));
+      return;
+    }
+    loadCameraIntegration();
+  }catch(e){
+    console.warn("Erro ao salvar integração de câmeras:", e);
     alert(T('common.error.generic', 'Erro de conexão.'));
   }
 };
