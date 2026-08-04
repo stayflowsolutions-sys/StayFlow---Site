@@ -912,6 +912,24 @@ def create_database():
     )
     """)
 
+    # Pagamento em dinheiro numa moeda estrangeira (ex: hospede paga em
+    # dolar/real vivo num hostel que opera em peso argentino) - guarda o
+    # valor recebido na moeda estrangeira E a cotacao usada, pra local_amount
+    # (o que efetivamente entrou convertido pra moeda do hostel) poder ser
+    # somado ao restante da receita real sem perder o registro de origem.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS currency_exchanges (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        description TEXT,
+        foreign_currency TEXT NOT NULL,
+        foreign_amount REAL NOT NULL,
+        exchange_rate REAL NOT NULL,
+        local_amount REAL NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS suppliers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -3607,6 +3625,12 @@ def get_finance_summary(hostel_id):
     """, (hostel_id,))
     confirmed_revenue = cursor.fetchone()["total"]
 
+    cursor.execute(
+        "SELECT COALESCE(SUM(local_amount), 0) AS total FROM currency_exchanges WHERE hostel_id = ?",
+        (hostel_id,)
+    )
+    confirmed_revenue += cursor.fetchone()["total"]
+
     # Financeiro mostra so o que realmente entrou na empresa - reserva
     # confirmada e pagamento de verdade. Oportunidade (estimativa, ainda
     # nao fechada) fica de fora de proposito: ela ja tem casa propria no
@@ -3635,9 +3659,20 @@ def get_finance_summary(hostel_id):
         JOIN reservations r ON r.id = rp.reservation_id
         WHERE rp.hostel_id = ?
 
+        UNION ALL
+
+        SELECT
+            'Câmbio' AS type,
+            COALESCE(NULLIF(description, ''), foreign_currency || ' em dinheiro') AS description,
+            local_amount AS value,
+            'confirmed' AS status,
+            created_at
+        FROM currency_exchanges
+        WHERE hostel_id = ?
+
         ORDER BY created_at DESC
         LIMIT 30
-    """, (hostel_id, hostel_id))
+    """, (hostel_id, hostel_id, hostel_id))
 
     movements = [dict(row) for row in cursor.fetchall()]
 
@@ -3647,6 +3682,41 @@ def get_finance_summary(hostel_id):
         "confirmed_revenue": confirmed_revenue,
         "movements": movements
     }
+
+
+def create_currency_exchange(hostel_id, description, foreign_currency, foreign_amount, exchange_rate):
+    local_amount = foreign_amount * exchange_rate
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO currency_exchanges
+            (hostel_id, description, foreign_currency, foreign_amount, exchange_rate, local_amount)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, description, foreign_currency, foreign_amount, exchange_rate, local_amount)
+    )
+    exchange_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return exchange_id
+
+
+def get_currency_exchanges(hostel_id, limit=30):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT * FROM currency_exchanges
+        WHERE hostel_id = ?
+        ORDER BY created_at DESC
+        LIMIT ?
+        """,
+        (hostel_id, limit)
+    )
+    data = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return data
 
 
 def get_reports_summary(hostel_id):
