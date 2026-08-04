@@ -1464,6 +1464,16 @@ async function deleteRoleConfirm(roleId){
       <div class="note" data-i18n="finance.kpi.confirmedNote">Aguardando reservas reais</div>
     </div>
 
+    <div class="card span-12 settings-summary-card" onclick="openExchangeModal()">
+      <div class="settings-summary-row">
+        <div>
+          <h2 data-i18n="finance.exchange.title">💱 Câmbio (pagamento em moeda estrangeira)</h2>
+          <p class="settings-summary-desc" id="exchangeSummaryDesc" data-i18n="finance.exchange.desc">Registre pagamentos recebidos em dinheiro numa moeda diferente da sua.</p>
+        </div>
+        <span class="settings-summary-chevron">›</span>
+      </div>
+    </div>
+
     <div class="card span-12">
       <h2 data-i18n="finance.title">💰 Financeiro</h2>
       <div class="sf-empty" id="financeEmpty">
@@ -1753,6 +1763,11 @@ async function deleteRoleConfirm(roleId){
           <div class="span-12">
             <input type="text" data-setting="logo_url" data-i18n-placeholder="settings.company.logoUrlPlaceholder" placeholder="URL do logo (opcional - cole o link de uma imagem já hospedada)">
           </div>
+        </div>
+
+        <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+          <button class="btn secondary" type="button" onclick="openPage('dashboard', document.querySelector('[data-page=dashboard]'))" data-i18n="settings.cancelBtn">Cancelar</button>
+          <button class="btn" type="button" onclick="saveSettings()" data-i18n="settings.saveChangesBtn">Salvar alterações</button>
         </div>
       </div>
 
@@ -5277,6 +5292,140 @@ async function loadFinance(){
   }
 }
 
+const FINANCE_EXCHANGE_CURRENCIES = ["ARS", "CLP", "BRL", "PEN", "BOB", "COP", "USD"];
+
+window.loadExchangeSummary = async function(){
+  const el = document.getElementById("exchangeSummaryDesc");
+  if(!el) return;
+  try{
+    const res = await fetch("/finance/exchanges", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const exchanges = await res.json();
+    el.textContent = exchanges.length
+      ? T('finance.exchange.summaryCount', '{count} câmbio(s) registrado(s)', {count: exchanges.length})
+      : T('finance.exchange.desc', 'Registre pagamentos recebidos em dinheiro numa moeda diferente da sua.');
+  }catch(e){
+    console.warn("Erro ao carregar resumo de câmbio:", e);
+  }
+};
+
+window.updateExchangePreview = function(){
+  const preview = document.getElementById("exchangePreview");
+  if(!preview) return;
+  const amount = parseFloat(document.getElementById("newExchangeAmount")?.value || "0") || 0;
+  const rate = parseFloat(document.getElementById("newExchangeRate")?.value || "0") || 0;
+  preview.textContent = (amount > 0 && rate > 0)
+    ? T('finance.exchange.previewText', 'Equivale a {amount}', { amount: formatMoney(amount * rate) })
+    : "";
+};
+
+window.openExchangeModal = function(){
+  const options = FINANCE_EXCHANGE_CURRENCIES.map(code =>
+    `<option value="${code}">${code} - ${STAYFLOW_CURRENCY_SYMBOLS[code] || code}</option>`
+  ).join("");
+
+  openGenericModal(T('finance.exchange.title', '💱 Câmbio (pagamento em moeda estrangeira)'), `
+    <p style="margin-bottom:14px">${T('finance.exchange.modalDesc', 'O valor convertido entra automaticamente na receita confirmada.')}</p>
+    <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('finance.exchange.currencyLabel', 'Moeda recebida')}</label>
+        <select id="newExchangeCurrency" style="width:100%">${options}</select>
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('finance.exchange.amountLabel', 'Valor recebido')}</label>
+        <input type="number" step="0.01" min="0" id="newExchangeAmount" oninput="updateExchangePreview()" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('finance.exchange.rateLabel', 'Cotação usada')}</label>
+        <input type="number" step="0.0001" min="0" id="newExchangeRate" oninput="updateExchangePreview()" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.description', 'Descrição')}</label>
+        <input type="text" id="newExchangeDescription" autocomplete="off" placeholder="${T('finance.exchange.descPlaceholder', 'Ex: Hóspede do quarto 4')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+    </div>
+    <p id="exchangePreview" style="margin-top:10px;font-size:13px;color:var(--muted)"></p>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="submitNewExchange()">${T('common.save', 'Salvar')}</button>
+    </div>
+    <div id="exchangeMessage" class="generic-modal-message"></div>
+
+    <h3 style="margin:20px 0 10px;font-size:14px;border-top:1px solid var(--line);padding-top:16px">${T('finance.exchange.recentTitle', 'Câmbios recentes')}</h3>
+    <div id="exchangeList" style="display:flex;flex-direction:column;gap:8px"></div>
+  `, true);
+  loadExchangeModalContent();
+};
+
+window.loadExchangeModalContent = async function(){
+  const listEl = document.getElementById("exchangeList");
+  if(!listEl) return;
+  listEl.innerHTML = `<p style="color:var(--muted);font-size:13px">${T('common.loading', 'Carregando...')}</p>`;
+  try{
+    const res = await fetch("/finance/exchanges", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const exchanges = await res.json();
+    loadExchangeSummary();
+
+    if(!exchanges.length){
+      listEl.innerHTML = `<p style="color:var(--muted);font-size:13px">${T('finance.exchange.empty', 'Nenhum câmbio registrado ainda.')}</p>`;
+      return;
+    }
+
+    listEl.innerHTML = "";
+    exchanges.forEach(ex => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:10px;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:10px 12px;";
+      row.innerHTML = `
+        <div>
+          <div style="font-weight:600">${escapeHtml(ex.description || (ex.foreign_currency + " " + T('finance.exchange.cashSuffix', 'em dinheiro')))}</div>
+          <div style="font-size:12px;color:var(--muted)">${Number(ex.foreign_amount).toFixed(2)} ${ex.foreign_currency} · ${T('finance.exchange.rateLabel', 'Cotação usada')}: ${ex.exchange_rate}</div>
+        </div>
+        <div style="font-weight:700">${formatMoney(ex.local_amount)}</div>
+      `;
+      listEl.appendChild(row);
+    });
+  }catch(e){
+    console.warn("Erro ao carregar câmbios:", e);
+  }
+};
+
+window.submitNewExchange = async function(){
+  const msg = document.getElementById("exchangeMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const foreignCurrency = document.getElementById("newExchangeCurrency")?.value;
+  const foreignAmount = parseFloat(document.getElementById("newExchangeAmount")?.value || "0");
+  const exchangeRate = parseFloat(document.getElementById("newExchangeRate")?.value || "0");
+  const description = (document.getElementById("newExchangeDescription")?.value || "").trim();
+
+  if(!foreignCurrency || !(foreignAmount > 0) || !(exchangeRate > 0)){
+    if(msg){ msg.textContent = T('finance.exchange.missingFields', 'Preencha moeda, valor e cotação.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch("/finance/exchanges", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ foreign_currency: foreignCurrency, foreign_amount: foreignAmount, exchange_rate: exchangeRate, description })
+    });
+    if(!res.ok){
+      if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    document.getElementById("newExchangeAmount").value = "";
+    document.getElementById("newExchangeRate").value = "";
+    document.getElementById("newExchangeDescription").value = "";
+    const preview = document.getElementById("exchangePreview");
+    if(preview) preview.textContent = "";
+    loadExchangeModalContent();
+    loadFinance();
+  }catch(e){
+    console.warn("Erro ao registrar câmbio:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
 // ===== OPERAÇÕES: /operations =====
 
 // Contagem de alertas e preferencia de canal chegam por rotas/tempos
@@ -7100,6 +7249,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadRoomMap === "function") loadRoomMap();
     if (typeof loadGuests === "function") loadGuests();
     if (typeof loadFinance === "function") loadFinance();
+    if (typeof loadExchangeSummary === "function") loadExchangeSummary();
     if (typeof loadReports === "function") loadReports();
     if (typeof loadSuppliers === "function") loadSuppliers();
     if (typeof loadInventory === "function") loadInventory();
@@ -7162,7 +7312,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     parking: ["loadParking"],
     scheduling: ["loadScheduling"],
     guests: ["loadGuests"],
-    finance: ["loadFinance"],
+    finance: ["loadFinance", "loadExchangeSummary"],
     inventory: ["loadInventory", "loadSuppliers"],
     revenue: ["loadRevenue"],
     reports: ["loadReports"],
