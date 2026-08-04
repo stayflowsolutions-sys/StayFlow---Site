@@ -1678,48 +1678,13 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="grid" data-settings-section="geral">
-
-        <div class="card span-6">
-          <h2 data-i18n="settings.general.aiCard.title">IA</h2>
-          <p data-i18n="settings.general.aiCard.desc">Configure quando a IA pode responder automaticamente e quando deve apenas sugerir ações para a equipe.</p>
-        </div>
-
-        <div class="card span-6">
-          <h2 data-i18n="settings.general.reservationsCard.title">Reservas</h2>
-          <p data-i18n="settings.general.reservationsCard.desc">Defina regras de confirmação, políticas de cancelamento e horários padrão de check-in e check-out.</p>
-        </div>
-
-        <div class="card span-6">
-          <h2 data-i18n="settings.general.integrationsCard.title">Integrações</h2>
-          <p data-i18n="settings.general.integrationsCard.desc">Conecte PMS, motor de reservas, meios de pagamento e canais de venda.</p>
-        </div>
-
-        <div class="card span-6">
-          <h2 data-i18n="settings.general.teamCard.title">Equipe</h2>
-          <p data-i18n="settings.general.teamCard.desc">Gerencie acessos, permissões e notificações para cada membro da equipe.</p>
-        </div>
-
-      </div>
-
-      <div class="card" data-settings-section="geral">
-        <h2 data-i18n="settings.general.title">Geral</h2>
-
-        <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
-          <div class="span-6">
-            <input type="text" data-setting="hostel_name" data-i18n-placeholder="settings.general.hostelNamePlaceholder" placeholder="Nome da hospedagem">
+      <div class="card settings-summary-card" data-settings-section="geral" onclick="openGeneralSettingsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.general.title">Geral</h2>
+            <p class="settings-summary-desc" id="generalSettingsSummaryDesc" data-i18n="settings.general.summaryDesc">Nome da hospedagem e tipo de propriedade.</p>
           </div>
-          <div class="span-6">
-            <select data-setting="hostel_type" id="settingsHostelTypeSelect">
-              <option value="" data-i18n="settings.general.hostelTypeOption">Tipo de propriedade</option>
-              <option value="Hostel" data-i18n="settings.hostelType.hostel">Hostel</option>
-              <option value="Hotel" data-i18n="settings.hostelType.hotel">Hotel</option>
-              <option value="Resort" data-i18n="settings.hostelType.resort">Resort</option>
-              <option value="Pousada" data-i18n="settings.hostelType.pousada">Pousada</option>
-              <option value="Flat" data-i18n="settings.hostelType.flat">Flat</option>
-              <option value="__new_hostel_type__" data-i18n="settings.hostelType.newOption">+ Novo tipo...</option>
-            </select>
-          </div>
+          <span class="settings-summary-chevron">›</span>
         </div>
       </div>
 
@@ -2279,6 +2244,8 @@ async function deleteRoleConfirm(roleId){
       });
       if(res.ok){
         alert(T('settings.msg.saved', 'Configurações salvas.'));
+        closeGenericModal();
+        if(typeof loadGeneralSettingsSummary === "function") loadGeneralSettingsSummary();
       }else if(res.status === 401){
         alert(T('reservations.msg.sessionExpired', 'Sua sessão expirou. Faça login novamente.'));
         window.location.href = "/Login.html";
@@ -3182,6 +3149,55 @@ async function deleteRoleConfirm(roleId){
     }catch(e){
       console.warn("Não foi possível carregar settings do backend, mantendo local.", e);
     }
+  };
+
+  window.loadGeneralSettingsSummary = async function(){
+    try{
+      const res = await fetch("/settings", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const summaryEl = document.getElementById("generalSettingsSummaryDesc");
+      if(summaryEl){
+        summaryEl.textContent = data.hostel_name
+          ? T('settings.general.summaryFilled', '{name} · {type}', {name: data.hostel_name, type: data.hostel_type || T('settings.general.hostelTypeOption', 'Tipo de propriedade')})
+          : T('settings.general.summaryDesc', 'Nome da hospedagem e tipo de propriedade.');
+      }
+
+      const nameInput = document.getElementById("generalSettingsName");
+      if(nameInput) setFieldValue(nameInput, data.hostel_name || "");
+      const typeSelect = document.getElementById("settingsHostelTypeSelect");
+      if(typeSelect && data.hostel_type) setFieldValue(typeSelect, data.hostel_type);
+    }catch(e){
+      console.warn("Erro ao carregar resumo de Geral:", e);
+    }
+  };
+
+  window.openGeneralSettingsModal = function(){
+    openGenericModal(T('settings.general.title', 'Geral'), `
+      <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.general.hostelNamePlaceholder', 'Nome da hospedagem')}</label>
+          <input type="text" data-setting="hostel_name" id="generalSettingsName" autocomplete="off" placeholder="${T('settings.general.hostelNamePlaceholder', 'Nome da hospedagem')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.general.hostelTypeOption', 'Tipo de propriedade')}</label>
+          <select data-setting="hostel_type" id="settingsHostelTypeSelect" onchange="onSettingsHostelTypeChange()" style="width:100%">
+            <option value="">${T('settings.general.hostelTypeOption', 'Tipo de propriedade')}</option>
+            <option value="Hostel">${T('settings.hostelType.hostel', 'Hostel')}</option>
+            <option value="Hotel">${T('settings.hostelType.hotel', 'Hotel')}</option>
+            <option value="Resort">${T('settings.hostelType.resort', 'Resort')}</option>
+            <option value="Pousada">${T('settings.hostelType.pousada', 'Pousada')}</option>
+            <option value="Flat">${T('settings.hostelType.flat', 'Flat')}</option>
+            <option value="__new_hostel_type__">${T('settings.hostelType.newOption', '+ Novo tipo...')}</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="saveSettings()">${T('settings.saveChangesBtn', 'Salvar alterações')}</button>
+      </div>
+    `);
+    loadGeneralSettingsSummary();
   };
 
   function hydrateSettings(){
@@ -6575,29 +6591,24 @@ window.openNewInventoryItemModal = function(){
   loadSuppliers();
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+window.onSettingsHostelTypeChange = async function(){
   const hostelTypeSelect = document.getElementById("settingsHostelTypeSelect");
-  if(hostelTypeSelect){
-    hostelTypeSelect.addEventListener("change", async () => {
-      if(hostelTypeSelect.value !== "__new_hostel_type__") return;
+  if(!hostelTypeSelect || hostelTypeSelect.value !== "__new_hostel_type__") return;
 
-      const newType = await stayflowPrompt(T('settings.newHostelTypePrompt', 'Nome do novo tipo de propriedade:'));
+  const newType = await stayflowPrompt(T('settings.newHostelTypePrompt', 'Nome do novo tipo de propriedade:'));
 
-      if(!newType || !newType.trim()){
-        hostelTypeSelect.value = "";
-        return;
-      }
-
-      const value = newType.trim();
-      const opt = document.createElement("option");
-      opt.value = value;
-      opt.textContent = value;
-      hostelTypeSelect.insertBefore(opt, hostelTypeSelect.querySelector('option[value="__new_hostel_type__"]'));
-      hostelTypeSelect.value = value;
-    });
+  if(!newType || !newType.trim()){
+    hostelTypeSelect.value = "";
+    return;
   }
 
-});
+  const value = newType.trim();
+  const opt = document.createElement("option");
+  opt.value = value;
+  opt.textContent = value;
+  hostelTypeSelect.insertBefore(opt, hostelTypeSelect.querySelector('option[value="__new_hostel_type__"]'));
+  hostelTypeSelect.value = value;
+};
 
 // ===== HÓSPEDES: /guests =====
 
@@ -7076,6 +7087,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadRevenue === "function") loadRevenue();
     if (typeof loadChats === "function") loadChats();
     if (typeof hydrateSettingsFromBackend === "function") hydrateSettingsFromBackend();
+    if (typeof loadGeneralSettingsSummary === "function") loadGeneralSettingsSummary();
     if (typeof loadWhatsappSettings === "function") loadWhatsappSettings();
     if (typeof loadBeds24Settings === "function") loadBeds24Settings();
     // As duas de baixo so estavam ligadas no reload por troca de idioma
@@ -7129,7 +7141,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     inventory: ["loadInventory", "loadSuppliers"],
     revenue: ["loadRevenue"],
     reports: ["loadReports"],
-    settings: ["hydrateSettingsFromBackend", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings"]
+    settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings"]
   };
 
   function reloadDynamicContent(pageId){
