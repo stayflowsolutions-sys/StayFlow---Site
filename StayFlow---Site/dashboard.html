@@ -1228,6 +1228,15 @@ async function deleteRoleConfirm(roleId){
 
 <!-- KITCHEN -->
 <section id="kitchen" class="page">
+  <div class="card settings-summary-card" onclick="openMenuModal()">
+    <div class="settings-summary-row">
+      <div>
+        <h2 data-i18n="kitchen.menu.title">📋 Cardápio</h2>
+        <p class="settings-summary-desc" id="menuSummaryDesc" data-i18n="kitchen.menu.desc">Itens que a IA usa pra tirar pedido pelo chat.</p>
+      </div>
+      <span class="settings-summary-chevron">›</span>
+    </div>
+  </div>
   <div class="card">
     <h2 data-i18n="kitchen.orders.title">🍽️ Pedidos em aberto</h2>
     <div class="sf-empty" id="kitchenOrdersEmpty">
@@ -1316,7 +1325,10 @@ async function deleteRoleConfirm(roleId){
 <!-- PARKING -->
 <section id="parking" class="page">
   <div class="card">
-    <h2 data-i18n="parking.vehicles.title">🚗 Veículos no estacionamento</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+      <h2 style="margin:0" data-i18n="parking.vehicles.title">🚗 Veículos no estacionamento</h2>
+      <button type="button" class="btn primary" onclick="openAddVehicleModal()" data-i18n="parking.vehicles.addBtn">➕ Adicionar veículo</button>
+    </div>
     <div class="sf-empty" id="parkingVehiclesEmpty">
       <div>
         <strong data-i18n="parking.vehicles.emptyTitle">Nenhum veículo registrado.</strong>
@@ -1371,32 +1383,14 @@ async function deleteRoleConfirm(roleId){
       <tbody id="schedulingOnDutyBody"><!-- preenchido por live --></tbody>
     </table>
   </div>
-  <div class="card">
-    <h2 data-i18n="scheduling.newShift.title">➕ Novo turno</h2>
-    <div class="form-grid">
-      <div class="field">
-        <label data-i18n="scheduling.field.department">Departamento</label>
-        <select id="newShiftDepartment">
-          <option value="kitchen" data-i18n="nav.kitchen">Cozinha</option>
-          <option value="maintenance" data-i18n="nav.maintenance">Manutenção</option>
-          <option value="patrimonial_security" data-i18n="nav.patrimonialSecurity">Segurança Patrimonial</option>
-          <option value="parking" data-i18n="nav.parking">Estacionamento</option>
-        </select>
+  <div class="card settings-summary-card" onclick="openNewShiftModal()">
+    <div class="settings-summary-row">
+      <div>
+        <h2 data-i18n="scheduling.newShift.title">➕ Novo turno</h2>
+        <p class="settings-summary-desc" data-i18n="scheduling.newShift.desc">Cadastre um turno de trabalho pra você ou pra equipe.</p>
       </div>
-      <div class="field">
-        <label data-i18n="scheduling.field.date">Data</label>
-        <input type="date" id="newShiftDate">
-      </div>
-      <div class="field">
-        <label data-i18n="scheduling.field.start">Início</label>
-        <input type="time" id="newShiftStart">
-      </div>
-      <div class="field">
-        <label data-i18n="scheduling.field.end">Fim</label>
-        <input type="time" id="newShiftEnd">
-      </div>
+      <span class="settings-summary-chevron">›</span>
     </div>
-    <button type="button" class="btn primary" style="margin-top:12px" onclick="createShiftUI()" data-i18n="scheduling.newShift.submit">Criar turno (pra mim)</button>
   </div>
 </section>
 
@@ -1480,83 +1474,13 @@ async function deleteRoleConfirm(roleId){
 <section id="inventory" class="page">
   <div class="grid">
 
-    <div class="card span-12">
-      <h2 data-i18n="inventory.newItem.title">📦 Novo produto</h2>
-      <form onsubmit="submitNewInventoryItem(event)" autocomplete="off" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
-
-        <div style="grid-column:span 3">
-          <label data-i18n="inventory.newItem.nameLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Nome do produto</label>
-          <input name="name" autocomplete="off" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    <div class="card span-12 settings-summary-card" onclick="openNewInventoryItemModal()">
+      <div class="settings-summary-row">
+        <div>
+          <h2 data-i18n="inventory.newItem.title">📦 Novo produto</h2>
+          <p class="settings-summary-desc" data-i18n="inventory.newItem.desc">Cadastre café da manhã, produtos de limpeza, enxoval e outros itens de estoque.</p>
         </div>
-
-        <div style="grid-column:span 2">
-          <label data-i18n="inventory.newItem.categoryLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Categoria</label>
-          <select name="category" id="inventoryCategorySelect" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <option value="cafe_da_manha" data-i18n="inventory.category.breakfast">Café da manhã</option>
-            <option value="limpeza" data-i18n="inventory.category.cleaning">Limpeza</option>
-            <option value="enxoval" data-i18n="inventory.category.linen">Enxoval</option>
-            <option value="outro" data-i18n="inventory.category.other">Outro</option>
-            <option value="__new_category__" data-i18n="inventory.category.newOption">+ Nova categoria...</option>
-          </select>
-        </div>
-
-        <div style="grid-column:span 1">
-          <label data-i18n="inventory.newItem.quantityLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Qtd. atual</label>
-          <input name="quantity" type="number" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-
-        <div style="grid-column:span 1">
-          <label data-i18n="inventory.newItem.minLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Mínimo</label>
-          <input name="min_threshold" type="number" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-
-        <div style="grid-column:span 1">
-          <label data-i18n="inventory.newItem.reorderLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Repor (qtd.)</label>
-          <input name="reorder_quantity" type="number" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-
-        <div style="grid-column:span 1">
-          <label data-i18n="inventory.newItem.unitLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Unidade</label>
-          <select name="unit" id="inventoryUnitSelect" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <option value="un" data-i18n="inventory.unit.un">un (unidades)</option>
-            <option value="kg" data-i18n="inventory.unit.kg">kg (quilos)</option>
-            <option value="l" data-i18n="inventory.unit.l">l (litros)</option>
-            <option value="pct" data-i18n="inventory.unit.pct">pct (pacotes)</option>
-            <option value="cx" data-i18n="inventory.unit.cx">cx (caixas)</option>
-            <option value="__other__" data-i18n="inventory.unit.other">Outro...</option>
-          </select>
-          <input name="unit_other" id="inventoryUnitOther" autocomplete="off" data-i18n-placeholder="inventory.unit.otherPlaceholder" placeholder="Digite a unidade" style="display:none;margin-top:6px;width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-
-        <div style="grid-column:span 2">
-          <label data-i18n="inventory.newItem.supplierLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Fornecedor</label>
-          <select name="supplier_id" id="inventorySupplierSelect" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <option value="" data-i18n="inventory.noSupplierOption">Sem fornecedor</option>
-            <option value="__new__" data-i18n="inventory.newSupplierOption">+ Novo fornecedor...</option>
-          </select>
-        </div>
-
-        <div style="grid-column:span 1;display:flex;align-items:flex-end">
-          <button type="submit" class="btn" data-i18n="common.create" style="width:100%">Criar</button>
-        </div>
-      </form>
-
-      <div id="newSupplierForm" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #ffffff12;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
-        <div style="grid-column:span 3">
-          <label data-i18n="inventory.supplierForm.nameLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Nome do fornecedor</label>
-          <input id="newSupplierName" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-        <div style="grid-column:span 3">
-          <label data-i18n="common.phone" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Telefone</label>
-          <input id="newSupplierPhone" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-        <div style="grid-column:span 3">
-          <label data-i18n="inventory.supplierForm.emailLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Email (opcional)</label>
-          <input id="newSupplierEmail" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-        <div style="grid-column:span 3;display:flex;align-items:flex-end">
-          <button type="button" class="btn secondary" data-i18n="inventory.supplierForm.submitBtn" style="width:100%" onclick="submitNewSupplier()">Salvar fornecedor</button>
-        </div>
+        <span class="settings-summary-chevron">›</span>
       </div>
     </div>
 
@@ -1601,27 +1525,10 @@ async function deleteRoleConfirm(roleId){
 <section id="revenue" class="page">
   <div class="grid">
     <div class="card span-8">
-      <h2 data-i18n="revenue.catalogTitle">🍷 Catálogo de experiências e upsells</h2>
-      <form onsubmit="submitNewOffering(event)" autocomplete="off" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;margin-bottom:16px">
-        <div style="grid-column:span 5">
-          <label data-i18n="common.name" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Nome</label>
-          <input name="name" autocomplete="off" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-        <div style="grid-column:span 3">
-          <label data-i18n="common.type" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Tipo</label>
-          <select name="type" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <option value="tour" data-i18n="revenue.type.tour">Tour / Experiência</option>
-            <option value="upsell" data-i18n="revenue.type.upsell">Upsell</option>
-          </select>
-        </div>
-        <div style="grid-column:span 2">
-          <label data-i18n="revenue.priceLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Preço (US$)</label>
-          <input name="price" type="number" step="0.01" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-        <div style="grid-column:span 2;display:flex;align-items:flex-end">
-          <button type="submit" class="btn" data-i18n="revenue.addBtn" style="width:100%">Adicionar</button>
-        </div>
-      </form>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="revenue.catalogTitle">🍷 Catálogo de experiências e upsells</h2>
+        <button type="button" class="btn primary" onclick="openNewOfferingModal()" data-i18n="revenue.addBtn">➕ Adicionar</button>
+      </div>
 
       <div class="sf-empty" id="offeringsEmpty">
         <div>
@@ -5469,6 +5376,8 @@ function ticketStatusLabel(status){
 // ----- Cozinha -----
 
 async function loadKitchen(){
+  loadMenuSummary();
+
   const emptyEl = document.getElementById("kitchenOrdersEmpty");
   const tableEl = document.getElementById("kitchenOrdersTable");
   const bodyEl = document.getElementById("kitchenOrdersBody");
@@ -5512,6 +5421,140 @@ async function loadKitchen(){
     console.warn("Erro ao carregar /kitchen/orders:", e);
   }
 }
+
+window.loadMenuSummary = async function(){
+  const el = document.getElementById("menuSummaryDesc");
+  if(!el) return;
+  try{
+    const res = await fetch("/kitchen/menu?active_only=false", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const items = await res.json();
+    const activeCount = items.filter(i => i.active).length;
+    el.textContent = items.length
+      ? T('kitchen.menu.summaryCount', '{count} itens cadastrados ({active} ativos)', {count: items.length, active: activeCount})
+      : T('kitchen.menu.summaryEmpty', 'Nenhum item cadastrado ainda — clique pra adicionar.');
+  }catch(e){
+    console.warn("Erro ao carregar resumo do cardápio:", e);
+  }
+};
+
+window.openMenuModal = function(){
+  openGenericModal(T('kitchen.menu.modalTitle', '📋 Cardápio'), `
+    <p style="margin-bottom:14px">${T('kitchen.menu.modalDesc', 'Itens que a IA usa pra tirar pedido pelo chat, e que aparecem pra equipe da cozinha.')}</p>
+    <div id="menuItemsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+    <div style="border-top:1px solid var(--line);padding-top:14px">
+      <h3 style="margin:0 0 10px;font-size:14px">${T('kitchen.menu.addTitle', 'Adicionar item')}</h3>
+      <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('kitchen.menu.nameLabel', 'Nome')}</label>
+          <input type="text" id="newMenuItemName" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('kitchen.menu.categoryLabel', 'Categoria')}</label>
+          <input type="text" id="newMenuItemCategory" autocomplete="off" placeholder="${T('kitchen.menu.categoryPlaceholder', 'Ex: Pratos, Bebidas, Sobremesas')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('kitchen.menu.priceLabel', 'Preço')}</label>
+          <input type="number" step="0.01" min="0" id="newMenuItemPrice" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('kitchen.menu.stationLabel', 'Estação')}</label>
+          <select id="newMenuItemStation" style="width:100%">
+            <option value="cozinha">${T('kitchen.menu.station.kitchen', 'Cozinha')}</option>
+            <option value="bar">${T('kitchen.menu.station.bar', 'Bar')}</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="submitNewMenuItem()">${T('common.save', 'Salvar')}</button>
+      </div>
+      <div id="menuItemMessage" class="generic-modal-message"></div>
+    </div>
+  `, true);
+  loadMenuModalContent();
+};
+
+window.loadMenuModalContent = async function(){
+  const listEl = document.getElementById("menuItemsList");
+  if(!listEl) return;
+  listEl.innerHTML = `<p style="color:var(--muted);font-size:13px">${T('common.loading', 'Carregando...')}</p>`;
+  try{
+    const res = await fetch("/kitchen/menu?active_only=false", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const items = await res.json();
+    loadMenuSummary();
+
+    if(!items.length){
+      listEl.innerHTML = `<p style="color:var(--muted);font-size:13px">${T('kitchen.menu.empty', 'Nenhum item cadastrado ainda.')}</p>`;
+      return;
+    }
+
+    listEl.innerHTML = "";
+    items.forEach(item => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:10px;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:10px 12px;";
+      row.innerHTML = `
+        <div>
+          <div style="font-weight:600;${item.active ? '' : 'opacity:.5;text-decoration:line-through'}">${item.name}</div>
+          <div style="font-size:12px;color:var(--muted)">${item.category || "-"} · $${Number(item.price || 0).toFixed(2)}</div>
+        </div>
+        <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="toggleMenuItemActive(${item.id}, ${item.active ? "false" : "true"})">
+          ${item.active ? T('kitchen.menu.deactivateBtn', 'Desativar') : T('kitchen.menu.activateBtn', 'Ativar')}
+        </button>
+      `;
+      listEl.appendChild(row);
+    });
+  }catch(e){
+    console.warn("Erro ao carregar cardápio:", e);
+  }
+};
+
+window.submitNewMenuItem = async function(){
+  const msg = document.getElementById("menuItemMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const name = (document.getElementById("newMenuItemName")?.value || "").trim();
+  const category = (document.getElementById("newMenuItemCategory")?.value || "").trim();
+  const price = parseFloat(document.getElementById("newMenuItemPrice")?.value || "0") || 0;
+  const station = document.getElementById("newMenuItemStation")?.value || "cozinha";
+
+  if(!name || !category){
+    if(msg){ msg.textContent = T('kitchen.menu.nameAndCategoryRequired', 'Informe nome e categoria.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch("/kitchen/menu", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ name, category, price, station })
+    });
+    if(!res.ok){
+      if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    document.getElementById("newMenuItemName").value = "";
+    document.getElementById("newMenuItemCategory").value = "";
+    document.getElementById("newMenuItemPrice").value = "";
+    loadMenuModalContent();
+  }catch(e){
+    console.warn("Erro ao adicionar item de cardápio:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+window.toggleMenuItemActive = async function(id, active){
+  try{
+    await fetch(`/kitchen/menu/${id}/active`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ active: !!active })
+    });
+    loadMenuModalContent();
+  }catch(e){
+    console.warn("Erro ao alterar status do item de cardápio:", e);
+  }
+};
 
 const KITCHEN_ITEM_STATUS_SEQUENCE = ["pending", "preparing", "ready", "delivered"];
 
@@ -5754,6 +5797,74 @@ window.saveCameraIntegration = async function(){
 
 // ----- Estacionamento -----
 
+window.openAddVehicleModal = function(){
+  openGenericModal(T('parking.vehicles.addModalTitle', '🚗 Adicionar veículo'), `
+    <p style="margin-bottom:14px">${T('parking.vehicles.addModalDesc', 'Pra quem chegou agora sem reserva/cadastro ainda - só o nome já serve, sem precisar buscar hóspede no sistema.')}</p>
+    <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('parking.vehicles.guestNameLabel', 'Nome do hóspede/cliente')}</label>
+        <input type="text" id="newVehicleGuestName" autocomplete="off" placeholder="${T('parking.vehicles.guestNamePlaceholder', 'Digite o nome, mesmo sem reserva ainda')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('parking.col.plate', 'Placa')}</label>
+        <input type="text" id="newVehiclePlate" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('parking.col.model', 'Modelo')}</label>
+        <input type="text" id="newVehicleModel" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('parking.vehicles.colorLabel', 'Cor')}</label>
+        <input type="text" id="newVehicleColor" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('parking.col.service', 'Serviço')}</label>
+        <select id="newVehicleServiceType" style="width:100%">
+          <option value="manobrista">${T('parking.service.valet', 'Manobrista')}</option>
+          <option value="autoatendimento">${T('parking.service.selfPark', 'Autoatendimento')}</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="submitAddVehicle()">${T('common.save', 'Salvar')}</button>
+    </div>
+    <div id="addVehicleMessage" class="generic-modal-message"></div>
+  `);
+};
+
+window.submitAddVehicle = async function(){
+  const msg = document.getElementById("addVehicleMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const guestName = (document.getElementById("newVehicleGuestName")?.value || "").trim();
+  const plate = (document.getElementById("newVehiclePlate")?.value || "").trim();
+  const model = (document.getElementById("newVehicleModel")?.value || "").trim();
+  const color = (document.getElementById("newVehicleColor")?.value || "").trim();
+  const serviceType = document.getElementById("newVehicleServiceType")?.value || "autoatendimento";
+
+  if(!guestName){
+    if(msg){ msg.textContent = T('parking.vehicles.guestNameRequired', 'Informe o nome do hóspede/cliente.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch("/parking/vehicles", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ guest_name: guestName, plate, model, color, service_type: serviceType })
+    });
+    if(!res.ok){
+      if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadParking();
+  }catch(e){
+    console.warn("Erro ao adicionar veículo:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
 async function loadParking(){
   const vEmptyEl = document.getElementById("parkingVehiclesEmpty");
   const vTableEl = document.getElementById("parkingVehiclesTable");
@@ -5846,7 +5957,10 @@ window.resolveValetRequest = async function(ticketId){
 // ----- Escala -----
 
 const SCHEDULING_DEPARTMENTS = [
+  { key: "reception", labelKey: "scheduling.department.reception", labelFallback: "Recepção" },
+  { key: "housekeeping", labelKey: "scheduling.department.housekeeping", labelFallback: "Limpeza" },
   { key: "kitchen", labelKey: "nav.kitchen", labelFallback: "Cozinha" },
+  { key: "dining", labelKey: "scheduling.department.dining", labelFallback: "Salão / Restaurante" },
   { key: "maintenance", labelKey: "nav.maintenance", labelFallback: "Manutenção" },
   { key: "patrimonial_security", labelKey: "nav.patrimonialSecurity", labelFallback: "Segurança Patrimonial" },
   { key: "parking", labelKey: "nav.parking", labelFallback: "Estacionamento" },
@@ -5881,14 +5995,49 @@ async function loadScheduling(){
   }
 }
 
+window.openNewShiftModal = function(){
+  const options = SCHEDULING_DEPARTMENTS.map(dept =>
+    `<option value="${dept.key}">${T(dept.labelKey, dept.labelFallback)}</option>`
+  ).join("");
+
+  openGenericModal(T('scheduling.newShift.title', '➕ Novo turno'), `
+    <p style="margin-bottom:14px">${T('scheduling.newShift.desc', 'Cadastre um turno de trabalho pra você ou pra equipe.')}</p>
+    <div class="form-grid">
+      <div class="field">
+        <label>${T('scheduling.field.department', 'Departamento')}</label>
+        <select id="newShiftDepartment">${options}</select>
+      </div>
+      <div class="field">
+        <label>${T('scheduling.field.date', 'Data')}</label>
+        <input type="date" id="newShiftDate">
+      </div>
+      <div class="field">
+        <label>${T('scheduling.field.start', 'Início')}</label>
+        <input type="time" id="newShiftStart">
+      </div>
+      <div class="field">
+        <label>${T('scheduling.field.end', 'Fim')}</label>
+        <input type="time" id="newShiftEnd">
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="createShiftUI()">${T('scheduling.newShift.submit', 'Criar turno (pra mim)')}</button>
+    </div>
+    <div id="newShiftMessage" class="generic-modal-message"></div>
+  `);
+};
+
 window.createShiftUI = async function(){
+  const msg = document.getElementById("newShiftMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
   const department = document.getElementById("newShiftDepartment")?.value;
   const date = document.getElementById("newShiftDate")?.value;
   const start = document.getElementById("newShiftStart")?.value;
   const end = document.getElementById("newShiftEnd")?.value;
 
   if(!department || !date || !start || !end){
-    alert(T('scheduling.newShift.missingFields', 'Preencha departamento, data, início e fim.'));
+    if(msg){ msg.textContent = T('scheduling.newShift.missingFields', 'Preencha departamento, data, início e fim.'); msg.classList.add("error"); }
     return;
   }
 
@@ -5899,17 +6048,43 @@ window.createShiftUI = async function(){
       body: JSON.stringify({ department, shift_date: date, start_time: start, end_time: end })
     });
     if(!res.ok){
-      alert(T('common.error.generic', 'Erro de conexão.'));
+      if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
       return;
     }
+    closeGenericModal();
     loadScheduling();
   }catch(e){
     console.warn("Erro ao criar turno:", e);
-    alert(T('common.error.generic', 'Erro de conexão.'));
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
   }
 };
 
 // ===== RECEITAS: /revenue e /offerings =====
+
+window.openNewOfferingModal = function(){
+  openGenericModal(T('revenue.catalogTitle', '🍷 Catálogo de experiências e upsells'), `
+    <form onsubmit="submitNewOffering(event)" autocomplete="off" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.name', 'Nome')}</label>
+        <input name="name" autocomplete="off" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.type', 'Tipo')}</label>
+        <select name="type" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <option value="tour">${T('revenue.type.tour', 'Tour / Experiência')}</option>
+          <option value="upsell">${T('revenue.type.upsell', 'Upsell')}</option>
+        </select>
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('revenue.priceLabel', 'Preço (US$)')}</label>
+        <input name="price" type="number" step="0.01" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 12;display:flex;justify-content:flex-end">
+        <button type="submit" class="btn">${T('revenue.addBtn', '➕ Adicionar')}</button>
+      </div>
+    </form>
+  `);
+};
 
 window.submitNewOffering = async function(event){
   event.preventDefault();
@@ -5940,6 +6115,7 @@ window.submitNewOffering = async function(event){
     }
 
     form.reset();
+    closeGenericModal();
     loadRevenue();
   }catch(e){
     console.error("Erro ao criar oferta:", e);
@@ -6150,6 +6326,7 @@ window.submitNewInventoryItem = async function(event){
     }
 
     form.reset();
+    closeGenericModal();
     loadInventory();
   }catch(e){
     console.error("Erro ao criar produto:", e);
@@ -6291,48 +6468,114 @@ async function loadInventory(){
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+window.onInventorySupplierSelectChange = function(){
   const select = document.getElementById("inventorySupplierSelect");
-  if(select){
-    select.addEventListener("change", () => {
-      const newForm = document.getElementById("newSupplierForm");
-      if(select.value === "__new__"){
-        newForm.style.display = "grid";
-      }else{
-        newForm.style.display = "none";
-      }
-    });
-  }
+  const newForm = document.getElementById("newSupplierForm");
+  if(!select || !newForm) return;
+  newForm.style.display = select.value === "__new__" ? "grid" : "none";
+};
 
+window.onInventoryUnitSelectChange = function(){
   const unitSelect = document.getElementById("inventoryUnitSelect");
-  if(unitSelect){
-    unitSelect.addEventListener("change", () => {
-      const otherInput = document.getElementById("inventoryUnitOther");
-      otherInput.style.display = unitSelect.value === "__other__" ? "block" : "none";
-    });
-  }
+  const otherInput = document.getElementById("inventoryUnitOther");
+  if(!unitSelect || !otherInput) return;
+  otherInput.style.display = unitSelect.value === "__other__" ? "block" : "none";
+};
 
+window.onInventoryCategorySelectChange = async function(){
   const categorySelect = document.getElementById("inventoryCategorySelect");
-  if(categorySelect){
-    categorySelect.addEventListener("change", async () => {
-      if(categorySelect.value !== "__new_category__") return;
+  if(!categorySelect || categorySelect.value !== "__new_category__") return;
 
-      const newCategory = await stayflowPrompt(T('inventory.newCategoryPrompt', 'Nome da nova categoria:'));
+  const newCategory = await stayflowPrompt(T('inventory.newCategoryPrompt', 'Nome da nova categoria:'));
 
-      if(!newCategory || !newCategory.trim()){
-        categorySelect.value = "outro";
-        return;
-      }
-
-      const value = newCategory.trim();
-      const opt = document.createElement("option");
-      opt.value = value;
-      opt.textContent = value;
-      categorySelect.insertBefore(opt, categorySelect.querySelector('option[value="__new_category__"]'));
-      categorySelect.value = value;
-    });
+  if(!newCategory || !newCategory.trim()){
+    categorySelect.value = "outro";
+    return;
   }
 
+  const value = newCategory.trim();
+  const opt = document.createElement("option");
+  opt.value = value;
+  opt.textContent = value;
+  categorySelect.insertBefore(opt, categorySelect.querySelector('option[value="__new_category__"]'));
+  categorySelect.value = value;
+};
+
+window.openNewInventoryItemModal = function(){
+  openGenericModal(T('inventory.newItem.title', '📦 Novo produto'), `
+    <form onsubmit="submitNewInventoryItem(event)" autocomplete="off" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('inventory.newItem.nameLabel', 'Nome do produto')}</label>
+        <input name="name" autocomplete="off" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('inventory.newItem.categoryLabel', 'Categoria')}</label>
+        <select name="category" id="inventoryCategorySelect" required onchange="onInventoryCategorySelectChange()" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <option value="cafe_da_manha">${T('inventory.category.breakfast', 'Café da manhã')}</option>
+          <option value="limpeza">${T('inventory.category.cleaning', 'Limpeza')}</option>
+          <option value="enxoval">${T('inventory.category.linen', 'Enxoval')}</option>
+          <option value="outro">${T('inventory.category.other', 'Outro')}</option>
+          <option value="__new_category__">${T('inventory.category.newOption', '+ Nova categoria...')}</option>
+        </select>
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('inventory.newItem.quantityLabel', 'Qtd. atual')}</label>
+        <input name="quantity" type="number" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('inventory.newItem.minLabel', 'Mínimo')}</label>
+        <input name="min_threshold" type="number" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('inventory.newItem.reorderLabel', 'Repor (qtd.)')}</label>
+        <input name="reorder_quantity" type="number" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('inventory.newItem.unitLabel', 'Unidade')}</label>
+        <select name="unit" id="inventoryUnitSelect" onchange="onInventoryUnitSelectChange()" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <option value="un">${T('inventory.unit.un', 'un (unidades)')}</option>
+          <option value="kg">${T('inventory.unit.kg', 'kg (quilos)')}</option>
+          <option value="l">${T('inventory.unit.l', 'l (litros)')}</option>
+          <option value="pct">${T('inventory.unit.pct', 'pct (pacotes)')}</option>
+          <option value="cx">${T('inventory.unit.cx', 'cx (caixas)')}</option>
+          <option value="__other__">${T('inventory.unit.other', 'Outro...')}</option>
+        </select>
+        <input name="unit_other" id="inventoryUnitOther" autocomplete="off" placeholder="${T('inventory.unit.otherPlaceholder', 'Digite a unidade')}" style="display:none;margin-top:6px;width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('inventory.newItem.supplierLabel', 'Fornecedor')}</label>
+        <select name="supplier_id" id="inventorySupplierSelect" onchange="onInventorySupplierSelectChange()" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <option value="">${T('inventory.noSupplierOption', 'Sem fornecedor')}</option>
+          <option value="__new__">${T('inventory.newSupplierOption', '+ Novo fornecedor...')}</option>
+        </select>
+      </div>
+      <div style="grid-column:span 12;display:flex;justify-content:flex-end">
+        <button type="submit" class="btn">${T('common.create', 'Criar')}</button>
+      </div>
+    </form>
+
+    <div id="newSupplierForm" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #ffffff12;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('inventory.supplierForm.nameLabel', 'Nome do fornecedor')}</label>
+        <input id="newSupplierName" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.phone', 'Telefone')}</label>
+        <input id="newSupplierPhone" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('inventory.supplierForm.emailLabel', 'Email (opcional)')}</label>
+        <input id="newSupplierEmail" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 12;display:flex;justify-content:flex-end">
+        <button type="button" class="btn secondary" onclick="submitNewSupplier()">${T('inventory.supplierForm.submitBtn', 'Salvar fornecedor')}</button>
+      </div>
+    </div>
+  `, true);
+  loadSuppliers();
+};
+
+document.addEventListener("DOMContentLoaded", () => {
   const hostelTypeSelect = document.getElementById("settingsHostelTypeSelect");
   if(hostelTypeSelect){
     hostelTypeSelect.addEventListener("change", async () => {

@@ -331,6 +331,64 @@ def _backfill_operational_modules_for_full_access_roles(cursor):
         )
 
 
+def _vehicles_table_needs_migration(cursor):
+    """
+    Detecta se vehicles ainda tem o schema antigo, com guest_id
+    NOT NULL (antes de permitir manobrista registrar carro de quem
+    chegou na hora, sem hospede formal cadastrado ainda).
+    """
+    cursor.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='vehicles'"
+    )
+    row = cursor.fetchone()
+
+    if row is None:
+        return False
+
+    table_sql = (row["sql"] or "").replace(" ", "").replace("\n", "")
+    return "guest_idINTEGERNOTNULL" in table_sql
+
+
+def _migrate_vehicles_guest_id_nullable(cursor):
+    """
+    Reconstroi vehicles com guest_id opcional (e guest_name novo, pro
+    caso sem hospede formal) - mesmo padrao ja usado pra
+    users/guests em migracoes anteriores. Preserva todos os dados
+    existentes.
+    """
+    cursor.execute("ALTER TABLE vehicles RENAME TO vehicles_old")
+
+    cursor.execute("""
+    CREATE TABLE vehicles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        guest_id INTEGER,
+        guest_name TEXT,
+        reservation_id INTEGER,
+        plate TEXT,
+        model TEXT,
+        color TEXT,
+        spot_number TEXT,
+        service_type TEXT NOT NULL DEFAULT 'autoatendimento',
+        checked_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        checked_out_at TIMESTAMP
+    )
+    """)
+
+    cursor.execute("""
+        INSERT INTO vehicles (
+            id, hostel_id, guest_id, reservation_id, plate, model, color,
+            spot_number, service_type, checked_in_at, checked_out_at
+        )
+        SELECT
+            id, hostel_id, guest_id, reservation_id, plate, model, color,
+            spot_number, service_type, checked_in_at, checked_out_at
+        FROM vehicles_old
+    """)
+
+    cursor.execute("DROP TABLE vehicles_old")
+
+
 def create_database():
     conn = get_connection()
     cursor = conn.cursor()
@@ -1163,7 +1221,8 @@ def create_database():
     CREATE TABLE IF NOT EXISTS vehicles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         hostel_id INTEGER NOT NULL,
-        guest_id INTEGER NOT NULL,
+        guest_id INTEGER,
+        guest_name TEXT,
         reservation_id INTEGER,
         plate TEXT,
         model TEXT,
@@ -1174,6 +1233,15 @@ def create_database():
         checked_out_at TIMESTAMP
     )
     """)
+
+    # guest_id agora e opcional - manobrista as vezes registra o carro
+    # de alguem que chegou na hora, sem reserva/hospede formal ainda no
+    # sistema (ver check_in_vehicle: guest_name cobre esse caso). Se a
+    # tabela ja existia com guest_id NOT NULL (antes desta mudanca),
+    # reconstroi pra tornar opcional - mesmo padrao ja usado pra
+    # users/guests em migracoes anteriores.
+    if _vehicles_table_needs_migration(cursor):
+        _migrate_vehicles_guest_id_nullable(cursor)
 
     # Cobranca de estacionamento independente do tipo de servico
     # (manobrista/autoatendimento e cobranca sao dois eixos separados) -
@@ -7394,13 +7462,20 @@ def get_active_vehicle_for_guest(hostel_id, guest_id):
 def list_active_vehicles(hostel_id):
     """
     Todo veiculo ainda no estacionamento (sem saida registrada) -
-    usado pela tela de Estacionamento no dashboard.
+    usado pela tela de Estacionamento no dashboard. guest_name final e
+    o nome do hospede cadastrado quando existe (guest_id preenchido),
+    ou o nome digitado na hora pelo manobrista (vehicles.guest_name)
+    quando nao ha hospede formal ainda - por isso o COALESCE, e por
+    isso NAO usa "v.*" direto (colidiria com o alias guest_name).
     """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
         """
-        SELECT v.*, g.name AS guest_name
+        SELECT
+            v.id, v.hostel_id, v.guest_id, v.reservation_id, v.plate, v.model,
+            v.color, v.spot_number, v.service_type, v.checked_in_at, v.checked_out_at,
+            COALESCE(g.name, v.guest_name) AS guest_name
         FROM vehicles v
         LEFT JOIN guests g ON g.id = v.guest_id
         WHERE v.hostel_id = ? AND v.checked_out_at IS NULL
@@ -7413,16 +7488,22 @@ def list_active_vehicles(hostel_id):
     return vehicles
 
 
-def check_in_vehicle(hostel_id, guest_id, plate=None, model=None, color=None,
-                      spot_number=None, service_type="autoatendimento", reservation_id=None):
+def check_in_vehicle(hostel_id, guest_id=None, guest_name=None, plate=None, model=None,
+                      color=None, spot_number=None, service_type="autoatendimento", reservation_id=None):
+    """
+    guest_id OU guest_name - manobrista pode registrar o carro de
+    alguem que chegou na hora, sem hospede formal cadastrado ainda
+    (guest_name cobre esse caso; guest_id continua sendo o caminho
+    normal quando o hospede ja existe no sistema).
+    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
         """
-        INSERT INTO vehicles (hostel_id, guest_id, reservation_id, plate, model, color, spot_number, service_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO vehicles (hostel_id, guest_id, guest_name, reservation_id, plate, model, color, spot_number, service_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (hostel_id, guest_id, reservation_id, plate, model, color, spot_number, service_type)
+        (hostel_id, guest_id, guest_name, reservation_id, plate, model, color, spot_number, service_type)
     )
     vehicle_id = cursor.lastrowid
     conn.commit()

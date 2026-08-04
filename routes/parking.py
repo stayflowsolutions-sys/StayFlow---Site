@@ -25,14 +25,21 @@ def list_active_vehicles_route(hostel_id):
 @parking_bp.route("/parking/vehicles", methods=["POST"])
 @require_permission("parking")
 def check_in_vehicle_route(hostel_id):
+    """
+    guest_id OU guest_name - o manobrista pode registrar o carro de
+    alguem que chegou na hora, sem hospede formal cadastrado ainda
+    (digita so o nome; guest_id continua o caminho normal quando o
+    hospede ja existe no sistema).
+    """
     data = request.get_json() or {}
     guest_id = data.get("guest_id")
+    guest_name = (data.get("guest_name") or "").strip() or None
 
-    if not guest_id:
-        return jsonify({"success": False, "message": "guest_id is required."}), 400
+    if not guest_id and not guest_name:
+        return jsonify({"success": False, "message": "guest_id or guest_name is required."}), 400
 
     vehicle_id = check_in_vehicle(
-        hostel_id, guest_id,
+        hostel_id, guest_id=guest_id, guest_name=guest_name,
         plate=data.get("plate"),
         model=data.get("model"),
         color=data.get("color"),
