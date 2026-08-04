@@ -4,6 +4,16 @@
    Requer tokens.css e reset.css carregados antes deste arquivo.
    ============================== */
 
+html, body{
+  /* Rede de seguranca contra qualquer elemento largo demais (tabela,
+     modal, texto sem quebra) empurrando a pagina inteira pra lado -
+     causa raiz mais comum de "site desalinha inteiro" ao encolher a
+     janela. Nada dentro do app deveria precisar de scroll horizontal
+     na pagina toda - so componentes especificos (tabela, .ops-tabs)
+     rolam por conta propria. */
+  overflow-x:hidden;
+  max-width:100vw;
+}
 body{
   margin:0;
   min-height:100vh;
@@ -45,6 +55,15 @@ body::before{
   display:flex;
   flex-direction:column;
   overflow:hidden;
+}
+
+/* Fundo escurecido atras do menu quando ele vira gaveta (<=1100px) -
+   sem isso o menu abria "flutuando" por cima do conteudo sem nenhuma
+   pista visual de que era um overlay, e clicar fora dele nao fechava.
+   Fica display:none/sem pointer-events acima de 1100px de proposito -
+   nunca deve aparecer em desktop, onde o menu e fixo na lateral. */
+.sidebar-overlay{
+  display:none;
 }
 
 .main{
@@ -1712,11 +1731,26 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     z-index:1000;
     height:100vh;
     width:var(--sidebar-w);
+    max-width:85vw;
     overflow-y:auto;
     transition:left .25s;
   }
   .sidebar.open{
     left:0;
+  }
+  .sidebar-overlay{
+    display:block;
+    position:fixed;
+    inset:0;
+    background:#00000080;
+    z-index:999;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s;
+  }
+  .sidebar-overlay.open{
+    opacity:1;
+    pointer-events:auto;
   }
   .main{
     height:auto;
@@ -1729,17 +1763,48 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   .collapse-menu{
     display:flex;
   }
+  /* Alvo de toque confortavel (~44px, padrao iOS/Android) - 38px
+     original era apertado demais pra dedo em vez de cursor de mouse. */
+  .menu button{
+    min-height:44px;
+  }
 
-  /* Fix: .topbar não quebrava linha no mobile, cortando os botões
-     de .actions (ex.: "Alertas operacionais" / "+ Nova reserva")
-     na borda direita da tela. */
+  /* Fix real do bug reportado: titulo e acoes desalinhavam ao
+     encolher a janela. Causa - nenhum dos dois lados do topbar tinha
+     min-width:0, entao um <h1> comprido (ex: "Segurança Patrimonial")
+     nunca encolhia e forcava layout quebrado; .actions tambem nao
+     tinha limite de largura pro nome da hospedagem, que podia ser
+     longo. Agora o titulo trunca com reticencias e as acoes ficam
+     numa fileira compacta a direita, quebrando pra proxima linha
+     inteira (nao empilhada verticalmente, que e o que causava a
+     coluna estreita e torta vista no relato). */
   .topbar{
     flex-wrap:wrap;
+    row-gap:10px;
+    min-height:auto;
+  }
+  .topbar>div:first-child{
+    min-width:0;
+    flex:1 1 200px;
+  }
+  .topbar h1{
+    font-size:22px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .topbar p{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
   }
   .actions{
-    width:100%;
-    flex-direction:column;
-    align-items:stretch;
+    min-width:0;
+    flex:0 0 auto;
+    justify-content:flex-end;
+  }
+  .actions .hostel-mini .profile-copy{
+    max-width:120px;
   }
 
   .chat-layout{
@@ -1757,6 +1822,70 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
      no arquivo original — não havia guerra de especificidade aqui). */
   .span-3,.span-4,.span-5,.span-6,.span-7,.span-8,.span-9,.kpi{
     grid-column:span 12;
+  }
+
+  /* Tabela rola por conta propria em vez de estourar a largura do
+     card - preserva o layout interno (thead/tbody como table de
+     verdade), so o elemento <table> vira um bloco que pode rolar.
+     Cobre TODA tabela do app, nao so as que ja tinham wrapper manual
+     com overflow-x:auto adicionado caso a caso. */
+  table.table{
+    display:block;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  table.table thead,
+  table.table tbody{
+    display:table;
+    width:100%;
+  }
+
+  .generic-modal-body{
+    padding:16px;
+  }
+  .generic-modal-head{
+    padding:14px 16px;
+  }
+}
+
+@media(max-width:640px){
+  /* --gap/--card-pad sao usados em todo canto (.grid, .card, .form-grid
+     etc via var()) - reduzir aqui de um lugar so evita ter que caçar
+     cada regra individual que os usa. */
+  :root{
+    --gap:14px;
+    --card-pad:16px;
+  }
+  .main{
+    padding:16px 14px 18px;
+  }
+  .brand-word{
+    font-size:24px;
+  }
+  .topbar h1{
+    font-size:19px;
+  }
+  .actions .hostel-mini .profile-copy{
+    display:none;
+  }
+  .ops-tab{
+    padding:10px 12px;
+    font-size:12px;
+  }
+  .generic-modal,
+  .generic-modal.wide{
+    width:94vw;
+  }
+  /* Os modais construidos em JS (cambio, cardapio, escala, produto de
+     estoque etc.) usam grid de 12 colunas via style="" inline, direto
+     no HTML gerado - nao da pra alcancar isso com uma classe normal
+     sem reescrever cada onclick=openXModal(). O seletor de atributo
+     pega qualquer div com essa grid inline, em qualquer modal, e
+     forca 1 coluna so - os filhos com "grid-column:span N" continuam
+     funcionando normal, so que span de um grid de 1 coluna sempre da
+     largura total (nao precisa mexer nos filhos tambem). */
+  .generic-modal-body [style*="grid-template-columns:repeat(12"]{
+    grid-template-columns:1fr !important;
   }
 }
 
