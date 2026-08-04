@@ -12,6 +12,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "finance.exchange.rateLoading": "Buscando cotação atual...",
+    "finance.exchange.rateReference": "Dólar blue agora: {rate} (compra, {source})",
+    "finance.exchange.useRateLink": "usar esta cotação",
     "finance.exchange.title": "💱 Câmbio (pagamento em moeda estrangeira)",
     "finance.exchange.desc": "Registre pagamentos recebidos em dinheiro numa moeda diferente da sua.",
     "finance.exchange.summaryCount": "{count} câmbio(s) registrado(s)",
@@ -907,6 +910,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "finance.exchange.rateLoading": "Fetching current rate...",
+    "finance.exchange.rateReference": "Blue dollar now: {rate} (buy, {source})",
+    "finance.exchange.useRateLink": "use this rate",
     "finance.exchange.title": "💱 Exchange (foreign currency payment)",
     "finance.exchange.desc": "Record cash payments received in a currency other than yours.",
     "finance.exchange.summaryCount": "{count} exchange(s) registered",
@@ -1785,6 +1791,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "finance.exchange.rateLoading": "Buscando cotización actual...",
+    "finance.exchange.rateReference": "Dólar blue ahora: {rate} (compra, {source})",
+    "finance.exchange.useRateLink": "usar esta cotización",
     "finance.exchange.title": "💱 Cambio (pago en moneda extranjera)",
     "finance.exchange.desc": "Registre pagos recibidos en efectivo en una moneda distinta a la suya.",
     "finance.exchange.summaryCount": "{count} cambio(s) registrado(s)",
@@ -2663,6 +2672,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "finance.exchange.rateLoading": "Recherche du taux actuel...",
+    "finance.exchange.rateReference": "Dollar blue actuel : {rate} (achat, {source})",
+    "finance.exchange.useRateLink": "utiliser ce taux",
     "finance.exchange.title": "💱 Change (paiement en devise étrangère)",
     "finance.exchange.desc": "Enregistrez les paiements reçus en espèces dans une devise différente de la vôtre.",
     "finance.exchange.summaryCount": "{count} change(s) enregistré(s)",
@@ -3541,6 +3553,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "finance.exchange.rateLoading": "Aktueller Kurs wird geladen...",
+    "finance.exchange.rateReference": "Blauer Dollar jetzt: {rate} (Ankauf, {source})",
+    "finance.exchange.useRateLink": "diesen Kurs verwenden",
     "finance.exchange.title": "💱 Umtausch (Zahlung in Fremdwährung)",
     "finance.exchange.desc": "Erfassen Sie Barzahlungen, die in einer anderen Währung eingegangen sind.",
     "finance.exchange.summaryCount": "{count} Umtausch/Umtäusche erfasst",
