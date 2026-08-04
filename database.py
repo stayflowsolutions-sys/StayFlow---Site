@@ -3156,13 +3156,41 @@ def get_dashboard_stats(hostel_id):
     }
 
 
-def get_opportunities_list(hostel_id):
+def get_opportunities_list(hostel_id, limit=20, offset=0, sort="recent"):
+    """
+    Paginado (LIMIT/OFFSET por created_at DESC) pra tela nao virar uma
+    lista gigante com o tempo - "mostrar mais" no frontend avanca o
+    offset. sort="priority" ordena por urgencia+score em vez de data,
+    usado pela caixa lateral "mais importantes" (sempre olha o conjunto
+    inteiro, independente da paginacao da lista principal). total/
+    almost_closed/probable_revenue sao agregados sobre TODAS as
+    oportunidades (nao so a pagina atual), pra alimentar os KPIs do
+    dashboard sem precisar buscar a lista inteira toda vez.
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
         SELECT
+            COUNT(*) AS total,
+            COALESCE(SUM(o.estimated_value), 0) AS probable_revenue,
+            SUM(CASE WHEN o.score >= 70 THEN 1 ELSE 0 END) AS almost_closed
+        FROM opportunities o
+        JOIN guests g ON o.guest_id = g.id
+        WHERE g.hostel_id = ?
+    """, (hostel_id,))
+    stats = cursor.fetchone()
+
+    order_clause = (
+        "CASE o.urgency WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, o.score DESC, o.created_at DESC"
+        if sort == "priority"
+        else "o.created_at DESC"
+    )
+
+    cursor.execute(f"""
+        SELECT
             o.id,
+            g.name,
             g.phone,
             o.type,
             o.description,
@@ -3176,12 +3204,19 @@ def get_opportunities_list(hostel_id):
         JOIN guests g
             ON o.guest_id = g.id
         WHERE g.hostel_id = ?
-        ORDER BY o.created_at DESC
-    """, (hostel_id,))
+        ORDER BY {order_clause}
+        LIMIT ? OFFSET ?
+    """, (hostel_id, limit, offset))
 
-    data = [dict(row) for row in cursor.fetchall()]
+    items = [dict(row) for row in cursor.fetchall()]
     conn.close()
-    return data
+
+    return {
+        "items": items,
+        "total": stats["total"],
+        "almost_closed": stats["almost_closed"] or 0,
+        "probable_revenue": stats["probable_revenue"],
+    }
 
 
 def get_reservations_with_stats(hostel_id):

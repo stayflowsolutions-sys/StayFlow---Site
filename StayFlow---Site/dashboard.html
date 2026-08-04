@@ -1094,27 +1094,43 @@ async function deleteRoleConfirm(roleId){
 <!-- OPPORTUNITIES -->
 <section id="opportunities" class="page">
   <div class="grid">
-    <div class="card span-12">
+    <div class="card span-8">
       <h2 data-i18n="opportunities.title">🔥 Opportunity Center</h2>
-      <table class="table">
-        <thead>
-          <tr>
-            <th data-i18n="opportunities.col.guest">Hóspede</th>
-            <th data-i18n="opportunities.col.urgency">Urgência</th>
-            <th data-i18n="opportunities.col.reason">Motivo</th>
-            <th data-i18n="opportunities.col.score">Score</th>
-            <th data-i18n="opportunities.col.revenue">Receita</th>
-            <th data-i18n="opportunities.col.nextAction">Próxima ação</th>
-          </tr>
-        </thead>
-        <tbody id="opportunitiesTableBody">
-          <!-- Linhas reais serão inseridas por stayflow-live.js -->
-        </tbody>
-      </table>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="common.date">Data</th>
+              <th data-i18n="opportunities.col.guest">Hóspede</th>
+              <th data-i18n="opportunities.col.urgency">Urgência</th>
+              <th data-i18n="opportunities.col.reason">Motivo</th>
+              <th data-i18n="opportunities.col.score">Score</th>
+              <th data-i18n="opportunities.col.revenue">Receita</th>
+              <th data-i18n="opportunities.col.nextAction">Próxima ação</th>
+            </tr>
+          </thead>
+          <tbody id="opportunitiesTableBody">
+            <!-- Linhas reais serão inseridas por stayflow-live.js -->
+          </tbody>
+        </table>
+      </div>
       <div id="opportunitiesEmpty" class="sf-empty">
         <div>
           <strong data-i18n="opportunities.emptyTitle">Nenhuma oportunidade ativa.</strong>
           <span data-i18n="opportunities.emptyDesc">Quando a IA identificar hóspedes com alta chance de reserva, risco de cancelamento ou possibilidade de upsell, eles aparecerão aqui com prioridade, valor e próxima ação sugerida.</span>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:center;margin-top:16px">
+        <button id="opportunitiesLoadMoreBtn" class="btn secondary" type="button" onclick="loadMoreOpportunities()" style="display:none" data-i18n="opportunities.loadMoreBtn">Mostrar mais</button>
+      </div>
+    </div>
+
+    <div class="card span-4">
+      <h2 data-i18n="opportunities.priorityTitle">⭐ Mais importantes</h2>
+      <div id="opportunitiesPriorityList" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div id="opportunitiesPriorityEmpty" class="sf-empty">
+        <div>
+          <strong data-i18n="opportunities.priorityEmpty">Nenhuma oportunidade prioritária no momento.</strong>
         </div>
       </div>
     </div>

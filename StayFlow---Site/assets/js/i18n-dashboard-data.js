@@ -12,6 +12,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "common.date": "Data",
+    "opportunities.loadMoreBtn": "Mostrar mais",
+    "opportunities.priorityTitle": "⭐ Mais importantes",
+    "opportunities.priorityEmpty": "Nenhuma oportunidade prioritária no momento.",
     "finance.exchange.previewCredited": "Creditado: {amount}",
     "finance.exchange.previewProfit": "Lucro: {amount}",
     "finance.exchange.guestLabel": "Hóspede (opcional)",
@@ -916,6 +920,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "common.date": "Date",
+    "opportunities.loadMoreBtn": "Show more",
+    "opportunities.priorityTitle": "⭐ Top priority",
+    "opportunities.priorityEmpty": "No priority opportunities right now.",
     "finance.exchange.previewCredited": "Credited: {amount}",
     "finance.exchange.previewProfit": "Profit: {amount}",
     "finance.exchange.guestLabel": "Guest (optional)",
@@ -1803,6 +1811,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "common.date": "Fecha",
+    "opportunities.loadMoreBtn": "Mostrar más",
+    "opportunities.priorityTitle": "⭐ Más importantes",
+    "opportunities.priorityEmpty": "Ninguna oportunidad prioritaria por ahora.",
     "finance.exchange.previewCredited": "Acreditado: {amount}",
     "finance.exchange.previewProfit": "Ganancia: {amount}",
     "finance.exchange.guestLabel": "Huésped (opcional)",
@@ -2690,6 +2702,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "common.date": "Date",
+    "opportunities.loadMoreBtn": "Afficher plus",
+    "opportunities.priorityTitle": "⭐ Les plus importantes",
+    "opportunities.priorityEmpty": "Aucune opportunité prioritaire pour le moment.",
     "finance.exchange.previewCredited": "Crédité : {amount}",
     "finance.exchange.previewProfit": "Profit : {amount}",
     "finance.exchange.guestLabel": "Client (facultatif)",
@@ -3577,6 +3593,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "common.date": "Datum",
+    "opportunities.loadMoreBtn": "Mehr anzeigen",
+    "opportunities.priorityTitle": "⭐ Wichtigste",
+    "opportunities.priorityEmpty": "Derzeit keine prioritären Chancen.",
     "finance.exchange.previewCredited": "Gutgeschrieben: {amount}",
     "finance.exchange.previewProfit": "Gewinn: {amount}",
     "finance.exchange.guestLabel": "Gast (optional)",
