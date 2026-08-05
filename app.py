@@ -34,6 +34,7 @@ from routes.patrimonial_security import patrimonial_security_bp
 from routes.parking import parking_bp
 from routes.scheduling import scheduling_bp
 from routes.push import push_bp
+from routes.events import events_bp
 
 app = Flask(__name__, static_folder=None)
 
@@ -79,6 +80,7 @@ app.register_blueprint(patrimonial_security_bp)
 app.register_blueprint(parking_bp)
 app.register_blueprint(scheduling_bp)
 app.register_blueprint(push_bp)
+app.register_blueprint(events_bp)
 
 # Caminho do frontend: por padrão assume que a pasta do site fica ao lado
 # da pasta do backend (ex: C:\StayFlow\backend + C:\StayFlow\StayFlow---Site).

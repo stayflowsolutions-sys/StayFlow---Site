@@ -1360,6 +1360,77 @@ def create_database():
     )
     """)
 
+    # ===== Eventos (Sessao 12) =====
+    # Espaco fisico que pode ser alugado pra evento (salao, jardim,
+    # auditorio...) - independente do Mapa de Quartos (quarto/cama e pra
+    # HOSPEDAGEM, espaco de evento e pra ALUGUEL POR PERIODO, conceitos
+    # diferentes mesmo numa mesma propriedade).
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS event_spaces (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        capacity_seated INTEGER,
+        capacity_standing INTEGER,
+        price_per_event REAL NOT NULL DEFAULT 0,
+        description TEXT,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Cliente do evento NAO precisa ser hospede cadastrado (guest_id
+    # opcional) - alguem pode alugar o salao pra um casamento sem nunca
+    # se hospedar. status espelha o ciclo de reservations (pending ate a
+    # equipe confirmar, depois confirmed/completed/cancelled).
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        space_id INTEGER NOT NULL,
+        guest_id INTEGER,
+        client_name TEXT NOT NULL,
+        client_phone TEXT,
+        client_email TEXT,
+        event_type TEXT,
+        title TEXT,
+        start_datetime TEXT NOT NULL,
+        end_datetime TEXT NOT NULL,
+        expected_guests INTEGER,
+        base_price REAL NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'pending',
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Catalogo de adicionais/servicos (catering, decoracao, som...) que
+    # qualquer evento pode anexar - preco fica congelado em
+    # event_addon_selections.price_at_booking no momento da escolha, pra
+    # mudar o preco do catalogo depois nao alterar retroativamente o
+    # valor de um evento ja fechado.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS event_addons (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        price REAL NOT NULL DEFAULT 0,
+        unit TEXT,
+        active INTEGER NOT NULL DEFAULT 1
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS event_addon_selections (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER NOT NULL,
+        addon_id INTEGER NOT NULL,
+        addon_name TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        price_at_booking REAL NOT NULL DEFAULT 0
+    )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -3341,6 +3412,7 @@ def is_within_quiet_hours(hostel_id):
 _DEFAULT_PUSH_NOTIFICATION_TYPES = [
     "opportunity", "reservation", "guest_needs_attention", "assumed_conversation",
     "kitchen_order", "maintenance_ticket", "security_incident", "valet_request",
+    "new_event",
 ]
 
 
@@ -4142,6 +4214,21 @@ def get_finance_summary(hostel_id):
     )
     confirmed_revenue += cursor.fetchone()["total"]
 
+    # Eventos confirmados: preco base + adicionais escolhidos (na
+    # cotacao/preco congelados no momento da escolha, ver
+    # add_event_addon_selection) - mesmo criterio de "confirmed" ja
+    # usado pra reservas.
+    cursor.execute(
+        """
+        SELECT e.id, e.base_price,
+               COALESCE((SELECT SUM(quantity * price_at_booking) FROM event_addon_selections WHERE event_id = e.id), 0) AS addons_total
+        FROM events e
+        WHERE e.hostel_id = ? AND e.status = 'confirmed'
+        """,
+        (hostel_id,)
+    )
+    confirmed_revenue += sum(row["base_price"] + row["addons_total"] for row in cursor.fetchall())
+
     # Financeiro mostra so o que realmente entrou na empresa - reserva
     # confirmada e pagamento de verdade. Oportunidade (estimativa, ainda
     # nao fechada) fica de fora de proposito: ela ja tem casa propria no
@@ -4181,9 +4268,20 @@ def get_finance_summary(hostel_id):
         FROM currency_exchanges
         WHERE hostel_id = ?
 
+        UNION ALL
+
+        SELECT
+            'Evento' AS type,
+            COALESCE(NULLIF(e.title, ''), e.client_name) AS description,
+            e.base_price + COALESCE((SELECT SUM(quantity * price_at_booking) FROM event_addon_selections WHERE event_id = e.id), 0) AS value,
+            e.status AS status,
+            e.created_at
+        FROM events e
+        WHERE e.hostel_id = ? AND e.status = 'confirmed'
+
         ORDER BY created_at DESC
         LIMIT 30
-    """, (hostel_id, hostel_id, hostel_id))
+    """, (hostel_id, hostel_id, hostel_id, hostel_id))
 
     movements = [dict(row) for row in cursor.fetchall()]
 
@@ -8218,6 +8316,389 @@ def set_hostel_parking_settings(hostel_id, pricing_model, daily_rate=0, included
 
     conn.commit()
     conn.close()
+
+
+# ===== Eventos =====
+
+def create_event_space(hostel_id, name, capacity_seated=None, capacity_standing=None, price_per_event=0, description=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO event_spaces (hostel_id, name, capacity_seated, capacity_standing, price_per_event, description)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, name, capacity_seated, capacity_standing, price_per_event or 0, description)
+    )
+    space_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return space_id
+
+
+def get_event_spaces(hostel_id, include_inactive=False):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM event_spaces WHERE hostel_id = ?"
+    if not include_inactive:
+        query += " AND active = 1"
+    query += " ORDER BY name"
+    cursor.execute(query, (hostel_id,))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def get_event_space(hostel_id, space_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM event_spaces WHERE id = ? AND hostel_id = ?", (space_id, hostel_id))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def update_event_space(hostel_id, space_id, **fields):
+    """Upsert parcial - so atualiza os campos passados. 'active' controla soft-delete (eventos historicos continuam referenciando o espaco mesmo desativado)."""
+    allowed = {"name", "capacity_seated", "capacity_standing", "price_per_event", "description", "active"}
+    updates = {k: v for k, v in fields.items() if k in allowed}
+    if not updates:
+        return False
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    set_clause = ", ".join(f"{key} = ?" for key in updates)
+    values = list(updates.values()) + [space_id, hostel_id]
+    cursor.execute(
+        f"UPDATE event_spaces SET {set_clause} WHERE id = ? AND hostel_id = ?",
+        values
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def check_event_space_conflict(hostel_id, space_id, start_datetime, end_datetime, exclude_event_id=None):
+    """
+    True se ja existe outro evento CONFIRMADO OU PENDENTE nesse espaco
+    com sobreposicao de horario (cancelado nunca conta - libera o
+    horario de volta). Sobreposicao classica: comeca antes do outro
+    terminar E termina depois do outro comecar.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = """
+        SELECT id FROM events
+        WHERE hostel_id = ? AND space_id = ? AND status IN ('pending', 'confirmed')
+          AND start_datetime < ? AND end_datetime > ?
+    """
+    params = [hostel_id, space_id, end_datetime, start_datetime]
+    if exclude_event_id:
+        query += " AND id != ?"
+        params.append(exclude_event_id)
+    cursor.execute(query, params)
+    conflict = cursor.fetchone() is not None
+    conn.close()
+    return conflict
+
+
+def create_event(hostel_id, space_id, client_name, start_datetime, end_datetime,
+                  client_phone=None, client_email=None, guest_id=None, event_type=None,
+                  title=None, expected_guests=None, base_price=None, notes=None):
+    """
+    base_price=None herda o preco atual do espaco (price_per_event) -
+    passar um valor explicito permite negociar um preco diferente do
+    tabelado pra esse evento especifico, sem mudar o preco padrao do
+    espaco pros proximos.
+    """
+    if check_event_space_conflict(hostel_id, space_id, start_datetime, end_datetime):
+        raise ValueError("Esse espaço já está reservado nesse horário.")
+
+    if base_price is None:
+        space = get_event_space(hostel_id, space_id)
+        base_price = space["price_per_event"] if space else 0
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO events (
+            hostel_id, space_id, guest_id, client_name, client_phone, client_email,
+            event_type, title, start_datetime, end_datetime, expected_guests, base_price, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, space_id, guest_id, client_name, client_phone, client_email,
+         event_type, title, start_datetime, end_datetime, expected_guests, base_price or 0, notes)
+    )
+    event_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    try:
+        from services.push_service import send_push_to_hostel
+        space = get_event_space(hostel_id, space_id)
+        space_name = space["name"] if space else "espaço"
+        send_push_to_hostel(
+            hostel_id,
+            title=f"🎉 Novo evento — {title or client_name}",
+            body=f"{space_name}, {start_datetime[:16].replace('T', ' ')}. Cliente: {client_name}.",
+            url="/app",
+            notification_type="new_event",
+        )
+    except Exception as error:
+        print(f"AVISO: falha ao notificar novo evento por push: {error}")
+
+    return event_id
+
+
+def get_events(hostel_id, status=None, upcoming_only=False):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = """
+        SELECT e.*, sp.name AS space_name
+        FROM events e
+        JOIN event_spaces sp ON sp.id = e.space_id
+        WHERE e.hostel_id = ?
+    """
+    params = [hostel_id]
+    if status:
+        query += " AND e.status = ?"
+        params.append(status)
+    if upcoming_only:
+        query += " AND e.end_datetime >= datetime('now') AND e.status != 'cancelled'"
+    query += " ORDER BY e.start_datetime ASC"
+    cursor.execute(query, params)
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def get_event(hostel_id, event_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT e.*, sp.name AS space_name
+        FROM events e
+        JOIN event_spaces sp ON sp.id = e.space_id
+        WHERE e.id = ? AND e.hostel_id = ?
+        """,
+        (event_id, hostel_id)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+
+    event = dict(row)
+    event["addons"] = get_event_addon_selections(event_id)
+    event["total_price"] = event["base_price"] + sum(a["price_at_booking"] * a["quantity"] for a in event["addons"])
+    return event
+
+
+def update_event(hostel_id, event_id, **fields):
+    """Upsert parcial dos dados do evento (nao mexe em status - ver update_event_status)."""
+    allowed = {
+        "space_id", "guest_id", "client_name", "client_phone", "client_email",
+        "event_type", "title", "start_datetime", "end_datetime", "expected_guests",
+        "base_price", "notes",
+    }
+    updates = {k: v for k, v in fields.items() if k in allowed}
+    if not updates:
+        return False
+
+    # Se datas/espaco mudaram, reconfere conflito (excluindo o proprio evento).
+    if {"space_id", "start_datetime", "end_datetime"} & updates.keys():
+        current = get_event(hostel_id, event_id)
+        if not current:
+            raise ValueError("Evento não encontrado.")
+        space_id = updates.get("space_id", current["space_id"])
+        start = updates.get("start_datetime", current["start_datetime"])
+        end = updates.get("end_datetime", current["end_datetime"])
+        if check_event_space_conflict(hostel_id, space_id, start, end, exclude_event_id=event_id):
+            raise ValueError("Esse espaço já está reservado nesse horário.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    set_clause = ", ".join(f"{key} = ?" for key in updates)
+    values = list(updates.values()) + [event_id, hostel_id]
+    cursor.execute(
+        f"UPDATE events SET {set_clause} WHERE id = ? AND hostel_id = ?",
+        values
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+_EVENT_VALID_STATUSES = {"pending", "confirmed", "completed", "cancelled"}
+
+
+def update_event_status(hostel_id, event_id, status):
+    if status not in _EVENT_VALID_STATUSES:
+        raise ValueError("Status inválido.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE events SET status = ? WHERE id = ? AND hostel_id = ?",
+        (status, event_id, hostel_id)
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def create_event_addon(hostel_id, name, price=0, unit=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO event_addons (hostel_id, name, price, unit) VALUES (?, ?, ?, ?)",
+        (hostel_id, name, price or 0, unit)
+    )
+    addon_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return addon_id
+
+
+def get_event_addons(hostel_id, include_inactive=False):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM event_addons WHERE hostel_id = ?"
+    if not include_inactive:
+        query += " AND active = 1"
+    query += " ORDER BY name"
+    cursor.execute(query, (hostel_id,))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def update_event_addon(hostel_id, addon_id, **fields):
+    allowed = {"name", "price", "unit", "active"}
+    updates = {k: v for k, v in fields.items() if k in allowed}
+    if not updates:
+        return False
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    set_clause = ", ".join(f"{key} = ?" for key in updates)
+    values = list(updates.values()) + [addon_id, hostel_id]
+    cursor.execute(
+        f"UPDATE event_addons SET {set_clause} WHERE id = ? AND hostel_id = ?",
+        values
+    )
+    updated = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return updated
+
+
+def get_event_addon_selections(event_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, addon_id, addon_name, quantity, price_at_booking FROM event_addon_selections WHERE event_id = ?",
+        (event_id,)
+    )
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def add_event_addon_selection(hostel_id, event_id, addon_id, quantity=1):
+    """price_at_booking congela o preco do catalogo NA HORA - evento ja fechado nao muda de valor se o preco do adicional mudar depois."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM events WHERE id = ? AND hostel_id = ?", (event_id, hostel_id))
+    if not cursor.fetchone():
+        conn.close()
+        raise ValueError("Evento não encontrado.")
+
+    cursor.execute("SELECT name, price FROM event_addons WHERE id = ? AND hostel_id = ?", (addon_id, hostel_id))
+    addon = cursor.fetchone()
+    if not addon:
+        conn.close()
+        raise ValueError("Adicional não encontrado.")
+
+    cursor.execute(
+        "INSERT INTO event_addon_selections (event_id, addon_id, addon_name, quantity, price_at_booking) VALUES (?, ?, ?, ?, ?)",
+        (event_id, addon_id, addon["name"], max(1, int(quantity or 1)), addon["price"])
+    )
+    selection_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return selection_id
+
+
+def remove_event_addon_selection(hostel_id, event_id, selection_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        DELETE FROM event_addon_selections
+        WHERE id = ? AND event_id = ?
+          AND event_id IN (SELECT id FROM events WHERE hostel_id = ?)
+        """,
+        (selection_id, event_id, hostel_id)
+    )
+    removed = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return removed
+
+
+def get_events_summary(hostel_id):
+    """KPIs da pagina de Eventos: confirmados no mes atual, receita prevista (base + adicionais dos nao-cancelados) e proximo evento."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS c FROM events
+        WHERE hostel_id = ? AND status = 'confirmed'
+          AND strftime('%Y-%m', start_datetime) = strftime('%Y-%m', 'now')
+        """,
+        (hostel_id,)
+    )
+    confirmed_this_month = cursor.fetchone()["c"]
+
+    cursor.execute(
+        """
+        SELECT e.id, e.base_price,
+               COALESCE((SELECT SUM(quantity * price_at_booking) FROM event_addon_selections WHERE event_id = e.id), 0) AS addons_total
+        FROM events e
+        WHERE e.hostel_id = ? AND e.status IN ('pending', 'confirmed')
+        """,
+        (hostel_id,)
+    )
+    expected_revenue = sum(row["base_price"] + row["addons_total"] for row in cursor.fetchall())
+
+    cursor.execute(
+        """
+        SELECT e.title, e.client_name, e.start_datetime, sp.name AS space_name
+        FROM events e
+        JOIN event_spaces sp ON sp.id = e.space_id
+        WHERE e.hostel_id = ? AND e.status IN ('pending', 'confirmed') AND e.start_datetime >= datetime('now')
+        ORDER BY e.start_datetime ASC
+        LIMIT 1
+        """,
+        (hostel_id,)
+    )
+    next_row = cursor.fetchone()
+    next_event = dict(next_row) if next_row else None
+
+    conn.close()
+    return {
+        "confirmed_this_month": confirmed_this_month,
+        "expected_revenue": expected_revenue,
+        "next_event": next_event,
+    }
 
 
 if __name__ == "__main__":

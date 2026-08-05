@@ -765,6 +765,9 @@ async function deleteRoleConfirm(roleId){
     <button data-page="revenue" onclick="openPage('revenue',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></span><span data-i18n="nav.revenue">Receitas</span>
     </button>
+    <button data-page="events" data-required-permission="events" onclick="openPage('events',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/></svg></span><span data-i18n="nav.events">Eventos</span>
+    </button>
     <button data-page="reports" onclick="openPage('reports',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M9 19v-7"/><path d="M13 19V8"/><path d="M17 19v-4"/></svg></span><span data-i18n="nav.reports">Relatórios</span>
     </button>
@@ -1582,6 +1585,90 @@ async function deleteRoleConfirm(roleId){
   </div>
 </section>
 
+<!-- EVENTOS -->
+<section id="events" class="page">
+  <div class="grid" style="margin-bottom:var(--gap)">
+    <div class="card span-4">
+      <h2 data-i18n="events.kpi.confirmedTitle">🎉 Eventos confirmados (mês)</h2>
+      <div class="value" style="font-size:34px;font-weight:900;color:var(--blue)" id="kpiEventsConfirmed">0</div>
+    </div>
+    <div class="card span-4">
+      <h2 data-i18n="events.kpi.revenueTitle">💰 Receita prevista</h2>
+      <div class="value" style="font-size:34px;font-weight:900;color:var(--blue)" id="kpiEventsRevenue">—</div>
+    </div>
+    <div class="card span-4">
+      <h2 data-i18n="events.kpi.nextTitle">📅 Próximo evento</h2>
+      <div id="kpiEventsNext" style="font-size:14px;color:var(--muted);margin-top:8px" data-i18n="events.kpi.nextEmpty">Nenhum evento futuro.</div>
+    </div>
+  </div>
+
+  <div class="ops-tabs">
+    <button type="button" class="ops-tab active" data-ops-tab="list" onclick="switchEventsTab('list')" data-i18n="events.tab.list">📋 Eventos</button>
+    <button type="button" class="ops-tab" data-ops-tab="spaces" onclick="switchEventsTab('spaces')" data-i18n="events.tab.spaces">🏛️ Espaços</button>
+    <button type="button" class="ops-tab" data-ops-tab="addons" onclick="switchEventsTab('addons')" data-i18n="events.tab.addons">🍽️ Adicionais</button>
+  </div>
+
+  <div data-events-section="list" class="grid">
+    <div class="card span-12">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="events.list.title">Eventos agendados</h2>
+        <button type="button" class="btn primary" onclick="openNewEventModal()" data-i18n="events.list.addBtn">➕ Novo evento</button>
+      </div>
+
+      <div class="sf-empty" id="eventsListEmpty">
+        <div>
+          <strong data-i18n="events.list.emptyTitle">Nenhum evento agendado.</strong>
+          <span data-i18n="events.list.emptyDesc">Casamentos, aniversários, eventos corporativos e outros usos dos espaços da sua hospedagem aparecem aqui.</span>
+        </div>
+      </div>
+      <table class="table" id="eventsListTable" style="display:none">
+        <thead>
+          <tr>
+            <th data-i18n="common.date">Data</th>
+            <th data-i18n="events.col.client">Cliente</th>
+            <th data-i18n="events.col.space">Espaço</th>
+            <th data-i18n="common.type">Tipo</th>
+            <th data-i18n="guests.col.status">Status</th>
+          </tr>
+        </thead>
+        <tbody id="eventsListBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div data-events-section="spaces" class="grid" style="display:none">
+    <div class="card span-12">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="events.spaces.title">Espaços para eventos</h2>
+        <button type="button" class="btn primary" onclick="openEventSpaceModal()" data-i18n="events.spaces.addBtn">➕ Novo espaço</button>
+      </div>
+      <div class="sf-empty" id="eventSpacesEmpty">
+        <div>
+          <strong data-i18n="events.spaces.emptyTitle">Nenhum espaço cadastrado.</strong>
+          <span data-i18n="events.spaces.emptyDesc">Cadastre salões, jardins, auditórios e outros espaços que podem ser alugados pra eventos.</span>
+        </div>
+      </div>
+      <div id="eventSpacesList" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"></div>
+    </div>
+  </div>
+
+  <div data-events-section="addons" class="grid" style="display:none">
+    <div class="card span-12">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="events.addons.title">Adicionais e serviços extras</h2>
+        <button type="button" class="btn primary" onclick="openEventAddonModal()" data-i18n="events.addons.addBtn">➕ Novo adicional</button>
+      </div>
+      <div class="sf-empty" id="eventAddonsEmpty">
+        <div>
+          <strong data-i18n="events.addons.emptyTitle">Nenhum adicional cadastrado.</strong>
+          <span data-i18n="events.addons.emptyDesc">Buffet, decoração, som, bar aberto e outros serviços que podem ser anexados a um evento.</span>
+        </div>
+      </div>
+      <div id="eventAddonsList" style="display:grid;gap:8px"></div>
+    </div>
+  </div>
+</section>
+
 <!-- REPORTS -->
 <section id="reports" class="page">
   <div class="grid">
@@ -2026,6 +2113,7 @@ async function deleteRoleConfirm(roleId){
     finance:      ["nav.finance",       "topbar.subtitle.finance"],
     inventory:    ["nav.inventory",     "topbar.subtitle.inventory"],
     revenue:      ["nav.revenue",       "topbar.subtitle.revenue"],
+    events:       ["nav.events",        "topbar.subtitle.events"],
     reports:      ["nav.reports",       "topbar.subtitle.reports"],
     settings:     ["nav.settings",      "topbar.subtitle.settings"]
   };
@@ -3255,6 +3343,10 @@ async function deleteRoleConfirm(roleId){
           <span>${T('settings.communication.pushTypeValetRequest', 'Novo chamado de manobrista')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="valet_request" id="pushTypeValetRequest">
         </label>
+        <label data-required-permission="events" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeNewEvent', 'Novo evento cadastrado')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="new_event" id="pushTypeNewEvent">
+        </label>
         <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeChatMessage', 'Toda mensagem nova no chat')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="chat_message" id="pushTypeChatMessage">
@@ -3313,13 +3405,14 @@ async function deleteRoleConfirm(roleId){
       const bellInput = document.getElementById("alertChannelsCheckbox");
       if(bellInput) bellInput.checked = Array.isArray(data.alert_channels) && data.alert_channels.includes("dashboard");
 
-      const defaultPushTypes = ["opportunity", "reservation", "guest_needs_attention", "assumed_conversation", "kitchen_order", "maintenance_ticket", "security_incident", "valet_request"];
+      const defaultPushTypes = ["opportunity", "reservation", "guest_needs_attention", "assumed_conversation", "kitchen_order", "maintenance_ticket", "security_incident", "valet_request", "new_event"];
       const pushTypes = Array.isArray(data.push_notification_types) ? data.push_notification_types : defaultPushTypes;
       const pushTypeCheckboxIds = {
         opportunity: "pushTypeOpportunity",
         reservation: "pushTypeReservation",
         guest_needs_attention: "pushTypeGuestNeedsAttention",
         assumed_conversation: "pushTypeAssumedConversation",
+        new_event: "pushTypeNewEvent",
         kitchen_order: "pushTypeKitchenOrder",
         maintenance_ticket: "pushTypeMaintenanceTicket",
         security_incident: "pushTypeSecurityIncident",
@@ -6048,6 +6141,641 @@ window.submitNewExchange = async function(){
   }
 };
 
+// ===== EVENTOS: /events =====
+let eventSpacesCache = [];
+let eventAddonsCache = [];
+
+function eventsToBackendDatetime(localValue){
+  // <input type="datetime-local"> devolve "YYYY-MM-DDTHH:MM" (sem
+  // segundos) - normaliza pro mesmo formato que datetime('now')/
+  // CURRENT_TIMESTAMP do SQLite usam (espaco em vez de "T", com
+  // segundos), senao a comparacao textual "esse evento ja passou?"
+  // pode dar errado no mesmo dia ("T" > espaco em ASCII, mesmo quando
+  // a hora real ja passou).
+  if(!localValue) return "";
+  return localValue.replace("T", " ") + ":00";
+}
+
+function eventsFromBackendDatetime(value){
+  if(!value) return "";
+  return value.replace(" ", "T").slice(0, 16);
+}
+
+function formatEventDateTime(value){
+  if(!value) return "";
+  const isoValue = value.includes("T") ? value : value.replace(" ", "T");
+  const date = new Date(isoValue);
+  if(isNaN(date.getTime())) return value;
+  const lang = window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt";
+  return date.toLocaleString(lang, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+const EVENT_TYPE_KEYS = {
+  casamento: "events.type.wedding",
+  aniversario: "events.type.birthday",
+  corporativo: "events.type.corporate",
+  conferencia: "events.type.conference",
+  formatura: "events.type.graduation",
+  outro: "events.type.other",
+};
+
+function eventTypeLabel(type){
+  if(!type) return "";
+  const key = EVENT_TYPE_KEYS[type];
+  return key ? T(key, type) : type;
+}
+
+const EVENT_STATUS_KEYS = {
+  pending: "events.status.pending",
+  confirmed: "events.status.confirmed",
+  completed: "events.status.completed",
+  cancelled: "events.status.cancelled",
+};
+
+function eventStatusLabel(status){
+  const key = EVENT_STATUS_KEYS[status];
+  return key ? T(key, status) : status;
+}
+
+function eventStatusColor(status){
+  return { pending: "#ffcf6b", confirmed: "#6ff0bd", completed: "#8bb4ff", cancelled: "#ff9caf" }[status] || "var(--muted)";
+}
+
+window.switchEventsTab = function(tabId){
+  document.querySelectorAll("#events [data-events-section]").forEach(el => {
+    el.style.display = el.dataset.eventsSection === tabId ? "" : "none";
+  });
+  document.querySelectorAll("#events .ops-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.opsTab === tabId);
+  });
+  window.scrollTo({top:0, behavior:"smooth"});
+};
+
+window.loadEvents = async function(){
+  try{
+    const [spacesRes, addonsRes, eventsRes, summaryRes] = await Promise.all([
+      fetch("/events/spaces", { credentials: "same-origin" }),
+      fetch("/events/addons", { credentials: "same-origin" }),
+      fetch("/events", { credentials: "same-origin" }),
+      fetch("/events/summary", { credentials: "same-origin" }),
+    ]);
+
+    if(spacesRes.ok) eventSpacesCache = await spacesRes.json();
+    if(addonsRes.ok) eventAddonsCache = await addonsRes.json();
+
+    renderEventSpacesList();
+    renderEventAddonsList();
+
+    if(eventsRes.ok) renderEventsList(await eventsRes.json());
+    if(summaryRes.ok) renderEventsKpis(await summaryRes.json());
+  }catch(e){
+    console.warn("Erro ao carregar eventos:", e);
+  }
+};
+
+function renderEventsKpis(summary){
+  const confirmedEl = document.getElementById("kpiEventsConfirmed");
+  if(confirmedEl) confirmedEl.textContent = summary.confirmed_this_month || 0;
+
+  const revenueEl = document.getElementById("kpiEventsRevenue");
+  if(revenueEl) revenueEl.textContent = formatMoney(summary.expected_revenue || 0);
+
+  const nextEl = document.getElementById("kpiEventsNext");
+  if(nextEl){
+    if(summary.next_event){
+      const ne = summary.next_event;
+      nextEl.textContent = `${ne.title || ne.client_name} · ${ne.space_name} · ${formatEventDateTime(ne.start_datetime)}`;
+    }else{
+      nextEl.textContent = T('events.kpi.nextEmpty', 'Nenhum evento futuro.');
+    }
+  }
+}
+
+function renderEventsList(events){
+  const emptyEl = document.getElementById("eventsListEmpty");
+  const tableEl = document.getElementById("eventsListTable");
+  const bodyEl = document.getElementById("eventsListBody");
+  if(!emptyEl || !tableEl || !bodyEl) return;
+
+  if(!events.length){
+    emptyEl.style.display = "flex";
+    tableEl.style.display = "none";
+    return;
+  }
+
+  emptyEl.style.display = "none";
+  tableEl.style.display = "table";
+  bodyEl.innerHTML = "";
+
+  events.forEach(ev => {
+    const row = document.createElement("tr");
+    row.style.cursor = "pointer";
+    row.onclick = () => openEventDetailModal(ev.id);
+    row.innerHTML = `
+      <td>${escapeHtml(formatEventDateTime(ev.start_datetime))}</td>
+      <td>${escapeHtml(ev.client_name)}</td>
+      <td>${escapeHtml(ev.space_name)}</td>
+      <td>${escapeHtml(eventTypeLabel(ev.event_type))}</td>
+      <td><span class="perm-tag" style="color:${eventStatusColor(ev.status)}">${escapeHtml(eventStatusLabel(ev.status))}</span></td>
+    `;
+    bodyEl.appendChild(row);
+  });
+}
+
+function renderEventSpacesList(){
+  const emptyEl = document.getElementById("eventSpacesEmpty");
+  const listEl = document.getElementById("eventSpacesList");
+  if(!emptyEl || !listEl) return;
+
+  if(!eventSpacesCache.length){
+    emptyEl.style.display = "flex";
+    listEl.innerHTML = "";
+    return;
+  }
+
+  emptyEl.style.display = "none";
+  listEl.innerHTML = "";
+
+  eventSpacesCache.forEach(space => {
+    const card = document.createElement("div");
+    card.className = "card settings-summary-card";
+    card.style.margin = "0";
+    card.onclick = () => openEventSpaceModal(space.id);
+    const capacityParts = [];
+    if(space.capacity_seated) capacityParts.push(T('events.spaces.seated', '{count} sentados', { count: space.capacity_seated }));
+    if(space.capacity_standing) capacityParts.push(T('events.spaces.standing', '{count} em pé', { count: space.capacity_standing }));
+    card.innerHTML = `
+      <div class="settings-summary-row">
+        <div>
+          <h2 style="font-size:15px">${escapeHtml(space.name)}</h2>
+          <p class="settings-summary-desc">${escapeHtml(capacityParts.join(" · ") || "—")} · ${formatMoney(space.price_per_event)}</p>
+        </div>
+        <span class="settings-summary-chevron">›</span>
+      </div>
+    `;
+    listEl.appendChild(card);
+  });
+}
+
+function renderEventAddonsList(){
+  const emptyEl = document.getElementById("eventAddonsEmpty");
+  const listEl = document.getElementById("eventAddonsList");
+  if(!emptyEl || !listEl) return;
+
+  if(!eventAddonsCache.length){
+    emptyEl.style.display = "flex";
+    listEl.innerHTML = "";
+    return;
+  }
+
+  emptyEl.style.display = "none";
+  listEl.innerHTML = "";
+
+  eventAddonsCache.forEach(addon => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid #ffffff12;border-radius:12px;background:#ffffff05;cursor:pointer";
+    row.onclick = () => openEventAddonModal(addon.id);
+    row.innerHTML = `
+      <span style="font-size:13px">${escapeHtml(addon.name)}</span>
+      <span style="font-size:13px;color:var(--muted)">${formatMoney(addon.price)}${addon.unit ? " · " + escapeHtml(addon.unit) : ""}</span>
+    `;
+    listEl.appendChild(row);
+  });
+}
+
+window.openNewEventModal = function(){
+  if(!eventSpacesCache.length){
+    alert(T('events.needSpaceFirst', 'Cadastre um espaço primeiro (aba Espaços).'));
+    return;
+  }
+
+  const spaceOptions = eventSpacesCache.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("");
+
+  openGenericModal(T('events.newModal.title', '🎉 Novo evento'), `
+    <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.col.space', 'Espaço')}</label>
+        <select id="newEventSpace" style="width:100%">${spaceOptions}</select>
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.type', 'Tipo')}</label>
+        <select id="newEventType" style="width:100%">
+          <option value="casamento">${T('events.type.wedding', 'Casamento')}</option>
+          <option value="aniversario">${T('events.type.birthday', 'Aniversário')}</option>
+          <option value="corporativo">${T('events.type.corporate', 'Corporativo')}</option>
+          <option value="conferencia">${T('events.type.conference', 'Conferência')}</option>
+          <option value="formatura">${T('events.type.graduation', 'Formatura')}</option>
+          <option value="outro">${T('events.type.other', 'Outro')}</option>
+        </select>
+      </div>
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.newModal.eventTitle', 'Título do evento (opcional)')}</label>
+        <input type="text" id="newEventTitle" autocomplete="off" placeholder="${T('events.newModal.eventTitlePlaceholder', 'Ex: Casamento Maria e João')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.col.client', 'Cliente')}</label>
+        <input type="text" id="newEventClientName" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 3">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.phone', 'Telefone')}</label>
+        <input type="text" id="newEventClientPhone" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 3">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.newModal.expectedGuests', 'Nº de convidados')}</label>
+        <input type="number" min="0" id="newEventExpectedGuests" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.newModal.start', 'Início')}</label>
+        <input type="datetime-local" id="newEventStart" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.newModal.end', 'Fim')}</label>
+        <input type="datetime-local" id="newEventEnd" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.notes', 'Observações')}</label>
+        <textarea id="newEventNotes" rows="2" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical"></textarea>
+      </div>
+    </div>
+    <p id="newEventAvailability" style="margin-top:10px;font-size:13px"></p>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="submitNewEvent()">${T('common.save', 'Salvar')}</button>
+    </div>
+    <div id="newEventMessage" class="generic-modal-message"></div>
+  `, true);
+
+  ["newEventSpace", "newEventStart", "newEventEnd"].forEach(id => {
+    document.getElementById(id)?.addEventListener(id === "newEventSpace" ? "change" : "input", updateNewEventAvailability);
+  });
+};
+
+window.updateNewEventAvailability = async function(){
+  const spaceId = document.getElementById("newEventSpace")?.value;
+  const start = document.getElementById("newEventStart")?.value;
+  const end = document.getElementById("newEventEnd")?.value;
+  const availEl = document.getElementById("newEventAvailability");
+  if(!availEl) return;
+
+  if(!spaceId || !start || !end){
+    availEl.textContent = "";
+    return;
+  }
+
+  try{
+    const params = new URLSearchParams({ space_id: spaceId, start: eventsToBackendDatetime(start), end: eventsToBackendDatetime(end) });
+    const res = await fetch(`/events/availability?${params}`, { credentials: "same-origin" });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data.available){
+      availEl.textContent = T('events.availability.free', '✅ Espaço disponível nesse horário.');
+      availEl.style.color = "#6ff0bd";
+    }else{
+      availEl.textContent = T('events.availability.busy', '⚠️ Espaço já reservado nesse horário.');
+      availEl.style.color = "#ff9caf";
+    }
+  }catch(e){
+    console.warn("Erro ao checar disponibilidade:", e);
+  }
+};
+
+window.submitNewEvent = async function(){
+  const msg = document.getElementById("newEventMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const spaceId = document.getElementById("newEventSpace")?.value;
+  const clientName = document.getElementById("newEventClientName")?.value.trim();
+  const start = document.getElementById("newEventStart")?.value;
+  const end = document.getElementById("newEventEnd")?.value;
+
+  if(!spaceId || !clientName || !start || !end){
+    if(msg){ msg.textContent = T('events.newModal.requiredFields', 'Espaço, cliente e período são obrigatórios.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch("/events", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        space_id: parseInt(spaceId, 10),
+        client_name: clientName,
+        client_phone: document.getElementById("newEventClientPhone")?.value.trim() || null,
+        event_type: document.getElementById("newEventType")?.value,
+        title: document.getElementById("newEventTitle")?.value.trim() || null,
+        expected_guests: document.getElementById("newEventExpectedGuests")?.value || null,
+        start_datetime: eventsToBackendDatetime(start),
+        end_datetime: eventsToBackendDatetime(end),
+        notes: document.getElementById("newEventNotes")?.value.trim() || null,
+      })
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+
+    closeGenericModal();
+    loadEvents();
+  }catch(e){
+    console.warn("Erro ao criar evento:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+window.openEventDetailModal = async function(eventId){
+  try{
+    const res = await fetch(`/events/${eventId}`, { credentials: "same-origin" });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data.success) return;
+    renderEventDetailModal(data.event);
+  }catch(e){
+    console.warn("Erro ao carregar evento:", e);
+  }
+};
+
+function renderEventDetailModal(ev){
+  const addonOptions = eventAddonsCache.map(a => `<option value="${a.id}">${escapeHtml(a.name)} (${formatMoney(a.price)}${a.unit ? " " + escapeHtml(a.unit) : ""})</option>`).join("");
+
+  const addonsHtml = ev.addons.length
+    ? ev.addons.map(a => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #ffffff12;border-radius:12px;background:#ffffff05;margin-bottom:6px">
+          <span style="font-size:13px">${escapeHtml(a.addon_name)} × ${a.quantity}</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:13px;color:var(--muted)">${formatMoney(a.price_at_booking * a.quantity)}</span>
+            <button class="btn secondary" type="button" style="font-size:11px;padding:4px 8px" onclick="removeEventAddon(${ev.id}, ${a.id})">${T('common.remove', 'Remover')}</button>
+          </div>
+        </div>
+      `).join("")
+    : `<p style="font-size:13px;color:var(--muted);margin:0">${T('events.detail.noAddons', 'Nenhum adicional.')}</p>`;
+
+  const statusActions = [];
+  if(ev.status === 'pending'){
+    statusActions.push(`<button class="btn" type="button" onclick="setEventStatus(${ev.id}, 'confirmed')">${T('events.detail.confirmBtn', 'Confirmar')}</button>`);
+  }
+  if(ev.status === 'confirmed'){
+    statusActions.push(`<button class="btn" type="button" onclick="setEventStatus(${ev.id}, 'completed')">${T('events.detail.completeBtn', 'Concluir')}</button>`);
+  }
+  if(ev.status !== 'cancelled' && ev.status !== 'completed'){
+    statusActions.push(`<button class="btn red" type="button" onclick="setEventStatus(${ev.id}, 'cancelled')">${T('events.detail.cancelBtn', 'Cancelar evento')}</button>`);
+  }
+
+  openGenericModal(escapeHtml(ev.title || ev.client_name), `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span class="perm-tag" style="color:${eventStatusColor(ev.status)};font-size:13px">${escapeHtml(eventStatusLabel(ev.status))}</span>
+      <span style="font-size:13px;color:var(--muted)">${escapeHtml(ev.space_name)}</span>
+    </div>
+
+    <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:8px;font-size:13px;margin-bottom:14px">
+      <div style="grid-column:span 6"><strong>${T('common.date', 'Data')}:</strong> ${escapeHtml(formatEventDateTime(ev.start_datetime))} — ${escapeHtml(formatEventDateTime(ev.end_datetime))}</div>
+      <div style="grid-column:span 6"><strong>${T('events.col.client', 'Cliente')}:</strong> ${escapeHtml(ev.client_name)}${ev.client_phone ? " · " + escapeHtml(ev.client_phone) : ""}</div>
+      <div style="grid-column:span 6"><strong>${T('common.type', 'Tipo')}:</strong> ${escapeHtml(eventTypeLabel(ev.event_type)) || "—"}</div>
+      <div style="grid-column:span 6"><strong>${T('events.newModal.expectedGuests', 'Nº de convidados')}:</strong> ${ev.expected_guests || "—"}</div>
+      ${ev.notes ? `<div style="grid-column:span 12"><strong>${T('common.notes', 'Observações')}:</strong> ${escapeHtml(ev.notes)}</div>` : ""}
+    </div>
+
+    <h3 style="margin:0 0 8px;font-size:14px;border-top:1px solid var(--line);padding-top:14px">${T('events.detail.addonsTitle', 'Adicionais')}</h3>
+    ${addonsHtml}
+    ${eventAddonsCache.length ? `
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <select id="eventDetailAddonSelect" style="flex:1">${addonOptions}</select>
+        <input type="number" min="1" value="1" id="eventDetailAddonQty" style="width:70px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 8px;">
+        <button class="btn secondary" type="button" onclick="addEventAddon(${ev.id})">${T('common.add', 'Adicionar')}</button>
+      </div>
+    ` : ""}
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
+      <div style="font-size:16px;font-weight:700">${T('events.detail.total', 'Total')}: ${formatMoney(ev.total_price)}</div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;flex-wrap:wrap">
+      ${statusActions.join("")}
+    </div>
+    <div id="eventDetailMessage" class="generic-modal-message"></div>
+  `, true);
+}
+
+window.addEventAddon = async function(eventId){
+  const addonId = document.getElementById("eventDetailAddonSelect")?.value;
+  const quantity = document.getElementById("eventDetailAddonQty")?.value || 1;
+  if(!addonId) return;
+
+  try{
+    const res = await fetch(`/events/${eventId}/addons`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ addon_id: parseInt(addonId, 10), quantity: parseInt(quantity, 10) || 1 })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+      return;
+    }
+    openEventDetailModal(eventId);
+    loadEvents();
+  }catch(e){
+    console.warn("Erro ao adicionar adicional:", e);
+  }
+};
+
+window.removeEventAddon = async function(eventId, selectionId){
+  try{
+    const res = await fetch(`/events/${eventId}/addons/${selectionId}`, { method: "DELETE", credentials: "same-origin" });
+    const data = await res.json();
+    if(!res.ok || !data.success) return;
+    openEventDetailModal(eventId);
+    loadEvents();
+  }catch(e){
+    console.warn("Erro ao remover adicional:", e);
+  }
+};
+
+window.setEventStatus = async function(eventId, status){
+  if(status === 'cancelled' && !await stayflowConfirm(T('events.detail.cancelConfirm', 'Cancelar este evento? O horário fica livre pra outra reserva.'))) return;
+
+  try{
+    const res = await fetch(`/events/${eventId}/status`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+      return;
+    }
+    closeGenericModal();
+    loadEvents();
+  }catch(e){
+    console.warn("Erro ao mudar status do evento:", e);
+  }
+};
+
+window.openEventSpaceModal = function(spaceId){
+  const space = spaceId ? eventSpacesCache.find(s => s.id === spaceId) : null;
+
+  openGenericModal(space ? T('events.spaceModal.editTitle', 'Editar espaço') : T('events.spaceModal.newTitle', 'Novo espaço'), `
+    <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.name', 'Nome')}</label>
+        <input type="text" id="eventSpaceName" value="${space ? escapeHtml(space.name) : ""}" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.spaces.capacitySeated', 'Capacidade sentados')}</label>
+        <input type="number" min="0" id="eventSpaceCapacitySeated" value="${space && space.capacity_seated ? space.capacity_seated : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.spaces.capacityStanding', 'Capacidade em pé')}</label>
+        <input type="number" min="0" id="eventSpaceCapacityStanding" value="${space && space.capacity_standing ? space.capacity_standing : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.spaces.priceLabel', 'Preço do aluguel')}</label>
+        <input type="number" min="0" step="0.01" id="eventSpacePrice" value="${space ? space.price_per_event : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.description', 'Descrição')}</label>
+        <textarea id="eventSpaceDescription" rows="2" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical">${space && space.description ? escapeHtml(space.description) : ""}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
+      ${space ? `<button class="btn red" type="button" onclick="toggleEventSpaceActive(${space.id}, ${space.active ? 0 : 1})">${space.active ? T('events.spaces.deactivateBtn', 'Desativar') : T('events.spaces.activateBtn', 'Reativar')}</button>` : "<span></span>"}
+      <button class="btn" type="button" onclick="submitEventSpace(${space ? space.id : "null"})">${T('common.save', 'Salvar')}</button>
+    </div>
+    <div id="eventSpaceMessage" class="generic-modal-message"></div>
+  `);
+};
+
+window.submitEventSpace = async function(spaceId){
+  const msg = document.getElementById("eventSpaceMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const name = document.getElementById("eventSpaceName")?.value.trim();
+  if(!name){
+    if(msg){ msg.textContent = T('events.spaceModal.nameRequired', 'Nome é obrigatório.'); msg.classList.add("error"); }
+    return;
+  }
+
+  const payload = {
+    name,
+    capacity_seated: document.getElementById("eventSpaceCapacitySeated")?.value || null,
+    capacity_standing: document.getElementById("eventSpaceCapacityStanding")?.value || null,
+    price_per_event: document.getElementById("eventSpacePrice")?.value || 0,
+    description: document.getElementById("eventSpaceDescription")?.value.trim() || null,
+  };
+
+  try{
+    const res = await fetch(spaceId ? `/events/spaces/${spaceId}` : "/events/spaces", {
+      method: spaceId ? "PATCH" : "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadEvents();
+  }catch(e){
+    console.warn("Erro ao salvar espaço:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+window.toggleEventSpaceActive = async function(spaceId, active){
+  try{
+    const res = await fetch(`/events/spaces/${spaceId}`, {
+      method: "PATCH", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ active })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success) return;
+    closeGenericModal();
+    loadEvents();
+  }catch(e){
+    console.warn("Erro ao alternar espaço:", e);
+  }
+};
+
+window.openEventAddonModal = function(addonId){
+  const addon = addonId ? eventAddonsCache.find(a => a.id === addonId) : null;
+
+  openGenericModal(addon ? T('events.addonModal.editTitle', 'Editar adicional') : T('events.addonModal.newTitle', 'Novo adicional'), `
+    <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.name', 'Nome')}</label>
+        <input type="text" id="eventAddonName" value="${addon ? escapeHtml(addon.name) : ""}" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.spaces.priceLabel', 'Preço')}</label>
+        <input type="number" min="0" step="0.01" id="eventAddonPrice" value="${addon ? addon.price : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.addonModal.unitLabel', 'Unidade (ex: por pessoa, fixo)')}</label>
+        <input type="text" id="eventAddonUnit" value="${addon && addon.unit ? escapeHtml(addon.unit) : ""}" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
+      ${addon ? `<button class="btn red" type="button" onclick="toggleEventAddonActive(${addon.id}, ${addon.active ? 0 : 1})">${addon.active ? T('events.spaces.deactivateBtn', 'Desativar') : T('events.spaces.activateBtn', 'Reativar')}</button>` : "<span></span>"}
+      <button class="btn" type="button" onclick="submitEventAddon(${addon ? addon.id : "null"})">${T('common.save', 'Salvar')}</button>
+    </div>
+    <div id="eventAddonMessage" class="generic-modal-message"></div>
+  `);
+};
+
+window.submitEventAddon = async function(addonId){
+  const msg = document.getElementById("eventAddonMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const name = document.getElementById("eventAddonName")?.value.trim();
+  if(!name){
+    if(msg){ msg.textContent = T('events.spaceModal.nameRequired', 'Nome é obrigatório.'); msg.classList.add("error"); }
+    return;
+  }
+
+  const payload = {
+    name,
+    price: document.getElementById("eventAddonPrice")?.value || 0,
+    unit: document.getElementById("eventAddonUnit")?.value.trim() || null,
+  };
+
+  try{
+    const res = await fetch(addonId ? `/events/addons/${addonId}` : "/events/addons", {
+      method: addonId ? "PATCH" : "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadEvents();
+  }catch(e){
+    console.warn("Erro ao salvar adicional:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+window.toggleEventAddonActive = async function(addonId, active){
+  try{
+    const res = await fetch(`/events/addons/${addonId}`, {
+      method: "PATCH", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ active })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success) return;
+    closeGenericModal();
+    loadEvents();
+  }catch(e){
+    console.warn("Erro ao alternar adicional:", e);
+  }
+};
+
 // ===== OPERAÇÕES: /operations =====
 
 // Contagem de alertas e preferencia de canal chegam por rotas/tempos
@@ -7961,6 +8689,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadScheduling === "function") loadScheduling();
     if (typeof loadTeamList === "function") loadTeamList();
     if (typeof loadRevenue === "function") loadRevenue();
+    if (typeof loadEvents === "function") loadEvents();
     if (typeof loadChats === "function") loadChats();
     if (typeof hydrateSettingsFromBackend === "function") hydrateSettingsFromBackend();
     if (typeof loadGeneralSettingsSummary === "function") loadGeneralSettingsSummary();
@@ -8014,6 +8743,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     finance: ["loadFinance", "loadExchangeSummary"],
     inventory: ["loadInventory", "loadSuppliers"],
     revenue: ["loadRevenue"],
+    events: ["loadEvents"],
     reports: ["loadReports"],
     settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings"]
   };
