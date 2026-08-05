@@ -12,6 +12,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeAssumedConversation": "Mensagem nova numa conversa assumida",
     "settings.communication.pushTypeGuestNeedsAttention": "Hóspede com problema, dúvida ou frustração",
     "settings.communication.pushTypeKitchenOrder": "Novo pedido na cozinha",
     "settings.communication.pushTypeMaintenanceTicket": "Novo chamado de manutenção",
@@ -958,6 +959,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeAssumedConversation": "New message in a taken-over conversation",
     "settings.communication.pushTypeGuestNeedsAttention": "Guest with a problem, question, or frustration",
     "settings.communication.pushTypeKitchenOrder": "New kitchen order",
     "settings.communication.pushTypeMaintenanceTicket": "New maintenance ticket",
@@ -1887,6 +1889,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeAssumedConversation": "Mensaje nuevo en una conversación asumida",
     "settings.communication.pushTypeGuestNeedsAttention": "Huésped con un problema, duda o frustración",
     "settings.communication.pushTypeKitchenOrder": "Nuevo pedido en la cocina",
     "settings.communication.pushTypeMaintenanceTicket": "Nuevo llamado de mantenimiento",
@@ -2816,6 +2819,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeAssumedConversation": "Nouveau message dans une conversation prise en charge",
     "settings.communication.pushTypeGuestNeedsAttention": "Client avec un problème, une question ou une frustration",
     "settings.communication.pushTypeKitchenOrder": "Nouvelle commande en cuisine",
     "settings.communication.pushTypeMaintenanceTicket": "Nouvelle demande de maintenance",
@@ -3745,6 +3749,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeAssumedConversation": "Neue Nachricht in einer übernommenen Unterhaltung",
     "settings.communication.pushTypeGuestNeedsAttention": "Gast mit einem Problem, einer Frage oder Frustration",
     "settings.communication.pushTypeKitchenOrder": "Neue Küchenbestellung",
     "settings.communication.pushTypeMaintenanceTicket": "Neuer Wartungsauftrag",
