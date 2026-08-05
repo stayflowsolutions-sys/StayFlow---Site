@@ -12,6 +12,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushSummaryActiveHere": "✅ Ativado neste dispositivo",
+    "settings.communication.pushSummaryInactiveHere": "Não ativado neste dispositivo",
+    "settings.communication.quietHoursSummaryActive": "Silêncio {start}–{end}",
     "settings.communication.pushTitle": "🔔 Notificações",
     "settings.communication.pushDesc": "Receba um aviso no navegador quando surgir algo urgente (nova oportunidade de alta prioridade, reserva pendente de confirmação), mesmo com a aba fechada. Ative em cada dispositivo separadamente.",
     "settings.communication.pushEnableBtn": "Ativar neste dispositivo",
@@ -944,6 +947,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushSummaryActiveHere": "✅ Enabled on this device",
+    "settings.communication.pushSummaryInactiveHere": "Not enabled on this device",
+    "settings.communication.quietHoursSummaryActive": "Quiet {start}–{end}",
     "settings.communication.pushTitle": "🔔 Notifications",
     "settings.communication.pushDesc": "Get a browser alert when something urgent comes up (new high-priority opportunity, reservation pending confirmation), even with the tab closed. Enable on each device separately.",
     "settings.communication.pushEnableBtn": "Enable on this device",
@@ -1859,6 +1865,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushSummaryActiveHere": "✅ Activado en este dispositivo",
+    "settings.communication.pushSummaryInactiveHere": "No activado en este dispositivo",
+    "settings.communication.quietHoursSummaryActive": "Silencio {start}–{end}",
     "settings.communication.pushTitle": "🔔 Notificaciones",
     "settings.communication.pushDesc": "Reciba un aviso en el navegador cuando surja algo urgente (nueva oportunidad de alta prioridad, reserva pendiente de confirmación), incluso con la pestaña cerrada. Active en cada dispositivo por separado.",
     "settings.communication.pushEnableBtn": "Activar en este dispositivo",
@@ -2774,6 +2783,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushSummaryActiveHere": "✅ Activé sur cet appareil",
+    "settings.communication.pushSummaryInactiveHere": "Non activé sur cet appareil",
+    "settings.communication.quietHoursSummaryActive": "Silence {start}–{end}",
     "settings.communication.pushTitle": "🔔 Notifications",
     "settings.communication.pushDesc": "Recevez une alerte dans le navigateur quand quelque chose d'urgent survient (nouvelle opportunité prioritaire, réservation en attente de confirmation), même onglet fermé. Activez sur chaque appareil séparément.",
     "settings.communication.pushEnableBtn": "Activer sur cet appareil",
@@ -3689,6 +3701,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushSummaryActiveHere": "✅ Auf diesem Gerät aktiviert",
+    "settings.communication.pushSummaryInactiveHere": "Auf diesem Gerät nicht aktiviert",
+    "settings.communication.quietHoursSummaryActive": "Ruhe {start}–{end}",
     "settings.communication.pushTitle": "🔔 Benachrichtigungen",
     "settings.communication.pushDesc": "Erhalten Sie eine Browser-Benachrichtigung, wenn etwas Dringendes auftritt (neue hochpriorisierte Gelegenheit, Reservierung wartet auf Bestätigung), auch bei geschlossenem Tab. Auf jedem Gerät separat aktivieren.",
     "settings.communication.pushEnableBtn": "Auf diesem Gerät aktivieren",
