@@ -1986,6 +1986,24 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     padding:10px 12px;
     font-size:12px;
   }
+  /* Compacta o que se repete em toda pagina (titulo de card + estado
+     vazio) - com varios cards empilhados no celular, esses 160px de
+     altura minima por estado vazio somavam rapido numa tela gigante
+     de rolar so pra ver "nenhum X cadastrado ainda" repetido. */
+  .card h2{
+    font-size:16px;
+    margin-bottom:8px;
+  }
+  .sf-empty{
+    min-height:auto;
+    padding:16px 12px;
+  }
+  .sf-empty strong{
+    font-size:14px;
+  }
+  .sf-empty span{
+    font-size:12px;
+  }
   .generic-modal,
   .generic-modal.wide{
     width:94vw;
