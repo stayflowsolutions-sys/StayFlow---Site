@@ -64,7 +64,7 @@ function updatePriorityActionsFromOpportunities(opportunities){
 
     const urgency = opportunityUrgencyPillClass(opportunity);
     const estimatedValue = Number(opportunity.estimated_value || 0);
-    const actionLabel = opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.');
+    const actionLabel = escapeHtml(opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.'));
     const impactLabel = estimatedValue > 0 ? formatMoney(estimatedValue) : "—";
 
     row.innerHTML = `
@@ -85,7 +85,7 @@ function opportunityRowHtml(opportunity){
   const urgency = opportunityUrgencyPillClass(opportunity);
   const score = Number(opportunity.score || 0);
   const estimatedValue = Number(opportunity.estimated_value || 0);
-  const guestLabel = opportunity.name || opportunity.phone || "-";
+  const guestLabel = escapeHtml(opportunity.name || opportunity.phone || "-");
 
   return `
     <td>${opportunityDateLabel(opportunity.created_at)}</td>
@@ -95,10 +95,10 @@ function opportunityRowHtml(opportunity){
         ${urgency.toUpperCase()}
       </span>
     </td>
-    <td>${opportunity.description || opportunity.type || "-"}</td>
+    <td>${escapeHtml(opportunity.description || opportunity.type || "-")}</td>
     <td>${score}/100</td>
     <td>${formatMoney(estimatedValue)}</td>
-    <td>${opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.')}</td>
+    <td>${escapeHtml(opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.'))}</td>
   `;
 }
 
@@ -146,7 +146,7 @@ function updateOpportunitiesPrioritySidebar(opportunities){
   opportunities.forEach(opportunity => {
     const urgency = opportunityUrgencyPillClass(opportunity);
     const estimatedValue = Number(opportunity.estimated_value || 0);
-    const guestLabel = opportunity.name || opportunity.phone || "-";
+    const guestLabel = escapeHtml(opportunity.name || opportunity.phone || "-");
 
     const card = document.createElement("div");
     card.style.cssText = "background:#02070d;border:1px solid var(--line);border-radius:14px;padding:12px 14px;";
@@ -155,7 +155,7 @@ function updateOpportunitiesPrioritySidebar(opportunities){
         <strong style="font-size:13px">${guestLabel}</strong>
         <span class="status-pill ${urgency}">${urgency.toUpperCase()}</span>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${opportunity.description || opportunity.type || "-"}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${escapeHtml(opportunity.description || opportunity.type || "-")}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
         <span style="color:var(--blue2);font-weight:700">${estimatedValue > 0 ? formatMoney(estimatedValue) : "—"}</span>
         <span style="color:var(--muted)">${T('opportunities.col.score', 'Score')}: ${Number(opportunity.score || 0)}/100</span>
