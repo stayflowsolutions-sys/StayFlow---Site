@@ -108,7 +108,28 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     # Interruptor mestre (hostel inteiro) OU essa conversa especifica foi
     # assumida manualmente pela equipe - nos dois casos, resposta da IA
     # fica pulada, mas mensagem/oportunidade continuam sendo salvas.
-    if not is_ai_enabled(hostel_id) or is_guest_ai_paused_by_id(guest_id):
+    conversation_assumed = is_guest_ai_paused_by_id(guest_id)
+    if not is_ai_enabled(hostel_id) or conversation_assumed:
+        # So notifica no caso de conversa assumida (nao no interruptor
+        # geral do hostel, que e uma escolha deliberada e ampla, nao um
+        # "esqueceram de responder"). Ninguem vai responder essa mensagem
+        # automaticamente - pedido do usuario: avisar a equipe que
+        # assumiu, pra nao deixar o hospede esperando a IA que nao vai
+        # responder.
+        if conversation_assumed:
+            try:
+                from services.push_service import send_push_to_hostel
+                guest_name_for_push = get_guest_name_by_id(guest_id) or "Hóspede"
+                send_push_to_hostel(
+                    hostel_id,
+                    title=f"👤 {guest_name_for_push}",
+                    body=text[:120],
+                    url="/app",
+                    notification_type="assumed_conversation",
+                )
+            except Exception as error:
+                print(f"AVISO: falha ao notificar mensagem em conversa assumida: {error}")
+
         return None, opportunity
 
     # O telefone só é passado pra IA quando a mensagem realmente veio do

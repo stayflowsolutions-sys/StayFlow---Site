@@ -3234,6 +3234,10 @@ async function deleteRoleConfirm(roleId){
           <input type="checkbox" data-setting="push_notification_types" value="guest_needs_attention" id="pushTypeGuestNeedsAttention">
         </label>
         <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeAssumedConversation', 'Mensagem nova numa conversa assumida')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="assumed_conversation" id="pushTypeAssumedConversation">
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeKitchenOrder', 'Novo pedido na cozinha')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="kitchen_order" id="pushTypeKitchenOrder">
         </label>
@@ -3293,12 +3297,13 @@ async function deleteRoleConfirm(roleId){
       const bellInput = document.getElementById("alertChannelsCheckbox");
       if(bellInput) bellInput.checked = Array.isArray(data.alert_channels) && data.alert_channels.includes("dashboard");
 
-      const defaultPushTypes = ["opportunity", "reservation", "guest_needs_attention", "kitchen_order", "maintenance_ticket", "security_incident", "valet_request"];
+      const defaultPushTypes = ["opportunity", "reservation", "guest_needs_attention", "assumed_conversation", "kitchen_order", "maintenance_ticket", "security_incident", "valet_request"];
       const pushTypes = Array.isArray(data.push_notification_types) ? data.push_notification_types : defaultPushTypes;
       const pushTypeCheckboxIds = {
         opportunity: "pushTypeOpportunity",
         reservation: "pushTypeReservation",
         guest_needs_attention: "pushTypeGuestNeedsAttention",
+        assumed_conversation: "pushTypeAssumedConversation",
         kitchen_order: "pushTypeKitchenOrder",
         maintenance_ticket: "pushTypeMaintenanceTicket",
         security_incident: "pushTypeSecurityIncident",
