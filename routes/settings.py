@@ -43,6 +43,7 @@ _SETTINGS_TEXT_FIELDS = [
 ]
 
 _DEFAULT_ALERT_CHANNELS = ["dashboard"]
+_DEFAULT_PUSH_NOTIFICATION_TYPES = ["opportunity", "reservation"]
 
 # Listas fechadas - timezone e currency nao sao categorias abertas
 # (diferente de hostel_type), sao padroes IANA/ISO 4217 relevantes
@@ -116,7 +117,7 @@ def get_settings(hostel_id):
     cursor.execute("""
         SELECT hostel_name, hostel_type, legal_name, tax_id, address,
                timezone, currency, checkin, checkout, logo_url,
-               opportunity_generation, alert_channels,
+               opportunity_generation, alert_channels, push_notification_types,
                quiet_hours_start, quiet_hours_end, ai_enabled
         FROM settings
         WHERE hostel_id = ?
@@ -129,6 +130,7 @@ def get_settings(hostel_id):
         payload = {field: None for field in _SETTINGS_TEXT_FIELDS}
         payload["opportunity_generation"] = True
         payload["alert_channels"] = _DEFAULT_ALERT_CHANNELS
+        payload["push_notification_types"] = _DEFAULT_PUSH_NOTIFICATION_TYPES
         payload["ai_enabled"] = True
         payload["success"] = True
         return jsonify(payload)
@@ -138,9 +140,15 @@ def get_settings(hostel_id):
     except (TypeError, ValueError):
         alert_channels = _DEFAULT_ALERT_CHANNELS
 
+    try:
+        push_notification_types = json.loads(row["push_notification_types"]) if row["push_notification_types"] else _DEFAULT_PUSH_NOTIFICATION_TYPES
+    except (TypeError, ValueError):
+        push_notification_types = _DEFAULT_PUSH_NOTIFICATION_TYPES
+
     payload = {field: row[field] for field in _SETTINGS_TEXT_FIELDS}
     payload["opportunity_generation"] = bool(row["opportunity_generation"]) if row["opportunity_generation"] is not None else True
     payload["alert_channels"] = alert_channels
+    payload["push_notification_types"] = push_notification_types
     payload["ai_enabled"] = bool(row["ai_enabled"]) if row["ai_enabled"] is not None else True
     payload["success"] = True
 
@@ -184,6 +192,9 @@ def update_settings(hostel_id):
 
     if "alert_channels" in data:
         updates["alert_channels"] = json.dumps(data["alert_channels"])
+
+    if "push_notification_types" in data:
+        updates["push_notification_types"] = json.dumps(data["push_notification_types"])
 
     if not updates:
         conn.close()

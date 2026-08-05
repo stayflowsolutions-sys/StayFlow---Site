@@ -52,18 +52,24 @@ def send_push_to_subscription(subscription, title, body, url=None):
         return "error"
 
 
-def send_push_to_hostel(hostel_id, title, body, url=None):
+def send_push_to_hostel(hostel_id, title, body, url=None, notification_type=None):
     """
     Manda pra todos os dispositivos inscritos daquela hospedagem (cada
     pessoa da equipe pode ter mais de um - PC e celular contam como
     inscricoes separadas). Respeita o horario de silencio configurado
-    (nunca manda nada fora do horario definido pela propria hospedagem).
-    Limpa do banco qualquer inscricao que o navegador ja invalidou.
+    (nunca manda nada fora do horario definido pela propria hospedagem)
+    e a preferencia de QUAIS tipos de evento devem notificar
+    (notification_type: "opportunity"/"reservation"/"chat_message" -
+    se a hospedagem desligou esse tipo, nem tenta enviar). Limpa do
+    banco qualquer inscricao que o navegador ja invalidou.
     """
     if not is_push_configured():
         return
 
-    from database import delete_push_subscription, get_push_subscriptions, is_within_quiet_hours
+    from database import delete_push_subscription, get_push_notification_types, get_push_subscriptions, is_within_quiet_hours
+
+    if notification_type and notification_type not in get_push_notification_types(hostel_id):
+        return
 
     if is_within_quiet_hours(hostel_id):
         return

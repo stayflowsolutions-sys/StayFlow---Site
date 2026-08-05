@@ -2270,6 +2270,15 @@ async function deleteRoleConfirm(roleId){
         data.alert_channels = input.checked ? ["dashboard"] : [];
         return;
       }
+      // push_notification_types e outra lista, mas com VARIOS checkboxes
+      // (um por tipo de evento) representando o MESMO campo - cada um
+      // com seu proprio "value" (opportunity/reservation/chat_message).
+      // Constroi o array junto conforme encontra cada checkbox marcado.
+      if(input.dataset.setting === "push_notification_types"){
+        if(!data.push_notification_types) data.push_notification_types = [];
+        if(input.checked) data.push_notification_types.push(input.value);
+        return;
+      }
       if(input.type === "checkbox"){
         data[input.dataset.setting] = input.checked;
       }else{
@@ -3210,6 +3219,22 @@ async function deleteRoleConfirm(roleId){
       <div id="pushStatusMessage" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
       <button class="btn secondary" type="button" id="pushToggleBtn" onclick="togglePushNotifications()">${T('settings.communication.pushEnableBtn', 'Ativar neste dispositivo')}</button>
 
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff12">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">${T('settings.communication.pushTypesTitle', 'O que deve notificar')}</div>
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeOpportunity', 'Nova oportunidade de alta prioridade')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="opportunity" id="pushTypeOpportunity">
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeReservation', 'Nova reserva pendente de confirmação')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="reservation" id="pushTypeReservation">
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeChatMessage', 'Toda mensagem nova no chat')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="chat_message" id="pushTypeChatMessage">
+        </label>
+      </div>
+
       <label style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 0;padding-top:16px;border-top:1px solid #ffffff12;font-size:14px;">
         <span data-i18n="settings.communication.bellToggleLabel">${T('settings.communication.bellToggleLabel', 'Mostrar contagem de alertas no sininho')}</span>
         <input type="checkbox" data-setting="alert_channels" id="alertChannelsCheckbox">
@@ -3247,6 +3272,14 @@ async function deleteRoleConfirm(roleId){
       if(endInput) setFieldValue(endInput, data.quiet_hours_end || "");
       const bellInput = document.getElementById("alertChannelsCheckbox");
       if(bellInput) bellInput.checked = Array.isArray(data.alert_channels) && data.alert_channels.includes("dashboard");
+
+      const pushTypes = Array.isArray(data.push_notification_types) ? data.push_notification_types : ["opportunity", "reservation"];
+      const opportunityInput = document.getElementById("pushTypeOpportunity");
+      if(opportunityInput) opportunityInput.checked = pushTypes.includes("opportunity");
+      const reservationInput = document.getElementById("pushTypeReservation");
+      if(reservationInput) reservationInput.checked = pushTypes.includes("reservation");
+      const chatMessageInput = document.getElementById("pushTypeChatMessage");
+      if(chatMessageInput) chatMessageInput.checked = pushTypes.includes("chat_message");
     }catch(e){
       console.warn("Erro ao carregar horário de silêncio:", e);
     }

@@ -197,6 +197,7 @@ def analyze_message(hostel_id, guest_id, message, history=None):
                 title=f"🔥 {guest_name}",
                 body=analysis.get("next_action") or analysis.get("description") or "Nova oportunidade de alta prioridade.",
                 url="/app",
+                notification_type="opportunity",
             )
         except Exception as error:
             print(f"AVISO: falha ao notificar nova oportunidade por push: {error}")

@@ -869,6 +869,12 @@ def create_database():
     # feita durante a reconstrucao da tabela).
     add_column_if_not_exists(cursor, "settings", "ai_enabled", "INTEGER DEFAULT 1")
 
+    # Preferencia de QUAIS eventos geram notificacao push (lista JSON,
+    # mesmo formato de alert_channels) - "opportunity"/"reservation"/
+    # "chat_message". Aditiva, escolhida pela equipe no modal de
+    # Notificacoes.
+    add_column_if_not_exists(cursor, "settings", "push_notification_types", "TEXT")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS reservations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -3138,6 +3144,31 @@ def is_within_quiet_hours(hostel_id):
     return now_local >= start or now_local < end
 
 
+def get_push_notification_types(hostel_id):
+    """
+    Quais eventos devem gerar notificacao push pra essa hospedagem -
+    lista JSON (mesmo formato de alert_channels). "chat_message" comeca
+    DESLIGADO por padrao (pode ser bem barulhento numa hospedagem
+    movimentada); "opportunity"/"reservation" comecam ligados, mesmo
+    comportamento que existia antes dessa preferencia existir.
+    """
+    import json
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT push_notification_types FROM settings WHERE hostel_id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row or not row["push_notification_types"]:
+        return ["opportunity", "reservation"]
+
+    try:
+        return json.loads(row["push_notification_types"])
+    except (TypeError, ValueError):
+        return ["opportunity", "reservation"]
+
+
 def save_push_subscription(hostel_id, user_id, endpoint, p256dh, auth, user_agent=None):
     """
     Grava (ou atualiza, se o mesmo endpoint ja existia) a inscricao push
@@ -4687,6 +4718,7 @@ def create_reservation_from_chat(hostel_id, guest_id, guest_name, category_name,
             title=f"📅 Reserva pendente — {guest_name or 'Hóspede'}",
             body=f"{category_name}, {checkin_date} a {checkout_date}. Confirmar com o hóspede.",
             url="/app",
+            notification_type="reservation",
         )
     except Exception as error:
         print(f"AVISO: falha ao notificar nova reserva por push: {error}")

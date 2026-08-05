@@ -80,6 +80,27 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
 
     opportunity = analyze_message(hostel_id, guest_id, text, history=history) if is_opportunity_generation_enabled(hostel_id) else None
 
+    # Notificacao push de mensagem nova - tipo separado da oportunidade
+    # (analyze_message acima so notifica em oportunidade NOVA de alta
+    # urgencia; aqui e literalmente "chegou mensagem", pra quem quiser
+    # saber de toda conversa). Desligado por padrao (get_push_notification_types)
+    # porque pode ser bem barulhento numa hospedagem movimentada - so
+    # manda de verdade se a equipe ligou esse tipo especifico nas
+    # preferencias. Best-effort: falha no envio nunca deve quebrar o
+    # processamento da mensagem em si.
+    try:
+        from services.push_service import send_push_to_hostel
+        guest_name_for_push = get_guest_name_by_id(guest_id) or "Hóspede"
+        send_push_to_hostel(
+            hostel_id,
+            title=f"💬 {guest_name_for_push}",
+            body=text[:120],
+            url="/app",
+            notification_type="chat_message",
+        )
+    except Exception as error:
+        print(f"AVISO: falha ao notificar nova mensagem por push: {error}")
+
     # Interruptor mestre: quando desligado, a mensagem do hospede e a
     # oportunidade (acima) ainda sao salvas normalmente - so a resposta
     # da IA (interna e o envio real) e que fica pulada, deixando o
