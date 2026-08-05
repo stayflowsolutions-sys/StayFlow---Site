@@ -3221,39 +3221,39 @@ async function deleteRoleConfirm(roleId){
 
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff12">
         <div style="font-size:13px;font-weight:700;margin-bottom:8px">${T('settings.communication.pushTypesTitle', 'O que deve notificar')}</div>
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="opportunities" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeOpportunity', 'Nova oportunidade de alta prioridade')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="opportunity" id="pushTypeOpportunity">
         </label>
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="reservations" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeReservation', 'Nova reserva pendente de confirmação')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="reservation" id="pushTypeReservation">
         </label>
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeGuestNeedsAttention', 'Hóspede com problema, dúvida ou frustração')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="guest_needs_attention" id="pushTypeGuestNeedsAttention">
         </label>
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeAssumedConversation', 'Mensagem nova numa conversa assumida')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="assumed_conversation" id="pushTypeAssumedConversation">
         </label>
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="kitchen" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeKitchenOrder', 'Novo pedido na cozinha')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="kitchen_order" id="pushTypeKitchenOrder">
         </label>
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="maintenance" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeMaintenanceTicket', 'Novo chamado de manutenção')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="maintenance_ticket" id="pushTypeMaintenanceTicket">
         </label>
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="patrimonial_security" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeSecurityIncident', 'Nova ocorrência de segurança')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="security_incident" id="pushTypeSecurityIncident">
         </label>
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="parking" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeValetRequest', 'Novo chamado de manobrista')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="valet_request" id="pushTypeValetRequest">
         </label>
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeChatMessage', 'Toda mensagem nova no chat')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="chat_message" id="pushTypeChatMessage">
         </label>
@@ -3283,6 +3283,20 @@ async function deleteRoleConfirm(roleId){
         <button class="btn" type="button" onclick="saveSettings()">${T('settings.saveChangesBtn', 'Salvar alterações')}</button>
       </div>
     `);
+
+    // Cada checkbox "o que deve notificar" so aparece pra quem tem a
+    // permissao daquela area (data-required-permission em cada label) -
+    // pedido do usuario: limpeza/manutencao/manobrista etc so devem ver
+    // (e poder ligar) a notificacao da PROPRIA funcao, nao de todas.
+    // Reaproveita o mesmo mecanismo generico ja usado no menu lateral e
+    // nas categorias de Configuracoes (applyPermissionVisibility).
+    try{
+      if(typeof applyPermissionVisibility === "function"){
+        applyPermissionVisibility((window.STAYFLOW_SESSION && window.STAYFLOW_SESSION.permissions) || []);
+      }
+    }catch(e){
+      console.warn("Erro ao aplicar visibilidade por permissao no modal de notificações:", e);
+    }
 
     refreshPushToggleState();
 
