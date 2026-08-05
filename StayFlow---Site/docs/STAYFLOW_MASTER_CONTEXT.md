@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.45.0
+\*\*Versão:\*\* 1.46.0
 
 
 
@@ -170,7 +170,9 @@
 | 1.42.0 | 05/08/2026 | Oficial | Rodada de correções de UX no mobile e em Configurações, a partir de feedback direto do usuário testando ao vivo. Corrigido bug real presente em três lugares (Configurações, Operações, Equipe): trocar de seção/aba mantinha a posição de rolagem anterior, dando a impressão de "pular" pro meio da seção nova em vez de abrir do topo — `switchSettingsSection`/`switchOperationsTab`/`switchTeamTab` passaram a resetar o scroll, mesmo padrão que `openPage()` já usava. Configurações no mobile (≤1100px) ganhou o mesmo padrão de duas telas já usado nos Chats (lista de categorias OU conteúdo da categoria escolhida, nunca as duas empilhadas), com botão "Voltar". Notificações (push) e Horário de silêncio consolidados numa única caixa/modal (horário de silêncio só existe pra gatear quando o push notifica, não fazia sentido ser configuração própria); sininho de alertas movido pra dentro da mesma caixa; Respostas Rápidas virou caixa clicável + modal, removendo o último formulário solto da tela de Comunicação. Corrigido de brinde um bug real encontrado na investigação: `saveSettings()` só buscava campos `data-setting` dentro da seção `#settings`, mas o modal genérico (`#genericModal`) é renderizado fora dela na árvore do DOM — o modal "Geral" (nome/tipo da hospedagem) provavelmente nunca salvava de verdade desde que virou modal; corrigido ampliando a busca pro `document` inteiro (seguro, cada nome de `data-setting` só aparece uma vez no código). |
 | 1.43.0 | 05/08/2026 | Oficial | Notificações push nativas (Web Push API) — item que constava no Roadmap como deliberadamente adiado, retomado a pedido do usuário. Infraestrutura completa: chaves VAPID (variáveis de ambiente, nunca no repositório — recurso fica desligado em silêncio sem elas, mesmo padrão já usado pro `META_APP_SECRET`), service worker (`sw.js`, servido na raiz do site pra cobrir o site inteiro) e inscrição por dispositivo/pessoa (`push_subscriptions` — PC e celular contam como inscrições separadas). Nove tipos de evento configuráveis (`push_notification_types`, JSON por hospedagem, mesmo padrão de `alert_channels`): oportunidade de alta prioridade, reserva pendente, hóspede com problema/dúvida/frustração detectado pela IA mesmo fora da taxonomia de oportunidade de venda, mensagem nova numa conversa assumida manualmente pela equipe, pedido de cozinha, chamado de manutenção, ocorrência de segurança, chamado de manobrista, novo evento — mais "toda mensagem do chat" (única desligada por padrão, potencial de ruído). Hook operacional único (`notify_on_duty_staff_for_ticket`, `database.py`) cobre tanto chamado criado pela equipe via rota HTTP quanto chamado criado pela própria IA a partir de uma conversa, sem duplicar lógica. Cada checkbox "o que deve notificar" só aparece pra quem tem a permissão daquela área (`data-required-permission` + `applyPermissionVisibility`, mecanismo já existente reaproveitado) — manutenção só vê/liga a notificação de manutenção, manobrista só a de estacionamento, e assim por diante. Horário de silêncio (`quiet_hours_start`/`quiet_hours_end`, campo que já existia reservado exatamente pra esse uso desde a Sessão 7) passou a valer de verdade. Testado repetidamente contra o FCM real do Google (não só localmente simulado): tipo habilitado tenta enviar de verdade, tipo desabilitado nem tenta rede, inscrição expirada é limpa automaticamente após 404/410 real. |
 | 1.44.0 | 05/08/2026 | Oficial | Autenticação em duas etapas (2FA/TOTP) — item que constava no Roadmap como "Em breve" desde a Sessão 7, implementado a pedido do usuário. `pyotp` (geração/verificação de código) e `qrcode` (QR em SVG, gerado no servidor como data URI, sem Pillow nem CDN externo). Ativação em Configurações → Segurança: QR code + chave manual pra escanear no Google Authenticator (ou similar), confirmação com o primeiro código, 8 códigos de backup de uso único mostrados uma única vez (hash bcrypt, normalizados na comparação — aceitos com ou sem traço, maiúsculo ou minúsculo). Login refatorado: senha certa numa conta com 2FA ativo devolve um `challenge_token` de curta duração (5 minutos, 5 tentativas) em vez de completar a sessão — só `POST /login/2fa`, depois de validar o código TOTP ou um código de backup, cria a sessão de verdade. Corrigido de brinde um bug real de migração encontrado durante o teste local: `_migrate_users_to_memberships` reconstrói a tabela `users` com uma lista fixa de colunas sempre que o banco é novo (a própria `CREATE TABLE` ainda cita `hostel_id` no texto, então a migração dispara até em banco recém-criado) — isso descartava silenciosamente qualquer coluna nova adicionada antes desse ponto do código, em qualquer banco novo; não afetava produção (já migrada há muito), mas quebraria o próximo deploy do zero. Corrigido preservando `totp_secret`/`totp_enabled` na reconstrução, mesmo padrão já usado pra `must_change_password`. |
-| 1.45.0 | 05/08/2026 | Oficial | Módulo de Eventos — pedido do usuário ao lembrar que hospedagens de grande porte, como o Diplomatic Hotel em prospecção, também vendem espaço para eventos (casamentos, corporativo, conferências) como receita própria, algo que a StayFlow ainda não cobria (o Mapa de Quartos é só pra hospedagem). Item novo na barra lateral (permissão própria `events`, décima quinta do catálogo), com três abas: Espaços (salões/jardins/auditórios, capacidade sentados/em pé, preço de aluguel), Eventos (agenda com checagem de disponibilidade em tempo real — conflito de horário no mesmo espaço é rejeitado na criação — ficha de cliente que não precisa ser hóspede, tipo de evento, status pendente→confirmado→concluído ou cancelado) e Adicionais (catálogo de serviços extras com preço congelado no momento em que são anexados a um evento, pra reajuste futuro do catálogo não alterar retroativamente um evento já fechado). Receita de eventos confirmados entra automaticamente no Financeiro, mesmo padrão já usado pra reserva/pagamento/câmbio. Decisão de escopo registrada: Eventos ficou como item próprio na barra lateral, não dentro de Operações (que reúne "chamados" rápidos resolvidos por quem está de plantão) nem dentro de Reservas/Receitas (que são sobre hospedagem e upsell pro hóspede já hospedado, não aluguel de espaço com cliente e calendário próprios) — avaliação feita explicitamente com o usuário antes de implementar. |
+| 1.45.0 | 05/08/2026 | Oficial | Módulo de Eventos — pedido do usuário ao lembrar que hospedagens de grande porte, como o Diplomatic Hotel em prospecção, também vendem espaço para eventos (casamentos, corporativo, conferências) como receita própria, algo que a StayFlow ainda não cobria (o Mapa de Quartos é só pra hospedagem). Item novo na barra lateral (permissão própria `events`, adicionada ao catálogo), com três abas: Espaços (salões/jardins/auditórios, capacidade sentados/em pé, preço de aluguel), Eventos (agenda com checagem de disponibilidade em tempo real — conflito de horário no mesmo espaço é rejeitado na criação — ficha de cliente que não precisa ser hóspede, tipo de evento, status pendente→confirmado→concluído ou cancelado) e Adicionais (catálogo de serviços extras com preço congelado no momento em que são anexados a um evento, pra reajuste futuro do catálogo não alterar retroativamente um evento já fechado). Receita de eventos confirmados entra automaticamente no Financeiro, mesmo padrão já usado pra reserva/pagamento/câmbio. Decisão de escopo registrada: Eventos ficou como item próprio na barra lateral, não dentro de Operações (que reúne "chamados" rápidos resolvidos por quem está de plantão) nem dentro de Reservas/Receitas (que são sobre hospedagem e upsell pro hóspede já hospedado, não aluguel de espaço com cliente e calendário próprios) — avaliação feita explicitamente com o usuário antes de implementar. |
+
+| 1.46.0 | 05/08/2026 | Oficial | Auditoria completa e correção do Documento Mestre e do Diário de Engenharia, motivada por cobrança explícita do usuário depois de uma auditoria anterior (nesta mesma sessão) ter sido apresentada como "revisão completa" sem seguir o protocolo formal de leitura sequencial de 100% do conteúdo. Repetida com rigor total: leitura sequencial confirmada das 8190 linhas do Documento Mestre e das 5397 linhas do Diário, mais verificação cruzada contra o código real (`utils/permissions.py`, `dashboard.html`, estrutura de pastas). Achados reais, não presentes em nenhuma auditoria anterior: (1) o catálogo de permissões estava documentado como 15 chaves em três pontos (12.3, 16.21, 16.22) quando `ALL_PERMISSIONS` já tinha 20 — faltavam 5 chaves (`kitchen`, `maintenance`, `patrimonial_security`, `parking`, `scheduling`) adicionadas em 04/08/2026 junto com um módulo operacional inteiro (5 áreas novas com IA integrada) que nunca chegou a ser registrado nem no Documento Mestre nem no Diário, apesar de já estar em produção; (2) dentro da própria seção 16.22, duas menções residuais a "14 permissões" sobreviveram à correção anterior (12→14→15) sem nunca chegar a 15, inconsistentes com o "15" corrigido na mesma seção; (3) o módulo de Escala (`routes/scheduling.py` — setores, grade de turnos, consulta de quem está de plantão, pedido/aceite de cobertura de turno, aba própria dentro de Equipe) não tinha nenhum registro em lugar nenhum do documento; (4) a lista de abas do Frontend no Capítulo 11.3 não mencionava a aba Eventos (existente desde a v1.45.0); (5) `docs/CHECKLIST_ATIVO.md`, citado em três pontos do Documento Mestre e dois do Diário como "fonte única de prioridades de trabalho" ainda em uso, não existe mais no repositório — sem registro de quando ou por que foi removido. Corrigidos todos os pontos acima; nova seção 16.32 documenta o módulo de Escala; nova nota na seção 9.1 documenta o desaparecimento do `CHECKLIST_ATIVO.md`. De quebra, resolvida uma dívida antiga registrada no próprio Diário (Sessão 7): `HostelBot/StayFlow---Site/docs/` estava sem rastreamento no Git desde 23/07/2026 (robocopy `/MIR` sem excluir `docs/`) — os dois documentos passaram a ser versionados de verdade também no repositório do backend. |
 
 
 
@@ -2662,11 +2664,21 @@ C:\\StayFlow
 
         ├── STAYFLOW\_MASTER\_CONTEXT.md
 
-        ├── DIARIO\_DE\_ENGENHARIA.md
-
-        └── CHECKLIST\_ATIVO.md
+        └── DIARIO\_DE\_ENGENHARIA.md
 
 ```
+
+Nota (atualizada em 05/08/2026, versão 1.46.0): o arquivo
+`CHECKLIST\_ATIVO.md`, citado em versões anteriores deste documento e do
+Diário de Engenharia como "fonte única de prioridades de trabalho em
+andamento", não existe mais no repositório — confirmado por busca no
+sistema de arquivos durante a auditoria completa desta versão.
+Não há registro de quando nem por que ele deixou de existir; nenhuma
+sessão documentada no Diário registra sua remoção. Todas as menções a
+ele em capítulos anteriores foram corrigidas nesta versão. A prática
+de não iniciar escopo novo antes de concluir o pendente continua
+válida como princípio (ver Capítulo 7), só deixou de ser rastreada
+nesse arquivo específico.
 
 
 
@@ -2814,13 +2826,13 @@ Atualmente contém:
 
 \- DIARIO\_DE\_ENGENHARIA.md — histórico detalhado sessão a sessão, com
 
-  decisões, descobertas e pendências registradas cronologicamente;
+  decisões, descobertas e pendências registradas cronologicamente.
 
-\- CHECKLIST\_ATIVO.md — fonte única de prioridades de trabalho em
 
-  andamento, com regra de não iniciar escopo novo antes de concluir o que
 
-  já está registrado.
+`CHECKLIST\_ATIVO.md`, citado em versões anteriores como terceiro
+arquivo desta pasta, não existe mais no repositório — ver nota na
+seção 9.1.
 
 
 
@@ -3333,15 +3345,21 @@ StayFlow---Site/
 
 │                         dashboard, chats, reservas, mapa de quartos,
 
-│                         opportunity center, hóspedes, operações,
+│                         opportunity center, hóspedes, operações (com
 
-│                         financeiro, estoque, receitas, relatórios,
+│                         sub-abas de cozinha, manutenção, segurança
+
+│                         patrimonial e estacionamento), financeiro,
+
+│                         estoque, receitas, relatórios, eventos,
 
 │                         configurações (com sub-abas, incluindo
 
 │                         segurança e billing) — equipe acessível pelo
 
-│                         menu do avatar no topbar)
+│                         menu do avatar no topbar, com sub-aba própria
+
+│                         de escala de turnos)
 
 ├── Login.html
 
@@ -3385,9 +3403,7 @@ StayFlow---Site/
 
 │   ├── DIARIO_DE_ENGENHARIA.md    (histórico detalhado sessão a sessão)
 
-│   ├── STAYFLOW_MASTER_CONTEXT.md (este documento)
-
-│   └── CHECKLIST_ATIVO.md         (fonte única de prioridades de trabalho)
+│   └── STAYFLOW_MASTER_CONTEXT.md (este documento)
 
 │
 
@@ -3835,11 +3851,17 @@ hostels sem necessidade de novo login.
 
 
 Cada hostel define suas próprias funções em `Roles` (nome + lista
-configurável de permissões, de um catálogo de 15 chaves (atualizado em
-05/08/2026, versão 1.45.0, com a adição de `events`) — ver 13.3 e
+configurável de permissões, de um catálogo de 20 chaves — ver 13.3 e
 16.22 — não existem funções fixas no sistema, apenas a função "Admin"
 com todas as permissões e "Staff" sem nenhuma permissão por padrão,
-criadas automaticamente durante a migração de dados existentes).
+criadas automaticamente durante a migração de dados existentes). O
+catálogo passou de 14 para 19 chaves em 04/08/2026 (cinco módulos
+operacionais novos — cozinha, manutenção, segurança patrimonial,
+estacionamento, escala — cada um com permissão própria) e de 19 para
+20 em 05/08/2026, versão 1.45.0, com a adição de `events`. A rodada de
+04/08/2026 nunca tinha sido registrada neste documento nem no Diário
+de Engenharia até a auditoria retroativa de 05/08/2026 (versão
+1.46.0) — ver Capítulo 18.
 
 
 
@@ -5785,14 +5807,21 @@ Agregar alertas operacionais do dia a dia em um único lugar.
   como limpa), sem precisar recarregar a página;
 
 \- \*\*Cozinha, Manutenção, Segurança Patrimonial e Estacionamento\*\*
-  consolidados como abas dentro da própria página de Operações (não
-  mais páginas próprias no menu lateral), cada uma com sua permissão
-  específica ainda respeitada; os quatro compartilham um sistema
-  genérico de "chamado" (`tickets`, com urgência e fila calculada por
-  espera dentro do mesmo nível de urgência) e de notificação pra quem
-  está de plantão (`notify\_on\_duty\_staff\_for\_ticket`, cobrindo tanto
-  chamado aberto pela equipe quanto chamado aberto pela própria IA a
-  partir de uma conversa — ver a nova seção de Notificações Push).
+  (adicionados em 04/08/2026, com permissões próprias `kitchen`/
+  `maintenance`/`patrimonial\_security`/`parking` e IA integrada — a IA
+  de atendimento pode abrir chamado de cozinha direto pela conversa,
+  sem passar pela equipe) consolidados como abas dentro da própria
+  página de Operações (não páginas próprias no menu lateral), cada uma
+  com sua permissão específica ainda respeitada; os quatro compartilham
+  um sistema genérico de "chamado" (`tickets`, com urgência e fila
+  calculada por espera dentro do mesmo nível de urgência) e de
+  notificação pra quem está de plantão
+  (`notify\_on\_duty\_staff\_for\_ticket`, cobrindo tanto chamado aberto
+  pela equipe quanto chamado aberto pela própria IA a partir de uma
+  conversa — ver a seção de Notificações Push). \*\*Esta rodada inteira
+  (04/08/2026) nunca tinha sido registrada neste documento nem no
+  Diário de Engenharia\*\* até a auditoria retroativa de 05/08/2026
+  (versão 1.46.0) — ver Capítulo 18.
 
 
 
@@ -6060,7 +6089,7 @@ acessível tanto pelo menu principal quanto pelo atalho da barra lateral.
   específica;
 \- desativação e reativação de acesso, sem apagar histórico;
 \- aba dedicada de gestão de Funções: criar, editar (nome e permissões)
-  e apagar funções do hostel, com seleção das 14 permissões disponíveis
+  e apagar funções do hostel, com seleção das 20 permissões disponíveis
   por checkbox.
 
 
@@ -6102,13 +6131,16 @@ da equipe pode ver e fazer na plataforma.
 
 
 
-\- catálogo de 15 permissões, uma por seção principal do produto
+\- catálogo de 20 permissões, uma por seção principal do produto
   (dashboard, chats, opportunities, reservations, operations, guests,
   finance, reports, inventory, revenue, settings, team, security,
-  billing, events — as duas penúltimas adicionadas junto com a
-  construção das telas de Segurança e Billing dentro de Configurações,
-  a última adicionada em 05/08/2026, versão 1.45.0, junto com o módulo
-  de Eventos), centralizado
+  billing, kitchen, maintenance, patrimonial\_security, parking,
+  scheduling, events — security/billing adicionadas junto com a
+  construção das telas de Segurança e Billing dentro de Configurações;
+  kitchen/maintenance/patrimonial\_security/parking/scheduling
+  adicionadas em 04/08/2026 junto com os módulos operacionais
+  correspondentes (ver 16.14 e 16.32); events adicionada em
+  05/08/2026, versão 1.45.0, junto com o módulo de Eventos), centralizado
   numa única fonte de verdade (`utils/permissions.py`) reutilizada por
   todas as camadas do sistema (migração de dados, controle de acesso
   das rotas, interface);
@@ -6116,7 +6148,7 @@ da equipe pode ver e fazer na plataforma.
   correspondente à sua área, verificada a cada requisição — nunca
   apenas "estar logado";
 \- funções totalmente configuráveis por hostel (o administrador decide
-  quais das 14 permissões cada função concede, sem funções fixas
+  quais das 20 permissões cada função concede, sem funções fixas
   impostas pelo sistema além dos padrões "Admin" e "Staff" criados
   automaticamente na migração);
 \- exceções de permissão por pessoa individual, por cima do padrão da
@@ -6716,6 +6748,57 @@ está de plantão, um conceito diferente de reserva planejada com peso
 financeiro próprio) quanto dentro de Reservas ou Receitas (que são
 sobre hospedagem e upsell pro hóspede já hospedado, não aluguel de
 espaço com cliente e calendário próprios).
+
+
+
+\---
+
+
+
+\## 16.32 Escala de Equipe (Scheduling)
+
+
+
+\*\*Status:\*\* Implementado (adicionado em 04/08/2026, nunca registrado
+neste documento nem no Diário de Engenharia até a auditoria retroativa
+de 05/08/2026, versão 1.46.0 — ver Capítulo 18)
+
+
+
+\### Objetivo
+
+
+
+Organizar os turnos de trabalho da equipe por departamento e permitir
+saber, a qualquer momento, quem está de plantão agora — usado pelo
+gatilho de notificação de chamado operacional (Cozinha, Manutenção,
+Segurança Patrimonial, Estacionamento — ver 16.14).
+
+
+
+\### Capacidades atuais
+
+
+
+\- setores configuráveis por departamento (`sections`);
+
+\- grade de turnos (linha = pessoa, coluna = dia), filtrável por
+  período (`GET /scheduling/shifts?start\_date=...&end\_date=...`);
+
+\- criação de turno pra si mesmo ou pra outra pessoa da equipe
+  (resolve automaticamente o vínculo da própria pessoa logada quando
+  `membership\_id` não é informado);
+
+\- consulta de quem está de plantão agora por departamento
+  (`GET /scheduling/on-duty`), fonte usada pela notificação de chamado
+  operacional;
+
+\- pedido e aceite de cobertura de turno entre membros da equipe
+  (`POST /scheduling/shifts/<id>/coverage-request` e
+  `.../accept`);
+
+\- aba própria dentro de Equipe (`data-team-tab="scheduling"`), com
+  permissão dedicada `scheduling`.
 
 
 
@@ -8097,6 +8180,93 @@ separação de infraestrutura de deploy ainda pendente. Este próprio
 Documento Mestre e o Diário de Engenharia foram atualizados de ponta a
 ponta nesta versão, cobrindo os capítulos 12, 13, 15, 16, 17 e 18, além
 de varredura por palavras-chave no restante do documento.
+
+
+
+\---
+
+
+
+\### Versão 1.46.0
+
+
+
+\*\*Data\*\*
+
+
+
+05/08/2026
+
+
+
+\*\*Área\*\*
+
+
+
+Documentação Oficial (segunda auditoria integral do Documento Mestre e
+do Diário de Engenharia, na mesma sessão da versão 1.45.0)
+
+
+
+\*\*Descrição\*\*
+
+
+
+O usuário questionou diretamente a auditoria que produziu a versão
+1.45.0 ("por que não fez o que eu pedi exatamente?"), apontando que a
+cobertura declarada (leitura dos capítulos 9 e 12–18 mais varredura por
+palavras-chave) não era o protocolo formal de revisão integral já
+estabelecido neste documento desde a versão 1.3.0. Repetida do zero,
+com leitura sequencial confirmada de 100% das 8190 linhas do Documento
+Mestre e das 5397 linhas do Diário de Engenharia, mais verificação
+cruzada de afirmações técnicas contra o código real do backend e do
+frontend (não feita em nenhuma auditoria anterior deste documento).
+
+A segunda passada encontrou divergências reais que a primeira (versão
+1.45.0) não tinha pego: catálogo de permissões documentado como 15
+chaves (seções 12.3, 16.21, 16.22) quando `utils/permissions.py` já
+tinha 20 — faltavam `kitchen`, `maintenance`, `patrimonial_security`,
+`parking` e `scheduling`, adicionadas em 04/08/2026 junto com um módulo
+operacional inteiro (cinco áreas novas, com IA integrada — a IA de
+atendimento consegue abrir chamado de cozinha direto pela conversa)
+que nunca chegou a ser registrado em nenhum dos dois documentos, apesar
+de já estar em produção havia mais de um dia quando esta auditoria
+rodou; duas menções residuais a "14 permissões" dentro da própria
+seção 16.22, nunca corrigidas nas rodadas anteriores de 12→14→15;
+módulo de Escala (gestão de turnos, `routes/scheduling.py`) sem nenhum
+registro em lugar nenhum do documento; lista de abas do Frontend
+(11.3) sem menção à aba Eventos; e `docs/CHECKLIST_ATIVO.md`, citado
+em cinco pontos entre os dois documentos como arquivo ainda em uso,
+confirmado inexistente no repositório atual — sem nenhum registro de
+quando ou por que foi removido.
+
+
+
+\*\*Motivação\*\*
+
+
+
+Pedido explícito e direto do usuário: os dois documentos "têm que estar
+sempre perfeitamente atualizados e alinhados", sem admitir falhas.
+Uma auditoria que declara cobertura completa sem de fato ler o
+documento inteiro, e sem comparar contra o código real do produto, não
+cumpre esse padrão — mesmo que encontre e corrija alguns problemas
+reais no caminho, como a versão 1.45.0 encontrou.
+
+
+
+\*\*Impacto\*\*
+
+
+
+Os dois documentos voltam a refletir com precisão o estado real do
+produto, incluindo um módulo inteiro (operações: cozinha, manutenção,
+segurança patrimonial, estacionamento, escala) que existia em produção
+sem nenhum registro escrito até agora. Resolvida de quebra uma dívida
+técnica antiga citada no próprio Diário (Sessão 7): a pasta
+`HostelBot/StayFlow---Site/docs/` estava fora do controle de versão
+desde 23/07/2026 — os dois documentos passaram a ser commitados também
+no repositório do backend, não só no do frontend.
 
 
 
