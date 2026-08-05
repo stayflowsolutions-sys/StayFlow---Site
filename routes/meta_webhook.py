@@ -15,6 +15,7 @@ from routes.chat import process_incoming_message
 from services.memory_service import save_message
 from services.messenger_service import get_messenger_user_profile, download_messenger_attachment, send_messenger_message
 from services.instagram_service import get_instagram_user_profile, download_instagram_attachment, send_instagram_message
+from utils.webhook_security import verify_meta_signature
 
 meta_webhook_bp = Blueprint("meta_webhook", __name__)
 
@@ -210,6 +211,10 @@ def receive_message():
     inesperado). Sempre responde 200 rapido pra Meta, mesmo se algo
     interno falhar - senao a Meta pode desativar o webhook.
     """
+    if not verify_meta_signature(request):
+        print("Webhook Meta: assinatura invalida, payload rejeitado.")
+        return "Invalid signature", 403
+
     payload = request.get_json(silent=True) or {}
     print("Webhook Meta: payload bruto recebido:", payload)
 

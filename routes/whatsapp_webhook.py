@@ -12,6 +12,7 @@ from routes.chat import process_incoming_message
 from services.whatsapp_service import download_whatsapp_media, send_whatsapp_message
 from services.memory_service import save_message
 from services.message_service import save_message_db
+from utils.webhook_security import verify_meta_signature
 
 whatsapp_webhook_bp = Blueprint("whatsapp_webhook", __name__)
 
@@ -83,6 +84,10 @@ def receive_message():
     payload é bem mais aninhado que o nosso /message de teste — essa
     rota traduz o formato da Meta pro processamento interno.
     """
+    if not verify_meta_signature(request):
+        print("Webhook WhatsApp: assinatura invalida, payload rejeitado.")
+        return "Invalid signature", 403
+
     payload = request.get_json(silent=True) or {}
 
     try:
