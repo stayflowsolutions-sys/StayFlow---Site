@@ -20,9 +20,9 @@ def _get_usd_ars_blue_rate():
     funciona normal num navegador de verdade, so nao server-to-server,
     confirmado ao vivo em producao). Bluelytics cobre o mesmo conceito
     (dolar blue Argentina) com uma API estavel e sem essa restricao.
-    "value_buy" e o lado certo pra dinheiro recebido: e o que um hostel
-    receberia em pesos se trocasse os dolares, nao "value_sell" (preco
-    pra quem QUER COMPRAR dolares).
+    "value_buy" e o lado certo pra dinheiro recebido: e o que a
+    hospedagem receberia em pesos se trocasse os dolares, nao
+    "value_sell" (preco pra quem QUER COMPRAR dolares).
 
     Cache de 10 minutos em memoria (processo do servidor).
     """
@@ -83,18 +83,18 @@ def _get_official_rates(base_currency):
 def get_reference_rate(foreign_currency, home_currency):
     """
     Cotacao de referencia pra ajudar a preencher o cambio manual, pra
-    qualquer par moeda-recebida -> moeda do hostel (as 7 moedas
+    qualquer par moeda-recebida -> moeda da hospedagem (as 7 moedas
     cadastradas no seletor: USD/ARS/CLP/BRL/PEN/BOB/COP).
 
-    Caso especial: quando a moeda do hostel e ARS, ancoramos no dolar
-    "blue" (Bluelytics) em vez da taxa oficial - e a cotacao que hostels
-    na Argentina realmente usam no dia a dia, historicamente bem
-    diferente da oficial. Pra moeda recebida = USD, e o proprio valor do
-    blue. Pra qualquer outra moeda recebida, cruzamos:
+    Caso especial: quando a moeda da hospedagem e ARS, ancoramos no dolar
+    "blue" (Bluelytics) em vez da taxa oficial - e a cotacao que
+    hospedagens na Argentina realmente usam no dia a dia, historicamente
+    bem diferente da oficial. Pra moeda recebida = USD, e o proprio valor
+    do blue. Pra qualquer outra moeda recebida, cruzamos:
     <moeda> -> USD (taxa oficial, open.er-api.com) x USD -> ARS (blue),
     o que aproxima bem o valor realista em pesos.
 
-    Fora desse caso (moeda do hostel != ARS), usa taxa oficial direta via
+    Fora desse caso (moeda da hospedagem != ARS), usa taxa oficial direta via
     open.er-api.com. Limitacao conhecida: a Bolivia tambem passou a ter
     uma distorcao relevante entre cambio oficial e paralelo desde 2023,
     mas nao ha fonte publica/gratuita confiavel equivalente ao Bluelytics

@@ -1778,7 +1778,7 @@ def save_hostel_phone(hostel_id, phone):
 
 
 def get_hostel_currency(hostel_id):
-    """Moeda configurada em Configuracoes > Empresa. USD por padrao (mesmo default do frontend) se o hostel ainda nao configurou nada."""
+    """Moeda configurada em Configuracoes > Empresa. USD por padrao (mesmo default do frontend) se a hospedagem ainda nao configurou nada."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT currency FROM settings WHERE hostel_id = ?", (hostel_id,))

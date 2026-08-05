@@ -18,7 +18,7 @@ def get_reference_exchange_rate(hostel_id):
     """
     Cotacao de referencia pra ajudar a preencher o cambio manual, pra
     qualquer moeda recebida cadastrada no seletor, contra a moeda
-    configurada do hostel (Configuracoes > Empresa). Se a fonte nao
+    configurada da hospedagem (Configuracoes > Empresa). Se a fonte nao
     tiver dados desse par, devolve rate=None e o frontend so esconde a
     referencia, sem quebrar nada.
     """
