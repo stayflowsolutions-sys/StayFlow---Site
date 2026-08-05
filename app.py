@@ -124,21 +124,61 @@ def static_files(filename):
     )
 
 
+
+# Content-Security-Policy montada em partes pra documentar a razao de
+# cada diretiva, em vez de uma string gigante ilegivel.
+#
+# script-src/style-src precisam de 'unsafe-inline' porque o dashboard
+# inteiro usa onclick="" inline e <script> embutido no HTML (nao e um
+# app com build step separando JS/HTML) - reescrever isso pra remover
+# 'unsafe-inline' de verdade significaria trocar todo onclick por
+# addEventListener em centenas de lugares, refatoracao grande demais
+# pra fazer de uma vez sem quebrar produção sem forma de testar
+# visualmente antes. Ou seja: essa CSP especificamente NAO bloqueia
+# injecao de <script inline>/onclick por XSS (isso quem impede e o
+# escapeHtml() nos pontos corrigidos na auditoria). O valor real dela
+# esta nas outras diretivas abaixo, que fecham outros vetores sem
+# nenhum risco de regressao:
+_CSP_DIRECTIVES = (
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    # Se uma injecao de script AINDA acontecesse (ex: bug futuro sem
+    # escape), isso impede o payload de mandar dados roubados pra um
+    # servidor externo via fetch/XHR/WebSocket - so pode falar com o
+    # proprio stayflowsolutions.com.
+    "connect-src 'self'",
+    # Camera de vigilancia (Seguranca Patrimonial) embute uma URL
+    # externa configurada por cada hostel - nao da pra saber o dominio
+    # com antecedencia, por isso https: generico em vez de um dominio
+    # especifico.
+    "frame-src https:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+)
+
+
 @app.after_request
 def set_security_headers(response):
     """
     Cabecalhos de seguranca que nao existiam antes (achado numa
-    auditoria) - nenhum deles interfere com inline script/style/
-    onclick, que o resto do app usa bastante, entao sem risco de
-    quebrar funcionalidade existente. Content-Security-Policy fica de
-    fora de proposito: exigiria remover TODO onclick/style inline do
-    dashboard.html primeiro, refatoracao grande demais pra entrar
-    junto com um hardening pontual.
+    auditoria) - X-Content-Type-Options/X-Frame-Options/Referrer-
+    Policy/HSTS nao interferem com nada do app. A CSP tem a limitacao
+    documentada acima (unsafe-inline em script/style) mas ainda fecha
+    exfiltracao de dados (connect-src), objetos/plugins, clickjacking
+    (frame-ancestors, redundante com X-Frame-Options de proposito -
+    navegador mais antigo que nao entende frame-ancestors ainda cai
+    no X-Frame-Options) e hijack de formulario/base tag.
     """
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = "; ".join(_CSP_DIRECTIVES)
     return response
 
 
