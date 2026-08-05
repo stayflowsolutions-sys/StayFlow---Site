@@ -5395,3 +5395,77 @@ mencionava mas o 15.7 não tinha sido corrigido junto). Versão do
 Documento Mestre avançada de 1.38.0 pra 1.45.0, com sete novas linhas
 na tabela de Controle de Versões e um registro narrativo completo no
 Capítulo 18 cobrindo a sessão inteira.
+
+### Segunda auditoria, pedida na hora: "por que não fez o que eu pedi exatamente?"
+
+Usuário rejeitou a auditoria acima como insuficiente, direto: pediu
+"revisão completa", comparação com o produto atual, diagnóstico do que
+falta e um relatório do estado real - a cobertura declarada (capítulos
+9 e 12-18 mais varredura por palavra-chave) não é o protocolo formal
+de revisão integral que este documento já exige desde a versão 1.3.0
+(leitura sequencial de 100% das linhas, sem pular trecho nenhum).
+Repetida do zero, com rigor total: leitura sequencial confirmada das
+8190 linhas do Documento Mestre e das 5397 linhas deste Diário, mais
+verificação cruzada de afirmações técnicas contra o código real
+(`utils/permissions.py`, `dashboard.html`, estrutura de pastas do
+backend) - passo que nenhuma auditoria anterior deste documento tinha
+feito.
+
+**Achados reais que a primeira passada (mais rasa) não pegou:**
+
+1. **Catálogo de permissões estava documentado como 15 chaves, o
+   código real já tinha 20.** Faltavam `kitchen`, `maintenance`,
+   `patrimonial_security`, `parking` e `scheduling` - adicionadas em
+   04/08/2026 (commit `75f37e7`, "Adiciona 5 modulos operacionais
+   (cozinha, manutencao, seguranca patrimonial, estacionamento,
+   escala) com IA integrada") junto com um módulo operacional inteiro
+   que **nunca chegou a ser registrado em nenhum dos dois documentos**,
+   apesar de já estar em produção. Cozinha/Manutenção/Segurança
+   Patrimonial/Estacionamento até tinham uma menção genérica na seção
+   16.14 (sem versão/data atribuída), mas o módulo de **Escala**
+   (`routes/scheduling.py` - setores por departamento, grade semanal de
+   turnos, consulta de quem está de plantão, pedido/aceite de cobertura
+   de turno, aba própria dentro de Equipe) não tinha nenhum registro em
+   lugar nenhum.
+2. Dentro da própria seção 16.22, duas menções residuais a "14
+   permissões" sobreviveram a duas rodadas de correção anteriores
+   (12→14→15) sem nunca chegar no número certo, inconsistentes com o
+   "15" (agora corrigido pra 20) escrito algumas linhas acima na mesma
+   seção.
+3. Lista de abas do Frontend (Capítulo 11.3) sem menção à aba Eventos,
+   existente desde a v1.45.0 (poucas horas antes desta auditoria).
+4. `docs/CHECKLIST_ATIVO.md`, citado em três pontos do Documento Mestre
+   e dois pontos deste Diário (inclusive a regra "não iniciar escopo
+   novo antes de concluir o que já está no checklist", estabelecida na
+   Sessão 3) como arquivo em uso ativo, **confirmado inexistente no
+   repositório** - `find` não achou o arquivo em lugar nenhum do
+   projeto. Sem registro de quando ou por que foi removido; nenhuma
+   sessão documentada aqui registra sua exclusão.
+
+**Corrigido**: as três seções de permissões (12.3, 16.21, 16.22) agora
+dizem 20, com a história completa de como chegou nesse número; nova
+seção 16.32 documenta o módulo de Escala; 16.14 passou a atribuir
+versão/data e "IA integrada" aos quatro módulos que já tinha; 11.3
+ganhou "eventos" na lista de abas; as três menções ao
+`CHECKLIST_ATIVO.md` como arquivo atual foram substituídas por uma
+nota explicando que ele não existe mais (a menção histórica na entrada
+da Sessão 3, sobre a criação do arquivo em 09/07/2026, foi mantida
+intacta - era verdade no momento em que foi escrita). Versão do
+Documento Mestre avançada pra 1.46.0, com uma nova linha na tabela de
+Controle de Versões e um segundo registro narrativo no Capítulo 18.
+
+**Resolvido de quebra**: a pendência da Sessão 7 sobre
+`HostelBot/StayFlow---Site/docs/` estar fora do controle de versão
+desde 23/07/2026 (robocopy `/MIR` sem excluir `docs/`) - os dois
+documentos agora são commitados de verdade também no repositório do
+backend, não só no do frontend.
+
+**Lição registrada**: uma auditoria "completa" que só lê os capítulos
+que parecem mais prováveis de conter mudança recente, sem ler o
+documento inteiro nem comparar contra o código, pode passar despercebida
+mesmo quando encontra e corrige problemas reais no caminho - o
+problema não é o que ela acha, é o que ela erroneamente declara não
+existir. O protocolo formal (leitura sequencial de 100%, sem atalho)
+já estava registrado desde a versão 1.3.0 exatamente por causa de um
+episódio parecido; não seguir esse protocolo de novo, mesmo sem má
+intenção, repete o mesmo erro que ele foi criado pra evitar.
