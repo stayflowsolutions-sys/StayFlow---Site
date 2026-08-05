@@ -1237,6 +1237,35 @@ body::before{
 .chat-window h2{
   margin-bottom:6px;
 }
+.chat-window-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.chat-window-head h2{
+  margin:0;
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+/* So existem visualmente no mobile (a tela cheia de conversa/perfil
+   precisa de um jeito de voltar) - em desktop os 3 paineis do chat
+   ficam lado a lado o tempo todo, "voltar" nao faz sentido ali. */
+.chat-mobile-back,
+.chat-mobile-profile-btn{
+  display:none;
+  flex:0 0 auto;
+  width:34px;
+  height:34px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:#ffffff0d;
+  border:1px solid #ffffff18;
+  font-size:16px;
+}
 .chat-window .messages{
   flex:1 1 auto;
   min-height:0;
@@ -1826,14 +1855,46 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     max-width:90px;
   }
 
+  /* Chats no mobile: lista, conversa e perfil do hospede viram 3
+     telas cheias separadas (padrao WhatsApp) em vez de empilhadas na
+     mesma pagina - antes disso, a conversa em si so aparecia depois
+     de rolar por baixo da lista inteira. window.setChatMobileView()
+     (chats-live.js) troca data-mobile-view no .chat-layout; so o
+     painel correspondente fica visivel de cada vez. .main.chat-
+     fullscreen (aplicado so quando a pagina de chats esta aberta,
+     via openPage) devolve a altura fixa de tela inteira que o layout
+     de chat precisa pra rolar so a area de mensagens, nao a pagina
+     toda - as outras paginas continuam com altura livre normal. */
   .chat-layout{
     grid-template-columns:1fr;
+    height:100%;
+  }
+  .main.chat-fullscreen{
+    height:100vh;
+    overflow:hidden;
+  }
+  .main.chat-fullscreen .page.active{
+    height:100%;
   }
   #chats .chat-list,
   #chats .chat-window,
   #chats .guest-profile{
-    height:auto;
+    display:none;
+    height:100%;
     max-height:none;
+  }
+  .chat-layout[data-mobile-view="list"] .chat-list{
+    display:block;
+  }
+  .chat-layout[data-mobile-view="chat"] .chat-window{
+    display:flex;
+  }
+  .chat-layout[data-mobile-view="profile"] .guest-profile{
+    display:flex;
+  }
+  .chat-mobile-back,
+  .chat-mobile-profile-btn{
+    display:inline-flex;
   }
 
   /* Fix: grid de 12 colunas não colapsava no mobile, cortando os

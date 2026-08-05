@@ -3,6 +3,17 @@
 
 let stayflowCurrentGuestId = null;
 
+// Chats no mobile: lista, conversa e perfil do hospede sao 3 telas
+// cheias separadas (padrao WhatsApp), nao 3 paineis empilhados na
+// mesma tela - troca de tela e so essa variavel de estado no HTML,
+// o CSS (@media max-width:1100px) que decide o que mostrar/esconder
+// com base nela.
+window.setChatMobileView = function(view){
+  const layout = document.querySelector(".chat-layout");
+  if(layout) layout.dataset.mobileView = view;
+  window.scrollTo({top: 0});
+};
+
 // ===== Divisores de data no chat (estilo WhatsApp) =====
 // created_at vem do backend como "YYYY-MM-DD HH:MM:SS" (timezone local
 // do servidor). Comparamos só a parte da data (dia/mês/ano), sem
@@ -160,6 +171,9 @@ async function loadChats() {
                 document.querySelectorAll("#realChatList .chat-item").forEach(el => el.classList.remove("active"));
                 item.classList.add("active");
                 loadGuestProfile(chat.guest_id);
+                if(window.innerWidth <= 1100 && typeof setChatMobileView === "function"){
+                    setChatMobileView("chat");
+                }
             });
 
             list.appendChild(item);
