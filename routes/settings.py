@@ -44,7 +44,7 @@ _SETTINGS_TEXT_FIELDS = [
 
 _DEFAULT_ALERT_CHANNELS = ["dashboard"]
 _DEFAULT_PUSH_NOTIFICATION_TYPES = [
-    "opportunity", "reservation",
+    "opportunity", "reservation", "guest_needs_attention",
     "kitchen_order", "maintenance_ticket", "security_incident", "valet_request",
 ]
 

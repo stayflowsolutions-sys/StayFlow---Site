@@ -59,6 +59,12 @@ Rules:
 - intent must be one of: booking, tour, upsell, human_help, follow_up, general
 - score must be a number from 0 to 100
 - urgency must be one of: low, medium, high
+- set urgency to "high" whenever the guest shows frustration or
+  dissatisfaction, reports a problem/complaint about the stay (room,
+  cleanliness, staff, noise, etc.), or asks something you are not
+  confident you can resolve on your own - even when intent is
+  "general" (this is what triggers a real-time alert to the team, so
+  it must not be missed)
 - estimated_value must be a number
 - description must be in Portuguese
 - next_action must be in Portuguese
@@ -105,6 +111,34 @@ def analyze_message(hostel_id, guest_id, message, history=None):
     analysis = analyze_with_ai(message, history=history)
 
     if analysis.get("intent") == "general":
+        # "general" nunca vira oportunidade (nao e venda/reserva), mas
+        # ainda pode ser um hospede com problema, duvida sem resposta
+        # confiavel ou frustracao - isso merece alerta em tempo real pra
+        # equipe mesmo sem virar linha no Opportunity Center. Tipo
+        # separado de "opportunity" de proposito (pedido do usuario):
+        # nao e sobre venda, e sobre atencao humana urgente.
+        if analysis.get("urgency") == "high":
+            try:
+                from database import get_connection as _get_connection
+                from services.push_service import send_push_to_hostel
+
+                conn = _get_connection()
+                cursor = conn.cursor()
+                cursor.execute("SELECT name FROM guests WHERE id = ?", (guest_id,))
+                guest_row = cursor.fetchone()
+                conn.close()
+                guest_name = guest_row["name"] if guest_row and guest_row["name"] else "Hóspede"
+
+                send_push_to_hostel(
+                    hostel_id,
+                    title=f"⚠️ {guest_name}",
+                    body=analysis.get("description") or "Hóspede pode precisar de atenção.",
+                    url="/app",
+                    notification_type="guest_needs_attention",
+                )
+            except Exception as error:
+                print(f"AVISO: falha ao notificar hospede precisando de atencao por push: {error}")
+
         return analysis
 
     conn = get_connection()
