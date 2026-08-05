@@ -57,6 +57,26 @@
     <div id="hostelSelectorMessage" class="error"></div>
   </div>
 
+  <div id="twoFactorCard" class="auth-card" style="display:none;">
+    <div class="logo">
+      <img src="assets/images/logo2.png" alt="StayFlow">
+      <h1>Stay<span>Flow</span></h1>
+      <p>Smart Stay Solutions</p>
+    </div>
+
+    <h2>Verificação em duas etapas</h2>
+    <p>Digite o código de 6 dígitos do seu app autenticador (ou um código de backup, se perdeu acesso ao app).</p>
+
+    <form id="twoFactorForm">
+      <label for="twoFactorCode">Código</label>
+      <input id="twoFactorCode" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" required>
+
+      <button type="submit" class="auth-btn">Confirmar</button>
+    </form>
+
+    <div id="twoFactorMessage" class="error"></div>
+  </div>
+
   <script>
     const form = document.getElementById("loginForm");
     const msg  = document.getElementById("loginMessage");
@@ -67,6 +87,55 @@
       // Redireciona para o dashboard servido pelo Flask
       window.location.href = "/app";
     }
+
+    let pendingTwoFactorToken = null;
+
+    function showTwoFactorStep(challengeToken){
+      pendingTwoFactorToken = challengeToken;
+      document.getElementById("loginCard").style.display = "none";
+      document.getElementById("hostelSelector").style.display = "none";
+      document.getElementById("twoFactorCard").style.display = "block";
+      const codeInput = document.getElementById("twoFactorCode");
+      codeInput.value = "";
+      codeInput.focus();
+    }
+
+    document.getElementById("twoFactorForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const twoFactorMsg = document.getElementById("twoFactorMessage");
+      twoFactorMsg.textContent = "";
+
+      const code = document.getElementById("twoFactorCode").value.trim();
+      if (!code){
+        twoFactorMsg.textContent = "Digite o código.";
+        return;
+      }
+
+      try{
+        const res = await fetch("/login/2fa", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ challenge_token: pendingTwoFactorToken, code })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success){
+          twoFactorMsg.textContent = data.message || "Código inválido.";
+          return;
+        }
+
+        if (data.needs_hostel_selection){
+          document.getElementById("twoFactorCard").style.display = "none";
+          showHostelSelector(data);
+          return;
+        }
+
+        finishLogin(data);
+      }catch(err){
+        console.error(err);
+        twoFactorMsg.textContent = "Erro ao verificar código. Tente novamente.";
+      }
+    });
 
     function showHostelSelector(data){
       document.getElementById("loginCard").style.display = "none";
@@ -129,6 +198,11 @@
 
         if (!res.ok || !data.success){
           msg.textContent = data.message || "Email ou senha inválidos.";
+          return;
+        }
+
+        if (data.needs_2fa){
+          showTwoFactorStep(data.challenge_token);
           return;
         }
 

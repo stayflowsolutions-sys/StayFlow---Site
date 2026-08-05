@@ -1851,9 +1851,11 @@ async function deleteRoleConfirm(roleId){
         <h3 data-i18n="settings.security.loginAttemptsTitle" style="margin:24px 0 10px;font-size:14px;font-weight:800">Últimas tentativas de login</h3>
         <div id="loginAttemptsList" style="display:grid;gap:8px"></div>
 
-        <div style="margin-top:20px;padding-top:14px;border-top:1px solid #ffffff12;opacity:.5;">
+        <div style="margin-top:20px;padding-top:14px;border-top:1px solid #ffffff12;">
           <div data-i18n="settings.security.twoFATitle" style="font-size:13px;font-weight:700;margin-bottom:8px">Autenticação em duas etapas (2FA)</div>
-          <p data-i18n="settings.security.comingSoon" style="font-size:12px;color:var(--muted);margin:0">Em breve.</p>
+          <p data-i18n="settings.security.twoFADesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Além da senha, pede um código de 6 dígitos do seu celular (Google Authenticator ou similar) pra entrar — protege sua conta mesmo se a senha vazar.</p>
+          <div id="twoFactorStatusMessage" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+          <div id="twoFactorActions" style="display:flex;gap:10px;flex-wrap:wrap"></div>
         </div>
       </div>
 
@@ -3829,6 +3831,170 @@ async function deleteRoleConfirm(roleId){
       console.warn("Erro ao carregar tentativas de login:", e);
     }
   }
+
+  window.loadTwoFactorStatus = async function(){
+    const msgEl = document.getElementById("twoFactorStatusMessage");
+    const actionsEl = document.getElementById("twoFactorActions");
+    if(!msgEl || !actionsEl) return;
+
+    try{
+      const res = await fetch("/security/2fa/status", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      actionsEl.innerHTML = "";
+
+      if(data.enabled){
+        msgEl.textContent = T('settings.security.twoFAEnabled', '✅ Ativado · {count} código(s) de backup restante(s)', { count: data.backup_codes_remaining });
+
+        const regenBtn = document.createElement("button");
+        regenBtn.className = "btn secondary";
+        regenBtn.type = "button";
+        regenBtn.textContent = T('settings.security.twoFARegenerateBtn', 'Gerar novos códigos de backup');
+        regenBtn.onclick = regenerateTwoFactorBackupCodes;
+        actionsEl.appendChild(regenBtn);
+
+        const disableBtn = document.createElement("button");
+        disableBtn.className = "btn red";
+        disableBtn.type = "button";
+        disableBtn.textContent = T('settings.security.twoFADisableBtn', 'Desativar 2FA');
+        disableBtn.onclick = disableTwoFactor;
+        actionsEl.appendChild(disableBtn);
+      }else{
+        msgEl.textContent = T('settings.security.twoFADisabled', 'Não ativado.');
+
+        const enableBtn = document.createElement("button");
+        enableBtn.className = "btn";
+        enableBtn.type = "button";
+        enableBtn.textContent = T('settings.security.twoFAEnableBtn', 'Ativar 2FA');
+        enableBtn.onclick = openTwoFactorSetupModal;
+        actionsEl.appendChild(enableBtn);
+      }
+    }catch(e){
+      console.warn("Erro ao carregar status do 2FA:", e);
+    }
+  };
+
+  window.openTwoFactorSetupModal = async function(){
+    try{
+      const res = await fetch("/security/2fa/setup", { method: "POST", credentials: "same-origin" });
+      const data = await res.json();
+      if(!res.ok || !data.success){
+        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+
+      openGenericModal(T('settings.security.twoFASetupTitle', 'Ativar autenticação em duas etapas'), `
+        <p style="margin-bottom:14px">${T('settings.security.twoFASetupDesc', 'Escaneie o QR code com o Google Authenticator (ou outro app compatível), ou digite a chave manualmente. Depois, digite o código de 6 dígitos gerado pra confirmar.')}</p>
+        <div style="display:flex;justify-content:center;margin-bottom:14px">
+          <img src="${data.qr_code}" alt="QR code" style="width:200px;height:200px;background:white;border-radius:12px;padding:8px">
+        </div>
+        <p style="font-size:12px;color:var(--muted);text-align:center;margin:0 0 14px">${T('settings.security.twoFAManualKeyLabel', 'Chave manual')}: <code style="user-select:all">${data.secret}</code></p>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.security.twoFACodeLabel', 'Código de 6 dígitos')}</label>
+        <input type="text" id="twoFactorSetupCode" inputmode="numeric" autocomplete="one-time-code" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <div id="twoFactorSetupMessage" class="generic-modal-message"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button class="btn" type="button" onclick="confirmTwoFactorSetup()">${T('settings.security.twoFAConfirmBtn', 'Confirmar')}</button>
+        </div>
+      `);
+    }catch(e){
+      console.warn("Erro ao iniciar configuração do 2FA:", e);
+    }
+  };
+
+  window.confirmTwoFactorSetup = async function(){
+    const codeInput = document.getElementById("twoFactorSetupCode");
+    const msgEl = document.getElementById("twoFactorSetupMessage");
+    if(!codeInput) return;
+
+    const code = codeInput.value.trim();
+    if(!code){
+      if(msgEl){ msgEl.textContent = T('settings.security.twoFACodeRequired', 'Digite o código.'); msgEl.classList.add("error"); }
+      return;
+    }
+
+    try{
+      const res = await fetch("/security/2fa/confirm", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+
+      if(!res.ok || !data.success){
+        if(msgEl){ msgEl.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msgEl.classList.add("error"); }
+        return;
+      }
+
+      showTwoFactorBackupCodes(data.backup_codes, T('settings.security.twoFAEnabledSuccess', '2FA ativado com sucesso!'));
+      loadTwoFactorStatus();
+    }catch(e){
+      console.warn("Erro ao confirmar 2FA:", e);
+      if(msgEl){ msgEl.textContent = T('common.error.generic', 'Erro de conexão.'); msgEl.classList.add("error"); }
+    }
+  };
+
+  function showTwoFactorBackupCodes(codes, title){
+    const codesHtml = codes.map(c => `<div style="font-family:monospace;font-size:15px;padding:6px 0;text-align:center">${escapeHtml(c)}</div>`).join("");
+    openGenericModal(title, `
+      <p style="margin-bottom:14px;color:var(--red)">${T('settings.security.twoFABackupCodesWarning', 'Guarde esses códigos agora — cada um funciona uma única vez pra entrar se você perder acesso ao app autenticador. Eles não aparecem de novo depois de fechar esta tela.')}</p>
+      <div style="background:#02070d;border:1px solid var(--line);border-radius:15px;padding:14px">${codesHtml}</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="closeGenericModal()">${T('settings.security.twoFABackupCodesDoneBtn', 'Já salvei, concluir')}</button>
+      </div>
+    `);
+  }
+
+  window.disableTwoFactor = async function(){
+    const password = await stayflowPrompt(T('settings.security.twoFADisablePrompt', 'Digite sua senha pra confirmar a desativação do 2FA:'));
+    if(password === null) return;
+
+    try{
+      const res = await fetch("/security/2fa/disable", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+
+      if(!res.ok || !data.success){
+        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+
+      alert(T('settings.security.twoFADisabledSuccess', '2FA desativado.'));
+      loadTwoFactorStatus();
+    }catch(e){
+      console.warn("Erro ao desativar 2FA:", e);
+      alert(T('common.error.generic', 'Erro de conexão.'));
+    }
+  };
+
+  window.regenerateTwoFactorBackupCodes = async function(){
+    const password = await stayflowPrompt(T('settings.security.twoFARegeneratePrompt', 'Digite sua senha pra gerar novos códigos de backup (os antigos deixam de funcionar):'));
+    if(password === null) return;
+
+    try{
+      const res = await fetch("/security/2fa/backup-codes/regenerate", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+
+      if(!res.ok || !data.success){
+        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+
+      showTwoFactorBackupCodes(data.backup_codes, T('settings.security.twoFANewBackupCodesTitle', 'Novos códigos de backup'));
+      loadTwoFactorStatus();
+    }catch(e){
+      console.warn("Erro ao gerar novos códigos de backup:", e);
+      alert(T('common.error.generic', 'Erro de conexão.'));
+    }
+  };
 
   // Preenche o campo de texto do chat, igual digitar manualmente - nunca
   // chama mockSend() por conta propria. Assim, quando o envio real
@@ -7815,6 +7981,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     // especial - cada uma so ve/mexe na propria conta.
     if (typeof loadActiveSessions === "function") loadActiveSessions();
     if (typeof loadLoginAttempts === "function") loadLoginAttempts();
+    if (typeof loadTwoFactorStatus === "function") loadTwoFactorStatus();
 
     if (typeof handleMetaOAuthReturn === "function") handleMetaOAuthReturn();
   });
