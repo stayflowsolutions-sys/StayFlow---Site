@@ -593,6 +593,26 @@ def create_database():
     )
     """)
 
+    # Inscricao push (Web Push API) de UM dispositivo/navegador especifico
+    # de UMA pessoa da equipe - nao e por hostel, e por PESSOA+DISPOSITIVO
+    # (o mesmo membro da equipe pode ter PC e celular inscritos ao mesmo
+    # tempo, cada um sua propria linha). endpoint e unico globalmente (e
+    # a URL do proprio servico de push do navegador - FCM, Mozilla, etc -
+    # ja garante unicidade por instalacao); reinscrever o mesmo endpoint
+    # so atualiza as chaves.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        endpoint TEXT NOT NULL UNIQUE,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # Sessao rastreada no servidor (Sessao 7) - substitui o cookie
     # assinado client-side, que carregava user_id/hostel_id direto.
     # Agora o cookie so guarda um token opaco (id), e cada requisicao
@@ -3118,6 +3138,88 @@ def is_within_quiet_hours(hostel_id):
     return now_local >= start or now_local < end
 
 
+def save_push_subscription(hostel_id, user_id, endpoint, p256dh, auth, user_agent=None):
+    """
+    Grava (ou atualiza, se o mesmo endpoint ja existia) a inscricao push
+    de um dispositivo. Reinscrever o mesmo navegador manda o MESMO
+    endpoint de novo - por isso INSERT OR REPLACE por endpoint, em vez
+    de duplicar linha.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO push_subscriptions (hostel_id, user_id, endpoint, p256dh, auth, user_agent)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(endpoint) DO UPDATE SET
+            hostel_id = excluded.hostel_id,
+            user_id = excluded.user_id,
+            p256dh = excluded.p256dh,
+            auth = excluded.auth,
+            user_agent = excluded.user_agent
+        """,
+        (hostel_id, user_id, endpoint, p256dh, auth, user_agent)
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_push_subscription(hostel_id, endpoint):
+    """
+    Remove uma inscricao push - usado tanto pro botao de desativar
+    quanto pra limpeza automatica quando o proprio navegador ja
+    invalidou o endpoint (404/410 do servico de push). Filtra por
+    hostel_id tambem (alem do endpoint, que ja e unico globalmente) -
+    mesma postura de seguranca ja usada no resto do sistema: uma pessoa
+    autenticada no Hostel A nunca deve conseguir apagar um registro do
+    Hostel B, mesmo que de algum jeito soubesse o endpoint exato.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM push_subscriptions WHERE endpoint = ? AND hostel_id = ?",
+        (endpoint, hostel_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_push_subscriptions(hostel_id):
+    """Todas as inscricoes push (todos os dispositivos, de todas as pessoas da equipe) de uma hospedagem."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE hostel_id = ?",
+        (hostel_id,)
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def count_push_subscriptions(hostel_id):
+    """Quantos dispositivos tem notificacao push ativada nessa hospedagem - usado so pra exibir status em Configuracoes."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) AS cnt FROM push_subscriptions WHERE hostel_id = ?", (hostel_id,))
+    count = cursor.fetchone()["cnt"]
+    conn.close()
+    return count
+
+
+def has_push_subscription(user_id, endpoint):
+    """Confere se ESTE endpoint (dispositivo) ja esta inscrito por ESTA pessoa - usado pra devolver o estado certo do botao ao carregar a tela, num dispositivo que ja tinha ativado antes."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT 1 FROM push_subscriptions WHERE user_id = ? AND endpoint = ?",
+        (user_id, endpoint)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row is not None
+
+
 # ===== Consultas de leitura reaproveitadas pelas rotas normais E pelas
 # tools do agente Ask StayFlow (Fase A) - uma unica fonte de verdade
 # pra cada consulta, nunca duplicada entre rota HTTP e tool de IA. =====
@@ -4577,6 +4679,17 @@ def create_reservation_from_chat(hostel_id, guest_id, guest_name, category_name,
     sync_availability_to_channel(hostel_id, category_name, checkin_date, checkout_date)
     sync_booking_to_channel(hostel_id, reservation_id)
     dispatch_reservation_webhook(hostel_id, reservation_id, "created")
+
+    try:
+        from services.push_service import send_push_to_hostel
+        send_push_to_hostel(
+            hostel_id,
+            title=f"📅 Reserva pendente — {guest_name or 'Hóspede'}",
+            body=f"{category_name}, {checkin_date} a {checkout_date}. Confirmar com o hóspede.",
+            url="/app",
+        )
+    except Exception as error:
+        print(f"AVISO: falha ao notificar nova reserva por push: {error}")
 
     return {
         "reservation_id": reservation_id,

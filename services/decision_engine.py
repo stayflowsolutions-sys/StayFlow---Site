@@ -126,6 +126,7 @@ def analyze_message(hostel_id, guest_id, message, history=None):
         (guest_id, analysis.get("intent"))
     )
     existing = cursor.fetchone()
+    is_new_opportunity = existing is None
 
     if existing:
         # created_at tambem funciona como "ultima atividade" aqui (nao e
@@ -176,7 +177,28 @@ def analyze_message(hostel_id, guest_id, message, history=None):
             )
         )
 
+    cursor.execute("SELECT name FROM guests WHERE id = ?", (guest_id,))
+    guest_row = cursor.fetchone()
+    guest_name = guest_row["name"] if guest_row and guest_row["name"] else "Hóspede"
+
     conn.commit()
     conn.close()
+
+    # So notifica em oportunidade NOVA (nao em toda mensagem que
+    # atualiza uma ja existente) - senao uma conversa longa e urgente
+    # manda uma notificacao por mensagem, o que rapidamente vira ruido
+    # em vez de alerta util. Best-effort: falha no envio nunca deve
+    # quebrar a analise da mensagem em si.
+    if is_new_opportunity and analysis.get("urgency") == "high":
+        try:
+            from services.push_service import send_push_to_hostel
+            send_push_to_hostel(
+                hostel_id,
+                title=f"🔥 {guest_name}",
+                body=analysis.get("next_action") or analysis.get("description") or "Nova oportunidade de alta prioridade.",
+                url="/app",
+            )
+        except Exception as error:
+            print(f"AVISO: falha ao notificar nova oportunidade por push: {error}")
 
     return analysis

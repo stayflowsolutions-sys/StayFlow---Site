@@ -33,6 +33,7 @@ from routes.maintenance import maintenance_bp
 from routes.patrimonial_security import patrimonial_security_bp
 from routes.parking import parking_bp
 from routes.scheduling import scheduling_bp
+from routes.push import push_bp
 
 app = Flask(__name__, static_folder=None)
 
@@ -77,6 +78,7 @@ app.register_blueprint(maintenance_bp)
 app.register_blueprint(patrimonial_security_bp)
 app.register_blueprint(parking_bp)
 app.register_blueprint(scheduling_bp)
+app.register_blueprint(push_bp)
 
 # Caminho do frontend: por padrão assume que a pasta do site fica ao lado
 # da pasta do backend (ex: C:\StayFlow\backend + C:\StayFlow\StayFlow---Site).
@@ -97,6 +99,17 @@ def home():
 @app.route("/app")
 def dashboard_page():
     return send_from_directory(FRONTEND_DIR, "dashboard.html")
+
+
+@app.route("/sw.js")
+def service_worker():
+    # Precisa ser servido na RAIZ do site (nao em /assets/js/sw.js) pra
+    # o escopo padrao do service worker cobrir o site inteiro - um
+    # service worker so controla paginas dentro do seu proprio caminho
+    # (ou abaixo), por padrao do navegador.
+    response = send_from_directory(FRONTEND_DIR, "sw.js", mimetype="application/javascript")
+    response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 # Serve qualquer página .html solta na raiz do frontend

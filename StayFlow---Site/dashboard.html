@@ -1779,17 +1779,24 @@ async function deleteRoleConfirm(roleId){
           <input type="checkbox" data-setting="alert_channels" checked>
         </label>
 
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;opacity:.5;">
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;">
+          <div data-i18n="settings.communication.pushTitle" style="font-size:13px;font-weight:700;margin-bottom:4px">🔔 Notificações no PC e celular</div>
+          <p data-i18n="settings.communication.pushDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Receba um aviso no navegador quando surgir algo urgente (nova oportunidade de alta prioridade, reserva pendente de confirmação), mesmo com a aba fechada. Ative em cada dispositivo separadamente.</p>
+          <div id="pushStatusMessage" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+          <button class="btn secondary" type="button" id="pushToggleBtn" onclick="togglePushNotifications()" data-i18n="settings.communication.pushEnableBtn">Ativar neste dispositivo</button>
+        </div>
+
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;">
           <div data-i18n="settings.communication.quietHoursTitle" style="font-size:13px;font-weight:700;margin-bottom:8px">Horário de silêncio</div>
-          <p data-i18n="settings.communication.quietHoursDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Ainda não aplicado — vai silenciar mensagens proativas quando o Ask StayFlow (function calling) existir. Não afeta resposta direta a hóspede.</p>
+          <p data-i18n="settings.communication.quietHoursDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Notificações push não são enviadas nesse intervalo (a resposta automática ao hóspede continua funcionando normalmente — isso afeta só o aviso pra equipe).</p>
           <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
             <div class="span-6">
               <label data-i18n="settings.communication.quietHoursStartLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Início</label>
-              <input type="time" data-setting="quiet_hours_start" disabled>
+              <input type="time" data-setting="quiet_hours_start">
             </div>
             <div class="span-6">
               <label data-i18n="settings.communication.quietHoursEndLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Fim</label>
-              <input type="time" data-setting="quiet_hours_end" disabled>
+              <input type="time" data-setting="quiet_hours_end">
             </div>
           </div>
         </div>
@@ -3031,6 +3038,135 @@ async function deleteRoleConfirm(roleId){
         msg.textContent = T('common.connectionError', 'Erro de conexão.');
         msg.classList.add("error");
       }
+    }
+  };
+
+  // ===== Notificações push (Web Push API) =====
+  // Base64url -> Uint8Array: formato que pushManager.subscribe exige
+  // pra applicationServerKey (a chave publica VAPID chega do backend
+  // como string base64url comum).
+  function urlBase64ToUint8Array(base64String){
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for(let i = 0; i < rawData.length; i++){
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  async function getCurrentPushSubscription(){
+    if(!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
+    try{
+      const registration = await navigator.serviceWorker.ready;
+      return await registration.pushManager.getSubscription();
+    }catch(e){
+      return null;
+    }
+  }
+
+  window.initPushUI = async function(){
+    const btn = document.getElementById("pushToggleBtn");
+    const msgEl = document.getElementById("pushStatusMessage");
+    if(!btn || !msgEl) return;
+
+    if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)){
+      btn.style.display = "none";
+      msgEl.textContent = T('settings.communication.pushUnsupported', 'Seu navegador não suporta notificações push. No iPhone, adicione a StayFlow à Tela de Início primeiro (compartilhar → Adicionar à Tela de Início) — o Safari só permite push depois disso.');
+      return;
+    }
+
+    try{
+      await navigator.serviceWorker.register("/sw.js");
+    }catch(e){
+      console.warn("Erro ao registrar service worker:", e);
+    }
+
+    const subscription = await getCurrentPushSubscription();
+
+    try{
+      const params = subscription ? `?endpoint=${encodeURIComponent(subscription.endpoint)}` : "";
+      const res = await fetch(`/push/status${params}`, { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      if(!data.configured){
+        btn.style.display = "none";
+        msgEl.textContent = "";
+        return;
+      }
+
+      window.STAYFLOW_VAPID_PUBLIC_KEY = data.public_key;
+      btn.style.display = "";
+
+      const countMsg = data.subscription_count > 0
+        ? T('settings.communication.pushActiveOnCount', '{count} dispositivo(s) recebendo notificações nesta hospedagem.', { count: data.subscription_count })
+        : "";
+
+      if(subscription && data.this_device_subscribed){
+        btn.textContent = T('settings.communication.pushDisableBtn', 'Desativar neste dispositivo');
+        btn.dataset.subscribed = "true";
+      }else{
+        btn.textContent = T('settings.communication.pushEnableBtn', 'Ativar neste dispositivo');
+        btn.dataset.subscribed = "false";
+      }
+      msgEl.textContent = countMsg;
+    }catch(e){
+      console.warn("Erro ao carregar status de notificações push:", e);
+    }
+  };
+
+  window.togglePushNotifications = async function(){
+    const btn = document.getElementById("pushToggleBtn");
+    const msgEl = document.getElementById("pushStatusMessage");
+    if(!btn) return;
+
+    const isSubscribed = btn.dataset.subscribed === "true";
+    btn.disabled = true;
+
+    try{
+      if(isSubscribed){
+        const subscription = await getCurrentPushSubscription();
+        if(subscription){
+          await fetch("/push/subscribe", {
+            method: "DELETE", credentials: "same-origin",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ endpoint: subscription.endpoint })
+          });
+          await subscription.unsubscribe();
+        }
+      }else{
+        const permission = await Notification.requestPermission();
+        if(permission !== "granted"){
+          if(msgEl) msgEl.textContent = T('settings.communication.pushPermissionDenied', 'Permissão de notificação negada pelo navegador.');
+          return;
+        }
+
+        if(!window.STAYFLOW_VAPID_PUBLIC_KEY){
+          if(msgEl) msgEl.textContent = T('settings.communication.pushUnsupported', 'Notificações push ainda não estão configuradas neste servidor.');
+          return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(window.STAYFLOW_VAPID_PUBLIC_KEY),
+        });
+
+        const subJson = subscription.toJSON();
+        await fetch("/push/subscribe", {
+          method: "POST", credentials: "same-origin",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ endpoint: subJson.endpoint, keys: subJson.keys })
+        });
+      }
+    }catch(e){
+      console.warn("Erro ao alternar notificações push:", e);
+      if(msgEl) msgEl.textContent = T('common.error.generic', 'Erro de conexão.');
+    }finally{
+      btn.disabled = false;
+      initPushUI();
     }
   };
 
@@ -7468,6 +7604,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadFacebookSettings === "function") loadFacebookSettings();
     if (typeof loadInstagramSettings === "function") loadInstagramSettings();
     if (typeof loadQuickReplies === "function") loadQuickReplies();
+    if (typeof initPushUI === "function") initPushUI();
 
     // Gestao da propria conta (senha, sessoes, historico de login) e
     // acessivel pra qualquer pessoa autenticada, sem exigir permissao
