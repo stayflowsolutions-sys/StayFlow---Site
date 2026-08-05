@@ -12,6 +12,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "settings.quickReplies.summaryDesc": "Frases prontas pra responder hóspedes mais rápido no chat.",
+    "settings.quickReplies.summaryCount": "{count} cadastrada(s)",
     "settings.communication.pushSummaryActiveHere": "✅ Ativado neste dispositivo",
     "settings.communication.pushSummaryInactiveHere": "Não ativado neste dispositivo",
     "settings.communication.quietHoursSummaryActive": "Silêncio {start}–{end}",
@@ -947,6 +949,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "settings.quickReplies.summaryDesc": "Ready-made phrases to reply to guests faster in chat.",
+    "settings.quickReplies.summaryCount": "{count} saved",
     "settings.communication.pushSummaryActiveHere": "✅ Enabled on this device",
     "settings.communication.pushSummaryInactiveHere": "Not enabled on this device",
     "settings.communication.quietHoursSummaryActive": "Quiet {start}–{end}",
@@ -1865,6 +1869,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "settings.quickReplies.summaryDesc": "Frases listas para responder a los huéspedes más rápido en el chat.",
+    "settings.quickReplies.summaryCount": "{count} guardada(s)",
     "settings.communication.pushSummaryActiveHere": "✅ Activado en este dispositivo",
     "settings.communication.pushSummaryInactiveHere": "No activado en este dispositivo",
     "settings.communication.quietHoursSummaryActive": "Silencio {start}–{end}",
@@ -2783,6 +2789,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "settings.quickReplies.summaryDesc": "Phrases prêtes à l'emploi pour répondre plus vite aux clients dans le chat.",
+    "settings.quickReplies.summaryCount": "{count} enregistrée(s)",
     "settings.communication.pushSummaryActiveHere": "✅ Activé sur cet appareil",
     "settings.communication.pushSummaryInactiveHere": "Non activé sur cet appareil",
     "settings.communication.quietHoursSummaryActive": "Silence {start}–{end}",
@@ -3701,6 +3709,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "settings.quickReplies.summaryDesc": "Vorgefertigte Sätze, um Gästen im Chat schneller zu antworten.",
+    "settings.quickReplies.summaryCount": "{count} gespeichert",
     "settings.communication.pushSummaryActiveHere": "✅ Auf diesem Gerät aktiviert",
     "settings.communication.pushSummaryInactiveHere": "Auf diesem Gerät nicht aktiviert",
     "settings.communication.quietHoursSummaryActive": "Ruhe {start}–{end}",
