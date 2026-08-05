@@ -1883,13 +1883,17 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     height:100%;
     max-height:none;
   }
-  .chat-layout[data-mobile-view="list"] .chat-list{
+  /* #chats. prefixado igual a regra de esconder acima - senao a
+     especificidade de "#chats .chat-list" (ID) ganha de qualquer
+     regra sem ID, mesmo vindo depois no arquivo, e a lista fica
+     escondida pra sempre (bug real: apareceu vazio em producao). */
+  #chats .chat-layout[data-mobile-view="list"] .chat-list{
     display:block;
   }
-  .chat-layout[data-mobile-view="chat"] .chat-window{
+  #chats .chat-layout[data-mobile-view="chat"] .chat-window{
     display:flex;
   }
-  .chat-layout[data-mobile-view="profile"] .guest-profile{
+  #chats .chat-layout[data-mobile-view="profile"] .guest-profile{
     display:flex;
   }
   .chat-mobile-back,
