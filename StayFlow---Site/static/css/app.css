@@ -1907,6 +1907,18 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   .span-3,.span-4,.span-5,.span-6,.span-7,.span-8,.span-9{
     grid-column:span 12;
   }
+  /* Configuracoes usa uma grade PROPRIA (#settings > .grid com 320px
+     fixos pro menu + resto pro conteudo, mais especifica que a regra
+     generica acima por causa do #settings) - ela vencia mesmo no
+     mobile, sobrando so uns 80px pra coluna de conteudo inteira
+     (tela "totalmente desordenada" reportada). Mesmo raciocinio pro
+     grid interno da aba Empresa (campos span-6 lado a lado). */
+  #settings > .grid{
+    grid-template-columns:1fr;
+  }
+  #settings .span-8 > .grid > .span-6{
+    grid-column:span 12;
+  }
   /* KPIs ficam 2 por linha (nao empilhados 1 por linha) - reduz muito
      a altura total do Dashboard/Reservas/Financeiro no celular sem
      esconder nenhuma informacao, so deixa mais compacto. Padrao comum
