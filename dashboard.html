@@ -56,7 +56,7 @@ function T(key, fallback, ph){
 // escolhida (bug real reportado pelo usuario: selecionar peso
 // argentino continuava tratando os valores como dolar). window.
 // STAYFLOW_CURRENCY comeca em USD (mesmo padrao anterior) ate
-// loadCurrencySetting() confirmar a moeda real do hostel, chamado bem
+// loadCurrencySetting() confirmar a moeda real da hospedagem, chamado bem
 // no inicio do stayflow:session-ready, antes de qualquer loadX() que
 // exiba valor monetario.
 const STAYFLOW_CURRENCY_SYMBOLS = {
@@ -5571,7 +5571,7 @@ function updateAlertBadge(){
 
 // Cozinha/Manutencao/Seguranca Patrimonial/Estacionamento nao sao mais
 // paginas proprias no menu lateral - viraram abas dentro de Operacoes,
-// pra nao espalhar 4 itens de menu que a maioria dos hostels pequenos
+// pra nao espalhar 4 itens de menu que a maioria das hospedagens pequenas
 // nem usa todos. Cada aba mantem seus proprios IDs/loadX() de sempre,
 // so a secao que os envolve mudou de <section class="page"> pra
 // <div data-ops-section>.
