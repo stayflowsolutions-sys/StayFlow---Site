@@ -1898,10 +1898,28 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   }
 
   /* Fix: grid de 12 colunas não colapsava no mobile, cortando os
-     KPIs e qualquer card com span-3/4/5/6/7/8/9 (regra que faltava
-     no arquivo original — não havia guerra de especificidade aqui). */
-  .span-3,.span-4,.span-5,.span-6,.span-7,.span-8,.span-9,.kpi{
+     cards com span-3/4/5/6/7/8/9 (regra que faltava no arquivo
+     original — não havia guerra de especificidade aqui). */
+  .span-3,.span-4,.span-5,.span-6,.span-7,.span-8,.span-9{
     grid-column:span 12;
+  }
+  /* KPIs ficam 2 por linha (nao empilhados 1 por linha) - reduz muito
+     a altura total do Dashboard/Reservas/Financeiro no celular sem
+     esconder nenhuma informacao, so deixa mais compacto. Padrao comum
+     em dashboard mobile premium (grid de estatisticas pequenas). */
+  .kpi{
+    grid-column:span 6;
+    min-height:120px;
+    padding:16px;
+  }
+  .kpi-top{
+    height:32px;
+  }
+  .kpi .value{
+    font-size:22px;
+  }
+  .brief-metrics{
+    grid-template-columns:repeat(2,1fr);
   }
 
   /* Tabela rola por conta propria em vez de estourar a largura do
