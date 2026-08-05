@@ -1981,44 +1981,6 @@ async function deleteRoleConfirm(roleId){
   </div>
 </section>
 
-</main>
-</div>
-
-<!-- Ask StayFlow -->
-<div id="askOverlay" class="ask-overlay" onclick="closeAskStayFlow()"></div>
-
-<aside id="askPanel" class="ask-panel">
-  <div class="ask-head">
-    <div>
-      <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span><span data-i18n="ask.title">Pergunte à StayFlow</span></h2>
-      <p data-i18n="ask.subtitle">IA interna da sua hospedagem</p>
-    </div>
-    <button class="close-btn" onclick="closeAskStayFlow()">×</button>
-  </div>
-
-  <div class="ask-body">
-    <div class="ask-message bot" data-i18n="ask.welcomeMsg">
-      Oi! Assim que seu StayFlow estiver conectado a dados reais, posso analisar reservas, conversas, receita, limpeza e oportunidades. O que você quer resolver agora?
-    </div>
-    <button class="ask-suggestion" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]')); closeAskStayFlow()" data-i18n="ask.suggestion1">Quais oportunidades existem hoje?</button>
-    <button class="ask-suggestion" onclick="openPage('chats', document.querySelector('[data-page=chats]')); closeAskStayFlow()" data-i18n="ask.suggestion2">Quem precisa de resposta humana?</button>
-    <button class="ask-suggestion" onclick="openPage('revenue', document.querySelector('[data-page=revenue]')); closeAskStayFlow()" data-i18n="ask.suggestion3">Onde posso aumentar receita?</button>
-  </div>
-
-  <div class="ask-input">
-    <input data-i18n-placeholder="ask.inputPlaceholder" placeholder="Pergunte algo sobre a operação...">
-    <button class="btn" onclick="askStayFlowSend(this)" data-i18n="chats.sendBtn">Enviar</button>
-  </div>
-</aside>
-
-<button class="reserva-floating" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" data-i18n-title="reservations.newReservation.title2" title="Nova reserva">
-  <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#06101b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-</button>
-
-<button class="ask-floating" onclick="openAskStayFlow()" aria-label="Pergunte à StayFlow" data-i18n-title="ask.title" title="Pergunte à StayFlow">
-  <span class="brand-logo-mask" role="img" aria-label="StayFlow"></span>
-</button>
-
 <!-- TEAM -->
 <section id="team" class="page">
   <div class="ops-tabs">
@@ -2073,6 +2035,44 @@ async function deleteRoleConfirm(roleId){
     </div>
   </div>
 </section>
+
+</main>
+</div>
+
+<!-- Ask StayFlow -->
+<div id="askOverlay" class="ask-overlay" onclick="closeAskStayFlow()"></div>
+
+<aside id="askPanel" class="ask-panel">
+  <div class="ask-head">
+    <div>
+      <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span><span data-i18n="ask.title">Pergunte à StayFlow</span></h2>
+      <p data-i18n="ask.subtitle">IA interna da sua hospedagem</p>
+    </div>
+    <button class="close-btn" onclick="closeAskStayFlow()">×</button>
+  </div>
+
+  <div class="ask-body">
+    <div class="ask-message bot" data-i18n="ask.welcomeMsg">
+      Oi! Assim que seu StayFlow estiver conectado a dados reais, posso analisar reservas, conversas, receita, limpeza e oportunidades. O que você quer resolver agora?
+    </div>
+    <button class="ask-suggestion" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]')); closeAskStayFlow()" data-i18n="ask.suggestion1">Quais oportunidades existem hoje?</button>
+    <button class="ask-suggestion" onclick="openPage('chats', document.querySelector('[data-page=chats]')); closeAskStayFlow()" data-i18n="ask.suggestion2">Quem precisa de resposta humana?</button>
+    <button class="ask-suggestion" onclick="openPage('revenue', document.querySelector('[data-page=revenue]')); closeAskStayFlow()" data-i18n="ask.suggestion3">Onde posso aumentar receita?</button>
+  </div>
+
+  <div class="ask-input">
+    <input data-i18n-placeholder="ask.inputPlaceholder" placeholder="Pergunte algo sobre a operação...">
+    <button class="btn" onclick="askStayFlowSend(this)" data-i18n="chats.sendBtn">Enviar</button>
+  </div>
+</aside>
+
+<button class="reserva-floating" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" data-i18n-title="reservations.newReservation.title2" title="Nova reserva">
+  <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#06101b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<button class="ask-floating" onclick="openAskStayFlow()" aria-label="Pergunte à StayFlow" data-i18n-title="ask.title" title="Pergunte à StayFlow">
+  <span class="brand-logo-mask" role="img" aria-label="StayFlow"></span>
+</button>
 
 <div id="genericModalOverlay" class="generic-modal-overlay" onclick="closeGenericModal()"></div>
 <div id="genericModal" class="generic-modal">
