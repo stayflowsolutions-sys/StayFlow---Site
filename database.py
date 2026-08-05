@@ -3566,6 +3566,85 @@ def get_guest_profile(hostel_id, guest_id):
     }
 
 
+def erase_guest_data(hostel_id, guest_id):
+    """
+    Remove/anonimiza os dados pessoais de um hospede a pedido dele
+    (direito ao esquecimento - LGPD/Ley 25.326). Documentos de
+    identidade sao apagados de verdade (arquivo no disco + registro no
+    banco) e mensagens/conversas sao apagadas por completo. O cadastro
+    do hospede em si NAO e deletado - fica anonimizado (nome/telefone/
+    email/documento zerados) pra reservas/oportunidades/cambios ja
+    registrados (registros financeiros/operacionais legitimos de
+    manter) nao ficarem orfaos nem perderem o historico de valores.
+
+    Limitacao conhecida: a descricao de oportunidades (texto livre
+    gerado pela IA a partir da conversa) pode mencionar o nome do
+    hospede dentro do texto solto - nao e escaneada/limpa aqui, exigiria
+    processamento de linguagem natural pra fazer isso com seguranca
+    sem apagar contexto de negocio relevante.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM guests WHERE id = ? AND hostel_id = ?", (guest_id, hostel_id))
+    if not cursor.fetchone():
+        conn.close()
+        raise ValueError("Hospede nao encontrado.")
+
+    cursor.execute(
+        "SELECT file_path FROM guest_documents WHERE hostel_id = ? AND guest_id = ?",
+        (hostel_id, guest_id)
+    )
+    file_paths = [row["file_path"] for row in cursor.fetchall()]
+    cursor.execute(
+        "DELETE FROM guest_documents WHERE hostel_id = ? AND guest_id = ?",
+        (hostel_id, guest_id)
+    )
+
+    cursor.execute("SELECT id FROM conversations WHERE guest_id = ?", (guest_id,))
+    conversation_ids = [row["id"] for row in cursor.fetchall()]
+    for conversation_id in conversation_ids:
+        cursor.execute("DELETE FROM messages WHERE conversation_id = ?", (conversation_id,))
+    cursor.execute("DELETE FROM conversations WHERE guest_id = ?", (guest_id,))
+
+    cursor.execute("DELETE FROM guest_channel_identities WHERE guest_id = ?", (guest_id,))
+
+    anonymized_name = "Hóspede removido"
+    cursor.execute(
+        """
+        UPDATE guests
+        SET name = ?, phone = NULL, email = NULL, date_of_birth = NULL,
+            nationality = NULL, address = NULL, document_type = NULL,
+            document_number = NULL
+        WHERE id = ? AND hostel_id = ?
+        """,
+        (anonymized_name, guest_id, hostel_id)
+    )
+    cursor.execute(
+        "UPDATE reservations SET guest_name = ? WHERE guest_id = ? AND hostel_id = ?",
+        (anonymized_name, guest_id, hostel_id)
+    )
+    cursor.execute(
+        "UPDATE vehicles SET guest_name = ? WHERE guest_id = ? AND hostel_id = ?",
+        (anonymized_name, guest_id, hostel_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    # Apaga os arquivos do disco POR FORA da transacao - se algum
+    # arquivo falhar ao remover (ex: ja tinha sido movido), os dados
+    # no banco ja estao limpos, que e a parte que realmente importa
+    # pra privacidade (o registro que aponta pro documento ja sumiu).
+    for file_path in file_paths:
+        try:
+            os.remove(file_path)
+        except OSError:
+            pass
+
+    return {"erased_documents": len(file_paths), "erased_conversations": len(conversation_ids)}
+
+
 def get_guest_reservations(hostel_id, guest_id):
     """
     Historico de estadias desse hospede - reservas fixas (com amount

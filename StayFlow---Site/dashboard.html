@@ -7080,8 +7080,41 @@ function renderGuestProfileModal(profile, editMode){
       <h4>${T('finance.exchange.title', '💱 Câmbio (pagamento em moeda estrangeira)')}</h4>
       ${exchangesHtml}
     </div>
+
+    <div class="guest-profile-section">
+      <h4>${T('guests.privacy.title', '🔒 Privacidade')}</h4>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px">${T('guests.privacy.desc', 'A pedido do hóspede, remove documentos e conversas, e anonimiza nome/telefone/email/documento. Reservas e valores ficam registrados sem identificar a pessoa. Ação irreversível.')}</p>
+      <button class="btn red" type="button" onclick="eraseGuestDataUI(${g.id})">${T('guests.privacy.eraseBtn', '🗑️ Excluir dados do hóspede')}</button>
+      <div id="guestEraseMessage" class="generic-modal-message"></div>
+    </div>
   `, true);
 }
+
+window.eraseGuestDataUI = async function(guestId){
+  const confirmed = await stayflowConfirm(
+    T('guests.privacy.confirmMessage', 'Isso apaga documentos e conversas desse hóspede pra sempre, e remove nome/telefone/email/documento do cadastro. Reservas e valores ficam guardados sem identificar a pessoa. Não tem como desfazer. Confirmar?'),
+    { okLabel: T('guests.privacy.confirmOk', 'Excluir dados'), cancelLabel: T('common.cancel', 'Cancelar') }
+  );
+  if(!confirmed) return;
+
+  const msg = document.getElementById("guestEraseMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  try{
+    const res = await fetch(`/guests/${guestId}/erase-data`, {
+      method: "POST", credentials: "same-origin"
+    });
+    if(!res.ok){
+      if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    if(typeof loadGuests === "function") loadGuests();
+  }catch(e){
+    console.warn("Erro ao excluir dados do hóspede:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
 
 window.saveGuestProfileEdits = async function(guestId){
   const msg = document.getElementById("guestProfileMessage");

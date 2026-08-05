@@ -7,6 +7,7 @@ from database import (
     get_guest_document_file,
     update_guest_profile,
     save_guest_document,
+    erase_guest_data,
 )
 from services.translation_service import translate_opportunity_fields
 from utils.tenant import require_permission
@@ -108,5 +109,22 @@ def upload_guest_document_route(hostel_id, guest_id):
         result = save_guest_document(hostel_id, guest_id, file.read(), mime_type)
     except Exception as error:
         return jsonify({"success": False, "message": str(error)}), 400
+
+    return jsonify({"success": True, **result})
+
+
+@guests_bp.route("/guests/<int:guest_id>/erase-data", methods=["POST"])
+@require_permission("guests")
+def erase_guest_data_route(hostel_id, guest_id):
+    """
+    Direito ao esquecimento - apaga documentos/conversas de verdade e
+    anonimiza o cadastro do hospede (nome/telefone/email/documento).
+    Irreversivel de proposito (sem "lixeira"): o frontend confirma com
+    a pessoa antes de chamar essa rota.
+    """
+    try:
+        result = erase_guest_data(hostel_id, guest_id)
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 404
 
     return jsonify({"success": True, **result})
