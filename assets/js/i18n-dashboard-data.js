@@ -12,6 +12,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypesTitle": "O que deve notificar",
+    "settings.communication.pushTypeOpportunity": "Nova oportunidade de alta prioridade",
+    "settings.communication.pushTypeReservation": "Nova reserva pendente de confirmação",
+    "settings.communication.pushTypeChatMessage": "Toda mensagem nova no chat",
     "settings.quickReplies.summaryDesc": "Frases prontas pra responder hóspedes mais rápido no chat.",
     "settings.quickReplies.summaryCount": "{count} cadastrada(s)",
     "settings.communication.pushSummaryActiveHere": "✅ Ativado neste dispositivo",
@@ -949,6 +953,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypesTitle": "What should notify",
+    "settings.communication.pushTypeOpportunity": "New high-priority opportunity",
+    "settings.communication.pushTypeReservation": "New reservation pending confirmation",
+    "settings.communication.pushTypeChatMessage": "Every new chat message",
     "settings.quickReplies.summaryDesc": "Ready-made phrases to reply to guests faster in chat.",
     "settings.quickReplies.summaryCount": "{count} saved",
     "settings.communication.pushSummaryActiveHere": "✅ Enabled on this device",
@@ -1869,6 +1877,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypesTitle": "Qué debe notificar",
+    "settings.communication.pushTypeOpportunity": "Nueva oportunidad de alta prioridad",
+    "settings.communication.pushTypeReservation": "Nueva reserva pendiente de confirmación",
+    "settings.communication.pushTypeChatMessage": "Cada mensaje nuevo en el chat",
     "settings.quickReplies.summaryDesc": "Frases listas para responder a los huéspedes más rápido en el chat.",
     "settings.quickReplies.summaryCount": "{count} guardada(s)",
     "settings.communication.pushSummaryActiveHere": "✅ Activado en este dispositivo",
@@ -2789,6 +2801,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypesTitle": "Ce qui doit notifier",
+    "settings.communication.pushTypeOpportunity": "Nouvelle opportunité prioritaire",
+    "settings.communication.pushTypeReservation": "Nouvelle réservation en attente de confirmation",
+    "settings.communication.pushTypeChatMessage": "Chaque nouveau message dans le chat",
     "settings.quickReplies.summaryDesc": "Phrases prêtes à l'emploi pour répondre plus vite aux clients dans le chat.",
     "settings.quickReplies.summaryCount": "{count} enregistrée(s)",
     "settings.communication.pushSummaryActiveHere": "✅ Activé sur cet appareil",
@@ -3709,6 +3725,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypesTitle": "Was benachrichtigen soll",
+    "settings.communication.pushTypeOpportunity": "Neue hochpriorisierte Gelegenheit",
+    "settings.communication.pushTypeReservation": "Neue Reservierung wartet auf Bestätigung",
+    "settings.communication.pushTypeChatMessage": "Jede neue Chat-Nachricht",
     "settings.quickReplies.summaryDesc": "Vorgefertigte Sätze, um Gästen im Chat schneller zu antworten.",
     "settings.quickReplies.summaryCount": "{count} gespeichert",
     "settings.communication.pushSummaryActiveHere": "✅ Auf diesem Gerät aktiviert",
