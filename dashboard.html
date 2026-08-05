@@ -3230,6 +3230,22 @@ async function deleteRoleConfirm(roleId){
           <input type="checkbox" data-setting="push_notification_types" value="reservation" id="pushTypeReservation">
         </label>
         <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeKitchenOrder', 'Novo pedido na cozinha')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="kitchen_order" id="pushTypeKitchenOrder">
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeMaintenanceTicket', 'Novo chamado de manutenção')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="maintenance_ticket" id="pushTypeMaintenanceTicket">
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeSecurityIncident', 'Nova ocorrência de segurança')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="security_incident" id="pushTypeSecurityIncident">
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeValetRequest', 'Novo chamado de manobrista')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="valet_request" id="pushTypeValetRequest">
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeChatMessage', 'Toda mensagem nova no chat')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="chat_message" id="pushTypeChatMessage">
         </label>
@@ -3273,13 +3289,21 @@ async function deleteRoleConfirm(roleId){
       const bellInput = document.getElementById("alertChannelsCheckbox");
       if(bellInput) bellInput.checked = Array.isArray(data.alert_channels) && data.alert_channels.includes("dashboard");
 
-      const pushTypes = Array.isArray(data.push_notification_types) ? data.push_notification_types : ["opportunity", "reservation"];
-      const opportunityInput = document.getElementById("pushTypeOpportunity");
-      if(opportunityInput) opportunityInput.checked = pushTypes.includes("opportunity");
-      const reservationInput = document.getElementById("pushTypeReservation");
-      if(reservationInput) reservationInput.checked = pushTypes.includes("reservation");
-      const chatMessageInput = document.getElementById("pushTypeChatMessage");
-      if(chatMessageInput) chatMessageInput.checked = pushTypes.includes("chat_message");
+      const defaultPushTypes = ["opportunity", "reservation", "kitchen_order", "maintenance_ticket", "security_incident", "valet_request"];
+      const pushTypes = Array.isArray(data.push_notification_types) ? data.push_notification_types : defaultPushTypes;
+      const pushTypeCheckboxIds = {
+        opportunity: "pushTypeOpportunity",
+        reservation: "pushTypeReservation",
+        kitchen_order: "pushTypeKitchenOrder",
+        maintenance_ticket: "pushTypeMaintenanceTicket",
+        security_incident: "pushTypeSecurityIncident",
+        valet_request: "pushTypeValetRequest",
+        chat_message: "pushTypeChatMessage",
+      };
+      Object.entries(pushTypeCheckboxIds).forEach(([type, elementId]) => {
+        const input = document.getElementById(elementId);
+        if(input) input.checked = pushTypes.includes(type);
+      });
     }catch(e){
       console.warn("Erro ao carregar horário de silêncio:", e);
     }
