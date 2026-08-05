@@ -21,7 +21,7 @@ def main():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, hostel_name, instagram_business_id, instagram_access_token "
+        "SELECT id, name, instagram_business_id, instagram_access_token "
         "FROM hostels WHERE instagram_business_id IS NOT NULL AND instagram_access_token IS NOT NULL"
     )
     rows = cursor.fetchall()
@@ -33,7 +33,7 @@ def main():
 
     for row in rows:
         hostel_id = row["id"]
-        hostel_name = row["hostel_name"]
+        hostel_name = row["name"]
         ig_id = row["instagram_business_id"]
         token = row["instagram_access_token"]
 
