@@ -3144,13 +3144,21 @@ def is_within_quiet_hours(hostel_id):
     return now_local >= start or now_local < end
 
 
+_DEFAULT_PUSH_NOTIFICATION_TYPES = [
+    "opportunity", "reservation",
+    "kitchen_order", "maintenance_ticket", "security_incident", "valet_request",
+]
+
+
 def get_push_notification_types(hostel_id):
     """
     Quais eventos devem gerar notificacao push pra essa hospedagem -
     lista JSON (mesmo formato de alert_channels). "chat_message" comeca
     DESLIGADO por padrao (pode ser bem barulhento numa hospedagem
-    movimentada); "opportunity"/"reservation" comecam ligados, mesmo
-    comportamento que existia antes dessa preferencia existir.
+    movimentada); todos os outros tipos (oportunidade, reserva, e os 4
+    chamados operacionais - cozinha/manutencao/seguranca/manobrista)
+    comecam ligados, mesmo comportamento que existia antes de cada um
+    virar uma preferencia configuravel.
     """
     import json
 
@@ -3161,12 +3169,12 @@ def get_push_notification_types(hostel_id):
     conn.close()
 
     if not row or not row["push_notification_types"]:
-        return ["opportunity", "reservation"]
+        return list(_DEFAULT_PUSH_NOTIFICATION_TYPES)
 
     try:
         return json.loads(row["push_notification_types"])
     except (TypeError, ValueError):
-        return ["opportunity", "reservation"]
+        return list(_DEFAULT_PUSH_NOTIFICATION_TYPES)
 
 
 def save_push_subscription(hostel_id, user_id, endpoint, p256dh, auth, user_agent=None):
@@ -7287,18 +7295,60 @@ def acknowledge_ticket_notification(notification_id):
     return updated
 
 
+_TICKET_DEPARTMENT_PUSH_TYPE = {
+    "kitchen": "kitchen_order",
+    "maintenance": "maintenance_ticket",
+    "patrimonial_security": "security_incident",
+    "parking": "valet_request",
+}
+
+_TICKET_DEPARTMENT_PUSH_TITLE = {
+    "kitchen": "🍽️ Pedido na cozinha",
+    "maintenance": "🔧 Chamado de manutenção",
+    "patrimonial_security": "🚨 Ocorrência de segurança",
+    "parking": "🚗 Chamado de manobrista",
+}
+
+
 def notify_on_duty_staff_for_ticket(hostel_id, ticket_id, department, section_id=None, channel="dashboard"):
     """
     Combina get_on_duty_staff + log_ticket_notification - ponto unico
-    que cozinha/manutencao/seguranca chamam pra "avisar quem tem que
-    ser avisado, e so essa pessoa". Se ninguem estiver de plantao
-    (buraco na escala), o chamado fica sem notificacao mas continua
-    existindo - aparece pra qualquer um que olhar a fila de chamados
-    abertos.
+    que cozinha/manutencao/seguranca/estacionamento chamam pra "avisar
+    quem tem que ser avisado, e so essa pessoa" (log interno, sempre
+    acontece). Se ninguem estiver de plantao (buraco na escala), o
+    chamado fica sem notificacao interna mas continua existindo -
+    aparece pra qualquer um que olhar a fila de chamados abertos.
+
+    Tambem dispara a notificacao push (broadcast pra hospedagem, filtrada
+    pela preferencia de tipo em Configuracoes > Comunicacao > Notificacoes -
+    ver _TICKET_DEPARTMENT_PUSH_TYPE) - ponto UNICO chamado tanto pelas 4
+    rotas HTTP (kitchen.py/maintenance.py/patrimonial_security.py/
+    parking.py) quanto pela criacao de chamado feita pela propria IA no
+    chat (ai_service.py), entao cobre os dois caminhos sem duplicar logica.
+    Best-effort: falha no push nunca derruba a notificacao interna, que ja
+    aconteceu antes.
     """
     staff = get_on_duty_staff(hostel_id, department, section_id)
     for person in staff:
         log_ticket_notification(ticket_id, person["membership_id"], channel)
+
+    try:
+        from services.push_service import send_push_to_hostel
+
+        notification_type = _TICKET_DEPARTMENT_PUSH_TYPE.get(department)
+        if notification_type:
+            ticket = get_ticket(hostel_id, ticket_id)
+            body_parts = [p for p in [(ticket or {}).get("location"), (ticket or {}).get("description")] if p]
+            send_push_to_hostel(
+                hostel_id,
+                title=_TICKET_DEPARTMENT_PUSH_TITLE.get(department, "Novo chamado"),
+                body=" — ".join(body_parts) or "Novo chamado aberto.",
+                url="/app",
+                notification_type=notification_type,
+            )
+    except Exception as error:
+        print(f"AVISO: falha ao notificar chamado por push: {error}")
+
     return staff
 
 

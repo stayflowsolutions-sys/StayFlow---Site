@@ -12,6 +12,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeKitchenOrder": "Novo pedido na cozinha",
+    "settings.communication.pushTypeMaintenanceTicket": "Novo chamado de manutenção",
+    "settings.communication.pushTypeSecurityIncident": "Nova ocorrência de segurança",
+    "settings.communication.pushTypeValetRequest": "Novo chamado de manobrista",
     "settings.communication.pushTypesTitle": "O que deve notificar",
     "settings.communication.pushTypeOpportunity": "Nova oportunidade de alta prioridade",
     "settings.communication.pushTypeReservation": "Nova reserva pendente de confirmação",
@@ -953,6 +957,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeKitchenOrder": "New kitchen order",
+    "settings.communication.pushTypeMaintenanceTicket": "New maintenance ticket",
+    "settings.communication.pushTypeSecurityIncident": "New security incident",
+    "settings.communication.pushTypeValetRequest": "New valet request",
     "settings.communication.pushTypesTitle": "What should notify",
     "settings.communication.pushTypeOpportunity": "New high-priority opportunity",
     "settings.communication.pushTypeReservation": "New reservation pending confirmation",
@@ -1877,6 +1885,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeKitchenOrder": "Nuevo pedido en la cocina",
+    "settings.communication.pushTypeMaintenanceTicket": "Nuevo llamado de mantenimiento",
+    "settings.communication.pushTypeSecurityIncident": "Nueva incidencia de seguridad",
+    "settings.communication.pushTypeValetRequest": "Nueva solicitud de valet",
     "settings.communication.pushTypesTitle": "Qué debe notificar",
     "settings.communication.pushTypeOpportunity": "Nueva oportunidad de alta prioridad",
     "settings.communication.pushTypeReservation": "Nueva reserva pendiente de confirmación",
@@ -2801,6 +2813,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeKitchenOrder": "Nouvelle commande en cuisine",
+    "settings.communication.pushTypeMaintenanceTicket": "Nouvelle demande de maintenance",
+    "settings.communication.pushTypeSecurityIncident": "Nouvel incident de sécurité",
+    "settings.communication.pushTypeValetRequest": "Nouvelle demande de voiturier",
     "settings.communication.pushTypesTitle": "Ce qui doit notifier",
     "settings.communication.pushTypeOpportunity": "Nouvelle opportunité prioritaire",
     "settings.communication.pushTypeReservation": "Nouvelle réservation en attente de confirmation",
@@ -3725,6 +3741,10 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeKitchenOrder": "Neue Küchenbestellung",
+    "settings.communication.pushTypeMaintenanceTicket": "Neuer Wartungsauftrag",
+    "settings.communication.pushTypeSecurityIncident": "Neuer Sicherheitsvorfall",
+    "settings.communication.pushTypeValetRequest": "Neue Parkservice-Anfrage",
     "settings.communication.pushTypesTitle": "Was benachrichtigen soll",
     "settings.communication.pushTypeOpportunity": "Neue hochpriorisierte Gelegenheit",
     "settings.communication.pushTypeReservation": "Neue Reservierung wartet auf Bestätigung",
