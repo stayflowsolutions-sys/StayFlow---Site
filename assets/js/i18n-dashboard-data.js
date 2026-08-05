@@ -12,6 +12,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "finance.exchange.profitBoxLabel": "Lucro estimado (cotação atual × cotação usada)",
+    "finance.exchange.profitNeedsMarketRate": "Preencha a cotação atual pra calcular",
     "guests.privacy.title": "🔒 Privacidade",
     "guests.privacy.desc": "A pedido do hóspede, remove documentos e conversas, e anonimiza nome/telefone/email/documento. Reservas e valores ficam registrados sem identificar a pessoa. Ação irreversível.",
     "guests.privacy.eraseBtn": "🗑️ Excluir dados do hóspede",
@@ -935,6 +937,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "finance.exchange.profitBoxLabel": "Estimated profit (current rate × rate used)",
+    "finance.exchange.profitNeedsMarketRate": "Fill in the current rate to calculate",
     "guests.privacy.title": "🔒 Privacy",
     "guests.privacy.desc": "At the guest's request, removes documents and conversations, and anonymizes name/phone/email/document. Reservations and amounts stay on record without identifying the person. This action is irreversible.",
     "guests.privacy.eraseBtn": "🗑️ Erase guest data",
@@ -1841,6 +1845,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "finance.exchange.profitBoxLabel": "Ganancia estimada (cotización actual × cotización usada)",
+    "finance.exchange.profitNeedsMarketRate": "Complete la cotización actual para calcular",
     "guests.privacy.title": "🔒 Privacidad",
     "guests.privacy.desc": "A pedido del huésped, elimina documentos y conversaciones, y anonimiza nombre/teléfono/email/documento. Reservas y valores quedan registrados sin identificar a la persona. Acción irreversible.",
     "guests.privacy.eraseBtn": "🗑️ Eliminar datos del huésped",
@@ -2747,6 +2753,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "finance.exchange.profitBoxLabel": "Profit estimé (taux actuel × taux utilisé)",
+    "finance.exchange.profitNeedsMarketRate": "Renseignez le taux actuel pour calculer",
     "guests.privacy.title": "🔒 Confidentialité",
     "guests.privacy.desc": "À la demande du client, supprime les documents et conversations, et anonymise nom/téléphone/email/document. Les réservations et montants restent enregistrés sans identifier la personne. Action irréversible.",
     "guests.privacy.eraseBtn": "🗑️ Supprimer les données du client",
@@ -3653,6 +3661,8 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "finance.exchange.profitBoxLabel": "Geschätzter Gewinn (aktueller Kurs × verwendeter Kurs)",
+    "finance.exchange.profitNeedsMarketRate": "Aktuellen Kurs eingeben, um zu berechnen",
     "guests.privacy.title": "🔒 Datenschutz",
     "guests.privacy.desc": "Auf Wunsch des Gastes werden Dokumente und Gespräche entfernt und Name/Telefon/E-Mail/Ausweis anonymisiert. Reservierungen und Beträge bleiben ohne Personenbezug erhalten. Aktion nicht rückgängig zu machen.",
     "guests.privacy.eraseBtn": "🗑️ Gastdaten löschen",
