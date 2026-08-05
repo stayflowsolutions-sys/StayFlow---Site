@@ -986,7 +986,7 @@ async function deleteRoleConfirm(roleId){
 
 <!-- CHATS -->
 <section id="chats" class="page">
-  <div class="chat-layout">
+  <div class="chat-layout" data-mobile-view="list">
     <div class="card chat-list" id="realChatList">
       <h2 data-i18n="chats.conversationsTitle">Conversas</h2>
       <!-- chats-live.js preenche esta área -->
@@ -999,7 +999,11 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card chat-window">
-      <h2 id="chatTitle" data-i18n="chats.defaultTitle">Conversa</h2>
+      <div class="chat-window-head">
+        <button type="button" class="chat-mobile-back" onclick="setChatMobileView('list')" data-i18n-title="common.back" title="Voltar">←</button>
+        <h2 id="chatTitle" data-i18n="chats.defaultTitle" onclick="setChatMobileView('profile')" style="cursor:pointer">Conversa</h2>
+        <button type="button" class="chat-mobile-profile-btn" onclick="setChatMobileView('profile')" data-i18n-title="chats.guestProfileTitle" title="Perfil do hóspede">👤</button>
+      </div>
       <span id="chatMode" class="status-pill ai" data-i18n="chats.waitingConnection">Aguardando conexão</span>
       <span id="chatChance" class="status-pill cold">Score: —</span>
 
@@ -1018,7 +1022,10 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card guest-profile">
-      <h2 data-i18n="chats.guestProfileTitle">Perfil do hóspede</h2>
+      <div class="chat-window-head">
+        <button type="button" class="chat-mobile-back" onclick="setChatMobileView('chat')" data-i18n-title="common.back" title="Voltar">←</button>
+        <h2 data-i18n="chats.guestProfileTitle">Perfil do hóspede</h2>
+      </div>
 
       <div class="smart-profile-hero">
         <div class="smart-profile-title" id="guestName" data-i18n="chats.waitingConversation">Aguardando conversa</div>
@@ -2076,6 +2083,19 @@ async function deleteRoleConfirm(roleId){
     // em vez de continuar marcado pra sempre depois de ja ter sido aberto.
     if(pageId === "operations" && typeof markAlertsSeen === "function"){
       markAlertsSeen();
+    }
+
+    // Chats no mobile vira tela cheia de verdade (lista OU conversa OU
+    // perfil, nunca as 3 empilhadas) - pra isso funcionar direito
+    // (mensagens rolando so dentro da area delas, igual WhatsApp), o
+    // .main precisa voltar a ter altura fixa nessa pagina especifica,
+    // mesmo com a regra geral de mobile deixando as outras paginas com
+    // altura livre pra rolar normal.
+    const main = document.querySelector(".main");
+    if(main) main.classList.toggle("chat-fullscreen", pageId === "chats" && window.innerWidth <= 1100);
+    if(pageId === "chats"){
+      const chatLayout = document.querySelector(".chat-layout");
+      if(chatLayout) chatLayout.dataset.mobileView = "list";
     }
 
     const sidebar = document.getElementById("sidebar");
