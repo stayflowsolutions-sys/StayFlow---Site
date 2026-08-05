@@ -215,6 +215,8 @@ window.switchTeamTab = function(tab){
   }else if(tab === "scheduling" && typeof loadScheduling === "function"){
     loadScheduling();
   }
+
+  window.scrollTo({top:0, behavior:"smooth"});
 };
 
 async function loadTeamList() {
@@ -1771,6 +1773,16 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openNotificationsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.communication.pushTitle">🔔 Notificações</h2>
+            <p class="settings-summary-desc" id="notificationsSummaryDesc" data-i18n="settings.communication.pushDesc">Receba um aviso no navegador quando surgir algo urgente (nova oportunidade de alta prioridade, reserva pendente de confirmação), mesmo com a aba fechada. Ative em cada dispositivo separadamente.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <div class="card" data-settings-section="comunicacao">
         <h2 data-i18n="settings.communication.title">Comunicação</h2>
 
@@ -1778,28 +1790,6 @@ async function deleteRoleConfirm(roleId){
           <span data-i18n="settings.communication.bellToggleLabel">Mostrar contagem de alertas no sininho</span>
           <input type="checkbox" data-setting="alert_channels" checked>
         </label>
-
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;">
-          <div data-i18n="settings.communication.pushTitle" style="font-size:13px;font-weight:700;margin-bottom:4px">🔔 Notificações</div>
-          <p data-i18n="settings.communication.pushDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Receba um aviso no navegador quando surgir algo urgente (nova oportunidade de alta prioridade, reserva pendente de confirmação), mesmo com a aba fechada. Ative em cada dispositivo separadamente.</p>
-          <div id="pushStatusMessage" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
-          <button class="btn secondary" type="button" id="pushToggleBtn" onclick="togglePushNotifications()" data-i18n="settings.communication.pushEnableBtn">Ativar neste dispositivo</button>
-        </div>
-
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;">
-          <div data-i18n="settings.communication.quietHoursTitle" style="font-size:13px;font-weight:700;margin-bottom:8px">Horário de silêncio</div>
-          <p data-i18n="settings.communication.quietHoursDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Notificações push não são enviadas nesse intervalo (a resposta automática ao hóspede continua funcionando normalmente — isso afeta só o aviso pra equipe).</p>
-          <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
-            <div class="span-6">
-              <label data-i18n="settings.communication.quietHoursStartLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Início</label>
-              <input type="time" data-setting="quiet_hours_start">
-            </div>
-            <div class="span-6">
-              <label data-i18n="settings.communication.quietHoursEndLabel" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Fim</label>
-              <input type="time" data-setting="quiet_hours_end">
-            </div>
-          </div>
-        </div>
 
         <h3 data-i18n="settings.communication.quickRepliesTitle" style="margin:20px 0 10px;font-size:14px;font-weight:800">Respostas rápidas</h3>
         <div id="quickRepliesList" style="display:grid;gap:8px"></div>
@@ -2261,10 +2251,19 @@ async function deleteRoleConfirm(roleId){
     if(!settingsRoot) return;
 
     const data = {};
-    // :not([disabled]) evita que campos desabilitados (ex: horario de
-    // silencio, ainda nao aplicado) mandem valor vazio no upsert parcial
-    // e sobrescrevam silenciosamente um valor real no futuro.
-    $$("[data-setting]:not([disabled])", settingsRoot).forEach(input => {
+    // Busca no DOCUMENT inteiro, nao so dentro de #settings: campos
+    // data-setting de modais (Geral, Horario de silencio, etc) sao
+    // renderizados dentro de #genericModalBody, que fica FORA de
+    // #settings na arvore do DOM (#genericModal e um elemento irmao,
+    // definido depois de #settings/#team fecharem) - escopar em
+    // settingsRoot nunca encontraria esses campos, entao o Save do
+    // modal salvaria silenciosamente sem o valor digitado. Seguro
+    // ampliar pra document porque cada nome de data-setting so aparece
+    // uma unica vez no arquivo inteiro (conferido).
+    // :not([disabled]) evita que campos desabilitados mandem valor
+    // vazio no upsert parcial e sobrescrevam silenciosamente um valor
+    // real no futuro.
+    $$("[data-setting]:not([disabled])", document).forEach(input => {
       // alert_channels e o unico campo do contrato que e uma lista, nao
       // um escalar - o checkbox aqui representa so o canal "dashboard"
       // (unico que existe de verdade hoje, ligado ao badge do sino).
@@ -2293,6 +2292,7 @@ async function deleteRoleConfirm(roleId){
         alert(T('settings.msg.saved', 'Configurações salvas.'));
         closeGenericModal();
         if(typeof loadGeneralSettingsSummary === "function") loadGeneralSettingsSummary();
+        if(typeof loadNotificationsSummary === "function") loadNotificationsSummary();
         if(currencyChanged){
           // Moeda afeta valores ja renderizados em varias paginas (Reservas,
           // Financeiro, Receitas, RoomMap...) - mais simples e confiavel
@@ -3066,7 +3066,7 @@ async function deleteRoleConfirm(roleId){
     }
   }
 
-  window.initPushUI = async function(){
+  async function refreshPushToggleState(){
     const btn = document.getElementById("pushToggleBtn");
     const msgEl = document.getElementById("pushStatusMessage");
     if(!btn || !msgEl) return;
@@ -3115,7 +3115,7 @@ async function deleteRoleConfirm(roleId){
     }catch(e){
       console.warn("Erro ao carregar status de notificações push:", e);
     }
-  };
+  }
 
   window.togglePushNotifications = async function(){
     const btn = document.getElementById("pushToggleBtn");
@@ -3166,7 +3166,83 @@ async function deleteRoleConfirm(roleId){
       if(msgEl) msgEl.textContent = T('common.error.generic', 'Erro de conexão.');
     }finally{
       btn.disabled = false;
-      initPushUI();
+      refreshPushToggleState();
+    }
+  };
+
+  // Notificacoes push e horario de silencio moram na MESMA caixa/modal -
+  // horario de silencio so existe pra gatear quando o push manda aviso,
+  // entao nao faz sentido ser uma configuracao separada (pedido do
+  // usuario: nao duplicar area de configuracao pro mesmo assunto).
+  window.loadNotificationsSummary = async function(){
+    const summaryEl = document.getElementById("notificationsSummaryDesc");
+    if(!summaryEl) return;
+
+    try{
+      const subscription = await getCurrentPushSubscription();
+      const params = subscription ? `?endpoint=${encodeURIComponent(subscription.endpoint)}` : "";
+      const [pushRes, settingsRes] = await Promise.all([
+        fetch(`/push/status${params}`, { credentials: "same-origin" }),
+        fetch("/settings", { credentials: "same-origin" }),
+      ]);
+
+      const pushData = pushRes.ok ? await pushRes.json() : { configured: false };
+      if(!pushData.configured) return;
+
+      const settingsData = settingsRes.ok ? await settingsRes.json() : {};
+
+      const parts = [pushData.this_device_subscribed
+        ? T('settings.communication.pushSummaryActiveHere', '✅ Ativado neste dispositivo')
+        : T('settings.communication.pushSummaryInactiveHere', 'Não ativado neste dispositivo')];
+
+      if(settingsData.quiet_hours_start && settingsData.quiet_hours_end){
+        parts.push(T('settings.communication.quietHoursSummaryActive', 'Silêncio {start}–{end}', { start: settingsData.quiet_hours_start, end: settingsData.quiet_hours_end }));
+      }
+
+      summaryEl.textContent = parts.join(" · ");
+    }catch(e){
+      console.warn("Erro ao carregar resumo de notificações:", e);
+    }
+  };
+
+  window.openNotificationsModal = async function(){
+    openGenericModal(T('settings.communication.pushTitle', '🔔 Notificações'), `
+      <p style="margin-bottom:14px">${T('settings.communication.pushDesc', 'Receba um aviso no navegador quando surgir algo urgente (nova oportunidade de alta prioridade, reserva pendente de confirmação), mesmo com a aba fechada. Ative em cada dispositivo separadamente.')}</p>
+      <div id="pushStatusMessage" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+      <button class="btn secondary" type="button" id="pushToggleBtn" onclick="togglePushNotifications()">${T('settings.communication.pushEnableBtn', 'Ativar neste dispositivo')}</button>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid #ffffff12">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">${T('settings.communication.quietHoursTitle', 'Horário de silêncio')}</div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 10px">${T('settings.communication.quietHoursDesc', 'Notificações push não são enviadas nesse intervalo (a resposta automática ao hóspede continua funcionando normalmente — isso afeta só o aviso pra equipe).')}</p>
+        <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+          <div style="grid-column:span 6">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.communication.quietHoursStartLabel', 'Início')}</label>
+            <input type="time" data-setting="quiet_hours_start" id="quietHoursStart" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          </div>
+          <div style="grid-column:span 6">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.communication.quietHoursEndLabel', 'Fim')}</label>
+            <input type="time" data-setting="quiet_hours_end" id="quietHoursEnd" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="saveSettings()">${T('settings.saveChangesBtn', 'Salvar alterações')}</button>
+      </div>
+    `);
+
+    refreshPushToggleState();
+
+    try{
+      const res = await fetch("/settings", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      const startInput = document.getElementById("quietHoursStart");
+      if(startInput) setFieldValue(startInput, data.quiet_hours_start || "");
+      const endInput = document.getElementById("quietHoursEnd");
+      if(endInput) setFieldValue(endInput, data.quiet_hours_end || "");
+    }catch(e){
+      console.warn("Erro ao carregar horário de silêncio:", e);
     }
   };
 
@@ -3728,6 +3804,11 @@ async function deleteRoleConfirm(roleId){
     $$("#settings .settings-menu .btn.secondary[data-settings-target]").forEach(btn=>{
       btn.classList.toggle("active", btn.dataset.settingsTarget === target);
     });
+    // Sem isso, trocar de secao mantem o scroll onde estava - se a
+    // pessoa estava rolada pra baixo em "Geral", clicar em "Comunicação"
+    // parecia "pular" pro meio/fim da secao nova em vez de abrir do
+    // topo (mesmo padrao ja usado em openPage()).
+    window.scrollTo({top:0, behavior:"smooth"});
   }
 
   function bindSettingsMenu(){
@@ -5745,6 +5826,8 @@ window.switchOperationsTab = function(tabId){
   };
   const loader = loaders[tabId];
   if(loader) loader();
+
+  window.scrollTo({top:0, behavior:"smooth"});
 };
 
 async function loadOperations(){
@@ -7604,7 +7687,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadFacebookSettings === "function") loadFacebookSettings();
     if (typeof loadInstagramSettings === "function") loadInstagramSettings();
     if (typeof loadQuickReplies === "function") loadQuickReplies();
-    if (typeof initPushUI === "function") initPushUI();
+    if (typeof loadNotificationsSummary === "function") loadNotificationsSummary();
 
     // Gestao da propria conta (senha, sessoes, historico de login) e
     // acessivel pra qualquer pessoa autenticada, sem exigir permissao
