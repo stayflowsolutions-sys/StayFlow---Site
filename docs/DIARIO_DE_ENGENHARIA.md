@@ -5040,3 +5040,358 @@ nicho hostel, reforçando na prática a decisão de posicionamento
 registrada mais acima (a StayFlow foi desenhada desde o início pra
 hospedagem de qualquer porte, não só pequenos hostels - hostel foi só
 o ponto de partida operacional).
+
+## SESSÃO 9 - 04 a 05/08/2026
+
+### Contexto no início da sessão
+
+Sessão longa, com o usuário explicitamente pedindo "máximo de
+progresso possível" antes da apresentação ao Diplomatic Hotel. Cobriu
+sete frentes distintas, cada uma puxada por um pedido direto do
+usuário, várias delas descobertas via auditoria proativa de código em
+vez de bug reportado. Todas publicadas em produção e confirmadas no ar
+antes de passar pra próxima.
+
+### Auditoria de segurança completa
+
+Pedido direto do usuário: "qual a facilidade pra alguém hackear meu
+site? Tenho que proteger o máximo possível" - auditoria de segurança
+real (defensiva, sobre o próprio site do usuário, dentro do escopo
+permitido).
+
+Achados e correções:
+
+1. **XSS armazenado real** - dados controlados pelo hóspede (nome,
+   telefone, prévia de mensagem) e dados derivados da IA (descrição/
+   próxima ação de oportunidade) eram inseridos via `.innerHTML` sem
+   escape em `assets/js/chats-live.js` (lista de chats, histórico de
+   IA) e `assets/js/stayflow-live.js` (Opportunity Center, Ações
+   Prioritárias). Qualquer hóspede mandando mensagem por WhatsApp podia
+   injetar HTML/JS que executava no navegador da EQUIPE assim que
+   alguém abrisse Chats, Opportunity Center ou o próprio Dashboard.
+   Corrigido envolvendo todos os pontos identificados com
+   `escapeHtml()` (já existente, usado em outros lugares corretamente -
+   o problema era só nesses dois arquivos). Confirmado via varredura
+   que mensagens de bolha de chat e campos do perfil do hóspede já
+   usavam `.textContent` (seguro por natureza), não precisaram de
+   mudança.
+2. **Sem proteção contra força bruta no login** - a tabela
+   `login_attempts` já existia e já era populada (usada só pra exibir
+   histórico), mas nunca era LIDA pra bloquear nada. Nova
+   `count_recent_failed_logins(email, minutes=15)`; `/login` passou a
+   checar ANTES de validar a senha - 5 tentativas erradas pro mesmo
+   e-mail nos últimos 15 minutos bloqueia com 429. Casa por e-mail (não
+   por IP) de propósito: `login_attempts` já grava o e-mail tentado
+   mesmo pra conta inexistente, cobrindo também enumeração de contas.
+   Testado localmente: 5 senhas erradas seguidas de a senha CERTA ainda
+   devolve 429 (bloqueio vale mesmo acertando depois).
+3. **Sem cabeçalhos de segurança nenhum** - confirmado via `curl -sI`
+   direto em produção que faltavam `X-Content-Type-Options`,
+   `X-Frame-Options`, `Strict-Transport-Security`, `Referrer-Policy`.
+   Adicionados via `@app.after_request` em `app.py`.
+4. **Senha de cadastro aceitava 1 caractere** - `/register` não tinha o
+   mesmo mínimo de 8 caracteres que `/security/change-password` já
+   exigia. Alinhado.
+5. **Webhooks da Meta sem verificação de assinatura nenhuma** -
+   `/webhook/meta` e `/webhook/whatsapp` processavam qualquer POST com
+   payload plausível como se fosse legítimo da Meta. Esse item foi
+   REPORTADO primeiro (não corrigido de cara) porque não dava pra
+   testar contra tráfego real da Meta sem risco de quebrar mensageria
+   de hóspede de verdade antes de uma demo comercial - pedido
+   explicitamente autorização do usuário antes de mexer ("faça o").
+   Novo `utils/webhook_security.py`
+   (`verify_meta_signature`, HMAC-SHA256 sobre o corpo CRU da
+   requisição via `X-Hub-Signature-256`, comparação em tempo constante,
+   falha aberta só quando `META_APP_SECRET` não está configurado -
+   fallback de desenvolvimento). Testado localmente contra assinaturas
+   sintéticas (válida/inválida/ausente/sem secret configurado, os 4
+   cenários corretos), publicado, confirmado que a rota real passou a
+   devolver 403 pra requisição sem assinatura (prova que o secret
+   realmente está configurado em produção), e por fim confirmado pelo
+   usuário mandando uma mensagem real: "sim sim, chegou e a IA
+   respondeu normal".
+
+Na sequência, implementado Content-Security-Policy completo (`app.py`,
+`_CSP_DIRECTIVES`) - mantendo `unsafe-inline` em `script-src`/
+`style-src` deliberadamente: o dashboard inteiro usa `onclick=`/
+`onchange=`/`onsubmit=` inline e `<script>` embutido (não é um app com
+build step separando JS/HTML) - reescrever isso pra remover
+`unsafe-inline` de verdade significaria trocar ~169 `onclick` + 10
+`onchange` + 7 `onsubmit` por `addEventListener`, refatoração grande
+demais pra fazer de uma vez sem capacidade de teste visual real (sem
+ferramenta de automação de navegador neste ambiente). O valor real da
+CSP está nas outras diretivas, que fecham vetores sem risco de
+regressão - `connect-src 'self'` em particular impede que uma injeção
+de XSS (se algum dia acontecer de novo, apesar do fix acima) consiga
+exfiltrar dados pra um servidor externo.
+
+**Decisão permanente registrada nesta sessão**: sessão nunca deve
+expirar automaticamente por tempo (nem absoluta, nem por inatividade).
+Pedido explícito do usuário ao ser perguntado sobre isso: "a coisa de
+expiração automática não gosto muito, porque é incômodo você ter que
+ficar entrando e saindo toda vez que for usar o site". Revogação
+continua existindo normalmente (logout, troca de senha derruba outras
+sessões, revogação individual).
+
+### Direito ao esquecimento (exclusão de dados do hóspede) + documentação de hospedagem de dados
+
+Pedido do usuário ao considerar como responder se o Diplomatic Hotel
+perguntar sobre proteção de dados durante a venda: "e se eles me
+perguntarem sobre proteção de dados". Depois de uma avaliação honesta
+do que já podia/não podia ser afirmado, o usuário aprovou dois itens
+concretos de uma vez ("pode fazer os 2").
+
+**Exclusão de dados**: novo `erase_guest_data(hostel_id, guest_id)`
+(`database.py`) e `POST /guests/<id>/erase-data` - apaga de verdade
+documentos (inclusive o arquivo em disco, não só a linha no banco) e
+todas as conversas/mensagens do hóspede, anonimiza nome (vira "Hóspede
+removido"), telefone, e-mail, data de nascimento, nacionalidade e
+documento, e atualiza `guest_name` em reservas e veículos já
+existentes pra manter o registro financeiro sem identificar a pessoa
+(reserva em si não é apagada, só deixa de apontar pro nome real).
+Botão "🗑️ Excluir dados do hóspede" no perfil, com confirmação forte
+via `stayflowConfirm()` antes de executar (ação irreversível de
+propósito, sem lixeira). Testado localmente de ponta a ponta: hóspede
+com documento real em disco + conversa + mensagens + reserva +
+veículo - depois da exclusão, documento sumiu do disco de verdade,
+conversas/mensagens/identidades de canal foram apagadas, nome virou
+"Hóspede removido" com encoding UTF-8 correto (confirmado via
+`unicode_escape`, não só aparência no terminal), reserva/veículo
+mantidos com o nome anonimizado. Casos de erro (hóspede inexistente,
+`hostel_id` errado) devolvem `ValueError` corretamente, sem vazar dado
+de outra hospedagem.
+
+**Local de hospedagem dos dados**: usuário confirmou direto no painel
+do Render que a região é Oregon (US West) - não dava pra descobrir por
+código (sem `render.yaml` no repositório, serviço configurado
+manualmente pelo painel). Adicionado à política de privacidade
+(`privacy.html`), na mesma seção que já falava da Meta/OpenAI como
+transferência internacional, e a seção de direitos do titular passou a
+mencionar o botão de autoatendimento pra exclusão.
+
+### Câmbio evolui pra casa de câmbio de verdade
+
+Trabalho em várias rodadas curtas, cada uma puxada por um pedido/
+observação direta do usuário testando a funcionalidade:
+
+1. **Cotação atual não se preenchia sozinha** - causa raiz: o seletor
+   de "moeda recebida" abria com a primeira moeda da lista selecionada
+   por padrão (ARS), e a busca automática de cotação só disparava pra
+   USD - então a pessoa precisava trocar manualmente pra USD pra ver
+   qualquer coisa. Corrigido colocando USD primeiro na lista
+   (`FINANCE_EXCHANGE_CURRENCIES`).
+2. **"Você que teria que sincronizar o câmbio de todas as moedas
+   cadastradas"** - pedido pra cobrir ARS/CLP/BRL/PEN/BOB/COP, não só
+   USD. Novo `get_reference_rate(foreign_currency, home_currency)`
+   (`services/exchange_rate_service.py`): quando a moeda da hospedagem
+   é ARS, ancora no dólar blue (Bluelytics - a cotação que hospedagens
+   argentinas realmente usam no dia a dia, bem diferente da oficial) e
+   cruza via USD pra qualquer outra moeda recebida; fora desse caso,
+   taxa oficial direta via `open.er-api.com` (gratuita, sem chave).
+   Limitação documentada: Bolívia também tem uma distorção real entre
+   câmbio oficial e paralelo desde 2023, mas não há fonte pública/
+   gratuita equivalente ao Bluelytics pra isso - fica sem resolver,
+   documentado. Testado contra as APIs reais (USD→ARS via blue,
+   BRL→ARS e CLP→ARS cruzados via blue, USD→BRL e ARS→USD via taxa
+   oficial), todos os valores bateram com o esperado. A própria moeda
+   da hospedagem saiu da lista de "moeda recebida" (não faz sentido
+   cambiar ela por ela mesma).
+3. **Caixa de lucro dedicada** - antes o lucro aparecia junto do valor
+   creditado numa linha de texto pequena. Virou um espaço próprio
+   destacado, valor grande, verde/vermelho conforme o sinal, atualizado
+   em tempo real conforme a pessoa digita.
+
+### Correção de posicionamento "hostel" (terceira vez)
+
+Usuário reagiu com bem mais ênfase que das duas vezes anteriores:
+"de uma vez por todas entenda, NÃO ESTAMOS MAIS LIDANDO COM UM
+HOSTEL" - motivado por eu ter usado "hostel" tanto na conversa quanto
+em comentários de código recém-escritos (`database.py`,
+`routes/finance.py`, `services/exchange_rate_service.py`,
+`dashboard.html`) e, mais grave, em texto VISÍVEL na interface
+(`finance.exchange.modalDesc`, "gera lucro pro hostel", nos 5
+idiomas). Corrigido em todos os pontos encontrados. Memória de feedback
+atualizada com uma regra mais rígida: a exceção de "texto técnico
+interno não precisa desse cuidado" NÃO cobre comentários que descrevem
+lógica de negócio (só nomes de tabela/coluna/função que seguem a
+convenção `hostel_id`/`hostels` por motivo estrutural, e o valor
+literal "Hostel" como opção real de tipo de propriedade).
+
+### Revisão de UX mobile em Configurações/Operações/Equipe
+
+Usuário reportou, testando no celular: clicar numa categoria de
+Configurações só empurrava o conteúdo pra baixo do menu, em vez de
+abrir a categoria escolhida. Causa raiz: `switchSettingsSection()` (e
+o equivalente em Operações e Equipe) trocava o conteúdo visível mas
+nunca resetava a posição de rolagem - se a pessoa estava rolada pra
+baixo na seção anterior, a troca mantinha esse mesmo scroll, dando a
+impressão de ter "pulado" pro meio da seção nova. Corrigido nos três
+lugares (mesmo padrão que `openPage()` já usava certo). Configurações
+no mobile (≤1100px) ganhou também o mesmo padrão de duas telas já
+usado nos Chats (lista de categorias OU conteúdo, nunca as duas
+empilhadas), com botão "Voltar".
+
+Na mesma leva, consolidado Notificações (push) e Horário de silêncio
+numa única caixa/modal - horário de silêncio só existe pra gatear
+quando o push deve notificar, não fazia sentido ser configuração
+separada ("se já existe uma configuração que faça, não repita" - pedido
+direto do usuário). Sininho de alertas (`alert_channels`) movido pra
+dentro da mesma caixa. Respostas Rápidas virou caixa clicável + modal,
+removendo o último formulário solto que restava na tela de
+Comunicação.
+
+**Bug real achado de brinde durante essa investigação**: `saveSettings()`
+buscava campos `data-setting` só dentro da seção `#settings` do DOM,
+mas o modal genérico (`#genericModal`) é renderizado FORA dela na
+árvore (elemento irmão, definido depois de `#settings`/`#team`
+fecharem no HTML). Isso significa que o modal "Geral" (nome/tipo da
+hospedagem), que reusa `saveSettings()` pro botão Salvar, muito
+provavelmente NUNCA salvava esses dois campos de verdade desde que
+virou modal - o clique parecia funcionar (fechava o modal, mostrava
+"Configurações salvas") mas o valor digitado nunca chegava no banco.
+Corrigido ampliando a busca de `#settings` pro `document` inteiro -
+seguro, porque cada nome de `data-setting` só aparece uma única vez em
+todo o arquivo (conferido antes de aplicar). Confirmado por teste
+local: POST simulando exatamente o que o modal manda agora persiste
+`hostel_name`/`hostel_type` corretamente.
+
+### Sistema completo de notificações push nativas (Web Push API)
+
+Item que já constava no Roadmap como "deliberadamente adiado". Usuário
+pediu pra retomar agora ("agora quero que isso seja exibido... quero
+bem completo" foi dito mais tarde, sobre Eventos, mas o espírito valeu
+pra essa frente toda). Construído em várias rodadas dentro da mesma
+sessão:
+
+**Base**: chaves VAPID via variável de ambiente (nunca no repositório -
+recurso fica desligado em silêncio sem elas, mesmo padrão do
+`META_APP_SECRET`), gerado par de chaves real com `py_vapid`/
+`cryptography`. Service worker (`sw.js`) servido na RAIZ do site
+(`/sw.js`, não `/assets/js/sw.js`) pra que o escopo padrão cubra o
+site inteiro. Nova tabela `push_subscriptions` (uma linha por
+pessoa+dispositivo - PC e celular contam separado). `services/
+push_service.py` (`send_push_to_hostel`) manda a notificação de
+verdade via `pywebpush`, respeitando horário de silêncio e limpando
+sozinho qualquer inscrição que o navegador já invalidou (404/410 real
+do serviço de push). Testado repetidamente contra o FCM real do
+Google (não simulado) - inscrição fake sempre recebia 404 real e era
+limpa do banco, confirmando que o envio realmente saiu pra rede.
+
+**Tipos de evento**, adicionados em rodadas sucessivas conforme o
+usuário ia pedindo mais cobertura: nova oportunidade de alta
+prioridade e nova reserva pendente (os dois primeiros); depois "quero
+que notifique mensagens do chat" (chat_message, único desligado por
+padrão - risco de virar ruído); depois "quando o chat detectar
+problema, frustração do cliente, ou dúvida, quero que notifique como
+urgência" (guest_needs_attention - ajuste no prompt do Decision Engine
+pra marcar urgência alta mesmo quando `intent="general"`, que antes só
+retornava sem nenhum efeito colateral, sem notificar nada); depois
+"notificações para conversas assumidas" (assumed_conversation - dispara
+exatamente no ponto em que o código já pulava a resposta da IA por
+causa de `ai_paused`, só quando é a conversa individual assumida, não
+o interruptor geral do hostel); depois "adiciona pra chamado de
+manutenção, manobrista, pedido de cozinha, tudo que faça sentido"
+(kitchen_order/maintenance_ticket/security_incident/valet_request -
+hook único em `notify_on_duty_staff_for_ticket`, já chamado tanto
+pelas rotas HTTP quanto pela criação de chamado feita pela própria IA
+via chat, cobrindo os dois caminhos sem duplicar lógica); por fim
+new_event, junto com o módulo de Eventos.
+
+**Filtro por permissão**: "quero que isso seja exibido
+proporcionalmente a cada função... a limpeza só recebe opção de
+ativar notificação de limpeza, manutenção o mesmo, manobrista, etc" -
+cada checkbox "o que deve notificar" ganhou `data-required-permission`
+e passou a usar o mesmo `applyPermissionVisibility()` já usado no menu
+lateral e nas categorias de Configurações, reaproveitado dentro do
+modal.
+
+### Autenticação em duas etapas (2FA/TOTP)
+
+Pedido direto do usuário ("faça-o", referindo-se ao 2FA sinalizado
+como "Em breve" desde a Sessão 7). `pyotp` (geração/verificação de
+código TOTP) e `qrcode` (QR em SVG via `qrcode.image.svg`, sem Pillow,
+sem CDN externo - gerado no servidor como data URI). Ativação em
+Configurações → Segurança: QR code + chave manual, confirmação com o
+primeiro código antes de habilitar de verdade, 8 códigos de backup de
+uso único mostrados uma única vez (hash bcrypt do código normalizado -
+maiúsculo, sem traço - aceito de volta com ou sem formatação). Login
+refatorado: `_complete_login()` isola a lógica de escolha de hostel
+que antes vivia só dentro de `/login`; senha certa numa conta com 2FA
+ativo agora devolve um `challenge_token` (5 minutos, 5 tentativas) em
+vez de completar a sessão - só `POST /login/2fa`, depois do código
+TOTP ou um código de backup confirmado, cria a sessão de verdade.
+
+**Bug real de migração encontrado durante o teste local**: banco de
+teste recém-criado não tinha as colunas `totp_secret`/`totp_enabled`
+mesmo com `add_column_if_not_exists` chamado antes no código. Causa
+raiz: `_migrate_users_to_memberships()` (migração antiga, Sessão 7)
+reconstrói a tabela `users` inteira com uma lista FIXA de colunas
+sempre que detecta o schema antigo - e a detecção (`"hostel_id" in
+table_sql`) dispara até em banco novo, porque a própria `CREATE TABLE
+IF NOT EXISTS` inicial ainda cita `hostel_id` no texto da definição.
+Isso descartava silenciosamente qualquer coluna nova adicionada ANTES
+desse ponto do arquivo, em qualquer banco criado do zero - não afetava
+produção (já migrada há muito tempo, a condição não dispara mais lá),
+mas teria quebrado o próximo deploy realmente novo, e já estava
+quebrando os testes locais. Corrigido preservando `totp_secret`/
+`totp_enabled` na reconstrução, mesmo padrão já usado pra
+`must_change_password`. Testado de ponta a ponta contra um servidor
+real: setup + confirmação com código TOTP real, login completo
+(código certo completa, errado rejeita), código de backup funciona
+normalizado, código de backup reusado falha (uso único), desativar
+com senha errada rejeita/senha certa funciona, login volta ao normal
+sem pedir 2FA depois de desativado.
+
+### Módulo de Eventos
+
+Usuário perguntou "criamos uma sessão de eventos? o Diplomatic faz
+eventos também, importante ter essa parte não?" - discussão rápida de
+escopo antes de implementar (Eventos dentro de Operações? Dentro de
+Reservas/Receitas? Item próprio?) resolvida com o usuário concordando
+em manter item próprio na barra lateral: Operações reúne "chamados"
+rápidos resolvidos por quem está de plantão, um conceito diferente de
+reserva planejada com peso financeiro próprio; Reservas/Receitas são
+sobre hospedagem e upsell pro hóspede já hospedado, não aluguel de
+espaço com cliente e calendário próprios.
+
+Construído "bem completo" como pedido: `event_spaces` (salões/jardins/
+auditórios, capacidade sentados/em pé, preço), `events` (agenda com
+`check_event_space_conflict` - sobreposição de horário no mesmo espaço,
+considerando só pendente/confirmado, nunca cancelado - cliente que não
+precisa ser hóspede, tipo, status pendente→confirmado→concluído ou
+cancelado), `event_addons`/`event_addon_selections` (catálogo de
+serviços extras com preço CONGELADO no momento em que são anexados a
+um evento - reajustar o catálogo depois não muda retroativamente um
+evento já fechado). Nova permissão `events` (décima quinta do
+catálogo, aparece automaticamente na tela de Funções sem mudança de
+frontend, já que o catálogo é gerado dinamicamente de
+`utils/permissions.py`). Receita de eventos confirmados entra no
+Financeiro, mesmo critério já usado pra reservas.
+
+**Bug de comparação de data evitado por normalização**: `datetime('now')`/
+`CURRENT_TIMESTAMP` do SQLite usam espaço como separador
+("2026-08-05 06:38:52"), enquanto `<input type="datetime-local">`
+devolve "T" ("2026-08-05T18:00") - comparação textual direta entre os
+dois formatos dá errado especificamente em eventos no MESMO DIA
+("T" > espaço em ASCII, sempre, independente da hora real). Resolvido
+normalizando no Frontend antes de enviar (`eventsToBackendDatetime`,
+troca "T" por espaço + adiciona segundos) - testado com evento futuro
+aparecendo corretamente em `upcoming_only=1` e evento no passado sendo
+corretamente excluído.
+
+### Atualização completa do Documento Mestre e do Diário de Engenharia
+
+Ao final da sessão, usuário pediu explicitamente os dois documentos
+"100% atualizados de ponta a ponta, sem falhas" antes de encerrar.
+Seguido o protocolo de auditoria integral no Documento Mestre: leitura
+completa dos capítulos 9 e 12 a 18 (a maior parte do conteúdo técnico/
+específico do documento), mais varredura por palavras-chave
+("não implementado", "planejado", "em breve", "adiada" etc.) no
+restante do arquivo pra achar qualquer outra menção desatualizada -
+achados dois pontos fora dos capítulos originalmente previstos
+(catálogo de permissões em 12.3, e notificações push listadas como
+"deliberadamente adiadas" na seção 15.7, que o Capítulo 17 já
+mencionava mas o 15.7 não tinha sido corrigido junto). Versão do
+Documento Mestre avançada de 1.38.0 pra 1.45.0, com sete novas linhas
+na tabela de Controle de Versões e um registro narrativo completo no
+Capítulo 18 cobrindo a sessão inteira.

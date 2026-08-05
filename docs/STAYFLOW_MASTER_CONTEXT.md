@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.38.0
+\*\*Versão:\*\* 1.45.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 03/08/2026
+\*\*Última atualização:\*\* 05/08/2026
 
 
 
@@ -164,6 +164,13 @@
 | 1.36.0 | 31/07/2026 | Oficial | Pedido do usuário: reservas vindas do chat (Messenger/WhatsApp) ficam pendentes até a equipe confirmar manualmente — quando confirmada ou cancelada, o hóspede precisa ser avisado de volta no mesmo chat, já com horário de check-in e endereço na confirmação. Novo `notify_guest_reservation_status(hostel_id, reservation_id, status)` (`database.py`), chamado no fim de `update_reservation_status_record` (dentro de `try/except` — falha no envio nunca derruba a mudança de status, que já foi commitada antes). Resolve o canal de volta do hóspede pela linha mais recente em `guest_channel_identities` (com fallback pro telefone em `guests.phone`, pra hóspede antigo sem identidade de canal registrada); só dispara pra WhatsApp e Messenger (Instagram ainda não tem envio implementado). Mensagem de confirmação inclui check-in (com o horário padrão configurado em Configurações → Empresa, se houver), check-out e endereço do hostel (idem); mensagem de cancelamento é mais simples, convidando a reagendar. Texto varia por idioma (`get_guest_language_by_id`, mesmos 5 idiomas do resto da IA), com fallback pt. Reserva sem hóspede vinculado (cadastro manual só com nome) ou sem telefone/PSID resolvível sai em silêncio, sem tentar enviar. Testado (5 cenários: confirmação via Messenger com endereço/horário na mensagem certa e gravada na conversa; cancelamento via WhatsApp; reserva sem canal resolvível não tenta enviar; mudar pra "pending" não notifica; falha simulada no envio não impede o status de ser atualizado) e regressão completa (12 scripts) sem quebra. |
 | 1.37.0 | 31/07/2026 | Oficial | Terceiro canal conectado: Instagram Direct. A base de dados já estava pronta (colunas em `hostels` e 6 funções de CRUD/oauth-state em `database.py`, deixadas prontas quando o Facebook foi feito, mas nunca ligadas a nada). Pesquisa dedicada (documentação atual da Meta) confirmou que o "Instagram API with Instagram Login" é uma stack praticamente paralela ao "Facebook Login for Business" já usado pro Messenger — não uma variação dele: App ID/Secret próprios (`INSTAGRAM_APP_ID`/`INSTAGRAM_APP_SECRET`, variáveis novas, não reaproveitam `META_APP_ID`/`META_APP_SECRET`), autorização em `www.instagram.com/oauth/authorize` com `scope` direto (sem `config_id`), troca de código por token via **POST** em `api.instagram.com` (não GET como o Facebook), token de longa duração e envio de mensagem em `graph.instagram.com` — este último com o token no **header** `Authorization: Bearer` em vez de query param, e endpoint `/<IG_BUSINESS_ID>/messages` em vez de `/me/messages`. Não exige Página do Facebook vinculada (vantagem real do método novo). Novo `services/instagram_service.py` (`send_instagram_message`, `get_instagram_user_profile` — busca de nome é best-effort, sem confirmação oficial de que o endpoint existe pra esse fluxo, cai pra `None` sem quebrar nada — e `download_instagram_attachment`); `services/meta_oauth_service.py` ganhou `get_instagram_authorize_url`/`exchange_code_for_instagram_account`; `routes/meta_oauth.py` ganhou `/oauth/instagram/connect`/`callback`; `routes/settings.py` ganhou `GET/POST/DELETE /settings/instagram` (mesmo contrato do Facebook: form manual como alternativa ao OAuth). `routes/meta_webhook.py` foi generalizado pra um dicionário de adaptadores por canal (`_CHANNEL_ADAPTERS`, com wrappers de indireção pra continuar mockável em teste — capturar a função direto no dict quebraria o patch do nome no módulo) — resolve o canal pelo campo `object` do payload (`"page"` → Messenger, `"instagram"` → Instagram), com fallback tentando os dois lookups de hostel se o campo vier ausente/inesperado; o loop de eventos (texto, imagem, perfil) passou a ser o mesmo código pros dois canais. `database.py`: gate de canais permitidos na notificação automática de reserva confirmada/cancelada (`notify_guest_reservation_status`, v1.36.0) ganhou `"instagram"`. Frontend: terceiro card clicável em Comunicação (mesmo padrão dos outros), modal com os dois modos (Conectar/manual) espelhando o do Facebook; corrigido de brinde um bug real no retorno do OAuth (`handleMetaOAuthReturn` mostrava sempre a mensagem rotulada "Facebook", não importa o canal — trocado pra chaves genéricas `settings.metaOauth.*`). Testado (18 scripts de regressão incluindo 4 novos cenários específicos de Instagram: mensagem de texto roteada certo por `object`, documento salvo e confirmado no canal certo, fallback sem `object`, e reserva confirmada notificando pelo Direct) e teste real de clique em navegador (Playwright) nos três cards de Comunicação juntos, sem erro de console. Pontos que a pesquisa não confirmou com certeza na documentação oficial da Meta (marcados como "a confirmar no primeiro teste ao vivo", mesmo padrão já usado nesta sessão pro Beds24/`config_id` do Facebook): disponibilidade de nome/username do remetente pra esse fluxo específico; formato exato literal do payload do webhook (`object`/`entry.id`); se a assinatura do webhook no painel da Meta é uma seção separada da do Messenger; exigência de Business Verification pra esse escopo. Bloqueio de negócio (não é código): usuário precisa criar o produto "Instagram" no App Meta existente, pegar Instagram App ID/Secret em "API setup with Instagram login", e conectar uma conta de teste — sem isso, o botão "Conectar Instagram" redireciona com erro educado, sem quebrar nada. |
 | 1.38.0 | 03/08/2026 | Oficial | Auditoria completa e correção do Documento Mestre (protocolo de revisão integral, linha a linha, mesmo padrão já aplicado na versão 1.3.0), motivada por uma sessão anterior de Claude não conseguir identificar funcionalidades reais do produto a partir deste documento. Achados e correções principais: (1) catálogo de permissões estava documentado em 12 chaves em três pontos (Capítulo 12, 16.21, 16.22) — `utils/permissions.py` já tinha 14 há algumas versões (`security` e `billing` adicionadas junto com a construção das telas de Segurança e Billing em Configurações, nunca refletidas aqui); (2) Capítulo 16 (Funcionalidades) e Capítulo 17 (Roadmap) ainda descreviam como "não implementado"/"planejado" um conjunto de capacidades já construídas e em produção há várias versões: Mapa de Quartos (housekeeping completo), Ask StayFlow como agente real (34 ferramentas, function calling multi-rodada — o Roadmap ainda dizia "simulação de conversa, sem conexão real com o Backend"), integração com Channel Manager (Beds24, 6 fases completas) e módulo de Segurança (troca de senha, sessões ativas, tentativas de login); (3) módulos inteiros sem nenhum registro no documento: integração com Messenger e Instagram Direct (identidade multi-canal, `guest_channel_identities`), Respostas Rápidas (Quick Replies) na aba Chats, hóspede de Longa Duração, perfil de hóspede com modo leitura/edição e documentos. Confirmado por testes reais: a Conversations API do Instagram (`GET /{instagram_business_id}/conversations`) devolve lista vazia mesmo com mensagens reais acontecendo — restrição de "Standard Access" da própria Meta (contas sem "Advanced Access" em `instagram_business_basic`/`instagram_business_manage_messages` não veem conteúdo de mensagem por essa API até passar por App Review), não um bug do StayFlow; conexão de conta e envio de mensagem continuam funcionando normalmente. Registrado como padrão de segurança estabelecido: nenhuma rota `GET /settings/*` (WhatsApp, Facebook, Instagram, Beds24) devolve o valor bruto de um token de acesso ao Frontend, sempre um booleano (`has_access_token`). Registrada a decisão permanente de posicionamento (já aplicada em `index.html`/`privacy.html`): a StayFlow nunca deve ser descrita como produto nichado em hostel — hostel é a primeira categoria de hospedagem atacada para validar a operação, não o mercado-alvo final, que é hospedagens de todo porte. |
+| 1.39.0 | 04/08/2026 | Oficial | Auditoria de segurança completa pedida pelo usuário ("qual a facilidade pra alguém hackear meu site?"). Achados corrigidos: XSS armazenado real (nome/mensagem de hóspede e dados derivados da IA inseridos via `innerHTML` sem escape em `chats-live.js`/`stayflow-live.js` — qualquer hóspede podia injetar HTML/JS que executava no navegador da equipe); ausência de proteção contra força bruta no login (`count_recent_failed_logins`, bloqueio de 5 tentativas/15 minutos por e-mail); ausência de cabeçalhos de segurança (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Strict-Transport-Security`); senha de cadastro aceitava 1 caractere (`/register` alinhado ao mínimo de 8 já usado em `/security/change-password`); webhooks da Meta (`/webhook/meta`, `/webhook/whatsapp`) sem verificação de assinatura (`utils/webhook_security.py`, HMAC-SHA256 sobre o corpo cru via `X-Hub-Signature-256`, confirmado funcionando contra tráfego real da Meta em produção). Na sequência, implementado Content-Security-Policy (mantendo `unsafe-inline` em script/style de propósito — reescrever ~169 `onclick`/10 `onchange`/7 `onsubmit` inline pra remover essa exceção foi avaliado como refatoração grande demais pra fazer sem capacidade de teste visual real, adiada; `connect-src 'self'` já fecha exfiltração de dados via XSS, que é o vetor mais grave). Decisão permanente registrada: sessão nunca deve expirar automaticamente por tempo (nem absoluta, nem por inatividade) — usuário considera reentrar recorrentemente incômodo; revogação continua existindo (logout, troca de senha, revogar sessão específica). |
+| 1.40.0 | 04/08/2026 | Oficial | Direito ao esquecimento (LGPD/Ley 25.326) pedido pelo usuário ao considerar como responder se o cliente em prospecção (Diplomatic Hotel) perguntar sobre proteção de dados. Novo `erase_guest_data(hostel_id, guest_id)` (`database.py`) e `POST /guests/<id>/erase-data`: apaga de verdade documentos (inclusive arquivo em disco) e conversas/mensagens do hóspede, anonimiza nome/telefone/email/data de nascimento/nacionalidade/documento, e atualiza `guest_name` em reservas e veículos já existentes sem apagar o registro financeiro (ação irreversível, com confirmação forte no Frontend via `stayflowConfirm`). Documentado também onde os dados ficam fisicamente hospedados (Render, região Oregon — US West) na política de privacidade, junto com menção ao novo botão de exclusão como mecanismo de autoatendimento pro direito ao esquecimento. |
+| 1.41.0 a 1.41.2 | 04 a 05/08/2026 | Oficial | Câmbio evolui de cálculo simples pra uma operação de casa de câmbio de verdade: cotação atual (mercado) separada da cotação usada (com o hóspede), lucro calculado automaticamente na diferença, operador e horário registrados, vínculo opcional com hóspede. Cotação de referência passou a cobrir TODAS as moedas cadastradas (USD/ARS/CLP/BRL/PEN/BOB/COP), não só USD — quando a moeda da hospedagem é ARS, ancora no dólar blue (Bluelytics, a cotação que hospedagens argentinas usam de verdade no dia a dia) e cruza via USD pra qualquer outra moeda recebida; fora desse caso, usa taxa oficial direta (`open.er-api.com`, gratuita, sem chave). Corrigido bug real: o seletor de "moeda recebida" abria com a própria moeda da hospedagem selecionada por padrão, então a cotação nunca se preenchia sozinha sem troca manual — moeda da hospedagem agora nem aparece como opção (não faz sentido cambiar ela por ela mesma). Nova caixa dedicada de "Lucro estimado" no modal, com valor destacado (verde/vermelho conforme sinal), separada do valor creditado. Registrada terceira correção da decisão de posicionamento (ver v1.38.0): "hostel" usado como termo genérico de negócio em texto visível (`finance.exchange.modalDesc`, nos 5 idiomas) e em comentários de código escritos nesta sessão — corrigido pra "hospedagem"/"property"; regra de aplicação ampliada para cobrir também comentários de código que descrevem lógica de negócio, não só copy externa. |
+| 1.42.0 | 05/08/2026 | Oficial | Rodada de correções de UX no mobile e em Configurações, a partir de feedback direto do usuário testando ao vivo. Corrigido bug real presente em três lugares (Configurações, Operações, Equipe): trocar de seção/aba mantinha a posição de rolagem anterior, dando a impressão de "pular" pro meio da seção nova em vez de abrir do topo — `switchSettingsSection`/`switchOperationsTab`/`switchTeamTab` passaram a resetar o scroll, mesmo padrão que `openPage()` já usava. Configurações no mobile (≤1100px) ganhou o mesmo padrão de duas telas já usado nos Chats (lista de categorias OU conteúdo da categoria escolhida, nunca as duas empilhadas), com botão "Voltar". Notificações (push) e Horário de silêncio consolidados numa única caixa/modal (horário de silêncio só existe pra gatear quando o push notifica, não fazia sentido ser configuração própria); sininho de alertas movido pra dentro da mesma caixa; Respostas Rápidas virou caixa clicável + modal, removendo o último formulário solto da tela de Comunicação. Corrigido de brinde um bug real encontrado na investigação: `saveSettings()` só buscava campos `data-setting` dentro da seção `#settings`, mas o modal genérico (`#genericModal`) é renderizado fora dela na árvore do DOM — o modal "Geral" (nome/tipo da hospedagem) provavelmente nunca salvava de verdade desde que virou modal; corrigido ampliando a busca pro `document` inteiro (seguro, cada nome de `data-setting` só aparece uma vez no código). |
+| 1.43.0 | 05/08/2026 | Oficial | Notificações push nativas (Web Push API) — item que constava no Roadmap como deliberadamente adiado, retomado a pedido do usuário. Infraestrutura completa: chaves VAPID (variáveis de ambiente, nunca no repositório — recurso fica desligado em silêncio sem elas, mesmo padrão já usado pro `META_APP_SECRET`), service worker (`sw.js`, servido na raiz do site pra cobrir o site inteiro) e inscrição por dispositivo/pessoa (`push_subscriptions` — PC e celular contam como inscrições separadas). Nove tipos de evento configuráveis (`push_notification_types`, JSON por hospedagem, mesmo padrão de `alert_channels`): oportunidade de alta prioridade, reserva pendente, hóspede com problema/dúvida/frustração detectado pela IA mesmo fora da taxonomia de oportunidade de venda, mensagem nova numa conversa assumida manualmente pela equipe, pedido de cozinha, chamado de manutenção, ocorrência de segurança, chamado de manobrista, novo evento — mais "toda mensagem do chat" (única desligada por padrão, potencial de ruído). Hook operacional único (`notify_on_duty_staff_for_ticket`, `database.py`) cobre tanto chamado criado pela equipe via rota HTTP quanto chamado criado pela própria IA a partir de uma conversa, sem duplicar lógica. Cada checkbox "o que deve notificar" só aparece pra quem tem a permissão daquela área (`data-required-permission` + `applyPermissionVisibility`, mecanismo já existente reaproveitado) — manutenção só vê/liga a notificação de manutenção, manobrista só a de estacionamento, e assim por diante. Horário de silêncio (`quiet_hours_start`/`quiet_hours_end`, campo que já existia reservado exatamente pra esse uso desde a Sessão 7) passou a valer de verdade. Testado repetidamente contra o FCM real do Google (não só localmente simulado): tipo habilitado tenta enviar de verdade, tipo desabilitado nem tenta rede, inscrição expirada é limpa automaticamente após 404/410 real. |
+| 1.44.0 | 05/08/2026 | Oficial | Autenticação em duas etapas (2FA/TOTP) — item que constava no Roadmap como "Em breve" desde a Sessão 7, implementado a pedido do usuário. `pyotp` (geração/verificação de código) e `qrcode` (QR em SVG, gerado no servidor como data URI, sem Pillow nem CDN externo). Ativação em Configurações → Segurança: QR code + chave manual pra escanear no Google Authenticator (ou similar), confirmação com o primeiro código, 8 códigos de backup de uso único mostrados uma única vez (hash bcrypt, normalizados na comparação — aceitos com ou sem traço, maiúsculo ou minúsculo). Login refatorado: senha certa numa conta com 2FA ativo devolve um `challenge_token` de curta duração (5 minutos, 5 tentativas) em vez de completar a sessão — só `POST /login/2fa`, depois de validar o código TOTP ou um código de backup, cria a sessão de verdade. Corrigido de brinde um bug real de migração encontrado durante o teste local: `_migrate_users_to_memberships` reconstrói a tabela `users` com uma lista fixa de colunas sempre que o banco é novo (a própria `CREATE TABLE` ainda cita `hostel_id` no texto, então a migração dispara até em banco recém-criado) — isso descartava silenciosamente qualquer coluna nova adicionada antes desse ponto do código, em qualquer banco novo; não afetava produção (já migrada há muito), mas quebraria o próximo deploy do zero. Corrigido preservando `totp_secret`/`totp_enabled` na reconstrução, mesmo padrão já usado pra `must_change_password`. |
+| 1.45.0 | 05/08/2026 | Oficial | Módulo de Eventos — pedido do usuário ao lembrar que hospedagens de grande porte, como o Diplomatic Hotel em prospecção, também vendem espaço para eventos (casamentos, corporativo, conferências) como receita própria, algo que a StayFlow ainda não cobria (o Mapa de Quartos é só pra hospedagem). Item novo na barra lateral (permissão própria `events`, décima quinta do catálogo), com três abas: Espaços (salões/jardins/auditórios, capacidade sentados/em pé, preço de aluguel), Eventos (agenda com checagem de disponibilidade em tempo real — conflito de horário no mesmo espaço é rejeitado na criação — ficha de cliente que não precisa ser hóspede, tipo de evento, status pendente→confirmado→concluído ou cancelado) e Adicionais (catálogo de serviços extras com preço congelado no momento em que são anexados a um evento, pra reajuste futuro do catálogo não alterar retroativamente um evento já fechado). Receita de eventos confirmados entra automaticamente no Financeiro, mesmo padrão já usado pra reserva/pagamento/câmbio. Decisão de escopo registrada: Eventos ficou como item próprio na barra lateral, não dentro de Operações (que reúne "chamados" rápidos resolvidos por quem está de plantão) nem dentro de Reservas/Receitas (que são sobre hospedagem e upsell pro hóspede já hospedado, não aluguel de espaço com cliente e calendário próprios) — avaliação feita explicitamente com o usuário antes de implementar. |
 
 
 
@@ -3828,7 +3835,8 @@ hostels sem necessidade de novo login.
 
 
 Cada hostel define suas próprias funções em `Roles` (nome + lista
-configurável de permissões, de um catálogo de 14 chaves — ver 13.3 e
+configurável de permissões, de um catálogo de 15 chaves (atualizado em
+05/08/2026, versão 1.45.0, com a adição de `events`) — ver 13.3 e
 16.22 — não existem funções fixas no sistema, apenas a função "Admin"
 com todas as permissões e "Staff" sem nenhuma permissão por padrão,
 criadas automaticamente durante a migração de dados existentes).
@@ -3934,6 +3942,63 @@ sustenta as Respostas Rápidas da aba Chats. `billing` guarda o modelo de
 cobrança por hostel (ainda em definição comercial). `api\_keys` sustenta
 o webhook de saída assinado (Fase 6 da integração de canais). Ver
 Capítulo 16.
+
+
+
+\---
+
+
+
+\### Currency\_Exchanges (atualizado em 04/08/2026, versão 1.41.0)
+
+
+
+Sustenta a casa de câmbio: moeda e valor estrangeiro recebidos,
+cotação usada (com o hóspede) e cotação de mercado no momento do
+registro, lucro calculado na diferença, operador responsável e
+horário, com vínculo opcional a um `guest\_id`. Alimenta tanto o
+Financeiro quanto o histórico do perfil do hóspede. Ver Capítulo 16,
+seção 16.11.
+
+
+
+\---
+
+
+
+\### Push\_Subscriptions, Totp\_Pending\_Challenges e Totp\_Backup\_Codes
+(criadas em 05/08/2026, versões 1.43.0 e 1.44.0)
+
+
+
+`push\_subscriptions` guarda uma inscrição de notificação push por
+pessoa+dispositivo (PC e celular contam como inscrições separadas),
+com as chaves criptográficas exigidas pela Web Push API.
+`totp\_pending\_challenges` sustenta a etapa intermediária do login com
+2FA — token de curta duração criado depois da senha certa, antes do
+código TOTP confirmar a sessão de verdade. `totp\_backup\_codes` guarda
+o hash dos códigos de backup de uso único gerados na ativação do 2FA.
+Ver Capítulo 16, seções 16.28 e a nova seção de Notificações Push.
+
+
+
+\---
+
+
+
+\### Event\_Spaces, Events, Event\_Addons e Event\_Addon\_Selections
+(criadas em 05/08/2026, versão 1.45.0)
+
+
+
+Sustentam o módulo de Eventos: `event\_spaces` os espaços alugáveis
+(salões, jardins, auditórios) com capacidade e preço; `events` cada
+reserva de espaço, com cliente (não precisa ser hóspede cadastrado),
+período, status e preço base; `event\_addons` o catálogo de serviços
+extras (buffet, decoração, som); `event\_addon\_selections` os
+adicionais anexados a um evento específico, com o preço do catálogo
+congelado no momento da escolha. Ver Capítulo 16, nova seção de
+Eventos.
 
 
 
@@ -4223,7 +4288,15 @@ Exemplos:
 
 \- Team e Roles (gestão de equipe, funções e permissões individuais)
 
-\- Security (troca de senha, sessões, tentativas de login)
+\- Security (troca de senha, sessões, tentativas de login, 2FA — ver
+  16.28)
+
+\- Push (`/push/status`, `/push/subscribe`, inscrição de notificação
+  push por dispositivo — ver nova seção de Notificações Push no
+  Capítulo 16)
+
+\- Events (espaços, eventos, adicionais e disponibilidade — ver nova
+  seção de Eventos no Capítulo 16)
 
 \- WhatsApp Webhook (integração com a Meta Cloud API)
 
@@ -4856,6 +4929,8 @@ Na versão atual, os principais módulos são:
 
 \- Receitas (catálogo de upsells);
 
+\- Eventos (espaços, agenda e adicionais — ver Capítulo 16);
+
 \- Equipe (gestão de funções e permissões);
 
 \- Configurações;
@@ -4949,18 +5024,15 @@ Entre as evoluções previstas estão:
 
 \- Calendário Operacional;
 
-\- Notificações Inteligentes nativas no aparelho (Web Push API, service
-  worker, VAPID) — deliberadamente adiadas; o alerta operacional dentro
-  do próprio Dashboard (sino do topbar) já está implementado (ver
-  Capítulo 16);
-
 \- Indicadores personalizados.
 
 
 
 Já implementados nesta frente, portanto removidos da lista de futuro:
-Housekeeping (Mapa de Camas — ver 16.24) e Comandos por IA (Ask
-StayFlow como agente real — ver 16.27).
+Housekeeping (Mapa de Camas — ver 16.24), Comandos por IA (Ask
+StayFlow como agente real — ver 16.27) e Notificações Inteligentes
+nativas no aparelho (Web Push API, service worker, VAPID — atualizado
+em 05/08/2026, versão 1.43.0, ver Capítulo 16).
 
 
 
@@ -5235,6 +5307,17 @@ Concentrar informações relevantes sobre cada hóspede.
 
 \- oportunidades relacionadas;
 
+\- histórico de câmbios feitos com o hóspede, quando houver (atualizado
+  em 04/08/2026, versão 1.41.0 — ver 16.11);
+
+\- seção de Privacidade com exclusão de dados de uso único (atualizado
+  em 04/08/2026, versão 1.40.0): apaga documentos e conversas de
+  verdade, anonimiza nome/telefone/email/data de nascimento/
+  nacionalidade/documento, mantendo reservas e valores sem identificar
+  a pessoa — atende pedido de direito ao esquecimento (LGPD/Ley
+  25.326), com confirmação forte antes de executar (ação
+  irreversível);
+
 \- informações consolidadas da operação.
 
 
@@ -5281,7 +5364,17 @@ Persistência de:
 
 \- catálogo de experiências/upsells (offerings);
 
-\- sessões ativas e tentativas de login.
+\- sessões ativas e tentativas de login;
+
+\- câmbios (cotação usada, cotação de mercado, lucro, operador —
+  atualizado em 04/08/2026, versão 1.41.0);
+
+\- inscrições de notificação push por dispositivo e segredo/códigos de
+  backup de autenticação em duas etapas (atualizado em 05/08/2026,
+  versões 1.43.0 e 1.44.0);
+
+\- espaços, reservas e adicionais de eventos (atualizado em 05/08/2026,
+  versão 1.45.0).
 
 
 
@@ -5340,7 +5433,14 @@ O banco representa a memória operacional da plataforma.
 
 \- Team e Roles (gestão de equipe, funções e permissões);
 
-\- Security (troca de senha, sessões ativas, tentativas de login);
+\- Security (troca de senha, sessões ativas, tentativas de login,
+  autenticação em duas etapas — ver 16.28);
+
+\- Push (inscrição e status de notificação push por dispositivo — ver
+  nova seção de Notificações Push);
+
+\- Events (espaços, eventos, adicionais e disponibilidade — ver nova
+  seção de Eventos);
 
 \- Settings (inclui Beds24, Meta OAuth de Facebook/Instagram);
 
@@ -5552,7 +5652,22 @@ na plataforma.
   `reservations.amount`, já que são modelos de cobrança diferentes;
 
 \- extrato de movimentações com linha própria para pagamento de estadia
-  de Longa Duração.
+  de Longa Duração;
+
+\- \*\*casa de câmbio\*\* (atualizado em 04/08/2026, versão 1.41.0): registro
+  de pagamento recebido em moeda estrangeira, com cotação de mercado
+  (referência automática — ancorada no dólar blue via Bluelytics
+  quando a moeda da hospedagem é ARS, cruzada pra qualquer outra moeda
+  recebida; taxa oficial direta via `open.er-api.com` nos demais
+  casos) separada da cotação usada com o hóspede, lucro calculado na
+  diferença, operador e horário registrados, vínculo opcional com o
+  perfil do hóspede; entra na receita confirmada e no extrato de
+  movimentações;
+
+\- \*\*receita de eventos\*\* (atualizado em 05/08/2026, versão 1.45.0):
+  eventos confirmados (preço base + adicionais) entram na receita
+  confirmada e no extrato de movimentações, mesmo critério já usado
+  pra reservas — ver Capítulo 16, seção de Eventos.
 
 
 
@@ -5667,7 +5782,17 @@ Agregar alertas operacionais do dia a dia em um único lugar.
 
 \- atualização automática entre Operações e Mapa de Quartos após qualquer
   ação que muda status de cama/reserva (check-in, check-out, marcar
-  como limpa), sem precisar recarregar a página.
+  como limpa), sem precisar recarregar a página;
+
+\- \*\*Cozinha, Manutenção, Segurança Patrimonial e Estacionamento\*\*
+  consolidados como abas dentro da própria página de Operações (não
+  mais páginas próprias no menu lateral), cada uma com sua permissão
+  específica ainda respeitada; os quatro compartilham um sistema
+  genérico de "chamado" (`tickets`, com urgência e fila calculada por
+  espera dentro do mesmo nível de urgência) e de notificação pra quem
+  está de plantão (`notify\_on\_duty\_staff\_for\_ticket`, cobrindo tanto
+  chamado aberto pela equipe quanto chamado aberto pela própria IA a
+  partir de uma conversa — ver a nova seção de Notificações Push).
 
 
 
@@ -5977,11 +6102,13 @@ da equipe pode ver e fazer na plataforma.
 
 
 
-\- catálogo de 14 permissões, uma por seção principal do produto
+\- catálogo de 15 permissões, uma por seção principal do produto
   (dashboard, chats, opportunities, reservations, operations, guests,
   finance, reports, inventory, revenue, settings, team, security,
-  billing — as duas últimas adicionadas junto com a construção das
-  telas de Segurança e Billing dentro de Configurações), centralizado
+  billing, events — as duas penúltimas adicionadas junto com a
+  construção das telas de Segurança e Billing dentro de Configurações,
+  a última adicionada em 05/08/2026, versão 1.45.0, junto com o módulo
+  de Eventos), centralizado
   numa única fonte de verdade (`utils/permissions.py`) reutilizada por
   todas as camadas do sistema (migração de dados, controle de acesso
   das rotas, interface);
@@ -6367,8 +6494,31 @@ plataforma.
 \- histórico das últimas tentativas de login, com indicação de sucesso
   ou falha (`GET /security/login-attempts`);
 
-\- autenticação em duas etapas (2FA): ainda não implementada, sinalizada
-  como "Em breve" na própria interface.
+\- proteção contra força bruta no login: 5 tentativas erradas pro mesmo
+  e-mail travam por 15 minutos (`count\_recent\_failed\_logins`,
+  atualizado em 04/08/2026, versão 1.39.0);
+
+\- cabeçalhos de segurança (`X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `Strict-Transport-Security`) e Content-Security-Policy
+  em toda resposta (atualizado em 04/08/2026, versão 1.39.0 — CSP
+  mantém `unsafe-inline` em script/style deliberadamente, ver nota
+  abaixo);
+
+\- verificação de assinatura dos webhooks da Meta (`X-Hub-Signature-256`,
+  HMAC-SHA256 sobre o corpo cru), confirmada funcionando contra
+  tráfego real da Meta em produção (atualizado em 04/08/2026, versão
+  1.39.0);
+
+\- \*\*autenticação em duas etapas (2FA/TOTP)\*\* (implementada em
+  05/08/2026, versão 1.44.0): ativação com QR code + chave manual
+  (compatível com Google Authenticator e apps equivalentes), gerado no
+  servidor via `pyotp`/`qrcode` (SVG, sem CDN externo); confirmação
+  com o primeiro código antes de habilitar de verdade; 8 códigos de
+  backup de uso único mostrados apenas na ativação (hash bcrypt,
+  aceitos com ou sem formatação); login com 2FA ativo passa por uma
+  etapa intermediária (`challenge\_token` de 5 minutos/5 tentativas,
+  `POST /login/2fa`) antes de a sessão de verdade ser criada — senha
+  sozinha nunca basta pra quem ativou o 2FA.
 
 
 
@@ -6381,6 +6531,24 @@ devolve o valor bruto de um `access\_token` para o Frontend — sempre
 apenas um booleano (`has\_access\_token`). Essa é uma propriedade de
 design consistente em todo o sistema, não uma decisão isolada de um
 único canal.
+
+
+
+\### Decisão permanente registrada (04/08/2026, versão 1.39.0)
+
+
+
+A sessão nunca deve expirar automaticamente por tempo — nem de forma
+absoluta, nem por inatividade. O usuário considera reentrar
+recorrentemente um incômodo real; revogação continua existindo
+normalmente (logout, troca de senha derruba as demais sessões,
+revogação individual de uma sessão específica). Content-Security-Policy
+mantém `unsafe-inline` em `script-src`/`style-src` de propósito —
+remover essa exceção exigiria reescrever centenas de atributos
+`onclick`/`onchange`/`onsubmit` inline pro padrão `addEventListener`,
+avaliado como refatoração grande demais pra fazer sem capacidade de
+teste visual real; `connect-src 'self'` já fecha o vetor mais grave
+(exfiltração de dados por XSS), independente dessa exceção.
 
 
 
@@ -6412,6 +6580,142 @@ digitar o mesmo texto repetidamente.
 \- listagem, criação e exclusão de respostas rápidas por hostel
   (`GET`/`POST`/`DELETE /quick-replies`), protegidas pela permissão de
   `chats`.
+
+
+
+\---
+
+
+
+\## 16.30 Notificações Push (Web Push API)
+
+
+
+\*\*Status:\*\* Implementado e testado contra o serviço real do Google
+(FCM)
+
+
+
+\### Objetivo
+
+
+
+Avisar a equipe em tempo real, mesmo com a aba/app fechado, quando
+algo relevante acontece — sem depender de a pessoa estar olhando o
+Dashboard no momento.
+
+
+
+\### Capacidades atuais
+
+
+
+\- inscrição por dispositivo/pessoa (PC e celular contam como
+  inscrições separadas), com chave pública VAPID gerada no servidor e
+  service worker próprio (`sw.js`, servido na raiz do site pra cobrir
+  o site inteiro); recurso fica desligado em silêncio se as chaves
+  VAPID não estiverem configuradas no ambiente, mesmo padrão já usado
+  pro `META_APP_SECRET`;
+
+\- nove tipos de evento configuráveis por hospedagem (cada um pode ser
+  ligado/desligado independente): nova oportunidade de alta
+  prioridade, nova reserva pendente, hóspede com problema/dúvida/
+  frustração detectado pela IA mesmo quando a mensagem não vira
+  oportunidade de venda, mensagem nova numa conversa assumida
+  manualmente pela equipe, novo pedido de cozinha, novo chamado de
+  manutenção, nova ocorrência de segurança, novo chamado de
+  manobrista, novo evento cadastrado — mais "toda mensagem nova no
+  chat" (única desligada por padrão, por risco de virar ruído numa
+  hospedagem movimentada; as demais vêm ligadas);
+
+\- cada opção de "o que deve notificar" só aparece pra quem tem a
+  permissão da área correspondente (manutenção só vê a notificação de
+  manutenção, manobrista só a de estacionamento, e assim por diante),
+  reaproveitando o mesmo mecanismo genérico de visibilidade por
+  permissão já usado no menu lateral e em Configurações;
+
+\- horário de silêncio (campo que já existia reservado exatamente pra
+  esse uso desde a Sessão 7) suprime o envio nesse intervalo, sem
+  afetar a resposta automática ao hóspede;
+
+\- gatilho de chamado operacional (Cozinha/Manutenção/Segurança
+  Patrimonial/Estacionamento) é único e cobre tanto chamado aberto
+  pela equipe pelo painel quanto chamado aberto pela própria IA a
+  partir de uma conversa, sem duplicar lógica;
+
+\- inscrição expirada (navegador invalidou, ex: dados do navegador
+  limpos) é removida automaticamente do banco assim que uma tentativa
+  de envio recebe 404/410 do serviço de push.
+
+
+
+\---
+
+
+
+\## 16.31 Módulo de Eventos
+
+
+
+\*\*Status:\*\* Implementado
+
+
+
+\### Objetivo
+
+
+
+Permitir que uma hospedagem alugue espaços (salões, jardins,
+auditórios) pra eventos — casamentos, aniversários, corporativo,
+conferências, formaturas — como receita própria, independente da
+hospedagem em si. Conceito deliberadamente separado do Mapa de
+Quartos: quarto/cama é pra hospedagem, espaço de evento é pra aluguel
+por período, com cliente que não precisa ser hóspede.
+
+
+
+\### Capacidades atuais
+
+
+
+\- cadastro de espaços com capacidade (sentados e em pé) e preço de
+  aluguel;
+
+\- agenda de eventos com checagem de disponibilidade em tempo real —
+  sobreposição de horário no mesmo espaço (considerando eventos
+  pendentes ou confirmados, nunca cancelados) é rejeitada na criação;
+
+\- ficha do cliente (nome, telefone, e-mail, vínculo opcional com um
+  hóspede já cadastrado), tipo de evento, número esperado de
+  convidados e status (pendente → confirmado → concluído, ou
+  cancelado);
+
+\- catálogo de adicionais/serviços extras (buffet, decoração, som,
+  etc.), com preço congelado no momento em que são anexados a um
+  evento — reajustar o catálogo depois não altera retroativamente um
+  evento já fechado;
+
+\- preço total do evento é sempre preço base (herdado do espaço, ou
+  negociado por evento) mais a soma dos adicionais escolhidos;
+
+\- receita de eventos confirmados entra automaticamente no Financeiro
+  (ver 16.11);
+
+\- notificação push própria pra novo evento cadastrado (ver 16.30).
+
+
+
+\### Decisão de posicionamento na navegação
+
+
+
+Eventos é item próprio na barra lateral, com permissão própria
+(`events`) — avaliado explicitamente com o usuário e descartado tanto
+dentro de Operações (que reúne "chamados" rápidos resolvidos por quem
+está de plantão, um conceito diferente de reserva planejada com peso
+financeiro próprio) quanto dentro de Reservas ou Receitas (que são
+sobre hospedagem e upsell pro hóspede já hospedado, não aluguel de
+espaço com cliente e calendário próprios).
 
 
 
@@ -6573,24 +6877,6 @@ Prioridades atuais:
 
   pagamento nem plano ativo integrado;
 
-\- \*\*notificações nativas no aparelho\*\* (Web Push API, service worker,
-
-  VAPID) — deliberadamente adiadas para depois da validação comercial
-
-  atual; o alerta operacional dentro do próprio Dashboard já cobre a
-
-  necessidade imediata;
-
-\- \*\*moeda/câmbio automático por país\*\* — pedido do usuário registrado
-
-  desde a versão 1.22.0 (regra de margem de 30 pontos abaixo do câmbio
-
-  real), ainda não iniciado;
-
-\- \*\*autenticação em duas etapas (2FA)\*\* — sinalizada como "Em breve" na
-
-  própria interface de Segurança, ainda não implementada;
-
 \- avaliar estratégia de atendimento para hóspedes localizados no Brasil,
 
   dada a limitação de mensageria do WhatsApp descrita no Capítulo 16 —
@@ -6623,7 +6909,25 @@ Billing; arquitetura de tradução do Dashboard unificada (i18n-core.js,
 
 StayFlow como agente real; Mapa de Quartos completo; integração com
 
-Channel Manager (Beds24, 6 fases).
+Channel Manager (Beds24, 6 fases); auditoria de segurança completa com
+
+CSP, proteção contra força bruta e verificação de assinatura de
+
+webhook (v1.39.0); direito ao esquecimento/exclusão de dados do
+
+hóspede (v1.40.0); câmbio evoluído pra casa de câmbio real com cotação
+
+automática de todas as moedas cadastradas (v1.41.0 — item "moeda/
+
+câmbio automático por país" da revisão anterior foi resolvido dessa
+
+forma, não pela regra fixa de margem originalmente cogitada em
+
+1.22.0); revisão mobile de Configurações/Operações/Equipe (v1.42.0);
+
+notificações push nativas no aparelho (v1.43.0); autenticação em duas
+
+etapas — 2FA (v1.44.0); módulo de Eventos (v1.45.0).
 
 
 
@@ -6674,12 +6978,6 @@ Entre elas:
 \- Relatórios Inteligentes avançados (a versão básica de receita por
 
   canal e funil de conversão já está implementada, ver Capítulo 16);
-
-\- moeda/câmbio automático por país (ver 17.2);
-
-\- notificações nativas no aparelho (ver 17.2);
-
-\- autenticação em duas etapas — 2FA (ver 17.2);
 
 \- modelo de cobrança (Billing) real, com processador de pagamento e
 
@@ -7712,6 +8010,93 @@ do nicho hostel). Fica registrado como gap conhecido (ver nota acima) a
 ausência de entradas narrativas completas para as versões 1.7.0 a
 1.37.0 neste capítulo — a tabela de Controle de Versões no início do
 documento permanece completa e atualizada para todo esse intervalo.
+
+
+
+\---
+
+
+
+\### Versão 1.45.0
+
+
+
+\*\*Data\*\*
+
+
+
+05/08/2026
+
+
+
+\*\*Área\*\*
+
+
+
+Segurança, Financeiro, Configurações/Mobile, Notificações,
+Autenticação, novo módulo de Eventos
+
+
+
+\*\*Descrição\*\*
+
+
+
+Sessão longa e produtiva cobrindo sete frentes distintas, registradas
+em detalhe na tabela de Controle de Versões (1.39.0 a 1.45.0) e no
+Diário de Engenharia: (1) auditoria de segurança completa (XSS
+armazenado corrigido, força bruta no login bloqueada, cabeçalhos de
+segurança e CSP, verificação de assinatura dos webhooks da Meta
+confirmada com tráfego real, decisão permanente de nunca expirar
+sessão por tempo); (2) direito ao esquecimento — exclusão de dados do
+hóspede a pedido, e documentação de onde os dados ficam fisicamente
+hospedados (Render, Oregon); (3) câmbio evoluído pra casa de câmbio
+real, com cotação automática pra todas as moedas cadastradas (não só
+USD) e caixa de lucro dedicada; (4) revisão de UX mobile em
+Configurações/Operações/Equipe, incluindo um bug real de scroll ao
+trocar de seção e um bug real de save que nunca persistia o modal
+"Geral"; (5) sistema completo de notificações push nativas (Web Push
+API), nove tipos de evento configuráveis, filtrados por permissão de
+cada área; (6) autenticação em duas etapas (2FA/TOTP) com códigos de
+backup, incluindo a correção de um bug real de migração de banco que
+descartava colunas novas em qualquer banco criado do zero; (7) módulo
+de Eventos inteiro (espaços, agenda com checagem de disponibilidade,
+adicionais com preço congelado, integração com o Financeiro). Reforçada
+pela terceira vez a decisão de posicionamento registrada em 1.38.0: a
+StayFlow nunca deve ser descrita como nichada em hostel, nem em texto
+visível nem em comentários de código que descrevem lógica de negócio.
+
+
+
+\*\*Motivação\*\*
+
+
+
+Consolidar a plataforma antes da apresentação comercial ao Diplomatic
+Hotel: fechar lacunas de segurança e compliance que poderiam surgir
+como pergunta direta durante a venda, entregar capacidades que hotéis
+de maior porte esperam de um sistema de gestão (câmbio de verdade,
+2FA, notificações em tempo real, gestão de eventos), e manter a
+qualidade de UX consistente entre desktop e mobile.
+
+
+
+\*\*Impacto\*\*
+
+
+
+A plataforma sai desta sessão com resposta pronta para praticamente
+qualquer pergunta de segurança/compliance que a venda ao Diplomatic
+Hotel possa levantar, e com duas capacidades novas de peso (2FA,
+Eventos) que hotéis de grande porte tendem a considerar essenciais.
+Pendências reais que continuam abertas, sem mudança nesta versão:
+Billing (modelo de cobrança) ainda sem processador de pagamento real;
+Instagram Direct App Review ainda não submetido (ação do usuário);
+segunda conta de WhatsApp Business no Brasil ainda não registrada;
+separação de infraestrutura de deploy ainda pendente. Este próprio
+Documento Mestre e o Diário de Engenharia foram atualizados de ponta a
+ponta nesta versão, cobrindo os capítulos 12, 13, 15, 16, 17 e 18, além
+de varredura por palavras-chave no restante do documento.
 
 
 
