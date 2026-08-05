@@ -5331,25 +5331,36 @@ window.loadExchangeSummary = async function(){
 };
 
 window.updateExchangePreview = function(){
-  const preview = document.getElementById("exchangePreview");
-  if(!preview) return;
+  const profitValueEl = document.getElementById("exchangeProfitValue");
+  const profitHintEl = document.getElementById("exchangeProfitHint");
+  const creditedEl = document.getElementById("exchangeCreditedValue");
+  if(!profitValueEl || !creditedEl) return;
 
   const amount = parseFloat(document.getElementById("newExchangeAmount")?.value || "0") || 0;
   const marketRate = parseFloat(document.getElementById("newExchangeMarketRate")?.value || "0") || 0;
   const usedRate = parseFloat(document.getElementById("newExchangeRate")?.value || "0") || 0;
 
   if(!(amount > 0) || !(usedRate > 0)){
-    preview.innerHTML = "";
+    profitValueEl.textContent = "—";
+    profitValueEl.style.color = "var(--muted)";
+    if(profitHintEl) profitHintEl.textContent = "";
+    creditedEl.textContent = "";
     return;
   }
 
   const credited = amount * usedRate;
-  const parts = [T('finance.exchange.previewCredited', 'Creditado: {amount}', { amount: formatMoney(credited) })];
+  creditedEl.textContent = T('finance.exchange.previewCredited', 'Creditado: {amount}', { amount: formatMoney(credited) });
+
   if(marketRate > 0){
     const profit = amount * (marketRate - usedRate);
-    parts.push(T('finance.exchange.previewProfit', 'Lucro: {amount}', { amount: formatMoney(profit) }));
+    profitValueEl.textContent = formatMoney(profit);
+    profitValueEl.style.color = profit >= 0 ? "#2ecc71" : "#e74c3c";
+    if(profitHintEl) profitHintEl.textContent = "";
+  }else{
+    profitValueEl.textContent = "—";
+    profitValueEl.style.color = "var(--muted)";
+    if(profitHintEl) profitHintEl.textContent = T('finance.exchange.profitNeedsMarketRate', 'Preencha a cotação atual pra calcular');
   }
-  preview.innerHTML = parts.join(" &nbsp;·&nbsp; ");
 };
 
 window.openExchangeModal = async function(){
@@ -5401,7 +5412,14 @@ window.openExchangeModal = async function(){
         <input type="text" id="newExchangeDescription" autocomplete="off" placeholder="${T('finance.exchange.descPlaceholder', 'Ex: Hóspede do quarto 4')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
       </div>
     </div>
-    <p id="exchangePreview" style="margin-top:10px;font-size:13px;color:var(--muted)"></p>
+    <div id="exchangeProfitBox" style="margin-top:14px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.3);border-radius:15px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${T('finance.exchange.profitBoxLabel', 'Lucro estimado (cotação atual × cotação usada)')}</div>
+        <div id="exchangeProfitValue" style="font-size:24px;font-weight:700;color:var(--muted)">—</div>
+        <div id="exchangeProfitHint" style="font-size:11px;color:var(--muted);margin-top:2px"></div>
+      </div>
+      <div id="exchangeCreditedValue" style="font-size:13px;color:var(--muted)"></div>
+    </div>
     <div style="display:flex;justify-content:flex-end;margin-top:14px">
       <button class="btn" type="button" onclick="submitNewExchange()">${T('common.save', 'Salvar')}</button>
     </div>
@@ -5517,8 +5535,7 @@ window.submitNewExchange = async function(){
     document.getElementById("newExchangeRate").value = "";
     document.getElementById("newExchangeDescription").value = "";
     document.getElementById("newExchangeGuest").value = "";
-    const preview = document.getElementById("exchangePreview");
-    if(preview) preview.innerHTML = "";
+    updateExchangePreview();
     loadExchangeModalContent();
     loadFinance();
   }catch(e){
