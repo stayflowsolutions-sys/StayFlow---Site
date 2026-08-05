@@ -159,12 +159,12 @@ async function loadChats() {
 
             item.innerHTML = `
                 <div class="chat-name">
-                    <span>${flag ? flag + " " : ""}${chat.name || chat.phone || T('chats.noPhone', 'Sem telefone')} ${channelBadgeHtml(chat.channel)}</span>
+                    <span>${flag ? flag + " " : ""}${escapeHtml(chat.name || chat.phone || T('chats.noPhone', 'Sem telefone'))} ${channelBadgeHtml(chat.channel)}</span>
                     <span class="status-pill ${urgency}">
-                        ${intent} · ${score}/100
+                        ${escapeHtml(intent)} · ${score}/100
                     </span>
                 </div>
-                <div class="chat-preview">${preview || T('chats.noRecentMessages', 'Sem mensagens recentes.')}</div>
+                <div class="chat-preview">${escapeHtml(preview) || T('chats.noRecentMessages', 'Sem mensagens recentes.')}</div>
             `;
 
             item.addEventListener("click", () => {
@@ -359,8 +359,8 @@ if (guestNextAction) {
                     item.innerHTML = `
                         <div class="ai-history-time">${index === 0 ? T('chats.aiHistoryNow', 'Agora') : T('chats.historyPrevious', 'Anterior')}</div>
                         <div class="ai-history-text">
-                            <strong>${opp.type || T('chats.opportunityDefaultType', 'Oportunidade')}</strong>
-                            ${opp.description || T('chats.noDescription', 'Sem descrição.')}
+                            <strong>${escapeHtml(opp.type || T('chats.opportunityDefaultType', 'Oportunidade'))}</strong>
+                            ${escapeHtml(opp.description || T('chats.noDescription', 'Sem descrição.'))}
                         </div>
                     `;
                     guestAIHistory.appendChild(item);
