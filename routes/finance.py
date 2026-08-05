@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
-from database import get_finance_summary, create_currency_exchange, get_currency_exchanges
-from services.exchange_rate_service import get_usd_ars_blue_rate
+from database import get_finance_summary, create_currency_exchange, get_currency_exchanges, get_hostel_currency
+from services.exchange_rate_service import get_reference_rate
 from utils.tenant import require_permission, get_current_user
 
 finance_bp = Blueprint("finance", __name__)
@@ -16,15 +16,17 @@ def finance(hostel_id):
 @require_permission("finance")
 def get_reference_exchange_rate(hostel_id):
     """
-    Cotacao de referencia pra ajudar a preencher o cambio manual - so
-    existe pra USD->ARS hoje (unica fonte que temos, finanzasargy.com,
-    e um site voltado pro mercado argentino). Qualquer outro par devolve
-    rate=None e o frontend so esconde a referencia, sem quebrar nada.
+    Cotacao de referencia pra ajudar a preencher o cambio manual, pra
+    qualquer moeda recebida cadastrada no seletor, contra a moeda
+    configurada do hostel (Configuracoes > Empresa). Se a fonte nao
+    tiver dados desse par, devolve rate=None e o frontend so esconde a
+    referencia, sem quebrar nada.
     """
     currency = (request.args.get("currency") or "").upper()
-    if currency != "USD":
+    if not currency:
         return jsonify({"rate": None})
-    return jsonify(get_usd_ars_blue_rate())
+    home_currency = get_hostel_currency(hostel_id)
+    return jsonify(get_reference_rate(currency, home_currency))
 
 
 @finance_bp.route("/finance/exchanges", methods=["GET"])

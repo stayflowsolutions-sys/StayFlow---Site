@@ -5353,7 +5353,9 @@ window.updateExchangePreview = function(){
 };
 
 window.openExchangeModal = async function(){
-  const options = FINANCE_EXCHANGE_CURRENCIES.map(code =>
+  // A propria moeda do hostel nao entra como opcao de "moeda recebida"
+  // (nao existe cambio dela pra ela mesma).
+  const options = FINANCE_EXCHANGE_CURRENCIES.filter(code => code !== window.STAYFLOW_CURRENCY).map(code =>
     `<option value="${code}">${code} - ${STAYFLOW_CURRENCY_SYMBOLS[code] || code}</option>`
   ).join("");
 
@@ -5418,17 +5420,14 @@ window.onExchangeCurrencyChange = async function(){
   if(!refEl || !marketInput) return;
 
   const currency = document.getElementById("newExchangeCurrency")?.value;
-  // A referencia so existe pra USD->ARS hoje (unica fonte que temos) -
-  // qualquer outra combinacao simplesmente nao preenche nada, sem quebrar
-  // (o campo continua editavel manualmente).
-  if(currency !== "USD" || window.STAYFLOW_CURRENCY !== "ARS"){
+  if(!currency || currency === window.STAYFLOW_CURRENCY){
     refEl.textContent = "";
     return;
   }
 
   refEl.textContent = T('finance.exchange.rateLoading', 'Buscando cotação atual...');
   try{
-    const res = await fetch("/finance/exchange-rate?currency=USD", { credentials: "same-origin" });
+    const res = await fetch(`/finance/exchange-rate?currency=${encodeURIComponent(currency)}`, { credentials: "same-origin" });
     if(!res.ok){ refEl.textContent = ""; return; }
     const data = await res.json();
     if(!data.rate){ refEl.textContent = ""; return; }

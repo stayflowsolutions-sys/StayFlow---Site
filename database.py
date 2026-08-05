@@ -1777,6 +1777,16 @@ def save_hostel_phone(hostel_id, phone):
     conn.close()
 
 
+def get_hostel_currency(hostel_id):
+    """Moeda configurada em Configuracoes > Empresa. USD por padrao (mesmo default do frontend) se o hostel ainda nao configurou nada."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT currency FROM settings WHERE hostel_id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return (row["currency"] if row and row["currency"] else "USD")
+
+
 def get_user_by_email(email):
     """
     Retorna a identidade (pessoa) por email, ou None. O email e unico
