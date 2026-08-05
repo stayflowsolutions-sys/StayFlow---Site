@@ -2034,6 +2034,29 @@ def log_login_attempt(user_id, hostel_id, email_attempted, success):
     conn.close()
 
 
+def count_recent_failed_logins(email, minutes=15):
+    """
+    Quantas tentativas de login FALHADAS existem pra esse email nos
+    ultimos N minutos - usado pelo /login pra travar por forca bruta.
+    Conta por email tentado (nao por user_id), entao cobre tanto
+    contas reais quanto tentativas contra email que nem existe
+    (log_login_attempt ja grava o email attempted nos dois casos).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS total FROM login_attempts
+        WHERE email_attempted = ? AND success = 0
+          AND created_at >= datetime('now', ?)
+        """,
+        (email, f"-{minutes} minutes")
+    )
+    total = cursor.fetchone()["total"]
+    conn.close()
+    return total
+
+
 def get_login_attempts(user_id, limit=20):
     """Lista as ultimas tentativas de login associadas a esse
     usuario (tentativas com email desconhecido - sem match de

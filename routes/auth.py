@@ -15,7 +15,16 @@ from database import (
     update_session_hostel,
     revoke_session_by_id,
     log_login_attempt,
+    count_recent_failed_logins,
 )
+
+# Protecao basica contra forca bruta: 5 tentativas erradas pro MESMO
+# email trava por 15 minutos. Bloqueia por email (nao por IP) porque
+# login_attempts ja grava o email tentado mesmo pra conta inexistente -
+# cobre o cenario mais realista (alguem com o email certo tentando
+# adivinhar a senha), sem precisar de infraestrutura nova.
+LOGIN_MAX_FAILED_ATTEMPTS = 5
+LOGIN_LOCKOUT_MINUTES = 15
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -121,6 +130,12 @@ def login():
 
     email = data.get("email", "").strip().lower()
     password = data.get("password", "")
+
+    if email and count_recent_failed_logins(email, LOGIN_LOCKOUT_MINUTES) >= LOGIN_MAX_FAILED_ATTEMPTS:
+        return jsonify({
+            "success": False,
+            "message": f"Too many failed login attempts. Try again in {LOGIN_LOCKOUT_MINUTES} minutes."
+        }), 429
 
     user = get_user_by_email(email)
 
