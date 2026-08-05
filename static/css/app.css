@@ -1768,57 +1768,55 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     min-height:44px;
   }
 
-  /* Fix real do bug reportado (2a rodada - a 1a tentativa nao
-     resolveu de verdade). Causa raiz encontrada: .topbar era um flex
-     ROW com so 2 filhos (bloco do titulo + .actions); quando
-     quebrava linha, o filho com flex-grow (o titulo) tomava todo o
-     espaco extra disponivel na conta do flex-grow, deixando .actions
-     (flex-grow:0) espremido num espaco minusculo - pequeno demais ate
-     pros PROPRIOS filhos dele (hostel/sino/idioma/avatar) caberem
-     lado a lado, entao cada um quebrava pra sua propria linha dentro
-     desse espaco apertado. Resultado: coluna estreita e torta.
-     Fix: .topbar vira coluna de verdade com 2 linhas fixas (bloco do
-     titulo, depois .actions) - cada uma ocupando 100% da largura por
-     definicao propria, sem depender de calculo de flex-grow. Dentro
-     de .actions, flex-wrap:nowrap garante que sino/idioma/avatar
-     NUNCA quebram linha entre si - ficam sempre numa fileira unica
-     alinhada a direita. */
+  /* Fix do topbar no mobile (3a rodada). Pedido explicito: os icones
+     (hospedagem/sino/idioma/avatar) tem que ficar na MESMA linha do
+     titulo, nao numa linha propria depois do subtitulo.
+     display:contents no bloco do titulo faz ele "desaparecer" como
+     caixa - o hamburguer, o h1 e o <p> passam a ser filhos DIRETOS de
+     .topbar, no mesmo nivel de .actions, sem precisar tocar no HTML.
+     Com todos no mesmo flex container, "order" reorganiza livremente:
+     hamburguer + titulo (encolhendo com reticencias) dividem a 1a
+     linha com .actions (que nunca quebra por dentro, flex-wrap:nowrap);
+     o subtitulo vem sempre por ultimo, forcado pra sua propria linha
+     inteira via flex-basis:100%. */
   .topbar{
-    flex-direction:column;
-    align-items:stretch;
-    row-gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    row-gap:6px;
+    column-gap:10px;
     min-height:auto;
   }
   .topbar>div:first-child{
-    display:flex;
-    align-items:center;
-    flex-wrap:wrap;
-    column-gap:10px;
-    row-gap:2px;
-    min-width:0;
+    display:contents;
   }
-  .topbar>div:first-child p{
-    flex-basis:100%;
-    margin:0;
+  .mobile-menu{
+    order:1;
   }
   .topbar h1{
+    order:2;
+    flex:1 1 auto;
+    min-width:0;
     margin:0;
     font-size:22px;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
-    min-width:0;
-  }
-  .topbar p{
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
   }
   .actions{
-    width:100%;
+    order:3;
+    flex:0 0 auto;
     flex-wrap:nowrap;
     justify-content:flex-end;
     min-width:0;
+  }
+  .topbar p{
+    order:4;
+    flex-basis:100%;
+    width:100%;
+    margin:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
   }
   .actions>*{
     min-width:0;
