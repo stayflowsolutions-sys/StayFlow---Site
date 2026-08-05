@@ -106,6 +106,8 @@ def register():
         return jsonify({"success": False, "message": "Email is required."}), 400
     if not password:
         return jsonify({"success": False, "message": "Password is required."}), 400
+    if len(password) < 8:
+        return jsonify({"success": False, "message": "Password must be at least 8 characters."}), 400
 
     if get_user_by_email(email):
         return jsonify({"success": False, "message": "This email is already registered."}), 409

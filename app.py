@@ -124,6 +124,24 @@ def static_files(filename):
     )
 
 
+@app.after_request
+def set_security_headers(response):
+    """
+    Cabecalhos de seguranca que nao existiam antes (achado numa
+    auditoria) - nenhum deles interfere com inline script/style/
+    onclick, que o resto do app usa bastante, entao sem risco de
+    quebrar funcionalidade existente. Content-Security-Policy fica de
+    fora de proposito: exigiria remover TODO onclick/style inline do
+    dashboard.html primeiro, refatoracao grande demais pra entrar
+    junto com um hardening pontual.
+    """
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
 if __name__ == "__main__":
     # PORT vem do ambiente em serviços como Render; localmente usa 10000.
     port = int(os.getenv("PORT", 10000))
