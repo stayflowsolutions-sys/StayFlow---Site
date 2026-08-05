@@ -12,6 +12,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   pt: {
     // ===== Menu lateral =====
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeGuestNeedsAttention": "Hóspede com problema, dúvida ou frustração",
     "settings.communication.pushTypeKitchenOrder": "Novo pedido na cozinha",
     "settings.communication.pushTypeMaintenanceTicket": "Novo chamado de manutenção",
     "settings.communication.pushTypeSecurityIncident": "Nova ocorrência de segurança",
@@ -957,6 +958,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   en: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeGuestNeedsAttention": "Guest with a problem, question, or frustration",
     "settings.communication.pushTypeKitchenOrder": "New kitchen order",
     "settings.communication.pushTypeMaintenanceTicket": "New maintenance ticket",
     "settings.communication.pushTypeSecurityIncident": "New security incident",
@@ -1885,6 +1887,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   es: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeGuestNeedsAttention": "Huésped con un problema, duda o frustración",
     "settings.communication.pushTypeKitchenOrder": "Nuevo pedido en la cocina",
     "settings.communication.pushTypeMaintenanceTicket": "Nuevo llamado de mantenimiento",
     "settings.communication.pushTypeSecurityIncident": "Nueva incidencia de seguridad",
@@ -2813,6 +2816,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   fr: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeGuestNeedsAttention": "Client avec un problème, une question ou une frustration",
     "settings.communication.pushTypeKitchenOrder": "Nouvelle commande en cuisine",
     "settings.communication.pushTypeMaintenanceTicket": "Nouvelle demande de maintenance",
     "settings.communication.pushTypeSecurityIncident": "Nouvel incident de sécurité",
@@ -3741,6 +3745,7 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
   de: {
     "nav.dashboard": "Dashboard",
+    "settings.communication.pushTypeGuestNeedsAttention": "Gast mit einem Problem, einer Frage oder Frustration",
     "settings.communication.pushTypeKitchenOrder": "Neue Küchenbestellung",
     "settings.communication.pushTypeMaintenanceTicket": "Neuer Wartungsauftrag",
     "settings.communication.pushTypeSecurityIncident": "Neuer Sicherheitsvorfall",
