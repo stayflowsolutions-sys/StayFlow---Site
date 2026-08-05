@@ -16,7 +16,16 @@ from database import (
     revoke_session_by_id,
     log_login_attempt,
     count_recent_failed_logins,
+    is_user_totp_enabled,
+    get_user_totp_secret,
+    create_totp_challenge,
+    get_totp_challenge,
+    increment_totp_challenge_attempts,
+    delete_totp_challenge,
+    get_unused_totp_backup_codes,
+    mark_totp_backup_code_used,
 )
+from services.totp_service import verify_totp_code, normalize_backup_code
 
 # Protecao basica contra forca bruta: 5 tentativas erradas pro MESMO
 # email trava por 15 minutos. Bloqueia por email (nao por IP) porque
@@ -126,25 +135,13 @@ def register():
     return jsonify({"success": True, "message": "Hostel created successfully."})
 
 
-@auth_bp.route("/login", methods=["POST"])
-def login():
-    data = request.get_json()
-
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "")
-
-    if email and count_recent_failed_logins(email, LOGIN_LOCKOUT_MINUTES) >= LOGIN_MAX_FAILED_ATTEMPTS:
-        return jsonify({
-            "success": False,
-            "message": f"Too many failed login attempts. Try again in {LOGIN_LOCKOUT_MINUTES} minutes."
-        }), 429
-
-    user = get_user_by_email(email)
-
-    if not user or not user["password"] or not check_password(password, user["password"]):
-        log_login_attempt(user["id"] if user else None, None, email, False)
-        return jsonify({"success": False, "message": "Invalid email or password."}), 401
-
+def _complete_login(user, email):
+    """
+    Ultima etapa do login (sessao de verdade) - usada tanto por /login
+    direto (sem 2FA) quanto por /login/2fa (depois do codigo confirmado).
+    Isolada em funcao propria pra nao duplicar a logica de escolha de
+    hostel/log de tentativa nos dois caminhos.
+    """
     hostels = get_user_hostels(user["id"])
 
     if not hostels:
@@ -177,6 +174,79 @@ def login():
         },
         "hostels": hostels,
     })
+
+
+@auth_bp.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+
+    if email and count_recent_failed_logins(email, LOGIN_LOCKOUT_MINUTES) >= LOGIN_MAX_FAILED_ATTEMPTS:
+        return jsonify({
+            "success": False,
+            "message": f"Too many failed login attempts. Try again in {LOGIN_LOCKOUT_MINUTES} minutes."
+        }), 429
+
+    user = get_user_by_email(email)
+
+    if not user or not user["password"] or not check_password(password, user["password"]):
+        log_login_attempt(user["id"] if user else None, None, email, False)
+        return jsonify({"success": False, "message": "Invalid email or password."}), 401
+
+    # Senha certa, mas essa conta tem 2FA ativado - a sessao de verdade
+    # so nasce depois do codigo confirmado em /login/2fa. Nao loga
+    # login_attempt aqui ainda (login nao terminou de verdade) - quem
+    # loga sucesso/falha e o proprio /login/2fa.
+    if is_user_totp_enabled(user["id"]):
+        challenge_token = create_totp_challenge(user["id"])
+        return jsonify({"success": True, "needs_2fa": True, "challenge_token": challenge_token})
+
+    return _complete_login(user, email)
+
+
+@auth_bp.route("/login/2fa", methods=["POST"])
+def login_2fa():
+    data = request.get_json() or {}
+    challenge_token = data.get("challenge_token", "")
+    code = (data.get("code", "") or "").strip()
+
+    challenge = get_totp_challenge(challenge_token)
+    if not challenge:
+        return jsonify({
+            "success": False,
+            "message": "Sessão de verificação expirada. Faça login novamente."
+        }), 401
+
+    user_id = challenge["user_id"]
+    user = get_user_by_id(user_id)
+    if not user:
+        delete_totp_challenge(challenge_token)
+        return jsonify({
+            "success": False,
+            "message": "Sessão de verificação expirada. Faça login novamente."
+        }), 401
+
+    secret = get_user_totp_secret(user_id)
+    valid = verify_totp_code(secret, code)
+
+    # Codigo TOTP nao bateu - tenta como codigo de backup de uso unico
+    # antes de considerar invalido de verdade.
+    if not valid:
+        normalized = normalize_backup_code(code)
+        for backup_code in get_unused_totp_backup_codes(user_id):
+            if check_password(normalized, backup_code["code_hash"]):
+                mark_totp_backup_code_used(backup_code["id"])
+                valid = True
+                break
+
+    if not valid:
+        increment_totp_challenge_attempts(challenge_token)
+        return jsonify({"success": False, "message": "Código inválido."}), 401
+
+    delete_totp_challenge(challenge_token)
+    return _complete_login(user, user["email"])
 
 
 @auth_bp.route("/select-hostel", methods=["POST"])

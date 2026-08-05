@@ -230,6 +230,12 @@ def _migrate_users_to_memberships(cursor):
 
     cursor.execute("ALTER TABLE users RENAME TO users_old")
 
+    # totp_secret/totp_enabled so existem em users_old se essa migracao
+    # rodar DEPOIS dos add_column_if_not_exists correspondentes mais
+    # abaixo em create_database() (que sempre rodam antes deste ponto) -
+    # preservar aqui evita que um banco novo perca essas colunas na hora
+    # que essa migracao acontece (mesmo raciocinio ja aplicado a
+    # must_change_password).
     cursor.execute("""
     CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -237,13 +243,15 @@ def _migrate_users_to_memberships(cursor):
         email TEXT UNIQUE,
         password TEXT,
         must_change_password INTEGER DEFAULT 1,
+        totp_secret TEXT,
+        totp_enabled INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
     cursor.execute("""
-        INSERT INTO users (id, name, email, password, must_change_password, created_at)
-        SELECT id, name, email, password, must_change_password, created_at
+        INSERT INTO users (id, name, email, password, must_change_password, totp_secret, totp_enabled, created_at)
+        SELECT id, name, email, password, must_change_password, totp_secret, totp_enabled, created_at
         FROM users_old
     """)
 
@@ -461,6 +469,15 @@ def create_database():
 
     add_column_if_not_exists(cursor, "users", "must_change_password", "INTEGER DEFAULT 1")
 
+    # 2FA (TOTP) - totp_secret fica preenchido assim que a pessoa clica
+    # "Ativar" (antes de confirmar o primeiro codigo), mas totp_enabled
+    # so vira 1 depois do primeiro codigo confirmado com sucesso - login
+    # so passa a exigir 2FA quando totp_enabled=1. Gerar um secret novo
+    # de novo (reativar) sobrescreve o anterior sem problema, ja que so
+    # importa enquanto nao habilitado.
+    add_column_if_not_exists(cursor, "users", "totp_secret", "TEXT")
+    add_column_if_not_exists(cursor, "users", "totp_enabled", "INTEGER DEFAULT 0")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS roles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -638,6 +655,35 @@ def create_database():
         email_attempted TEXT,
         success INTEGER NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Etapa intermediaria do login com 2FA: senha ja foi conferida certa,
+    # mas a sessao de verdade so nasce depois do codigo TOTP tambem ser
+    # confirmado (ver /login e /login/2fa em routes/auth.py). Token
+    # opaco de curta duracao (checado por idade em codigo, sem job de
+    # limpeza - mesmo espirito ja usado noutras tabelas efemeras deste
+    # arquivo). "attempts" limita tentativas de codigo errado pra um
+    # mesmo challenge antes de forcar novo login.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS totp_pending_challenges (
+        token TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Codigos de backup de uso unico (gerados na confirmacao do 2FA,
+    # mostrados so uma vez) - permitem entrar se a pessoa perder acesso
+    # ao app autenticador. code_hash e bcrypt do codigo NORMALIZADO
+    # (maiusculo, sem traco) - ver services/totp_service.py.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS totp_backup_codes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        code_hash TEXT NOT NULL,
+        used_at TIMESTAMP
     )
     """)
 
@@ -2112,6 +2158,154 @@ def get_login_attempts(user_id, limit=20):
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
     return rows
+
+
+# ===== 2FA (TOTP) =====
+
+def set_user_totp_secret(user_id, secret):
+    """Grava o secret SEM habilitar 2FA ainda - so /security/2fa/confirm liga totp_enabled, depois do primeiro codigo certo."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET totp_secret = ? WHERE id = ?", (secret, user_id))
+    conn.commit()
+    conn.close()
+
+
+def enable_user_totp(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET totp_enabled = 1 WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+
+def disable_user_totp(user_id):
+    """Desliga 2FA, apaga o secret e todos os codigos de backup - reativar depois gera tudo de novo do zero."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET totp_secret = NULL, totp_enabled = 0 WHERE id = ?", (user_id,))
+    cursor.execute("DELETE FROM totp_backup_codes WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_user_totp_secret(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT totp_secret FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["totp_secret"] if row else None
+
+
+def is_user_totp_enabled(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT totp_enabled FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return bool(row["totp_enabled"]) if row else False
+
+
+def save_totp_backup_codes(user_id, code_hashes):
+    """Substitui TODOS os codigos de backup anteriores (gerar de novo invalida os antigos, evita confusao de qual lista vale)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM totp_backup_codes WHERE user_id = ?", (user_id,))
+    cursor.executemany(
+        "INSERT INTO totp_backup_codes (user_id, code_hash) VALUES (?, ?)",
+        [(user_id, code_hash) for code_hash in code_hashes]
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_unused_totp_backup_codes(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, code_hash FROM totp_backup_codes WHERE user_id = ? AND used_at IS NULL",
+        (user_id,)
+    )
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def mark_totp_backup_code_used(code_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE totp_backup_codes SET used_at = CURRENT_TIMESTAMP WHERE id = ?", (code_id,))
+    conn.commit()
+    conn.close()
+
+
+def count_unused_totp_backup_codes(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) AS c FROM totp_backup_codes WHERE user_id = ? AND used_at IS NULL",
+        (user_id,)
+    )
+    count = cursor.fetchone()["c"]
+    conn.close()
+    return count
+
+
+_TOTP_CHALLENGE_TTL_MINUTES = 5
+_TOTP_CHALLENGE_MAX_ATTEMPTS = 5
+
+
+def create_totp_challenge(user_id):
+    """Token opaco de curta duracao criado depois da senha certa, antes do codigo TOTP - so entao a sessao de verdade nasce (ver routes/auth.py)."""
+    import secrets as _secrets
+
+    token = _secrets.token_urlsafe(32)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO totp_pending_challenges (token, user_id) VALUES (?, ?)",
+        (token, user_id)
+    )
+    conn.commit()
+    conn.close()
+    return token
+
+
+def get_totp_challenge(token):
+    """Devolve {user_id, attempts} se o challenge existir, nao tiver estourado tentativas e nao tiver expirado (idade checada aqui, sem job de limpeza). None em qualquer outro caso."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT user_id, attempts FROM totp_pending_challenges WHERE token = ? AND created_at >= datetime('now', ?)",
+        (token, f"-{_TOTP_CHALLENGE_TTL_MINUTES} minutes")
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row or row["attempts"] >= _TOTP_CHALLENGE_MAX_ATTEMPTS:
+        return None
+
+    return {"user_id": row["user_id"], "attempts": row["attempts"]}
+
+
+def increment_totp_challenge_attempts(token):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE totp_pending_challenges SET attempts = attempts + 1 WHERE token = ?",
+        (token,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_totp_challenge(token):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM totp_pending_challenges WHERE token = ?", (token,))
+    conn.commit()
+    conn.close()
 
 
 def get_user_password_hash(user_id):
