@@ -1670,6 +1670,8 @@ async function deleteRoleConfirm(roleId){
 
     <div class="span-8">
 
+      <button class="btn secondary settings-mobile-back" type="button" onclick="settingsBackToMenu()">← <span data-i18n="common.back">Voltar</span></button>
+
       <div class="card">
         <h2 data-i18n="settings.systemStatus.title">Status do sistema</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -1783,24 +1785,13 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card" data-settings-section="comunicacao">
-        <h2 data-i18n="settings.communication.title">Comunicação</h2>
-
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
-          <span data-i18n="settings.communication.bellToggleLabel">Mostrar contagem de alertas no sininho</span>
-          <input type="checkbox" data-setting="alert_channels" checked>
-        </label>
-
-        <h3 data-i18n="settings.communication.quickRepliesTitle" style="margin:20px 0 10px;font-size:14px;font-weight:800">Respostas rápidas</h3>
-        <div id="quickRepliesList" style="display:grid;gap:8px"></div>
-        <div style="display:flex;gap:10px;margin-top:10px">
-          <input type="text" id="newQuickReplyText" data-i18n-placeholder="settings.communication.newQuickReplyPlaceholder" placeholder="Nova resposta rápida...">
-          <button class="btn secondary" type="button" onclick="createQuickReply()" data-i18n="settings.communication.addQuickReplyBtn">+ Adicionar</button>
-        </div>
-
-        <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
-          <button class="btn secondary" type="button" onclick="openPage('dashboard', document.querySelector('[data-page=dashboard]'))" data-i18n="settings.cancelBtn">Cancelar</button>
-          <button class="btn" type="button" onclick="saveSettings()" data-i18n="settings.saveChangesBtn">Salvar alterações</button>
+      <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openQuickRepliesModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.communication.quickRepliesTitle">💬 Respostas rápidas</h2>
+            <p class="settings-summary-desc" id="quickRepliesSummaryDesc" data-i18n="settings.quickReplies.summaryDesc">Frases prontas pra responder hóspedes mais rápido no chat.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
         </div>
       </div>
 
@@ -2092,6 +2083,14 @@ async function deleteRoleConfirm(roleId){
     if(pageId === "chats"){
       const chatLayout = document.querySelector(".chat-layout");
       if(chatLayout) chatLayout.dataset.mobileView = "list";
+    }
+
+    // Configuracoes no mobile segue o mesmo padrao de duas telas dos
+    // Chats - sempre entra pela lista de categorias, nunca direto no
+    // conteudo da ultima categoria vista.
+    if(pageId === "settings"){
+      const settingsGrid = document.querySelector("#settings > .grid");
+      if(settingsGrid) settingsGrid.dataset.mobileView = "menu";
     }
 
     const sidebar = document.getElementById("sidebar");
@@ -3211,6 +3210,11 @@ async function deleteRoleConfirm(roleId){
       <div id="pushStatusMessage" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
       <button class="btn secondary" type="button" id="pushToggleBtn" onclick="togglePushNotifications()">${T('settings.communication.pushEnableBtn', 'Ativar neste dispositivo')}</button>
 
+      <label style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 0;padding-top:16px;border-top:1px solid #ffffff12;font-size:14px;">
+        <span data-i18n="settings.communication.bellToggleLabel">${T('settings.communication.bellToggleLabel', 'Mostrar contagem de alertas no sininho')}</span>
+        <input type="checkbox" data-setting="alert_channels" id="alertChannelsCheckbox">
+      </label>
+
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid #ffffff12">
         <div style="font-size:13px;font-weight:700;margin-bottom:8px">${T('settings.communication.quietHoursTitle', 'Horário de silêncio')}</div>
         <p style="font-size:12px;color:var(--muted);margin:0 0 10px">${T('settings.communication.quietHoursDesc', 'Notificações push não são enviadas nesse intervalo (a resposta automática ao hóspede continua funcionando normalmente — isso afeta só o aviso pra equipe).')}</p>
@@ -3241,6 +3245,8 @@ async function deleteRoleConfirm(roleId){
       if(startInput) setFieldValue(startInput, data.quiet_hours_start || "");
       const endInput = document.getElementById("quietHoursEnd");
       if(endInput) setFieldValue(endInput, data.quiet_hours_end || "");
+      const bellInput = document.getElementById("alertChannelsCheckbox");
+      if(bellInput) bellInput.checked = Array.isArray(data.alert_channels) && data.alert_channels.includes("dashboard");
     }catch(e){
       console.warn("Erro ao carregar horário de silêncio:", e);
     }
@@ -3500,6 +3506,13 @@ async function deleteRoleConfirm(roleId){
   }
 
   function renderQuickRepliesList(){
+    const summaryEl = document.getElementById("quickRepliesSummaryDesc");
+    if(summaryEl){
+      summaryEl.textContent = window.STAYFLOW_QUICK_REPLIES.length
+        ? T('settings.quickReplies.summaryCount', '{count} cadastrada(s)', { count: window.STAYFLOW_QUICK_REPLIES.length })
+        : T('settings.quickReplies.summaryDesc', 'Frases prontas pra responder hóspedes mais rápido no chat.');
+    }
+
     const container = document.getElementById("quickRepliesList");
     if(!container) return;
     container.innerHTML = "";
@@ -3519,6 +3532,17 @@ async function deleteRoleConfirm(roleId){
       container.appendChild(row);
     });
   }
+
+  window.openQuickRepliesModal = function(){
+    openGenericModal(T('settings.communication.quickRepliesTitle', '💬 Respostas rápidas'), `
+      <div id="quickRepliesList" style="display:grid;gap:8px"></div>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <input type="text" id="newQuickReplyText" placeholder="${T('settings.communication.newQuickReplyPlaceholder', 'Nova resposta rápida...')}">
+        <button class="btn secondary" type="button" onclick="createQuickReply()">${T('settings.communication.addQuickReplyBtn', '+ Adicionar')}</button>
+      </div>
+    `);
+    renderQuickRepliesList();
+  };
 
   window.createQuickReply = async function(){
     const input = document.getElementById("newQuickReplyText");
@@ -3804,12 +3828,28 @@ async function deleteRoleConfirm(roleId){
     $$("#settings .settings-menu .btn.secondary[data-settings-target]").forEach(btn=>{
       btn.classList.toggle("active", btn.dataset.settingsTarget === target);
     });
+
+    // No mobile, Configuracoes vira duas telas (lista de categorias OU
+    // conteudo, nunca as duas empilhadas no mesmo scroll) - mesmo
+    // padrao ja usado nos Chats. Escolher uma categoria leva pra tela
+    // de conteudo; "Voltar" (settingsBackToMenu) volta pra lista.
+    const settingsGrid = document.querySelector("#settings > .grid");
+    if(settingsGrid && window.innerWidth <= 1100){
+      settingsGrid.dataset.mobileView = "content";
+    }
+
     // Sem isso, trocar de secao mantem o scroll onde estava - se a
     // pessoa estava rolada pra baixo em "Geral", clicar em "Comunicação"
     // parecia "pular" pro meio/fim da secao nova em vez de abrir do
     // topo (mesmo padrao ja usado em openPage()).
     window.scrollTo({top:0, behavior:"smooth"});
   }
+
+  window.settingsBackToMenu = function(){
+    const settingsGrid = document.querySelector("#settings > .grid");
+    if(settingsGrid) settingsGrid.dataset.mobileView = "menu";
+    window.scrollTo({top:0, behavior:"smooth"});
+  };
 
   function bindSettingsMenu(){
     $$("#settings .settings-menu .btn.secondary[data-settings-target]").forEach(btn=>{

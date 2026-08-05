@@ -1631,6 +1631,12 @@ body::before{
   grid-template-columns:repeat(12,minmax(0,1fr));
   gap:var(--gap);
 }
+/* So existe/aparece no mobile (ver @media max-width:1100px) - some por
+   padrao aqui pra nao sobrar um botao "Voltar" inutil no desktop, onde
+   menu e conteudo ja ficam lado a lado o tempo todo. */
+.settings-mobile-back{
+  display:none;
+}
 /* ===== Campos de formulario (select/date/time/text) - tema global
    StayFlow, MESMO visual ja usado dentro de #settings (fundo escuro,
    borda azul no foco) - generalizado pra fora do Configuracoes,
@@ -1918,6 +1924,25 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   }
   #settings .span-8 > .grid > .span-6{
     grid-column:span 12;
+  }
+  /* Configuracoes no mobile vira duas telas (lista de categorias OU
+     conteudo da categoria escolhida, nunca as duas empilhadas no mesmo
+     scroll) - mesmo padrao ja usado nos Chats (lista/conversa/perfil).
+     Antes disso, escolher uma categoria so empurrava o conteudo pra
+     baixo do menu (dentro do mesmo scroll), dando a impressao de nao
+     ter acontecido nada (reportado pelo usuario). */
+  #settings > .grid > .span-8{
+    display:none;
+  }
+  #settings > .grid[data-mobile-view="content"] > .card.span-4{
+    display:none;
+  }
+  #settings > .grid[data-mobile-view="content"] > .span-8{
+    display:block;
+  }
+  .settings-mobile-back{
+    display:inline-flex;
+    margin-bottom:12px;
   }
   /* KPIs ficam 2 por linha (nao empilhados 1 por linha) - reduz muito
      a altura total do Dashboard/Reservas/Financeiro no celular sem
