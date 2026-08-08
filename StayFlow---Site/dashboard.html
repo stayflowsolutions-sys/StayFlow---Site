@@ -807,10 +807,20 @@ async function deleteRoleConfirm(roleId){
       </div>
     </div>
 
-    <button class="btn secondary bell-btn" onclick="openPage('operations', document.querySelector('[data-page=operations]'))" data-i18n-title="topbar.bell.title" title="Alertas operacionais">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      <span id="opsAlertBadge" class="notif-badge" style="display:none;">0</span>
-    </button>
+    <div class="hostel-selector-wrap">
+      <button class="btn secondary bell-btn" onclick="toggleNotificationsPanel(event)" data-i18n-title="topbar.bell.title" title="Alertas operacionais">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span id="opsAlertBadge" class="notif-badge" style="display:none;">0</span>
+      </button>
+
+      <div id="notifPanel" class="notif-panel" style="display:none;">
+        <div class="notif-panel-header">
+          <span data-i18n="notif.title">🔔 Notificações</span>
+        </div>
+        <div id="notifFilterChips" class="notif-filter-chips"></div>
+        <div id="notifList"></div>
+      </div>
+    </div>
 
     <div class="hostel-selector-wrap">
       <button type="button" class="btn secondary" id="langCurrentBtn" data-i18n-title="topbar.lang.title" title="Idioma" style="padding:9px 12px;font-weight:800;font-size:12px" data-lang-current>PT</button>
@@ -1232,14 +1242,14 @@ async function deleteRoleConfirm(roleId){
 <!-- OPERATIONS -->
 <section id="operations" class="page">
   <div class="ops-tabs">
-    <button type="button" class="ops-tab active" data-ops-tab="overview" onclick="switchOperationsTab('overview')" data-i18n="operations.tab.overview">📋 Visão Geral</button>
+    <button type="button" class="ops-tab active" data-ops-tab="tasks" onclick="switchOperationsTab('tasks')" data-i18n="operations.tab.tasks">🧹 Tarefas</button>
     <button type="button" class="ops-tab" data-ops-tab="kitchen" data-required-permission="kitchen" onclick="switchOperationsTab('kitchen')" data-i18n="nav.kitchen">Cozinha</button>
     <button type="button" class="ops-tab" data-ops-tab="maintenance" data-required-permission="maintenance" onclick="switchOperationsTab('maintenance')" data-i18n="nav.maintenance">Manutenção</button>
     <button type="button" class="ops-tab" data-ops-tab="patrimonialSecurity" data-required-permission="patrimonial_security" onclick="switchOperationsTab('patrimonialSecurity')" data-i18n="nav.patrimonialSecurity">Segurança Patrimonial</button>
     <button type="button" class="ops-tab" data-ops-tab="parking" data-required-permission="parking" onclick="switchOperationsTab('parking')" data-i18n="nav.parking">Estacionamento</button>
   </div>
 
-  <div data-ops-section="overview" class="grid">
+  <div data-ops-section="tasks" class="grid">
     <div class="card span-12">
       <h2 data-i18n="operations.tasks.title">🧹 Tarefas operacionais</h2>
       <div class="sf-empty" id="opsTasksEmpty">
@@ -6892,6 +6902,96 @@ function updateAlertBadge(){
   }
 }
 
+// Painel de notificacoes do sino - lista completa dos alertas (antes so
+// existia a contagem, sem nenhum lugar pra ver o conteudo de verdade).
+// Categoria vem do backend (routes/operations.py) junto com a pagina de
+// destino, pra clicar num alerta levar direto pra tela relacionada.
+const NOTIF_CATEGORY_META = {
+  checkin_checkout: { icon: "🛎️", labelKey: "notif.category.checkinCheckout", fallback: "Check-in/Check-out" },
+  arrival:          { icon: "🚪", labelKey: "notif.category.arrival", fallback: "Chegada" },
+  guest_urgent:     { icon: "💬", labelKey: "notif.category.guestUrgent", fallback: "Hóspede urgente" },
+  low_stock:        { icon: "📦", labelKey: "notif.category.lowStock", fallback: "Estoque baixo" },
+  new_reservation:  { icon: "🆕", labelKey: "notif.category.newReservation", fallback: "Nova reserva" },
+  cleaning:         { icon: "🧹", labelKey: "notif.category.cleaning", fallback: "Limpeza" },
+};
+
+let notifActiveFilter = "all";
+
+window.toggleNotificationsPanel = function(event){
+  if(event) event.stopPropagation();
+  const panel = document.getElementById("notifPanel");
+  if(!panel) return;
+  const opening = panel.style.display === "none";
+  panel.style.display = opening ? "block" : "none";
+  if(opening){
+    renderNotificationsPanel();
+    if(typeof window.markAlertsSeen === "function") window.markAlertsSeen();
+  }
+};
+
+document.addEventListener("click", (event) => {
+  const panel = document.getElementById("notifPanel");
+  const trigger = document.querySelector(".bell-btn");
+  if(!panel || panel.style.display === "none") return;
+  // composedPath() em vez de panel.contains(event.target): os cliques
+  // nos chips de filtro re-renderizam o innerHTML do painel (pra
+  // atualizar contadores), o que desconecta o botao clicado do DOM
+  // ainda durante o bubble do proprio evento - contains() com o target
+  // ja desconectado dava falso negativo e fechava o painel sozinho.
+  // composedPath() captura o caminho no momento do clique, antes da
+  // mutacao, entao continua correto mesmo com o DOM mudando no meio.
+  const path = event.composedPath ? event.composedPath() : [];
+  const clickedInsidePanel = path.includes(panel);
+  const clickedTrigger = trigger && path.includes(trigger);
+  if(!clickedInsidePanel && !clickedTrigger){
+    panel.style.display = "none";
+  }
+});
+
+window.setNotifFilter = function(category){
+  notifActiveFilter = category;
+  renderNotificationsPanel();
+};
+
+function renderNotificationsPanel(){
+  const chipsEl = document.getElementById("notifFilterChips");
+  const listEl = document.getElementById("notifList");
+  if(!chipsEl || !listEl) return;
+
+  const alerts = window.STAYFLOW_ALERTS || [];
+  const categoriesPresent = [...new Set(alerts.map(a => a.category))];
+  if(!categoriesPresent.includes(notifActiveFilter) && notifActiveFilter !== "all"){
+    notifActiveFilter = "all";
+  }
+
+  const allChip = `<button type="button" class="notif-filter-chip ${notifActiveFilter === "all" ? "active" : ""}" onclick="setNotifFilter('all')">${T('notif.filter.all', 'Todos')} (${alerts.length})</button>`;
+  const categoryChips = categoriesPresent.map(cat => {
+    const meta = NOTIF_CATEGORY_META[cat] || { icon: "🔔", labelKey: null, fallback: cat };
+    const label = meta.labelKey ? T(meta.labelKey, meta.fallback) : meta.fallback;
+    const count = alerts.filter(a => a.category === cat).length;
+    return `<button type="button" class="notif-filter-chip ${notifActiveFilter === cat ? "active" : ""}" onclick="setNotifFilter('${cat}')">${meta.icon} ${label} (${count})</button>`;
+  }).join("");
+  chipsEl.innerHTML = allChip + categoryChips;
+
+  const filtered = notifActiveFilter === "all" ? alerts : alerts.filter(a => a.category === notifActiveFilter);
+
+  if(!filtered.length){
+    listEl.innerHTML = `<div class="notif-empty">${T('notif.empty', 'Nenhuma notificação por aqui.')}</div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(a => {
+    const meta = NOTIF_CATEGORY_META[a.category] || { icon: "🔔" };
+    return `<button type="button" class="notif-item" onclick="openNotificationAlert('${a.page}')"><span class="notif-item-icon">${meta.icon}</span><span>${escapeHtml(a.message)}</span></button>`;
+  }).join("");
+}
+
+window.openNotificationAlert = function(page){
+  const panel = document.getElementById("notifPanel");
+  if(panel) panel.style.display = "none";
+  openPage(page, document.querySelector(`[data-page=${page}]`));
+};
+
 // Cozinha/Manutencao/Seguranca Patrimonial/Estacionamento nao sao mais
 // paginas proprias no menu lateral - viraram abas dentro de Operacoes,
 // pra nao espalhar 4 itens de menu que a maioria das hospedagens pequenas
@@ -6907,7 +7007,7 @@ window.switchOperationsTab = function(tabId){
   });
 
   const loaders = {
-    overview: loadOperations,
+    tasks: loadOperations,
     kitchen: () => typeof loadKitchen === "function" && loadKitchen(),
     maintenance: () => typeof loadMaintenance === "function" && loadMaintenance(),
     patrimonialSecurity: () => typeof loadPatrimonialSecurity === "function" && loadPatrimonialSecurity(),
@@ -6931,12 +7031,17 @@ async function loadOperations(){
     const alerts = data.alerts || [];
     const tasks = data.tasks || [];
 
-    // Alertas nao tem mais bloco proprio nesta pagina (ja aparecem no
-    // sino de notificacoes e no Opportunity Center - mostrar duas vezes
-    // era redundante) - o /operations continua sendo a fonte da
-    // contagem do sino, so a exibicao em lista aqui que saiu.
+    // Alertas nao tem mais bloco proprio nesta pagina - viraram o painel
+    // dropdown do sino (ver renderNotificationsPanel), com filtro por
+    // categoria. /operations continua sendo a fonte tanto da contagem
+    // do sino quanto da lista completa mostrada no painel.
+    window.STAYFLOW_ALERTS = alerts;
     window.STAYFLOW_LAST_ALERT_COUNT = alerts.length;
     updateAlertBadge();
+    const notifPanelEl = document.getElementById("notifPanel");
+    if(notifPanelEl && notifPanelEl.style.display !== "none" && typeof renderNotificationsPanel === "function"){
+      renderNotificationsPanel();
+    }
 
     // Tarefas vem do Mapa de Quartos (camas aguardando limpeza).
     if(!tasks.length){

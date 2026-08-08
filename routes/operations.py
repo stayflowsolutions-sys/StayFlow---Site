@@ -16,6 +16,11 @@ def operations(hostel_id):
     today = date.today().isoformat()
     alerts = []
 
+    # Cada alerta carrega "category" (pra filtro no painel do sino) e
+    # "page" (pra clicar no alerta e ser levado direto pra tela
+    # relacionada) - antes era so uma lista de strings, sem estrutura
+    # nenhuma pra filtrar/navegar.
+
     # Check-ins e check-outs de hoje ainda não confirmados
     cursor.execute("""
         SELECT guest_name, checkin_date, checkout_date, status
@@ -27,9 +32,11 @@ def operations(hostel_id):
 
     for row in cursor.fetchall():
         kind = "Check-in" if row["checkin_date"] == today else "Check-out"
-        alerts.append(
-            f"{kind} de hoje ainda pendente: {row['guest_name']} (status: {row['status']})"
-        )
+        alerts.append({
+            "category": "checkin_checkout",
+            "message": f"{kind} de hoje ainda pendente: {row['guest_name']} (status: {row['status']})",
+            "page": "reservations",
+        })
 
     # Chegada de hoje sem check-in FISICO feito ainda - dispara mesmo
     # pra reserva ja confirmada (o alerta acima so cobre status !=
@@ -45,7 +52,11 @@ def operations(hostel_id):
     """, (hostel_id, today))
 
     for row in cursor.fetchall():
-        alerts.append(f"Chegada hoje - atribuir cama e confirmar check-in: {row['guest_name']}")
+        alerts.append({
+            "category": "arrival",
+            "message": f"Chegada hoje - atribuir cama e confirmar check-in: {row['guest_name']}",
+            "page": "roommap",
+        })
 
     # Oportunidades urgentes ainda em aberto
     cursor.execute("""
@@ -56,7 +67,11 @@ def operations(hostel_id):
     """, (hostel_id,))
 
     for row in cursor.fetchall():
-        alerts.append(f"Hóspede aguardando resposta urgente ({row['phone']}): {row['description']}")
+        alerts.append({
+            "category": "guest_urgent",
+            "message": f"Hóspede aguardando resposta urgente ({row['phone']}): {row['description']}",
+            "page": "chats",
+        })
 
     # Itens de estoque no mínimo ou abaixo
     cursor.execute("""
@@ -66,10 +81,14 @@ def operations(hostel_id):
     """, (hostel_id,))
 
     for row in cursor.fetchall():
-        alerts.append(
-            f"Estoque baixo: {row['name']} ({row['quantity']} {row['unit']}, "
-            f"mínimo {row['min_threshold']} {row['unit']})"
-        )
+        alerts.append({
+            "category": "low_stock",
+            "message": (
+                f"Estoque baixo: {row['name']} ({row['quantity']} {row['unit']}, "
+                f"mínimo {row['min_threshold']} {row['unit']})"
+            ),
+            "page": "inventory",
+        })
 
     # Reservas criadas automaticamente (WhatsApp, Beds24/qualquer OTA -
     # tudo que nao veio de cadastro manual da equipe) nas ultimas 24h.
@@ -84,10 +103,14 @@ def operations(hostel_id):
     """, (hostel_id,))
 
     for row in cursor.fetchall():
-        alerts.append(
-            f"Nova reserva via {row['source']}: {row['guest_name']} "
-            f"({row['checkin_date']} → {row['checkout_date']})"
-        )
+        alerts.append({
+            "category": "new_reservation",
+            "message": (
+                f"Nova reserva via {row['source']}: {row['guest_name']} "
+                f"({row['checkin_date']} → {row['checkout_date']})"
+            ),
+            "page": "reservations",
+        })
 
     conn.close()
 
@@ -107,7 +130,11 @@ def operations(hostel_id):
     # tarefa) - sem isso, um check-out nunca incrementava o sininho de
     # notificacoes nem aparecia pra quem loga so olhando o resumo geral.
     for item in cleaning_list:
-        alerts.append(f"Limpeza pendente: {item['label']} ({item['room_name']})")
+        alerts.append({
+            "category": "cleaning",
+            "message": f"Limpeza pendente: {item['label']} ({item['room_name']})",
+            "page": "roommap",
+        })
 
     return jsonify({
         "alerts": alerts,
