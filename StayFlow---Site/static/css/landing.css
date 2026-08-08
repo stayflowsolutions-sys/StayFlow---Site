@@ -849,7 +849,7 @@ nav{
    a cada frame de scroll.
    ============================== */
 .navbar{
-  background:linear-gradient(180deg,rgba(8,18,31,.82),rgba(8,18,31,.68))!important;
+  background:linear-gradient(180deg,rgba(8,18,31,.4),rgba(8,18,31,.22))!important;
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
   transform:translateZ(0);
@@ -905,18 +905,18 @@ nav{
     gap:6px!important;
   }
   .brand{
-    gap:6px!important;
+    gap:8px!important;
     min-width:0!important;
   }
   .brand img{
-    width:26px!important;
-    height:26px!important;
+    width:36px!important;
+    height:36px!important;
     margin:0!important;
     transform:none!important;
   }
   .brand-word{
-    font-size:16px!important;
-    letter-spacing:-.3px!important;
+    font-size:20px!important;
+    letter-spacing:-.4px!important;
   }
   .nav-links{
     display:none!important;
@@ -941,19 +941,34 @@ nav{
     min-width:0!important;
     row-gap:6px!important;
   }
+  /* Botoes ficavam agrupados a esquerda com um vazio grande a
+     direita (flex-start sem grow). flex:1 em cada um faz os 3
+     dividirem a largura toda igualmente, sem reintroduzir o bug do
+     Edge headless documentado acima (que era especifico de
+     justify-content:flex-end/margin-auto, nao de flex-grow). */
+  .lang-select{
+    flex:1 1 0!important;
+    min-width:0!important;
+  }
   .lang-current{
-    min-height:28px!important;
-    padding:0 7px!important;
-    font-size:11px!important;
+    width:100%!important;
+    min-height:34px!important;
+    padding:0 8px!important;
+    font-size:12.5px!important;
     gap:4px!important;
+    justify-content:center!important;
   }
   .login-btn,
   .demo-btn{
-    min-height:28px!important;
-    padding:0 9px!important;
-    font-size:10.5px!important;
+    flex:1.4 1 0!important;
+    min-width:0!important;
+    min-height:34px!important;
+    padding:0 10px!important;
+    font-size:12.5px!important;
     font-weight:800!important;
     white-space:nowrap!important;
+    text-align:center!important;
+    justify-content:center!important;
   }
 
   /* A barra agora é sempre 2 linhas (logo + ações, ver acima), então
@@ -1043,7 +1058,7 @@ nav{
 
 .radial-wrap{position:relative;width:100%;max-width:600px;aspect-ratio:1/1;margin:0 auto}
 .radial-wrap svg.lines{position:absolute;inset:0;width:100%;height:100%}
-.radial-legend{display:flex;justify-content:center;gap:28px;margin-top:18px;font-size:12px;color:var(--muted)}
+.radial-legend{display:flex;justify-content:center;gap:28px;margin-top:32px;font-size:12px;color:var(--muted)}
 .radial-legend span{display:inline-flex;align-items:center;gap:7px}
 .radial-legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
 .radial-legend i.gold{background:var(--gold-soft)}
@@ -1055,6 +1070,7 @@ nav{
 .gnode .bubble{
   width:100%;aspect-ratio:1/1;
   clip-path:polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%);
+  overflow:hidden;
   background:linear-gradient(155deg,var(--panel2),var(--panel) 82%);
   border:1.5px solid var(--line);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -1074,10 +1090,10 @@ nav{
   box-shadow:inset 0 0 0 1.5px rgba(217,184,114,.55);
   filter:drop-shadow(0 0 34px rgba(217,184,114,.22));
   border-color:rgba(217,184,114,.55);
-  padding:0 11%;
-  gap:2px;
+  padding:0 1%;
+  gap:3px;
 }
-.hub-mark{width:44%!important;height:44%!important;object-fit:contain;transform:scale(1.85);filter:drop-shadow(0 0 10px rgba(217,184,114,.35))}
+.hub-mark{width:94%!important;height:94%!important;object-fit:contain;filter:drop-shadow(0 0 10px rgba(217,184,114,.35))}
 .hub-cap{font-family:var(--serif);font-size:12.5px;font-weight:600;color:var(--text)}
 
 /* .hero-text/.hero-actions do hero antigo (removido) tem regras
@@ -1115,7 +1131,7 @@ nav{
 .strip-item svg{width:18px;height:18px;stroke:var(--gold-soft);flex:none}
 
 @media(max-width:980px){
-  .hero-split{grid-template-columns:1fr;padding:130px 0 40px;gap:44px}
+  .hero-split{grid-template-columns:1fr;padding:150px 0 40px;gap:44px}
   .radial-wrap{max-width:88%;margin:0 auto}
   .hero-heading h1{font-size:36px!important}
 }
