@@ -11,19 +11,21 @@ from database import (
     notify_on_duty_staff_for_ticket,
     resolve_ticket,
 )
-from utils.tenant import require_permission
+from utils.tenant import require_permission, require_plan_feature
 
 parking_bp = Blueprint("parking", __name__)
 
 
 @parking_bp.route("/parking/vehicles", methods=["GET"])
 @require_permission("parking")
+@require_plan_feature("parking")
 def list_active_vehicles_route(hostel_id):
     return jsonify(list_active_vehicles(hostel_id))
 
 
 @parking_bp.route("/parking/vehicles", methods=["POST"])
 @require_permission("parking")
+@require_plan_feature("parking")
 def check_in_vehicle_route(hostel_id):
     """
     guest_id OU guest_name - o manobrista pode registrar o carro de
@@ -52,6 +54,7 @@ def check_in_vehicle_route(hostel_id):
 
 @parking_bp.route("/parking/vehicles/<int:vehicle_id>/checkout", methods=["POST"])
 @require_permission("parking")
+@require_plan_feature("parking")
 def check_out_vehicle_route(hostel_id, vehicle_id):
     updated = check_out_vehicle(hostel_id, vehicle_id)
     if not updated:
@@ -61,6 +64,7 @@ def check_out_vehicle_route(hostel_id, vehicle_id):
 
 @parking_bp.route("/parking/vehicles/<int:vehicle_id>/valet-request", methods=["POST"])
 @require_permission("parking")
+@require_plan_feature("parking")
 def request_valet_route(hostel_id, vehicle_id):
     """
     "Traz meu carro" - quando o pedido vem do hospede pelo chat, a IA
@@ -78,12 +82,14 @@ def request_valet_route(hostel_id, vehicle_id):
 
 @parking_bp.route("/parking/valet-requests", methods=["GET"])
 @require_permission("parking")
+@require_plan_feature("parking")
 def list_valet_requests(hostel_id):
     return jsonify(get_open_tickets(hostel_id, ticket_type="valet_request"))
 
 
 @parking_bp.route("/parking/valet-requests/<int:ticket_id>/resolve", methods=["POST"])
 @require_permission("parking")
+@require_plan_feature("parking")
 def resolve_valet_request_route(hostel_id, ticket_id):
     data = request.get_json() or {}
     updated = resolve_ticket(hostel_id, ticket_id, resolution_notes=data.get("resolution_notes"))
@@ -94,12 +100,14 @@ def resolve_valet_request_route(hostel_id, ticket_id):
 
 @parking_bp.route("/parking/settings", methods=["GET"])
 @require_permission("parking")
+@require_plan_feature("parking")
 def get_parking_settings_route(hostel_id):
     return jsonify(get_hostel_parking_settings(hostel_id))
 
 
 @parking_bp.route("/parking/settings", methods=["POST"])
 @require_permission("parking")
+@require_plan_feature("parking")
 def set_parking_settings_route(hostel_id):
     data = request.get_json() or {}
     pricing_model = data.get("pricing_model", "incluso")

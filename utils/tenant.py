@@ -1,6 +1,14 @@
 """
 Utilitário central de multi-tenancy da StayFlow.
 
+Exceção deliberada à regra de ouro abaixo: require_stayflow_admin (mais
+adiante neste arquivo) protege rotas administrativas cross-tenant (ex:
+marcar uma hospedagem como conta cortesia/piloto de billing) - nessas
+rotas, e SÓ nessas, o hostel_id alvo vem do corpo da requisição de
+propósito, porque quem está chamando não é necessariamente membro
+daquele hostel. A proteção real ali é o allowlist de e-mail admin, não
+a sessão do hostel.
+
 Regra de ouro: o hostel_id de uma requisição NUNCA vem do cliente
 (nem de query params, nem de JSON body, nem de header). Ele sempre
 vem da sessão de servidor, criada no login (routes/auth.py) e
@@ -149,6 +157,80 @@ def require_permission(permission_key):
                 return jsonify({
                     "success": False,
                     "message": "Voce nao tem permissao para acessar este recurso."
+                }), 403
+
+            return view_func(hostel_id, *args, **kwargs)
+
+        return wrapper
+    return decorator
+
+
+def require_stayflow_admin(view_func):
+    """
+    Protege rotas administrativas cross-tenant (hoje: marcar plano/
+    add-on de billing de qualquer hospedagem, ex: liberar um piloto de
+    graca) - NAO injeta hostel_id (a rota le do corpo da requisicao,
+    ver nota no topo do arquivo). So exige sessao valida + e-mail na
+    allowlist STAYFLOW_ADMIN_EMAILS (variavel de ambiente, lista
+    separada por virgula) - nao existe conceito de "super-admin" no
+    banco hoje, e criar um pra um unico uso administrativo seria mais
+    complexidade do que o necessario nesta fase.
+    """
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        import os
+
+        user_id = get_current_user_id()
+        if not user_id:
+            return jsonify({"success": False, "message": "Not authenticated."}), 401
+
+        from database import get_user_by_id
+
+        user = get_user_by_id(user_id)
+        admin_emails = {
+            email.strip().lower()
+            for email in os.getenv("STAYFLOW_ADMIN_EMAILS", "").split(",")
+            if email.strip()
+        }
+
+        if not user or user["email"].lower() not in admin_emails:
+            return jsonify({"success": False, "message": "Acesso restrito."}), 403
+
+        return view_func(*args, **kwargs)
+
+    return wrapper
+
+
+def require_plan_feature(feature_key):
+    """
+    Segunda camada de trava, sobre um recurso vinculado ao plano
+    contratado (Eventos, modulos operacionais) - diferente de
+    require_permission, que e sobre QUEM na equipe pode acessar algo
+    que a hospedagem ja tem direito de usar. Esta aqui e sobre SE a
+    hospedagem contratou aquele modulo (plano/add-on).
+
+    Sempre usado JUNTO de require_permission, nesta ordem (o de baixo
+    roda primeiro e ja recebe hostel_id injetado pelo de cima):
+
+        @events_bp.route("/events", methods=["GET"])
+        @require_permission("events")
+        @require_plan_feature("events")
+        def list_events(hostel_id):
+            ...
+
+    Por isso este decorator NAO busca hostel_id sozinho - recebe como
+    primeiro argumento posicional, ja resolvido por require_permission
+    (ou require_auth) logo acima dele na pilha.
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(hostel_id, *args, **kwargs):
+            from database import hostel_has_plan_feature
+
+            if not hostel_has_plan_feature(hostel_id, feature_key):
+                return jsonify({
+                    "success": False,
+                    "message": "Este recurso nao esta incluido no seu plano atual."
                 }), 403
 
             return view_func(hostel_id, *args, **kwargs)

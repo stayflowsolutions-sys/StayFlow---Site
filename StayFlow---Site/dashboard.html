@@ -1947,13 +1947,8 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div class="card" data-required-permission="billing" data-settings-section="billing">
-        <h2>Billing</h2>
-        <div class="sf-empty">
-          <div>
-            <strong data-i18n="settings.billing.emptyTitle">Modelo de cobrança em definição</strong>
-            <span data-i18n="settings.billing.emptyDesc">Ainda não há processador de pagamento integrado nem plano ativo. Esta tela vai mostrar plano contratado, status e faturas assim que o modelo comercial estiver definido.</span>
-          </div>
-        </div>
+        <h2 data-i18n="settings.billing.title">Billing</h2>
+        <div id="billingSummaryContent"><p style="color:var(--muted)" data-i18n="common.loading">Carregando...</p></div>
       </div>
 
       <div class="card settings-summary-card" data-settings-section="integracoes" onclick="openBeds24SettingsModal()">
@@ -3611,6 +3606,85 @@ async function deleteRoleConfirm(roleId){
       if(typeSelect && data.hostel_type) setFieldValue(typeSelect, data.hostel_type);
     }catch(e){
       console.warn("Erro ao carregar resumo de Geral:", e);
+    }
+  };
+
+  const BILLING_PLAN_LABELS = {
+    starter: "Starter",
+    business: "Business",
+    enterprise: "Enterprise",
+  };
+
+  const BILLING_STATUS_LABELS = {
+    trialing: T('settings.billing.status.trialing', 'Período de teste'),
+    active: T('settings.billing.status.active', 'Ativo'),
+    comp: T('settings.billing.status.comp', 'Cortesia'),
+    past_due: T('settings.billing.status.pastDue', 'Pagamento pendente'),
+    canceled: T('settings.billing.status.canceled', 'Cancelado'),
+  };
+
+  const BILLING_ADDON_LABELS = {
+    events: T('settings.billing.addon.events', 'Módulo de Eventos'),
+    ops_bundle: T('settings.billing.addon.opsBundle', 'Pacote Operacional Avançado'),
+    kitchen: T('nav.kitchen', 'Cozinha'),
+    maintenance: T('nav.maintenance', 'Manutenção'),
+    patrimonial_security: T('nav.patrimonialSecurity', 'Segurança Patrimonial'),
+    parking: T('nav.parking', 'Estacionamento'),
+  };
+
+  window.loadBillingSummary = async function(){
+    const container = document.getElementById("billingSummaryContent");
+    if(!container) return;
+
+    try{
+      const res = await fetch("/billing", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const planLabel = BILLING_PLAN_LABELS[data.plan_name] || data.plan_name;
+      const statusLabel = BILLING_STATUS_LABELS[data.status] || data.status;
+
+      let trialLine = "";
+      if(data.status === "trialing" && data.trial_days_left !== null){
+        trialLine = `<p style="color:var(--muted);margin:2px 0 0">${T('settings.billing.trialDaysLeft', '{days} dias restantes de teste grátis', {days: data.trial_days_left})}</p>`;
+      }
+
+      const roomLimitText = data.room_limit === null
+        ? T('settings.billing.unlimited', 'ilimitado')
+        : data.room_limit;
+      const seatLimitText = data.seat_limit === null
+        ? T('settings.billing.unlimited', 'ilimitado')
+        : data.seat_limit;
+
+      const addonsHtml = data.addons.length
+        ? data.addons.map(key => `<span class="status-pill ok" style="margin:2px 4px 2px 0">${BILLING_ADDON_LABELS[key] || key}</span>`).join("")
+        : `<span style="color:var(--muted)">${T('settings.billing.noAddons', 'Nenhum add-on ativo')}</span>`;
+
+      container.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+          <div>
+            <strong style="font-size:16px">${T('settings.billing.planPrefix', 'Plano')} ${planLabel}</strong>
+            <p style="color:var(--muted);margin:2px 0 0">${statusLabel}</p>
+            ${trialLine}
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:10px">
+          <div>
+            <p style="color:var(--muted);font-size:12px;margin:0 0 2px">${T('settings.billing.roomsUsed', 'Quartos')}</p>
+            <strong>${data.rooms_used} / ${roomLimitText}</strong>
+          </div>
+          <div>
+            <p style="color:var(--muted);font-size:12px;margin:0 0 2px">${T('settings.billing.seatsUsed', 'Usuários')}</p>
+            <strong>${data.seats_used} / ${seatLimitText}</strong>
+          </div>
+        </div>
+        <div>
+          <p style="color:var(--muted);font-size:12px;margin:0 0 6px">${T('settings.billing.addonsTitle', 'Add-ons ativos')}</p>
+          ${addonsHtml}
+        </div>
+      `;
+    }catch(e){
+      console.warn("Erro ao carregar resumo de Billing:", e);
     }
   };
 
@@ -8693,6 +8767,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadChats === "function") loadChats();
     if (typeof hydrateSettingsFromBackend === "function") hydrateSettingsFromBackend();
     if (typeof loadGeneralSettingsSummary === "function") loadGeneralSettingsSummary();
+    if (typeof loadBillingSummary === "function") loadBillingSummary();
     if (typeof loadWhatsappSettings === "function") loadWhatsappSettings();
     if (typeof loadBeds24Settings === "function") loadBeds24Settings();
     // As duas de baixo so estavam ligadas no reload por troca de idioma
@@ -8745,7 +8820,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     revenue: ["loadRevenue"],
     events: ["loadEvents"],
     reports: ["loadReports"],
-    settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings"]
+    settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings", "loadBillingSummary"]
   };
 
   function reloadDynamicContent(pageId){

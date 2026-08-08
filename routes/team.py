@@ -18,6 +18,7 @@ from database import (
     reactivate_membership,
     get_membership_by_id,
     get_permission_detail,
+    check_seat_limit,
 )
 
 team_bp = Blueprint("team", __name__)
@@ -117,6 +118,10 @@ def invite_team_member(hostel_id):
     if not _role_in_hostel(role_id, hostel_id):
         return jsonify({"success": False, "message": "Role not found."}), 404
 
+    allowed, limit_message = check_seat_limit(hostel_id, additional=1)
+    if not allowed:
+        return jsonify({"success": False, "message": limit_message}), 402
+
     temp_password = secrets.token_urlsafe(9)
     password_hash = hash_password(temp_password)
 
@@ -193,6 +198,10 @@ def deactivate_member(hostel_id, membership_id):
 def reactivate_member(hostel_id, membership_id):
     if not _membership_in_hostel(membership_id, hostel_id):
         return jsonify({"success": False, "message": "Team member not found."}), 404
+
+    allowed, limit_message = check_seat_limit(hostel_id, additional=1)
+    if not allowed:
+        return jsonify({"success": False, "message": limit_message}), 402
 
     reactivate_membership(membership_id)
 

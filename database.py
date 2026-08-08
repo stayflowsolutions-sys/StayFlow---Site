@@ -297,6 +297,33 @@ def _backfill_security_billing_for_full_access_roles(cursor):
         )
 
 
+def _backfill_billing_for_hostels(cursor):
+    """
+    Toda hospedagem precisa de uma linha em `billing` - nunca deve
+    ficar sem registro (get_billing_info depende disso pra nao ter que
+    tratar "sem billing" como um terceiro estado em toda rota que
+    consulta plano). Hospedagem que ja existia antes desta migracao
+    (Fase 1, 07/08/2026) ganha trial de 30 dias a partir de agora, plano
+    Starter - mesmo criterio de quem se cadastra hoje.
+    """
+    cursor.execute("SELECT id FROM hostels")
+    hostel_ids = [row["id"] for row in cursor.fetchall()]
+
+    cursor.execute("SELECT hostel_id FROM billing")
+    already_has_billing = {row["hostel_id"] for row in cursor.fetchall()}
+
+    trial_ends_at = (datetime.datetime.utcnow() + datetime.timedelta(days=30)).isoformat()
+
+    for hostel_id in hostel_ids:
+        if hostel_id in already_has_billing:
+            continue
+        cursor.execute(
+            "INSERT INTO billing (hostel_id, plan_name, status, trial_ends_at, seats_included) "
+            "VALUES (?, 'starter', 'trialing', ?, 10)",
+            (hostel_id, trial_ends_at)
+        )
+
+
 # As 14 chaves que existiam antes das 5 novas de Sessao 9 (kitchen,
 # maintenance, patrimonial_security, parking, scheduling) - mesmo
 # raciocinio de _LEGACY_FULL_ACCESS_PERMISSIONS acima, fixo aqui de
@@ -687,18 +714,44 @@ def create_database():
     )
     """)
 
-    # Billing (PASSO 8) - so estrutura, sem processador de pagamento
-    # integrado. Tela em Configuracoes e honestamente estatica ("modelo
-    # de cobranca em definicao"), nao le nem escreve nesta tabela ainda.
+    # Billing (Fase 1, 07/08/2026) - esqueleto funcional completo do
+    # modelo de cobranca (planos por faixa de quartos, add-ons, conta
+    # cortesia/piloto), ainda sem processador de pagamento integrado -
+    # isso fica pras Fases 2 (Stripe) e 3 (MercadoPago). Toda hospedagem
+    # ganha uma linha aqui automaticamente (ver _backfill_billing_for_hostels
+    # mais abaixo), nunca fica sem registro.
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS billing (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        hostel_id INTEGER NOT NULL,
-        plan_name TEXT,
-        status TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        hostel_id INTEGER NOT NULL UNIQUE,
+        plan_name TEXT NOT NULL DEFAULT 'starter',
+        status TEXT NOT NULL DEFAULT 'trialing',
+        trial_ends_at TIMESTAMP,
+        seats_included INTEGER NOT NULL DEFAULT 10,
+        extra_seats INTEGER NOT NULL DEFAULT 0,
+        payment_processor TEXT,
+        processor_customer_id TEXT,
+        processor_subscription_id TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
+    # Add-ons de billing (Eventos, Pacote Operacional ou modulo avulso) -
+    # so tem efeito pra hospedagem em plano Starter; Business/Enterprise
+    # ja incluem tudo (ver is_feature_included_in_plan).
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS billing_addons (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        addon_key TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(hostel_id, addon_key)
+    )
+    """)
+
+    _backfill_billing_for_hostels(cursor)
 
     # Developer (PASSO 9) - so estrutura pra chave de API futura, sem
     # geracao real de chave agora. Tela em Configuracoes e estatica
@@ -1431,6 +1484,250 @@ def create_database():
     )
     """)
 
+    conn.commit()
+    conn.close()
+
+
+# ----- Billing (Fase 1) -----
+
+# Faixa de quartos de cada plano - define o teto de criacao de quarto
+# (nao bloqueia quem ja esta acima, so barra criar mais um). None = sem
+# teto (Enterprise).
+PLAN_ROOM_LIMITS = {
+    "starter": 30,
+    "business": 80,
+    "enterprise": None,
+}
+
+# Usuarios de equipe inclusos de graca em cada plano - alem disso, cada
+# assento extra e cobrado a parte (extra_seats na tabela billing,
+# ainda so contado manualmente ate a Fase 2/3 ligar o processador de
+# pagamento de verdade).
+PLAN_SEAT_LIMITS = {
+    "starter": 10,
+    "business": 40,
+    "enterprise": None,
+}
+
+# Recursos que cada plano ja inclui sem precisar de add-on - Business e
+# Enterprise incluem tudo; Starter precisa de add-on avulso ou do pacote
+# pra cada um. "ops_bundle" cobre os 4 modulos operacionais de uma vez
+# (ver is_feature_included_in_plan).
+PLAN_INCLUDED_FEATURES = {
+    "starter": set(),
+    "business": {"events", "kitchen", "maintenance", "patrimonial_security", "parking"},
+    "enterprise": {"events", "kitchen", "maintenance", "patrimonial_security", "parking"},
+}
+
+# Cada modulo operacional avulso tambem e liberado se o add-on
+# "ops_bundle" (Pacote Operacional Avancado) estiver ativo.
+OPS_BUNDLE_FEATURES = {"kitchen", "maintenance", "patrimonial_security", "parking"}
+
+
+def is_feature_included_in_plan(plan_name, feature_key):
+    """
+    Funcao pura (sem acesso a banco) - so consulta os mapas fixos acima.
+    Usada tanto pelo decorator require_plan_feature quanto por qualquer
+    lugar que precise saber "esse plano ja cobre isso?" sem bater no
+    banco de novo.
+    """
+    return feature_key in PLAN_INCLUDED_FEATURES.get(plan_name, set())
+
+
+def get_billing_info(hostel_id):
+    """
+    Devolve a linha de billing do hostel - nunca None. Se por algum
+    motivo a hospedagem ainda nao tiver linha (nao deveria acontecer,
+    _backfill_billing_for_hostels cobre isso na inicializacao, mas uma
+    hospedagem criada bem no meio de um restart poderia escapar), cria
+    na hora com o mesmo padrao (trial 30 dias, Starter).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM billing WHERE hostel_id = ?", (hostel_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        trial_ends_at = (datetime.datetime.utcnow() + datetime.timedelta(days=30)).isoformat()
+        cursor.execute(
+            "INSERT INTO billing (hostel_id, plan_name, status, trial_ends_at, seats_included) "
+            "VALUES (?, 'starter', 'trialing', ?, 10)",
+            (hostel_id, trial_ends_at)
+        )
+        conn.commit()
+        cursor.execute("SELECT * FROM billing WHERE hostel_id = ?", (hostel_id,))
+        row = cursor.fetchone()
+
+    conn.close()
+    return dict(row)
+
+
+def count_rooms(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) AS total FROM rooms WHERE hostel_id = ?", (hostel_id,))
+    total = cursor.fetchone()["total"]
+    conn.close()
+    return total
+
+
+def count_active_seats(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) AS total FROM hostel_memberships WHERE hostel_id = ? AND active = 1",
+        (hostel_id,)
+    )
+    total = cursor.fetchone()["total"]
+    conn.close()
+    return total
+
+
+def get_active_addons(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT addon_key FROM billing_addons WHERE hostel_id = ? AND active = 1",
+        (hostel_id,)
+    )
+    addons = {row["addon_key"] for row in cursor.fetchall()}
+    conn.close()
+    return addons
+
+
+def hostel_has_plan_feature(hostel_id, feature_key):
+    """
+    Checagem completa de acesso a um recurso vinculado ao plano - conta
+    cortesia libera tudo; senao, ve se o plano ja inclui de graca, senao
+    ve se tem add-on especifico ativo, senao (so pros 4 modulos
+    operacionais) ve se o pacote "ops_bundle" esta ativo.
+    """
+    billing = get_billing_info(hostel_id)
+
+    if billing["status"] == "comp":
+        return True
+
+    if is_feature_included_in_plan(billing["plan_name"], feature_key):
+        return True
+
+    active_addons = get_active_addons(hostel_id)
+
+    if feature_key in active_addons:
+        return True
+
+    if feature_key in OPS_BUNDLE_FEATURES and "ops_bundle" in active_addons:
+        return True
+
+    return False
+
+
+def set_billing_plan(hostel_id, plan_name, status=None, trial_ends_at=None,
+                      payment_processor=None, processor_customer_id=None,
+                      processor_subscription_id=None):
+    """
+    Atualiza o plano/status de uma hospedagem - usado hoje pelo endpoint
+    administrativo (routes/billing.py), e futuramente pelos webhooks do
+    Stripe/MercadoPago (Fases 2/3). get_billing_info(hostel_id) e
+    chamado antes pra garantir que a linha ja existe.
+    """
+    get_billing_info(hostel_id)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    fields = {"plan_name": plan_name}
+    if status is not None:
+        fields["status"] = status
+    if trial_ends_at is not None:
+        fields["trial_ends_at"] = trial_ends_at
+    if payment_processor is not None:
+        fields["payment_processor"] = payment_processor
+    if processor_customer_id is not None:
+        fields["processor_customer_id"] = processor_customer_id
+    if processor_subscription_id is not None:
+        fields["processor_subscription_id"] = processor_subscription_id
+    fields["updated_at"] = datetime.datetime.utcnow().isoformat()
+
+    set_clause = ", ".join(f"{key} = ?" for key in fields)
+    cursor.execute(
+        f"UPDATE billing SET {set_clause} WHERE hostel_id = ?",
+        (*fields.values(), hostel_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def check_room_limit(hostel_id, additional=1):
+    """
+    Confirma se dá pra criar mais `additional` quarto(s) sem estourar o
+    teto do plano contratado (PLAN_ROOM_LIMITS). Conta cortesia (comp)
+    e plano Enterprise (teto None) sempre liberam. So barra a CRIACAO
+    de quarto novo acima do teto - nunca bloqueia quem ja esta acima
+    (ex: cliente que baixou de tier com mais quartos ja cadastrados).
+    Retorna (permitido: bool, mensagem: str ou None).
+    """
+    billing = get_billing_info(hostel_id)
+
+    if billing["status"] == "comp":
+        return True, None
+
+    limit = PLAN_ROOM_LIMITS.get(billing["plan_name"])
+    if limit is None:
+        return True, None
+
+    current = count_rooms(hostel_id)
+    if current + additional > limit:
+        return False, (
+            f"Seu plano atual permite até {limit} quartos. "
+            f"Fale com a StayFlow pra fazer upgrade de plano."
+        )
+
+    return True, None
+
+
+def check_seat_limit(hostel_id, additional=1):
+    """
+    Mesmo principio de check_room_limit, aplicado a assentos de equipe
+    (hostel_memberships ativos). extra_seats (assentos comprados a
+    parte, ainda so ajustado manualmente ate a Fase 2/3) soma ao teto
+    do plano.
+    """
+    billing = get_billing_info(hostel_id)
+
+    if billing["status"] == "comp":
+        return True, None
+
+    base_limit = PLAN_SEAT_LIMITS.get(billing["plan_name"])
+    if base_limit is None:
+        return True, None
+
+    limit = base_limit + (billing["extra_seats"] or 0)
+    current = count_active_seats(hostel_id)
+    if current + additional > limit:
+        return False, (
+            f"Seu plano atual inclui {limit} usuários de equipe. "
+            f"Fale com a StayFlow pra adicionar mais assentos."
+        )
+
+    return True, None
+
+
+def set_billing_addon(hostel_id, addon_key, active):
+    """
+    Liga/desliga um add-on (upsert - ON CONFLICT em vez de checar
+    existencia antes, mesmo padrao ja usado noutras tabelas do
+    projeto).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO billing_addons (hostel_id, addon_key, active)
+        VALUES (?, ?, ?)
+        ON CONFLICT(hostel_id, addon_key) DO UPDATE SET active = excluded.active
+        """,
+        (hostel_id, addon_key, 1 if active else 0)
+    )
     conn.commit()
     conn.close()
 

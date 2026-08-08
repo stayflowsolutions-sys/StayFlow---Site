@@ -18,7 +18,7 @@ from database import (
     get_events_summary,
     check_event_space_conflict,
 )
-from utils.tenant import require_permission
+from utils.tenant import require_permission, require_plan_feature
 
 events_bp = Blueprint("events", __name__)
 
@@ -27,6 +27,7 @@ events_bp = Blueprint("events", __name__)
 
 @events_bp.route("/events/spaces", methods=["GET"])
 @require_permission("events")
+@require_plan_feature("events")
 def list_event_spaces(hostel_id):
     include_inactive = request.args.get("include_inactive") == "1"
     return jsonify(get_event_spaces(hostel_id, include_inactive=include_inactive))
@@ -34,6 +35,7 @@ def list_event_spaces(hostel_id):
 
 @events_bp.route("/events/spaces", methods=["POST"])
 @require_permission("events")
+@require_plan_feature("events")
 def create_event_space_route(hostel_id):
     data = request.get_json() or {}
     name = (data.get("name") or "").strip()
@@ -53,6 +55,7 @@ def create_event_space_route(hostel_id):
 
 @events_bp.route("/events/spaces/<int:space_id>", methods=["PATCH"])
 @require_permission("events")
+@require_plan_feature("events")
 def update_event_space_route(hostel_id, space_id):
     data = request.get_json() or {}
     updated = update_event_space(hostel_id, space_id, **data)
@@ -67,6 +70,7 @@ def update_event_space_route(hostel_id, space_id):
 
 @events_bp.route("/events/addons", methods=["GET"])
 @require_permission("events")
+@require_plan_feature("events")
 def list_event_addons(hostel_id):
     include_inactive = request.args.get("include_inactive") == "1"
     return jsonify(get_event_addons(hostel_id, include_inactive=include_inactive))
@@ -74,6 +78,7 @@ def list_event_addons(hostel_id):
 
 @events_bp.route("/events/addons", methods=["POST"])
 @require_permission("events")
+@require_plan_feature("events")
 def create_event_addon_route(hostel_id):
     data = request.get_json() or {}
     name = (data.get("name") or "").strip()
@@ -87,6 +92,7 @@ def create_event_addon_route(hostel_id):
 
 @events_bp.route("/events/addons/<int:addon_id>", methods=["PATCH"])
 @require_permission("events")
+@require_plan_feature("events")
 def update_event_addon_route(hostel_id, addon_id):
     data = request.get_json() or {}
     updated = update_event_addon(hostel_id, addon_id, **data)
@@ -101,6 +107,7 @@ def update_event_addon_route(hostel_id, addon_id):
 
 @events_bp.route("/events", methods=["GET"])
 @require_permission("events")
+@require_plan_feature("events")
 def list_events(hostel_id):
     status = request.args.get("status")
     upcoming_only = request.args.get("upcoming_only") == "1"
@@ -109,6 +116,7 @@ def list_events(hostel_id):
 
 @events_bp.route("/events/availability", methods=["GET"])
 @require_permission("events")
+@require_plan_feature("events")
 def check_event_availability(hostel_id):
     space_id = request.args.get("space_id", type=int)
     start = request.args.get("start")
@@ -124,6 +132,7 @@ def check_event_availability(hostel_id):
 
 @events_bp.route("/events", methods=["POST"])
 @require_permission("events")
+@require_plan_feature("events")
 def create_event_route(hostel_id):
     data = request.get_json() or {}
     client_name = (data.get("client_name") or "").strip()
@@ -154,6 +163,7 @@ def create_event_route(hostel_id):
 
 @events_bp.route("/events/<int:event_id>", methods=["GET"])
 @require_permission("events")
+@require_plan_feature("events")
 def get_event_route(hostel_id, event_id):
     event = get_event(hostel_id, event_id)
     if not event:
@@ -163,6 +173,7 @@ def get_event_route(hostel_id, event_id):
 
 @events_bp.route("/events/<int:event_id>", methods=["PATCH"])
 @require_permission("events")
+@require_plan_feature("events")
 def update_event_route(hostel_id, event_id):
     data = request.get_json() or {}
 
@@ -179,6 +190,7 @@ def update_event_route(hostel_id, event_id):
 
 @events_bp.route("/events/<int:event_id>/status", methods=["POST"])
 @require_permission("events")
+@require_plan_feature("events")
 def update_event_status_route(hostel_id, event_id):
     data = request.get_json() or {}
     status = data.get("status")
@@ -196,6 +208,7 @@ def update_event_status_route(hostel_id, event_id):
 
 @events_bp.route("/events/<int:event_id>/addons", methods=["POST"])
 @require_permission("events")
+@require_plan_feature("events")
 def add_event_addon_route(hostel_id, event_id):
     data = request.get_json() or {}
     addon_id = data.get("addon_id")
@@ -213,6 +226,7 @@ def add_event_addon_route(hostel_id, event_id):
 
 @events_bp.route("/events/<int:event_id>/addons/<int:selection_id>", methods=["DELETE"])
 @require_permission("events")
+@require_plan_feature("events")
 def remove_event_addon_route(hostel_id, event_id, selection_id):
     removed = remove_event_addon_selection(hostel_id, event_id, selection_id)
 
@@ -224,5 +238,6 @@ def remove_event_addon_route(hostel_id, event_id, selection_id):
 
 @events_bp.route("/events/summary", methods=["GET"])
 @require_permission("events")
+@require_plan_feature("events")
 def events_summary_route(hostel_id):
     return jsonify(get_events_summary(hostel_id))

@@ -18,19 +18,21 @@ from database import (
     set_hostel_system_integration,
     notify_on_duty_staff_for_ticket,
 )
-from utils.tenant import require_permission
+from utils.tenant import require_permission, require_plan_feature
 
 patrimonial_security_bp = Blueprint("patrimonial_security", __name__)
 
 
 @patrimonial_security_bp.route("/patrimonial-security/incidents", methods=["GET"])
 @require_permission("patrimonial_security")
+@require_plan_feature("patrimonial_security")
 def list_security_incidents(hostel_id):
     return jsonify(get_open_tickets(hostel_id, ticket_type="security_incident"))
 
 
 @patrimonial_security_bp.route("/patrimonial-security/incidents", methods=["POST"])
 @require_permission("patrimonial_security")
+@require_plan_feature("patrimonial_security")
 def create_security_incident_route(hostel_id):
     """
     Criacao manual (equipe registrando ronda/ocorrencia) - quando o
@@ -60,6 +62,7 @@ def create_security_incident_route(hostel_id):
 
 @patrimonial_security_bp.route("/patrimonial-security/incidents/<int:ticket_id>/assign", methods=["POST"])
 @require_permission("patrimonial_security")
+@require_plan_feature("patrimonial_security")
 def assign_security_incident_route(hostel_id, ticket_id):
     data = request.get_json() or {}
     membership_id = data.get("membership_id")
@@ -74,6 +77,7 @@ def assign_security_incident_route(hostel_id, ticket_id):
 
 @patrimonial_security_bp.route("/patrimonial-security/incidents/<int:ticket_id>/resolve", methods=["POST"])
 @require_permission("patrimonial_security")
+@require_plan_feature("patrimonial_security")
 def resolve_security_incident_route(hostel_id, ticket_id):
     data = request.get_json() or {}
     updated = resolve_ticket(hostel_id, ticket_id, resolution_notes=data.get("resolution_notes"))
@@ -84,12 +88,14 @@ def resolve_security_incident_route(hostel_id, ticket_id):
 
 @patrimonial_security_bp.route("/patrimonial-security/integrations/<capability>", methods=["GET"])
 @require_permission("patrimonial_security")
+@require_plan_feature("patrimonial_security")
 def get_integration_route(hostel_id, capability):
     return jsonify(get_hostel_system_integration(hostel_id, capability))
 
 
 @patrimonial_security_bp.route("/patrimonial-security/integrations/<capability>", methods=["POST"])
 @require_permission("patrimonial_security")
+@require_plan_feature("patrimonial_security")
 def set_integration_route(hostel_id, capability):
     """
     provider default 'manual_fallback' de proposito - so vira 'api'

@@ -7,6 +7,7 @@ from database import (
     update_room_category,
     create_room,
     create_rooms_bulk,
+    check_room_limit,
     list_rooms,
     delete_room,
     update_room,
@@ -95,6 +96,11 @@ def rooms(hostel_id):
 @require_permission("operations")
 def create_room_route(hostel_id):
     data = request.get_json() or {}
+
+    allowed, limit_message = check_room_limit(hostel_id, additional=1)
+    if not allowed:
+        return jsonify({"success": False, "message": limit_message}), 402
+
     try:
         room_id = create_room(hostel_id, data.get("name"), data.get("category_name"), data.get("floor"))
     except ValueError as error:
@@ -106,8 +112,14 @@ def create_room_route(hostel_id):
 @require_permission("operations")
 def create_rooms_bulk_route(hostel_id):
     data = request.get_json() or {}
+    names = data.get("names", [])
+
+    allowed, limit_message = check_room_limit(hostel_id, additional=len(names))
+    if not allowed:
+        return jsonify({"success": False, "message": limit_message}), 402
+
     try:
-        room_ids = create_rooms_bulk(hostel_id, data.get("names", []), data.get("category_name"), data.get("floor"))
+        room_ids = create_rooms_bulk(hostel_id, names, data.get("category_name"), data.get("floor"))
     except ValueError as error:
         return jsonify({"success": False, "message": str(error)}), 400
     return jsonify({"success": True, "ids": room_ids, "count": len(room_ids)}), 201

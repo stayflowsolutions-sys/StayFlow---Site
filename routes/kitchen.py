@@ -13,13 +13,14 @@ from database import (
     notify_on_duty_staff_for_ticket,
     resolve_ticket,
 )
-from utils.tenant import require_permission
+from utils.tenant import require_permission, require_plan_feature
 
 kitchen_bp = Blueprint("kitchen", __name__)
 
 
 @kitchen_bp.route("/kitchen/menu", methods=["GET"])
 @require_permission("kitchen")
+@require_plan_feature("kitchen")
 def list_menu_items(hostel_id):
     active_only = request.args.get("active_only", "true").lower() != "false"
     return jsonify(get_menu_items(hostel_id, active_only=active_only))
@@ -27,6 +28,7 @@ def list_menu_items(hostel_id):
 
 @kitchen_bp.route("/kitchen/menu", methods=["POST"])
 @require_permission("kitchen")
+@require_plan_feature("kitchen")
 def create_menu_item_route(hostel_id):
     data = request.get_json() or {}
     name = (data.get("name") or "").strip()
@@ -45,6 +47,7 @@ def create_menu_item_route(hostel_id):
 
 @kitchen_bp.route("/kitchen/menu/<int:menu_item_id>/active", methods=["POST"])
 @require_permission("kitchen")
+@require_plan_feature("kitchen")
 def set_menu_item_active_route(hostel_id, menu_item_id):
     data = request.get_json() or {}
     updated = set_menu_item_active(hostel_id, menu_item_id, bool(data.get("active", True)))
@@ -55,6 +58,7 @@ def set_menu_item_active_route(hostel_id, menu_item_id):
 
 @kitchen_bp.route("/kitchen/menu/<int:menu_item_id>/ingredients", methods=["POST"])
 @require_permission("kitchen")
+@require_plan_feature("kitchen")
 def set_menu_item_ingredient_route(hostel_id, menu_item_id):
     """
     Sem checar hostel_id contra menu_item_id/inventory_item_id aqui de
@@ -75,6 +79,7 @@ def set_menu_item_ingredient_route(hostel_id, menu_item_id):
 
 @kitchen_bp.route("/kitchen/orders", methods=["GET"])
 @require_permission("kitchen")
+@require_plan_feature("kitchen")
 def list_kitchen_orders(hostel_id):
     orders = get_open_tickets(hostel_id, ticket_type="kitchen_order")
     for order in orders:
@@ -85,6 +90,7 @@ def list_kitchen_orders(hostel_id):
 
 @kitchen_bp.route("/kitchen/orders", methods=["POST"])
 @require_permission("kitchen")
+@require_plan_feature("kitchen")
 def create_kitchen_order_route(hostel_id):
     """
     Criacao manual (pela equipe, via dashboard) - o mesmo caminho que a
@@ -115,6 +121,7 @@ def create_kitchen_order_route(hostel_id):
 
 @kitchen_bp.route("/kitchen/orders/<int:ticket_id>/items/<int:item_id>/status", methods=["POST"])
 @require_permission("kitchen")
+@require_plan_feature("kitchen")
 def update_kitchen_order_item_status_route(hostel_id, ticket_id, item_id):
     data = request.get_json() or {}
     status = data.get("status")
