@@ -737,6 +737,21 @@ def create_database():
     )
     """)
 
+    # A tabela billing ja existia em producao desde a Sessao 7 (schema
+    # antigo, so id/hostel_id/plan_name/status/created_at) - CREATE TABLE
+    # IF NOT EXISTS nao altera uma tabela que ja existe, entao as colunas
+    # novas precisam ser adicionadas aqui explicitamente (mesmo padrao ja
+    # usado no resto do arquivo pra migrar tabelas antigas). Sem isso, o
+    # primeiro deploy quebrava no startup: _backfill_billing_for_hostels
+    # tentava gravar em colunas que nao existiam ainda.
+    add_column_if_not_exists(cursor, "billing", "trial_ends_at", "TIMESTAMP")
+    add_column_if_not_exists(cursor, "billing", "seats_included", "INTEGER NOT NULL DEFAULT 10")
+    add_column_if_not_exists(cursor, "billing", "extra_seats", "INTEGER NOT NULL DEFAULT 0")
+    add_column_if_not_exists(cursor, "billing", "payment_processor", "TEXT")
+    add_column_if_not_exists(cursor, "billing", "processor_customer_id", "TEXT")
+    add_column_if_not_exists(cursor, "billing", "processor_subscription_id", "TEXT")
+    add_column_if_not_exists(cursor, "billing", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+
     # Add-ons de billing (Eventos, Pacote Operacional ou modulo avulso) -
     # so tem efeito pra hospedagem em plano Starter; Business/Enterprise
     # ja incluem tudo (ver is_feature_included_in_plan).
@@ -8183,7 +8198,17 @@ def create_kitchen_order(hostel_id, location, items, reported_by_guest_id=None,
     cozinha ver, sem etapa de aprovacao manual.
 
     items: lista de dicts {"menu_item_id": int, "quantity": int, "notes": str opcional}
+
+    Checa o plano aqui dentro (nao so na rota HTTP) porque a IA chama
+    esta funcao direto (services/ai_service.py, pedido chegando por
+    WhatsApp/Messenger/Instagram), sem passar pelo decorator
+    require_plan_feature da rota - sem essa checagem aqui, uma
+    hospedagem Starter sem o modulo de cozinha conseguia criar pedido
+    de cozinha via IA mesmo assim.
     """
+    if not hostel_has_plan_feature(hostel_id, "kitchen"):
+        raise ValueError("Este recurso não está incluído no seu plano atual.")
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -8293,7 +8318,14 @@ def create_maintenance_ticket(hostel_id, location, description, category=None,
     divergir de base_urgency, que e o que a equipe/IA decidiu usar de
     fato pra fila - modelo hibrido: pergunta pro hospede, mas o sistema
     ainda pode reordenar comparado aos outros chamados abertos).
+
+    Checa o plano aqui dentro pelo mesmo motivo de create_kitchen_order:
+    a IA chama esta funcao direto, sem passar pelo require_plan_feature
+    da rota HTTP.
     """
+    if not hostel_has_plan_feature(hostel_id, "maintenance"):
+        raise ValueError("Este recurso não está incluído no seu plano atual.")
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -8357,7 +8389,14 @@ def create_security_incident(hostel_id, location, description, incident_type=Non
     seguranca comeca em 'high', nao 'normal') - reflete que um relato
     de seguranca tipicamente nao deveria esperar na mesma fila que um
     pedido de cozinha.
+
+    Checa o plano aqui dentro pelo mesmo motivo de create_kitchen_order:
+    a IA chama esta funcao direto, sem passar pelo require_plan_feature
+    da rota HTTP.
     """
+    if not hostel_has_plan_feature(hostel_id, "patrimonial_security"):
+        raise ValueError("Este recurso não está incluído no seu plano atual.")
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -8543,7 +8582,14 @@ def request_valet(hostel_id, vehicle_id, reported_by_guest_id=None, channel=None
     um ticket generico (type='valet_request'), notificado pelo mesmo
     caminho de escala/plantao (department='estacionamento') que os
     outros modulos.
+
+    Checa o plano aqui dentro pelo mesmo motivo de create_kitchen_order:
+    a IA chama esta funcao direto, sem passar pelo require_plan_feature
+    da rota HTTP.
     """
+    if not hostel_has_plan_feature(hostel_id, "parking"):
+        raise ValueError("Este recurso não está incluído no seu plano atual.")
+
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
