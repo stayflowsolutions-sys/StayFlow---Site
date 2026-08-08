@@ -1091,7 +1091,7 @@ nav{
   border-color:rgba(217,184,114,.55);
   padding:0 2%;
 }
-.hub-mark{width:82%!important;height:82%!important;object-fit:contain}
+.hub-mark{width:64%!important;height:64%!important;object-fit:contain}
 
 /* .hero-text/.hero-actions do hero antigo (removido) tem regras
    globais com !important em outro trecho deste arquivo (secao
