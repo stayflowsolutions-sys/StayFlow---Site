@@ -1084,16 +1084,15 @@ nav{
 .gnode.cyan .bubble svg{stroke:var(--blue2);color:var(--blue2)}
 .gcap{font-size:9.6px;font-weight:700;color:var(--text);text-align:center;line-height:1.15}
 
-.hub-node{width:31%;z-index:3}
+.hub-node{width:26%;z-index:3}
 .hub-node .bubble{
   background:radial-gradient(closest-side,#0d2034,#081420 80%);
   box-shadow:inset 0 0 0 1.5px rgba(217,184,114,.55);
-  filter:drop-shadow(0 0 34px rgba(217,184,114,.22));
   border-color:rgba(217,184,114,.55);
   padding:0 2%;
-  gap:9px;
+  gap:4px;
 }
-.hub-mark{width:72%!important;height:72%!important;object-fit:contain;filter:drop-shadow(0 0 10px rgba(217,184,114,.35))}
+.hub-mark{width:64%!important;height:64%!important;object-fit:contain}
 .hub-cap{font-family:var(--serif);font-size:12.5px;font-weight:600;color:var(--text);line-height:1.1}
 
 /* .hero-text/.hero-actions do hero antigo (removido) tem regras
