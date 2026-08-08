@@ -1007,7 +1007,7 @@ nav{
 :root{
   --gold:#d9b872;
   --gold-soft:#f0ddb0;
-  --serif:'Playfair Display','Iowan Old Style','Palatino Linotype',Georgia,serif;
+  --serif:Inter,"SF Pro Display","Segoe UI",Arial,Helvetica,sans-serif;
 }
 
 .hero-split{display:grid;grid-template-columns:1.55fr 1fr;gap:34px;align-items:center;max-width:1240px;margin:0 auto;padding:150px 0 40px}
@@ -1095,8 +1095,8 @@ nav{
 }
 .hero-heading .eyebrow::before{content:"";width:6px;height:6px;background:var(--gold);border-radius:50%;box-shadow:0 0 10px rgba(217,184,114,.7)}
 .hero-heading h1{
-  font-family:var(--serif)!important;font-weight:600!important;font-size:54px!important;
-  line-height:1.08!important;letter-spacing:-.4px!important;text-wrap:balance;
+  font-family:var(--serif)!important;font-weight:900!important;font-size:clamp(32px,4vw,54px)!important;
+  line-height:1.05!important;letter-spacing:-2px!important;text-wrap:balance;
   margin:0 auto 22px!important;max-width:760px!important;color:var(--text)!important;
 }
 .hero-heading h1 em{font-style:normal;background:linear-gradient(120deg,var(--blue2),var(--blue) 75%);-webkit-background-clip:text;background-clip:text;color:transparent}
