@@ -1025,7 +1025,7 @@ nav{
   --serif:Inter,"SF Pro Display","Segoe UI",Arial,Helvetica,sans-serif;
 }
 
-.hero-split{display:grid;grid-template-columns:1.3fr 1fr;gap:34px;align-items:center;max-width:1320px;margin:0 auto;padding:150px 0 40px}
+.hero-split{display:grid;grid-template-columns:1.8fr 1fr;gap:34px;align-items:start;max-width:1240px;margin:0 auto;padding:168px 0 40px}
 .hero-split .split-label{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:12px}
 
 .frame-wrap{position:relative;margin:0 auto}
@@ -1056,7 +1056,7 @@ nav{
 .dot.active{background:var(--gold-soft);width:18px;border-radius:4px}
 .dot-label{font-size:11px;color:var(--muted);margin-left:10px;font-weight:600}
 
-.radial-wrap{position:relative;width:100%;max-width:600px;aspect-ratio:1/1;margin:0 auto}
+.radial-wrap{position:relative;width:100%;max-width:430px;aspect-ratio:1/1;margin:0 auto}
 .radial-wrap svg.lines{position:absolute;inset:0;width:100%;height:100%}
 .radial-legend{display:flex;justify-content:center;gap:28px;margin-top:32px;font-size:12px;color:var(--muted)}
 .radial-legend span{display:inline-flex;align-items:center;gap:7px}
@@ -1091,10 +1091,10 @@ nav{
   filter:drop-shadow(0 0 34px rgba(217,184,114,.22));
   border-color:rgba(217,184,114,.55);
   padding:0 2%;
-  gap:6px;
+  gap:7px;
 }
-.hub-mark{width:72%!important;height:72%!important;object-fit:contain;filter:drop-shadow(0 0 10px rgba(217,184,114,.35))}
-.hub-cap{font-family:var(--serif);font-size:12.5px;font-weight:600;color:var(--text)}
+.hub-mark{width:62%!important;height:62%!important;object-fit:contain;filter:drop-shadow(0 0 10px rgba(217,184,114,.35))}
+.hub-cap{font-family:var(--serif);font-size:12.5px;font-weight:600;color:var(--text);line-height:1.1}
 
 /* .hero-text/.hero-actions do hero antigo (removido) tem regras
    globais com !important em outro trecho deste arquivo (secao
