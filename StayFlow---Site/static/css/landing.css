@@ -1090,10 +1090,10 @@ nav{
   box-shadow:inset 0 0 0 1.5px rgba(217,184,114,.55);
   filter:drop-shadow(0 0 34px rgba(217,184,114,.22));
   border-color:rgba(217,184,114,.55);
-  padding:0 1%;
-  gap:3px;
+  padding:0 2%;
+  gap:6px;
 }
-.hub-mark{width:94%!important;height:94%!important;object-fit:contain;filter:drop-shadow(0 0 10px rgba(217,184,114,.35))}
+.hub-mark{width:72%!important;height:72%!important;object-fit:contain;filter:drop-shadow(0 0 10px rgba(217,184,114,.35))}
 .hub-cap{font-family:var(--serif);font-size:12.5px;font-weight:600;color:var(--text)}
 
 /* .hero-text/.hero-actions do hero antigo (removido) tem regras
