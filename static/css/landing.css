@@ -1084,16 +1084,16 @@ nav{
 .gnode.cyan .bubble svg{stroke:var(--blue2);color:var(--blue2)}
 .gcap{font-size:9.6px;font-weight:700;color:var(--text);text-align:center;line-height:1.15}
 
-.hub-node{width:26%;z-index:3}
+.hub-node{width:31%;z-index:3}
 .hub-node .bubble{
   background:radial-gradient(closest-side,#0d2034,#081420 80%);
   box-shadow:inset 0 0 0 1.5px rgba(217,184,114,.55);
   filter:drop-shadow(0 0 34px rgba(217,184,114,.22));
   border-color:rgba(217,184,114,.55);
   padding:0 2%;
-  gap:7px;
+  gap:9px;
 }
-.hub-mark{width:62%!important;height:62%!important;object-fit:contain;filter:drop-shadow(0 0 10px rgba(217,184,114,.35))}
+.hub-mark{width:72%!important;height:72%!important;object-fit:contain;filter:drop-shadow(0 0 10px rgba(217,184,114,.35))}
 .hub-cap{font-family:var(--serif);font-size:12.5px;font-weight:600;color:var(--text);line-height:1.1}
 
 /* .hero-text/.hero-actions do hero antigo (removido) tem regras
@@ -1108,13 +1108,13 @@ nav{
   display:inline-flex;align-items:center;gap:9px;
   padding:0;border:0;background:none;border-radius:0;
   font-size:11.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--gold-soft);margin-bottom:20px;
+  color:var(--gold-soft);margin-bottom:28px;
 }
 .hero-heading .eyebrow::before{content:"";width:6px;height:6px;background:var(--gold);border-radius:50%;box-shadow:0 0 10px rgba(217,184,114,.7)}
 .hero-heading h1{
   font-family:var(--serif)!important;font-weight:900!important;font-size:clamp(32px,4vw,54px)!important;
   line-height:1.05!important;letter-spacing:-2px!important;text-wrap:balance;
-  margin:0 auto 22px!important;max-width:760px!important;color:var(--text)!important;
+  margin:8px auto 22px!important;max-width:760px!important;color:var(--text)!important;
 }
 .hero-heading h1 em{font-style:normal;background:linear-gradient(120deg,var(--blue2),var(--blue) 75%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero-heading-text{font-size:16px;line-height:1.7;color:var(--muted);max-width:560px;margin:0 auto 30px}
