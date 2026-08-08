@@ -6393,7 +6393,7 @@ def update_room(hostel_id, room_id, name=None, category_name=None, floor=None):
         raise ValueError("Quarto nao encontrado.")
 
     new_name = (name.strip() if name else "") or room["name"]
-    new_floor = (floor.strip() or None) if floor is not None else room["floor"]
+    new_floor = (str(floor).strip() or None) if floor is not None else room["floor"]
     new_category_id = _resolve_category_id(hostel_id, category_name) if category_name is not None else room["category_id"]
 
     cursor.execute(
