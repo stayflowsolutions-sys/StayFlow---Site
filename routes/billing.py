@@ -9,6 +9,7 @@ from database import (
     get_active_addons,
     set_billing_plan,
     set_billing_addon,
+    set_commission_pct,
     PLAN_ROOM_LIMITS,
     PLAN_SEAT_LIMITS,
 )
@@ -78,4 +79,23 @@ def admin_set_addon_route():
         return jsonify({"success": False, "message": "hostel_id e addon_key são obrigatórios."}), 400
 
     set_billing_addon(hostel_id, addon_key, active)
+    return jsonify({"success": True})
+
+
+@billing_bp.route("/billing/admin/set-commission", methods=["POST"])
+@require_stayflow_admin
+def admin_set_commission_route():
+    """Sobrescreve a comissão de guest_charges (tour/rental/reservation) de uma hospedagem específica. Sem override = usa DEFAULT_COMMISSION_PCT."""
+    data = request.get_json() or {}
+    hostel_id = data.get("hostel_id")
+    charge_type = data.get("charge_type")
+    commission_pct = data.get("commission_pct")
+
+    if not hostel_id or not charge_type or commission_pct is None:
+        return jsonify({"success": False, "message": "hostel_id, charge_type e commission_pct são obrigatórios."}), 400
+
+    if charge_type not in ("tour", "rental", "reservation"):
+        return jsonify({"success": False, "message": "charge_type inválido."}), 400
+
+    set_commission_pct(hostel_id, charge_type, commission_pct)
     return jsonify({"success": True})

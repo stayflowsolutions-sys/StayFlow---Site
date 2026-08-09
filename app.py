@@ -36,6 +36,9 @@ from routes.scheduling import scheduling_bp
 from routes.push import push_bp
 from routes.events import events_bp
 from routes.billing import billing_bp
+from routes.mercadopago_oauth import mercadopago_oauth_bp
+from routes.guest_charges import guest_charges_bp
+from routes.mercadopago_webhook import mercadopago_webhook_bp
 
 app = Flask(__name__, static_folder=None)
 
@@ -83,6 +86,9 @@ app.register_blueprint(scheduling_bp)
 app.register_blueprint(push_bp)
 app.register_blueprint(events_bp)
 app.register_blueprint(billing_bp)
+app.register_blueprint(mercadopago_oauth_bp)
+app.register_blueprint(guest_charges_bp)
+app.register_blueprint(mercadopago_webhook_bp)
 
 # Caminho do frontend: por padrão assume que a pasta do site fica ao lado
 # da pasta do backend (ex: C:\StayFlow\backend + C:\StayFlow\StayFlow---Site).

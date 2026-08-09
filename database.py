@@ -482,6 +482,20 @@ def create_database():
     # MESMAS duas colunas; so o state anti-CSRF do OAuth e novo aqui.
     add_column_if_not_exists(cursor, "hostels", "whatsapp_oauth_state", "TEXT")
 
+    # Mercado Pago (Split de Pagos) - cada hostel conecta a propria
+    # conta MP via OAuth pra receber pagamento de hospede (reserva,
+    # passeio/excursao, aluguel) direto na conta dele, com a comissao
+    # da StayFlow descontada automaticamente na criacao da preferencia
+    # (marketplace_fee). mp_access_token expira e precisa de refresh
+    # via mp_refresh_token antes de cada uso (ver services/
+    # mercadopago_service.py). mp_oauth_state e so o valor anti-CSRF do
+    # fluxo, mesmo papel de facebook_oauth_state/instagram_oauth_state.
+    add_column_if_not_exists(cursor, "hostels", "mp_user_id", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "mp_access_token", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "mp_refresh_token", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "mp_public_key", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "mp_oauth_state", "TEXT")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -831,6 +845,23 @@ def create_database():
     )
     """)
 
+    # Log/idempotencia dos webhooks do Mercado Pago (mesmo papel de
+    # channel_webhook_events acima, so que pra pagamento em vez de
+    # reserva de canal) - UNIQUE(mp_payment_id) evita processar duas
+    # vezes se o Mercado Pago reentregar a notificacao.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS mp_webhook_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        mp_payment_id TEXT NOT NULL UNIQUE,
+        hostel_id INTEGER,
+        payload_json TEXT,
+        status TEXT NOT NULL DEFAULT 'processing',
+        error_message TEXT,
+        guest_charge_id INTEGER,
+        received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # Historico de conversa do agente Ask StayFlow (painel do operador
     # logado, nao do hospede) - chave hostel_id+user_id.
     cursor.execute("""
@@ -937,6 +968,56 @@ def create_database():
     add_column_if_not_exists(cursor, "opportunities", "urgency", "TEXT DEFAULT 'low'")
     add_column_if_not_exists(cursor, "opportunities", "estimated_value", "REAL DEFAULT 0")
     add_column_if_not_exists(cursor, "opportunities", "next_action", "TEXT")
+
+    # Taxa de comissao da StayFlow por hospedagem e por tipo de cobranca
+    # (ver guest_charges abaixo) - override opcional; quando nao existe
+    # linha aqui pra um par (hostel_id, charge_type), vale o default de
+    # DEFAULT_COMMISSION_PCT no codigo. Decisao comercial da StayFlow,
+    # por isso so ajustavel via endpoint admin (require_stayflow_admin),
+    # nunca pelo proprio hostel.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS commission_rates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        charge_type TEXT NOT NULL,
+        commission_pct REAL NOT NULL,
+        UNIQUE(hostel_id, charge_type)
+    )
+    """)
+
+    # Cobranca paga pelo hospede via Mercado Pago, repassada ao hostel
+    # com a comissao da StayFlow descontada automaticamente no ato do
+    # pagamento (marketplace_fee). Serve pros tres cenarios de
+    # charge_type: 'tour'/'rental' (venda avulsa ou originada de uma
+    # oportunidade do Opportunity Center) e 'reservation' (link de
+    # pagamento pra uma reserva de quarto existente) - opportunity_id e
+    # reservation_id sao mutuamente exclusivos na pratica, mas nada
+    # impede os dois nulos ao mesmo tempo (venda avulsa sem origem).
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS guest_charges (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        guest_id INTEGER,
+        opportunity_id INTEGER,
+        reservation_id INTEGER,
+        charge_type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        total_amount REAL NOT NULL,
+        currency TEXT NOT NULL,
+        commission_pct REAL NOT NULL,
+        payment_mode TEXT NOT NULL DEFAULT 'full',
+        deposit_amount REAL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        mp_preference_id TEXT,
+        mp_payment_id TEXT,
+        mp_init_point TEXT,
+        paid_amount REAL,
+        paid_at TIMESTAMP,
+        created_by_user_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS settings (
@@ -2242,6 +2323,46 @@ def get_hostel_currency(hostel_id):
     return (row["currency"] if row and row["currency"] else "USD")
 
 
+# Comissao padrao da StayFlow por tipo de cobranca (guest_charges),
+# usada quando a hospedagem nao tem override em commission_rates.
+# Passeio/aluguel: comissao de venda incremental (a StayFlow gerou a
+# oportunidade). Reserva: taxa de processamento, bem menor - e a
+# receita principal do hotel, uma comissao alta ali faria o hotel
+# preferir receber por fora.
+DEFAULT_COMMISSION_PCT = {"tour": 10, "rental": 10, "reservation": 1.5}
+
+
+def get_commission_pct(hostel_id, charge_type):
+    """Taxa de comissao da StayFlow pra esse hostel+tipo de cobranca - override em commission_rates, senao DEFAULT_COMMISSION_PCT."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT commission_pct FROM commission_rates WHERE hostel_id = ? AND charge_type = ?",
+        (hostel_id, charge_type)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return row["commission_pct"]
+    return DEFAULT_COMMISSION_PCT.get(charge_type, 10)
+
+
+def set_commission_pct(hostel_id, charge_type, commission_pct):
+    """Cria/atualiza o override de comissao de uma hospedagem pra um tipo de cobranca - uso administrativo (require_stayflow_admin)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO commission_rates (hostel_id, charge_type, commission_pct)
+        VALUES (?, ?, ?)
+        ON CONFLICT(hostel_id, charge_type) DO UPDATE SET commission_pct = excluded.commission_pct
+        """,
+        (hostel_id, charge_type, commission_pct)
+    )
+    conn.commit()
+    conn.close()
+
+
 def get_user_by_email(email):
     """
     Retorna a identidade (pessoa) por email, ou None. O email e unico
@@ -3521,6 +3642,79 @@ def consume_hostel_instagram_oauth_state(hostel_id, state):
     return valid
 
 
+def get_hostel_mercadopago_config(hostel_id):
+    """Retorna (mp_user_id, access_token, refresh_token, public_key), ou (None, None, None, None) se nunca conectou."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT mp_user_id, mp_access_token, mp_refresh_token, mp_public_key FROM hostels WHERE id = ?",
+        (hostel_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None, None, None, None
+    return row["mp_user_id"], row["mp_access_token"], row["mp_refresh_token"], row["mp_public_key"]
+
+
+def save_hostel_mercadopago_config(hostel_id, mp_user_id, access_token, refresh_token, public_key):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE hostels
+        SET mp_user_id = ?, mp_access_token = ?, mp_refresh_token = ?, mp_public_key = ?
+        WHERE id = ?
+        """,
+        (mp_user_id, access_token, refresh_token, public_key, hostel_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def update_hostel_mercadopago_tokens(hostel_id, access_token, refresh_token):
+    """So os tokens (chamado depois de um refresh) - nao mexe em mp_user_id/mp_public_key."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET mp_access_token = ?, mp_refresh_token = ? WHERE id = ?",
+        (access_token, refresh_token, hostel_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def clear_hostel_mercadopago_config(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET mp_user_id = NULL, mp_access_token = NULL, mp_refresh_token = NULL, mp_public_key = NULL WHERE id = ?",
+        (hostel_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def save_hostel_mercadopago_oauth_state(hostel_id, state):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE hostels SET mp_oauth_state = ? WHERE id = ?", (state, hostel_id))
+    conn.commit()
+    conn.close()
+
+
+def consume_hostel_mercadopago_oauth_state(hostel_id, state):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT mp_oauth_state FROM hostels WHERE id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    valid = bool(row and row["mp_oauth_state"] and row["mp_oauth_state"] == state)
+    cursor.execute("UPDATE hostels SET mp_oauth_state = NULL WHERE id = ?", (hostel_id,))
+    conn.commit()
+    conn.close()
+    return valid
+
+
 def get_or_create_guest_by_channel(hostel_id, channel, external_id, phone=None, name=None):
     """
     Identidade canonica multi-canal: resolve o guest_id pela combinacao
@@ -3942,6 +4136,7 @@ def get_opportunities_list(hostel_id, limit=20, offset=0, sort="recent"):
     cursor.execute(f"""
         SELECT
             o.id,
+            g.id AS guest_id,
             g.name,
             g.phone,
             o.type,
@@ -4541,6 +4736,20 @@ def get_finance_summary(hostel_id):
     )
     confirmed_revenue += sum(row["base_price"] + row["addons_total"] for row in cursor.fetchall())
 
+    # Cobrancas pagas via Mercado Pago (guest_charges) - so passeio/
+    # aluguel entram na soma aqui: sao receita nova, que nao aparece em
+    # nenhum outro bloco acima. charge_type='reservation' fica de fora
+    # de proposito - e so uma FORMA de pagar uma reserva que ja foi
+    # contada no primeiro bloco (r.amount, reserva confirmada); somar
+    # de novo aqui duplicaria a receita (mesmo motivo pelo qual
+    # reservation_payments de reserva fixa tambem nao entra na soma,
+    # so aparece como movimento informativo mais abaixo).
+    cursor.execute(
+        "SELECT COALESCE(SUM(paid_amount), 0) AS total FROM guest_charges WHERE hostel_id = ? AND status = 'paid' AND charge_type != 'reservation'",
+        (hostel_id,)
+    )
+    confirmed_revenue += cursor.fetchone()["total"]
+
     # Financeiro mostra so o que realmente entrou na empresa - reserva
     # confirmada e pagamento de verdade. Oportunidade (estimativa, ainda
     # nao fechada) fica de fora de proposito: ela ja tem casa propria no
@@ -4591,9 +4800,24 @@ def get_finance_summary(hostel_id):
         FROM events e
         WHERE e.hostel_id = ? AND e.status = 'confirmed'
 
+        UNION ALL
+
+        SELECT
+            CASE gc.charge_type
+                WHEN 'tour' THEN 'Passeio'
+                WHEN 'rental' THEN 'Aluguel'
+                ELSE 'Reserva (link)'
+            END AS type,
+            gc.title AS description,
+            gc.paid_amount AS value,
+            'confirmed' AS status,
+            gc.paid_at AS created_at
+        FROM guest_charges gc
+        WHERE gc.hostel_id = ? AND gc.status = 'paid'
+
         ORDER BY created_at DESC
         LIMIT 30
-    """, (hostel_id, hostel_id, hostel_id, hostel_id))
+    """, (hostel_id, hostel_id, hostel_id, hostel_id, hostel_id))
 
     movements = [dict(row) for row in cursor.fetchall()]
 
@@ -4994,6 +5218,170 @@ def list_reservation_payments(hostel_id, reservation_id):
     conn.close()
 
     return payments
+
+
+_GUEST_CHARGE_TYPES = {"tour", "rental", "reservation"}
+_GUEST_CHARGE_PAYMENT_MODES = {"full", "deposit"}
+
+
+def create_guest_charge(hostel_id, charge_type, title, total_amount, payment_mode="full",
+                         deposit_amount=None, description=None, guest_id=None,
+                         opportunity_id=None, reservation_id=None, created_by_user_id=None):
+    """
+    Cria uma cobranca pendente (link de pagamento ainda nao gerado - ver
+    mark_guest_charge_checkout_created, chamado logo em seguida pela
+    rota depois de criar a preferencia no Mercado Pago). Snapshota
+    moeda e comissao vigentes no momento da criacao - mudar a comissao
+    default depois nao altera cobrancas ja criadas.
+    """
+    if charge_type not in _GUEST_CHARGE_TYPES:
+        raise ValueError(f"charge_type invalido: {charge_type}")
+    if payment_mode not in _GUEST_CHARGE_PAYMENT_MODES:
+        raise ValueError(f"payment_mode invalido: {payment_mode}")
+
+    total_amount = float(total_amount or 0)
+    if total_amount <= 0:
+        raise ValueError("O valor total precisa ser maior que zero.")
+
+    if payment_mode == "deposit":
+        deposit_amount = float(deposit_amount or 0)
+        if deposit_amount <= 0 or deposit_amount >= total_amount:
+            raise ValueError("O valor do depósito precisa ser maior que zero e menor que o valor total.")
+    else:
+        deposit_amount = None
+
+    title = (title or "").strip()
+    if not title:
+        raise ValueError("Título é obrigatório.")
+
+    currency = get_hostel_currency(hostel_id)
+    commission_pct = get_commission_pct(hostel_id, charge_type)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO guest_charges
+        (hostel_id, guest_id, opportunity_id, reservation_id, charge_type, title, description,
+         total_amount, currency, commission_pct, payment_mode, deposit_amount, created_by_user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, guest_id, opportunity_id, reservation_id, charge_type, title,
+         (description or "").strip() or None, total_amount, currency, commission_pct,
+         payment_mode, deposit_amount, created_by_user_id)
+    )
+    charge_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return get_guest_charge(hostel_id, charge_id)
+
+
+def get_guest_charge(hostel_id, charge_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM guest_charges WHERE id = ? AND hostel_id = ?", (charge_id, hostel_id))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def list_guest_charges(hostel_id, limit=50, offset=0):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT * FROM guest_charges
+        WHERE hostel_id = ?
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+        """,
+        (hostel_id, limit, offset)
+    )
+    charges = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return charges
+
+
+def mark_guest_charge_checkout_created(hostel_id, charge_id, mp_preference_id, mp_init_point):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE guest_charges SET mp_preference_id = ?, mp_init_point = ? WHERE id = ? AND hostel_id = ?",
+        (mp_preference_id, mp_init_point, charge_id, hostel_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def mark_guest_charge_paid(hostel_id, guest_charge_id, mp_payment_id, paid_amount):
+    """
+    Idempotente - se a cobranca ja estiver 'paid' (reentrega do
+    webhook), nao faz nada. Quando charge_type='reservation', tambem
+    grava em reservation_payments (method='mercadopago') pra manter o
+    historico de pagamento da reserva consistente com o que ja existe.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT status, charge_type, reservation_id FROM guest_charges WHERE id = ? AND hostel_id = ?",
+        (guest_charge_id, hostel_id)
+    )
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        raise ValueError("Cobrança não encontrada.")
+
+    if row["status"] == "paid":
+        conn.close()
+        return
+
+    cursor.execute(
+        """
+        UPDATE guest_charges
+        SET status = 'paid', mp_payment_id = ?, paid_amount = ?, paid_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND hostel_id = ?
+        """,
+        (mp_payment_id, paid_amount, guest_charge_id, hostel_id)
+    )
+
+    if row["charge_type"] == "reservation" and row["reservation_id"]:
+        cursor.execute(
+            "INSERT INTO reservation_payments (hostel_id, reservation_id, amount, method, note) VALUES (?, ?, ?, 'mercadopago', ?)",
+            (hostel_id, row["reservation_id"], paid_amount, f"guest_charge #{guest_charge_id}")
+        )
+
+    conn.commit()
+    conn.close()
+
+
+def try_claim_mp_webhook_event(mp_payment_id, hostel_id, payload_json):
+    """Mesmo principio de try_claim_webhook_event (Beds24) - UNIQUE(mp_payment_id) barra reentrega duplicada. Devolve False se ja processado antes."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO mp_webhook_events (mp_payment_id, hostel_id, payload_json, status) VALUES (?, ?, ?, 'processing')",
+            (str(mp_payment_id), hostel_id, payload_json)
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def finalize_mp_webhook_event(mp_payment_id, status, error_message=None, guest_charge_id=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE mp_webhook_events SET status = ?, error_message = ?, guest_charge_id = ? WHERE mp_payment_id = ?",
+        (status, error_message, guest_charge_id, str(mp_payment_id))
+    )
+    conn.commit()
+    conn.close()
 
 
 def close_indefinite_stay(hostel_id, reservation_id, checkout_date=None):

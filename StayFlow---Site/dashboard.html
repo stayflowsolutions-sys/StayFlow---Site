@@ -1097,7 +1097,10 @@ async function deleteRoleConfirm(roleId){
 <section id="opportunities" class="page">
   <div class="grid">
     <div class="card span-8">
-      <h2 data-i18n="opportunities.title">🔥 Opportunity Center</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h2 data-i18n="opportunities.title">🔥 Opportunity Center</h2>
+        <button type="button" class="btn secondary" onclick="openGuestChargeModal({})" data-i18n="guestCharge.newStandaloneBtn">+ Nova cobrança</button>
+      </div>
       <div style="overflow-x:auto">
         <table class="table">
           <thead>
@@ -1109,6 +1112,7 @@ async function deleteRoleConfirm(roleId){
               <th data-i18n="opportunities.col.score">Score</th>
               <th data-i18n="opportunities.col.revenue">Receita</th>
               <th data-i18n="opportunities.col.nextAction">Próxima ação</th>
+              <th data-i18n="opportunities.col.action">Ação</th>
             </tr>
           </thead>
           <tbody id="opportunitiesTableBody">
@@ -1981,6 +1985,16 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="integracoes" onclick="openMercadoPagoSettingsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.mercadopago.title">💳 Mercado Pago</h2>
+            <p class="settings-summary-desc" id="mercadopagoSummaryDesc" data-i18n="settings.mercadopago.desc">Conecte a conta Mercado Pago da hospedagem pra receber pagamento de reserva, passeio e aluguel direto do hóspede.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -2726,6 +2740,67 @@ async function deleteRoleConfirm(roleId){
       loadFacebookSettings();
     }catch(e){
       console.warn("Erro ao desconectar Facebook:", e);
+    }
+  };
+
+  window.openMercadoPagoSettingsModal = function(){
+    openGenericModal(T('settings.mercadopago.title', '💳 Mercado Pago'), `
+      <p style="margin-bottom:14px">${T('settings.mercadopago.desc', 'Conecte a conta Mercado Pago da hospedagem pra receber pagamento de reserva, passeio e aluguel direto do hóspede — o dinheiro cai direto na sua conta, com a taxa da StayFlow já descontada automaticamente.')}</p>
+
+      <div id="mercadopagoConnected" style="display:none">
+        <p style="margin:0 0 12px">
+          <span>${T('settings.mercadopago.statusLabel', 'Status:')}</span>
+          <strong style="color:#3ddc97">${T('settings.mercadopago.statusActive', 'Conectado')}</strong>
+        </p>
+        <button type="button" class="btn red" onclick="disconnectMercadoPago()">${T('settings.mercadopago.disconnectBtn', 'Desconectar')}</button>
+      </div>
+
+      <div id="mercadopagoNotConnected">
+        <button type="button" class="btn" onclick="connectMercadoPago()">${T('settings.mercadopago.connectBtn', 'Conectar Mercado Pago')}</button>
+      </div>
+
+      <div id="mercadopagoMessage" class="generic-modal-message"></div>
+    `);
+    loadMercadoPagoSettings();
+  };
+
+  window.loadMercadoPagoSettings = async function(){
+    try{
+      const res = await fetch("/settings/mercadopago", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const summaryDesc = document.getElementById("mercadopagoSummaryDesc");
+      if(summaryDesc){
+        summaryDesc.textContent = data.connected
+          ? T('settings.mercadopago.summaryConnected', '✅ Conectado')
+          : T('settings.mercadopago.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+      }
+
+      const connectedEl = document.getElementById("mercadopagoConnected");
+      const notConnectedEl = document.getElementById("mercadopagoNotConnected");
+      if(!connectedEl || !notConnectedEl) return;
+
+      connectedEl.style.display = data.connected ? "block" : "none";
+      notConnectedEl.style.display = data.connected ? "none" : "block";
+    }catch(e){
+      console.warn("Erro ao carregar configuração do Mercado Pago:", e);
+    }
+  };
+
+  window.connectMercadoPago = function(){
+    window.location.href = "/oauth/mercadopago/connect";
+  };
+
+  window.disconnectMercadoPago = async function(){
+    const confirmed = await stayflowConfirm(T('settings.mercadopago.disconnectConfirm', 'Desconectar o Mercado Pago? Não vai ser possível gerar novos links de pagamento até reconectar.'));
+    if(!confirmed) return;
+
+    try{
+      await fetch("/settings/mercadopago", { method: "DELETE", credentials: "same-origin" });
+      loadMercadoPagoSettings();
+    }catch(e){
+      console.warn("Erro ao desconectar Mercado Pago:", e);
     }
   };
 
@@ -4512,6 +4587,7 @@ async function loadReservations(){
             </select>
             ${r.status === "confirmed" && !r.checked_in_at ? `<button type="button" class="pill-btn checkin-pill" onclick="checkinReservationUI(${r.id}, ${r.bed_id || "null"}, '${(r.room_type || "").split("'").join("\\'")}')">${T('reservations.checkinBtn', 'Check-in')}</button>` : ""}
             ${r.checked_in_at && !r.checked_out_at ? `<button type="button" class="pill-btn checkout-pill" onclick="checkoutReservationUI(${r.id})">${T('reservations.checkoutBtn', 'Check-out')}</button>` : ""}
+            <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="openGuestChargeModal(${JSON.stringify({chargeType: "reservation", guestId: r.guest_id || null, reservationId: r.id, title: T('guestCharge.reservationDefaultTitle', 'Pagamento da reserva') + " - " + (r.guest_name || ""), amount: r.amount || "", guestLabel: r.guest_name || ""}).replace(/"/g, "&quot;")})">${T('guestCharge.generatePaymentLinkBtn', 'Gerar link de pagamento')}</button>
           </div>
         </td>
       `;
@@ -8882,6 +8958,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadOutboundWebhookSettings === "function") loadOutboundWebhookSettings();
     if (typeof loadFacebookSettings === "function") loadFacebookSettings();
     if (typeof loadInstagramSettings === "function") loadInstagramSettings();
+    if (typeof loadMercadoPagoSettings === "function") loadMercadoPagoSettings();
     if (typeof loadQuickReplies === "function") loadQuickReplies();
     if (typeof loadNotificationsSummary === "function") loadNotificationsSummary();
 

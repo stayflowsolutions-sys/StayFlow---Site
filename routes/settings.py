@@ -24,8 +24,11 @@ from database import (
     save_hostel_instagram_config,
     clear_hostel_instagram_config,
     save_hostel_phone,
+    get_hostel_mercadopago_config,
+    clear_hostel_mercadopago_config,
 )
 import services.meta_oauth_service as meta_oauth_service
+import services.mercadopago_service as mercadopago_service
 import services.beds24_service as beds24_service
 from utils.tenant import require_permission
 
@@ -500,6 +503,23 @@ def update_instagram_settings(hostel_id):
 @require_permission("settings")
 def delete_instagram_settings(hostel_id):
     clear_hostel_instagram_config(hostel_id)
+    return jsonify({"success": True})
+
+
+@settings_bp.route("/settings/mercadopago", methods=["GET"])
+@require_permission("settings")
+def get_mercadopago_settings(hostel_id):
+    mp_user_id, access_token, _refresh, _public_key = get_hostel_mercadopago_config(hostel_id)
+    return jsonify({
+        "connected": bool(mp_user_id and access_token),
+        "oauth_available": mercadopago_service.is_configured(),
+    })
+
+
+@settings_bp.route("/settings/mercadopago", methods=["DELETE"])
+@require_permission("settings")
+def delete_mercadopago_settings(hostel_id):
+    clear_hostel_mercadopago_config(hostel_id)
     return jsonify({"success": True})
 
 
