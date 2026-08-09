@@ -4395,6 +4395,31 @@ async function loadDashboardStats(){
     const msgNote = kpiMessages?.closest(".card")?.querySelector(".note");
     if(msgNote) msgNote.textContent = stats.messages ? T('home.kpi.messagesNoteReceived', 'Total recebido') : T('home.kpi.messagesNoteEmpty', 'Nenhuma conversa recebida');
 
+    const kpiOccupancy = document.getElementById("kpiOccupancy");
+    if(kpiOccupancy) kpiOccupancy.textContent = `${stats.occupancy_pct ?? 0}%`;
+
+    const occNote = kpiOccupancy?.closest(".card")?.querySelector(".note");
+    if(occNote){
+      occNote.textContent = stats.beds_total
+        ? T('home.kpi.occupancyNoteReal', '{occupied} de {total} camas ocupadas', { occupied: stats.beds_occupied ?? 0, total: stats.beds_total })
+        : T('home.kpi.occupancyNote', 'Aguardando dados reais');
+    }
+
+    const kpiReservations = document.getElementById("kpiReservations");
+    if(kpiReservations) kpiReservations.textContent = String(stats.reservations ?? 0);
+    const resNote = kpiReservations?.closest(".card")?.querySelector(".note");
+    if(resNote) resNote.textContent = stats.reservations ? T('home.kpi.reservationsNoteConfirmed', 'Confirmadas') : T('home.kpi.reservationsNote', 'Nenhum registro');
+
+    const kpiRevenue = document.getElementById("kpiRevenue");
+    if(kpiRevenue) kpiRevenue.textContent = formatMoney(stats.revenue ?? 0);
+    const revNote = kpiRevenue?.closest(".card")?.querySelector(".note");
+    if(revNote) revNote.textContent = stats.revenue ? T('home.kpi.revenueNoteConfirmed', 'Receita confirmada') : T('home.kpi.revenueNote', 'Aguardando reservas');
+
+    const kpiOpportunities = document.getElementById("kpiOpportunities");
+    if(kpiOpportunities) kpiOpportunities.textContent = String(stats.opportunities ?? 0);
+    const oppNote = kpiOpportunities?.closest(".card")?.querySelector(".note");
+    if(oppNote) oppNote.textContent = stats.opportunities ? T('home.kpi.opportunitiesNoteActive', 'Em aberto') : T('home.kpi.opportunitiesNote', 'Nenhuma detectada ainda');
+
   }catch(e){
     console.warn("Erro ao carregar /dashboard:", e);
   }

@@ -4039,6 +4039,34 @@ def get_dashboard_stats(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Ocupacao real = status da cama (mesmo criterio ja usado no mapa de
+    # quartos, get_bed_map) - occupied/needs_cleaning conta como ocupada,
+    # ja que a cama so fica limpa de novo depois do proximo check-in.
+    cursor.execute("SELECT COUNT(*) AS total FROM beds WHERE hostel_id = ?", (hostel_id,))
+    beds_total = cursor.fetchone()["total"]
+    cursor.execute(
+        "SELECT COUNT(*) AS total FROM beds WHERE hostel_id = ? AND status IN ('occupied', 'needs_cleaning')",
+        (hostel_id,)
+    )
+    beds_occupied = cursor.fetchone()["total"]
+    occupancy_pct = round(100 * beds_occupied / beds_total) if beds_total else 0
+
+    # Mesmo criterio de receita confirmada ja usado no primeiro bloco de
+    # get_finance_summary (reserva confirmada = amount, exceto estadia
+    # indefinida que nao tem valor fechado) - versao simplificada so pra
+    # KPI rapido do Dashboard, o Financeiro continua sendo a fonte
+    # completa (cambio, eventos, guest_charges etc.).
+    cursor.execute(
+        "SELECT COUNT(*) AS total FROM reservations WHERE hostel_id = ? AND status = 'confirmed'",
+        (hostel_id,)
+    )
+    reservations_count = cursor.fetchone()["total"]
+    cursor.execute(
+        "SELECT COALESCE(SUM(amount), 0) AS total FROM reservations WHERE hostel_id = ? AND status = 'confirmed' AND stay_type != 'indefinite'",
+        (hostel_id,)
+    )
+    revenue = cursor.fetchone()["total"]
+
     cursor.execute(
         "SELECT COUNT(*) AS total FROM guests WHERE hostel_id = ?",
         (hostel_id,)
@@ -4095,7 +4123,12 @@ def get_dashboard_stats(hostel_id):
             "guests": guests,
             "messages": messages,
             "leads": leads,
-            "opportunities": opportunities
+            "opportunities": opportunities,
+            "occupancy_pct": occupancy_pct,
+            "beds_occupied": beds_occupied,
+            "beds_total": beds_total,
+            "reservations": reservations_count,
+            "revenue": revenue
         },
         "recent_leads": recent_leads,
         "recent_messages": recent_messages
