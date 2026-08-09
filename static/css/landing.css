@@ -53,10 +53,11 @@ body::after{
   position:fixed;
   inset:0;
   pointer-events:none;
-  background-image:url('../../assets/images/octagon-pattern.svg');
-  background-repeat:repeat;
-  background-size:400px 400px;
-  opacity:.55;
+  background-image:url('../../assets/images/octagon-constellation.svg');
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:cover;
+  opacity:.7;
 }
 button,a{transition:.2s ease}
 button{font:inherit}
