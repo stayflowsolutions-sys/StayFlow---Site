@@ -87,6 +87,19 @@ function opportunityRowHtml(opportunity){
   const estimatedValue = Number(opportunity.estimated_value || 0);
   const guestLabel = escapeHtml(opportunity.name || opportunity.phone || "-");
 
+  // "Gerar cobranca" so faz sentido pra oportunidade que a IA
+  // classificou como passeio/upsell (tour/rental de verdade) - reserva,
+  // pedido de ajuda humana e follow-up nao sao vendas cobraveis aqui.
+  const canCharge = opportunity.type === "tour" || opportunity.type === "upsell";
+  const chargeArgs = JSON.stringify({
+    chargeType: "tour",
+    guestId: opportunity.guest_id || null,
+    opportunityId: opportunity.id,
+    title: opportunity.description || "",
+    amount: estimatedValue || "",
+    guestLabel: opportunity.name || opportunity.phone || "",
+  }).replace(/"/g, "&quot;");
+
   return `
     <td>${opportunityDateLabel(opportunity.created_at)}</td>
     <td>${guestLabel}</td>
@@ -99,6 +112,7 @@ function opportunityRowHtml(opportunity){
     <td>${score}/100</td>
     <td>${formatMoney(estimatedValue)}</td>
     <td>${escapeHtml(opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.'))}</td>
+    <td>${canCharge ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="openGuestChargeModal(${chargeArgs})">${T('guestCharge.generateBtn', 'Gerar cobrança')}</button>` : "—"}</td>
   `;
 }
 
@@ -210,13 +224,162 @@ async function loadOpportunities() {
     if (container) {
       container.innerHTML = `
         <tr>
-          <td colspan="7">
+          <td colspan="8">
             ${T('opportunities.loadError', 'Erro ao carregar oportunidades. Tente novamente mais tarde.')}
           </td>
         </tr>
       `;
     }
   }
+}
+
+// ---------------------------------------------------------------
+// Cobranca ao hospede via Mercado Pago (guest_charges) - modal
+// compartilhado por tres pontos de entrada: Opportunity Center
+// (charge_type tour/rental, com opportunity_id), Reservas
+// (charge_type='reservation' travado, com reservation_id) e "+ Nova
+// cobranca" avulsa (sem origem nenhuma). Ver routes/guest_charges.py.
+// ---------------------------------------------------------------
+
+function openGuestChargeModal(opts){
+  opts = opts || {};
+  const lockedType = opts.chargeType || null;
+  const guestId = opts.guestId || null;
+  const opportunityId = opts.opportunityId || null;
+  const reservationId = opts.reservationId || null;
+  const defaultTitle = opts.title || "";
+  const defaultAmount = opts.amount || "";
+  const guestLabel = opts.guestLabel || "";
+
+  const typeOptions = lockedType
+    ? `<input type="hidden" id="chargeType" value="${escapeHtml(lockedType)}">`
+    : `
+      <select id="chargeType" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <option value="tour">${T('guestCharge.type.tour', 'Passeio/excursão')}</option>
+        <option value="rental">${T('guestCharge.type.rental', 'Aluguel')}</option>
+      </select>
+    `;
+
+  openGenericModal(T('guestCharge.modalTitle', '💳 Gerar cobrança'), `
+    ${guestLabel ? `<p style="margin:0 0 14px;color:var(--muted);font-size:13px">${T('guestCharge.guestLabel', 'Hóspede:')} <strong style="color:white">${escapeHtml(guestLabel)}</strong></p>` : ""}
+
+    <div style="display:grid;gap:var(--gap)">
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('guestCharge.typeLabel', 'Tipo')}</label>
+        ${typeOptions}
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('guestCharge.titleLabel', 'Título')}</label>
+        <input type="text" id="chargeTitle" value="${escapeHtml(defaultTitle)}" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('guestCharge.descriptionLabel', 'Descrição (opcional)')}</label>
+        <input type="text" id="chargeDescription" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('guestCharge.totalLabel', 'Valor total')}</label>
+        <input type="number" id="chargeTotalAmount" value="${escapeHtml(String(defaultAmount))}" min="0" step="0.01" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('guestCharge.paymentModeLabel', 'Pagamento')}</label>
+        <select id="chargePaymentMode" onchange="document.getElementById('chargeDepositRow').style.display = this.value === 'deposit' ? 'block' : 'none'" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <option value="full">${T('guestCharge.paymentMode.full', 'Valor cheio')}</option>
+          <option value="deposit">${T('guestCharge.paymentMode.deposit', 'Sinal/depósito')}</option>
+        </select>
+      </div>
+      <div id="chargeDepositRow" style="display:none">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('guestCharge.depositLabel', 'Valor do depósito')}</label>
+        <input type="number" id="chargeDepositAmount" min="0" step="0.01" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+    </div>
+
+    <div id="chargeResult" style="display:none;margin-top:16px;padding:12px;background:#02070d;border:1px solid var(--line);border-radius:12px">
+      <p style="margin:0 0 8px;font-size:12px;color:var(--muted)">${T('guestCharge.linkReady', 'Link de pagamento gerado:')}</p>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="chargeLinkInput" readonly style="flex:1;background:#050c16;border:1px solid var(--line);border-radius:10px;color:white;padding:9px 10px;font-size:12px">
+        <button type="button" class="btn secondary" onclick="copyGuestChargeLink()">${T('guestCharge.copyBtn', 'Copiar link')}</button>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" id="chargeSubmitBtn" onclick="submitGuestCharge()">${T('guestCharge.submitBtn', 'Gerar cobrança')}</button>
+    </div>
+
+    <div id="chargeMessage" class="generic-modal-message"></div>
+  `);
+
+  window._guestChargeContext = { guestId, opportunityId, reservationId };
+}
+
+async function submitGuestCharge(){
+  const msg = document.getElementById("chargeMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const ctx = window._guestChargeContext || {};
+  const chargeType = document.getElementById("chargeType").value;
+  const title = (document.getElementById("chargeTitle").value || "").trim();
+  const description = (document.getElementById("chargeDescription").value || "").trim();
+  const totalAmount = parseFloat(document.getElementById("chargeTotalAmount").value);
+  const paymentMode = document.getElementById("chargePaymentMode").value;
+  const depositAmount = paymentMode === "deposit" ? parseFloat(document.getElementById("chargeDepositAmount").value) : null;
+
+  if(!title || !totalAmount || totalAmount <= 0){
+    if(msg){
+      msg.textContent = T('guestCharge.validationError', 'Preencha título e um valor total maior que zero.');
+      msg.classList.add("error");
+    }
+    return;
+  }
+
+  const btn = document.getElementById("chargeSubmitBtn");
+  if(btn) btn.disabled = true;
+
+  try{
+    const res = await fetch("/guest-charges", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        charge_type: chargeType,
+        title,
+        description: description || null,
+        total_amount: totalAmount,
+        payment_mode: paymentMode,
+        deposit_amount: depositAmount,
+        guest_id: ctx.guestId,
+        opportunity_id: ctx.opportunityId,
+        reservation_id: ctx.reservationId,
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success){
+      if(msg){
+        msg.textContent = data.message || T('guestCharge.submitFailed', 'Não foi possível gerar a cobrança.');
+        msg.classList.add("error");
+      }
+      return;
+    }
+
+    const linkInput = document.getElementById("chargeLinkInput");
+    const resultBox = document.getElementById("chargeResult");
+    if(linkInput) linkInput.value = data.charge.mp_init_point || "";
+    if(resultBox) resultBox.style.display = "block";
+    if(btn) btn.style.display = "none";
+  }catch(e){
+    if(msg){
+      msg.textContent = T('common.connectionError', 'Erro de conexão.');
+      msg.classList.add("error");
+    }
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
+function copyGuestChargeLink(){
+  const input = document.getElementById("chargeLinkInput");
+  if(!input || !input.value) return;
+  input.select();
+  navigator.clipboard?.writeText(input.value).catch(() => {});
 }
 
 // loadOpportunities() é chamado por dashboard.html no evento
