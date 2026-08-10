@@ -247,6 +247,7 @@ function openGuestChargeModal(opts){
   const guestId = opts.guestId || null;
   const opportunityId = opts.opportunityId || null;
   const reservationId = opts.reservationId || null;
+  const portfolioItemId = opts.portfolioItemId || null;
   const defaultTitle = opts.title || "";
   const defaultAmount = opts.amount || "";
   const guestLabel = opts.guestLabel || "";
@@ -308,7 +309,7 @@ function openGuestChargeModal(opts){
     <div id="chargeMessage" class="generic-modal-message"></div>
   `);
 
-  window._guestChargeContext = { guestId, opportunityId, reservationId };
+  window._guestChargeContext = { guestId, opportunityId, reservationId, portfolioItemId };
 }
 
 async function submitGuestCharge(){
@@ -349,6 +350,7 @@ async function submitGuestCharge(){
         guest_id: ctx.guestId,
         opportunity_id: ctx.opportunityId,
         reservation_id: ctx.reservationId,
+        portfolio_item_id: ctx.portfolioItemId,
       })
     });
     const data = await res.json().catch(() => ({}));
