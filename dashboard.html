@@ -5,6 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google" content="notranslate">
 <title>StayFlow Dashboard</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#03070d">
+<link rel="icon" href="/assets/images/icon-192.png">
+<link rel="apple-touch-icon" href="/assets/images/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="StayFlow">
+<script>
+  // Registro do service worker acontece AQUI, sempre, assim que a
+  // pagina carrega - independente de a pessoa nunca ter aberto
+  // Configuracoes > Notificacoes (unico lugar que ja registrava antes,
+  // so pro fluxo de push). Instalabilidade de PWA exige um service
+  // worker ativo pra pagina atual; sem isso registrado cedo, a grande
+  // maioria nunca ganhava a opcao de "Instalar app". register() e
+  // idempotente - chamar de novo dentro do fluxo de push nao duplica
+  // nada, o navegador so reaproveita o mesmo registro.
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(e => console.warn("Erro ao registrar service worker:", e));
+    });
+  }
+</script>
 <link rel="stylesheet" href="static/css/tokens.css">
 <link rel="stylesheet" href="static/css/reset.css">
 <link rel="stylesheet" href="static/css/app.css">
