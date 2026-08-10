@@ -133,7 +133,7 @@
           : "—";
 
         tr.innerHTML = `
-          <td>${escapeHtml(h.hostel_name)}</td>
+          <td><a href="admin-hostel.html?id=${h.hostel_id}" style="color:var(--text);font-weight:600;text-decoration:none">${escapeHtml(h.hostel_name)}</a></td>
           <td>${planLabel(h.plan_name)}</td>
           <td><span class="status-pill ${pillClass}">${escapeHtml(statusLabel.toUpperCase())}</span></td>
           <td>${trialText}</td>
