@@ -31,6 +31,8 @@ ALL_PERMISSIONS = [
     "parking",
     "scheduling",
     "events",
+    "portfolio",
+    "partners",
 ]
 
 ALL_PERMISSIONS_STR = ",".join(ALL_PERMISSIONS)
@@ -56,4 +58,6 @@ PERMISSION_LABELS = {
     "parking": "Estacionamento",
     "scheduling": "Escala",
     "events": "Eventos",
+    "portfolio": "Meu Portfólio",
+    "partners": "Parceiros",
 }

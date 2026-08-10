@@ -3,6 +3,7 @@ import sqlite3
 import bcrypt
 
 from database import (
+    AGENCY_CATEGORIES,
     get_hostel,
     get_user_by_email,
     get_user_by_id,
@@ -94,6 +95,7 @@ def build_session_payload(user_id, hostel_id):
         "is_stayflow_admin": is_stayflow_admin_email(user["email"]),
         "hostel_id": hostel_id,
         "hostel_name": hostel["name"] if hostel else None,
+        "account_kind": hostel["account_kind"] if hostel else "lodging",
         "role_name": membership["role_name"],
         "permissions": permissions,
         "hostels": hostels,
@@ -108,6 +110,8 @@ def register():
     admin_name = data.get("admin_name", "").strip()
     email = data.get("email", "").strip().lower()
     password = data.get("password", "").strip()
+    account_kind = data.get("account_kind", "lodging").strip() or "lodging"
+    agency_category = (data.get("agency_category") or "").strip() or None
 
     if not hostel_name:
         return jsonify({"success": False, "message": "Hostel name is required."}), 400
@@ -119,6 +123,12 @@ def register():
         return jsonify({"success": False, "message": "Password is required."}), 400
     if len(password) < 8:
         return jsonify({"success": False, "message": "Password must be at least 8 characters."}), 400
+    if account_kind not in ("lodging", "agency"):
+        return jsonify({"success": False, "message": "Tipo de estabelecimento inválido."}), 400
+    if account_kind == "agency" and agency_category not in AGENCY_CATEGORIES:
+        return jsonify({"success": False, "message": "Categoria de agência inválida."}), 400
+    if account_kind == "lodging":
+        agency_category = None
 
     if get_user_by_email(email):
         return jsonify({"success": False, "message": "This email is already registered."}), 409
@@ -127,7 +137,8 @@ def register():
 
     try:
         result = create_identity_and_hostel(
-            admin_name, email, password_hash, hostel_name, email
+            admin_name, email, password_hash, hostel_name, email,
+            account_kind=account_kind, agency_category=agency_category
         )
     except sqlite3.IntegrityError:
         return jsonify({"success": False, "message": "This email is already registered."}), 409

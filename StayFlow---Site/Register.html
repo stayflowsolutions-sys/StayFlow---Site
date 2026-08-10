@@ -1,16 +1,30 @@
 <!DOCTYPE html><html lang='pt-BR' translate='no'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><meta name='google' content='notranslate'><title>StayFlow | Criar Conta</title><link rel='manifest' href='/manifest.json'><meta name='theme-color' content='#03070d'><link rel='icon' href='/assets/images/icon-192.png'><link rel='apple-touch-icon' href='/assets/images/apple-touch-icon.png'><meta name='apple-mobile-web-app-capable' content='yes'><meta name='apple-mobile-web-app-title' content='StayFlow'><script>if("serviceWorker" in navigator){window.addEventListener("load", () => {navigator.serviceWorker.register("/sw.js").catch(e => console.warn("Erro ao registrar service worker:", e));});}</script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;height:100vh;display:flex;align-items:center;justify-content:center;background:#06101b;color:#fff;overflow:hidden}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#06101b;color:#fff;overflow:auto}
 body:before{content:'';position:fixed;inset:0;opacity:.22;background:url('https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg') center/cover no-repeat}
-.card{position:relative;z-index:1;width:500px;background:rgba(8,12,20,.9);padding:42px;border-radius:28px;border:1px solid #233652}
+.card{position:relative;z-index:1;width:500px;background:rgba(8,12,20,.9);padding:42px;border-radius:28px;border:1px solid #233652;margin:24px 0}
 .brand{text-align:center;margin-bottom:22px}.brand img{width:128px}
-input{width:100%;padding:15px;margin:8px 0 16px;background:#0d1421;border:1px solid #233652;border-radius:15px;color:#fff}
+input,select{width:100%;padding:15px;margin:8px 0 16px;background:#0d1421;border:1px solid #233652;border-radius:15px;color:#fff;font-size:15px}
 button{width:100%;padding:16px;background:#2f7dff;border:none;border-radius:16px;color:#fff;font-weight:700}
 a{color:#8fb4ff;text-decoration:none}
 </style></head><body><div class='card'>
 <div class='brand' style='display:flex;justify-content:center;align-items:center;gap:0px'><img src='assets/images/logo2.png' style='width:128px;margin-right:-28px'><h1 style='font-size:34px;margin:0'>STAY<span style='color:#2f7dff'>FLOW</span></h1></div>
 <h2>Criar conta</h2><br>
-<label>Nome do hostel</label><input id='hostel_name' placeholder='Digite o nome do hostel'>
+<label>Tipo de estabelecimento</label>
+<select id='account_kind' onchange='toggleAgencyCategory()'>
+<option value='lodging'>Hospedagem</option>
+<option value='agency'>Agência parceira (turismo, aluguel de carro/bike/equipamento)</option>
+</select>
+<div id='agencyCategoryWrap' style='display:none'>
+<label>Categoria da agência</label>
+<select id='agency_category'>
+<option value='turismo'>Turismo</option>
+<option value='aluguel_carro'>Aluguel de carro</option>
+<option value='aluguel_bike'>Aluguel de bike</option>
+<option value='aluguel_equipamentos'>Aluguel de equipamentos</option>
+</select>
+</div>
+<label id='hostelNameLabel'>Nome do hostel</label><input id='hostel_name' placeholder='Digite o nome do hostel'>
 <label>Seu nome</label><input id='admin_name' placeholder='Digite seu nome'>
 <label>E-mail</label><input id='email' placeholder='Digite seu e-mail'>
 <label>Senha</label><input id='password' type='password' placeholder='Crie uma senha'>
@@ -18,8 +32,19 @@ a{color:#8fb4ff;text-decoration:none}
 <a href='Login.html'>Já possui uma conta? Entrar</a>
 </div>
 <script>
+function toggleAgencyCategory(){
+const isAgency = account_kind.value === 'agency';
+agencyCategoryWrap.style.display = isAgency ? 'block' : 'none';
+hostelNameLabel.textContent = isAgency ? 'Nome da agência' : 'Nome do hostel';
+hostel_name.placeholder = isAgency ? 'Digite o nome da agência' : 'Digite o nome do hostel';
+}
 async function reg(){
-const p={hostel_name:hostel_name.value.trim(),admin_name:admin_name.value.trim(),email:email.value.trim(),password:password.value};
+const p={
+  hostel_name:hostel_name.value.trim(),admin_name:admin_name.value.trim(),
+  email:email.value.trim(),password:password.value,
+  account_kind:account_kind.value,
+  agency_category:account_kind.value==='agency'?agency_category.value:null,
+};
 const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
 const d=await r.json();
 if(!r.ok||!d.success){m.textContent=d.message||'Erro';return;}

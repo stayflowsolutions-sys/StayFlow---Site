@@ -496,6 +496,17 @@ def create_database():
     add_column_if_not_exists(cursor, "hostels", "mp_public_key", "TEXT")
     add_column_if_not_exists(cursor, "hostels", "mp_oauth_state", "TEXT")
 
+    # account_kind distingue uma hospedagem comum de uma agencia parceira
+    # (turismo/aluguel de carro/bike/equipamento) - agencia e so mais uma
+    # linha em "hostels" reaproveitando toda a infra de sessao/permissao/
+    # billing/Mercado Pago sem nenhuma mudanca. NAO confundir com
+    # settings.hostel_type, que e um rotulo de ESTILO de hospedagem
+    # (hostel/hotel/pousada/resort) usado so pra prompt da IA e
+    # categorias de quarto padrao - conceito diferente, coluna diferente
+    # de proposito pra nao colidir.
+    add_column_if_not_exists(cursor, "hostels", "account_kind", "TEXT NOT NULL DEFAULT 'lodging'")
+    add_column_if_not_exists(cursor, "hostels", "agency_category", "TEXT")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1015,6 +1026,76 @@ def create_database():
         paid_amount REAL,
         paid_at TIMESTAMP,
         created_by_user_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # charge_type='partner_item' (venda do portfolio de uma agencia
+    # parceira, feita por uma hospedagem que nao vende aquilo direto) -
+    # guest_charges.hostel_id continua sendo o VENDEDOR (a agencia, dona
+    # do token Mercado Pago usado no checkout), igual ja acontece hoje
+    # pra 'tour'/'rental'. referring_hostel_id e a hospedagem que
+    # indicou a venda; referring_hostel_commission_pct e a fatia DELA
+    # dentro da commission_pct combinada (StayFlow + hospedagem),
+    # snapshotada na criacao. A fatia da StayFlow nunca fica guardada
+    # separada - e sempre commission_pct - referring_hostel_commission_pct,
+    # calculada na hora de gravar partner_referral_ledger (evita um
+    # terceiro numero que pode desalinhar dos outros dois).
+    add_column_if_not_exists(cursor, "guest_charges", "referring_hostel_id", "INTEGER")
+    add_column_if_not_exists(cursor, "guest_charges", "referring_hostel_commission_pct", "REAL")
+
+    # Catalogo de uma agencia parceira (turismo, aluguel de carro/bike/
+    # equipamento) - hostel_id e o dono/vendedor do item. v1: sem
+    # agenda/disponibilidade (so catalogo com preco), preco pode ser
+    # fixo ou "a combinar" (price=NULL quando price_type='variable').
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS portfolio_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        photo_url TEXT,
+        category TEXT,
+        price_type TEXT NOT NULL DEFAULT 'fixed',
+        price REAL,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Opt-in de uma hospedagem num item do portfolio de uma agencia -
+    # UNIQUE(hostel_id, portfolio_item_id) pra ligar/desligar ser sempre
+    # um upsert, mesmo padrao de commission_rates acima.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS partner_offers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        portfolio_item_id INTEGER NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(hostel_id, portfolio_item_id)
+    )
+    """)
+
+    # Livro-razao do repasse devido a uma hospedagem por ter indicado a
+    # venda de um item de agencia parceira. Existe porque o Mercado Pago
+    # so faz split pra UMA conta por preferencia (marketplace_fee) - nao
+    # da pra cair automaticamente na conta da hospedagem numa venda cujo
+    # vendedor e a agencia. Uma linha por guest_charge pago; StayFlow
+    # acumula e paga por fora periodicamente (ver
+    # /stayflow-admin/partner-ledger/payout) - isso e so registro
+    # contabil, nao movimenta dinheiro de verdade.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS partner_referral_ledger (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        referring_hostel_id INTEGER NOT NULL,
+        agency_hostel_id INTEGER NOT NULL,
+        guest_charge_id INTEGER NOT NULL,
+        amount_owed REAL NOT NULL,
+        currency TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'accrued',
+        paid_out_at TIMESTAMP,
+        paid_out_note TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
@@ -2340,7 +2421,7 @@ def get_hostel(hostel_id):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, name, email, phone FROM hostels WHERE id = ?",
+        "SELECT id, name, email, phone, account_kind, agency_category FROM hostels WHERE id = ?",
         (hostel_id,)
     )
 
@@ -2383,7 +2464,23 @@ def get_hostel_currency(hostel_id):
 # oportunidade). Reserva: taxa de processamento, bem menor - e a
 # receita principal do hotel, uma comissao alta ali faria o hotel
 # preferir receber por fora.
-DEFAULT_COMMISSION_PCT = {"tour": 10, "rental": 10, "reservation": 1.5}
+DEFAULT_COMMISSION_PCT = {"tour": 10, "rental": 10, "reservation": 1.5, "partner_item": 15}
+
+# Fatia da comissao combinada de 'partner_item' que fica pra hospedagem
+# que indicou a venda (o resto da commission_pct fica com a StayFlow).
+# Nao ha override por hospedagem ainda (v1) - decisao comercial unica.
+DEFAULT_REFERRAL_COMMISSION_PCT = 5
+
+# Categorias de agencia parceira - lista simples de proposito, pra
+# adicionar uma categoria nova ser so uma linha aqui (mesmo espirito de
+# ALL_PERMISSIONS em utils/permissions.py).
+AGENCY_CATEGORIES = ["turismo", "aluguel_carro", "aluguel_bike", "aluguel_equipamentos"]
+AGENCY_CATEGORY_LABELS = {
+    "turismo": "Turismo",
+    "aluguel_carro": "Aluguel de carro",
+    "aluguel_bike": "Aluguel de bike",
+    "aluguel_equipamentos": "Aluguel de equipamentos",
+}
 
 
 def get_commission_pct(hostel_id, charge_type):
@@ -2481,13 +2578,19 @@ def get_user_hostels(user_id):
     return rows
 
 
-def create_identity_and_hostel(name, email, password_hash, hostel_name, hostel_email):
+def create_identity_and_hostel(name, email, password_hash, hostel_name, hostel_email,
+                                account_kind="lodging", agency_category=None):
     """
     Cria uma identidade nova, um hostel novo, a role "Admin" (com
     todas as permissoes) nesse hostel, e o vinculo entre a pessoa e
     o hostel - tudo numa unica transacao. Se qualquer etapa falhar,
     nada e salvo (evita pessoa sem hostel, hostel sem admin, etc).
     Retorna um dict com user_id, hostel_id, role_id, membership_id.
+
+    account_kind='agency' cria uma agencia parceira em vez de uma
+    hospedagem - mesma role "Admin" com todas as permissoes (a
+    distincao agencia/hospedagem e so de navegacao no dashboard, nao de
+    permissao, ver hydrateUserUI/applyAccountKindVisibility no frontend).
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -2500,8 +2603,8 @@ def create_identity_and_hostel(name, email, password_hash, hostel_name, hostel_e
         user_id = cursor.lastrowid
 
         cursor.execute(
-            "INSERT INTO hostels (name, email) VALUES (?, ?)",
-            (hostel_name, hostel_email)
+            "INSERT INTO hostels (name, email, account_kind, agency_category) VALUES (?, ?, ?, ?)",
+            (hostel_name, hostel_email, account_kind, agency_category)
         )
         hostel_id = cursor.lastrowid
 
@@ -5307,19 +5410,27 @@ def list_reservation_payments(hostel_id, reservation_id):
     return payments
 
 
-_GUEST_CHARGE_TYPES = {"tour", "rental", "reservation"}
+_GUEST_CHARGE_TYPES = {"tour", "rental", "reservation", "partner_item"}
 _GUEST_CHARGE_PAYMENT_MODES = {"full", "deposit"}
 
 
 def create_guest_charge(hostel_id, charge_type, title, total_amount, payment_mode="full",
                          deposit_amount=None, description=None, guest_id=None,
-                         opportunity_id=None, reservation_id=None, created_by_user_id=None):
+                         opportunity_id=None, reservation_id=None, created_by_user_id=None,
+                         referring_hostel_id=None):
     """
     Cria uma cobranca pendente (link de pagamento ainda nao gerado - ver
     mark_guest_charge_checkout_created, chamado logo em seguida pela
     rota depois de criar a preferencia no Mercado Pago). Snapshota
     moeda e comissao vigentes no momento da criacao - mudar a comissao
     default depois nao altera cobrancas ja criadas.
+
+    hostel_id aqui e sempre o VENDEDOR (dono do token Mercado Pago usado
+    no checkout). Pra charge_type='partner_item', o vendedor e a
+    agencia parceira, nao a hospedagem que indicou a venda -
+    referring_hostel_id e essa hospedagem, e sua fatia da comissao
+    combinada e snapshotada em referring_hostel_commission_pct (o resto
+    da commission_pct fica com a StayFlow).
     """
     if charge_type not in _GUEST_CHARGE_TYPES:
         raise ValueError(f"charge_type invalido: {charge_type}")
@@ -5344,18 +5455,26 @@ def create_guest_charge(hostel_id, charge_type, title, total_amount, payment_mod
     currency = get_hostel_currency(hostel_id)
     commission_pct = get_commission_pct(hostel_id, charge_type)
 
+    referring_hostel_commission_pct = None
+    if charge_type == "partner_item" and referring_hostel_id:
+        referring_hostel_commission_pct = min(DEFAULT_REFERRAL_COMMISSION_PCT, commission_pct)
+    else:
+        referring_hostel_id = None
+
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
         """
         INSERT INTO guest_charges
         (hostel_id, guest_id, opportunity_id, reservation_id, charge_type, title, description,
-         total_amount, currency, commission_pct, payment_mode, deposit_amount, created_by_user_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         total_amount, currency, commission_pct, payment_mode, deposit_amount, created_by_user_id,
+         referring_hostel_id, referring_hostel_commission_pct)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (hostel_id, guest_id, opportunity_id, reservation_id, charge_type, title,
          (description or "").strip() or None, total_amount, currency, commission_pct,
-         payment_mode, deposit_amount, created_by_user_id)
+         payment_mode, deposit_amount, created_by_user_id,
+         referring_hostel_id, referring_hostel_commission_pct)
     )
     charge_id = cursor.lastrowid
     conn.commit()
@@ -5407,11 +5526,20 @@ def mark_guest_charge_paid(hostel_id, guest_charge_id, mp_payment_id, paid_amoun
     webhook), nao faz nada. Quando charge_type='reservation', tambem
     grava em reservation_payments (method='mercadopago') pra manter o
     historico de pagamento da reserva consistente com o que ja existe.
+    Quando charge_type='partner_item' com referring_hostel_id, tambem
+    grava uma linha em partner_referral_ledger com o que a StayFlow
+    passa a dever pra hospedagem que indicou a venda - essa e a UNICA
+    escrita do razao no sistema inteiro, entao a idempotencia do guard
+    de status acima (linha ja 'paid') cobre o razao de graca tambem.
     """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT status, charge_type, reservation_id FROM guest_charges WHERE id = ? AND hostel_id = ?",
+        """
+        SELECT status, charge_type, reservation_id, currency,
+               referring_hostel_id, referring_hostel_commission_pct
+        FROM guest_charges WHERE id = ? AND hostel_id = ?
+        """,
         (guest_charge_id, hostel_id)
     )
     row = cursor.fetchone()
@@ -5438,8 +5566,178 @@ def mark_guest_charge_paid(hostel_id, guest_charge_id, mp_payment_id, paid_amoun
             (hostel_id, row["reservation_id"], paid_amount, f"guest_charge #{guest_charge_id}")
         )
 
+    if row["charge_type"] == "partner_item" and row["referring_hostel_id"]:
+        amount_owed = round(float(paid_amount or 0) * (row["referring_hostel_commission_pct"] or 0) / 100, 2)
+        cursor.execute(
+            """
+            INSERT INTO partner_referral_ledger
+            (referring_hostel_id, agency_hostel_id, guest_charge_id, amount_owed, currency)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (row["referring_hostel_id"], hostel_id, guest_charge_id, amount_owed, row["currency"])
+        )
+
     conn.commit()
     conn.close()
+
+
+# --- Portfolio de agencia parceira + opt-in de hospedagem ---------------
+
+def create_portfolio_item(hostel_id, name, description=None, photo_url=None, category=None,
+                           price_type="fixed", price=None):
+    if price_type not in ("fixed", "variable"):
+        raise ValueError("price_type invalido.")
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("Nome é obrigatório.")
+    if price_type == "fixed":
+        price = float(price or 0)
+        if price <= 0:
+            raise ValueError("Preço precisa ser maior que zero pra item de preço fixo.")
+    else:
+        price = None
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO portfolio_items (hostel_id, name, description, photo_url, category, price_type, price)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (hostel_id, name, (description or "").strip() or None, photo_url, category, price_type, price)
+    )
+    item_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return get_portfolio_item(hostel_id, item_id)
+
+
+def get_portfolio_item(hostel_id, item_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM portfolio_items WHERE id = ? AND hostel_id = ?", (item_id, hostel_id))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def list_portfolio_items(hostel_id, include_inactive=True):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM portfolio_items WHERE hostel_id = ?"
+    if not include_inactive:
+        query += " AND active = 1"
+    query += " ORDER BY created_at DESC"
+    cursor.execute(query, (hostel_id,))
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def update_portfolio_item(hostel_id, item_id, **fields):
+    """Update parcial - so as chaves passadas em fields sao alteradas. Espelha o padrao usado em update_event_space."""
+    allowed = {"name", "description", "photo_url", "category", "price_type", "price", "active"}
+    updates = {k: v for k, v in fields.items() if k in allowed}
+    if not updates:
+        return get_portfolio_item(hostel_id, item_id)
+
+    set_clause = ", ".join(f"{k} = ?" for k in updates)
+    values = list(updates.values()) + [item_id, hostel_id]
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        f"UPDATE portfolio_items SET {set_clause} WHERE id = ? AND hostel_id = ?",
+        values
+    )
+    conn.commit()
+    conn.close()
+    return get_portfolio_item(hostel_id, item_id)
+
+
+def list_agencies():
+    """Todas as hospedagens com account_kind='agency', pra tela de Parceiros."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT h.id AS hostel_id, h.name AS hostel_name, h.agency_category,
+               COUNT(pi.id) AS item_count
+        FROM hostels h
+        LEFT JOIN portfolio_items pi ON pi.hostel_id = h.id AND pi.active = 1
+        WHERE h.account_kind = 'agency'
+        GROUP BY h.id
+        ORDER BY h.name COLLATE NOCASE
+        """
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def set_partner_offer(hostel_id, portfolio_item_id, enabled):
+    """Upsert do opt-in de uma hospedagem num item de portfolio - mesmo padrao de set_commission_pct."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO partner_offers (hostel_id, portfolio_item_id, enabled)
+        VALUES (?, ?, ?)
+        ON CONFLICT(hostel_id, portfolio_item_id) DO UPDATE SET enabled = excluded.enabled
+        """,
+        (hostel_id, portfolio_item_id, 1 if enabled else 0)
+    )
+    conn.commit()
+    conn.close()
+
+
+def list_partner_offers(hostel_id):
+    """IDs de portfolio_item habilitados por essa hospedagem (pra marcar os checkboxes na tela de Parceiros)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT portfolio_item_id FROM partner_offers WHERE hostel_id = ? AND enabled = 1",
+        (hostel_id,)
+    )
+    ids = [row["portfolio_item_id"] for row in cursor.fetchall()]
+    conn.close()
+    return ids
+
+
+def get_partner_referral_ledger_summary():
+    """Saldo acumulado 'accrued' por hospedagem, pro admin ver quem tem repasse pendente."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT referring_hostel_id, currency, SUM(amount_owed) AS total_owed, COUNT(*) AS charge_count
+        FROM partner_referral_ledger
+        WHERE status = 'accrued'
+        GROUP BY referring_hostel_id, currency
+        ORDER BY total_owed DESC
+        """
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def mark_partner_referral_paid_out(referring_hostel_id, note=None):
+    """Marca todo o saldo 'accrued' dessa hospedagem como pago - so registro contabil, sem processador de payout."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE partner_referral_ledger
+        SET status = 'paid_out', paid_out_at = CURRENT_TIMESTAMP, paid_out_note = ?
+        WHERE referring_hostel_id = ? AND status = 'accrued'
+        """,
+        (note, referring_hostel_id)
+    )
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return affected
 
 
 def try_claim_mp_webhook_event(mp_payment_id, hostel_id, payload_json):

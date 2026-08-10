@@ -16,7 +16,7 @@ continua sendo feito pelos endpoints ja existentes em routes/billing.py
 
 import datetime
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 from database import (
     get_stayflow_admin_overview,
@@ -26,6 +26,8 @@ from database import (
     get_dashboard_stats,
     count_rooms,
     count_active_seats,
+    get_partner_referral_ledger_summary,
+    mark_partner_referral_paid_out,
     PLAN_PRICES,
     PLAN_ROOM_LIMITS,
     PLAN_SEAT_LIMITS,
@@ -144,3 +146,39 @@ def hostel_profile(hostel_id):
             "commission_collected": commission_collected,
         },
     })
+
+
+@stayflow_admin_bp.route("/stayflow-admin/partner-ledger", methods=["GET"])
+@require_stayflow_admin
+def partner_ledger():
+    """
+    Saldo acumulado (status='accrued') de repasse devido a cada
+    hospedagem por ter indicado venda de item de agencia parceira -
+    dinheiro que a StayFlow ja recebeu (embutido na marketplace_fee)
+    mas ainda nao repassou. So registro contabil, sem processador de
+    payout automatico (ver partner-ledger/payout abaixo).
+    """
+    rows = get_partner_referral_ledger_summary()
+    balances = [{
+        "hostel_id": row["referring_hostel_id"],
+        "hostel_name": (get_hostel(row["referring_hostel_id"]) or {}).get("name"),
+        "currency": row["currency"],
+        "total_owed": row["total_owed"],
+        "charge_count": row["charge_count"],
+    } for row in rows]
+
+    return jsonify({"success": True, "balances": balances})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/partner-ledger/payout", methods=["POST"])
+@require_stayflow_admin
+def partner_ledger_payout():
+    data = request.get_json() or {}
+    hostel_id = data.get("hostel_id")
+    note = data.get("note")
+
+    if not hostel_id:
+        return jsonify({"success": False, "message": "hostel_id é obrigatório."}), 400
+
+    affected = mark_partner_referral_paid_out(hostel_id, note=note)
+    return jsonify({"success": True, "rows_paid_out": affected})
