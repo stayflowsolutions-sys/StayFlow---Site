@@ -18,7 +18,18 @@ import datetime
 
 from flask import Blueprint, jsonify
 
-from database import get_stayflow_admin_overview, get_hostel_currency, PLAN_PRICES
+from database import (
+    get_stayflow_admin_overview,
+    get_hostel_currency,
+    get_hostel,
+    get_billing_info,
+    get_dashboard_stats,
+    count_rooms,
+    count_active_seats,
+    PLAN_PRICES,
+    PLAN_ROOM_LIMITS,
+    PLAN_SEAT_LIMITS,
+)
 from utils.tenant import require_stayflow_admin
 
 stayflow_admin_bp = Blueprint("stayflow_admin", __name__)
@@ -68,5 +79,68 @@ def overview():
             },
             "total_estimated_mrr": sum(h["estimated_mrr"] for h in hostels),
             "total_commission_collected": sum(h["commission_collected"] for h in hostels),
+        },
+    })
+
+
+@stayflow_admin_bp.route("/stayflow-admin/hostel/<int:hostel_id>", methods=["GET"])
+@require_stayflow_admin
+def hostel_profile(hostel_id):
+    """
+    Perfil de UMA hospedagem, visto pelo admin da StayFlow - reaproveita
+    tudo que ja existe (get_dashboard_stats e a mesma funcao que
+    alimenta o Dashboard da propria hospedagem, count_rooms/
+    count_active_seats ja usados pro limite de plano) em vez de
+    duplicar consulta.
+    """
+    hostel = get_hostel(hostel_id)
+    if not hostel:
+        return jsonify({"success": False, "message": "Hospedagem não encontrada."}), 404
+
+    billing = get_billing_info(hostel_id)
+    stats = get_dashboard_stats(hostel_id)["stats"]
+    plan_name = billing["plan_name"]
+
+    # Reaproveita a agregacao cross-tenant e filtra so essa hospedagem,
+    # em vez de duplicar a query de comissao de guest_charges.
+    overview_row = next(
+        (r for r in get_stayflow_admin_overview() if r["hostel_id"] == hostel_id),
+        None
+    )
+    commission_collected = overview_row["commission_collected"] if overview_row else 0
+    guest_payment_volume = overview_row["guest_payment_volume"] if overview_row else 0
+
+    room_limit = PLAN_ROOM_LIMITS.get(plan_name)
+    seat_base_limit = PLAN_SEAT_LIMITS.get(plan_name)
+    seat_limit = None if seat_base_limit is None else seat_base_limit + (billing["extra_seats"] or 0)
+
+    return jsonify({
+        "success": True,
+        "hostel_id": hostel_id,
+        "hostel_name": hostel["name"],
+        "hostel_email": hostel["email"],
+        "hostel_phone": hostel["phone"],
+        "plan_name": plan_name,
+        "status": billing["status"],
+        "trial_days_left": _trial_days_left(billing["status"], billing["trial_ends_at"]),
+        "estimated_mrr": PLAN_PRICES.get(plan_name, 0) if plan_name else 0,
+        "currency": get_hostel_currency(hostel_id),
+        "operacao": {
+            "rooms_used": count_rooms(hostel_id),
+            "room_limit": room_limit,
+            "beds_total": stats["beds_total"],
+            "beds_occupied": stats["beds_occupied"],
+            "occupancy_pct": stats["occupancy_pct"],
+            "seats_used": count_active_seats(hostel_id),
+            "seat_limit": seat_limit,
+            "guests": stats["guests"],
+            "reservations": stats["reservations"],
+            "messages": stats["messages"],
+            "opportunities": stats["opportunities"],
+        },
+        "financeiro": {
+            "revenue": stats["revenue"],
+            "guest_payment_volume": guest_payment_volume,
+            "commission_collected": commission_collected,
         },
     })

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <title>Perfil da hospedagem · Painel StayFlow</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="google" content="notranslate">
+  <link rel="stylesheet" href="static/css/tokens.css">
+  <link rel="stylesheet" href="static/css/reset.css">
+  <link rel="stylesheet" href="static/css/app.css">
+  <style>
+    .admin-wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+    .admin-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+    .admin-header h1{font-size:24px;margin:0 0 8px;display:flex;align-items:center;gap:10px}
+    .admin-header p{color:var(--muted);margin:0;font-size:13px}
+    .admin-section-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 12px;font-weight:700}
+    .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+    .stat-card .big{font-size:24px;font-weight:800;margin:0 0 4px}
+    .stat-card .label{font-size:12px;color:var(--muted)}
+    .stat-card.commission .big{color:#6ff0bd}
+    #adminLoading, #adminError{padding:60px;text-align:center;color:var(--muted)}
+    #adminError{display:none;color:#ff9caf}
+    #adminContent{display:none}
+    .admin-note{font-size:11px;color:var(--muted);margin-top:16px}
+    @media(max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+  <div class="admin-wrap">
+    <div class="admin-header">
+      <div>
+        <h1 id="hostelTitle">—</h1>
+        <p id="hostelSub">Carregando...</p>
+      </div>
+      <a href="admin.html" style="color:var(--muted);font-size:13px;text-decoration:none">← Voltar pro painel</a>
+    </div>
+
+    <div id="adminLoading">Carregando...</div>
+    <div id="adminError">Não foi possível carregar o perfil dessa hospedagem.</div>
+
+    <div id="adminContent">
+      <div class="admin-section-title">Operação</div>
+      <div class="stat-grid">
+        <div class="card stat-card">
+          <div class="big" id="statRooms">—</div>
+          <div class="label">Quartos</div>
+        </div>
+        <div class="card stat-card">
+          <div class="big" id="statBeds">—</div>
+          <div class="label" id="statBedsLabel">Camas ocupadas</div>
+        </div>
+        <div class="card stat-card">
+          <div class="big" id="statSeats">—</div>
+          <div class="label">Equipe (assentos)</div>
+        </div>
+        <div class="card stat-card">
+          <div class="big" id="statGuests">—</div>
+          <div class="label">Hóspedes cadastrados</div>
+        </div>
+        <div class="card stat-card">
+          <div class="big" id="statReservations">—</div>
+          <div class="label">Reservas confirmadas</div>
+        </div>
+        <div class="card stat-card">
+          <div class="big" id="statMessages">—</div>
+          <div class="label">Mensagens recebidas</div>
+        </div>
+        <div class="card stat-card">
+          <div class="big" id="statOpportunities">—</div>
+          <div class="label">Oportunidades abertas</div>
+        </div>
+        <div class="card stat-card">
+          <div class="big" id="statOccupancy">—</div>
+          <div class="label">Ocupação</div>
+        </div>
+      </div>
+
+      <div class="admin-section-title">Financeiro</div>
+      <div class="stat-grid">
+        <div class="card stat-card">
+          <div class="big" id="statMrr">—</div>
+          <div class="label">MRR estimado (plano)</div>
+        </div>
+        <div class="card stat-card">
+          <div class="big" id="statRevenue">—</div>
+          <div class="label">Receita de reservas</div>
+        </div>
+        <div class="card stat-card">
+          <div class="big" id="statVolume">—</div>
+          <div class="label">Volume processado (Mercado Pago)</div>
+        </div>
+        <div class="card stat-card commission">
+          <div class="big" id="statCommission">—</div>
+          <div class="label">Comissão real coletada</div>
+        </div>
+      </div>
+
+      <div class="admin-note">MRR estimado é baseado no plano contratado — a cobrança de assinatura ainda não é automática. Volume/comissão são dinheiro real, via Mercado Pago Split de Pagos.</div>
+    </div>
+  </div>
+
+  <script>
+    function formatMoney(value, currency){
+      const n = Number(value || 0);
+      try{
+        return new Intl.NumberFormat("pt-BR", { style: "currency", currency: currency || "USD" }).format(n);
+      }catch(e){
+        return `${currency || "USD"} ${n.toFixed(2)}`;
+      }
+    }
+
+    const STATUS_LABELS = {
+      trialing: "Trial", active: "Ativo", past_due: "Inadimplente",
+      canceled: "Cancelado", comp: "Cortesia",
+    };
+    const STATUS_PILL_CLASS = {
+      trialing: "warm", active: "ok", past_due: "hot",
+      canceled: "cold", comp: "ai",
+    };
+
+    function planLabel(plan){
+      if(!plan) return "Sem plano";
+      return plan.charAt(0).toUpperCase() + plan.slice(1);
+    }
+
+    function limitLabel(used, limit){
+      return limit === null || limit === undefined ? `${used}` : `${used}/${limit}`;
+    }
+
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const hostelId = params.get("id");
+      if(!hostelId){
+        window.location.href = "admin.html";
+        return;
+      }
+
+      try{
+        const res = await fetch(`/stayflow-admin/hostel/${hostelId}`, { credentials: "same-origin" });
+        if(res.status === 401 || res.status === 403){
+          window.location.href = "Login.html";
+          return;
+        }
+        if(!res.ok) throw new Error("request failed");
+        const d = await res.json();
+        if(!d.success) throw new Error("unsuccessful");
+
+        const pillClass = STATUS_PILL_CLASS[d.status] || "cold";
+        const statusLabel = STATUS_LABELS[d.status] || d.status || "—";
+        const trialText = d.status === "trialing" && d.trial_days_left !== null
+          ? ` · ${d.trial_days_left}d de trial restantes`
+          : "";
+
+        document.getElementById("hostelTitle").innerHTML = `${d.hostel_name} <span class="status-pill ${pillClass}">${statusLabel.toUpperCase()}</span>`;
+        document.getElementById("hostelSub").textContent = `${planLabel(d.plan_name)}${trialText} · ${d.hostel_email || "sem e-mail"}${d.hostel_phone ? " · " + d.hostel_phone : ""}`;
+
+        const op = d.operacao;
+        document.getElementById("statRooms").textContent = limitLabel(op.rooms_used, op.room_limit);
+        document.getElementById("statBeds").textContent = `${op.beds_occupied}/${op.beds_total}`;
+        document.getElementById("statSeats").textContent = limitLabel(op.seats_used, op.seat_limit);
+        document.getElementById("statGuests").textContent = String(op.guests);
+        document.getElementById("statReservations").textContent = String(op.reservations);
+        document.getElementById("statMessages").textContent = String(op.messages);
+        document.getElementById("statOpportunities").textContent = String(op.opportunities);
+        document.getElementById("statOccupancy").textContent = `${op.occupancy_pct}%`;
+
+        const fin = d.financeiro;
+        document.getElementById("statMrr").textContent = formatMoney(d.estimated_mrr, "USD");
+        document.getElementById("statRevenue").textContent = formatMoney(fin.revenue, d.currency);
+        document.getElementById("statVolume").textContent = formatMoney(fin.guest_payment_volume, d.currency);
+        document.getElementById("statCommission").textContent = formatMoney(fin.commission_collected, d.currency);
+
+        document.getElementById("adminLoading").style.display = "none";
+        document.getElementById("adminContent").style.display = "block";
+      }catch(e){
+        console.warn("Erro ao carregar perfil da hospedagem:", e);
+        document.getElementById("adminLoading").style.display = "none";
+        document.getElementById("adminError").style.display = "block";
+      }
+    })();
+  </script>
+</body>
+</html>
