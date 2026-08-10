@@ -124,6 +124,14 @@ def service_worker():
     return response
 
 
+@app.route("/manifest.json")
+def web_app_manifest():
+    # Web App Manifest do PWA - precisa ficar na raiz (mesmo motivo do
+    # sw.js) pra referencia relativa <link rel="manifest"> funcionar
+    # em qualquer pagina que a inclua (dashboard.html, Login.html etc).
+    return send_from_directory(FRONTEND_DIR, "manifest.json", mimetype="application/manifest+json")
+
+
 # Serve qualquer página .html solta na raiz do frontend
 # (Login.html, Register.html, inbox.html, reservations.html,
 # statistics.html, settings.html, etc.) sem precisar de uma

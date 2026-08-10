@@ -1,7 +1,6 @@
-// Service worker minimo, feito so pra notificacoes push (Web Push API).
-// Nao faz cache de nada de propósito - a StayFlow ainda nao e um PWA
-// completo, so precisa de um service worker registrado pra poder
-// receber "push" mesmo com a aba fechada.
+// Service worker - notificacoes push (Web Push API) + criterio minimo
+// de instalabilidade de PWA (Chrome exige um service worker com
+// handler de "fetch" registrado pra oferecer "Instalar app").
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -9,6 +8,16 @@ self.addEventListener("install", () => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener("fetch", (event) => {
+  // De proposito SEM estrategia de cache ainda - so repassa pra rede
+  // normal. Existe so pra satisfazer o criterio de instalabilidade do
+  // Chrome; cache de verdade (assets estaticos) fica pra quando tiver
+  // uma estrategia de invalidacao por versao - servir JS/HTML
+  // desatualizado depois de um deploy ja foi um problema real nesta
+  // mesma sessao (cache de navegador confundindo o que estava no ar).
+  event.respondWith(fetch(event.request));
 });
 
 self.addEventListener("push", (event) => {
