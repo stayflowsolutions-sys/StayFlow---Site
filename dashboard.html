@@ -845,6 +845,9 @@ async function deleteRoleConfirm(roleId){
         <button type="button" id="userMenuEquipeItem" data-required-permission="team,scheduling" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openPage('team', document.querySelector('[data-page=team]'))">
           <span data-i18n="topbar.userMenu.team">👥 Equipe</span>
         </button>
+        <button type="button" id="userMenuStayflowAdminItem" class="hostel-selector-settings-link" style="display:none;" onclick="window.location.href='/admin.html'">
+          <span>🛠 Painel StayFlow</span>
+        </button>
         <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
           <span data-i18n="topbar.userMenu.logout">↪ Sair</span>
         </button>
@@ -8920,6 +8923,11 @@ window.uploadGuestDocumentUI = async function(guestId){
     }
     if(userAvatarEl && u.name){
       userAvatarEl.textContent = (u.name[0] || "?").toUpperCase();
+    }
+
+    const stayflowAdminItem = document.getElementById("userMenuStayflowAdminItem");
+    if(stayflowAdminItem){
+      stayflowAdminItem.style.display = session.is_stayflow_admin ? "" : "none";
     }
 
     const hostelNameEl = document.querySelector(".hostel-name");

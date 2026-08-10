@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel StayFlow · Interno</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="google" content="notranslate">
+  <link rel="stylesheet" href="static/css/tokens.css">
+  <link rel="stylesheet" href="static/css/reset.css">
+  <link rel="stylesheet" href="static/css/app.css">
+  <style>
+    .admin-wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+    .admin-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+    .admin-header h1{font-size:24px;margin:0 0 4px}
+    .admin-header p{color:var(--muted);margin:0;font-size:14px}
+    .admin-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+    .admin-summary .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px;font-weight:700}
+    .admin-summary .card .big{font-size:28px;font-weight:800;margin:0 0 6px}
+    .admin-summary .card .sub{font-size:12px;color:var(--muted);line-height:1.5}
+    .admin-summary .card.commission .big{color:#6ff0bd}
+    .admin-summary .card.commission{border-color:#26e0a02a}
+    .admin-note{font-size:11px;color:var(--muted);margin-top:16px}
+    #adminTableWrap{overflow-x:auto}
+    #adminLoading, #adminError{padding:40px;text-align:center;color:var(--muted)}
+    #adminError{display:none;color:#ff9caf}
+    @media(max-width:900px){.admin-summary{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="admin-wrap">
+    <div class="admin-header">
+      <div>
+        <h1>🛠 Painel StayFlow</h1>
+        <p>Visão interna de todas as hospedagens — não é o dashboard de nenhuma hospedagem específica.</p>
+      </div>
+      <a href="dashboard.html" style="color:var(--muted);font-size:13px;text-decoration:none">← Voltar pro dashboard</a>
+    </div>
+
+    <div class="admin-summary">
+      <div class="card">
+        <h2>Hospedagens</h2>
+        <div class="big" id="sumTotalHostels">—</div>
+        <div class="sub" id="sumByStatus">Carregando...</div>
+      </div>
+      <div class="card">
+        <h2>MRR estimado</h2>
+        <div class="big" id="sumMrr">—</div>
+        <div class="sub">Baseado no plano contratado de cada hospedagem — a cobrança de assinatura ainda não é automática (Stripe/Mercado Pago dessa parte ainda não ligados), isso é só o valor de tabela.</div>
+      </div>
+      <div class="card commission">
+        <h2>Comissão real coletada</h2>
+        <div class="big" id="sumCommission">—</div>
+        <div class="sub">Dinheiro real, já processado via Mercado Pago Split de Pagos (reservas, passeios, aluguéis pagos pelo hóspede).</div>
+      </div>
+    </div>
+
+    <div class="card" id="adminTableCard">
+      <h2 style="margin:0 0 16px;font-size:16px">Hospedagens</h2>
+      <div id="adminLoading">Carregando...</div>
+      <div id="adminError">Não foi possível carregar o painel.</div>
+      <div id="adminTableWrap" style="display:none">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Hospedagem</th>
+              <th>Plano</th>
+              <th>Status</th>
+              <th>Trial</th>
+              <th>MRR estimado</th>
+              <th>Volume processado</th>
+              <th>Comissão coletada</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody"></tbody>
+        </table>
+      </div>
+      <div class="admin-note">Valores por hospedagem na moeda operacional de cada uma. Os totais dos cards acima são somados sem conversão cambial — hospedagens podem operar em moedas diferentes.</div>
+    </div>
+  </div>
+
+  <script>
+    function escapeHtml(str){
+      const div = document.createElement("div");
+      div.textContent = str == null ? "" : String(str);
+      return div.innerHTML;
+    }
+
+    function formatMoney(value, currency){
+      const n = Number(value || 0);
+      try{
+        return new Intl.NumberFormat("pt-BR", { style: "currency", currency: currency || "USD" }).format(n);
+      }catch(e){
+        return `${currency || "USD"} ${n.toFixed(2)}`;
+      }
+    }
+
+    const STATUS_LABELS = {
+      trialing: "Trial", active: "Ativo", past_due: "Inadimplente",
+      canceled: "Cancelado", comp: "Cortesia",
+    };
+    const STATUS_PILL_CLASS = {
+      trialing: "warm", active: "ok", past_due: "hot",
+      canceled: "cold", comp: "ai",
+    };
+
+    function planLabel(plan){
+      if(!plan) return "—";
+      return plan.charAt(0).toUpperCase() + plan.slice(1);
+    }
+
+    function renderOverview(data){
+      const s = data.summary;
+
+      document.getElementById("sumTotalHostels").textContent = String(s.total_hostels);
+      const byStatusText = Object.entries(s.by_status)
+        .map(([status, count]) => `${count} ${(STATUS_LABELS[status] || status).toLowerCase()}`)
+        .join(" · ") || "Nenhuma hospedagem ainda";
+      document.getElementById("sumByStatus").textContent = byStatusText;
+
+      document.getElementById("sumMrr").textContent = formatMoney(s.total_estimated_mrr, "USD");
+      document.getElementById("sumCommission").textContent = formatMoney(s.total_commission_collected, "USD");
+
+      const tbody = document.getElementById("adminTableBody");
+      tbody.innerHTML = "";
+
+      data.hostels.forEach(h => {
+        const tr = document.createElement("tr");
+        const pillClass = STATUS_PILL_CLASS[h.status] || "cold";
+        const statusLabel = STATUS_LABELS[h.status] || h.status || "—";
+        const trialText = h.status === "trialing" && h.trial_days_left !== null
+          ? `${h.trial_days_left}d restantes`
+          : "—";
+
+        tr.innerHTML = `
+          <td>${escapeHtml(h.hostel_name)}</td>
+          <td>${planLabel(h.plan_name)}</td>
+          <td><span class="status-pill ${pillClass}">${escapeHtml(statusLabel.toUpperCase())}</span></td>
+          <td>${trialText}</td>
+          <td>${formatMoney(h.estimated_mrr, "USD")}</td>
+          <td>${formatMoney(h.guest_payment_volume, h.currency)}</td>
+          <td>${formatMoney(h.commission_collected, h.currency)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("adminLoading").style.display = "none";
+      document.getElementById("adminTableWrap").style.display = "block";
+    }
+
+    (async () => {
+      try{
+        const res = await fetch("/stayflow-admin/overview", { credentials: "same-origin" });
+        if(res.status === 401 || res.status === 403){
+          window.location.href = "Login.html";
+          return;
+        }
+        if(!res.ok) throw new Error("request failed");
+        const data = await res.json();
+        if(!data.success) throw new Error("unsuccessful");
+        renderOverview(data);
+      }catch(e){
+        console.warn("Erro ao carregar painel StayFlow:", e);
+        document.getElementById("adminLoading").style.display = "none";
+        document.getElementById("adminError").style.display = "block";
+      }
+    })();
+  </script>
+</body>
+</html>
