@@ -165,21 +165,36 @@ def require_permission(permission_key):
     return decorator
 
 
+def is_stayflow_admin_email(email):
+    """
+    Checa um e-mail contra a allowlist STAYFLOW_ADMIN_EMAILS (variavel
+    de ambiente, lista separada por virgula) - usado tanto pelo
+    decorator require_stayflow_admin quanto por build_session_payload
+    (pra decidir se mostra o link do painel interno no frontend).
+    Nao existe conceito de "super-admin" no banco hoje - allowlist por
+    e-mail e suficiente pro uso administrativo desta fase.
+    """
+    import os
+
+    admin_emails = {
+        e.strip().lower()
+        for e in os.getenv("STAYFLOW_ADMIN_EMAILS", "").split(",")
+        if e.strip()
+    }
+    return bool(email) and email.lower() in admin_emails
+
+
 def require_stayflow_admin(view_func):
     """
     Protege rotas administrativas cross-tenant (hoje: marcar plano/
     add-on de billing de qualquer hospedagem, ex: liberar um piloto de
-    graca) - NAO injeta hostel_id (a rota le do corpo da requisicao,
-    ver nota no topo do arquivo). So exige sessao valida + e-mail na
-    allowlist STAYFLOW_ADMIN_EMAILS (variavel de ambiente, lista
-    separada por virgula) - nao existe conceito de "super-admin" no
-    banco hoje, e criar um pra um unico uso administrativo seria mais
-    complexidade do que o necessario nesta fase.
+    graca; ler o painel interno com todas as hospedagens) - NAO injeta
+    hostel_id (a rota le do corpo da requisicao, ver nota no topo do
+    arquivo). So exige sessao valida + e-mail na allowlist (ver
+    is_stayflow_admin_email).
     """
     @wraps(view_func)
     def wrapper(*args, **kwargs):
-        import os
-
         user_id = get_current_user_id()
         if not user_id:
             return jsonify({"success": False, "message": "Not authenticated."}), 401
@@ -187,13 +202,7 @@ def require_stayflow_admin(view_func):
         from database import get_user_by_id
 
         user = get_user_by_id(user_id)
-        admin_emails = {
-            email.strip().lower()
-            for email in os.getenv("STAYFLOW_ADMIN_EMAILS", "").split(",")
-            if email.strip()
-        }
-
-        if not user or user["email"].lower() not in admin_emails:
+        if not user or not is_stayflow_admin_email(user["email"]):
             return jsonify({"success": False, "message": "Acesso restrito."}), 403
 
         return view_func(*args, **kwargs)

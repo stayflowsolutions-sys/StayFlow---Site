@@ -1605,6 +1605,19 @@ PLAN_SEAT_LIMITS = {
     "enterprise": None,
 }
 
+# Precos mensais dos planos, em USD - so existem como fato de negocio
+# ate hoje (Stripe/MercadoPago pra ESSA cobranca - a assinatura da
+# propria StayFlow - ainda nao foi ligado, Fase 2/3). Usado SOMENTE pro
+# painel interno (get_stayflow_admin_overview) estimar MRR por
+# hospedagem a partir do plan_name - nunca e dinheiro que a StayFlow
+# de fato coletou, so o valor de tabela do plano contratado. Enterprise
+# e "699+ negociado" - 699 aqui e piso/estimativa, nao preco fechado.
+PLAN_PRICES = {
+    "starter": 89,
+    "business": 349,
+    "enterprise": 699,
+}
+
 # Recursos que cada plano ja inclui sem precisar de add-on - Business e
 # Enterprise incluem tudo; Starter precisa de add-on avulso ou do pacote
 # pra cada um. "ops_bundle" cobre os 4 modulos operacionais de uma vez
@@ -1656,6 +1669,47 @@ def get_billing_info(hostel_id):
 
     conn.close()
     return dict(row)
+
+
+def get_stayflow_admin_overview():
+    """
+    Painel interno StayFlow (cross-tenant, nao por-hostel) - uma linha
+    por hospedagem com o plano/status de assinatura (billing) e o
+    volume/comissao real de guest_charges pagos. LEFT JOIN em tudo:
+    hospedagem sem linha de billing (nao deveria acontecer, ver
+    get_billing_info) ou sem nenhum guest_charge pago ainda continua
+    aparecendo, com os campos de guest_charges zerados via COALESCE
+    (nunca NULL).
+
+    A comissao e somada POR LINHA (paid_amount * commission_pct / 100
+    dentro do SUM) - nunca como "soma dos valores vezes taxa media",
+    que daria numero errado se hospedagens tivessem taxas diferentes.
+    O subquery agrega guest_charges por hostel_id ANTES de juntar com
+    billing, evitando fan-out caso isso deixe de ser 1:1 um dia.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT
+            h.id AS hostel_id, h.name AS hostel_name,
+            b.plan_name, b.status, b.trial_ends_at,
+            COALESCE(gc.volume_paid, 0) AS guest_payment_volume,
+            COALESCE(gc.commission_earned, 0) AS commission_collected
+        FROM hostels h
+        LEFT JOIN billing b ON b.hostel_id = h.id
+        LEFT JOIN (
+            SELECT hostel_id,
+                   SUM(paid_amount) AS volume_paid,
+                   SUM(paid_amount * commission_pct / 100.0) AS commission_earned
+            FROM guest_charges
+            WHERE status = 'paid'
+            GROUP BY hostel_id
+        ) gc ON gc.hostel_id = h.id
+        ORDER BY h.name COLLATE NOCASE
+    """)
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
 
 
 def count_rooms(hostel_id):

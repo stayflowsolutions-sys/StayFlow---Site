@@ -26,6 +26,7 @@ from database import (
     mark_totp_backup_code_used,
 )
 from services.totp_service import verify_totp_code, normalize_backup_code
+from utils.tenant import is_stayflow_admin_email
 
 # Protecao basica contra forca bruta: 5 tentativas erradas pro MESMO
 # email trava por 15 minutos. Bloqueia por email (nao por IP) porque
@@ -90,6 +91,7 @@ def build_session_payload(user_id, hostel_id):
             "email": user["email"],
             "must_change_password": bool(user["must_change_password"]),
         },
+        "is_stayflow_admin": is_stayflow_admin_email(user["email"]),
         "hostel_id": hostel_id,
         "hostel_name": hostel["name"] if hostel else None,
         "role_name": membership["role_name"],
