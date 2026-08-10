@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -8,6 +9,43 @@ from database import get_connection
 load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Mensagens so-confirmacao que nao carregam sinal nenhum de venda/
+# problema sozinhas ("ok", "obrigado", so emoji) - rodar a IA nelas so
+# gerava ruido no Opportunity Center (pedido explicito do usuario pra
+# parar) e dobrava o custo de token por mensagem (essa analise roda
+# em CIMA da resposta do chat, nao no lugar dela). Lista curta e
+# deliberadamente conservadora - qualquer coisa fora dela ainda passa
+# pela IA normalmente, inclusive respostas curtas com numero/data
+# ("dia 20", "sim, 2 pessoas") que continuam relevantes no contexto.
+_FILLER_MESSAGES = {
+    "ok", "okay", "okey", "oki", "blz", "beleza", "certo", "entendi",
+    "show", "top", "legal", "otimo", "ótimo", "perfeito", "combinado",
+    "obrigado", "obrigada", "obg", "vlw", "valeu", "thanks", "thank you",
+    "ty", "gracias", "merci", "danke",
+    "sim", "s", "yes", "y", "si", "oui", "ja", "já",
+    "nao", "não", "no", "n", "non", "nein",
+}
+
+_EMOJI_RE = re.compile(
+    "[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF]+",
+    flags=re.UNICODE,
+)
+
+
+def _is_filler_message(message):
+    """True quando a mensagem nao vale a pena mandar pra IA analisar - so
+    emoji/pontuacao, ou um agradecimento/confirmacao puro e curto."""
+    stripped = _EMOJI_RE.sub("", message or "").strip()
+    stripped = re.sub(r"[!?.,;:]+$", "", stripped).strip()
+
+    if not stripped:
+        return True
+
+    if len(stripped) <= 25 and stripped.lower() in _FILLER_MESSAGES:
+        return True
+
+    return False
 
 
 def fallback_analysis(message):
@@ -108,6 +146,9 @@ def analyze_message(hostel_id, guest_id, message, history=None):
     canal sem telefone de verdade (Instagram/Messenger, onde
     guests.phone fica NULL).
     """
+    if _is_filler_message(message):
+        return None
+
     analysis = analyze_with_ai(message, history=history)
 
     if analysis.get("intent") == "general":
