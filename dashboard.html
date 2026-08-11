@@ -33,6 +33,10 @@
 </head>
 
 <body>
+<div id="impersonationBanner" style="display:none;background:#ff9500;color:#1a1200;padding:10px 20px;align-items:center;justify-content:center;gap:14px;text-align:center;font-size:13px;font-weight:700;position:sticky;top:0;z-index:9999">
+  <span>🔑 Você está visitando o painel de <span id="impersonationHostelName"></span> como StayFlow Admin</span>
+  <button type="button" onclick="exitImpersonation()" style="background:#1a1200;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">Sair da visualização</button>
+</div>
 <div class="app">
 
 <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -9276,6 +9280,17 @@ window.uploadGuestDocumentUI = async function(guestId){
         if(guestsSectionTitle) guestsSectionTitle.textContent = "👥 PAX";
       }
     }catch(e){ console.error("Erro ao ajustar rotulo de PAX:", e); }
+    try{
+      // Banner obrigatorio sempre que a sessao esta "em visita" (admin
+      // StayFlow dentro do dashboard de outra conta) - impossivel
+      // confundir "isso e a StayFlow" com "isso e a conta de um cliente".
+      const banner = document.getElementById("impersonationBanner");
+      if(banner){
+        banner.style.display = session.impersonating ? "flex" : "none";
+        const nameEl = document.getElementById("impersonationHostelName");
+        if(nameEl) nameEl.textContent = session.hostel_name || "";
+      }
+    }catch(e){ console.error("Erro ao aplicar banner de visitacao:", e); }
     try{ restoreLastOpenPage(); }catch(e){ console.error("Erro ao restaurar ultima pagina aberta:", e); }
 
     if(hostelMetaEl){
@@ -9285,6 +9300,22 @@ window.uploadGuestDocumentUI = async function(guestId){
       hostelMetaEl.textContent = "";
     }
   }
+
+  window.exitImpersonation = async function(){
+    try{
+      const res = await fetch("/stayflow-admin/stop-impersonating", {
+        method: "POST", credentials: "same-origin",
+      });
+      const d = await res.json();
+      if(!res.ok || !d.success){
+        console.warn("Erro ao sair da visita:", d.message);
+        return;
+      }
+      window.location.href = "stayflow-hub.html";
+    }catch(e){
+      console.error("Erro ao sair da visita:", e);
+    }
+  };
 
   document.addEventListener("stayflow:session-ready", async () => {
     hydrateUserUI(window.STAYFLOW_USER);

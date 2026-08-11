@@ -10,7 +10,10 @@
   <link rel="stylesheet" href="static/css/reset.css">
   <link rel="stylesheet" href="static/css/app.css">
   <style>
-    .admin-wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+    .admin-wrap{max-width:1180px;margin:0 auto;padding:24px 24px 80px}
+    .admin-switcher{display:flex;gap:6px;margin-bottom:24px;font-size:13px}
+    .admin-switcher a{color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:8px}
+    .admin-switcher a.active{background:#2f7dff20;color:#7fb1ff;font-weight:700}
     .admin-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
     .admin-header h1{font-size:24px;margin:0 0 4px}
     .admin-header p{color:var(--muted);margin:0;font-size:14px}
@@ -21,71 +24,73 @@
     .admin-summary .card.commission .big{color:#6ff0bd}
     .admin-summary .card.commission{border-color:#26e0a02a}
     .admin-note{font-size:11px;color:var(--muted);margin-top:16px}
-    #adminTableWrap{overflow-x:auto}
     #adminLoading, #adminError{padding:40px;text-align:center;color:var(--muted)}
     #adminError{display:none;color:#ff9caf}
     @media(max-width:900px){.admin-summary{grid-template-columns:1fr}}
+    .admin-nav-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .admin-nav-card{display:block;text-decoration:none;color:inherit;padding:26px 20px;text-align:center;cursor:pointer;transition:transform .15s ease,border-color .15s ease}
+    .admin-nav-card:hover{transform:translateY(-2px);border-color:#2f7dff70}
+    .admin-nav-card .ico{font-size:30px;margin-bottom:10px}
+    .admin-nav-card h2{font-size:16px;margin:0 0 4px}
+    .admin-nav-card p{font-size:12px;color:var(--muted);margin:0}
+    @media(max-width:700px){.admin-nav-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="admin-wrap">
+    <div class="admin-switcher">
+      <a href="admin.html" class="active">🛠 Painel StayFlow</a>
+      <a href="admin-list.html?kind=lodging">🏨 Hospedagens</a>
+      <a href="admin-list.html?kind=agency">✈️ Agências</a>
+    </div>
+
     <div class="admin-header">
       <div>
         <h1>🛠 Painel StayFlow</h1>
-        <p>Visão interna de todas as hospedagens — não é o dashboard de nenhuma hospedagem específica.</p>
+        <p>Visão interna de todas as hospedagens e agências — não é o dashboard de nenhuma conta específica.</p>
       </div>
       <a href="dashboard.html" style="color:var(--muted);font-size:13px;text-decoration:none">← Voltar pro dashboard</a>
     </div>
 
-    <div class="admin-summary">
-      <div class="card">
-        <h2>Hospedagens</h2>
-        <div class="big" id="sumTotalHostels">—</div>
-        <div class="sub" id="sumByStatus">Carregando...</div>
-      </div>
-      <div class="card">
-        <h2>MRR estimado</h2>
-        <div class="big" id="sumMrr">—</div>
-        <div class="sub">Baseado no plano contratado de cada hospedagem — a cobrança de assinatura ainda não é automática (Stripe/Mercado Pago dessa parte ainda não ligados), isso é só o valor de tabela.</div>
-      </div>
-      <div class="card commission">
-        <h2>Comissão real coletada</h2>
-        <div class="big" id="sumCommission">—</div>
-        <div class="sub">Dinheiro real, já processado via Mercado Pago Split de Pagos (reservas, passeios, aluguéis pagos pelo hóspede).</div>
-      </div>
-    </div>
+    <div id="adminLoading">Carregando...</div>
+    <div id="adminError">Não foi possível carregar o painel.</div>
 
-    <div class="card" id="adminTableCard">
-      <h2 style="margin:0 0 16px;font-size:16px">Hospedagens</h2>
-      <div id="adminLoading">Carregando...</div>
-      <div id="adminError">Não foi possível carregar o painel.</div>
-      <div id="adminTableWrap" style="display:none">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Hospedagem</th>
-              <th>Plano</th>
-              <th>Status</th>
-              <th>Trial</th>
-              <th>MRR estimado</th>
-              <th>Volume processado</th>
-              <th>Comissão coletada</th>
-            </tr>
-          </thead>
-          <tbody id="adminTableBody"></tbody>
-        </table>
+    <div id="adminContent" style="display:none">
+      <div class="admin-summary">
+        <div class="card">
+          <h2>Contas</h2>
+          <div class="big" id="sumTotalHostels">—</div>
+          <div class="sub" id="sumByStatus">Carregando...</div>
+        </div>
+        <div class="card">
+          <h2>MRR estimado</h2>
+          <div class="big" id="sumMrr">—</div>
+          <div class="sub">Baseado no plano contratado de cada conta — a cobrança de assinatura ainda não é automática (Stripe/Mercado Pago dessa parte ainda não ligados), isso é só o valor de tabela.</div>
+        </div>
+        <div class="card commission">
+          <h2>Comissão real coletada</h2>
+          <div class="big" id="sumCommission">—</div>
+          <div class="sub">Dinheiro real, já processado via Mercado Pago Split de Pagos (reservas, passeios, aluguéis, itens de portfólio de agência).</div>
+        </div>
       </div>
-      <div class="admin-note">Valores por hospedagem na moeda operacional de cada uma. Os totais dos cards acima são somados sem conversão cambial — hospedagens podem operar em moedas diferentes.</div>
+
+      <div class="admin-nav-grid">
+        <a class="card admin-nav-card" href="admin-list.html?kind=agency">
+          <div class="ico">✈️</div>
+          <h2>Agências</h2>
+          <p>Ver listagem de agências parceiras</p>
+        </a>
+        <a class="card admin-nav-card" href="admin-list.html?kind=lodging">
+          <div class="ico">🏨</div>
+          <h2>Hospedagens</h2>
+          <p>Ver listagem de hospedagens</p>
+        </a>
+      </div>
+      <div class="admin-note">Os totais acima são somados sem conversão cambial — contas podem operar em moedas diferentes.</div>
     </div>
   </div>
 
   <script>
-    function escapeHtml(str){
-      const div = document.createElement("div");
-      div.textContent = str == null ? "" : String(str);
-      return div.innerHTML;
-    }
-
     function formatMoney(value, currency){
       const n = Number(value || 0);
       try{
@@ -99,53 +104,21 @@
       trialing: "Trial", active: "Ativo", past_due: "Inadimplente",
       canceled: "Cancelado", comp: "Cortesia",
     };
-    const STATUS_PILL_CLASS = {
-      trialing: "warm", active: "ok", past_due: "hot",
-      canceled: "cold", comp: "ai",
-    };
 
-    function planLabel(plan){
-      if(!plan) return "—";
-      return plan.charAt(0).toUpperCase() + plan.slice(1);
-    }
-
-    function renderOverview(data){
+    function renderSummary(data){
       const s = data.summary;
 
       document.getElementById("sumTotalHostels").textContent = String(s.total_hostels);
       const byStatusText = Object.entries(s.by_status)
         .map(([status, count]) => `${count} ${(STATUS_LABELS[status] || status).toLowerCase()}`)
-        .join(" · ") || "Nenhuma hospedagem ainda";
+        .join(" · ") || "Nenhuma conta ainda";
       document.getElementById("sumByStatus").textContent = byStatusText;
 
       document.getElementById("sumMrr").textContent = formatMoney(s.total_estimated_mrr, "USD");
       document.getElementById("sumCommission").textContent = formatMoney(s.total_commission_collected, "USD");
 
-      const tbody = document.getElementById("adminTableBody");
-      tbody.innerHTML = "";
-
-      data.hostels.forEach(h => {
-        const tr = document.createElement("tr");
-        const pillClass = STATUS_PILL_CLASS[h.status] || "cold";
-        const statusLabel = STATUS_LABELS[h.status] || h.status || "—";
-        const trialText = h.status === "trialing" && h.trial_days_left !== null
-          ? `${h.trial_days_left}d restantes`
-          : "—";
-
-        tr.innerHTML = `
-          <td><a href="admin-hostel.html?id=${h.hostel_id}" style="color:var(--text);font-weight:600;text-decoration:none">${escapeHtml(h.hostel_name)}</a></td>
-          <td>${planLabel(h.plan_name)}</td>
-          <td><span class="status-pill ${pillClass}">${escapeHtml(statusLabel.toUpperCase())}</span></td>
-          <td>${trialText}</td>
-          <td>${formatMoney(h.estimated_mrr, "USD")}</td>
-          <td>${formatMoney(h.guest_payment_volume, h.currency)}</td>
-          <td>${formatMoney(h.commission_collected, h.currency)}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
       document.getElementById("adminLoading").style.display = "none";
-      document.getElementById("adminTableWrap").style.display = "block";
+      document.getElementById("adminContent").style.display = "block";
     }
 
     (async () => {
@@ -158,7 +131,7 @@
         if(!res.ok) throw new Error("request failed");
         const data = await res.json();
         if(!data.success) throw new Error("unsuccessful");
-        renderOverview(data);
+        renderSummary(data);
       }catch(e){
         console.warn("Erro ao carregar painel StayFlow:", e);
         document.getElementById("adminLoading").style.display = "none";

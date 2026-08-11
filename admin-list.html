@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel StayFlow · Listagem</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="google" content="notranslate">
+  <link rel="stylesheet" href="static/css/tokens.css">
+  <link rel="stylesheet" href="static/css/reset.css">
+  <link rel="stylesheet" href="static/css/app.css">
+  <style>
+    .admin-wrap{max-width:1180px;margin:0 auto;padding:24px 24px 80px}
+    .admin-switcher{display:flex;gap:6px;margin-bottom:24px;font-size:13px}
+    .admin-switcher a{color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:8px}
+    .admin-switcher a.active{background:#2f7dff20;color:#7fb1ff;font-weight:700}
+    .admin-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+    .admin-header h1{font-size:22px;margin:0 0 4px}
+    .admin-header p{color:var(--muted);margin:0;font-size:14px}
+    #adminTableWrap{overflow-x:auto}
+    #adminLoading, #adminError, #adminEmpty{padding:40px;text-align:center;color:var(--muted)}
+    #adminError{display:none;color:#ff9caf}
+    #adminEmpty{display:none}
+  </style>
+</head>
+<body>
+  <div class="admin-wrap">
+    <div class="admin-switcher">
+      <a href="admin.html" id="navPainel">🛠 Painel StayFlow</a>
+      <a href="admin-list.html?kind=lodging" id="navHospedagens">🏨 Hospedagens</a>
+      <a href="admin-list.html?kind=agency" id="navAgencias">✈️ Agências</a>
+    </div>
+
+    <div class="admin-header">
+      <div>
+        <h1 id="listTitle">—</h1>
+        <p id="listSubtitle"></p>
+      </div>
+      <a href="stayflow-hub.html" style="color:var(--muted);font-size:13px;text-decoration:none">← Início</a>
+    </div>
+
+    <div class="card" id="adminTableCard">
+      <div id="adminLoading">Carregando...</div>
+      <div id="adminError">Não foi possível carregar a listagem.</div>
+      <div id="adminEmpty">Nenhuma conta encontrada ainda.</div>
+      <div id="adminTableWrap" style="display:none">
+        <table class="table">
+          <thead>
+            <tr>
+              <th id="colName">Nome</th>
+              <th>Plano</th>
+              <th>Status</th>
+              <th>Trial</th>
+              <th>MRR estimado</th>
+              <th>Volume processado</th>
+              <th>Comissão coletada</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function escapeHtml(str){
+      const div = document.createElement("div");
+      div.textContent = str == null ? "" : String(str);
+      return div.innerHTML;
+    }
+
+    function formatMoney(value, currency){
+      const n = Number(value || 0);
+      try{
+        return new Intl.NumberFormat("pt-BR", { style: "currency", currency: currency || "USD" }).format(n);
+      }catch(e){
+        return `${currency || "USD"} ${n.toFixed(2)}`;
+      }
+    }
+
+    const STATUS_LABELS = {
+      trialing: "Trial", active: "Ativo", past_due: "Inadimplente",
+      canceled: "Cancelado", comp: "Cortesia",
+    };
+    const STATUS_PILL_CLASS = {
+      trialing: "warm", active: "ok", past_due: "hot",
+      canceled: "cold", comp: "ai",
+    };
+
+    function planLabel(plan){
+      if(!plan) return "—";
+      return plan.charAt(0).toUpperCase() + plan.slice(1);
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const kind = params.get("kind") === "agency" ? "agency" : "lodging";
+
+    document.getElementById("listTitle").textContent = kind === "agency" ? "✈️ Agências" : "🏨 Hospedagens";
+    document.getElementById("listSubtitle").textContent = kind === "agency"
+      ? "Agências de turismo, aluguel de carro/bike/equipamento parceiras."
+      : "Hostels, hotéis, pousadas e resorts que usam a StayFlow.";
+    document.getElementById("colName").textContent = kind === "agency" ? "Agência" : "Hospedagem";
+    document.getElementById(kind === "agency" ? "navAgencias" : "navHospedagens").classList.add("active");
+
+    function renderTable(hostels){
+      const tbody = document.getElementById("adminTableBody");
+      tbody.innerHTML = "";
+
+      hostels.forEach(h => {
+        const tr = document.createElement("tr");
+        const pillClass = STATUS_PILL_CLASS[h.status] || "cold";
+        const statusLabel = STATUS_LABELS[h.status] || h.status || "—";
+        const trialText = h.status === "trialing" && h.trial_days_left !== null
+          ? `${h.trial_days_left}d restantes`
+          : "—";
+
+        tr.innerHTML = `
+          <td><a href="admin-hostel.html?id=${h.hostel_id}" style="color:var(--text);font-weight:600;text-decoration:none">${escapeHtml(h.hostel_name)}</a></td>
+          <td>${planLabel(h.plan_name)}</td>
+          <td><span class="status-pill ${pillClass}">${escapeHtml(statusLabel.toUpperCase())}</span></td>
+          <td>${trialText}</td>
+          <td>${formatMoney(h.estimated_mrr, "USD")}</td>
+          <td>${formatMoney(h.guest_payment_volume, h.currency)}</td>
+          <td>${formatMoney(h.commission_collected, h.currency)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    (async () => {
+      try{
+        const res = await fetch(`/stayflow-admin/overview?kind=${kind}`, { credentials: "same-origin" });
+        if(res.status === 401 || res.status === 403){
+          window.location.href = "Login.html";
+          return;
+        }
+        if(!res.ok) throw new Error("request failed");
+        const data = await res.json();
+        if(!data.success) throw new Error("unsuccessful");
+
+        document.getElementById("adminLoading").style.display = "none";
+
+        if(!data.hostels.length){
+          document.getElementById("adminEmpty").style.display = "block";
+          return;
+        }
+
+        renderTable(data.hostels);
+        document.getElementById("adminTableWrap").style.display = "block";
+      }catch(e){
+        console.warn("Erro ao carregar listagem:", e);
+        document.getElementById("adminLoading").style.display = "none";
+        document.getElementById("adminError").style.display = "block";
+      }
+    })();
+  </script>
+</body>
+</html>
