@@ -37,6 +37,30 @@ ALL_PERMISSIONS = [
 
 ALL_PERMISSIONS_STR = ",".join(ALL_PERMISSIONS)
 
+# Permissoes que so fazem sentido pra hospedagem (reserva de quarto,
+# modulos operacionais do predio fisico) - mesma categorizacao usada
+# no menu lateral (data-required-account-kind="lodging" em
+# dashboard.html) pra esconder o item de nav correspondente. Uma
+# agencia parceira nunca deveria ver checkbox pra essas no catalogo de
+# cargos (Equipe > Novo cargo), mesmo que a permissao exista no
+# sistema em abstrato.
+LODGING_ONLY_PERMISSIONS = {
+    "reservations", "operations", "inventory", "revenue",
+    "kitchen", "maintenance", "patrimonial_security", "parking",
+    "scheduling", "events", "partners",
+}
+
+# Permissoes exclusivas de agencia parceira - hospedagem nao ve.
+AGENCY_ONLY_PERMISSIONS = {"portfolio"}
+
+
+def permissions_for_account_kind(account_kind):
+    """Subconjunto de ALL_PERMISSIONS que faz sentido oferecer pra esse tipo de conta - mesma categorizacao do menu lateral, so que pro catalogo de cargos (Equipe)."""
+    if account_kind == "agency":
+        return [p for p in ALL_PERMISSIONS if p not in LODGING_ONLY_PERMISSIONS]
+    return [p for p in ALL_PERMISSIONS if p not in AGENCY_ONLY_PERMISSIONS]
+
+
 PERMISSION_LABELS = {
     "dashboard": "Dashboard",
     "chats": "Chats",

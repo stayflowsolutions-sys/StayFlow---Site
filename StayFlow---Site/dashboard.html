@@ -613,11 +613,15 @@ function collectCheckedPermissions(){
 
 async function openNewRoleForm(){
   const catalog = await fetchPermissionCatalog();
+  const isAgency = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
+  const roleNamePlaceholder = isAgency
+    ? T('team.roleNamePlaceholderExampleAgency', 'Ex: Vendedor')
+    : T('team.roleNamePlaceholderExample', 'Ex: Recepção');
 
   openGenericModal(T('team.modal.newRoleTitle', 'Nova função'), `
     <div>
       <label>${T('team.roleNameLabel', 'Nome da função')}</label>
-      <input id="newRoleName" type="text" placeholder="${T('team.roleNamePlaceholderExample', 'Ex: Recepção')}">
+      <input id="newRoleName" type="text" placeholder="${roleNamePlaceholder}">
     </div>
     <div>
       <label>${T('team.permissionsLabel', 'Permissões')}</label>
@@ -781,7 +785,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="guests" onclick="openPage('guests',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4"/><circle cx="12" cy="9" r="3"/><path d="M20 19c0-1.7-1-3.1-2.5-3.7"/><path d="M17 7.2a2.5 2.5 0 0 1 0 3.6"/></svg></span><span data-i18n="nav.guests" id="navGuestsLabel">Hóspedes</span>
     </button>
-    <button data-page="operations" onclick="openPage('operations',this)">
+    <button data-page="operations" data-required-account-kind="lodging" onclick="openPage('operations',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span><span data-i18n="nav.operations">Operações</span>
     </button>
     <button data-page="team" data-required-permission="team,scheduling" onclick="openPage('team',this)">
@@ -790,7 +794,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="finance" onclick="openPage('finance',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></span><span data-i18n="nav.finance">Financeiro</span>
     </button>
-    <button data-page="inventory" onclick="openPage('inventory',this)">
+    <button data-page="inventory" data-required-account-kind="lodging" onclick="openPage('inventory',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span><span data-i18n="nav.inventory">Estoque</span>
     </button>
     <button data-page="revenue" data-required-account-kind="lodging" onclick="openPage('revenue',this)">

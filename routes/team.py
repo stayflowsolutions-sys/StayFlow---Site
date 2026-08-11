@@ -211,8 +211,16 @@ def reactivate_member(hostel_id, membership_id):
 @team_bp.route("/permissions/catalog", methods=["GET"])
 @require_permission("team")
 def permissions_catalog(hostel_id):
-    from utils.permissions import ALL_PERMISSIONS, PERMISSION_LABELS
-    catalog = [{"key": k, "label": PERMISSION_LABELS.get(k, k)} for k in ALL_PERMISSIONS]
+    from database import get_hostel
+    from utils.permissions import PERMISSION_LABELS, permissions_for_account_kind
+
+    account_kind = (get_hostel(hostel_id) or {}).get("account_kind", "lodging")
+    # "Hospedes" vira "PAX" aqui tambem pra bater com o rotulo que a
+    # agencia ja ve no menu lateral (ver dashboard.html hydrateUserUI).
+    catalog = [{
+        "key": k,
+        "label": "PAX" if k == "guests" and account_kind == "agency" else PERMISSION_LABELS.get(k, k),
+    } for k in permissions_for_account_kind(account_kind)]
     return jsonify({"success": True, "permissions": catalog})
 
 
