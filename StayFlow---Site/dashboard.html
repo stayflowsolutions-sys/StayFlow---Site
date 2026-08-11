@@ -67,7 +67,18 @@ function escapeHtml(str){
 // tiver carregado). ph, quando passado, e um dict de {token: valor} pra
 // substituir placeholders "{token}" dentro do texto ja traduzido.
 function T(key, fallback, ph){
-  let text = window.StayFlowI18n
+  // A guarda so checava window.StayFlowI18n (de assets/js/i18n-core.js)
+  // mas nao STAYFLOW_DASHBOARD_I18N (de assets/js/i18n-dashboard-data.js,
+  // carregado DEPOIS, perto do fim do body) - se algo chamasse T() entre
+  // um script carregar e o outro (ex: clique bem no inicio da sessao, ou
+  // conexao mais lenta), a leitura de STAYFLOW_DASHBOARD_I18N estourava
+  // ReferenceError, matando silenciosamente a funcao chamadora inteira
+  // (achado real: quebrava o clique do modal de Cambio, o titulo do
+  // topbar em updateTopbar, loadScheduling, loadTeamList, loadChats -
+  // qualquer coisa que chamasse T() cedo demais). typeof nunca lanca
+  // pra uma binding nao inicializada de OUTRO <script>, por isso e
+  // seguro usar aqui como guarda.
+  let text = (window.StayFlowI18n && typeof STAYFLOW_DASHBOARD_I18N !== "undefined")
     ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, StayFlowI18n.currentLang(), key, fallback)
     : fallback;
   if(ph){
@@ -2226,9 +2237,19 @@ async function deleteRoleConfirm(roleId){
     const [titleKey, subtitleKey] = PAGE_LABELS[pageId] || ["nav.dashboard", ""];
     const titleEl = $("#pageTitle");
     const subEl   = $("#pageSubtitle");
+    // Mesma guarda incompleta de T() (so checava window.StayFlowI18n,
+    // nao STAYFLOW_DASHBOARD_I18N em si) causava ReferenceError aqui
+    // tambem, matando a troca de titulo do topbar se chamado cedo
+    // demais na sessao - ver comentario completo em T() acima.
+    const i18nReady = window.StayFlowI18n && typeof STAYFLOW_DASHBOARD_I18N !== "undefined";
     const lang    = window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt";
-    let title   = window.StayFlowI18n ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, titleKey, titleKey) : titleKey;
-    const subtitle= window.StayFlowI18n && subtitleKey ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, subtitleKey, "") : "";
+    // Fallback vem do proprio texto estatico do botao de nav (sempre
+    // presente no HTML, mesmo antes do i18n carregar) - sem isso, essa
+    // janela de corrida mostrava a CHAVE crua ("nav.finance") na tela
+    // em vez de um texto legivel.
+    const navFallback = document.querySelector(`.menu button[data-page="${pageId}"] [data-i18n]`)?.textContent || titleKey;
+    let title   = i18nReady ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, titleKey, navFallback) : navFallback;
+    const subtitle= i18nReady && subtitleKey ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, subtitleKey, "") : "";
     // Agencia parceira (turismo/aluguel) chama guest de "PAX", termo
     // padrao do setor - hospedagem continua "Hospedes" normalmente.
     if(pageId === "guests" && (window.STAYFLOW_SESSION || {}).account_kind === "agency") title = "PAX";
