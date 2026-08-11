@@ -100,6 +100,30 @@ function opportunityRowHtml(opportunity){
     guestLabel: opportunity.name || opportunity.phone || "",
   }).replace(/"/g, "&quot;");
 
+  // Sugestao de parceiro (decision_engine.py) - so aparece quando a
+  // hospedagem tem um item de portfolio de agencia ja ativado e o
+  // hospede pediu algo do tipo 'tour'. Botao separado do "Gerar
+  // cobranca" normal porque o vendedor de verdade e a agencia, nao a
+  // hospedagem (ver routes/guest_charges.py, charge_type='partner_item').
+  let partnerSuggestionHtml = "";
+  if(opportunity.suggested_partner_item_id){
+    const partnerChargeArgs = JSON.stringify({
+      chargeType: "partner_item",
+      portfolioItemId: opportunity.suggested_partner_item_id,
+      guestId: opportunity.guest_id || null,
+      opportunityId: opportunity.id,
+      title: opportunity.suggested_partner_item_name || "",
+      amount: opportunity.suggested_partner_item_price_type === "fixed" ? (opportunity.suggested_partner_item_price || "") : "",
+      guestLabel: opportunity.name || opportunity.phone || "",
+    }).replace(/"/g, "&quot;");
+    partnerSuggestionHtml = `
+      <div style="margin-top:6px;font-size:11px;color:var(--blue2)">
+        💡 ${T('opportunities.partnerSuggestion', 'Sugestão: {item} via {agency}', {item: escapeHtml(opportunity.suggested_partner_item_name || ""), agency: escapeHtml(opportunity.suggested_partner_agency_name || "")})}
+      </div>
+      <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="openGuestChargeModal(${partnerChargeArgs})">${T('opportunities.offerPartnerBtn', 'Oferecer parceiro')}</button>
+    `;
+  }
+
   return `
     <td>${opportunityDateLabel(opportunity.created_at)}</td>
     <td>${guestLabel}</td>
@@ -108,7 +132,7 @@ function opportunityRowHtml(opportunity){
         ${urgency.toUpperCase()}
       </span>
     </td>
-    <td>${escapeHtml(opportunity.description || opportunity.type || "-")}</td>
+    <td>${escapeHtml(opportunity.description || opportunity.type || "-")}${partnerSuggestionHtml}</td>
     <td>${score}/100</td>
     <td>${formatMoney(estimatedValue)}</td>
     <td>${escapeHtml(opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.'))}</td>
@@ -170,6 +194,7 @@ function updateOpportunitiesPrioritySidebar(opportunities){
         <span class="status-pill ${urgency}">${urgency.toUpperCase()}</span>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${escapeHtml(opportunity.description || opportunity.type || "-")}</div>
+      ${opportunity.suggested_partner_item_id ? `<div style="font-size:11px;color:var(--blue2);margin-bottom:6px">💡 ${T('opportunities.partnerSuggestion', 'Sugestão: {item} via {agency}', {item: escapeHtml(opportunity.suggested_partner_item_name || ""), agency: escapeHtml(opportunity.suggested_partner_agency_name || "")})}</div>` : ""}
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
         <span style="color:var(--blue2);font-weight:700">${estimatedValue > 0 ? formatMoney(estimatedValue) : "—"}</span>
         <span style="color:var(--muted)">${T('opportunities.col.score', 'Score')}: ${Number(opportunity.score || 0)}/100</span>

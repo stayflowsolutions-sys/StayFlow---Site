@@ -999,6 +999,12 @@ def create_database():
     add_column_if_not_exists(cursor, "opportunities", "urgency", "TEXT DEFAULT 'low'")
     add_column_if_not_exists(cursor, "opportunities", "estimated_value", "REAL DEFAULT 0")
     add_column_if_not_exists(cursor, "opportunities", "next_action", "TEXT")
+    # Preenchido pelo decision_engine quando a oportunidade e do tipo
+    # 'tour' e a hospedagem tem algum item de portfolio de agencia
+    # parceira ja ativado (partner_offers) - deixa a equipe oferecer o
+    # passeio/aluguel de uma agencia parceira em vez de so anotar que o
+    # hospede quer algo que a hospedagem nao vende ela mesma.
+    add_column_if_not_exists(cursor, "opportunities", "suggested_partner_item_id", "INTEGER")
 
     # Taxa de comissao da StayFlow por hospedagem e por tipo de cobranca
     # (ver guest_charges abaixo) - override opcional; quando nao existe
@@ -4413,10 +4419,17 @@ def get_opportunities_list(hostel_id, limit=20, offset=0, sort="recent"):
             o.urgency,
             o.estimated_value,
             o.next_action,
-            o.created_at
+            o.created_at,
+            o.suggested_partner_item_id,
+            pi.name AS suggested_partner_item_name,
+            pi.price AS suggested_partner_item_price,
+            pi.price_type AS suggested_partner_item_price_type,
+            ah.name AS suggested_partner_agency_name
         FROM opportunities o
         JOIN guests g
             ON o.guest_id = g.id
+        LEFT JOIN portfolio_items pi ON pi.id = o.suggested_partner_item_id
+        LEFT JOIN hostels ah ON ah.id = pi.hostel_id
         WHERE g.hostel_id = ?
         ORDER BY {order_clause}
         LIMIT ? OFFSET ?
@@ -5779,6 +5792,31 @@ def list_partner_offers(hostel_id):
     ids = [row["portfolio_item_id"] for row in cursor.fetchall()]
     conn.close()
     return ids
+
+
+def get_enabled_partner_items_for_hostel(hostel_id):
+    """
+    Itens de portfolio de agencia que essa hospedagem ja ativou
+    (partner_offers) e que continuam ativos - usado pelo decision_engine
+    pra saber se da pra sugerir um parceiro quando o hospede pede um
+    passeio/aluguel que a propria hospedagem nao vende.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT pi.id, pi.name, pi.category, pi.price_type, pi.price,
+               pi.hostel_id AS agency_hostel_id, h.name AS agency_name
+        FROM partner_offers po
+        JOIN portfolio_items pi ON pi.id = po.portfolio_item_id
+        JOIN hostels h ON h.id = pi.hostel_id
+        WHERE po.hostel_id = ? AND po.enabled = 1 AND pi.active = 1
+        """,
+        (hostel_id,)
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
 
 
 def get_partner_referral_ledger_summary():

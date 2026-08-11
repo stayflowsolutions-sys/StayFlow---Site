@@ -4,7 +4,7 @@ import re
 from openai import OpenAI
 from dotenv import load_dotenv
 
-from database import get_connection
+from database import get_connection, get_enabled_partner_items_for_hostel
 
 load_dotenv()
 
@@ -189,6 +189,19 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
 
         return analysis
 
+    # Quando o hospede pede um passeio/excursao (intent='tour') e a
+    # hospedagem ja tem algum item de portfolio de agencia parceira
+    # ativado (Parceiros), sugere o primeiro disponivel - a equipe pode
+    # oferecer isso ao hospede mesmo sem a hospedagem vender aquilo
+    # ela mesma. So pra 'tour' de proposito (o unico intent que mapeia
+    # claramente pra categoria de agencia hoje - 'upsell' e generico
+    # demais, cobre coisas sem nada a ver, tipo upgrade de quarto).
+    suggested_partner_item_id = None
+    if analysis.get("intent") == "tour":
+        partner_items = get_enabled_partner_items_for_hostel(hostel_id)
+        if partner_items:
+            suggested_partner_item_id = partner_items[0]["id"]
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -219,7 +232,8 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
         cursor.execute(
             """
             UPDATE opportunities
-            SET description = ?, score = ?, urgency = ?, estimated_value = ?, next_action = ?, created_at = CURRENT_TIMESTAMP
+            SET description = ?, score = ?, urgency = ?, estimated_value = ?, next_action = ?,
+                suggested_partner_item_id = ?, created_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """,
             (
@@ -228,6 +242,7 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
                 analysis.get("urgency", "low"),
                 analysis.get("estimated_value", 0),
                 analysis.get("next_action"),
+                suggested_partner_item_id,
                 existing["id"]
             )
         )
@@ -243,9 +258,10 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
                 score,
                 urgency,
                 estimated_value,
-                next_action
+                next_action,
+                suggested_partner_item_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 guest_id,
@@ -255,7 +271,8 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
                 analysis.get("score", 0),
                 analysis.get("urgency", "low"),
                 analysis.get("estimated_value", 0),
-                analysis.get("next_action")
+                analysis.get("next_action"),
+                suggested_partner_item_id
             )
         )
 
