@@ -896,7 +896,7 @@ async function deleteRoleConfirm(roleId){
   <div class="grid dashboard-grid">
 
     <!-- KPIs principais -->
-    <div class="card kpi" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))">
+    <div class="card kpi" data-required-account-kind="lodging" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))">
       <div class="kpi-top">
         <div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 11h16v8"/><path d="M4 19V7"/><path d="M8 11V8h8v3"/></svg></div>
         <div class="kpi-arrow">›</div>
@@ -908,7 +908,7 @@ async function deleteRoleConfirm(roleId){
       </div>
     </div>
 
-    <div class="card kpi" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))">
+    <div class="card kpi" data-required-account-kind="lodging" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))">
       <div class="kpi-top">
         <div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></div>
         <div class="kpi-arrow">›</div>
@@ -1904,10 +1904,10 @@ async function deleteRoleConfirm(roleId){
               <option value="USD">USD - Dólar americano</option>
             </select>
           </div>
-          <div class="span-6">
+          <div class="span-6" data-required-account-kind="lodging">
             <input type="text" data-setting="checkin" data-i18n-placeholder="settings.company.checkinPlaceholder" placeholder="Check-in padrão (ex: 14:00)">
           </div>
-          <div class="span-6">
+          <div class="span-6" data-required-account-kind="lodging">
             <input type="text" data-setting="checkout" data-i18n-placeholder="settings.company.checkoutPlaceholder" placeholder="Check-out padrão (ex: 11:00)">
           </div>
           <div class="span-12">
@@ -2040,7 +2040,7 @@ async function deleteRoleConfirm(roleId){
         <div id="billingSummaryContent"><p style="color:var(--muted)" data-i18n="common.loading">Carregando...</p></div>
       </div>
 
-      <div class="card settings-summary-card" data-settings-section="integracoes" onclick="openBeds24SettingsModal()">
+      <div class="card settings-summary-card" data-settings-section="integracoes" data-required-account-kind="lodging" onclick="openBeds24SettingsModal()">
         <div class="settings-summary-row">
           <div>
             <h2 data-i18n="settings.beds24.title">🔌 Integração com canais (Booking.com, Airbnb, Hostelworld)</h2>
@@ -3759,10 +3759,15 @@ async function deleteRoleConfirm(roleId){
       const data = await res.json();
 
       const summaryEl = document.getElementById("generalSettingsSummaryDesc");
+      const isAgency = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
       if(summaryEl){
-        summaryEl.textContent = data.hostel_name
-          ? T('settings.general.summaryFilled', '{name} · {type}', {name: data.hostel_name, type: data.hostel_type || T('settings.general.hostelTypeOption', 'Tipo de propriedade')})
-          : T('settings.general.summaryDesc', 'Nome da hospedagem e tipo de propriedade.');
+        if(isAgency){
+          summaryEl.textContent = data.hostel_name || T('settings.general.summaryDescAgency', 'Nome da agência.');
+        }else{
+          summaryEl.textContent = data.hostel_name
+            ? T('settings.general.summaryFilled', '{name} · {type}', {name: data.hostel_name, type: data.hostel_type || T('settings.general.hostelTypeOption', 'Tipo de propriedade')})
+            : T('settings.general.summaryDesc', 'Nome da hospedagem e tipo de propriedade.');
+        }
       }
 
       const nameInput = document.getElementById("generalSettingsName");
@@ -3854,12 +3859,11 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openGeneralSettingsModal = function(){
-    openGenericModal(T('settings.general.title', 'Geral'), `
-      <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
-        <div style="grid-column:span 6">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.general.hostelNamePlaceholder', 'Nome da hospedagem')}</label>
-          <input type="text" data-setting="hostel_name" id="generalSettingsName" autocomplete="off" placeholder="${T('settings.general.hostelNamePlaceholder', 'Nome da hospedagem')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
+    // "Tipo de propriedade" (Hostel/Hotel/Resort/Pousada/Flat) so faz
+    // sentido pra hospedagem - agencia parceira nao tem esse conceito,
+    // esse campo nem entra no HTML do modal pra ela.
+    const isAgency = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
+    const hostelTypeField = isAgency ? "" : `
         <div style="grid-column:span 6">
           <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.general.hostelTypeOption', 'Tipo de propriedade')}</label>
           <select data-setting="hostel_type" id="settingsHostelTypeSelect" onchange="onSettingsHostelTypeChange()" style="width:100%">
@@ -3871,7 +3875,15 @@ async function deleteRoleConfirm(roleId){
             <option value="Flat">${T('settings.hostelType.flat', 'Flat')}</option>
             <option value="__new_hostel_type__">${T('settings.hostelType.newOption', '+ Novo tipo...')}</option>
           </select>
+        </div>`;
+
+    openGenericModal(T('settings.general.title', 'Geral'), `
+      <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.general.hostelNamePlaceholder', 'Nome da hospedagem')}</label>
+          <input type="text" data-setting="hostel_name" id="generalSettingsName" autocomplete="off" placeholder="${T('settings.general.hostelNamePlaceholder', 'Nome da hospedagem')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
+        ${hostelTypeField}
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:14px">
         <button class="btn" type="button" onclick="saveSettings()">${T('settings.saveChangesBtn', 'Salvar alterações')}</button>
@@ -4401,8 +4413,15 @@ async function deleteRoleConfirm(roleId){
   // "active" visual, nunca controlou o conteudo. "Equipe" fica de fora
   // desse mecanismo de proposito (abre painel separado via onclick).
   function switchSettingsSection(target){
+    const accountKind = (window.STAYFLOW_SESSION || {}).account_kind || "lodging";
     $$("#settings [data-settings-section]").forEach(el=>{
-      el.style.display = (el.dataset.settingsSection === target) ? "" : "none";
+      const sectionMatches = el.dataset.settingsSection === target;
+      // Alem de bater a secao clicada, respeita data-required-account-kind
+      // (ex: card do Beds24 dentro de "Integracoes") - senao trocar de
+      // categoria reexibia cards que applyAccountKindVisibility ja
+      // tinha escondido no hydrate inicial da sessao.
+      const kindOk = !el.dataset.requiredAccountKind || el.dataset.requiredAccountKind === accountKind;
+      el.style.display = (sectionMatches && kindOk) ? "" : "none";
     });
     $$("#settings .settings-menu .btn.secondary[data-settings-target]").forEach(btn=>{
       btn.classList.toggle("active", btn.dataset.settingsTarget === target);
@@ -9230,6 +9249,19 @@ window.uploadGuestDocumentUI = async function(guestId){
     });
   }
 
+  // Mesma ideia de applyPermissionVisibility, mas pro eixo account_kind
+  // (lodging/agency) - itens do menu ja sao tratados dentro de
+  // hideNavItemsWithoutPermission (precisa combinar com permissao ali);
+  // isso aqui cobre qualquer OUTRO elemento (card do Dashboard, secao
+  // de Configuracoes) marcado com data-required-account-kind="lodging"
+  // ou "agency", sem precisar logica nova em JS a cada card futuro.
+  function applyAccountKindVisibility(accountKind){
+    document.querySelectorAll("[data-required-account-kind]").forEach(el => {
+      if(el.closest(".menu")) return;
+      el.style.display = (el.dataset.requiredAccountKind === (accountKind || "lodging")) ? "" : "none";
+    });
+  }
+
   function hydrateUserUI(u){
     if(!u) return;
 
@@ -9273,6 +9305,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 
     try{ populateHostelSelector(session); }catch(e){ console.error("Erro ao popular seletor de hospedagem:", e); }
     try{ applyPermissionVisibility(session.permissions || []); }catch(e){ console.error("Erro ao aplicar visibilidade por permissao:", e); }
+    try{ applyAccountKindVisibility(session.account_kind); }catch(e){ console.error("Erro ao aplicar visibilidade por tipo de conta:", e); }
     try{ hideNavItemsWithoutPermission(session.permissions || [], session.account_kind); }catch(e){ console.error("Erro ao esconder itens de menu sem permissao:", e); }
     try{
       // Agencia parceira chama guest de "PAX" (termo padrao do setor de

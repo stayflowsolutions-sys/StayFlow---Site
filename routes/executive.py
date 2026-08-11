@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 from openai import OpenAI
 from dotenv import load_dotenv
 
-from database import get_connection
+from database import get_connection, get_hostel
 from utils.tenant import require_permission
 
 load_dotenv()
@@ -86,6 +86,14 @@ def executive_summary(hostel_id):
         lang = "pt"
     language_name = LANGUAGE_NAMES[lang]
 
+    # Os dados agregados abaixo (hospedes/mensagens/oportunidades) ja
+    # sao genericos - nao referenciam quarto/cama em nenhum momento -
+    # entao so o ENQUADRAMENTO do prompt precisava mudar pra agencia
+    # parceira, pra IA nao falar "seu hostel" pra quem administra uma
+    # locadora/agencia de turismo.
+    account_kind = (get_hostel(hostel_id) or {}).get("account_kind", "lodging")
+    business_label = "uma agência parceira (turismo/locação)" if account_kind == "agency" else "um hostel/hotel"
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -155,10 +163,11 @@ def executive_summary(hostel_id):
     }
 
     prompt = f"""
-Você é o gerente digital inteligente do StayFlow, um SaaS premium para hotelaria.
+Você é o gerente digital inteligente do StayFlow, um SaaS premium para
+hotelaria e agências de turismo/locação.
 
-Analise os dados reais abaixo, referentes exclusivamente a UM hostel,
-e gere um resumo executivo para o gestor desse hostel.
+Analise os dados reais abaixo, referentes exclusivamente a {business_label},
+e gere um resumo executivo para quem administra esse negócio.
 
 Dados:
 {json.dumps(stats, ensure_ascii=False)}
