@@ -27,6 +27,7 @@ from database import (
     mark_totp_backup_code_used,
 )
 from services.totp_service import verify_totp_code, normalize_backup_code
+from utils.permissions import ALL_PERMISSIONS
 from utils.tenant import is_stayflow_admin_email
 
 # Protecao basica contra forca bruta: 5 tentativas erradas pro MESMO
@@ -68,20 +69,36 @@ def start_new_session(user_id, hostel_id):
     return session_id
 
 
-def build_session_payload(user_id, hostel_id):
+def build_session_payload(user_id, hostel_id, impersonating_from_hostel_id=None):
     """
     Monta a resposta completa de sessao - login com hostel unico,
     select-hostel e /me usam a mesma forma.
+
+    impersonating_from_hostel_id != None significa que essa sessao esta
+    "em visita" (admin StayFlow dentro do dashboard de outra conta, ver
+    routes/stayflow_admin.py /impersonate) - nesse caso nao existe uma
+    hostel_memberships real pra (user_id, hostel_id), entao pula essa
+    exigencia e libera permissao completa, igual utils/tenant.py faz
+    pro resto das rotas via is_impersonating().
     """
     user = get_user_by_id(user_id)
-    membership = get_membership(user_id, hostel_id)
-
-    if not user or not membership:
+    if not user:
         return None
 
     hostel = get_hostel(hostel_id)
-    permissions = get_effective_permissions(user_id, hostel_id)
+
+    if impersonating_from_hostel_id:
+        role_name = "Visitante StayFlow"
+        permissions = ALL_PERMISSIONS
+    else:
+        membership = get_membership(user_id, hostel_id)
+        if not membership:
+            return None
+        role_name = membership["role_name"]
+        permissions = get_effective_permissions(user_id, hostel_id)
+
     hostels = get_user_hostels(user_id)
+    origin_hostel = get_hostel(impersonating_from_hostel_id) if impersonating_from_hostel_id else None
 
     return {
         "success": True,
@@ -96,9 +113,11 @@ def build_session_payload(user_id, hostel_id):
         "hostel_id": hostel_id,
         "hostel_name": hostel["name"] if hostel else None,
         "account_kind": hostel["account_kind"] if hostel else "lodging",
-        "role_name": membership["role_name"],
+        "role_name": role_name,
         "permissions": permissions,
         "hostels": hostels,
+        "impersonating": bool(impersonating_from_hostel_id),
+        "impersonating_from_hostel_name": origin_hostel["name"] if origin_hostel else None,
     }
 
 
@@ -318,7 +337,10 @@ def me():
     if not session_data or not session_data["hostel_id"]:
         return jsonify({"success": False, "message": "Not authenticated."}), 401
 
-    payload = build_session_payload(session_data["user_id"], session_data["hostel_id"])
+    payload = build_session_payload(
+        session_data["user_id"], session_data["hostel_id"],
+        impersonating_from_hostel_id=session_data.get("impersonating_from_hostel_id"),
+    )
 
     if not payload:
         session.clear()

@@ -699,6 +699,26 @@ def create_database():
     )
     """)
 
+    # Quando preenchida, guarda o hostel_id ORIGINAL de uma sessao que
+    # esta "visitando" outra conta (admin StayFlow entrando no
+    # dashboard de uma hospedagem/agencia sem ser membro real dela -
+    # ver utils/tenant.py is_impersonating). hostel_id da sessao fica
+    # reapontado pra conta visitada (update_session_hostel, ja existe);
+    # esta coluna e o "endereco de volta". NULL = sessao normal.
+    add_column_if_not_exists(cursor, "sessions", "impersonating_from_hostel_id", "INTEGER")
+
+    # Log leve de quem visitou o dashboard de qual conta e quando - so
+    # por responsabilidade, sem tela de auditoria nesta rodada.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS impersonation_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        admin_user_id INTEGER NOT NULL,
+        hostel_id INTEGER NOT NULL,
+        started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ended_at TIMESTAMP
+    )
+    """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS login_attempts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1752,7 +1772,7 @@ def get_billing_info(hostel_id):
     return dict(row)
 
 
-def get_stayflow_admin_overview():
+def get_stayflow_admin_overview(account_kind=None):
     """
     Painel interno StayFlow (cross-tenant, nao por-hostel) - uma linha
     por hospedagem com o plano/status de assinatura (billing) e o
@@ -1767,12 +1787,16 @@ def get_stayflow_admin_overview():
     que daria numero errado se hospedagens tivessem taxas diferentes.
     O subquery agrega guest_charges por hostel_id ANTES de juntar com
     billing, evitando fan-out caso isso deixe de ser 1:1 um dia.
+
+    account_kind opcional ('agency'/'lodging') filtra pra uma das duas
+    listagens dedicadas do painel interno (admin-list.html) - None
+    (default) traz tudo, usado pelos cards de resumo financeiro.
     """
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    query = """
         SELECT
-            h.id AS hostel_id, h.name AS hostel_name,
+            h.id AS hostel_id, h.name AS hostel_name, h.account_kind,
             b.plan_name, b.status, b.trial_ends_at,
             COALESCE(gc.volume_paid, 0) AS guest_payment_volume,
             COALESCE(gc.commission_earned, 0) AS commission_collected
@@ -1786,8 +1810,13 @@ def get_stayflow_admin_overview():
             WHERE status = 'paid'
             GROUP BY hostel_id
         ) gc ON gc.hostel_id = h.id
-        ORDER BY h.name COLLATE NOCASE
-    """)
+    """
+    params = ()
+    if account_kind:
+        query += " WHERE h.account_kind = ?"
+        params = (account_kind,)
+    query += " ORDER BY h.name COLLATE NOCASE"
+    cursor.execute(query, params)
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return rows
@@ -2667,7 +2696,7 @@ def get_valid_session(session_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, user_id, hostel_id, revoked FROM sessions WHERE id = ?",
+        "SELECT id, user_id, hostel_id, revoked, impersonating_from_hostel_id FROM sessions WHERE id = ?",
         (session_id,)
     )
     row = cursor.fetchone()
@@ -2683,7 +2712,55 @@ def get_valid_session(session_id):
     conn.commit()
     conn.close()
 
-    return {"user_id": row["user_id"], "hostel_id": row["hostel_id"]}
+    return {
+        "user_id": row["user_id"],
+        "hostel_id": row["hostel_id"],
+        "impersonating_from_hostel_id": row["impersonating_from_hostel_id"],
+    }
+
+
+def set_session_impersonation(session_id, impersonating_from_hostel_id):
+    """Marca (valor != None) ou limpa (None) o "endereco de volta" de uma sessao em visita - ver coluna sessions.impersonating_from_hostel_id."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE sessions SET impersonating_from_hostel_id = ? WHERE id = ?",
+        (impersonating_from_hostel_id, session_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def log_impersonation_start(admin_user_id, hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO impersonation_log (admin_user_id, hostel_id) VALUES (?, ?)",
+        (admin_user_id, hostel_id)
+    )
+    log_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return log_id
+
+
+def log_impersonation_end(admin_user_id, hostel_id):
+    """Fecha a entrada de log mais recente ainda aberta (ended_at NULL) pra esse par admin/hostel."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE impersonation_log SET ended_at = CURRENT_TIMESTAMP
+        WHERE id = (
+            SELECT id FROM impersonation_log
+            WHERE admin_user_id = ? AND hostel_id = ? AND ended_at IS NULL
+            ORDER BY started_at DESC LIMIT 1
+        )
+        """,
+        (admin_user_id, hostel_id)
+    )
+    conn.commit()
+    conn.close()
 
 
 def update_session_hostel(session_id, hostel_id):

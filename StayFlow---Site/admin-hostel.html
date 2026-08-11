@@ -10,7 +10,10 @@
   <link rel="stylesheet" href="static/css/reset.css">
   <link rel="stylesheet" href="static/css/app.css">
   <style>
-    .admin-wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+    .admin-wrap{max-width:1180px;margin:0 auto;padding:24px 24px 80px}
+    .admin-switcher{display:flex;gap:6px;margin-bottom:24px;font-size:13px}
+    .admin-switcher a{color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:8px}
+    .admin-switcher a.active{background:#2f7dff20;color:#7fb1ff;font-weight:700}
     .admin-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
     .admin-header h1{font-size:24px;margin:0 0 8px;display:flex;align-items:center;gap:10px}
     .admin-header p{color:var(--muted);margin:0;font-size:13px}
@@ -32,57 +35,35 @@
     #editPlanMsg.ok{color:#6ff0bd}
     #editPlanMsg.err{color:#ff9caf}
     @media(max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+    #enterDashboardBtn{background:#2f7dff;border:none;border-radius:10px;color:#fff;font-weight:700;padding:11px 18px;font-size:14px;cursor:pointer}
+    #enterDashboardBtn:disabled{opacity:.6;cursor:default}
   </style>
 </head>
 <body>
   <div class="admin-wrap">
+    <div class="admin-switcher">
+      <a href="admin.html">🛠 Painel StayFlow</a>
+      <a href="admin-list.html?kind=lodging" id="navHospedagens">🏨 Hospedagens</a>
+      <a href="admin-list.html?kind=agency" id="navAgencias">✈️ Agências</a>
+    </div>
+
     <div class="admin-header">
       <div>
         <h1 id="hostelTitle">—</h1>
         <p id="hostelSub">Carregando...</p>
       </div>
-      <a href="admin.html" style="color:var(--muted);font-size:13px;text-decoration:none">← Voltar pro painel</a>
+      <div style="display:flex;align-items:center;gap:14px">
+        <button type="button" id="enterDashboardBtn" onclick="enterDashboard()">🔑 Entrar no dashboard</button>
+        <a href="admin.html" style="color:var(--muted);font-size:13px;text-decoration:none">← Voltar pro painel</a>
+      </div>
     </div>
 
     <div id="adminLoading">Carregando...</div>
     <div id="adminError">Não foi possível carregar o perfil dessa hospedagem.</div>
 
     <div id="adminContent">
-      <div class="admin-section-title">Operação</div>
-      <div class="stat-grid">
-        <div class="card stat-card">
-          <div class="big" id="statRooms">—</div>
-          <div class="label">Quartos</div>
-        </div>
-        <div class="card stat-card">
-          <div class="big" id="statBeds">—</div>
-          <div class="label" id="statBedsLabel">Camas ocupadas</div>
-        </div>
-        <div class="card stat-card">
-          <div class="big" id="statSeats">—</div>
-          <div class="label">Equipe (assentos)</div>
-        </div>
-        <div class="card stat-card">
-          <div class="big" id="statGuests">—</div>
-          <div class="label">Hóspedes cadastrados</div>
-        </div>
-        <div class="card stat-card">
-          <div class="big" id="statReservations">—</div>
-          <div class="label">Reservas confirmadas</div>
-        </div>
-        <div class="card stat-card">
-          <div class="big" id="statMessages">—</div>
-          <div class="label">Mensagens recebidas</div>
-        </div>
-        <div class="card stat-card">
-          <div class="big" id="statOpportunities">—</div>
-          <div class="label">Oportunidades abertas</div>
-        </div>
-        <div class="card stat-card">
-          <div class="big" id="statOccupancy">—</div>
-          <div class="label">Ocupação</div>
-        </div>
-      </div>
+      <div class="admin-section-title" id="operacaoTitle">Operação</div>
+      <div class="stat-grid" id="operacaoGrid"></div>
 
       <div class="admin-section-title">Financeiro</div>
       <div class="stat-grid">
@@ -162,6 +143,84 @@
       return limit === null || limit === undefined ? `${used}` : `${used}/${limit}`;
     }
 
+    function statCard(id, label){
+      return `<div class="card stat-card"><div class="big" id="${id}">—</div><div class="label">${label}</div></div>`;
+    }
+
+    function renderOperacao(accountKind, op){
+      const grid = document.getElementById("operacaoGrid");
+      document.getElementById("operacaoTitle").textContent = accountKind === "agency" ? "Operação · Portfólio" : "Operação";
+
+      if(accountKind === "agency"){
+        grid.innerHTML = statCard("statItemsTotal", "Itens no portfólio")
+          + statCard("statItemsActive", "Itens ativos")
+          + statCard("statSeats", "Equipe (assentos)")
+          + statCard("statMessages", "Mensagens recebidas")
+          + statCard("statOpportunities", "Oportunidades abertas");
+
+        document.getElementById("statItemsTotal").textContent = String(op.items_total);
+        document.getElementById("statItemsActive").textContent = String(op.items_active);
+        document.getElementById("statSeats").textContent = limitLabel(op.seats_used, op.seat_limit);
+        document.getElementById("statMessages").textContent = String(op.messages);
+        document.getElementById("statOpportunities").textContent = String(op.opportunities);
+
+        if(op.by_category && op.by_category.length){
+          const catLine = document.createElement("div");
+          catLine.className = "admin-note";
+          catLine.style.gridColumn = "1 / -1";
+          catLine.textContent = "Por categoria: " + op.by_category.map(c => `${c.label} (${c.count})`).join(" · ");
+          grid.appendChild(catLine);
+        }
+        return;
+      }
+
+      grid.innerHTML = statCard("statRooms", "Quartos")
+        + statCard("statBeds", "Camas ocupadas")
+        + statCard("statSeats", "Equipe (assentos)")
+        + statCard("statGuests", "Hóspedes cadastrados")
+        + statCard("statReservations", "Reservas confirmadas")
+        + statCard("statMessages", "Mensagens recebidas")
+        + statCard("statOpportunities", "Oportunidades abertas")
+        + statCard("statOccupancy", "Ocupação");
+
+      document.getElementById("statRooms").textContent = limitLabel(op.rooms_used, op.room_limit);
+      document.getElementById("statBeds").textContent = `${op.beds_occupied}/${op.beds_total}`;
+      document.getElementById("statSeats").textContent = limitLabel(op.seats_used, op.seat_limit);
+      document.getElementById("statGuests").textContent = String(op.guests);
+      document.getElementById("statReservations").textContent = String(op.reservations);
+      document.getElementById("statMessages").textContent = String(op.messages);
+      document.getElementById("statOpportunities").textContent = String(op.opportunities);
+      document.getElementById("statOccupancy").textContent = `${op.occupancy_pct}%`;
+    }
+
+    window.enterDashboard = async function(){
+      const btn = document.getElementById("enterDashboardBtn");
+      const params = new URLSearchParams(window.location.search);
+      const hostelId = Number(params.get("id"));
+      btn.disabled = true;
+      btn.textContent = "Entrando...";
+      try{
+        const res = await fetch("/stayflow-admin/impersonate", {
+          method: "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hostel_id: hostelId }),
+        });
+        const d = await res.json();
+        if(!res.ok || !d.success){
+          alert(d.message || "Não foi possível entrar no dashboard.");
+          btn.disabled = false;
+          btn.textContent = "🔑 Entrar no dashboard";
+          return;
+        }
+        window.location.href = "/app";
+      }catch(e){
+        console.error(e);
+        alert("Erro de conexão.");
+        btn.disabled = false;
+        btn.textContent = "🔑 Entrar no dashboard";
+      }
+    };
+
     (async () => {
       const params = new URLSearchParams(window.location.search);
       const hostelId = params.get("id");
@@ -188,20 +247,15 @@
           : "";
 
         document.getElementById("hostelTitle").innerHTML = `${d.hostel_name} <span class="status-pill ${pillClass}">${statusLabel.toUpperCase()}</span>`;
-        document.getElementById("hostelSub").textContent = `${planLabel(d.plan_name)}${trialText} · ${d.hostel_email || "sem e-mail"}${d.hostel_phone ? " · " + d.hostel_phone : ""}`;
+        const kindTag = d.account_kind === "agency" ? ` · ✈️ Agência (${d.agency_category_label || d.agency_category || "—"})` : "";
+        document.getElementById("hostelSub").textContent = `${planLabel(d.plan_name)}${trialText}${kindTag} · ${d.hostel_email || "sem e-mail"}${d.hostel_phone ? " · " + d.hostel_phone : ""}`;
+
+        document.getElementById(d.account_kind === "agency" ? "navAgencias" : "navHospedagens").classList.add("active");
 
         if(d.plan_name) document.getElementById("planSelect").value = d.plan_name;
         if(d.status) document.getElementById("statusSelect").value = d.status;
 
-        const op = d.operacao;
-        document.getElementById("statRooms").textContent = limitLabel(op.rooms_used, op.room_limit);
-        document.getElementById("statBeds").textContent = `${op.beds_occupied}/${op.beds_total}`;
-        document.getElementById("statSeats").textContent = limitLabel(op.seats_used, op.seat_limit);
-        document.getElementById("statGuests").textContent = String(op.guests);
-        document.getElementById("statReservations").textContent = String(op.reservations);
-        document.getElementById("statMessages").textContent = String(op.messages);
-        document.getElementById("statOpportunities").textContent = String(op.opportunities);
-        document.getElementById("statOccupancy").textContent = `${op.occupancy_pct}%`;
+        renderOperacao(d.account_kind, d.operacao);
 
         const fin = d.financeiro;
         document.getElementById("statMrr").textContent = formatMoney(d.estimated_mrr, "USD");

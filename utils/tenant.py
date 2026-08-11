@@ -9,6 +9,20 @@ propósito, porque quem está chamando não é necessariamente membro
 daquele hostel. A proteção real ali é o allowlist de e-mail admin, não
 a sessão do hostel.
 
+Segunda exceção deliberada: sessões "em visita" (impersonation, ver
+is_impersonating abaixo) - quando um admin StayFlow entra no dashboard
+de uma conta via POST /stayflow-admin/impersonate, o hostel_id da
+PRÓPRIA sessão dele é reapontado pra conta visitada (nenhuma linha de
+hostel_memberships é criada em lugar nenhum). Como a checagem de
+permissão normal (get_effective_permissions) depende de existir essa
+membership, uma sessão em visita não passaria por ela - por isso
+require_permission/require_plan_feature/get_current_user checam
+is_impersonating() primeiro e liberam acesso equivalente a um Admin
+quando true. A proteção real continua sendo o allowlist de e-mail
+checado no momento de ENTRAR em visita (require_stayflow_admin, na
+rota /impersonate) - depois disso a sessão em si já carrega essa
+autorização.
+
 Regra de ouro: o hostel_id de uma requisição NUNCA vem do cliente
 (nem de query params, nem de JSON body, nem de header). Ele sempre
 vem da sessão de servidor, criada no login (routes/auth.py) e
@@ -21,6 +35,8 @@ Hostel B.
 
 from functools import wraps
 from flask import session, jsonify, g
+
+from utils.permissions import ALL_PERMISSIONS
 
 
 def _current_session_data():
@@ -65,6 +81,18 @@ def get_current_session_id():
     return session.get("session_id")
 
 
+def is_impersonating():
+    """True se a sessao atual esta "em visita" (admin StayFlow dentro do dashboard de outra conta) - ver nota no topo do arquivo."""
+    data = _current_session_data()
+    return bool(data and data.get("impersonating_from_hostel_id"))
+
+
+def get_impersonation_origin_hostel_id():
+    """hostel_id ORIGINAL guardado pra sessao em visita, ou None se a sessao nao esta visitando nada."""
+    data = _current_session_data()
+    return data.get("impersonating_from_hostel_id") if data else None
+
+
 def get_current_user():
     """
     Retorna um dict com os dados da pessoa logada e do hostel atual,
@@ -81,9 +109,20 @@ def get_current_user():
     from database import get_user_by_id, get_membership
 
     user = get_user_by_id(user_id)
-    membership = get_membership(user_id, hostel_id)
+    if not user:
+        return None
 
-    if not user or not membership:
+    if is_impersonating():
+        return {
+            "id": user["id"],
+            "hostel_id": hostel_id,
+            "role": "Visitante StayFlow",
+            "name": user["name"],
+            "email": user["email"],
+        }
+
+    membership = get_membership(user_id, hostel_id)
+    if not membership:
         return None
 
     return {
@@ -150,8 +189,11 @@ def require_permission(permission_key):
                     "message": "Not authenticated."
                 }), 401
 
-            from database import get_effective_permissions
-            permissions = get_effective_permissions(user_id, hostel_id)
+            if is_impersonating():
+                permissions = ALL_PERMISSIONS
+            else:
+                from database import get_effective_permissions
+                permissions = get_effective_permissions(user_id, hostel_id)
 
             if permission_key not in permissions:
                 return jsonify({
@@ -234,6 +276,9 @@ def require_plan_feature(feature_key):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(hostel_id, *args, **kwargs):
+            if is_impersonating():
+                return view_func(hostel_id, *args, **kwargs)
+
             from database import hostel_has_plan_feature
 
             if not hostel_has_plan_feature(hostel_id, feature_key):

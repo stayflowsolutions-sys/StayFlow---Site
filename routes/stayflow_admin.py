@@ -28,11 +28,24 @@ from database import (
     count_active_seats,
     get_partner_referral_ledger_summary,
     mark_partner_referral_paid_out,
+    list_portfolio_items,
+    AGENCY_CATEGORY_LABELS,
+    set_session_impersonation,
+    log_impersonation_start,
+    log_impersonation_end,
     PLAN_PRICES,
     PLAN_ROOM_LIMITS,
     PLAN_SEAT_LIMITS,
 )
-from utils.tenant import require_stayflow_admin
+from utils.tenant import (
+    require_stayflow_admin,
+    require_auth,
+    get_current_session_id,
+    get_current_user_id,
+    get_current_hostel_id,
+    is_impersonating,
+    get_impersonation_origin_hostel_id,
+)
 
 stayflow_admin_bp = Blueprint("stayflow_admin", __name__)
 
@@ -48,7 +61,14 @@ def _trial_days_left(status, trial_ends_at):
 @stayflow_admin_bp.route("/stayflow-admin/overview", methods=["GET"])
 @require_stayflow_admin
 def overview():
-    rows = get_stayflow_admin_overview()
+    # ?kind=agency|lodging filtra pra uma das duas listagens dedicadas
+    # (admin-list.html) - sem filtro, traz tudo (usado pelos cards de
+    # resumo financeiro em admin.html).
+    kind = request.args.get("kind")
+    if kind not in (None, "agency", "lodging"):
+        return jsonify({"success": False, "message": "kind inválido."}), 400
+
+    rows = get_stayflow_admin_overview(account_kind=kind)
 
     hostels = []
     for row in rows:
@@ -56,6 +76,7 @@ def overview():
         hostels.append({
             "hostel_id": row["hostel_id"],
             "hostel_name": row["hostel_name"],
+            "account_kind": row["account_kind"],
             "plan_name": plan_name,
             "status": row["status"],
             "trial_days_left": _trial_days_left(row["status"], row["trial_ends_at"]),
@@ -116,18 +137,28 @@ def hostel_profile(hostel_id):
     seat_base_limit = PLAN_SEAT_LIMITS.get(plan_name)
     seat_limit = None if seat_base_limit is None else seat_base_limit + (billing["extra_seats"] or 0)
 
-    return jsonify({
-        "success": True,
-        "hostel_id": hostel_id,
-        "hostel_name": hostel["name"],
-        "hostel_email": hostel["email"],
-        "hostel_phone": hostel["phone"],
-        "plan_name": plan_name,
-        "status": billing["status"],
-        "trial_days_left": _trial_days_left(billing["status"], billing["trial_ends_at"]),
-        "estimated_mrr": PLAN_PRICES.get(plan_name, 0) if plan_name else 0,
-        "currency": get_hostel_currency(hostel_id),
-        "operacao": {
+    is_agency = hostel["account_kind"] == "agency"
+    if is_agency:
+        # Rooms/beds/occupancy nao fazem sentido pra agencia - troca o
+        # bloco "operacao" por estatisticas de portfolio.
+        items = list_portfolio_items(hostel_id, include_inactive=True)
+        by_category = {}
+        for item in items:
+            by_category[item["category"]] = by_category.get(item["category"], 0) + 1
+        operacao = {
+            "items_total": len(items),
+            "items_active": sum(1 for i in items if i["active"]),
+            "by_category": [
+                {"category": cat, "label": AGENCY_CATEGORY_LABELS.get(cat, cat), "count": count}
+                for cat, count in by_category.items()
+            ],
+            "seats_used": count_active_seats(hostel_id),
+            "seat_limit": seat_limit,
+            "messages": stats["messages"],
+            "opportunities": stats["opportunities"],
+        }
+    else:
+        operacao = {
             "rooms_used": count_rooms(hostel_id),
             "room_limit": room_limit,
             "beds_total": stats["beds_total"],
@@ -139,7 +170,23 @@ def hostel_profile(hostel_id):
             "reservations": stats["reservations"],
             "messages": stats["messages"],
             "opportunities": stats["opportunities"],
-        },
+        }
+
+    return jsonify({
+        "success": True,
+        "hostel_id": hostel_id,
+        "hostel_name": hostel["name"],
+        "hostel_email": hostel["email"],
+        "hostel_phone": hostel["phone"],
+        "account_kind": hostel["account_kind"],
+        "agency_category": hostel.get("agency_category"),
+        "agency_category_label": AGENCY_CATEGORY_LABELS.get(hostel.get("agency_category")),
+        "plan_name": plan_name,
+        "status": billing["status"],
+        "trial_days_left": _trial_days_left(billing["status"], billing["trial_ends_at"]),
+        "estimated_mrr": PLAN_PRICES.get(plan_name, 0) if plan_name else 0,
+        "currency": get_hostel_currency(hostel_id),
+        "operacao": operacao,
         "financeiro": {
             "revenue": stats["revenue"],
             "guest_payment_volume": guest_payment_volume,
@@ -168,6 +215,69 @@ def partner_ledger():
     } for row in rows]
 
     return jsonify({"success": True, "balances": balances})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/impersonate", methods=["POST"])
+@require_stayflow_admin
+def impersonate():
+    """
+    "Entra" no dashboard de verdade de uma hospedagem/agencia sem ser
+    membro real dela - reaponta o hostel_id da PROPRIA sessao do admin
+    pra conta alvo (update_session_hostel, ja existe) e guarda o
+    hostel_id original em impersonating_from_hostel_id (o "endereco de
+    volta"). require_permission/require_plan_feature/get_current_user
+    (utils/tenant.py) liberam acesso completo quando is_impersonating()
+    - nenhuma hostel_memberships e criada em lugar nenhum.
+    """
+    data = request.get_json() or {}
+    target_hostel_id = data.get("hostel_id")
+
+    if not target_hostel_id:
+        return jsonify({"success": False, "message": "hostel_id é obrigatório."}), 400
+
+    target = get_hostel(target_hostel_id)
+    if not target:
+        return jsonify({"success": False, "message": "Conta não encontrada."}), 404
+
+    session_id = get_current_session_id()
+    user_id = get_current_user_id()
+
+    # Visita encadeada: se ja esta visitando outra conta, mantem o
+    # endereco de volta ORIGINAL (nunca sobrescreve com o hostel que
+    # estava sendo visitado ate agora) - senao "sair" levaria pra uma
+    # conta visitada anterior, nao pro hostel de verdade do admin.
+    origin_hostel_id = get_impersonation_origin_hostel_id() or get_current_hostel_id()
+
+    from database import update_session_hostel
+    set_session_impersonation(session_id, origin_hostel_id)
+    update_session_hostel(session_id, target_hostel_id)
+    log_impersonation_start(user_id, target_hostel_id)
+
+    return jsonify({"success": True})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/stop-impersonating", methods=["POST"])
+@require_auth
+def stop_impersonating(hostel_id):
+    """
+    Sai da visita - so faz sentido se a sessao realmente esta visitando
+    (protecao real e a propria coluna impersonating_from_hostel_id
+    estar preenchida, nao um allowlist de e-mail aqui: so uma sessao
+    que passou por /impersonate teria esse campo setado).
+    """
+    origin_hostel_id = get_impersonation_origin_hostel_id()
+    if not origin_hostel_id:
+        return jsonify({"success": False, "message": "Esta sessão não está em visita."}), 400
+
+    session_id = get_current_session_id()
+    user_id = get_current_user_id()
+
+    from database import update_session_hostel
+    log_impersonation_end(user_id, hostel_id)
+    update_session_hostel(session_id, origin_hostel_id)
+    set_session_impersonation(session_id, None)
+
+    return jsonify({"success": True})
 
 
 @stayflow_admin_bp.route("/stayflow-admin/partner-ledger/payout", methods=["POST"])

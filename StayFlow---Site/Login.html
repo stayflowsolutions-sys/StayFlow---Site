@@ -97,8 +97,10 @@
     function finishLogin(data){
       // Guarda o usuario no localStorage (simples) para uso no front
       localStorage.setItem("stayflow_user", JSON.stringify(data.user));
-      // Redireciona para o dashboard servido pelo Flask
-      window.location.href = "/app";
+      // Login do dono da StayFlow (e-mail na allowlist) cai numa tela
+      // de boas-vindas com atalhos (Agencias/Hospedagens/Painel),
+      // nao direto no dashboard de um hostel especifico.
+      window.location.href = data.is_stayflow_admin ? "stayflow-hub.html" : "/app";
     }
 
     let pendingTwoFactorToken = null;
