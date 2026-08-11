@@ -21,6 +21,7 @@ from database import (
     get_active_vehicle_for_guest,
     request_valet,
     notify_on_duty_staff_for_ticket,
+    list_portfolio_items,
 )
 
 load_dotenv()
@@ -224,6 +225,106 @@ anything.
 
 Never invent prices or availability — always check with the tools above.
 """
+
+# Prompt separado pra conta de agencia parceira (turismo/aluguel de
+# carro/bike/equipamento) - o SYSTEM_PROMPT acima e inteiro construido
+# em torno de reserva de quarto/check-in fisico (quartos, camas,
+# cadastro legal de hospede com foto de documento), que nao existe pra
+# uma agencia. Reaproveitar aquele prompt pra agencia faria a IA se
+# apresentar como "hospitality property" e tentar pedir foto de
+# passaporte de um cliente que so quer saber o preco de um passeio -
+# por isso um prompt e um conjunto de ferramentas proprios, no mesmo
+# tom/estilo do de hospedagem, mas girando em torno do portfolio da
+# agencia (ver AGENCY_TOOLS) em vez de quartos.
+AGENCY_SYSTEM_PROMPT = """
+Today's date is {today_date}. Use this as your reference for anything
+relative ("tomorrow", "next week", "in 3 days", etc.) — always convert
+relative dates to actual YYYY-MM-DD dates based on it, never guess.
+
+LANGUAGE — IMPORTANT, DO NOT SWITCH MID-CONVERSATION:
+{language_instruction}
+
+You are the virtual assistant of {hostel_name}, an agency specializing in
+{agency_category_label}.
+
+You are a warm, attentive salesperson — not a form to fill out. Friendly
+and enthusiastic about what {hostel_name} offers, but always personable,
+never robotic.
+Write like a real person texting on WhatsApp: short messages, natural tone,
+occasional light warmth (an emoji here and there is fine, don't overdo it).
+Vary your sentence structure. Never repeat the same phrasing pattern over
+and over — that's what makes you sound robotic. Mix statements, short
+reactions, and questions naturally like a human would.
+
+{alt_channel_instruction}
+
+Your goal:
+Help customers discover what {hostel_name} offers and gather their interest
+through natural conversation, not a rigid interrogation.
+
+Information you're gathering, in a natural order (not a strict script):
+- preferred language
+- what they're interested in (see OFFERINGS below)
+- relevant details for that interest (dates/timeframe, number of people,
+  etc. — only ask what's actually relevant to what they picked, don't
+  force every question on every customer)
+- contact number (see below — usually already known)
+- customer's name
+
+OFFERINGS — IMPORTANT:
+Never invent an item, price, or description. As soon as the customer asks
+what you offer, or about prices, call get_offerings to see the real items
+this business actually has listed (name, description, category, price).
+Quote the real price exactly as returned. NEVER rescale or reformat the
+number — if price is 20000, say "20.000" (or "20000"), never "200". Don't
+guess a currency symbol either; just state the plain number, since the
+business's actual currency isn't ARS/BRL/USD-labeled in the data — unless
+the customer tells you their currency. If an item has no fixed price
+(price_type is "variable"), tell the customer the exact value will be
+confirmed by the team — never guess a number for it.
+If get_offerings comes back empty, tell the customer nothing is listed
+yet and that the team will follow up directly to help them.
+
+WHEN THE CUSTOMER IS INTERESTED — IMPORTANT:
+You do not close the sale or take payment yourself. Once the customer has
+picked something and you have their name and contact number, tell them
+warmly that the team will follow up shortly to confirm details,
+availability and payment — never say it's 100% confirmed yet, and never
+invent an ETA you don't actually have.
+
+CONTACT NUMBER — IMPORTANT:
+{phone_instruction}
+
+CUSTOMER NAME — IMPORTANT:
+{name_instruction}
+
+WHEN YOU'RE DONE:
+Once you've naturally covered what the customer is interested in and have
+their contact info, close the conversation warmly and clearly (thank them,
+say the team will follow up shortly). Do NOT restart the flow, do NOT ask
+again for information you've already collected, and do NOT ask the
+language question again once it's already been answered — check the
+conversation so far before asking anything.
+
+Never invent prices or offerings — always check with get_offerings.
+"""
+
+GET_OFFERINGS_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "get_offerings",
+        "description": (
+            "Returns this business's real portfolio of tours/rentals/services, "
+            "with name, description, category and price (or price_type "
+            "'variable' when there's no fixed price yet, only 'fixed' has a "
+            "usable price). Always call this before quoting a price or "
+            "describing what's offered to a customer — never invent an item."
+        ),
+        "parameters": {"type": "object", "properties": {}}
+    }
+}
+
+AGENCY_TOOLS = [GET_OFFERINGS_TOOL]
 
 SAVE_GUEST_LANGUAGE_TOOL = {
     "type": "function",
@@ -576,7 +677,7 @@ OPERATIONAL_TOOLS = [
 MAX_TOOL_ROUNDS = 4
 
 
-def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None, hostel_name=None, hostel_type=None):
+def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None, hostel_name=None, hostel_type=None, account_kind="lodging", agency_category=None):
     # So sugere o WhatsApp como canal alternativo quando a conversa NAO
     # e no proprio WhatsApp (nao faz sentido sugerir o hospede ir pro
     # canal em que ja esta) e o hostel realmente tem um numero
@@ -655,28 +756,56 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             "for the rest of the conversation, never switching on your own."
         )
 
-    # hostel_type e um campo livre (Configuracoes > Empresa aceita "+ Novo
-    # tipo..."), entao so usamos os rotulos conhecidos pra deixar o texto
-    # natural em ingles ("a hostel", "a hotel") - qualquer tipo customizado
-    # cai no generico "hospitality property", que ainda funciona bem na frase.
-    _HOSTEL_TYPE_LABELS = {
-        "hostel": "hostel",
-        "hotel": "hotel",
-        "pousada": "guesthouse",
-        "resort": "resort",
-        "flat": "serviced apartment",
-    }
-    hostel_type_label = _HOSTEL_TYPE_LABELS.get((hostel_type or "").strip().lower(), "hospitality property")
+    is_agency = account_kind == "agency"
 
-    system_prompt = SYSTEM_PROMPT.format(
-        phone_instruction=phone_instruction,
-        language_instruction=language_instruction,
-        name_instruction=name_instruction,
-        alt_channel_instruction=alt_channel_instruction,
-        today_date=datetime.date.today().isoformat(),
-        hostel_name=hostel_name or "the property",
-        hostel_type_label=hostel_type_label
-    )
+    if is_agency:
+        # agency_category vem de hostels.agency_category (lista fechada
+        # em database.py AGENCY_CATEGORIES) - rotulo em ingles pra
+        # manter o prompt inteiro no mesmo idioma (o modelo responde no
+        # idioma do hospede de qualquer forma, isso e so a instrucao
+        # interna). Fallback generico cobre categoria nao mapeada.
+        _AGENCY_CATEGORY_LABELS = {
+            "turismo": "tours and travel experiences",
+            "aluguel_carro": "car rentals",
+            "aluguel_bike": "bike rentals",
+            "aluguel_equipamentos": "equipment rentals",
+        }
+        agency_category_label = _AGENCY_CATEGORY_LABELS.get(
+            (agency_category or "").strip().lower(), "travel and rental services"
+        )
+
+        system_prompt = AGENCY_SYSTEM_PROMPT.format(
+            phone_instruction=phone_instruction,
+            language_instruction=language_instruction,
+            name_instruction=name_instruction,
+            alt_channel_instruction=alt_channel_instruction,
+            today_date=datetime.date.today().isoformat(),
+            hostel_name=hostel_name or "the business",
+            agency_category_label=agency_category_label,
+        )
+    else:
+        # hostel_type e um campo livre (Configuracoes > Empresa aceita "+ Novo
+        # tipo..."), entao so usamos os rotulos conhecidos pra deixar o texto
+        # natural em ingles ("a hostel", "a hotel") - qualquer tipo customizado
+        # cai no generico "hospitality property", que ainda funciona bem na frase.
+        _HOSTEL_TYPE_LABELS = {
+            "hostel": "hostel",
+            "hotel": "hotel",
+            "pousada": "guesthouse",
+            "resort": "resort",
+            "flat": "serviced apartment",
+        }
+        hostel_type_label = _HOSTEL_TYPE_LABELS.get((hostel_type or "").strip().lower(), "hospitality property")
+
+        system_prompt = SYSTEM_PROMPT.format(
+            phone_instruction=phone_instruction,
+            language_instruction=language_instruction,
+            name_instruction=name_instruction,
+            alt_channel_instruction=alt_channel_instruction,
+            today_date=datetime.date.today().isoformat(),
+            hostel_name=hostel_name or "the property",
+            hostel_type_label=hostel_type_label
+        )
 
     messages = (
         [{"role": "system", "content": system_prompt}]
@@ -684,14 +813,18 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
         + [{"role": "user", "content": message}]
     )
 
-    # As ferramentas de reserva/preco/cama precisam de hostel_id+guest_id
-    # reais pra saber de qual hospede/hostel se trata - sem isso (ex:
-    # endpoint de teste manual sem hostel_id), elas nem aparecem pro
-    # modelo. guest_id (nao guest_phone) porque funciona pra qualquer
-    # canal - Messenger/Instagram nunca tem guest_phone de verdade, mas
-    # sempre tem guest_id resolvido pelo chamador.
+    # As ferramentas de reserva/preco/cama (hospedagem) ou de portfolio
+    # (agencia) precisam de um hostel_id real pra saber de qual conta se
+    # trata - sem isso (ex: endpoint de teste manual sem hostel_id),
+    # elas nem aparecem pro modelo. guest_id (nao guest_phone) porque
+    # funciona pra qualquer canal - Messenger/Instagram nunca tem
+    # guest_phone de verdade, mas sempre tem guest_id resolvido pelo
+    # chamador.
     tools = [SAVE_GUEST_NAME_TOOL, SAVE_GUEST_LANGUAGE_TOOL]
-    if hostel_id and guest_id:
+    if is_agency:
+        if hostel_id:
+            tools = tools + AGENCY_TOOLS
+    elif hostel_id and guest_id:
         tools = tools + RESERVATION_TOOLS + OPERATIONAL_TOOLS
 
     extracted_name = None
@@ -774,6 +907,19 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
                     tool_content = json.dumps(result, ensure_ascii=False)
                 except Exception as error:
                     tool_content = json.dumps({"error": "Erro ao buscar extras."}, ensure_ascii=False)
+            elif name == "get_offerings":
+                try:
+                    items = list_portfolio_items(hostel_id, include_inactive=False)
+                    result = [{
+                        "name": item["name"],
+                        "description": item["description"],
+                        "category": item["category"],
+                        "price_type": item["price_type"],
+                        "price": item["price"],
+                    } for item in items]
+                    tool_content = json.dumps(result, ensure_ascii=False)
+                except Exception as error:
+                    tool_content = json.dumps({"error": "Erro ao buscar portfólio."}, ensure_ascii=False)
             elif name == "create_reservation":
                 try:
                     result = create_reservation_from_chat(

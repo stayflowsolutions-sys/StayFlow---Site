@@ -78,7 +78,14 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     # da mesma conversa como uma "oportunidade" separada.
     history = get_history(hostel_id, memory_key)
 
-    opportunity = analyze_message(hostel_id, guest_id, text, history=history) if is_opportunity_generation_enabled(hostel_id) else None
+    # hostel_record buscado aqui (nao mais la embaixo) pra account_kind
+    # ja estar disponivel tanto pra analise de oportunidade quanto pra
+    # IA de atendimento - agencia parceira tem prompt/framing proprios
+    # nos dois casos (ver ai_service.py e decision_engine.py).
+    hostel_record = get_hostel(hostel_id) or {}
+    account_kind = hostel_record.get("account_kind", "lodging")
+
+    opportunity = analyze_message(hostel_id, guest_id, text, history=history, account_kind=account_kind) if is_opportunity_generation_enabled(hostel_id) else None
 
     # Notificacao push de mensagem nova - tipo separado da oportunidade
     # (analyze_message acima so notifica em oportunidade NOVA de alta
@@ -140,14 +147,15 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     guest_phone = external_id if channel == "whatsapp" and external_id != "unknown" else None
     guest_language = get_guest_language_by_id(guest_id)
     known_guest_name = get_guest_name_by_id(guest_id)
-    hostel_record = get_hostel(hostel_id) or {}
     hostel_phone = hostel_record.get("phone")
     hostel_name = hostel_record.get("name")
     hostel_type = get_hostel_type(hostel_id)
+    agency_category = hostel_record.get("agency_category")
     answer, guest_name, guest_language_detected = ask_ai(
         history, text, guest_phone=guest_phone, hostel_id=hostel_id,
         guest_language=guest_language, guest_id=guest_id, guest_name=known_guest_name,
-        channel=channel, hostel_phone=hostel_phone, hostel_name=hostel_name, hostel_type=hostel_type
+        channel=channel, hostel_phone=hostel_phone, hostel_name=hostel_name, hostel_type=hostel_type,
+        account_kind=account_kind, agency_category=agency_category,
     )
 
     if guest_name:

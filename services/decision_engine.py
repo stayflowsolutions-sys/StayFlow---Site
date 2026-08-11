@@ -59,7 +59,7 @@ def fallback_analysis(message):
     }
 
 
-def analyze_with_ai(message, history=None):
+def analyze_with_ai(message, history=None, account_kind="lodging"):
     # Analisa a CONVERSA (ultimas mensagens reais, se houver), nao so a
     # mensagem isolada que acabou de chegar - uma mensagem curta tipo
     # "sim" ou "pode ser dia 20" so faz sentido junto do que veio antes.
@@ -74,11 +74,17 @@ def analyze_with_ai(message, history=None):
             lines.append(f"{speaker}: {item.get('content', '')}")
         conversation_block = "Conversa ate agora (mais antiga primeiro):\n" + "\n".join(lines) + "\n\n"
 
+    business_context = (
+        "a tour/rental agency and its customer"
+        if account_kind == "agency"
+        else "a hostel/hotel and its guest"
+    )
     prompt = f"""
-Analyze this hostel guest conversation and return ONLY valid JSON.
-Judge the opportunity based on the CONVERSATION AS A WHOLE, not just
-the single latest message in isolation - a short reply like "sim" or
-"pode ser dia 20" only makes sense together with what came before.
+Analyze this conversation between {business_context}, and return ONLY
+valid JSON. Judge the opportunity based on the CONVERSATION AS A WHOLE,
+not just the single latest message in isolation - a short reply like
+"sim" or "pode ser dia 20" only makes sense together with what came
+before.
 
 {conversation_block}Latest message just received:
 {message}
@@ -97,12 +103,13 @@ Rules:
 - intent must be one of: booking, tour, upsell, human_help, follow_up, general
 - score must be a number from 0 to 100
 - urgency must be one of: low, medium, high
-- set urgency to "high" whenever the guest shows frustration or
-  dissatisfaction, reports a problem/complaint about the stay (room,
-  cleanliness, staff, noise, etc.), or asks something you are not
-  confident you can resolve on your own - even when intent is
-  "general" (this is what triggers a real-time alert to the team, so
-  it must not be missed)
+- set urgency to "high" whenever the guest/customer shows frustration or
+  dissatisfaction, reports a problem/complaint about the service they
+  received (for a stay: room, cleanliness, staff, noise, etc.; for a
+  tour/rental: the vehicle/equipment/guide not showing up or not as
+  described, etc.), or asks something you are not confident you can
+  resolve on your own - even when intent is "general" (this is what
+  triggers a real-time alert to the team, so it must not be missed)
 - estimated_value must be a number
 - description must be in Portuguese
 - next_action must be in Portuguese
@@ -137,7 +144,7 @@ Rules:
         return fallback_analysis(message)
 
 
-def analyze_message(hostel_id, guest_id, message, history=None):
+def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lodging"):
     """
     guest_id vem ja resolvido pelo chamador (routes/chat.py, via
     get_or_create_guest_by_channel) - antes essa funcao recebia
@@ -149,7 +156,7 @@ def analyze_message(hostel_id, guest_id, message, history=None):
     if _is_filler_message(message):
         return None
 
-    analysis = analyze_with_ai(message, history=history)
+    analysis = analyze_with_ai(message, history=history, account_kind=account_kind)
 
     if analysis.get("intent") == "general":
         # "general" nunca vira oportunidade (nao e venda/reserva), mas
