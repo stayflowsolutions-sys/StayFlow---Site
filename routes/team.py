@@ -143,15 +143,15 @@ def invite_team_member(hostel_id):
 def import_team_route(hostel_id):
     """
     Convida varias pessoas de uma vez a partir de uma planilha ja
-    parseada no frontend (lista de {name, email, role_name}). Diferente
-    de quartos/hospedes, funcao NUNCA e criada automaticamente aqui -
-    funcao carrega um conjunto de permissoes de seguranca real, entao
-    uma linha citando uma funcao que ainda nao existe e reportada como
-    erro (a pessoa cria a funcao primeiro em Equipe, com as permissoes
-    que ela quer, e so entao reimporta) em vez de inventar permissoes.
-    Mesma senha temporaria de uso unico do convite manual
-    (/team/invite) - devolvida pra quem importou repassar pra cada
-    pessoa, nunca mostrada de novo depois.
+    parseada no frontend (lista de {name, email, role_name}). Funcao
+    citada que ainda nao existe e criada na hora, mas SEM NENHUMA
+    permissao (comeca fechada, nao aberta) - ninguem fica de fora da
+    importacao esperando alguem criar a funcao primeiro, e delegar o
+    acesso de verdade depois e so uma edicao normal em Equipe > Funcoes,
+    sem precisar reimportar nada. Varias linhas citando a mesma funcao
+    nova reusam a MESMA funcao (nao duplica). Mesma senha temporaria de
+    uso unico do convite manual (/team/invite) - devolvida pra quem
+    importou repassar pra cada pessoa, nunca mostrada de novo depois.
     """
     data = request.get_json() or {}
     rows = data.get("rows", [])
@@ -163,6 +163,7 @@ def import_team_route(hostel_id):
         return jsonify({"success": False, "message": limit_message}), 402
 
     roles_by_name = {r["name"].strip().lower(): r["id"] for r in get_roles(hostel_id)}
+    roles_created_empty = []
 
     invited = []
     errors = []
@@ -174,11 +175,19 @@ def import_team_route(hostel_id):
         if not name or not email:
             errors.append({"row": i + 1, "message": "Nome e email são obrigatórios."})
             continue
+        if not role_name:
+            errors.append({"row": i + 1, "message": "Função é obrigatória."})
+            continue
 
         role_id = roles_by_name.get(role_name.lower())
         if not role_id:
-            errors.append({"row": i + 1, "message": f"Função '{role_name}' não encontrada. Crie a função em Equipe primeiro."})
-            continue
+            try:
+                role_id = create_role(hostel_id, role_name, [])
+                roles_by_name[role_name.lower()] = role_id
+                roles_created_empty.append(role_name)
+            except ValueError as error:
+                errors.append({"row": i + 1, "message": str(error)})
+                continue
 
         temp_password = secrets.token_urlsafe(9)
         password_hash = hash_password(temp_password)
@@ -188,7 +197,7 @@ def import_team_route(hostel_id):
         except ValueError as error:
             errors.append({"row": i + 1, "message": str(error)})
 
-    return jsonify({"success": True, "invited": invited, "errors": errors}), 201
+    return jsonify({"success": True, "invited": invited, "errors": errors, "roles_created_empty": roles_created_empty}), 201
 
 
 @team_bp.route("/team/<int:membership_id>/role", methods=["PATCH"])
