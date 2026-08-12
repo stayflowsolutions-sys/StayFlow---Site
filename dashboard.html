@@ -3941,6 +3941,16 @@ async function deleteRoleConfirm(roleId){
       header: "hospede,telefone,quarto,checkin,checkout,valor,status,forma_pagamento",
       sample: "Joao Silva,5511999998888,Standard,2026-01-10,2026-01-15,445,confirmed,pix",
     },
+    team: {
+      filename: "modelo_equipe.csv",
+      header: "nome,email,funcao",
+      sample: "Maria Recepção,maria@hospedagem.com,Recepção",
+    },
+    portfolio: {
+      filename: "modelo_portfolio.csv",
+      header: "nome,descricao,categoria,tipo_preco,preco",
+      sample: "City Tour,Passeio de meio período pela cidade,turismo,fixed,45",
+    },
   };
 
   window.downloadImportTemplate = function(kind){
@@ -4028,19 +4038,48 @@ async function deleteRoleConfirm(roleId){
       status: ["status", "situacao", "situação"],
       payment_method: ["forma_pagamento", "payment_method", "pagamento"],
     },
+    team: {
+      name: ["nome", "name"],
+      email: ["email", "e-mail"],
+      role_name: ["funcao", "função", "role_name", "role", "cargo"],
+    },
+    portfolio: {
+      name: ["nome", "name"],
+      description: ["descricao", "descrição", "description"],
+      category: ["categoria", "category"],
+      price_type: ["tipo_preco", "tipo_preço", "price_type"],
+      price: ["preco", "preço", "price"],
+    },
+  };
+
+  // Valores digitados em portugues que o backend so aceita em ingles
+  // (enums fixos, ex: price_type de portfolio) - normaliza antes de
+  // mandar, pra planilha em portugues nao virar erro de linha.
+  const IMPORT_VALUE_NORMALIZERS = {
+    portfolio: {
+      price_type: (v) => {
+        const lower = (v || "").toLowerCase().trim();
+        if(["fixo", "fixed", "fixa"].includes(lower)) return "fixed";
+        if(["variavel", "variável", "variable", "a combinar"].includes(lower)) return "variable";
+        return v;
+      },
+    },
   };
 
   function mapImportRow(kind, rawRow){
     const aliases = IMPORT_FIELD_ALIASES[kind];
+    const normalizers = IMPORT_VALUE_NORMALIZERS[kind] || {};
     const mapped = {};
     Object.keys(aliases).forEach(field => {
       const key = aliases[field].find(a => rawRow[a] !== undefined && rawRow[a] !== "");
-      mapped[field] = key ? rawRow[key] : "";
+      let value = key ? rawRow[key] : "";
+      if(normalizers[field]) value = normalizers[field](value);
+      mapped[field] = value;
     });
     return mapped;
   }
 
-  const IMPORT_ID_PREFIXES = { rooms: "Rooms", guests: "Guests", reservations: "Reservations" };
+  const IMPORT_ID_PREFIXES = { rooms: "Rooms", guests: "Guests", reservations: "Reservations", team: "Team", portfolio: "Portfolio" };
   function importIdPrefix(kind){
     return IMPORT_ID_PREFIXES[kind];
   }
@@ -4086,14 +4125,15 @@ async function deleteRoleConfirm(roleId){
 
     const btnEl = document.getElementById(`import${importIdPrefix(kind)}Btn`);
     const previewEl = document.getElementById(`import${importIdPrefix(kind)}Preview`);
-    const IMPORT_IDLE_LABELS = { rooms: "Importar quartos", guests: "Importar hóspedes", reservations: "Importar reservas" };
+    const IMPORT_IDLE_LABELS = { rooms: "Importar quartos", guests: "Importar hóspedes", reservations: "Importar reservas", team: "Convidar equipe", portfolio: "Importar portfólio" };
+    const IMPORT_ENDPOINTS = { portfolio: "/portfolio/items/import" };
     const idleLabel = IMPORT_IDLE_LABELS[kind];
 
     btnEl.disabled = true;
     btnEl.textContent = "Importando...";
 
     try{
-      const res = await fetch(`/${kind}/import`, {
+      const res = await fetch(IMPORT_ENDPOINTS[kind] || `/${kind}/import`, {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
@@ -4108,20 +4148,37 @@ async function deleteRoleConfirm(roleId){
         return;
       }
 
-      const IMPORT_COUNT_LABELS = {
-        rooms: `${data.created} quarto(s) criado(s)`,
-        guests: `${data.processed} hóspede(s) importado(s)`,
-        reservations: `${data.created} reserva(s) criada(s)`,
-      };
       const errorsHtml = (data.errors && data.errors.length)
         ? `<p style="color:var(--yellow);font-size:12.5px;margin-top:6px">${data.errors.length} linha(s) com erro: ${data.errors.slice(0, 5).map(e => e.row ? `linha ${e.row} (${e.message})` : e.message).join("; ")}${data.errors.length > 5 ? "…" : ""}</p>`
         : "";
-      previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${IMPORT_COUNT_LABELS[kind]}.</p>${errorsHtml}`);
+
+      if(kind === "team"){
+        const credentialsHtml = data.invited && data.invited.length
+          ? `<div style="overflow-x:auto;margin-top:8px">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+                <thead><tr><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Nome</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Email</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Senha temporária</th></tr></thead>
+                <tbody>${data.invited.map(p => `<tr><td style="padding:6px 8px;border-bottom:1px solid var(--line)">${p.name}</td><td style="padding:6px 8px;border-bottom:1px solid var(--line)">${p.email}</td><td style="padding:6px 8px;border-bottom:1px solid var(--line);font-family:monospace">${p.temporary_password}</td></tr>`).join("")}</tbody>
+              </table>
+              <p style="color:var(--yellow);font-size:12px;margin-top:6px">Copie e repasse essas senhas agora - elas não vão aparecer de novo. Cada pessoa é obrigada a trocar no primeiro acesso.</p>
+            </div>`
+          : "";
+        previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${data.invited.length} pessoa(s) convidada(s).</p>${credentialsHtml}${errorsHtml}`);
+      } else {
+        const IMPORT_COUNT_LABELS = {
+          rooms: `${data.created} quarto(s) criado(s)`,
+          guests: `${data.processed} hóspede(s) importado(s)`,
+          reservations: `${data.created} reserva(s) criada(s)`,
+          portfolio: `${data.created} item(ns) de portfólio criado(s)`,
+        };
+        previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${IMPORT_COUNT_LABELS[kind]}.</p>${errorsHtml}`);
+      }
       btnEl.textContent = "Concluído";
 
       if(kind === "rooms" && typeof loadOperations === "function") loadOperations();
       if(kind === "guests" && typeof loadGuests === "function") loadGuests();
       if(kind === "reservations" && typeof loadReservations === "function") loadReservations();
+      if(kind === "team" && typeof loadTeamList === "function") loadTeamList();
+      if(kind === "portfolio" && typeof loadPortfolio === "function") loadPortfolio();
     }catch(err){
       previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--red);font-size:13px;margin-top:8px">Erro de conexão.</p>`);
       btnEl.disabled = false;
@@ -4131,7 +4188,7 @@ async function deleteRoleConfirm(roleId){
 
   window.openImportDataModal = function(){
     const isAgency = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
-    window._importRowsCache = { rooms: null, guests: null, reservations: null };
+    window._importRowsCache = { rooms: null, guests: null, reservations: null, team: null, portfolio: null };
 
     const roomsSection = isAgency ? "" : `
       <div>
@@ -4161,6 +4218,34 @@ async function deleteRoleConfirm(roleId){
       </div>
     `;
 
+    const portfolioSection = !isAgency ? "" : `
+      <hr style="border-color:var(--line);margin:4px 0">
+      <div>
+        <h3 style="margin-bottom:6px">Portfólio</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, descrição, categoria, tipo de preço (fixo/variável), preço</strong> (nome é obrigatório - preço só é obrigatório pra item de preço fixo).</p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <a href="#" onclick="downloadImportTemplate('portfolio');return false;" style="font-size:13px">Baixar modelo CSV</a>
+          <input type="file" id="importPortfolioFile" accept=".csv" onchange="handleImportFile('portfolio', this)">
+        </div>
+        <div id="importPortfolioPreview"></div>
+        <button class="btn" type="button" id="importPortfolioBtn" disabled onclick="submitImportRows('portfolio')" style="margin-top:10px">Importar portfólio</button>
+      </div>
+    `;
+
+    const teamSection = `
+      <hr style="border-color:var(--line);margin:4px 0">
+      <div>
+        <h3 style="margin-bottom:6px">Equipe</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, email, função</strong> (todos obrigatórios - a função já precisa existir em Equipe &gt; Funções antes de importar, pra não criar acesso com permissão indefinida).</p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <a href="#" onclick="downloadImportTemplate('team');return false;" style="font-size:13px">Baixar modelo CSV</a>
+          <input type="file" id="importTeamFile" accept=".csv" onchange="handleImportFile('team', this)">
+        </div>
+        <div id="importTeamPreview"></div>
+        <button class="btn" type="button" id="importTeamBtn" disabled onclick="submitImportRows('team')" style="margin-top:10px">Convidar equipe</button>
+      </div>
+    `;
+
     openGenericModal("Importar dados", `
       <div style="display:flex;flex-direction:column;gap:18px">
         ${roomsSection}
@@ -4175,6 +4260,8 @@ async function deleteRoleConfirm(roleId){
           <button class="btn" type="button" id="importGuestsBtn" disabled onclick="submitImportRows('guests')" style="margin-top:10px">Importar hóspedes</button>
         </div>
         ${reservationsSection}
+        ${portfolioSection}
+        ${teamSection}
       </div>
     `, true);
   };
