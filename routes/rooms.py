@@ -130,10 +130,10 @@ def create_rooms_bulk_route(hostel_id):
 def import_rooms_route(hostel_id):
     """
     Importa quartos em lote a partir de uma planilha ja parseada no
-    frontend (lista de {name, category_name, floor}) - diferente de
-    /rooms/bulk (uma modalidade/andar pra tudo), aqui cada linha pode
-    ter sua propria modalidade/andar, pra bater com o formato real de
-    uma planilha existente.
+    frontend (lista de {name, category_name, floor, capacity,
+    price_per_night}) - diferente de /rooms/bulk (uma modalidade/andar
+    pra tudo), aqui cada linha pode ter sua propria modalidade/andar,
+    pra bater com o formato real de uma planilha existente.
     """
     data = request.get_json() or {}
     rows = data.get("rows", [])
@@ -146,16 +146,30 @@ def import_rooms_route(hostel_id):
 
     # Planilha de origem geralmente cita a modalidade pelo nome sem a
     # pessoa ja ter cadastrado ela antes - cria as que faltam em vez de
-    # rejeitar a linha, pra importar de fato "de uma vez so".
+    # rejeitar a linha, pra importar de fato "de uma vez so". Se a
+    # planilha tambem trouxer capacidade/preco pra essa modalidade nova,
+    # usa (primeira linha que citar essa modalidade manda); modalidade
+    # que ja existia nunca e alterada por uma importacao.
     existing_names = {c["name"].strip().lower() for c in list_room_categories(hostel_id)}
-    wanted_names = {(row.get("category_name") or "").strip() for row in rows if (row.get("category_name") or "").strip()}
-    for name in wanted_names:
-        if name.lower() not in existing_names:
+    new_category_hints = {}
+    for row in rows:
+        name = (row.get("category_name") or "").strip()
+        if not name or name.lower() in existing_names or name.lower() in new_category_hints:
+            continue
+        new_category_hints[name.lower()] = (name, row.get("capacity"), row.get("price_per_night"))
+
+    category_errors = []
+    for name, capacity, price_per_night in new_category_hints.values():
+        try:
+            create_room_category(hostel_id, name, capacity or None, price_per_night or None)
+            existing_names.add(name.lower())
+        except (ValueError, TypeError):
+            category_errors.append(f"Modalidade '{name}': capacidade/preço inválido, criada sem esses dados.")
             create_room_category(hostel_id, name)
             existing_names.add(name.lower())
 
     created = 0
-    errors = []
+    errors = [{"row": None, "message": message} for message in category_errors]
     for i, row in enumerate(rows):
         try:
             create_room(hostel_id, row.get("name"), row.get("category_name"), row.get("floor"))

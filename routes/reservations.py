@@ -15,6 +15,48 @@ from utils.tenant import require_permission
 reservations_bp = Blueprint("reservations", __name__)
 
 
+@reservations_bp.route("/reservations/import", methods=["POST"])
+@require_permission("reservations")
+def import_reservations_route(hostel_id):
+    """
+    Importa reservas historicas em lote a partir de uma planilha ja
+    parseada no frontend (lista de {guest_name, phone, room_type,
+    checkin_date, checkout_date, amount, status, payment_method}) -
+    pra quem esta migrando de outro sistema e quer manter o historico
+    de estadias. notify=False (ver create_reservation_record): reserva
+    importada e historico, nao um evento acontecendo agora - nunca deve
+    ecoar pro Beds24 nem disparar webhook de saida configurado pela
+    hospedagem pra reserva NOVA de verdade.
+    """
+    data = request.get_json() or {}
+    rows = data.get("rows", [])
+    if not rows:
+        return jsonify({"success": False, "message": "Nenhuma linha pra importar."}), 400
+
+    created = 0
+    errors = []
+    for i, row in enumerate(rows):
+        try:
+            create_reservation_record(
+                hostel_id,
+                guest_name=row.get("guest_name"),
+                room_type=row.get("room_type"),
+                checkin_date=row.get("checkin_date"),
+                checkout_date=row.get("checkout_date"),
+                source="import",
+                payment_method=row.get("payment_method"),
+                amount=row.get("amount") or 0,
+                status=row.get("status") or "confirmed",
+                phone=row.get("phone"),
+                notify=False,
+            )
+            created += 1
+        except (ValueError, TypeError) as error:
+            errors.append({"row": i + 1, "message": str(error)})
+
+    return jsonify({"success": True, "created": created, "errors": errors}), 201
+
+
 @reservations_bp.route("/reservations", methods=["GET"])
 @require_permission("reservations")
 def list_reservations(hostel_id):

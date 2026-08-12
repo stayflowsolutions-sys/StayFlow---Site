@@ -5226,7 +5226,8 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
                                 checkin_date=None, checkout_date=None,
                                 source="manual", payment_method="",
                                 amount=0, status="pending", phone="",
-                                email="", nationality="", bed_id=None):
+                                email="", nationality="", bed_id=None,
+                                notify=True):
     guest_name = (guest_name or "").strip()
     checkin_date = (checkin_date or "").strip()
     checkout_date = (checkout_date or "").strip()
@@ -5319,11 +5320,18 @@ def create_reservation_record(hostel_id, guest_name, room_type="", bed="",
         conn.commit()
         conn.close()
 
-    if room_type:
-        sync_availability_to_channel(hostel_id, room_type, checkin_date, checkout_date)
-        sync_booking_to_channel(hostel_id, reservation_id)
+    # notify=False pra reserva historica trazida de importacao em lote
+    # (Configuracoes > Importar dados) - nao e um evento acontecendo
+    # agora, entao nao deve ecoar pro Beds24 (disponibilidade/reserva
+    # fake de uma data que ja passou) nem disparar webhook de saida que
+    # a hospedagem configurou esperando reserva NOVA de verdade (evita,
+    # por ex., mandar SMS "nova reserva!" pra cada linha historica).
+    if notify:
+        if room_type:
+            sync_availability_to_channel(hostel_id, room_type, checkin_date, checkout_date)
+            sync_booking_to_channel(hostel_id, reservation_id)
 
-    dispatch_reservation_webhook(hostel_id, reservation_id, "created")
+        dispatch_reservation_webhook(hostel_id, reservation_id, "created")
 
     return reservation_id
 

@@ -29,17 +29,20 @@ def list_guests(hostel_id):
 def import_guests_route(hostel_id):
     """
     Importa hospedes em lote a partir de uma planilha ja parseada no
-    frontend (lista de {name, phone, email}) - pensado pra quem esta
-    migrando de outro sistema/planilha e nao quer redigitar contato por
-    contato. Telefone e o unico campo obrigatorio (chave de identidade
-    do hospede, ver get_or_create_guest) - linha sem telefone valido e
-    reportada como erro, nunca cria hospede "orfao" sem telefone.
+    frontend (lista de {name, phone, email, address, nationality,
+    document_type, document_number, date_of_birth}) - pensado pra quem
+    esta migrando de outro sistema/planilha e nao quer redigitar
+    contato por contato. Telefone e o unico campo obrigatorio (chave de
+    identidade do hospede, ver get_or_create_guest) - linha sem
+    telefone valido e reportada como erro, nunca cria hospede "orfao"
+    sem telefone.
     """
     data = request.get_json() or {}
     rows = data.get("rows", [])
     if not rows:
         return jsonify({"success": False, "message": "Nenhuma linha pra importar."}), 400
 
+    importable_fields = ("name", "email", "address", "nationality", "document_type", "document_number", "date_of_birth")
     processed = 0
     errors = []
 
@@ -52,11 +55,11 @@ def import_guests_route(hostel_id):
 
         try:
             guest_id = get_or_create_guest(hostel_id, phone)
-            profile_fields = {}
-            if row.get("name"):
-                profile_fields["name"] = str(row["name"]).strip()
-            if row.get("email"):
-                profile_fields["email"] = str(row["email"]).strip()
+            profile_fields = {
+                field: str(row[field]).strip()
+                for field in importable_fields
+                if row.get(field)
+            }
             if profile_fields:
                 update_guest_profile(hostel_id, guest_id, **profile_fields)
             processed += 1
