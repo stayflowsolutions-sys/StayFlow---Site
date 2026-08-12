@@ -27,6 +27,7 @@ from database import (
     delete_totp_challenge,
     get_unused_totp_backup_codes,
     mark_totp_backup_code_used,
+    get_onboarding_seen_features,
 )
 from services.totp_service import verify_totp_code, normalize_backup_code
 from utils.permissions import ALL_PERMISSIONS
@@ -110,6 +111,8 @@ def build_session_payload(user_id, hostel_id, impersonating_from_hostel_id=None)
             "name": user["name"],
             "email": user["email"],
             "must_change_password": bool(user["must_change_password"]),
+            "onboarding_dismissed": bool(user["onboarding_dismissed"]),
+            "onboarding_seen_features": get_onboarding_seen_features(user["id"]),
         },
         "is_stayflow_admin": is_stayflow_admin_email(user["email"]),
         "hostel_id": hostel_id,

@@ -230,12 +230,17 @@ def _migrate_users_to_memberships(cursor):
 
     cursor.execute("ALTER TABLE users RENAME TO users_old")
 
-    # totp_secret/totp_enabled so existem em users_old se essa migracao
-    # rodar DEPOIS dos add_column_if_not_exists correspondentes mais
-    # abaixo em create_database() (que sempre rodam antes deste ponto) -
-    # preservar aqui evita que um banco novo perca essas colunas na hora
-    # que essa migracao acontece (mesmo raciocinio ja aplicado a
-    # must_change_password).
+    # totp_secret/totp_enabled/onboarding_dismissed so existem em
+    # users_old se essa migracao rodar DEPOIS dos add_column_if_not_exists
+    # correspondentes mais acima em create_database() (que sempre rodam
+    # antes deste ponto) - preservar aqui evita que um banco novo perca
+    # essas colunas na hora que essa migracao acontece (mesmo raciocinio
+    # ja aplicado a must_change_password). QUALQUER coluna nova
+    # adicionada em users precisa ser listada aqui tambem, senao essa
+    # reconstrucao (que roda pra TODO banco novo, ja que a propria
+    # CREATE TABLE IF NOT EXISTS inicial ainda tem hostel_id) descarta
+    # ela silenciosamente - foi exatamente isso que aconteceu com
+    # onboarding_dismissed antes desse comentario existir.
     cursor.execute("""
     CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -245,13 +250,14 @@ def _migrate_users_to_memberships(cursor):
         must_change_password INTEGER DEFAULT 1,
         totp_secret TEXT,
         totp_enabled INTEGER DEFAULT 0,
+        onboarding_dismissed INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
     cursor.execute("""
-        INSERT INTO users (id, name, email, password, must_change_password, totp_secret, totp_enabled, created_at)
-        SELECT id, name, email, password, must_change_password, totp_secret, totp_enabled, created_at
+        INSERT INTO users (id, name, email, password, must_change_password, totp_secret, totp_enabled, onboarding_dismissed, created_at)
+        SELECT id, name, email, password, must_change_password, totp_secret, totp_enabled, onboarding_dismissed, created_at
         FROM users_old
     """)
 
@@ -529,6 +535,23 @@ def create_database():
     # importa enquanto nao habilitado.
     add_column_if_not_exists(cursor, "users", "totp_secret", "TEXT")
     add_column_if_not_exists(cursor, "users", "totp_enabled", "INTEGER DEFAULT 0")
+
+    # Tour de introducao do dashboard (slides no primeiro acesso + dica
+    # ao clicar em cada item do menu pela primeira vez) - "nao mostrar
+    # novamente" e por PESSOA, nao por navegador/dispositivo (login em
+    # outro PC nao repete o tour). Uma vez marcado, nunca mais mostra
+    # nada do onboarding pra essa pessoa.
+    add_column_if_not_exists(cursor, "users", "onboarding_dismissed", "INTEGER NOT NULL DEFAULT 0")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_feature_intros (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        feature_key TEXT NOT NULL,
+        seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, feature_key)
+    )
+    """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS roles (
@@ -2575,7 +2598,7 @@ def get_user_by_id(user_id):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, name, email, must_change_password FROM users WHERE id = ?",
+        "SELECT id, name, email, must_change_password, onboarding_dismissed FROM users WHERE id = ?",
         (user_id,)
     )
 
@@ -2583,6 +2606,34 @@ def get_user_by_id(user_id):
     conn.close()
 
     return dict(row) if row else None
+
+
+def get_onboarding_seen_features(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT feature_key FROM user_feature_intros WHERE user_id = ?", (user_id,))
+    keys = [row["feature_key"] for row in cursor.fetchall()]
+    conn.close()
+    return keys
+
+
+def mark_onboarding_feature_seen(user_id, feature_key):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT OR IGNORE INTO user_feature_intros (user_id, feature_key) VALUES (?, ?)",
+        (user_id, feature_key)
+    )
+    conn.commit()
+    conn.close()
+
+
+def dismiss_onboarding(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET onboarding_dismissed = 1 WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
 
 
 def get_user_hostels(user_id):

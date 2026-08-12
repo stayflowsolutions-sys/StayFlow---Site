@@ -35,6 +35,7 @@ from routes.parking import parking_bp
 from routes.scheduling import scheduling_bp
 from routes.push import push_bp
 from routes.events import events_bp
+from routes.onboarding import onboarding_bp
 from routes.billing import billing_bp
 from routes.mercadopago_oauth import mercadopago_oauth_bp
 from routes.guest_charges import guest_charges_bp
@@ -95,6 +96,7 @@ app.register_blueprint(mercadopago_webhook_bp)
 app.register_blueprint(stayflow_admin_bp)
 app.register_blueprint(portfolio_bp)
 app.register_blueprint(partners_bp)
+app.register_blueprint(onboarding_bp)
 
 # Caminho do frontend: por padrão assume que a pasta do site fica ao lado
 # da pasta do backend (ex: C:\StayFlow\backend + C:\StayFlow\StayFlow---Site).
