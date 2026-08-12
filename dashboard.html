@@ -1878,6 +1878,16 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="geral" onclick="openImportDataModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2>Importar dados</h2>
+            <p class="settings-summary-desc">Já tem quartos e hóspedes numa planilha? Importe tudo de uma vez.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <div class="card" data-settings-section="empresa">
         <h2 data-i18n="settings.company.title">Empresa</h2>
         <p data-i18n="settings.company.desc" style="margin-bottom:14px">Dados legais, horários padrão e identidade visual da hospedagem.</p>
@@ -3911,6 +3921,210 @@ async function deleteRoleConfirm(roleId){
       </div>
     `);
     loadGeneralSettingsSummary();
+  };
+
+  window._importRowsCache = { rooms: null, guests: null };
+
+  const IMPORT_TEMPLATES = {
+    rooms: { filename: "modelo_quartos.csv", header: "nome,categoria,andar", sample: "101,Standard,1\n102,Standard,1\n201,Suite,2" },
+    guests: { filename: "modelo_hospedes.csv", header: "nome,telefone,email", sample: "Joao Silva,5511999998888,joao@email.com" },
+  };
+
+  window.downloadImportTemplate = function(kind){
+    const tpl = IMPORT_TEMPLATES[kind];
+    const csv = tpl.header + "\n" + tpl.sample;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = tpl.filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  // Parser CSV simples (aceita campo entre aspas com virgula dentro,
+  // ex: "Silva, Joao" - suficiente pro caso de uso de planilha
+  // exportada do Excel/Google Sheets, sem precisar de biblioteca extra).
+  function parseImportCSV(text){
+    const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+    if(!lines.length) return { headers: [], rows: [] };
+
+    const parseLine = (line) => {
+      const cells = [];
+      let cur = "";
+      let inQuotes = false;
+      for(let i = 0; i < line.length; i++){
+        const ch = line[i];
+        if(inQuotes){
+          if(ch === '"'){
+            if(line[i + 1] === '"'){ cur += '"'; i++; }
+            else inQuotes = false;
+          } else cur += ch;
+        } else if(ch === '"'){
+          inQuotes = true;
+        } else if(ch === ","){
+          cells.push(cur);
+          cur = "";
+        } else {
+          cur += ch;
+        }
+      }
+      cells.push(cur);
+      return cells.map(c => c.trim());
+    };
+
+    const headers = parseLine(lines[0]).map(h => h.toLowerCase());
+    const rows = lines.slice(1).map(line => {
+      const cells = parseLine(line);
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = cells[i] !== undefined ? cells[i] : ""; });
+      return obj;
+    });
+    return { headers, rows };
+  }
+
+  // Aceita variacoes comuns de nome de coluna (portugues/ingles) pra nao
+  // obrigar a pessoa a renomear a planilha que ja tem.
+  const IMPORT_FIELD_ALIASES = {
+    rooms: {
+      name: ["nome", "name", "quarto", "numero", "número"],
+      category_name: ["categoria", "category", "modalidade", "tipo"],
+      floor: ["andar", "floor", "piso"],
+    },
+    guests: {
+      name: ["nome", "name"],
+      phone: ["telefone", "phone", "celular", "whatsapp"],
+      email: ["email", "e-mail"],
+    },
+  };
+
+  function mapImportRow(kind, rawRow){
+    const aliases = IMPORT_FIELD_ALIASES[kind];
+    const mapped = {};
+    Object.keys(aliases).forEach(field => {
+      const key = aliases[field].find(a => rawRow[a] !== undefined && rawRow[a] !== "");
+      mapped[field] = key ? rawRow[key] : "";
+    });
+    return mapped;
+  }
+
+  function importIdPrefix(kind){
+    return kind === "rooms" ? "Rooms" : "Guests";
+  }
+
+  window.handleImportFile = function(kind, input){
+    const file = input.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const { rows } = parseImportCSV(String(e.target.result));
+      const mapped = rows.map(r => mapImportRow(kind, r)).filter(r => Object.values(r).some(v => v));
+      window._importRowsCache[kind] = mapped;
+
+      const previewEl = document.getElementById(`import${importIdPrefix(kind)}Preview`);
+      const btnEl = document.getElementById(`import${importIdPrefix(kind)}Btn`);
+
+      if(!mapped.length){
+        previewEl.innerHTML = `<p style="color:var(--red);font-size:13px">Nenhuma linha reconhecida - confira as colunas do arquivo.</p>`;
+        btnEl.disabled = true;
+        return;
+      }
+
+      const cols = Object.keys(mapped[0]);
+      const previewRows = mapped.slice(0, 8);
+      previewEl.innerHTML = `
+        <div style="overflow-x:auto;margin-top:8px">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+            <thead><tr>${cols.map(c => `<th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">${c}</th>`).join("")}</tr></thead>
+            <tbody>${previewRows.map(r => `<tr>${cols.map(c => `<td style="padding:6px 8px;border-bottom:1px solid var(--line)">${r[c] || ""}</td>`).join("")}</tr>`).join("")}</tbody>
+          </table>
+        </div>
+        <p style="color:var(--muted);font-size:12.5px;margin-top:6px">${mapped.length} linha(s) reconhecida(s)${mapped.length > previewRows.length ? ` (mostrando ${previewRows.length})` : ""}.</p>
+      `;
+      btnEl.disabled = false;
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
+  window.submitImportRows = async function(kind){
+    const rows = window._importRowsCache[kind];
+    if(!rows || !rows.length) return;
+
+    const btnEl = document.getElementById(`import${importIdPrefix(kind)}Btn`);
+    const previewEl = document.getElementById(`import${importIdPrefix(kind)}Preview`);
+    const idleLabel = kind === "rooms" ? "Importar quartos" : "Importar hóspedes";
+
+    btnEl.disabled = true;
+    btnEl.textContent = "Importando...";
+
+    try{
+      const res = await fetch(`/${kind}/import`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows }),
+      });
+      const data = await res.json();
+
+      if(!res.ok || !data.success){
+        previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--red);font-size:13px;margin-top:8px">${data.message || "Erro ao importar."}</p>`);
+        btnEl.disabled = false;
+        btnEl.textContent = idleLabel;
+        return;
+      }
+
+      const countLabel = kind === "rooms" ? `${data.created} quarto(s) criado(s)` : `${data.processed} hóspede(s) importado(s)`;
+      const errorsHtml = (data.errors && data.errors.length)
+        ? `<p style="color:var(--yellow);font-size:12.5px;margin-top:6px">${data.errors.length} linha(s) com erro: ${data.errors.slice(0, 5).map(e => `linha ${e.row} (${e.message})`).join("; ")}${data.errors.length > 5 ? "…" : ""}</p>`
+        : "";
+      previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${countLabel}.</p>${errorsHtml}`);
+      btnEl.textContent = "Concluído";
+
+      if(kind === "rooms" && typeof loadOperations === "function") loadOperations();
+      if(kind === "guests" && typeof loadGuests === "function") loadGuests();
+    }catch(err){
+      previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--red);font-size:13px;margin-top:8px">Erro de conexão.</p>`);
+      btnEl.disabled = false;
+      btnEl.textContent = idleLabel;
+    }
+  };
+
+  window.openImportDataModal = function(){
+    const isAgency = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
+    window._importRowsCache = { rooms: null, guests: null };
+
+    const roomsSection = isAgency ? "" : `
+      <div>
+        <h3 style="margin-bottom:6px">Quartos</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, categoria, andar</strong> (categoria e andar são opcionais).</p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <a href="#" onclick="downloadImportTemplate('rooms');return false;" style="font-size:13px">Baixar modelo CSV</a>
+          <input type="file" id="importRoomsFile" accept=".csv" onchange="handleImportFile('rooms', this)">
+        </div>
+        <div id="importRoomsPreview"></div>
+        <button class="btn" type="button" id="importRoomsBtn" disabled onclick="submitImportRows('rooms')" style="margin-top:10px">Importar quartos</button>
+      </div>
+      <hr style="border-color:var(--line);margin:4px 0">
+    `;
+
+    openGenericModal("Importar dados", `
+      <div style="display:flex;flex-direction:column;gap:18px">
+        ${roomsSection}
+        <div>
+          <h3 style="margin-bottom:6px">Hóspedes</h3>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, telefone, email</strong> (telefone é obrigatório, só números com DDI+DDD).</p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+            <a href="#" onclick="downloadImportTemplate('guests');return false;" style="font-size:13px">Baixar modelo CSV</a>
+            <input type="file" id="importGuestsFile" accept=".csv" onchange="handleImportFile('guests', this)">
+          </div>
+          <div id="importGuestsPreview"></div>
+          <button class="btn" type="button" id="importGuestsBtn" disabled onclick="submitImportRows('guests')" style="margin-top:10px">Importar hóspedes</button>
+        </div>
+      </div>
+    `, true);
   };
 
   function hydrateSettings(){
