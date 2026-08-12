@@ -138,6 +138,59 @@ def invite_team_member(hostel_id):
     }), 201
 
 
+@team_bp.route("/team/import", methods=["POST"])
+@require_permission("team")
+def import_team_route(hostel_id):
+    """
+    Convida varias pessoas de uma vez a partir de uma planilha ja
+    parseada no frontend (lista de {name, email, role_name}). Diferente
+    de quartos/hospedes, funcao NUNCA e criada automaticamente aqui -
+    funcao carrega um conjunto de permissoes de seguranca real, entao
+    uma linha citando uma funcao que ainda nao existe e reportada como
+    erro (a pessoa cria a funcao primeiro em Equipe, com as permissoes
+    que ela quer, e so entao reimporta) em vez de inventar permissoes.
+    Mesma senha temporaria de uso unico do convite manual
+    (/team/invite) - devolvida pra quem importou repassar pra cada
+    pessoa, nunca mostrada de novo depois.
+    """
+    data = request.get_json() or {}
+    rows = data.get("rows", [])
+    if not rows:
+        return jsonify({"success": False, "message": "Nenhuma linha pra importar."}), 400
+
+    allowed, limit_message = check_seat_limit(hostel_id, additional=len(rows))
+    if not allowed:
+        return jsonify({"success": False, "message": limit_message}), 402
+
+    roles_by_name = {r["name"].strip().lower(): r["id"] for r in get_roles(hostel_id)}
+
+    invited = []
+    errors = []
+    for i, row in enumerate(rows):
+        name = (row.get("name") or "").strip()
+        email = (row.get("email") or "").strip().lower()
+        role_name = (row.get("role_name") or "").strip()
+
+        if not name or not email:
+            errors.append({"row": i + 1, "message": "Nome e email são obrigatórios."})
+            continue
+
+        role_id = roles_by_name.get(role_name.lower())
+        if not role_id:
+            errors.append({"row": i + 1, "message": f"Função '{role_name}' não encontrada. Crie a função em Equipe primeiro."})
+            continue
+
+        temp_password = secrets.token_urlsafe(9)
+        password_hash = hash_password(temp_password)
+        try:
+            invite_to_hostel(hostel_id, name, email, role_id, password_hash=password_hash)
+            invited.append({"name": name, "email": email, "temporary_password": temp_password})
+        except ValueError as error:
+            errors.append({"row": i + 1, "message": str(error)})
+
+    return jsonify({"success": True, "invited": invited, "errors": errors}), 201
+
+
 @team_bp.route("/team/<int:membership_id>/role", methods=["PATCH"])
 @require_permission("team")
 def change_member_role(hostel_id, membership_id):

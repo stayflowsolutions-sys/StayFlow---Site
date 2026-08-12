@@ -59,6 +59,47 @@ def create_portfolio_item_route(hostel_id):
     return jsonify({"success": True, "item": item})
 
 
+@portfolio_bp.route("/portfolio/items/import", methods=["POST"])
+@require_permission("portfolio")
+def import_portfolio_items_route(hostel_id):
+    """
+    Importa itens de portfolio em lote a partir de uma planilha ja
+    parseada no frontend (lista de {name, description, category,
+    price_type, price}) - equivalente da importacao de quartos, so que
+    pro lado agencia (que nao tem quarto, tem item de portfolio).
+    """
+    error = _require_agency(hostel_id)
+    if error:
+        return error
+
+    data = request.get_json() or {}
+    rows = data.get("rows", [])
+    if not rows:
+        return jsonify({"success": False, "message": "Nenhuma linha pra importar."}), 400
+
+    created = 0
+    errors = []
+    for i, row in enumerate(rows):
+        category = row.get("category") or None
+        if category and category not in AGENCY_CATEGORIES:
+            errors.append({"row": i + 1, "message": f"Categoria '{category}' inválida."})
+            continue
+        try:
+            create_portfolio_item(
+                hostel_id,
+                name=row.get("name"),
+                description=row.get("description"),
+                category=category,
+                price_type=row.get("price_type") or "fixed",
+                price=row.get("price"),
+            )
+            created += 1
+        except (ValueError, TypeError) as error_msg:
+            errors.append({"row": i + 1, "message": str(error_msg)})
+
+    return jsonify({"success": True, "created": created, "errors": errors}), 201
+
+
 @portfolio_bp.route("/portfolio/items/<int:item_id>", methods=["PATCH"])
 @require_permission("portfolio")
 def update_portfolio_item_route(hostel_id, item_id):
