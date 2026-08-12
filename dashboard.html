@@ -9481,6 +9481,15 @@ window.uploadGuestDocumentUI = async function(guestId){
       window.STAYFLOW_USER = data.user;
       localStorage.setItem("stayflow_user", JSON.stringify(data.user));
 
+      // Carrega o estado do tour de introducao ANTES de disparar
+      // session-ready - hydrateUserUI (que roda no inicio do handler
+      // desse evento) ja chama restoreLastOpenPage/openPage, que
+      // dispara a dica de cada pagina. Sem isso, a primeira pagina
+      // restaurada apos F5 podia mostrar dica de novo (ou mesmo depois
+      // da pessoa ja ter marcado "nao mostrar novamente") so porque o
+      // estado ainda nao tinha chegado do backend.
+      if(typeof window.stayflowLoadOnboardingState === "function") window.stayflowLoadOnboardingState();
+
       document.dispatchEvent(new Event("stayflow:session-ready"));
     }catch(e){
       console.warn("Falha ao verificar sessão:", e);
@@ -9784,7 +9793,199 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadTwoFactorStatus === "function") loadTwoFactorStatus();
 
     if (typeof handleMetaOAuthReturn === "function") handleMetaOAuthReturn();
+
+    if (typeof stayflowInitOnboarding === "function") stayflowInitOnboarding();
   });
+</script>
+
+<script>
+(function(){
+  "use strict";
+
+  // Tour de introducao: slides no primeiro acesso ao Dashboard + dica
+  // curta ao abrir cada item do menu pela primeira vez. Tudo controlado
+  // por UMA flag "dismissed" por pessoa (banco, nao localStorage - ver
+  // routes/onboarding.py) - uma vez marcada, nunca mais mostra nada
+  // disso pra essa pessoa, em qualquer dispositivo. Cada item (slide
+  // inicial + cada pagina do menu) so aparece uma vez, mesmo com o tour
+  // ainda ativo, via user_feature_intros no backend.
+
+  const FEATURE_COACH_MARKS = {
+    chats: { title: "Chats", text: "As conversas com hóspedes ficam aqui. A IA responde sozinha 24h - você só entra quando quiser assumir manualmente." },
+    reservations: { title: "Reservas", text: "Todas as reservas, com check-in/check-out e criação manual quando precisar." },
+    roommap: { title: "Mapa de Quartos", text: "Visão de cada quarto/cama: ocupado, livre ou aguardando limpeza." },
+    opportunities: { title: "Opportunity Center", text: "Quando um hóspede pergunta por algo vendável (passeio, aluguel), a IA detecta e sugere aqui - até indicando um parceiro, se você não vende isso." },
+    partners: { title: "Parceiros", text: "Portfólio de agências parceiras que você pode oferecer aos seus hóspedes." },
+    portfolio: { title: "Portfólio", text: "O que você vende (passeios, aluguéis) - é isso que aparece pras hospedagens parceiras oferecerem." },
+    guests: { title: "Hóspedes", text: "Cadastro de hóspedes, com histórico e documentos." },
+    operations: { title: "Operações", text: "Limpeza, manutenção e outras tarefas do dia a dia da equipe." },
+    team: { title: "Equipe", text: "Quem tem acesso ao sistema e o que cada pessoa pode ver/fazer." },
+    finance: { title: "Financeiro", text: "Cobranças, câmbio e o que os hóspedes já pagaram." },
+    inventory: { title: "Estoque", text: "Controle de itens usados na operação (enxoval, produtos de limpeza etc.)." },
+    revenue: { title: "Receitas", text: "Receita ao longo do tempo." },
+    events: { title: "Eventos", text: "Espaços e eventos que você organiza ou aluga." },
+    reports: { title: "Relatórios", text: "Números consolidados da operação." },
+    settings: { title: "Configurações", text: "Dados da hospedagem, integrações, segurança e mais." },
+  };
+
+  const onboardingState = { dismissed: false, seen: new Set() };
+
+  function isOnboardingActive(){
+    return !onboardingState.dismissed;
+  }
+
+  async function markFeatureSeen(featureKey){
+    onboardingState.seen.add(featureKey);
+    try{
+      await fetch("/onboarding/seen", {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feature_key: featureKey }),
+      });
+    }catch(e){ console.warn("Falha ao marcar onboarding como visto:", e); }
+  }
+
+  async function dismissOnboardingForever(){
+    onboardingState.dismissed = true;
+    document.getElementById("onboardingCoachMark")?.remove();
+    try{
+      await fetch("/onboarding/dismiss", { method: "POST", credentials: "same-origin" });
+    }catch(e){ console.warn("Falha ao desligar onboarding:", e); }
+  }
+
+  function showFeatureCoachMark(featureKey){
+    const info = FEATURE_COACH_MARKS[featureKey];
+    if(!info) return;
+    document.getElementById("onboardingCoachMark")?.remove();
+
+    const el = document.createElement("div");
+    el.id = "onboardingCoachMark";
+    el.style.cssText = "position:fixed;right:24px;bottom:100px;max-width:320px;background:var(--panel2,#0a1726);border:1px solid var(--blue,#0b84ff);border-radius:16px;padding:16px 18px;z-index:2000;box-shadow:0 18px 42px rgba(0,0,0,.45)";
+    el.innerHTML = `
+      <div style="font-weight:800;font-size:14px;margin-bottom:6px">${info.title}</div>
+      <div style="font-size:13px;color:var(--muted,#9aa8bb);line-height:1.45;margin-bottom:14px">${info.text}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted,#9aa8bb);cursor:pointer">
+          <input type="checkbox" id="onboardingCoachDismissCheck">Não mostrar mais dicas
+        </label>
+        <button type="button" class="btn" id="onboardingCoachOkBtn" style="padding:7px 16px;font-size:12.5px;min-height:unset">Entendi</button>
+      </div>
+    `;
+    document.body.appendChild(el);
+    document.getElementById("onboardingCoachOkBtn").addEventListener("click", () => {
+      const wantsDismiss = document.getElementById("onboardingCoachDismissCheck").checked;
+      markFeatureSeen(featureKey);
+      if(wantsDismiss) dismissOnboardingForever();
+      el.remove();
+    });
+  }
+
+  window.stayflowMaybeShowFeatureIntro = function(pageId){
+    if(!isOnboardingActive()) return;
+    if(pageId === "dashboard") return;
+    if(onboardingState.seen.has(pageId)) return;
+    if(!FEATURE_COACH_MARKS[pageId]) return;
+    showFeatureCoachMark(pageId);
+  };
+
+  function dashboardIntroSlides(){
+    const isAgency = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
+    const opportunityLabel = isAgency ? "quem te procurou" : "hóspedes com potencial de venda (passeio, upgrade, aluguel)";
+    return [
+      {
+        title: "👋 Bem-vindo(a) à StayFlow",
+        body: "Esse é o seu Dashboard - a visão geral de tudo que está acontecendo agora. Vamos mostrar rapidinho o que tem em cada bloco.",
+      },
+      {
+        title: "Números no topo",
+        body: isAgency
+          ? "Os cards no topo mostram um resumo rápido da sua operação hoje."
+          : "Os cards no topo mostram ocupação, reservas e outros números-chave do dia.",
+      },
+      {
+        title: "Resumo executivo",
+        body: "Um resumo escrito pela IA, olhando os dados reais da sua operação - pra você entender o momento sem precisar caçar número por número.",
+      },
+      {
+        title: "Opportunity Center",
+        body: `Mostra ${opportunityLabel}, detectado automaticamente pelas conversas - pra você não deixar dinheiro na mesa.`,
+      },
+      {
+        title: "Agora explore o menu",
+        body: "No menu à esquerda tem cada área da operação. Na primeira vez que você abrir cada uma, aparece uma dica rápida explicando o que é.",
+      },
+    ];
+  }
+
+  function showDashboardIntroModal(){
+    const slides = dashboardIntroSlides();
+    let current = 0;
+    let wantsDismiss = false;
+
+    function render(){
+      const s = slides[current];
+      const isLast = current === slides.length - 1;
+      const dots = slides.map((_, i) => `<span style="width:${i === current ? 18 : 6}px;height:6px;border-radius:4px;background:${i === current ? "var(--blue,#0b84ff)" : "var(--line,#27466d)"};display:inline-block;transition:all .2s"></span>`).join("");
+
+      document.getElementById("genericModalBody").innerHTML = `
+        <div style="min-height:140px">
+          <h3 style="margin-bottom:10px">${s.title}</h3>
+          <p style="color:var(--muted,#9aa8bb);font-size:14px;line-height:1.55">${s.body}</p>
+        </div>
+        <div style="display:flex;justify-content:center;gap:6px;margin:18px 0">${dots}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted,#9aa8bb);cursor:pointer">
+            <input type="checkbox" id="onboardingIntroDismissCheck" ${wantsDismiss ? "checked" : ""}>Não mostrar novamente
+          </label>
+          <div style="display:flex;gap:8px">
+            ${current > 0 ? `<button class="btn secondary" type="button" id="onboardingIntroPrevBtn">Voltar</button>` : ""}
+            <button class="btn" type="button" id="onboardingIntroNextBtn">${isLast ? "Explorar o menu" : "Próximo"}</button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("onboardingIntroDismissCheck").addEventListener("change", (e) => { wantsDismiss = e.target.checked; });
+      document.getElementById("onboardingIntroNextBtn").addEventListener("click", () => {
+        if(isLast){ finish(); } else { current++; render(); }
+      });
+      const prevBtn = document.getElementById("onboardingIntroPrevBtn");
+      if(prevBtn) prevBtn.addEventListener("click", () => { current--; render(); });
+    }
+
+    function finish(){
+      markFeatureSeen("dashboard_intro");
+      if(wantsDismiss) dismissOnboardingForever();
+      closeGenericModal();
+    }
+
+    openGenericModal("Introdução", "", true);
+    render();
+  }
+
+  window.stayflowMaybeShowDashboardIntro = function(){
+    if(!isOnboardingActive()) return;
+    if(onboardingState.seen.has("dashboard_intro")) return;
+    showDashboardIntroModal();
+  };
+
+  window.stayflowLoadOnboardingState = function(){
+    const user = (window.STAYFLOW_SESSION || {}).user || {};
+    onboardingState.dismissed = !!user.onboarding_dismissed;
+    onboardingState.seen = new Set(user.onboarding_seen_features || []);
+  };
+
+  window.stayflowInitOnboarding = function(){
+    if(!isOnboardingActive()) return;
+    // So mostra o slide inicial se a pessoa realmente esta olhando o
+    // Dashboard agora (lido do DOM, .page.active - openPage guarda o
+    // ultimo id em stayflow_last_page, entao um F5 na aba Financeiro,
+    // por exemplo, restaura direto la e nao interrompe o que a pessoa
+    // estava fazendo).
+    if(document.querySelector(".page.active")?.id === "dashboard"){
+      window.stayflowMaybeShowDashboardIntro();
+    }
+  };
+})();
 </script>
 
 <script src="assets/js/chats-live.js"></script>
@@ -9860,6 +10061,7 @@ window.uploadGuestDocumentUI = async function(guestId){
       reloadDynamicContent(pageId);
       dirtyPages.delete(pageId);
     }
+    if(typeof window.stayflowMaybeShowFeatureIntro === "function") window.stayflowMaybeShowFeatureIntro(pageId);
   };
 
   const initialLang = StayFlowI18n.getInitialLang();
