@@ -125,6 +125,47 @@ def create_rooms_bulk_route(hostel_id):
     return jsonify({"success": True, "ids": room_ids, "count": len(room_ids)}), 201
 
 
+@rooms_bp.route("/rooms/import", methods=["POST"])
+@require_permission("operations")
+def import_rooms_route(hostel_id):
+    """
+    Importa quartos em lote a partir de uma planilha ja parseada no
+    frontend (lista de {name, category_name, floor}) - diferente de
+    /rooms/bulk (uma modalidade/andar pra tudo), aqui cada linha pode
+    ter sua propria modalidade/andar, pra bater com o formato real de
+    uma planilha existente.
+    """
+    data = request.get_json() or {}
+    rows = data.get("rows", [])
+    if not rows:
+        return jsonify({"success": False, "message": "Nenhuma linha pra importar."}), 400
+
+    allowed, limit_message = check_room_limit(hostel_id, additional=len(rows))
+    if not allowed:
+        return jsonify({"success": False, "message": limit_message}), 402
+
+    # Planilha de origem geralmente cita a modalidade pelo nome sem a
+    # pessoa ja ter cadastrado ela antes - cria as que faltam em vez de
+    # rejeitar a linha, pra importar de fato "de uma vez so".
+    existing_names = {c["name"].strip().lower() for c in list_room_categories(hostel_id)}
+    wanted_names = {(row.get("category_name") or "").strip() for row in rows if (row.get("category_name") or "").strip()}
+    for name in wanted_names:
+        if name.lower() not in existing_names:
+            create_room_category(hostel_id, name)
+            existing_names.add(name.lower())
+
+    created = 0
+    errors = []
+    for i, row in enumerate(rows):
+        try:
+            create_room(hostel_id, row.get("name"), row.get("category_name"), row.get("floor"))
+            created += 1
+        except ValueError as error:
+            errors.append({"row": i + 1, "message": str(error)})
+
+    return jsonify({"success": True, "created": created, "errors": errors}), 201
+
+
 @rooms_bp.route("/rooms/<int:room_id>", methods=["PATCH"])
 @require_permission("operations")
 def update_room_route(hostel_id, room_id):

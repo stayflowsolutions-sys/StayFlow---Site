@@ -8,6 +8,7 @@ from database import (
     update_guest_profile,
     save_guest_document,
     erase_guest_data,
+    get_or_create_guest,
 )
 from services.translation_service import translate_opportunity_fields
 from utils.tenant import require_permission
@@ -21,6 +22,48 @@ _ALLOWED_DOCUMENT_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "applic
 @require_permission("guests")
 def list_guests(hostel_id):
     return jsonify(get_guests_list(hostel_id))
+
+
+@guests_bp.route("/guests/import", methods=["POST"])
+@require_permission("guests")
+def import_guests_route(hostel_id):
+    """
+    Importa hospedes em lote a partir de uma planilha ja parseada no
+    frontend (lista de {name, phone, email}) - pensado pra quem esta
+    migrando de outro sistema/planilha e nao quer redigitar contato por
+    contato. Telefone e o unico campo obrigatorio (chave de identidade
+    do hospede, ver get_or_create_guest) - linha sem telefone valido e
+    reportada como erro, nunca cria hospede "orfao" sem telefone.
+    """
+    data = request.get_json() or {}
+    rows = data.get("rows", [])
+    if not rows:
+        return jsonify({"success": False, "message": "Nenhuma linha pra importar."}), 400
+
+    processed = 0
+    errors = []
+
+    for i, row in enumerate(rows):
+        raw_phone = str(row.get("phone") or "").strip()
+        phone = "".join(ch for ch in raw_phone if ch.isdigit())
+        if not phone:
+            errors.append({"row": i + 1, "message": "Telefone ausente ou inválido."})
+            continue
+
+        try:
+            guest_id = get_or_create_guest(hostel_id, phone)
+            profile_fields = {}
+            if row.get("name"):
+                profile_fields["name"] = str(row["name"]).strip()
+            if row.get("email"):
+                profile_fields["email"] = str(row["email"]).strip()
+            if profile_fields:
+                update_guest_profile(hostel_id, guest_id, **profile_fields)
+            processed += 1
+        except ValueError as error:
+            errors.append({"row": i + 1, "message": str(error)})
+
+    return jsonify({"success": True, "processed": processed, "errors": errors}), 201
 
 
 @guests_bp.route("/guests/<int:guest_id>", methods=["GET"])
