@@ -4162,7 +4162,10 @@ async function deleteRoleConfirm(roleId){
               <p style="color:var(--yellow);font-size:12px;margin-top:6px">Copie e repasse essas senhas agora - elas não vão aparecer de novo. Cada pessoa é obrigada a trocar no primeiro acesso.</p>
             </div>`
           : "";
-        previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${data.invited.length} pessoa(s) convidada(s).</p>${credentialsHtml}${errorsHtml}`);
+        const rolesWarningHtml = (data.roles_created_empty && data.roles_created_empty.length)
+          ? `<p style="color:var(--yellow);font-size:12.5px;margin-top:8px">⚠ Função(ões) criada(s) sem nenhuma permissão: <strong>${data.roles_created_empty.join(", ")}</strong>. Vá em Equipe &gt; Funções e defina o acesso antes de avisar essas pessoas.</p>`
+          : "";
+        previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${data.invited.length} pessoa(s) convidada(s).</p>${credentialsHtml}${rolesWarningHtml}${errorsHtml}`);
       } else {
         const IMPORT_COUNT_LABELS = {
           rooms: `${data.created} quarto(s) criado(s)`,
@@ -4236,7 +4239,7 @@ async function deleteRoleConfirm(roleId){
       <hr style="border-color:var(--line);margin:4px 0">
       <div>
         <h3 style="margin-bottom:6px">Equipe</h3>
-        <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, email, função</strong> (todos obrigatórios - a função já precisa existir em Equipe &gt; Funções antes de importar, pra não criar acesso com permissão indefinida).</p>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, email, função</strong> (todos obrigatórios). Função que ainda não existe é criada automaticamente <strong>sem nenhuma permissão</strong> - você define o acesso depois em Equipe &gt; Funções.</p>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
           <a href="#" onclick="downloadImportTemplate('team');return false;" style="font-size:13px">Baixar modelo CSV</a>
           <input type="file" id="importTeamFile" accept=".csv" onchange="handleImportFile('team', this)">
