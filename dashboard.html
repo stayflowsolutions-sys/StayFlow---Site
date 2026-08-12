@@ -3926,8 +3926,21 @@ async function deleteRoleConfirm(roleId){
   window._importRowsCache = { rooms: null, guests: null };
 
   const IMPORT_TEMPLATES = {
-    rooms: { filename: "modelo_quartos.csv", header: "nome,categoria,andar", sample: "101,Standard,1\n102,Standard,1\n201,Suite,2" },
-    guests: { filename: "modelo_hospedes.csv", header: "nome,telefone,email", sample: "Joao Silva,5511999998888,joao@email.com" },
+    rooms: {
+      filename: "modelo_quartos.csv",
+      header: "nome,categoria,andar,capacidade,preco_diaria",
+      sample: "101,Standard,1,2,89\n102,Standard,1,2,89\n201,Suite,2,4,149",
+    },
+    guests: {
+      filename: "modelo_hospedes.csv",
+      header: "nome,telefone,email,endereco,nacionalidade,tipo_documento,numero_documento,data_nascimento",
+      sample: "Joao Silva,5511999998888,joao@email.com,Rua Exemplo 123,Brasil,CPF,12345678900,1990-05-20",
+    },
+    reservations: {
+      filename: "modelo_reservas.csv",
+      header: "hospede,telefone,quarto,checkin,checkout,valor,status,forma_pagamento",
+      sample: "Joao Silva,5511999998888,Standard,2026-01-10,2026-01-15,445,confirmed,pix",
+    },
   };
 
   window.downloadImportTemplate = function(kind){
@@ -3992,11 +4005,28 @@ async function deleteRoleConfirm(roleId){
       name: ["nome", "name", "quarto", "numero", "número"],
       category_name: ["categoria", "category", "modalidade", "tipo"],
       floor: ["andar", "floor", "piso"],
+      capacity: ["capacidade", "capacity"],
+      price_per_night: ["preco_diaria", "preço_diária", "price_per_night", "diaria", "diária"],
     },
     guests: {
       name: ["nome", "name"],
       phone: ["telefone", "phone", "celular", "whatsapp"],
       email: ["email", "e-mail"],
+      address: ["endereco", "endereço", "address"],
+      nationality: ["nacionalidade", "nationality"],
+      document_type: ["tipo_documento", "document_type"],
+      document_number: ["numero_documento", "número_documento", "document_number"],
+      date_of_birth: ["data_nascimento", "date_of_birth", "nascimento"],
+    },
+    reservations: {
+      guest_name: ["hospede", "hóspede", "guest_name", "nome"],
+      phone: ["telefone", "phone", "celular", "whatsapp"],
+      room_type: ["quarto", "categoria", "room_type", "modalidade"],
+      checkin_date: ["checkin", "check-in", "checkin_date", "entrada"],
+      checkout_date: ["checkout", "check-out", "checkout_date", "saida", "saída"],
+      amount: ["valor", "amount", "preco", "preço"],
+      status: ["status", "situacao", "situação"],
+      payment_method: ["forma_pagamento", "payment_method", "pagamento"],
     },
   };
 
@@ -4010,8 +4040,9 @@ async function deleteRoleConfirm(roleId){
     return mapped;
   }
 
+  const IMPORT_ID_PREFIXES = { rooms: "Rooms", guests: "Guests", reservations: "Reservations" };
   function importIdPrefix(kind){
-    return kind === "rooms" ? "Rooms" : "Guests";
+    return IMPORT_ID_PREFIXES[kind];
   }
 
   window.handleImportFile = function(kind, input){
@@ -4055,7 +4086,8 @@ async function deleteRoleConfirm(roleId){
 
     const btnEl = document.getElementById(`import${importIdPrefix(kind)}Btn`);
     const previewEl = document.getElementById(`import${importIdPrefix(kind)}Preview`);
-    const idleLabel = kind === "rooms" ? "Importar quartos" : "Importar hóspedes";
+    const IMPORT_IDLE_LABELS = { rooms: "Importar quartos", guests: "Importar hóspedes", reservations: "Importar reservas" };
+    const idleLabel = IMPORT_IDLE_LABELS[kind];
 
     btnEl.disabled = true;
     btnEl.textContent = "Importando...";
@@ -4076,15 +4108,20 @@ async function deleteRoleConfirm(roleId){
         return;
       }
 
-      const countLabel = kind === "rooms" ? `${data.created} quarto(s) criado(s)` : `${data.processed} hóspede(s) importado(s)`;
+      const IMPORT_COUNT_LABELS = {
+        rooms: `${data.created} quarto(s) criado(s)`,
+        guests: `${data.processed} hóspede(s) importado(s)`,
+        reservations: `${data.created} reserva(s) criada(s)`,
+      };
       const errorsHtml = (data.errors && data.errors.length)
-        ? `<p style="color:var(--yellow);font-size:12.5px;margin-top:6px">${data.errors.length} linha(s) com erro: ${data.errors.slice(0, 5).map(e => `linha ${e.row} (${e.message})`).join("; ")}${data.errors.length > 5 ? "…" : ""}</p>`
+        ? `<p style="color:var(--yellow);font-size:12.5px;margin-top:6px">${data.errors.length} linha(s) com erro: ${data.errors.slice(0, 5).map(e => e.row ? `linha ${e.row} (${e.message})` : e.message).join("; ")}${data.errors.length > 5 ? "…" : ""}</p>`
         : "";
-      previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${countLabel}.</p>${errorsHtml}`);
+      previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${IMPORT_COUNT_LABELS[kind]}.</p>${errorsHtml}`);
       btnEl.textContent = "Concluído";
 
       if(kind === "rooms" && typeof loadOperations === "function") loadOperations();
       if(kind === "guests" && typeof loadGuests === "function") loadGuests();
+      if(kind === "reservations" && typeof loadReservations === "function") loadReservations();
     }catch(err){
       previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--red);font-size:13px;margin-top:8px">Erro de conexão.</p>`);
       btnEl.disabled = false;
@@ -4094,12 +4131,12 @@ async function deleteRoleConfirm(roleId){
 
   window.openImportDataModal = function(){
     const isAgency = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
-    window._importRowsCache = { rooms: null, guests: null };
+    window._importRowsCache = { rooms: null, guests: null, reservations: null };
 
     const roomsSection = isAgency ? "" : `
       <div>
         <h3 style="margin-bottom:6px">Quartos</h3>
-        <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, categoria, andar</strong> (categoria e andar são opcionais).</p>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, categoria, andar, capacidade, preço da diária</strong> (só nome é obrigatório - modalidade nova é criada automaticamente).</p>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
           <a href="#" onclick="downloadImportTemplate('rooms');return false;" style="font-size:13px">Baixar modelo CSV</a>
           <input type="file" id="importRoomsFile" accept=".csv" onchange="handleImportFile('rooms', this)">
@@ -4110,12 +4147,26 @@ async function deleteRoleConfirm(roleId){
       <hr style="border-color:var(--line);margin:4px 0">
     `;
 
+    const reservationsSection = isAgency ? "" : `
+      <hr style="border-color:var(--line);margin:4px 0">
+      <div>
+        <h3 style="margin-bottom:6px">Reservas (histórico)</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>hóspede, telefone, quarto, checkin, checkout, valor, status, forma de pagamento</strong> (hóspede, checkin e checkout são obrigatórios - datas no formato AAAA-MM-DD). Fica marcada como histórico: não sincroniza com Beds24/canais nem dispara notificação.</p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <a href="#" onclick="downloadImportTemplate('reservations');return false;" style="font-size:13px">Baixar modelo CSV</a>
+          <input type="file" id="importReservationsFile" accept=".csv" onchange="handleImportFile('reservations', this)">
+        </div>
+        <div id="importReservationsPreview"></div>
+        <button class="btn" type="button" id="importReservationsBtn" disabled onclick="submitImportRows('reservations')" style="margin-top:10px">Importar reservas</button>
+      </div>
+    `;
+
     openGenericModal("Importar dados", `
       <div style="display:flex;flex-direction:column;gap:18px">
         ${roomsSection}
         <div>
           <h3 style="margin-bottom:6px">Hóspedes</h3>
-          <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, telefone, email</strong> (telefone é obrigatório, só números com DDI+DDD).</p>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, telefone, email, endereço, nacionalidade, tipo/número de documento, data de nascimento</strong> (telefone é obrigatório, só números com DDI+DDD).</p>
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
             <a href="#" onclick="downloadImportTemplate('guests');return false;" style="font-size:13px">Baixar modelo CSV</a>
             <input type="file" id="importGuestsFile" accept=".csv" onchange="handleImportFile('guests', this)">
@@ -4123,6 +4174,7 @@ async function deleteRoleConfirm(roleId){
           <div id="importGuestsPreview"></div>
           <button class="btn" type="button" id="importGuestsBtn" disabled onclick="submitImportRows('guests')" style="margin-top:10px">Importar hóspedes</button>
         </div>
+        ${reservationsSection}
       </div>
     `, true);
   };
