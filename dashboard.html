@@ -1337,7 +1337,10 @@ async function deleteRoleConfirm(roleId){
       </div>
     </div>
     <div class="card">
-      <h2 data-i18n="kitchen.orders.title">🍽️ Pedidos em aberto</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="kitchen.orders.title">🍽️ Pedidos em aberto</h2>
+        <button type="button" class="btn primary" onclick="openNewKitchenOrderModal()" data-i18n="kitchen.orders.newBtn">➕ Novo pedido</button>
+      </div>
       <div class="sf-empty" id="kitchenOrdersEmpty">
         <div>
           <strong data-i18n="kitchen.orders.emptyTitle">Nenhum pedido em aberto.</strong>
@@ -1360,7 +1363,10 @@ async function deleteRoleConfirm(roleId){
 
   <div data-ops-section="maintenance" style="display:none">
     <div class="card">
-      <h2 data-i18n="maintenance.tickets.title">🔧 Chamados em aberto</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="maintenance.tickets.title">🔧 Chamados em aberto</h2>
+        <button type="button" class="btn primary" onclick="openNewMaintenanceTicketModal()" data-i18n="maintenance.tickets.newBtn">➕ Novo chamado</button>
+      </div>
       <div class="sf-empty" id="maintenanceEmpty">
         <div>
           <strong data-i18n="maintenance.tickets.emptyTitle">Nenhum chamado em aberto.</strong>
@@ -1388,7 +1394,10 @@ async function deleteRoleConfirm(roleId){
 
   <div data-ops-section="patrimonialSecurity" style="display:none">
     <div class="card">
-      <h2 data-i18n="patrimonialSecurity.incidents.title">🛡️ Incidentes em aberto</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="patrimonialSecurity.incidents.title">🛡️ Incidentes em aberto</h2>
+        <button type="button" class="btn primary" onclick="openNewSecurityIncidentModal()" data-i18n="patrimonialSecurity.incidents.newBtn">➕ Novo chamado</button>
+      </div>
       <div class="sf-empty" id="patrimonialSecurityEmpty">
         <div>
           <strong data-i18n="patrimonialSecurity.incidents.emptyTitle">Nenhum incidente em aberto.</strong>
@@ -7993,6 +8002,83 @@ window.loadMenuSummary = async function(){
   }
 };
 
+window.openNewKitchenOrderModal = async function(){
+  openGenericModal(T('kitchen.orders.newModalTitle', '🍽️ Novo pedido'), `<p style="color:var(--muted);font-size:13px">Carregando cardápio…</p>`);
+
+  let items = [];
+  try{
+    const res = await fetch("/kitchen/menu", { credentials: "same-origin" });
+    if(res.ok) items = await res.json();
+  }catch(e){
+    console.warn("Erro ao carregar cardápio pra novo pedido:", e);
+  }
+
+  if(!items.length){
+    document.getElementById("genericModalBody").innerHTML = `<p style="color:var(--muted);font-size:13px">${T('kitchen.orders.noMenuItems', 'Cadastre pelo menos um item no cardápio antes de lançar um pedido.')}</p>`;
+    return;
+  }
+
+  const itemsHtml = items.map(item => `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+      <div>
+        <div style="font-weight:700;font-size:13.5px">${item.name}</div>
+        <div style="color:var(--muted);font-size:12px">US$ ${Number(item.price || 0).toFixed(2)}</div>
+      </div>
+      <input type="number" min="0" value="0" data-menu-item-id="${item.id}" class="new-order-qty" style="width:70px;background:#02070d;border:1px solid var(--line);border-radius:12px;color:white;padding:8px 10px;text-align:center">
+    </div>
+  `).join("");
+
+  document.getElementById("genericModalBody").innerHTML = `
+    <p style="margin-bottom:10px;color:var(--muted);font-size:13px">${T('kitchen.orders.newModalDesc', 'Pra pedido que chegou no balcão/recepção, não pelo chat.')}</p>
+    <div style="grid-column:span 12;margin-bottom:14px">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.location', 'Local')}</label>
+      <input type="text" id="newOrderLocation" autocomplete="off" placeholder="${T('kitchen.orders.locationPlaceholder', 'Ex: Mesa 4, Quarto 12')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+    <div style="max-height:280px;overflow-y:auto;margin-bottom:14px">${itemsHtml}</div>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="btn" type="button" onclick="submitNewKitchenOrder()">${T('kitchen.orders.submitBtn', 'Lançar pedido')}</button>
+    </div>
+    <div id="newOrderMessage" class="generic-modal-message"></div>
+  `;
+};
+
+window.submitNewKitchenOrder = async function(){
+  const msg = document.getElementById("newOrderMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const location = (document.getElementById("newOrderLocation")?.value || "").trim();
+  const orderItems = Array.from(document.querySelectorAll(".new-order-qty"))
+    .map(el => ({ menu_item_id: Number(el.dataset.menuItemId), quantity: Number(el.value) || 0 }))
+    .filter(i => i.quantity > 0);
+
+  if(!location){
+    if(msg){ msg.textContent = T('common.location.required', 'Informe o local.'); msg.classList.add("error"); }
+    return;
+  }
+  if(!orderItems.length){
+    if(msg){ msg.textContent = T('kitchen.orders.itemsRequired', 'Escolha pelo menos um item.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch("/kitchen/orders", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ location, items: orderItems, channel: "dashboard" }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadKitchen();
+  }catch(e){
+    console.warn("Erro ao lançar pedido de cozinha:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
 window.openMenuModal = function(){
   openGenericModal(T('kitchen.menu.modalTitle', '📋 Cardápio'), `
     <p style="margin-bottom:14px">${T('kitchen.menu.modalDesc', 'Itens que a IA usa pra tirar pedido pelo chat, e que aparecem pra equipe da cozinha.')}</p>
@@ -8131,6 +8217,67 @@ window.advanceKitchenItem = async function(ticketId, itemId, currentStatus){
 
 // ----- Manutencao -----
 
+window.openNewMaintenanceTicketModal = function(){
+  openGenericModal(T('maintenance.tickets.newModalTitle', '🔧 Novo chamado'), `
+    <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('maintenance.tickets.newModalDesc', 'Pra problema relatado no balcão/recepção, não pelo chat.')}</p>
+    <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.location', 'Local')}</label>
+        <input type="text" id="newMaintenanceLocation" autocomplete="off" placeholder="${T('maintenance.locationPlaceholder', 'Ex: Quarto 12, Banheiro social')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.urgency', 'Urgência')}</label>
+        <select id="newMaintenanceUrgency" style="width:100%">
+          <option value="low">${T('common.urgency.low', 'Baixa')}</option>
+          <option value="normal" selected>${T('common.urgency.normal', 'Normal')}</option>
+          <option value="high">${T('common.urgency.high', 'Alta')}</option>
+          <option value="urgent">${T('common.urgency.urgent', 'Urgente')}</option>
+        </select>
+      </div>
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.description', 'Descrição')}</label>
+        <textarea id="newMaintenanceDescription" rows="3" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="submitNewMaintenanceTicket()">${T('maintenance.tickets.submitBtn', 'Abrir chamado')}</button>
+    </div>
+    <div id="newMaintenanceMessage" class="generic-modal-message"></div>
+  `);
+};
+
+window.submitNewMaintenanceTicket = async function(){
+  const msg = document.getElementById("newMaintenanceMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const location = (document.getElementById("newMaintenanceLocation")?.value || "").trim();
+  const description = (document.getElementById("newMaintenanceDescription")?.value || "").trim();
+  const baseUrgency = document.getElementById("newMaintenanceUrgency")?.value || "normal";
+
+  if(!location || !description){
+    if(msg){ msg.textContent = T('maintenance.tickets.fieldsRequired', 'Informe local e descrição.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch("/maintenance/tickets", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ location, description, base_urgency: baseUrgency, channel: "dashboard" }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadMaintenance();
+  }catch(e){
+    console.warn("Erro ao abrir chamado de manutenção:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
 async function loadMaintenance(){
   const emptyEl = document.getElementById("maintenanceEmpty");
   const tableEl = document.getElementById("maintenanceTable");
@@ -8204,6 +8351,67 @@ window.resolveMaintenanceTicket = async function(ticketId){
 };
 
 // ----- Seguranca Patrimonial -----
+
+window.openNewSecurityIncidentModal = function(){
+  openGenericModal(T('patrimonialSecurity.incidents.newModalTitle', '🛡️ Novo chamado'), `
+    <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('patrimonialSecurity.incidents.newModalDesc', 'Pra ocorrência registrada pela equipe (ronda, relato no balcão), não pelo chat.')}</p>
+    <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.location', 'Local')}</label>
+        <input type="text" id="newIncidentLocation" autocomplete="off" placeholder="${T('patrimonialSecurity.locationPlaceholder', 'Ex: Estacionamento, Corredor 2º andar')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.urgency', 'Urgência')}</label>
+        <select id="newIncidentUrgency" style="width:100%">
+          <option value="low">${T('common.urgency.low', 'Baixa')}</option>
+          <option value="normal">${T('common.urgency.normal', 'Normal')}</option>
+          <option value="high" selected>${T('common.urgency.high', 'Alta')}</option>
+          <option value="urgent">${T('common.urgency.urgent', 'Urgente')}</option>
+        </select>
+      </div>
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.description', 'Descrição')}</label>
+        <textarea id="newIncidentDescription" rows="3" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="submitNewSecurityIncident()">${T('patrimonialSecurity.incidents.submitBtn', 'Abrir chamado')}</button>
+    </div>
+    <div id="newIncidentMessage" class="generic-modal-message"></div>
+  `);
+};
+
+window.submitNewSecurityIncident = async function(){
+  const msg = document.getElementById("newIncidentMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const location = (document.getElementById("newIncidentLocation")?.value || "").trim();
+  const description = (document.getElementById("newIncidentDescription")?.value || "").trim();
+  const baseUrgency = document.getElementById("newIncidentUrgency")?.value || "high";
+
+  if(!location || !description){
+    if(msg){ msg.textContent = T('patrimonialSecurity.incidents.fieldsRequired', 'Informe local e descrição.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch("/patrimonial-security/incidents", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ location, description, base_urgency: baseUrgency, reported_via: "staff_patrol", channel: "dashboard" }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadPatrimonialSecurity();
+  }catch(e){
+    console.warn("Erro ao abrir chamado de segurança patrimonial:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
 
 async function loadPatrimonialSecurity(){
   loadCameraIntegration();
@@ -8438,13 +8646,16 @@ async function loadParking(){
         if(vBodyEl) vBodyEl.innerHTML = "";
         vehicles.forEach(v => {
           const serviceLabel = v.service_type === "manobrista" ? T('parking.service.valet', 'Manobrista') : T('parking.service.selfPark', 'Autoatendimento');
+          const valetBtn = v.service_type === "manobrista"
+            ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-right:6px" onclick="requestValetUI(${v.id})">${T('parking.requestValetBtn', '🔑 Chamar carro')}</button>`
+            : "";
           const row = document.createElement("tr");
           row.innerHTML = `
             <td>${v.plate || "-"}</td>
             <td>${v.model || "-"}${v.color ? " · " + v.color : ""}</td>
             <td>${v.guest_name || "-"}</td>
             <td>${serviceLabel}</td>
-            <td><button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="checkoutVehicleUI(${v.id})">${T('parking.checkoutBtn', 'Registrar saída')}</button></td>
+            <td>${valetBtn}<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="checkoutVehicleUI(${v.id})">${T('parking.checkoutBtn', 'Registrar saída')}</button></td>
           `;
           vBodyEl.appendChild(row);
         });
@@ -8484,6 +8695,24 @@ async function loadParking(){
     console.warn("Erro ao carregar /parking/valet-requests:", e);
   }
 }
+
+window.requestValetUI = async function(vehicleId){
+  try{
+    const res = await fetch(`/parking/vehicles/${vehicleId}/valet-request`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ channel: "dashboard" }),
+    });
+    if(!res.ok){
+      alert(T('common.error.generic', 'Erro de conexão.'));
+      return;
+    }
+    loadParking();
+  }catch(e){
+    console.warn("Erro ao solicitar manobrista:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
 
 window.checkoutVehicleUI = async function(vehicleId){
   try{
