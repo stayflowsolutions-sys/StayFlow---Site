@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta http-equiv="Content-Language" content="pt-BR">
+<meta name="google" content="notranslate">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StayFlow | Planos</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#03070d">
+<link rel="icon" href="/assets/images/icon-192.png">
+<link rel="stylesheet" href="static/css/tokens.css">
+<link rel="stylesheet" href="static/css/reset.css">
+<link rel="stylesheet" href="static/css/landing.css">
+<style>
+.plans-page{padding:150px 22px 100px}
+.plans-head{max-width:720px;margin:0 auto 56px;text-align:center}
+.plans-head h1{font-size:clamp(32px,4.5vw,46px);font-weight:800;letter-spacing:-1px;margin-bottom:16px}
+.plans-head p{color:var(--muted);font-size:16px;line-height:1.6}
+.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:1180px;margin:0 auto}
+.plan-card{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.09);border-radius:26px;padding:34px 28px;display:flex;flex-direction:column}
+.plan-card.featured{border-color:rgba(11,132,255,.55);background:linear-gradient(180deg,rgba(11,132,255,.12),rgba(255,255,255,.02));box-shadow:0 30px 70px rgba(11,132,255,.18)}
+.plan-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#0f8bff,#056ee7);color:#fff;font-size:12px;font-weight:800;padding:6px 16px;border-radius:999px;white-space:nowrap;box-shadow:0 12px 26px rgba(11,132,255,.35)}
+.plan-name{font-size:20px;font-weight:800;margin-bottom:6px}
+.plan-tagline{color:var(--muted);font-size:13.5px;margin-bottom:22px;min-height:36px}
+.plan-price{display:flex;align-items:baseline;gap:6px;margin-bottom:26px}
+.plan-price .amount{font-size:38px;font-weight:800;letter-spacing:-1px}
+.plan-price .period{color:var(--muted);font-size:14px}
+.plan-features{list-style:none;display:flex;flex-direction:column;gap:13px;margin-bottom:30px;flex:1}
+.plan-features li{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:#dbe4f0;line-height:1.4}
+.plan-features li::before{content:"";flex:none;width:18px;height:10px;margin-top:6px;border-left:2px solid var(--green);border-bottom:2px solid var(--green);transform:rotate(-45deg);filter:drop-shadow(0 0 4px rgba(38,224,160,.5))}
+.plan-cta{display:flex;align-items:center;justify-content:center;padding:15px;border-radius:16px;font-weight:800;font-size:15px;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13)}
+.plan-cta:hover{background:rgba(255,255,255,.1);transform:translateY(-1px)}
+.plan-card.featured .plan-cta{background:linear-gradient(180deg,#0f8bff,#056ee7);border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 38px rgba(11,132,255,.3)}
+.plans-trust{text-align:center;margin-top:36px;color:var(--muted);font-size:13.5px}
+.plans-trust a{color:#8fb4ff}
+@media(max-width:980px){.plans-grid{grid-template-columns:1fr;max-width:440px}.plan-card.featured{order:-1}}
+</style>
+</head>
+<body>
+<div class="container">
+  <nav class="navbar">
+    <a class="brand" href="index.html" aria-label="StayFlow Home">
+      <img src="assets/images/logo2.png" alt="StayFlow Logo">
+      <div class="brand-word">Stay<span>Flow</span></div>
+    </a>
+    <div class="nav-actions">
+      <a class="login-btn" href="Login.html">Já sou cliente</a>
+    </div>
+  </nav>
+
+  <section class="plans-page">
+    <div class="plans-head">
+      <h1>Escolha seu plano e comece agora</h1>
+      <p>30 dias grátis em qualquer plano, sem cartão de crédito. Você mesmo escolhe e já entra direto no painel.</p>
+    </div>
+
+    <div class="plans-grid">
+      <div class="plan-card">
+        <div class="plan-name">Starter</div>
+        <div class="plan-tagline">Pra quem está começando e quer organizar reservas, chat e financeiro num só lugar.</div>
+        <div class="plan-price"><span class="amount">US$ 89</span><span class="period">/mês</span></div>
+        <ul class="plan-features">
+          <li>Até 30 quartos</li>
+          <li>Até 10 usuários de equipe</li>
+          <li>Atendimento com IA (WhatsApp) e chat centralizado</li>
+          <li>Reservas, mapa de quartos e hóspedes</li>
+          <li>Opportunity Center e financeiro</li>
+          <li>Pagamentos de hóspede via Mercado Pago</li>
+          <li>Módulos operacionais (cozinha, manutenção, portaria, estacionamento) como add-on avulso</li>
+        </ul>
+        <a class="plan-cta" href="Register.html?plan=starter">Começar teste grátis</a>
+      </div>
+
+      <div class="plan-card featured">
+        <div class="plan-badge">Mais escolhido</div>
+        <div class="plan-name">Business</div>
+        <div class="plan-tagline">Pra operações maiores que já precisam de todos os módulos e mais gente na equipe.</div>
+        <div class="plan-price"><span class="amount">US$ 349</span><span class="period">/mês</span></div>
+        <ul class="plan-features">
+          <li>Até 80 quartos</li>
+          <li>Até 40 usuários de equipe</li>
+          <li>Tudo do plano Starter</li>
+          <li>Módulos operacionais inclusos: eventos, cozinha, manutenção, segurança patrimonial e estacionamento</li>
+          <li>Portfólio e rede de parceiros (agências)</li>
+        </ul>
+        <a class="plan-cta" href="Register.html?plan=business">Começar teste grátis</a>
+      </div>
+
+      <div class="plan-card">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-tagline">Pra redes e operações de grande porte, sem limite de quartos nem de equipe.</div>
+        <div class="plan-price"><span class="amount">US$ 699</span><span class="period">/mês</span></div>
+        <ul class="plan-features">
+          <li>Quartos ilimitados</li>
+          <li>Equipe ilimitada</li>
+          <li>Tudo do plano Business incluso</li>
+          <li>Indicado pra redes com múltiplas propriedades</li>
+        </ul>
+        <a class="plan-cta" href="Register.html?plan=enterprise">Começar teste grátis</a>
+      </div>
+    </div>
+
+    <div class="plans-trust">
+      Prefere conversar com alguém antes? <a href="https://wa.me/message/AESQYS7GU4RYI1">Fale com a gente</a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-brand"><img src="assets/images/logo2.png" alt=""><span>StayFlow — AI Digital Manager for Hospitality</span></div>
+    <div class="socials"><a href="https://www.instagram.com/stayflowsolutions" aria-label="Instagram">IG</a><a href="https://www.facebook.com/share/1BSEVzznDG" aria-label="Facebook">f</a></div>
+    <div>© 2026 StayFlow. Todos os direitos reservados.</div>
+  </footer>
+</div>
+
+<a class="whatsapp" href="https://wa.me/message/AESQYS7GU4RYI1" aria-label="StayFlow">
+  <img src="assets/images/logo2.png" alt="StayFlow">
+</a>
+</body>
+</html>
