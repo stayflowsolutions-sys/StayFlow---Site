@@ -10,6 +10,10 @@ a{color:#8fb4ff;text-decoration:none}
 </style></head><body><div class='card'>
 <div class='brand' style='display:flex;justify-content:center;align-items:center;gap:0px'><img src='assets/images/logo2.png' style='width:128px;margin-right:-28px'><h1 style='font-size:34px;margin:0'>STAY<span style='color:#2f7dff'>FLOW</span></h1></div>
 <h2>Criar conta</h2><br>
+<div id='planBadge' style='display:none;background:#0d1421;border:1px solid #2f7dff;border-radius:15px;padding:12px 16px;margin-bottom:16px;font-size:14px'>
+Plano selecionado: <strong id='planBadgeName'></strong> — <span id='planBadgePrice'></span>
+<br><a href='planos.html' style='font-size:12px'>Trocar plano</a>
+</div>
 <label>Tipo de estabelecimento</label>
 <select id='account_kind' onchange='toggleAgencyCategory()'>
 <option value='lodging'>Hospedagem</option>
@@ -24,7 +28,7 @@ a{color:#8fb4ff;text-decoration:none}
 <option value='aluguel_equipamentos'>Aluguel de equipamentos</option>
 </select>
 </div>
-<label id='hostelNameLabel'>Nome do hostel</label><input id='hostel_name' placeholder='Digite o nome do hostel'>
+<label id='hostelNameLabel'>Nome da hospedagem</label><input id='hostel_name' placeholder='Digite o nome da hospedagem'>
 <label>Seu nome</label><input id='admin_name' placeholder='Digite seu nome'>
 <label>E-mail</label><input id='email' placeholder='Digite seu e-mail'>
 <label>Senha</label><input id='password' type='password' placeholder='Crie uma senha'>
@@ -32,11 +36,18 @@ a{color:#8fb4ff;text-decoration:none}
 <a href='Login.html'>Já possui uma conta? Entrar</a>
 </div>
 <script>
+const PLAN_LABELS={starter:['Starter','US$ 89/mês'],business:['Business','US$ 349/mês'],enterprise:['Enterprise','US$ 699/mês']};
+const selectedPlan=new URLSearchParams(location.search).get('plan');
+if(selectedPlan && PLAN_LABELS[selectedPlan]){
+  planBadgeName.textContent=PLAN_LABELS[selectedPlan][0];
+  planBadgePrice.textContent=PLAN_LABELS[selectedPlan][1]+' (30 dias grátis pra testar)';
+  planBadge.style.display='block';
+}
 function toggleAgencyCategory(){
 const isAgency = account_kind.value === 'agency';
 agencyCategoryWrap.style.display = isAgency ? 'block' : 'none';
-hostelNameLabel.textContent = isAgency ? 'Nome da agência' : 'Nome do hostel';
-hostel_name.placeholder = isAgency ? 'Digite o nome da agência' : 'Digite o nome do hostel';
+hostelNameLabel.textContent = isAgency ? 'Nome da agência' : 'Nome da hospedagem';
+hostel_name.placeholder = isAgency ? 'Digite o nome da agência' : 'Digite o nome da hospedagem';
 }
 async function reg(){
 const p={
@@ -44,6 +55,7 @@ const p={
   email:email.value.trim(),password:password.value,
   account_kind:account_kind.value,
   agency_category:account_kind.value==='agency'?agency_category.value:null,
+  plan_name:(selectedPlan && PLAN_LABELS[selectedPlan])?selectedPlan:null,
 };
 const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
 const d=await r.json();

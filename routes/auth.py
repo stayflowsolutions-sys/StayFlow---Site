@@ -11,6 +11,8 @@ from database import (
     get_membership,
     get_effective_permissions,
     create_identity_and_hostel,
+    set_billing_plan,
+    PLAN_PRICES,
     create_session,
     get_valid_session,
     update_session_hostel,
@@ -131,6 +133,7 @@ def register():
     password = data.get("password", "").strip()
     account_kind = data.get("account_kind", "lodging").strip() or "lodging"
     agency_category = (data.get("agency_category") or "").strip() or None
+    plan_name = (data.get("plan_name") or "").strip() or None
 
     if not hostel_name:
         return jsonify({"success": False, "message": "Hostel name is required."}), 400
@@ -148,6 +151,8 @@ def register():
         return jsonify({"success": False, "message": "Categoria de agência inválida."}), 400
     if account_kind == "lodging":
         agency_category = None
+    if plan_name and plan_name not in PLAN_PRICES:
+        return jsonify({"success": False, "message": "Plano inválido."}), 400
 
     if get_user_by_email(email):
         return jsonify({"success": False, "message": "This email is already registered."}), 409
@@ -161,6 +166,9 @@ def register():
         )
     except sqlite3.IntegrityError:
         return jsonify({"success": False, "message": "This email is already registered."}), 409
+
+    if plan_name and plan_name != "starter":
+        set_billing_plan(result["hostel_id"], plan_name)
 
     start_new_session(result["user_id"], result["hostel_id"])
 
