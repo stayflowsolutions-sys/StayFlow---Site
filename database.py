@@ -532,6 +532,57 @@ def create_database():
     # portfolio, dashboard), so na persona da IA pra esse hostel_id.
     add_column_if_not_exists(cursor, "hostels", "ai_persona", "TEXT")
 
+    # Despesas da PROPRIA StayFlow (hosting, ferramentas, impostos etc) -
+    # nada a ver com guest_charges (receita dos CLIENTES). recurrence
+    # ('none'/'monthly'/'yearly'): ao marcar uma despesa recorrente como
+    # paga, uma proxima ocorrencia e criada automaticamente com o
+    # vencimento rolado pra frente (ver mark_stayflow_expense_paid).
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS stayflow_expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'other',
+        amount REAL NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'USD',
+        due_date TEXT,
+        recurrence TEXT NOT NULL DEFAULT 'none',
+        status TEXT NOT NULL DEFAULT 'pending',
+        paid_at TIMESTAMP,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Equipe da propria StayFlow (pessoas com acesso ao Meu painel, alem
+    # do e-mail em STAYFLOW_ADMIN_EMAILS que continua valendo como
+    # bootstrap/fallback - ver is_stayflow_admin_email em utils/tenant.py).
+    # Cada membro tambem ganha uma linha em users (login de verdade, sem
+    # hostel_id, ver add_stayflow_team_member).
+    # Snapshot diario dos totais do painel interno (MRR/comissao/contas)
+    # - so a partir de quando essa coluna comecou a existir; nao ha como
+    # reconstruir isso retroativamente (billing.status/plan_name so
+    # guarda o estado ATUAL). Uma linha por dia, sobrescrita se o
+    # overview for carregado de novo no mesmo dia (ver get_stayflow_
+    # admin_overview -> snapshot_todays_metrics, chamado a cada load).
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS stayflow_metrics_daily (
+        date TEXT PRIMARY KEY,
+        total_hostels INTEGER NOT NULL,
+        total_estimated_mrr REAL NOT NULL,
+        total_commission_collected REAL NOT NULL
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS stayflow_team (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # Suporte: 1 thread continuo por hostel_id, entre a equipe daquele
     # hostel e a StayFlow (voce). *_last_seen_at marca quando cada lado
     # abriu a conversa pela ultima vez - usado so pra calcular badge de
@@ -2774,6 +2825,7 @@ def get_user_hostels(user_id):
     cursor.execute(
         """
         SELECT h.id AS hostel_id, h.name AS hostel_name,
+               h.account_kind, h.agency_category,
                r.id AS role_id, r.name AS role_name
         FROM hostel_memberships hm
         JOIN hostels h ON h.id = hm.hostel_id
@@ -5053,6 +5105,222 @@ def list_support_threads():
     threads = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return threads
+
+
+def create_stayflow_expense(title, category, amount, currency, due_date, recurrence, notes):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO stayflow_expenses (title, category, amount, currency, due_date, recurrence, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (title, category, amount, currency, due_date, recurrence, notes))
+    expense_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return expense_id
+
+
+def list_stayflow_expenses(status=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM stayflow_expenses"
+    params = ()
+    if status:
+        query += " WHERE status = ?"
+        params = (status,)
+    query += " ORDER BY (due_date IS NULL), due_date ASC, id DESC"
+    cursor.execute(query, params)
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def get_stayflow_expense(expense_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM stayflow_expenses WHERE id = ?", (expense_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def update_stayflow_expense(expense_id, **fields):
+    if not fields:
+        return
+    allowed = {"title", "category", "amount", "currency", "due_date", "recurrence", "notes"}
+    updates = {k: v for k, v in fields.items() if k in allowed}
+    if not updates:
+        return
+    conn = get_connection()
+    cursor = conn.cursor()
+    set_clause = ", ".join(f"{k} = ?" for k in updates)
+    cursor.execute(f"UPDATE stayflow_expenses SET {set_clause} WHERE id = ?", (*updates.values(), expense_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_stayflow_expense(expense_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM stayflow_expenses WHERE id = ?", (expense_id,))
+    conn.commit()
+    conn.close()
+
+
+def mark_stayflow_expense_paid(expense_id):
+    """
+    Marca como paga; se for recorrente, cria a PROXIMA ocorrencia (mesmo
+    titulo/categoria/valor/moeda/recorrencia) com o vencimento rolado
+    +1 mes ou +1 ano a partir do vencimento atual (nao da data de hoje -
+    evita acumular atraso se ela for marcada paga com dias de atraso).
+    """
+    expense = get_stayflow_expense(expense_id)
+    if not expense:
+        raise ValueError("Despesa nao encontrada.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE stayflow_expenses SET status = 'paid', paid_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (expense_id,)
+    )
+    conn.commit()
+    conn.close()
+
+    next_id = None
+    if expense["recurrence"] in ("monthly", "yearly") and expense["due_date"]:
+        base = datetime.datetime.strptime(expense["due_date"], "%Y-%m-%d").date()
+        if expense["recurrence"] == "monthly":
+            month = base.month + 1
+            year = base.year + (1 if month > 12 else 0)
+            month = month - 12 if month > 12 else month
+            day = min(base.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+            next_due = datetime.date(year, month, day)
+        else:
+            try:
+                next_due = base.replace(year=base.year + 1)
+            except ValueError:
+                next_due = base.replace(year=base.year + 1, day=28)
+        next_id = create_stayflow_expense(
+            expense["title"], expense["category"], expense["amount"], expense["currency"],
+            next_due.isoformat(), expense["recurrence"], expense["notes"]
+        )
+
+    return {"paid_id": expense_id, "next_expense_id": next_id}
+
+
+def list_stayflow_team():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, user_id, name, email, added_at FROM stayflow_team ORDER BY added_at ASC")
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def is_email_in_stayflow_team(email):
+    if not email:
+        return False
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM stayflow_team WHERE email = ?", (email.strip().lower(),))
+    row = cursor.fetchone()
+    conn.close()
+    return bool(row)
+
+
+def add_stayflow_team_member(name, email, password_hash):
+    """
+    Cria o login de verdade (users, sem hostel_id - o acesso dele vem
+    todo de estar na allowlist/tabela de admin, nao de nenhuma
+    hostel_membership) + a linha em stayflow_team. Falha se o e-mail ja
+    existir em users (mesma regra de unicidade do cadastro normal).
+    """
+    email = email.strip().lower()
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO users (name, email, password, must_change_password) VALUES (?, ?, ?, 1)",
+            (name, email, password_hash)
+        )
+        user_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO stayflow_team (user_id, name, email) VALUES (?, ?, ?)",
+            (user_id, name, email)
+        )
+        team_id = cursor.lastrowid
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+    return {"team_id": team_id, "user_id": user_id}
+
+
+def remove_stayflow_team_member(team_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT email FROM stayflow_team WHERE id = ?", (team_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return None
+    cursor.execute("DELETE FROM stayflow_team WHERE id = ?", (team_id,))
+    conn.commit()
+    conn.close()
+    return row["email"]
+
+
+def get_account_growth_by_month():
+    """
+    Crescimento REAL e retroativo de contas (hostels.created_at existe
+    desde sempre) - numero cumulativo de contas ao final de cada mes,
+    desde a primeira conta criada ate hoje. Diferente do MRR/comissao
+    (ver get_metrics_history), isso nao depende de snapshot nenhum.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT strftime('%Y-%m', created_at) AS ym, COUNT(*) AS n FROM hostels GROUP BY ym ORDER BY ym ASC")
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    cumulative = 0
+    series = []
+    for row in rows:
+        cumulative += row["n"]
+        series.append({"month": row["ym"], "total_hostels": cumulative})
+    return series
+
+
+def snapshot_todays_metrics(total_hostels, total_estimated_mrr, total_commission_collected):
+    """INSERT OR REPLACE - uma linha por dia, sobrescrita a cada chamada no mesmo dia (idempotente)."""
+    today = datetime.date.today().isoformat()
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO stayflow_metrics_daily (date, total_hostels, total_estimated_mrr, total_commission_collected)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(date) DO UPDATE SET
+            total_hostels = excluded.total_hostels,
+            total_estimated_mrr = excluded.total_estimated_mrr,
+            total_commission_collected = excluded.total_commission_collected
+    """, (today, total_hostels, total_estimated_mrr, total_commission_collected))
+    conn.commit()
+    conn.close()
+
+
+def get_metrics_history(days=90):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM stayflow_metrics_daily WHERE date >= date('now', ?) ORDER BY date ASC",
+        (f"-{int(days)} days",)
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
 
 
 def count_new_hostels_last_days(days=7):

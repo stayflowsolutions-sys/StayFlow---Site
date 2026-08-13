@@ -210,20 +210,30 @@ def require_permission(permission_key):
 def is_stayflow_admin_email(email):
     """
     Checa um e-mail contra a allowlist STAYFLOW_ADMIN_EMAILS (variavel
-    de ambiente, lista separada por virgula) - usado tanto pelo
-    decorator require_stayflow_admin quanto por build_session_payload
-    (pra decidir se mostra o link do painel interno no frontend).
-    Nao existe conceito de "super-admin" no banco hoje - allowlist por
-    e-mail e suficiente pro uso administrativo desta fase.
+    de ambiente, lista separada por virgula - bootstrap/fallback, sempre
+    funciona mesmo se o banco tiver problema) OU contra a tabela
+    stayflow_team (equipe adicionada pela propria StayFlow via Meu
+    painel > Equipe, ver database.py add_stayflow_team_member). Usado
+    tanto pelo decorator require_stayflow_admin quanto por
+    build_session_payload (pra decidir se mostra o link do painel
+    interno no frontend). Nao existe conceito de "super-admin" no banco
+    hoje - todo mundo aqui tem acesso total ao painel interno.
     """
     import os
+
+    if not email:
+        return False
 
     admin_emails = {
         e.strip().lower()
         for e in os.getenv("STAYFLOW_ADMIN_EMAILS", "").split(",")
         if e.strip()
     }
-    return bool(email) and email.lower() in admin_emails
+    if email.lower() in admin_emails:
+        return True
+
+    from database import is_email_in_stayflow_team
+    return is_email_in_stayflow_team(email)
 
 
 def require_stayflow_admin(view_func):

@@ -88,10 +88,19 @@ def build_session_payload(user_id, hostel_id, impersonating_from_hostel_id=None)
     if not user:
         return None
 
-    hostel = get_hostel(hostel_id)
+    hostel = get_hostel(hostel_id) if hostel_id else None
 
     if impersonating_from_hostel_id:
         role_name = "Visitante StayFlow"
+        permissions = ALL_PERMISSIONS
+    elif hostel_id is None and is_stayflow_admin_email(user["email"]):
+        # Membro da equipe StayFlow (stayflow_team) sem NENHUMA
+        # hostel_membership - acontece com quem foi adicionado so pelo
+        # Meu painel > Equipe, sem hostel de teste nenhum vinculado.
+        # Acesso vem inteiro do e-mail estar na allowlist/tabela, nao de
+        # membership real - mesmo principio de is_impersonating() em
+        # utils/tenant.py, so que aqui e permanente, nao uma visita.
+        role_name = "StayFlow Admin"
         permissions = ALL_PERMISSIONS
     else:
         membership = get_membership(user_id, hostel_id)
@@ -188,6 +197,15 @@ def _complete_login(user, email):
     hostels = get_user_hostels(user["id"])
 
     if not hostels:
+        # Membro da equipe StayFlow sem NENHUM hostel de teste vinculado
+        # (adicionado so via Meu painel > Equipe) - acesso vem do e-mail
+        # estar na allowlist/stayflow_team, nao de hostel_membership
+        # nenhuma. Ver build_session_payload (hostel_id=None + admin).
+        if is_stayflow_admin_email(email):
+            start_new_session(user["id"], None)
+            log_login_attempt(user["id"], None, email, True)
+            return jsonify(build_session_payload(user["id"], None))
+
         log_login_attempt(user["id"], None, email, False)
         return jsonify({
             "success": False,
@@ -215,6 +233,7 @@ def _complete_login(user, email):
             "name": user["name"],
             "email": user["email"],
         },
+        "is_stayflow_admin": is_stayflow_admin_email(email),
         "hostels": hostels,
     })
 

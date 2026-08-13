@@ -16,6 +16,7 @@ continua sendo feito pelos endpoints ja existentes em routes/billing.py
 
 import datetime
 import os
+import secrets
 
 from flask import Blueprint, jsonify, request
 
@@ -50,6 +51,17 @@ from database import (
     list_support_threads,
     set_hostel_is_own_test_account,
     list_recent_guest_charges,
+    create_stayflow_expense,
+    list_stayflow_expenses,
+    update_stayflow_expense,
+    delete_stayflow_expense,
+    mark_stayflow_expense_paid,
+    list_stayflow_team,
+    add_stayflow_team_member,
+    remove_stayflow_team_member,
+    get_account_growth_by_month,
+    snapshot_todays_metrics,
+    get_metrics_history,
 )
 from utils.tenant import (
     require_stayflow_admin,
@@ -106,6 +118,15 @@ def overview():
             "currency": get_hostel_currency(row["hostel_id"]),
         })
 
+    total_estimated_mrr = sum(h["estimated_mrr"] for h in hostels)
+    total_commission_collected = sum(h["commission_collected"] for h in hostels)
+
+    # So tira o snapshot do dia quando e o overview COMPLETO (sem filtro
+    # de kind) - senao um load de admin-list.html?kind=agency salvaria
+    # um total parcial errado pro dia.
+    if not kind:
+        snapshot_todays_metrics(len(hostels), total_estimated_mrr, total_commission_collected)
+
     return jsonify({
         "success": True,
         "hostels": hostels,
@@ -115,11 +136,93 @@ def overview():
                 status: sum(1 for h in hostels if h["status"] == status)
                 for status in {h["status"] for h in hostels if h["status"]}
             },
-            "total_estimated_mrr": sum(h["estimated_mrr"] for h in hostels),
-            "total_commission_collected": sum(h["commission_collected"] for h in hostels),
+            "total_estimated_mrr": total_estimated_mrr,
+            "total_commission_collected": total_commission_collected,
             "new_hostels_last_7_days": count_new_hostels_last_days(7),
         },
     })
+
+
+@stayflow_admin_bp.route("/stayflow-admin/growth", methods=["GET"])
+@require_stayflow_admin
+def growth():
+    return jsonify({
+        "success": True,
+        "accounts_by_month": get_account_growth_by_month(),
+        "metrics_history": get_metrics_history(days=90),
+    })
+
+
+@stayflow_admin_bp.route("/stayflow-admin/ask", methods=["POST"])
+@require_stayflow_admin
+def ask_admin():
+    """
+    "Ask StayFlow" do Meu painel - versao propria, diferente da IA
+    interna de cada hospedagem (services/ask_agent_service.py, que gira
+    em torno de reservas/quartos/hospedes de UM hostel). Aqui nao ha
+    tool-calling: monta um snapshot real e atual dos numeros do
+    negocio (contas, MRR, comissao, trials, nao-lidos) e pede pro
+    modelo responder com base nisso, sem inventar numero nenhum.
+    """
+    data = request.get_json() or {}
+    message = (data.get("message") or "").strip()
+    history = data.get("history") or []
+    if not message:
+        return jsonify({"success": False, "message": "Mensagem vazia."}), 400
+
+    from services.ai_service import client as openai_client
+
+    overview_rows = get_stayflow_admin_overview()
+    total_hostels = len(overview_rows)
+    total_mrr = sum(PLAN_PRICES.get(r["plan_name"], 0) if r["plan_name"] else 0 for r in overview_rows)
+    total_commission = sum(r["commission_collected"] for r in overview_rows)
+    by_status = {}
+    for r in overview_rows:
+        if r["status"]:
+            by_status[r["status"]] = by_status.get(r["status"], 0) + 1
+    trialing_names = [r["hostel_name"] for r in overview_rows if r["status"] == "trialing"]
+    past_due_names = [r["hostel_name"] for r in overview_rows if r["status"] == "past_due"]
+
+    support_threads = list_support_threads()
+    support_unread = sum(1 for t in support_threads if t["unread_count"] > 0)
+
+    software_hostel_id = get_hostel_id_by_ai_persona("software")
+    chat_unread = 0
+    if software_hostel_id:
+        chat_unread = sum(1 for g in get_guests_inbox(software_hostel_id) if g["unread"])
+
+    pending_expenses = [e for e in list_stayflow_expenses(status="pending")]
+    pending_expenses_total = sum(e["amount"] for e in pending_expenses)
+
+    snapshot = (
+        f"Total accounts: {total_hostels}\n"
+        f"Accounts by status: {by_status}\n"
+        f"Trialing accounts: {', '.join(trialing_names) or 'none'}\n"
+        f"Past-due accounts: {', '.join(past_due_names) or 'none'}\n"
+        f"New accounts in the last 7 days: {count_new_hostels_last_days(7)}\n"
+        f"Estimated MRR (list price, not yet auto-charged): US$ {total_mrr:.2f}\n"
+        f"Real commission collected (via Mercado Pago Split de Pagos): US$ {total_commission:.2f}\n"
+        f"Unread sales-lead conversations (Meu chat): {chat_unread}\n"
+        f"Unread support tickets: {support_unread}\n"
+        f"Pending expenses: {len(pending_expenses)} totaling roughly US$ {pending_expenses_total:.2f} (mixed currencies, approximate)\n"
+    )
+
+    system_prompt = (
+        "You are the internal assistant of StayFlow's OWN operator dashboard ('Meu painel') — "
+        "you're helping the founder of the StayFlow company itself understand and manage the "
+        "business, not a hostel's guest-facing assistant. Below is a live, real snapshot of the "
+        "current business data. Use it to answer precisely — never invent a number that isn't in "
+        "the snapshot. If asked about something outside this snapshot, say honestly that you "
+        "don't have that data here. Reply in the same language the founder writes in. Keep "
+        "answers concise and to the point, like a sharp analyst, not a wall of text.\n\n"
+        f"CURRENT SNAPSHOT:\n{snapshot}"
+    )
+
+    messages = [{"role": "system", "content": system_prompt}] + history + [{"role": "user", "content": message}]
+    response = openai_client.chat.completions.create(model="gpt-4.1-mini", temperature=0.4, messages=messages)
+    answer = response.choices[0].message.content
+
+    return jsonify({"success": True, "answer": answer})
 
 
 @stayflow_admin_bp.route("/stayflow-admin/hostel/<int:hostel_id>", methods=["GET"])
@@ -479,3 +582,111 @@ def integrations_status():
         "admin_emails": [e.strip() for e in os.getenv("STAYFLOW_ADMIN_EMAILS", "").split(",") if e.strip()],
         "software_persona_hostel_id": get_hostel_id_by_ai_persona("software"),
     })
+
+
+# ===== Despesas (custos da PROPRIA StayFlow - hosting, ferramentas,
+# impostos etc, nada a ver com guest_charges) =====
+_EXPENSE_CATEGORIES = {"hosting", "tools", "marketing", "taxes", "other"}
+_EXPENSE_RECURRENCES = {"none", "monthly", "yearly"}
+
+
+@stayflow_admin_bp.route("/stayflow-admin/expenses", methods=["GET"])
+@require_stayflow_admin
+def expenses_list():
+    status = request.args.get("status") or None
+    return jsonify({"success": True, "expenses": list_stayflow_expenses(status=status)})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/expenses", methods=["POST"])
+@require_stayflow_admin
+def expenses_create():
+    data = request.get_json() or {}
+    title = (data.get("title") or "").strip()
+    if not title:
+        return jsonify({"success": False, "message": "Título é obrigatório."}), 400
+
+    try:
+        amount = float(data.get("amount"))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "message": "Valor inválido."}), 400
+    if amount <= 0:
+        return jsonify({"success": False, "message": "Valor precisa ser maior que zero."}), 400
+
+    category = data.get("category") or "other"
+    if category not in _EXPENSE_CATEGORIES:
+        return jsonify({"success": False, "message": "Categoria inválida."}), 400
+
+    recurrence = data.get("recurrence") or "none"
+    if recurrence not in _EXPENSE_RECURRENCES:
+        return jsonify({"success": False, "message": "Recorrência inválida."}), 400
+
+    expense_id = create_stayflow_expense(
+        title, category, amount, (data.get("currency") or "USD").upper(),
+        data.get("due_date") or None, recurrence, data.get("notes") or None
+    )
+    return jsonify({"success": True, "expense_id": expense_id}), 201
+
+
+@stayflow_admin_bp.route("/stayflow-admin/expenses/<int:expense_id>", methods=["PATCH"])
+@require_stayflow_admin
+def expenses_update(expense_id):
+    data = request.get_json() or {}
+    if "category" in data and data["category"] not in _EXPENSE_CATEGORIES:
+        return jsonify({"success": False, "message": "Categoria inválida."}), 400
+    if "recurrence" in data and data["recurrence"] not in _EXPENSE_RECURRENCES:
+        return jsonify({"success": False, "message": "Recorrência inválida."}), 400
+    update_stayflow_expense(expense_id, **data)
+    return jsonify({"success": True})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/expenses/<int:expense_id>", methods=["DELETE"])
+@require_stayflow_admin
+def expenses_delete(expense_id):
+    delete_stayflow_expense(expense_id)
+    return jsonify({"success": True})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/expenses/<int:expense_id>/mark-paid", methods=["POST"])
+@require_stayflow_admin
+def expenses_mark_paid(expense_id):
+    try:
+        result = mark_stayflow_expense_paid(expense_id)
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 404
+    return jsonify({"success": True, **result})
+
+
+# ===== Equipe da propria StayFlow =====
+@stayflow_admin_bp.route("/stayflow-admin/team", methods=["GET"])
+@require_stayflow_admin
+def team_list():
+    return jsonify({"success": True, "team": list_stayflow_team()})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/team", methods=["POST"])
+@require_stayflow_admin
+def team_add():
+    from routes.auth import hash_password
+
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    if not name or not email:
+        return jsonify({"success": False, "message": "Nome e e-mail são obrigatórios."}), 400
+
+    temp_password = secrets.token_urlsafe(9)
+    try:
+        result = add_stayflow_team_member(name, email, hash_password(temp_password))
+    except Exception as error:
+        return jsonify({"success": False, "message": "E-mail já cadastrado no sistema."}), 400
+
+    return jsonify({"success": True, "temp_password": temp_password, **result}), 201
+
+
+@stayflow_admin_bp.route("/stayflow-admin/team/<int:team_id>", methods=["DELETE"])
+@require_stayflow_admin
+def team_remove(team_id):
+    removed_email = remove_stayflow_team_member(team_id)
+    if not removed_email:
+        return jsonify({"success": False, "message": "Membro não encontrado."}), 404
+    return jsonify({"success": True})
