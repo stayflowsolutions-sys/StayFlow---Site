@@ -100,8 +100,7 @@
       // Login do dono da StayFlow (e-mail na allowlist) cai direto no
       // painel dele (admin.html) - pedido explicito: nao passar por
       // nenhuma tela intermediaria antes do local principal de trabalho.
-      // stayflow-hub.html continua existindo, so nao e mais o destino
-      // automatico do login.
+      // De la, ele troca de propriedade pelo seletor no topo do painel.
       window.location.href = data.is_stayflow_admin ? "admin.html" : "/app";
     }
 

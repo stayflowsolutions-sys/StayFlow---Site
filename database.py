@@ -523,6 +523,25 @@ def create_database():
     # portfolio, dashboard), so na persona da IA pra esse hostel_id.
     add_column_if_not_exists(cursor, "hostels", "ai_persona", "TEXT")
 
+    # Suporte: 1 thread continuo por hostel_id, entre a equipe daquele
+    # hostel e a StayFlow (voce). *_last_seen_at marca quando cada lado
+    # abriu a conversa pela ultima vez - usado so pra calcular badge de
+    # "nao lido" (comparado contra o created_at das mensagens do OUTRO
+    # lado), nunca pra esconder mensagem nenhuma.
+    add_column_if_not_exists(cursor, "hostels", "support_admin_last_seen_at", "TIMESTAMP")
+    add_column_if_not_exists(cursor, "hostels", "support_hostel_last_seen_at", "TIMESTAMP")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS support_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostel_id INTEGER NOT NULL,
+        sender TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (hostel_id) REFERENCES hostels(id)
+    )
+    """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -643,6 +662,13 @@ def create_database():
     add_column_if_not_exists(cursor, "guests", "address", "TEXT")
     add_column_if_not_exists(cursor, "guests", "document_type", "TEXT")
     add_column_if_not_exists(cursor, "guests", "document_number", "TEXT")
+
+    # Quando o admin da StayFlow abriu essa conversa pela ultima vez -
+    # usado so pelo "Meu chat" do painel interno (routes/stayflow_admin.py)
+    # pra saber se tem mensagem nova do lead desde a ultima vez que foi
+    # vista, e mostrar um badge de "nao lido" real (nao so a contagem
+    # total de conversas).
+    add_column_if_not_exists(cursor, "guests", "admin_last_seen_at", "TIMESTAMP")
 
     # se for um banco antigo (criado antes do multi-tenant), migra
     if _guests_table_needs_migration(cursor):
@@ -4842,7 +4868,8 @@ def get_guests_inbox(hostel_id):
                 WHERE c.guest_id = g.id
                 ORDER BY m.created_at DESC, m.id DESC
                 LIMIT 1
-            ) AS last_message_at
+            ) AS last_message_at,
+            g.admin_last_seen_at
         FROM guests g
         WHERE g.hostel_id = ?
         ORDER BY last_message_at DESC, g.created_at DESC
@@ -4852,7 +4879,136 @@ def get_guests_inbox(hostel_id):
 
     conn.close()
 
+    # "Nao lido" de verdade: a ultima mensagem e do lead (nao da propria
+    # StayFlow) E chegou depois da ultima vez que o admin abriu essa
+    # conversa - nao e so "tem mensagem", senao toda conversa antiga
+    # ficaria marcada como nao lida pra sempre.
+    for g in guests:
+        g["unread"] = bool(
+            g["last_message_sender"] == "user"
+            and g["last_message_at"]
+            and (not g["admin_last_seen_at"] or g["last_message_at"] > g["admin_last_seen_at"])
+        )
+
     return guests
+
+
+def mark_guest_seen_by_admin(guest_id):
+    """Marca que o admin da StayFlow abriu essa conversa agora - usado so pelo "Meu chat"."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE guests SET admin_last_seen_at = CURRENT_TIMESTAMP WHERE id = ?", (guest_id,))
+    conn.commit()
+    conn.close()
+
+
+def create_support_message(hostel_id, sender, message):
+    """sender: 'hostel' (equipe da hospedagem/agencia) ou 'stayflow' (voce, no painel interno)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO support_messages (hostel_id, sender, message) VALUES (?, ?, ?)",
+        (hostel_id, sender, message)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_support_messages(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, sender, message, created_at FROM support_messages WHERE hostel_id = ? ORDER BY created_at ASC, id ASC",
+        (hostel_id,)
+    )
+    messages = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return messages
+
+
+def mark_support_seen_by_admin(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE hostels SET support_admin_last_seen_at = CURRENT_TIMESTAMP WHERE id = ?", (hostel_id,))
+    conn.commit()
+    conn.close()
+
+
+def mark_support_seen_by_hostel(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE hostels SET support_hostel_last_seen_at = CURRENT_TIMESTAMP WHERE id = ?", (hostel_id,))
+    conn.commit()
+    conn.close()
+
+
+def count_unread_support_for_hostel(hostel_id):
+    """Mensagens da StayFlow (sender='stayflow') que a hospedagem ainda nao viu - badge no menu dela."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COUNT(*) AS n
+        FROM support_messages sm
+        JOIN hostels h ON h.id = sm.hostel_id
+        WHERE sm.hostel_id = ? AND sm.sender = 'stayflow'
+          AND (h.support_hostel_last_seen_at IS NULL OR sm.created_at > h.support_hostel_last_seen_at)
+    """, (hostel_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["n"] if row else 0
+
+
+def list_support_threads():
+    """
+    Uma linha por hostel que JA tem pelo menos 1 mensagem de suporte -
+    ordenado por atividade mais recente, com contagem de nao lidos pelo
+    admin (mesma logica de "nao lido" do Meu chat, so que o outro lado:
+    mensagens sender='hostel' mais novas que support_admin_last_seen_at).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT
+            h.id AS hostel_id,
+            h.name AS hostel_name,
+            h.account_kind,
+            h.support_admin_last_seen_at,
+            (
+                SELECT sm.message FROM support_messages sm
+                WHERE sm.hostel_id = h.id ORDER BY sm.created_at DESC, sm.id DESC LIMIT 1
+            ) AS last_message,
+            (
+                SELECT sm.sender FROM support_messages sm
+                WHERE sm.hostel_id = h.id ORDER BY sm.created_at DESC, sm.id DESC LIMIT 1
+            ) AS last_message_sender,
+            (
+                SELECT sm.created_at FROM support_messages sm
+                WHERE sm.hostel_id = h.id ORDER BY sm.created_at DESC, sm.id DESC LIMIT 1
+            ) AS last_message_at,
+            (
+                SELECT COUNT(*) FROM support_messages sm
+                WHERE sm.hostel_id = h.id AND sm.sender = 'hostel'
+                  AND (h.support_admin_last_seen_at IS NULL OR sm.created_at > h.support_admin_last_seen_at)
+            ) AS unread_count
+        FROM hostels h
+        WHERE EXISTS (SELECT 1 FROM support_messages sm WHERE sm.hostel_id = h.id)
+        ORDER BY last_message_at DESC
+    """)
+    threads = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return threads
+
+
+def count_new_hostels_last_days(days=7):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) AS n FROM hostels WHERE created_at >= datetime('now', ?)",
+        (f"-{int(days)} days",)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row["n"] if row else 0
 
 
 def get_guest_profile(hostel_id, guest_id):

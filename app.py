@@ -43,6 +43,7 @@ from routes.mercadopago_webhook import mercadopago_webhook_bp
 from routes.stayflow_admin import stayflow_admin_bp
 from routes.portfolio import portfolio_bp
 from routes.partners import partners_bp
+from routes.support import support_bp
 
 app = Flask(__name__, static_folder=None)
 
@@ -97,6 +98,7 @@ app.register_blueprint(stayflow_admin_bp)
 app.register_blueprint(portfolio_bp)
 app.register_blueprint(partners_bp)
 app.register_blueprint(onboarding_bp)
+app.register_blueprint(support_bp)
 
 # Caminho do frontend: por padrão assume que a pasta do site fica ao lado
 # da pasta do backend (ex: C:\StayFlow\backend + C:\StayFlow\StayFlow---Site).

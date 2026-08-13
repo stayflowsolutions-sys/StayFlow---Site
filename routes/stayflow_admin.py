@@ -41,6 +41,12 @@ from database import (
     get_guest_profile,
     set_guest_ai_paused,
     send_message_to_guest_now,
+    mark_guest_seen_by_admin,
+    count_new_hostels_last_days,
+    create_support_message,
+    get_support_messages,
+    mark_support_seen_by_admin,
+    list_support_threads,
 )
 from utils.tenant import (
     require_stayflow_admin,
@@ -107,6 +113,7 @@ def overview():
             },
             "total_estimated_mrr": sum(h["estimated_mrr"] for h in hostels),
             "total_commission_collected": sum(h["commission_collected"] for h in hostels),
+            "new_hostels_last_7_days": count_new_hostels_last_days(7),
         },
     })
 
@@ -336,6 +343,7 @@ def my_chat_guest_profile(guest_id):
     if not profile:
         return jsonify({"success": False, "message": "Conversa não encontrada."}), 404
 
+    mark_guest_seen_by_admin(guest_id)
     return jsonify({"success": True, **profile})
 
 
@@ -372,3 +380,38 @@ def my_chat_send_message(guest_id):
         return jsonify({"success": False, "message": "WhatsApp não configurado — mensagem não enviada."}), 502
 
     return jsonify({"success": True, **result})
+
+
+# "Suporte" - 1 thread continuo por hostel_id entre a equipe daquela
+# conta e a StayFlow (ver database.py, tabela support_messages). Do
+# lado da hospedagem/agencia, ver routes/support.py (/support/thread).
+@stayflow_admin_bp.route("/stayflow-admin/support/threads", methods=["GET"])
+@require_stayflow_admin
+def support_threads():
+    return jsonify({"success": True, "threads": list_support_threads()})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/support/threads/<int:hostel_id>", methods=["GET"])
+@require_stayflow_admin
+def support_thread_detail(hostel_id):
+    if not get_hostel(hostel_id):
+        return jsonify({"success": False, "message": "Conta não encontrada."}), 404
+
+    messages = get_support_messages(hostel_id)
+    mark_support_seen_by_admin(hostel_id)
+    return jsonify({"success": True, "messages": messages})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/support/threads/<int:hostel_id>/send", methods=["POST"])
+@require_stayflow_admin
+def support_thread_send(hostel_id):
+    if not get_hostel(hostel_id):
+        return jsonify({"success": False, "message": "Conta não encontrada."}), 404
+
+    data = request.get_json() or {}
+    message = (data.get("message") or "").strip()
+    if not message:
+        return jsonify({"success": False, "message": "Mensagem vazia."}), 400
+
+    create_support_message(hostel_id, "stayflow", message)
+    return jsonify({"success": True})
