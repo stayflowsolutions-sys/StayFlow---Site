@@ -2648,6 +2648,14 @@ async function deleteRoleConfirm(roleId){
           <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
           <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.contactPhoneHint', 'Usado pela IA pra sugerir esse número como contato alternativo em conversas de Messenger/Instagram.')}</div>
         </div>
+        <div style="grid-column:span 12">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.aiPersonaLabel', 'Este número responde como')}</label>
+          <select id="whatsappAiPersona" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+            <option value="">${T('settings.whatsapp.aiPersonaGuest', 'Atendimento da hospedagem (padrão)')}</option>
+            <option value="software">${T('settings.whatsapp.aiPersonaSoftware', 'Assistente comercial da StayFlow (só pro número oficial da StayFlow)')}</option>
+          </select>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.aiPersonaHint', 'Deixe em "Atendimento da hospedagem" a menos que este seja o número comercial da própria StayFlow — nesse caso, a IA se apresenta como assistente do software, não como recepção.')}</div>
+        </div>
       </div>
 
       <div id="whatsappTokenStatus" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
@@ -2752,6 +2760,8 @@ async function deleteRoleConfirm(roleId){
     const phoneNumberId = document.getElementById("whatsappPhoneNumberId").value.trim();
     const accessToken = document.getElementById("whatsappAccessToken").value.trim();
     const contactPhone = document.getElementById("whatsappContactPhone").value.trim();
+    const aiPersonaEl = document.getElementById("whatsappAiPersona");
+    const aiPersona = aiPersonaEl ? aiPersonaEl.value : "";
 
     if(!phoneNumberId){
       alert(T('settings.whatsapp.msg.phoneIdRequired', 'Cola o Phone Number ID que a Meta te deu.'));
@@ -2763,7 +2773,7 @@ async function deleteRoleConfirm(roleId){
         method: "POST",
         credentials: "same-origin",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ phone_number_id: phoneNumberId, access_token: accessToken, contact_phone: contactPhone })
+        body: JSON.stringify({ phone_number_id: phoneNumberId, access_token: accessToken, contact_phone: contactPhone, ai_persona: aiPersona })
       });
 
       if(!res.ok){
@@ -2795,6 +2805,9 @@ async function deleteRoleConfirm(roleId){
 
       const contactPhoneInput = document.getElementById("whatsappContactPhone");
       if(contactPhoneInput) contactPhoneInput.value = data.contact_phone || "";
+
+      const aiPersonaInput = document.getElementById("whatsappAiPersona");
+      if(aiPersonaInput) aiPersonaInput.value = data.ai_persona || "";
 
       const statusEl = document.getElementById("whatsappTokenStatus");
       if(statusEl){
