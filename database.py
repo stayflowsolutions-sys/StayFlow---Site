@@ -2483,6 +2483,23 @@ def get_effective_permissions(user_id, hostel_id):
     return sorted(role_permissions)
 
 
+def get_hostel_id_by_ai_persona(ai_persona):
+    """
+    Resolve o hostel_id marcado com um ai_persona especifico (hoje so
+    'software' e usado - o numero comercial da propria StayFlow, ver
+    coluna hostels.ai_persona). Retorna None se nenhum hostel estiver
+    marcado assim ainda - usado pelo painel interno (routes/
+    stayflow_admin.py, secao "Meu chat") pra saber de qual hostel_id
+    puxar as conversas, sem hardcodar um ID fixo no codigo.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM hostels WHERE ai_persona = ? LIMIT 1", (ai_persona,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["id"] if row else None
+
+
 def get_hostel(hostel_id):
     """Retorna os dados basicos de um hostel, ou None se nao existir."""
     conn = get_connection()

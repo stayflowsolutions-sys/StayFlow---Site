@@ -36,6 +36,11 @@ from database import (
     PLAN_PRICES,
     PLAN_ROOM_LIMITS,
     PLAN_SEAT_LIMITS,
+    get_hostel_id_by_ai_persona,
+    get_guests_list,
+    get_guest_profile,
+    set_guest_ai_paused,
+    send_message_to_guest_now,
 )
 from utils.tenant import (
     require_stayflow_admin,
@@ -292,3 +297,78 @@ def partner_ledger_payout():
 
     affected = mark_partner_referral_paid_out(hostel_id, note=note)
     return jsonify({"success": True, "rows_paid_out": affected})
+
+
+# "Meu chat" - conversas do numero comercial oficial da StayFlow (o
+# hostel com ai_persona='software', ver services/ai_service.py e a
+# coluna hostels.ai_persona em database.py). O admin da StayFlow NAO e
+# membro real dessa conta (nao ha hostel_memberships pra ele ali), por
+# isso essas rotas resolvem o hostel_id sozinhas via ai_persona em vez
+# de vir da sessao, e reaproveitam as MESMAS funcoes de database.py que
+# /guests (routes/guests.py) usa pra qualquer hospedagem normal -
+# mesma logica de negocio, so a origem do hostel_id e diferente.
+def _get_software_hostel_id():
+    return get_hostel_id_by_ai_persona("software")
+
+
+@stayflow_admin_bp.route("/stayflow-admin/my-chat/guests", methods=["GET"])
+@require_stayflow_admin
+def my_chat_guests():
+    hostel_id = _get_software_hostel_id()
+    if not hostel_id:
+        return jsonify({"success": True, "configured": False, "guests": []})
+    return jsonify({
+        "success": True,
+        "configured": True,
+        "hostel_id": hostel_id,
+        "guests": get_guests_list(hostel_id),
+    })
+
+
+@stayflow_admin_bp.route("/stayflow-admin/my-chat/guests/<int:guest_id>", methods=["GET"])
+@require_stayflow_admin
+def my_chat_guest_profile(guest_id):
+    hostel_id = _get_software_hostel_id()
+    if not hostel_id:
+        return jsonify({"success": False, "message": "Nenhum número marcado como assistente comercial da StayFlow ainda."}), 404
+
+    profile = get_guest_profile(hostel_id, guest_id)
+    if not profile:
+        return jsonify({"success": False, "message": "Conversa não encontrada."}), 404
+
+    return jsonify({"success": True, **profile})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/my-chat/guests/<int:guest_id>/toggle-ai", methods=["POST"])
+@require_stayflow_admin
+def my_chat_toggle_ai(guest_id):
+    hostel_id = _get_software_hostel_id()
+    if not hostel_id:
+        return jsonify({"success": False, "message": "Nenhum número marcado como assistente comercial da StayFlow ainda."}), 404
+
+    data = request.get_json() or {}
+    try:
+        result = set_guest_ai_paused(hostel_id, guest_id, bool(data.get("paused")))
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 404
+
+    return jsonify({"success": True, **result})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/my-chat/guests/<int:guest_id>/send-message", methods=["POST"])
+@require_stayflow_admin
+def my_chat_send_message(guest_id):
+    hostel_id = _get_software_hostel_id()
+    if not hostel_id:
+        return jsonify({"success": False, "message": "Nenhum número marcado como assistente comercial da StayFlow ainda."}), 404
+
+    data = request.get_json() or {}
+    try:
+        result = send_message_to_guest_now(hostel_id, guest_id, data.get("message"))
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+
+    if not result["sent"]:
+        return jsonify({"success": False, "message": "WhatsApp não configurado — mensagem não enviada."}), 502
+
+    return jsonify({"success": True, **result})
