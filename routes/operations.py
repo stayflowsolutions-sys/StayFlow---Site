@@ -1,10 +1,42 @@
 from datetime import date
 
-from flask import Blueprint, jsonify
-from database import get_connection, get_cleaning_list
+from flask import Blueprint, jsonify, request
+from database import get_connection, get_cleaning_list, create_ticket, get_open_tickets, resolve_ticket
 from utils.tenant import require_permission
 
 operations_bp = Blueprint("operations", __name__)
+
+
+@operations_bp.route("/operations/tasks", methods=["POST"])
+@require_permission("operations")
+def create_task_route(hostel_id):
+    """
+    Tarefa avulsa que nao se encaixa em cozinha/manutencao/seguranca
+    (ex: "trocar lampada do corredor") - chamado generico (tickets,
+    type='task'), sem setor de plantao fixo pra avisar (diferente dos
+    outros 3, ninguem e notificado automaticamente - so entra na fila
+    de Tarefas pra quem estiver olhando pegar).
+    """
+    data = request.get_json() or {}
+    description = (data.get("description") or "").strip()
+    if not description:
+        return jsonify({"success": False, "message": "description is required."}), 400
+
+    ticket_id = create_ticket(
+        hostel_id, "task",
+        location=(data.get("location") or "").strip() or None,
+        description=description,
+        base_urgency=data.get("base_urgency", "normal"),
+        channel="dashboard",
+    )
+    return jsonify({"success": True, "id": ticket_id}), 201
+
+
+@operations_bp.route("/operations/tasks/<int:ticket_id>/resolve", methods=["POST"])
+@require_permission("operations")
+def resolve_task_route(hostel_id, ticket_id):
+    resolve_ticket(hostel_id, ticket_id)
+    return jsonify({"success": True})
 
 
 @operations_bp.route("/operations", methods=["GET"])
@@ -125,6 +157,20 @@ def operations(hostel_id):
         }
         for item in cleaning_list
     ]
+
+    # Tarefas avulsas criadas manualmente (ver /operations/tasks) - unica
+    # com ticket_id no dict, pra so essas ganharem botao de "concluir" no
+    # frontend (tarefa de limpeza resolve sozinha ao marcar a cama limpa).
+    for ticket in get_open_tickets(hostel_id, ticket_type="task"):
+        label = ticket["description"] or "Tarefa"
+        if ticket["location"]:
+            label = f"{label} ({ticket['location']})"
+        tasks.append({
+            "task": label,
+            "assignee": "-",
+            "status": "pending",
+            "ticket_id": ticket["id"],
+        })
 
     # Cada cama aguardando limpeza tambem conta como alerta (nao so
     # tarefa) - sem isso, um check-out nunca incrementava o sininho de
