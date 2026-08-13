@@ -100,6 +100,17 @@
     #sidebar.sidebar{ -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
     #sidebar .menu{ -webkit-overflow-scrolling:touch; overscroll-behavior:contain; max-height:none; }
   }
+
+  /* Ask StayFlow flutuante - so a logo, sem quadrado ao redor (pedido
+     explicito: mesmo estilo do botao do index.html, nao o quadrado
+     arredondado que o dashboard normal usa em .ask-floating). */
+  .ask-floating-bare{
+    width:auto!important;height:auto!important;background:transparent!important;
+    border:none!important;border-radius:0!important;box-shadow:none!important;padding:0!important;
+  }
+  .ask-floating-bare img{ width:60px; height:auto; display:block; filter:drop-shadow(0 10px 24px rgba(11,132,255,.4)); }
+  .ask-floating-bare:hover img{ transform:translateY(-2px); }
+  .ask-floating-bare img{ transition:transform .18s; }
 </style>
 </head>
 <body>
@@ -133,6 +144,12 @@
     </button>
     <button type="button" data-tab="ranking" onclick="switchAdminTab('ranking', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 4"/><path d="M17 6h3a3 3 0 0 1-3 4"/></svg></span><span data-i18n="nav.ranking">Ranking</span>
+    </button>
+    <button type="button" data-tab="expenses" onclick="switchAdminTab('expenses', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 9h10"/><path d="M7 13h10"/><path d="M7 17h6"/></svg></span><span data-i18n="nav.expenses">Despesas</span><span class="badge" id="expensesDueBadge" style="display:none">0</span>
+    </button>
+    <button type="button" data-tab="team" onclick="switchAdminTab('team', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span><span data-i18n="nav.team">Equipe</span>
     </button>
     <button type="button" data-tab="config" onclick="switchAdminTab('config', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 2.9a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1l.4 2.9h4.8l.4-2.9a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6a7 7 0 0 0 .1-1z"/></svg></span><span data-i18n="nav.config">Configurações</span>
@@ -249,11 +266,18 @@
       <div class="section-title" data-i18n="overview.section.attention">Precisa de atenção</div>
       <div class="alert-list" id="attentionList"></div>
 
-      <div class="section-title" data-i18n="overview.section.topRanking">Top 5 do ranking</div>
-      <div id="overviewRankingPreview"></div>
+      <div class="section-title" data-i18n="overview.section.growth">Evolução da StayFlow</div>
+      <div class="card" style="padding:20px 22px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:10px">
+          <div style="display:flex;gap:16px;font-size:12px;color:var(--muted)">
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#23d2ff;margin-right:5px"></span><span data-i18n="growth.legend.accounts">Contas (histórico real)</span></span>
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#6ff0bd;margin-right:5px"></span><span data-i18n="growth.legend.mrr">MRR (a partir de hoje)</span></span>
+          </div>
+        </div>
+        <canvas id="growthCanvas" style="width:100%;height:220px;display:block"></canvas>
+        <div id="growthEmptyNote" style="font-size:11px;color:var(--muted);margin-top:10px" data-i18n="growth.note">A linha de contas é reconstruída a partir da data de cadastro de cada uma. A linha de MRR/comissão começa a acumular a partir de hoje — vai ficando mais rica dia após dia.</div>
+      </div>
 
-      <div class="section-title" data-i18n="overview.section.recentProperties">Últimas propriedades inscritas</div>
-      <div class="prop-list" id="overviewRecentList"></div>
       <div style="font-size:11px;color:var(--muted);margin-top:16px" data-i18n="overview.currencyNote">Os totais acima são somados sem conversão cambial — contas podem operar em moedas diferentes.</div>
     </section>
 
@@ -421,10 +445,164 @@
       <div class="section-title" data-i18n="config.section.admins">Administradores da StayFlow</div>
       <div id="adminEmailsList" class="prop-list"></div>
     </section>
+
+    <!-- ===== Despesas ===== -->
+    <section class="page" id="page-expenses">
+      <div class="grid">
+        <div class="card kpi span-4">
+          <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 9h10"/><path d="M7 13h10"/></svg></div></div>
+          <div><div class="label" data-i18n="expenses.kpi.pending">Pendentes</div><div class="value" id="expPendingTotal">—</div><div class="note" id="expPendingCount"></div></div>
+        </div>
+        <div class="card kpi span-4">
+          <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div></div>
+          <div><div class="label" data-i18n="expenses.kpi.dueSoon">Vencendo em 7 dias</div><div class="value" id="expDueSoonTotal">—</div><div class="note" id="expDueSoonCount"></div></div>
+        </div>
+        <div class="card kpi span-4">
+          <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div></div>
+          <div><div class="label" data-i18n="expenses.kpi.paidThisMonth">Pagas este mês</div><div class="value" id="expPaidTotal">—</div><div class="note" id="expPaidCount"></div></div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:26px 0 12px">
+        <div class="section-title" style="margin:0" data-i18n="expenses.section.list">Despesas</div>
+        <button type="button" class="btn" onclick="openExpenseForm()" data-i18n="expenses.newBtn">+ Nova despesa</button>
+      </div>
+
+      <div id="expenseFormCard" class="card" style="display:none;margin-bottom:18px">
+        <div class="grid">
+          <div class="span-6">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="expenses.form.title">Título</label>
+            <input type="text" id="expTitle" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-3">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="expenses.form.category">Categoria</label>
+            <select id="expCategory" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+              <option value="hosting" data-i18n="expenses.category.hosting">Hospedagem/Infra</option>
+              <option value="tools" data-i18n="expenses.category.tools">Ferramentas/SaaS</option>
+              <option value="marketing" data-i18n="expenses.category.marketing">Marketing</option>
+              <option value="taxes" data-i18n="expenses.category.taxes">Impostos</option>
+              <option value="other" data-i18n="expenses.category.other">Outros</option>
+            </select>
+          </div>
+          <div class="span-3">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="expenses.form.recurrence">Recorrência</label>
+            <select id="expRecurrence" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+              <option value="none" data-i18n="expenses.recurrence.none">Única</option>
+              <option value="monthly" data-i18n="expenses.recurrence.monthly">Mensal</option>
+              <option value="yearly" data-i18n="expenses.recurrence.yearly">Anual</option>
+            </select>
+          </div>
+          <div class="span-4">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="expenses.form.amount">Valor</label>
+            <input type="number" step="0.01" min="0.01" id="expAmount" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-4">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="expenses.form.currency">Moeda</label>
+            <select id="expCurrency" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+              <option value="USD">USD</option><option value="ARS">ARS</option><option value="BRL">BRL</option>
+              <option value="CLP">CLP</option><option value="PEN">PEN</option><option value="BOB">BOB</option><option value="COP">COP</option>
+            </select>
+          </div>
+          <div class="span-4">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="expenses.form.dueDate">Vencimento</label>
+            <input type="date" id="expDueDate" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-12">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="expenses.form.notes">Notas (opcional)</label>
+            <input type="text" id="expNotes" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+          <button type="button" class="btn secondary" onclick="closeExpenseForm()" data-i18n="expenses.form.cancel">Cancelar</button>
+          <button type="button" class="btn" onclick="saveExpense()" data-i18n="expenses.form.save">Salvar</button>
+        </div>
+      </div>
+
+      <div class="prop-toolbar">
+        <select id="expStatusFilter">
+          <option value="" data-i18n="expenses.filter.all">Todas</option>
+          <option value="pending" data-i18n="expenses.filter.pending">Pendentes</option>
+          <option value="paid" data-i18n="expenses.filter.paid">Pagas</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="expenses.table.title">Título</th><th data-i18n="expenses.table.category">Categoria</th>
+              <th data-i18n="expenses.table.amount">Valor</th><th data-i18n="expenses.table.due">Vencimento</th>
+              <th data-i18n="expenses.table.recurrence">Recorrência</th><th data-i18n="expenses.table.status">Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="expensesTableBody"></tbody>
+        </table>
+      </div>
+      <div class="sf-empty" id="expensesEmpty" style="display:none">
+        <div><strong data-i18n="expenses.empty">Nenhuma despesa cadastrada.</strong></div>
+      </div>
+    </section>
+
+    <!-- ===== Equipe ===== -->
+    <section class="page" id="page-team">
+      <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="team.subtitle">Quem tem acesso ao Meu painel, além do seu próprio login. Cada pessoa ganha acesso completo — não existe permissão parcial aqui ainda.</p>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button type="button" class="btn" onclick="openTeamForm()" data-i18n="team.addBtn">+ Adicionar à equipe</button>
+      </div>
+
+      <div id="teamFormCard" class="card" style="display:none;margin-bottom:18px">
+        <div class="grid">
+          <div class="span-6">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="team.form.name">Nome</label>
+            <input type="text" id="teamName" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-6">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="team.form.email">E-mail</label>
+            <input type="email" id="teamEmail" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+          <button type="button" class="btn secondary" onclick="closeTeamForm()" data-i18n="expenses.form.cancel">Cancelar</button>
+          <button type="button" class="btn" onclick="saveTeamMember()" data-i18n="expenses.form.save">Salvar</button>
+        </div>
+        <div id="teamNewPasswordBox" style="display:none;margin-top:14px;padding:14px;border-radius:14px;background:#26e0a014;border:1px solid #26e0a030">
+          <div style="font-size:12.5px;color:var(--muted);margin-bottom:6px" data-i18n="team.tempPasswordHint">Senha temporária (compartilhe com a pessoa agora — não é possível ver de novo depois):</div>
+          <code id="teamNewPasswordValue" style="font-size:15px;font-weight:800;color:#6ff0bd"></code>
+        </div>
+      </div>
+
+      <div class="prop-list" id="teamList"></div>
+    </section>
   </div>
 </div>
 
 </div>
+
+<aside id="askAdminPanel" class="ask-panel">
+  <div class="ask-head">
+    <div>
+      <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span><span data-i18n="ask.title">Pergunte à StayFlow</span></h2>
+      <p data-i18n="ask.adminSubtitle">Sobre o seu negócio — contas, financeiro, chat</p>
+    </div>
+    <button class="close-btn" onclick="closeAskAdmin()">×</button>
+  </div>
+
+  <div class="ask-body" id="askAdminBody">
+    <div class="ask-message bot" data-i18n="ask.adminWelcome">Oi! Pergunta sobre contas, MRR, comissão, trials, despesas ou o que estiver rolando no Meu chat e no Suporte — respondo com os números reais de agora.</div>
+    <button class="ask-suggestion" onclick="askAdminSuggestion('Quantas contas eu tenho e quanto de MRR estimado?')" data-i18n="ask.adminSuggestion1">Quantas contas eu tenho e quanto de MRR?</button>
+    <button class="ask-suggestion" onclick="askAdminSuggestion('Tem alguma conta que precisa de atenção agora?')" data-i18n="ask.adminSuggestion2">Alguma conta precisa de atenção?</button>
+    <button class="ask-suggestion" onclick="askAdminSuggestion('Tem mensagem sem responder no Meu chat ou no Suporte?')" data-i18n="ask.adminSuggestion3">Tem mensagem sem responder?</button>
+  </div>
+
+  <div class="ask-input">
+    <input type="text" id="askAdminInput" data-i18n-placeholder="ask.inputPlaceholder" placeholder="Pergunte algo sobre a StayFlow..." onkeydown="if(event.key==='Enter')sendAskAdmin()">
+    <button class="btn" onclick="sendAskAdmin()" data-i18n="chats.sendBtn">Enviar</button>
+  </div>
+</aside>
+
+<button class="ask-floating ask-floating-bare" onclick="openAskAdmin()" aria-label="Pergunte à StayFlow" data-i18n-title="ask.title" title="Pergunte à StayFlow">
+  <img src="assets/images/logo2.png" alt="StayFlow">
+</button>
 
 <script src="assets/js/i18n-core.js"></script>
 <script>
@@ -444,6 +622,33 @@
       "topbar.finance.title": "Financeiro", "topbar.finance.subtitle": "Relatório completo: por propriedade e registro de transações.",
       "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Quem mais gera valor pra StayFlow hoje.",
       "topbar.config.title": "Configurações", "topbar.config.subtitle": "Status das integrações de nível StayFlow.",
+      "topbar.expenses.title": "Despesas", "topbar.expenses.subtitle": "Custos da própria StayFlow — hosting, ferramentas, impostos.",
+      "topbar.team.title": "Equipe", "topbar.team.subtitle": "Quem tem acesso ao Meu painel.",
+      "nav.expenses": "Despesas", "nav.team": "Equipe",
+      "expenses.kpi.pending": "Pendentes", "expenses.kpi.dueSoon": "Vencendo em 7 dias", "expenses.kpi.paidThisMonth": "Pagas este mês",
+      "expenses.section.list": "Despesas", "expenses.newBtn": "+ Nova despesa",
+      "expenses.form.title": "Título", "expenses.form.category": "Categoria", "expenses.form.recurrence": "Recorrência",
+      "expenses.form.amount": "Valor", "expenses.form.currency": "Moeda", "expenses.form.dueDate": "Vencimento",
+      "expenses.form.notes": "Notas (opcional)", "expenses.form.cancel": "Cancelar", "expenses.form.save": "Salvar",
+      "expenses.category.hosting": "Hospedagem/Infra", "expenses.category.tools": "Ferramentas/SaaS",
+      "expenses.category.marketing": "Marketing", "expenses.category.taxes": "Impostos", "expenses.category.other": "Outros",
+      "expenses.recurrence.none": "Única", "expenses.recurrence.monthly": "Mensal", "expenses.recurrence.yearly": "Anual",
+      "expenses.filter.all": "Todas", "expenses.filter.pending": "Pendentes", "expenses.filter.paid": "Pagas",
+      "expenses.table.title": "Título", "expenses.table.category": "Categoria", "expenses.table.amount": "Valor",
+      "expenses.table.due": "Vencimento", "expenses.table.recurrence": "Recorrência", "expenses.table.status": "Status",
+      "expenses.empty": "Nenhuma despesa cadastrada.", "expenses.markPaid": "Marcar como paga", "expenses.delete": "Excluir",
+      "expenses.approxMultiCurrency": "(aprox., moedas variadas)",
+      "expenses.deleteConfirm": "Excluir esta despesa?", "expenses.noDueDate": "sem vencimento",
+      "expenses.status.pending": "Pendente", "expenses.status.paid": "Paga",
+      "team.subtitle": "Quem tem acesso ao Meu painel, além do seu próprio login. Cada pessoa ganha acesso completo — não existe permissão parcial aqui ainda.",
+      "team.addBtn": "+ Adicionar à equipe", "team.form.name": "Nome", "team.form.email": "E-mail",
+      "team.tempPasswordHint": "Senha temporária (compartilhe com a pessoa agora — não é possível ver de novo depois):",
+      "team.empty": "Só você por enquanto.", "team.remove": "Remover", "team.removeConfirm": "Remover esta pessoa da equipe?",
+      "team.addedOn": "Adicionado em {date}",
+      "ask.title": "Pergunte à StayFlow", "ask.adminSubtitle": "Sobre o seu negócio — contas, financeiro, chat",
+      "ask.adminWelcome": "Oi! Pergunta sobre contas, MRR, comissão, trials, despesas ou o que estiver rolando no Meu chat e no Suporte — respondo com os números reais de agora.",
+      "ask.adminSuggestion1": "Quantas contas eu tenho e quanto de MRR?", "ask.adminSuggestion2": "Alguma conta precisa de atenção?", "ask.adminSuggestion3": "Tem mensagem sem responder?",
+      "ask.inputPlaceholder": "Pergunte algo sobre a StayFlow...", "chats.sendBtn": "Enviar",
       "propertySelector.name": "Propriedades", "propertySelector.meta": "Ir para o dashboard de...",
       "propertySelector.title": "Ir para o dashboard de uma propriedade", "propertySelector.searchPlaceholder": "Buscar propriedade...",
       "propertySelector.empty": "Nenhuma conta de teste marcada ainda.<br>Marca uma no perfil dela (aba Propriedades → abrir a conta → \"Marcar como minha conta de teste\").",
@@ -454,6 +659,9 @@
       "overview.kpi.accounts": "Contas", "overview.kpi.mrr": "MRR estimado", "overview.kpi.mrr.note": "Cobrança automática ainda não ligada — valor de tabela.",
       "overview.kpi.commission": "Comissão real coletada", "overview.kpi.commission.note": "Dinheiro real, via Mercado Pago Split de Pagos.",
       "overview.section.attention": "Precisa de atenção", "overview.section.topRanking": "Top 5 do ranking", "overview.section.recentProperties": "Últimas propriedades inscritas",
+      "overview.section.growth": "Evolução da StayFlow",
+      "growth.legend.accounts": "Contas (histórico real)", "growth.legend.mrr": "MRR (a partir de hoje)",
+      "growth.note": "A linha de contas é reconstruída a partir da data de cadastro de cada uma. A linha de MRR/comissão começa a acumular a partir de hoje — vai ficando mais rica dia após dia.",
       "overview.currencyNote": "Os totais acima são somados sem conversão cambial — contas podem operar em moedas diferentes.",
       "overview.attention.empty": "Nenhuma conta precisando de atenção agora — trials tranquilos, sem inadimplência.",
       "overview.attention.trialToday": "trial vence hoje", "overview.attention.trialDays": "trial acaba em {days}d", "overview.attention.pastDue": "pagamento em atraso", "overview.attention.pastDueTag": "inadimplente",
@@ -511,6 +719,33 @@
       "topbar.finance.title": "Finance", "topbar.finance.subtitle": "Full report: by property and transaction log.",
       "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Who generates the most value for StayFlow today.",
       "topbar.config.title": "Settings", "topbar.config.subtitle": "Status of StayFlow-level integrations.",
+      "topbar.expenses.title": "Expenses", "topbar.expenses.subtitle": "StayFlow's own costs — hosting, tools, taxes.",
+      "topbar.team.title": "Team", "topbar.team.subtitle": "Who has access to My panel.",
+      "nav.expenses": "Expenses", "nav.team": "Team",
+      "expenses.kpi.pending": "Pending", "expenses.kpi.dueSoon": "Due in 7 days", "expenses.kpi.paidThisMonth": "Paid this month",
+      "expenses.section.list": "Expenses", "expenses.newBtn": "+ New expense",
+      "expenses.form.title": "Title", "expenses.form.category": "Category", "expenses.form.recurrence": "Recurrence",
+      "expenses.form.amount": "Amount", "expenses.form.currency": "Currency", "expenses.form.dueDate": "Due date",
+      "expenses.form.notes": "Notes (optional)", "expenses.form.cancel": "Cancel", "expenses.form.save": "Save",
+      "expenses.category.hosting": "Hosting/Infra", "expenses.category.tools": "Tools/SaaS",
+      "expenses.category.marketing": "Marketing", "expenses.category.taxes": "Taxes", "expenses.category.other": "Other",
+      "expenses.recurrence.none": "One-time", "expenses.recurrence.monthly": "Monthly", "expenses.recurrence.yearly": "Yearly",
+      "expenses.filter.all": "All", "expenses.filter.pending": "Pending", "expenses.filter.paid": "Paid",
+      "expenses.table.title": "Title", "expenses.table.category": "Category", "expenses.table.amount": "Amount",
+      "expenses.table.due": "Due date", "expenses.table.recurrence": "Recurrence", "expenses.table.status": "Status",
+      "expenses.empty": "No expenses yet.", "expenses.markPaid": "Mark as paid", "expenses.delete": "Delete",
+      "expenses.approxMultiCurrency": "(approx., mixed currencies)",
+      "expenses.deleteConfirm": "Delete this expense?", "expenses.noDueDate": "no due date",
+      "expenses.status.pending": "Pending", "expenses.status.paid": "Paid",
+      "team.subtitle": "Who has access to My panel, besides your own login. Everyone gets full access — there's no partial permission yet.",
+      "team.addBtn": "+ Add to team", "team.form.name": "Name", "team.form.email": "Email",
+      "team.tempPasswordHint": "Temporary password (share it with them now — you won't be able to see it again):",
+      "team.empty": "Just you for now.", "team.remove": "Remove", "team.removeConfirm": "Remove this person from the team?",
+      "team.addedOn": "Added on {date}",
+      "ask.title": "Ask StayFlow", "ask.adminSubtitle": "About your business — accounts, finances, chat",
+      "ask.adminWelcome": "Hi! Ask about accounts, MRR, commission, trials, expenses, or what's happening in My chat and Support — I'll answer with the real current numbers.",
+      "ask.adminSuggestion1": "How many accounts and how much MRR?", "ask.adminSuggestion2": "Does any account need attention?", "ask.adminSuggestion3": "Any unanswered messages?",
+      "ask.inputPlaceholder": "Ask something about StayFlow...", "chats.sendBtn": "Send",
       "propertySelector.name": "Properties", "propertySelector.meta": "Go to the dashboard of...",
       "propertySelector.title": "Go to a property's dashboard", "propertySelector.searchPlaceholder": "Search property...",
       "propertySelector.empty": "No test account marked yet.<br>Mark one on its profile (Properties tab → open the account → \"Mark as my test account\").",
@@ -521,6 +756,9 @@
       "overview.kpi.accounts": "Accounts", "overview.kpi.mrr": "Estimated MRR", "overview.kpi.mrr.note": "Automatic billing not connected yet — list value.",
       "overview.kpi.commission": "Commission collected", "overview.kpi.commission.note": "Real money, via Mercado Pago Split de Pagos.",
       "overview.section.attention": "Needs attention", "overview.section.topRanking": "Top 5 ranking", "overview.section.recentProperties": "Latest properties signed up",
+      "overview.section.growth": "StayFlow's growth",
+      "growth.legend.accounts": "Accounts (real history)", "growth.legend.mrr": "MRR (from today)",
+      "growth.note": "The accounts line is rebuilt from each account's signup date. The MRR/commission line starts accumulating today — it'll get richer day by day.",
       "overview.currencyNote": "Totals above are added without currency conversion — accounts can operate in different currencies.",
       "overview.attention.empty": "No account needs attention right now — trials are fine, no overdue payments.",
       "overview.attention.trialToday": "trial ends today", "overview.attention.trialDays": "trial ends in {days}d", "overview.attention.pastDue": "payment overdue", "overview.attention.pastDueTag": "overdue",
@@ -578,6 +816,33 @@
       "topbar.finance.title": "Finanzas", "topbar.finance.subtitle": "Informe completo: por propiedad y registro de transacciones.",
       "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Quién genera más valor para StayFlow hoy.",
       "topbar.config.title": "Configuración", "topbar.config.subtitle": "Estado de las integraciones a nivel StayFlow.",
+      "topbar.expenses.title": "Gastos", "topbar.expenses.subtitle": "Costos propios de StayFlow — hosting, herramientas, impuestos.",
+      "topbar.team.title": "Equipo", "topbar.team.subtitle": "Quién tiene acceso a Mi panel.",
+      "nav.expenses": "Gastos", "nav.team": "Equipo",
+      "expenses.kpi.pending": "Pendientes", "expenses.kpi.dueSoon": "Vencen en 7 días", "expenses.kpi.paidThisMonth": "Pagados este mes",
+      "expenses.section.list": "Gastos", "expenses.newBtn": "+ Nuevo gasto",
+      "expenses.form.title": "Título", "expenses.form.category": "Categoría", "expenses.form.recurrence": "Recurrencia",
+      "expenses.form.amount": "Monto", "expenses.form.currency": "Moneda", "expenses.form.dueDate": "Vencimiento",
+      "expenses.form.notes": "Notas (opcional)", "expenses.form.cancel": "Cancelar", "expenses.form.save": "Guardar",
+      "expenses.category.hosting": "Hosting/Infra", "expenses.category.tools": "Herramientas/SaaS",
+      "expenses.category.marketing": "Marketing", "expenses.category.taxes": "Impuestos", "expenses.category.other": "Otros",
+      "expenses.recurrence.none": "Única", "expenses.recurrence.monthly": "Mensual", "expenses.recurrence.yearly": "Anual",
+      "expenses.filter.all": "Todos", "expenses.filter.pending": "Pendientes", "expenses.filter.paid": "Pagados",
+      "expenses.table.title": "Título", "expenses.table.category": "Categoría", "expenses.table.amount": "Monto",
+      "expenses.table.due": "Vencimiento", "expenses.table.recurrence": "Recurrencia", "expenses.table.status": "Estado",
+      "expenses.empty": "Todavía no hay gastos.", "expenses.markPaid": "Marcar como pagado", "expenses.delete": "Eliminar",
+      "expenses.approxMultiCurrency": "(aprox., monedas variadas)",
+      "expenses.deleteConfirm": "¿Eliminar este gasto?", "expenses.noDueDate": "sin vencimiento",
+      "expenses.status.pending": "Pendiente", "expenses.status.paid": "Pagado",
+      "team.subtitle": "Quién tiene acceso a Mi panel, además de tu propio login. Todos tienen acceso completo — todavía no existe permiso parcial acá.",
+      "team.addBtn": "+ Agregar al equipo", "team.form.name": "Nombre", "team.form.email": "Correo",
+      "team.tempPasswordHint": "Contraseña temporal (compartila con la persona ahora — no vas a poder verla de nuevo):",
+      "team.empty": "Solo vos por ahora.", "team.remove": "Quitar", "team.removeConfirm": "¿Quitar a esta persona del equipo?",
+      "team.addedOn": "Agregado el {date}",
+      "ask.title": "Preguntale a StayFlow", "ask.adminSubtitle": "Sobre tu negocio — cuentas, finanzas, chat",
+      "ask.adminWelcome": "¡Hola! Preguntame sobre cuentas, MRR, comisión, trials, gastos o lo que esté pasando en Mi chat y Soporte — respondo con los números reales de ahora.",
+      "ask.adminSuggestion1": "¿Cuántas cuentas tengo y cuánto de MRR?", "ask.adminSuggestion2": "¿Alguna cuenta necesita atención?", "ask.adminSuggestion3": "¿Hay mensajes sin responder?",
+      "ask.inputPlaceholder": "Preguntá algo sobre StayFlow...", "chats.sendBtn": "Enviar",
       "propertySelector.name": "Propiedades", "propertySelector.meta": "Ir al dashboard de...",
       "propertySelector.title": "Ir al dashboard de una propiedad", "propertySelector.searchPlaceholder": "Buscar propiedad...",
       "propertySelector.empty": "Todavía no marcaste ninguna cuenta de prueba.<br>Marcala en su perfil (pestaña Propiedades → abrir la cuenta → \"Marcar como mi cuenta de prueba\").",
@@ -588,6 +853,9 @@
       "overview.kpi.accounts": "Cuentas", "overview.kpi.mrr": "MRR estimado", "overview.kpi.mrr.note": "El cobro automático todavía no está conectado — valor de lista.",
       "overview.kpi.commission": "Comisión real cobrada", "overview.kpi.commission.note": "Dinero real, vía Mercado Pago Split de Pagos.",
       "overview.section.attention": "Necesita atención", "overview.section.topRanking": "Top 5 del ranking", "overview.section.recentProperties": "Últimas propiedades inscritas",
+      "overview.section.growth": "Evolución de StayFlow",
+      "growth.legend.accounts": "Cuentas (histórico real)", "growth.legend.mrr": "MRR (desde hoy)",
+      "growth.note": "La línea de cuentas se reconstruye a partir de la fecha de alta de cada una. La línea de MRR/comisión empieza a acumularse desde hoy — se va enriqueciendo día a día.",
       "overview.currencyNote": "Los totales de arriba se suman sin conversión de moneda — cada cuenta puede operar en una moneda distinta.",
       "overview.attention.empty": "Ninguna cuenta necesita atención ahora — trials tranquilos, sin mora.",
       "overview.attention.trialToday": "el trial vence hoy", "overview.attention.trialDays": "el trial termina en {days}d", "overview.attention.pastDue": "pago atrasado", "overview.attention.pastDueTag": "en mora",
@@ -645,6 +913,33 @@
       "topbar.finance.title": "Finances", "topbar.finance.subtitle": "Rapport complet : par propriété et journal des transactions.",
       "topbar.ranking.title": "Classement", "topbar.ranking.subtitle": "Qui génère le plus de valeur pour StayFlow aujourd'hui.",
       "topbar.config.title": "Paramètres", "topbar.config.subtitle": "État des intégrations au niveau StayFlow.",
+      "topbar.expenses.title": "Dépenses", "topbar.expenses.subtitle": "Coûts propres de StayFlow — hébergement, outils, impôts.",
+      "topbar.team.title": "Équipe", "topbar.team.subtitle": "Qui a accès à Mon panneau.",
+      "nav.expenses": "Dépenses", "nav.team": "Équipe",
+      "expenses.kpi.pending": "En attente", "expenses.kpi.dueSoon": "Échéance sous 7 jours", "expenses.kpi.paidThisMonth": "Payées ce mois-ci",
+      "expenses.section.list": "Dépenses", "expenses.newBtn": "+ Nouvelle dépense",
+      "expenses.form.title": "Titre", "expenses.form.category": "Catégorie", "expenses.form.recurrence": "Récurrence",
+      "expenses.form.amount": "Montant", "expenses.form.currency": "Devise", "expenses.form.dueDate": "Échéance",
+      "expenses.form.notes": "Notes (optionnel)", "expenses.form.cancel": "Annuler", "expenses.form.save": "Enregistrer",
+      "expenses.category.hosting": "Hébergement/Infra", "expenses.category.tools": "Outils/SaaS",
+      "expenses.category.marketing": "Marketing", "expenses.category.taxes": "Impôts", "expenses.category.other": "Autres",
+      "expenses.recurrence.none": "Unique", "expenses.recurrence.monthly": "Mensuelle", "expenses.recurrence.yearly": "Annuelle",
+      "expenses.filter.all": "Toutes", "expenses.filter.pending": "En attente", "expenses.filter.paid": "Payées",
+      "expenses.table.title": "Titre", "expenses.table.category": "Catégorie", "expenses.table.amount": "Montant",
+      "expenses.table.due": "Échéance", "expenses.table.recurrence": "Récurrence", "expenses.table.status": "Statut",
+      "expenses.empty": "Aucune dépense pour l'instant.", "expenses.markPaid": "Marquer comme payée", "expenses.delete": "Supprimer",
+      "expenses.approxMultiCurrency": "(approx., devises variées)",
+      "expenses.deleteConfirm": "Supprimer cette dépense ?", "expenses.noDueDate": "sans échéance",
+      "expenses.status.pending": "En attente", "expenses.status.paid": "Payée",
+      "team.subtitle": "Qui a accès à Mon panneau, en plus de votre propre connexion. Tout le monde a un accès complet — pas encore de permission partielle ici.",
+      "team.addBtn": "+ Ajouter à l'équipe", "team.form.name": "Nom", "team.form.email": "E-mail",
+      "team.tempPasswordHint": "Mot de passe temporaire (partagez-le maintenant — vous ne pourrez plus le revoir) :",
+      "team.empty": "Juste vous pour l'instant.", "team.remove": "Retirer", "team.removeConfirm": "Retirer cette personne de l'équipe ?",
+      "team.addedOn": "Ajouté le {date}",
+      "ask.title": "Demandez à StayFlow", "ask.adminSubtitle": "Sur votre activité — comptes, finances, chat",
+      "ask.adminWelcome": "Salut ! Demandez-moi les comptes, le MRR, la commission, les essais, les dépenses, ou ce qui se passe dans Mon chat et Support — je réponds avec les vrais chiffres actuels.",
+      "ask.adminSuggestion1": "Combien de comptes et quel MRR ?", "ask.adminSuggestion2": "Un compte a besoin d'attention ?", "ask.adminSuggestion3": "Des messages sans réponse ?",
+      "ask.inputPlaceholder": "Posez une question sur StayFlow...", "chats.sendBtn": "Envoyer",
       "propertySelector.name": "Propriétés", "propertySelector.meta": "Aller au tableau de bord de...",
       "propertySelector.title": "Aller au tableau de bord d'une propriété", "propertySelector.searchPlaceholder": "Rechercher une propriété...",
       "propertySelector.empty": "Aucun compte de test marqué pour l'instant.<br>Marquez-en un sur son profil (onglet Propriétés → ouvrir le compte → \"Marquer comme mon compte de test\").",
@@ -655,6 +950,9 @@
       "overview.kpi.accounts": "Comptes", "overview.kpi.mrr": "MRR estimé", "overview.kpi.mrr.note": "Facturation automatique pas encore connectée — valeur catalogue.",
       "overview.kpi.commission": "Commission réelle collectée", "overview.kpi.commission.note": "Argent réel, via Mercado Pago Split de Pagos.",
       "overview.section.attention": "Nécessite votre attention", "overview.section.topRanking": "Top 5 du classement", "overview.section.recentProperties": "Dernières propriétés inscrites",
+      "overview.section.growth": "Évolution de StayFlow",
+      "growth.legend.accounts": "Comptes (historique réel)", "growth.legend.mrr": "MRR (à partir d'aujourd'hui)",
+      "growth.note": "La courbe des comptes est reconstruite à partir de la date d'inscription de chacun. La courbe MRR/commission commence à s'accumuler à partir d'aujourd'hui — elle s'enrichira jour après jour.",
       "overview.currencyNote": "Les totaux ci-dessus sont additionnés sans conversion de devise — les comptes peuvent opérer dans des devises différentes.",
       "overview.attention.empty": "Aucun compte ne nécessite d'attention pour l'instant — essais tranquilles, aucun impayé.",
       "overview.attention.trialToday": "l'essai se termine aujourd'hui", "overview.attention.trialDays": "l'essai se termine dans {days}j", "overview.attention.pastDue": "paiement en retard", "overview.attention.pastDueTag": "impayé",
@@ -712,6 +1010,33 @@
       "topbar.finance.title": "Finanzen", "topbar.finance.subtitle": "Vollständiger Bericht: nach Objekt und Transaktionsprotokoll.",
       "topbar.ranking.title": "Rangliste", "topbar.ranking.subtitle": "Wer heute den meisten Wert für StayFlow generiert.",
       "topbar.config.title": "Einstellungen", "topbar.config.subtitle": "Status der Integrationen auf StayFlow-Ebene.",
+      "topbar.expenses.title": "Ausgaben", "topbar.expenses.subtitle": "Eigene Kosten von StayFlow — Hosting, Tools, Steuern.",
+      "topbar.team.title": "Team", "topbar.team.subtitle": "Wer Zugriff auf Mein Panel hat.",
+      "nav.expenses": "Ausgaben", "nav.team": "Team",
+      "expenses.kpi.pending": "Ausstehend", "expenses.kpi.dueSoon": "Fällig in 7 Tagen", "expenses.kpi.paidThisMonth": "Diesen Monat bezahlt",
+      "expenses.section.list": "Ausgaben", "expenses.newBtn": "+ Neue Ausgabe",
+      "expenses.form.title": "Titel", "expenses.form.category": "Kategorie", "expenses.form.recurrence": "Wiederholung",
+      "expenses.form.amount": "Betrag", "expenses.form.currency": "Währung", "expenses.form.dueDate": "Fälligkeit",
+      "expenses.form.notes": "Notizen (optional)", "expenses.form.cancel": "Abbrechen", "expenses.form.save": "Speichern",
+      "expenses.category.hosting": "Hosting/Infra", "expenses.category.tools": "Tools/SaaS",
+      "expenses.category.marketing": "Marketing", "expenses.category.taxes": "Steuern", "expenses.category.other": "Sonstiges",
+      "expenses.recurrence.none": "Einmalig", "expenses.recurrence.monthly": "Monatlich", "expenses.recurrence.yearly": "Jährlich",
+      "expenses.filter.all": "Alle", "expenses.filter.pending": "Ausstehend", "expenses.filter.paid": "Bezahlt",
+      "expenses.table.title": "Titel", "expenses.table.category": "Kategorie", "expenses.table.amount": "Betrag",
+      "expenses.table.due": "Fälligkeit", "expenses.table.recurrence": "Wiederholung", "expenses.table.status": "Status",
+      "expenses.empty": "Noch keine Ausgaben.", "expenses.markPaid": "Als bezahlt markieren", "expenses.delete": "Löschen",
+      "expenses.approxMultiCurrency": "(ca., verschiedene Währungen)",
+      "expenses.deleteConfirm": "Diese Ausgabe löschen?", "expenses.noDueDate": "keine Fälligkeit",
+      "expenses.status.pending": "Ausstehend", "expenses.status.paid": "Bezahlt",
+      "team.subtitle": "Wer außer Ihnen selbst Zugriff auf Mein Panel hat. Jeder erhält vollen Zugriff — es gibt noch keine teilweisen Berechtigungen.",
+      "team.addBtn": "+ Zum Team hinzufügen", "team.form.name": "Name", "team.form.email": "E-Mail",
+      "team.tempPasswordHint": "Temporäres Passwort (jetzt mit der Person teilen — Sie können es danach nicht mehr sehen):",
+      "team.empty": "Bisher nur Sie.", "team.remove": "Entfernen", "team.removeConfirm": "Diese Person aus dem Team entfernen?",
+      "team.addedOn": "Hinzugefügt am {date}",
+      "ask.title": "Fragen Sie StayFlow", "ask.adminSubtitle": "Über Ihr Geschäft — Konten, Finanzen, Chat",
+      "ask.adminWelcome": "Hallo! Fragen Sie nach Konten, MRR, Provision, Testphasen, Ausgaben oder was in Mein Chat und Support passiert — ich antworte mit den echten aktuellen Zahlen.",
+      "ask.adminSuggestion1": "Wie viele Konten und wie viel MRR?", "ask.adminSuggestion2": "Braucht ein Konto Aufmerksamkeit?", "ask.adminSuggestion3": "Gibt es unbeantwortete Nachrichten?",
+      "ask.inputPlaceholder": "Fragen Sie etwas zu StayFlow...", "chats.sendBtn": "Senden",
       "propertySelector.name": "Unterkünfte", "propertySelector.meta": "Zum Dashboard von...",
       "propertySelector.title": "Zum Dashboard einer Unterkunft gehen", "propertySelector.searchPlaceholder": "Unterkunft suchen...",
       "propertySelector.empty": "Noch kein Testkonto markiert.<br>Markieren Sie eines im Profil (Reiter Unterkünfte → Konto öffnen → \"Als mein Testkonto markieren\").",
@@ -722,6 +1047,9 @@
       "overview.kpi.accounts": "Konten", "overview.kpi.mrr": "Geschätzter MRR", "overview.kpi.mrr.note": "Automatische Abrechnung noch nicht angebunden — Listenwert.",
       "overview.kpi.commission": "Erhaltene Provision", "overview.kpi.commission.note": "Echtes Geld, über Mercado Pago Split de Pagos.",
       "overview.section.attention": "Braucht Aufmerksamkeit", "overview.section.topRanking": "Top 5 der Rangliste", "overview.section.recentProperties": "Zuletzt angemeldete Unterkünfte",
+      "overview.section.growth": "Wachstum von StayFlow",
+      "growth.legend.accounts": "Konten (echte Historie)", "growth.legend.mrr": "MRR (ab heute)",
+      "growth.note": "Die Konten-Linie wird anhand des Anmeldedatums jedes Kontos rekonstruiert. Die MRR/Provisions-Linie beginnt heute zu sammeln — sie wird Tag für Tag reicher.",
       "overview.currencyNote": "Die Summen oben werden ohne Währungsumrechnung addiert — Konten können in unterschiedlichen Währungen arbeiten.",
       "overview.attention.empty": "Aktuell braucht kein Konto Aufmerksamkeit — Testphasen laufen ruhig, keine Zahlungsrückstände.",
       "overview.attention.trialToday": "Testphase endet heute", "overview.attention.trialDays": "Testphase endet in {days}T", "overview.attention.pastDue": "Zahlung überfällig", "overview.attention.pastDueTag": "überfällig",
@@ -854,6 +1182,9 @@
     loadPayouts();
     loadIntegrationsStatus();
     if(txOffset > 0) loadTransactions(true);
+    loadExpenses();
+    loadTeam();
+    renderGrowthChart();
   }
 
   function formatMoney(value, currency){
@@ -942,14 +1273,6 @@
     document.getElementById("sumCommission").textContent = formatMoney(s.total_commission_collected, "USD");
 
     renderAttention(data.hostels);
-
-    const ranked = [...data.hostels].sort((a, b) => (b.estimated_mrr + b.commission_collected) - (a.estimated_mrr + a.commission_collected));
-    document.getElementById("overviewRankingPreview").innerHTML = rankListHtml(ranked.slice(0, 5));
-
-    const recent = [...data.hostels].slice(0, 6);
-    document.getElementById("overviewRecentList").innerHTML = recent.length
-      ? recent.map(propRowHtml).join("")
-      : `<div class="prop-empty">${AT("overview.noProperties")}</div>`;
   }
 
   function renderProperties(){
@@ -1033,6 +1356,153 @@
       alert("Erro de conexão.");
     }
   };
+
+  // ===== Grafico de evolucao (Visao geral) =====
+  let growthData = null;
+
+  async function loadGrowth(){
+    try{
+      const res = await fetch("/stayflow-admin/growth", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+      growthData = data;
+      renderGrowthChart();
+    }catch(e){
+      console.warn("Erro ao carregar evolução:", e);
+    }
+  }
+
+  function renderGrowthChart(){
+    const canvas = document.getElementById("growthCanvas");
+    if(!canvas || !growthData) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth || canvas.parentElement.clientWidth;
+    const cssH = 220;
+    canvas.width = cssW * dpr;
+    canvas.height = cssH * dpr;
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const padL = 42, padR = 12, padT = 14, padB = 24;
+    const plotW = cssW - padL - padR;
+    const plotH = cssH - padT - padB;
+
+    const accounts = growthData.accounts_by_month || [];
+    const mrrHistory = growthData.metrics_history || [];
+
+    if(!accounts.length){
+      ctx.fillStyle = "#65758b";
+      ctx.font = "13px Inter, sans-serif";
+      ctx.fillText(AT("overview.noProperties"), padL, padT + plotH / 2);
+      return;
+    }
+
+    const maxAccounts = Math.max(...accounts.map(a => a.total_hostels), 1);
+    const maxMrr = Math.max(...mrrHistory.map(m => m.total_estimated_mrr), 1);
+
+    // Eixo Y esquerdo (contas) - grade horizontal leve
+    ctx.strokeStyle = "#ffffff0e";
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "#65758b";
+    ctx.font = "10.5px Inter, sans-serif";
+    for(let i = 0; i <= 3; i++){
+      const y = padT + plotH - (plotH * i / 3);
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL + plotW, y);
+      ctx.stroke();
+      ctx.fillText(String(Math.round(maxAccounts * i / 3)), 4, y + 3);
+    }
+
+    // Linha de contas (cumulativa, por mes) - area preenchida sutil + linha
+    const xForIndex = (i, n) => padL + (n <= 1 ? plotW / 2 : plotW * i / (n - 1));
+    const yForAccounts = v => padT + plotH - (plotH * v / maxAccounts);
+
+    ctx.beginPath();
+    accounts.forEach((a, i) => {
+      const x = xForIndex(i, accounts.length);
+      const y = yForAccounts(a.total_hostels);
+      if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    const lastX = xForIndex(accounts.length - 1, accounts.length);
+    ctx.lineTo(lastX, padT + plotH);
+    ctx.lineTo(padL, padT + plotH);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+    grad.addColorStop(0, "#23d2ff33");
+    grad.addColorStop(1, "#23d2ff02");
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    accounts.forEach((a, i) => {
+      const x = xForIndex(i, accounts.length);
+      const y = yForAccounts(a.total_hostels);
+      if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = "#23d2ff";
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
+    ctx.stroke();
+
+    // Ponto final destacado + rotulo do mes em cada ponto
+    ctx.fillStyle = "#03070d";
+    accounts.forEach((a, i) => {
+      const x = xForIndex(i, accounts.length);
+      const y = yForAccounts(a.total_hostels);
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#23d2ff";
+      ctx.fill();
+      ctx.strokeStyle = "#03070d";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+    ctx.fillStyle = "#65758b";
+    ctx.font = "10px Inter, sans-serif";
+    ctx.textAlign = "center";
+    accounts.forEach((a, i) => {
+      if(accounts.length > 8 && i % Math.ceil(accounts.length / 8) !== 0 && i !== accounts.length - 1) return;
+      const x = xForIndex(i, accounts.length);
+      ctx.fillText(a.month.slice(2), x, padT + plotH + 16);
+    });
+    ctx.textAlign = "left";
+
+    // Linha de MRR (verde), so desenha se tiver 2+ pontos - com 1 ponto
+    // so, mostra so o marcador (sem linha, nao ha "evolucao" ainda).
+    if(mrrHistory.length){
+      const xForMrr = (i, n) => padL + (n <= 1 ? plotW - 6 : plotW * i / (n - 1));
+      const yForMrr = v => padT + plotH - (plotH * v / maxMrr) * 0.9;
+
+      if(mrrHistory.length > 1){
+        ctx.beginPath();
+        mrrHistory.forEach((m, i) => {
+          const x = xForMrr(i, mrrHistory.length);
+          const y = yForMrr(m.total_estimated_mrr);
+          if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = "#6ff0bd";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      mrrHistory.forEach((m, i) => {
+        const x = xForMrr(i, mrrHistory.length);
+        const y = yForMrr(m.total_estimated_mrr);
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = "#6ff0bd";
+        ctx.fill();
+      });
+    }
+  }
+
+  window.addEventListener("resize", () => { if(growthData) renderGrowthChart(); });
 
   async function loadOverview(){
     const res = await fetch("/stayflow-admin/overview", { credentials: "same-origin" });
@@ -1211,6 +1681,263 @@
       btn.textContent = AT("payouts.markPaid");
     }
   };
+
+  // ===== Despesas =====
+  const EXPENSE_CATEGORY_KEYS = { hosting: "expenses.category.hosting", tools: "expenses.category.tools", marketing: "expenses.category.marketing", taxes: "expenses.category.taxes", other: "expenses.category.other" };
+  const EXPENSE_RECURRENCE_KEYS = { none: "expenses.recurrence.none", monthly: "expenses.recurrence.monthly", yearly: "expenses.recurrence.yearly" };
+  let expensesCache = [];
+  let editingExpenseId = null;
+
+  window.openExpenseForm = function(expense){
+    editingExpenseId = expense ? expense.id : null;
+    document.getElementById("expTitle").value = expense ? expense.title : "";
+    document.getElementById("expCategory").value = expense ? expense.category : "hosting";
+    document.getElementById("expRecurrence").value = expense ? expense.recurrence : "none";
+    document.getElementById("expAmount").value = expense ? expense.amount : "";
+    document.getElementById("expCurrency").value = expense ? expense.currency : "USD";
+    document.getElementById("expDueDate").value = expense ? (expense.due_date || "") : "";
+    document.getElementById("expNotes").value = expense ? (expense.notes || "") : "";
+    document.getElementById("expenseFormCard").style.display = "block";
+  };
+  window.closeExpenseForm = function(){
+    document.getElementById("expenseFormCard").style.display = "none";
+    editingExpenseId = null;
+  };
+
+  window.saveExpense = async function(){
+    const title = document.getElementById("expTitle").value.trim();
+    const amount = parseFloat(document.getElementById("expAmount").value);
+    if(!title || !amount || amount <= 0){
+      alert(AT("expenses.form.title") + " / " + AT("expenses.form.amount"));
+      return;
+    }
+    const payload = {
+      title,
+      category: document.getElementById("expCategory").value,
+      recurrence: document.getElementById("expRecurrence").value,
+      amount,
+      currency: document.getElementById("expCurrency").value,
+      due_date: document.getElementById("expDueDate").value || null,
+      notes: document.getElementById("expNotes").value.trim() || null,
+    };
+    try{
+      const url = editingExpenseId ? `/stayflow-admin/expenses/${editingExpenseId}` : "/stayflow-admin/expenses";
+      const res = await fetch(url, {
+        method: editingExpenseId ? "PATCH" : "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível salvar.");
+        return;
+      }
+      closeExpenseForm();
+      loadExpenses();
+    }catch(e){
+      console.warn("Erro ao salvar despesa:", e);
+    }
+  };
+
+  window.markExpensePaid = async function(id){
+    try{
+      const res = await fetch(`/stayflow-admin/expenses/${id}/mark-paid`, { method: "POST", credentials: "same-origin" });
+      const data = await res.json();
+      if(!data.success){ alert(data.message || "Não foi possível marcar como paga."); return; }
+      loadExpenses();
+    }catch(e){
+      console.warn("Erro ao marcar despesa paga:", e);
+    }
+  };
+
+  window.deleteExpense = async function(id){
+    if(!confirm(AT("expenses.deleteConfirm"))) return;
+    try{
+      await fetch(`/stayflow-admin/expenses/${id}`, { method: "DELETE", credentials: "same-origin" });
+      loadExpenses();
+    }catch(e){
+      console.warn("Erro ao excluir despesa:", e);
+    }
+  };
+
+  function expenseRowHtml(e){
+    const dueLabel = e.due_date ? parseUtc(e.due_date + "T00:00:00")?.toLocaleDateString("pt-BR") : AT("expenses.noDueDate");
+    const isOverdue = e.status === "pending" && e.due_date && e.due_date < new Date().toISOString().slice(0, 10);
+    return `
+      <tr>
+        <td>${(e.title || "").replace(/</g, "&lt;")}</td>
+        <td>${AT(EXPENSE_CATEGORY_KEYS[e.category] ? EXPENSE_CATEGORY_KEYS[e.category] : "expenses.category.other")}</td>
+        <td>${formatMoney(e.amount, e.currency)}</td>
+        <td style="${isOverdue ? "color:#ff9caf;font-weight:700" : ""}">${dueLabel}</td>
+        <td>${AT(EXPENSE_RECURRENCE_KEYS[e.recurrence] || "expenses.recurrence.none")}</td>
+        <td><span class="plan-chip ${e.status === "paid" ? "active" : "trialing"}">${AT(`expenses.status.${e.status}`)}</span></td>
+        <td style="white-space:nowrap">
+          ${e.status === "pending" ? `<button type="button" class="payout-btn" onclick="markExpensePaid(${e.id})">${AT("expenses.markPaid")}</button>` : ""}
+          <button type="button" class="payout-btn" style="background:#ff5d7618;border-color:#ff5d7630;color:#ff9caf;margin-left:6px" onclick="deleteExpense(${e.id})">${AT("expenses.delete")}</button>
+        </td>
+      </tr>`;
+  }
+
+  async function loadExpenses(){
+    try{
+      const res = await fetch("/stayflow-admin/expenses", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      const statusFilter = document.getElementById("expStatusFilter").value;
+      expensesCache = data.expenses || [];
+      const filtered = statusFilter ? expensesCache.filter(e => e.status === statusFilter) : expensesCache;
+
+      document.getElementById("expensesTableBody").innerHTML = filtered.length ? filtered.map(expenseRowHtml).join("") : "";
+      document.getElementById("expensesEmpty").style.display = filtered.length ? "none" : "flex";
+
+      const pending = expensesCache.filter(e => e.status === "pending");
+      document.getElementById("expPendingTotal").textContent = String(pending.length);
+      document.getElementById("expPendingCount").textContent = formatMoney(pending.reduce((s, e) => s + e.amount, 0), "USD") + " " + AT("expenses.approxMultiCurrency");
+
+      const today = new Date().toISOString().slice(0, 10);
+      const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+      const dueSoon = pending.filter(e => e.due_date && e.due_date >= today && e.due_date <= in7);
+      document.getElementById("expDueSoonTotal").textContent = String(dueSoon.length);
+      document.getElementById("expDueSoonCount").textContent = dueSoon.length ? dueSoon.map(e => e.title).slice(0, 3).join(", ") : "";
+
+      const thisMonth = today.slice(0, 7);
+      const paidThisMonth = expensesCache.filter(e => e.status === "paid" && (e.paid_at || "").slice(0, 7) === thisMonth);
+      document.getElementById("expPaidTotal").textContent = String(paidThisMonth.length);
+      document.getElementById("expPaidCount").textContent = formatMoney(paidThisMonth.reduce((s, e) => s + e.amount, 0), "USD");
+
+      const overdue = pending.filter(e => e.due_date && e.due_date < today);
+      const badge = document.getElementById("expensesDueBadge");
+      const alertCount = overdue.length + dueSoon.length;
+      if(alertCount){ badge.style.display = "inline-block"; badge.textContent = String(alertCount); }
+      else badge.style.display = "none";
+    }catch(e){
+      console.warn("Erro ao carregar despesas:", e);
+    }
+  }
+
+  document.getElementById("expStatusFilter").addEventListener("change", loadExpenses);
+
+  // ===== Ask StayFlow (Meu painel) =====
+  let askAdminHistory = [];
+
+  window.openAskAdmin = function(){
+    document.getElementById("askAdminPanel").classList.add("open");
+    setTimeout(() => document.getElementById("askAdminInput")?.focus(), 80);
+  };
+  window.closeAskAdmin = function(){
+    document.getElementById("askAdminPanel").classList.remove("open");
+  };
+
+  function appendAskAdminMessage(text, who){
+    const body = document.getElementById("askAdminBody");
+    const div = document.createElement("div");
+    div.className = `ask-message ${who}`;
+    div.textContent = text;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  window.askAdminSuggestion = function(text){
+    document.getElementById("askAdminInput").value = text;
+    sendAskAdmin();
+  };
+
+  window.sendAskAdmin = async function(){
+    const input = document.getElementById("askAdminInput");
+    const message = input.value.trim();
+    if(!message) return;
+    input.value = "";
+    appendAskAdminMessage(message, "user");
+
+    try{
+      const res = await fetch("/stayflow-admin/ask", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, history: askAdminHistory }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        appendAskAdminMessage(data.message || "Não consegui responder agora.", "bot");
+        return;
+      }
+      askAdminHistory.push({ role: "user", content: message });
+      askAdminHistory.push({ role: "assistant", content: data.answer });
+      if(askAdminHistory.length > 20) askAdminHistory = askAdminHistory.slice(-20);
+      appendAskAdminMessage(data.answer, "bot");
+    }catch(e){
+      console.warn("Erro no Ask StayFlow:", e);
+      appendAskAdminMessage("Erro de conexão. Tenta de novo.", "bot");
+    }
+  };
+
+  // ===== Equipe =====
+  window.openTeamForm = function(){
+    document.getElementById("teamName").value = "";
+    document.getElementById("teamEmail").value = "";
+    document.getElementById("teamNewPasswordBox").style.display = "none";
+    document.getElementById("teamFormCard").style.display = "block";
+  };
+  window.closeTeamForm = function(){
+    document.getElementById("teamFormCard").style.display = "none";
+  };
+
+  window.saveTeamMember = async function(){
+    const name = document.getElementById("teamName").value.trim();
+    const email = document.getElementById("teamEmail").value.trim();
+    if(!name || !email) return;
+    try{
+      const res = await fetch("/stayflow-admin/team", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível adicionar.");
+        return;
+      }
+      document.getElementById("teamNewPasswordValue").textContent = data.temp_password;
+      document.getElementById("teamNewPasswordBox").style.display = "block";
+      loadTeam();
+    }catch(e){
+      console.warn("Erro ao adicionar à equipe:", e);
+    }
+  };
+
+  window.removeTeamMember = async function(id){
+    if(!confirm(AT("team.removeConfirm"))) return;
+    try{
+      await fetch(`/stayflow-admin/team/${id}`, { method: "DELETE", credentials: "same-origin" });
+      loadTeam();
+    }catch(e){
+      console.warn("Erro ao remover da equipe:", e);
+    }
+  };
+
+  async function loadTeam(){
+    try{
+      const res = await fetch("/stayflow-admin/team", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      document.getElementById("teamList").innerHTML = data.team.length
+        ? data.team.map(m => `
+          <div class="prop-row" style="cursor:default">
+            <div class="ico">👤</div>
+            <div><div class="name">${(m.name || "").replace(/</g, "&lt;")}</div><div class="meta">${m.email} · ${AT("team.addedOn", { date: parseUtc(m.added_at)?.toLocaleDateString("pt-BR") || "" })}</div></div>
+            <div class="right"><button type="button" class="payout-btn" style="background:#ff5d7618;border-color:#ff5d7630;color:#ff9caf" onclick="removeTeamMember(${m.id})">${AT("team.remove")}</button></div>
+          </div>`).join("")
+        : `<div class="prop-empty">${AT("team.empty")}</div>`;
+    }catch(e){
+      console.warn("Erro ao carregar equipe:", e);
+    }
+  }
 
   // ===== Meu chat =====
   let myChatGuests = [];
@@ -1578,6 +2305,9 @@
       await loadSupportThreads();
       loadFinance();
       loadIntegrationsStatus();
+      loadExpenses();
+      loadTeam();
+      loadGrowth();
 
       StayFlowI18n.applyTranslations(ADMIN_I18N, StayFlowI18n.getInitialLang());
       StayFlowI18n.wireLanguageSwitcher("langCurrentBtn", "langDropdown", ADMIN_I18N, refreshAllTranslatedContent);
