@@ -2184,7 +2184,13 @@ async function deleteRoleConfirm(roleId){
     <button class="ask-suggestion" onclick="openPage('revenue', document.querySelector('[data-page=revenue]')); closeAskStayFlow()" data-i18n="ask.suggestion3">Onde posso aumentar receita?</button>
   </div>
 
+  <div id="askFilePreview" style="display:none;align-items:center;gap:8px;padding:8px 14px;font-size:12.5px;color:var(--muted)">
+    <span id="askFilePreviewName"></span>
+    <button type="button" onclick="askStayFlowClearFile()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0">✕</button>
+  </div>
   <div class="ask-input">
+    <input type="file" id="askFileInput" accept="image/*" style="display:none" onchange="askStayFlowFileSelected(this)">
+    <button type="button" class="btn secondary" onclick="document.getElementById('askFileInput').click()" title="Anexar foto ou arquivo" style="min-width:unset;padding:0 12px">📷</button>
     <input data-i18n-placeholder="ask.inputPlaceholder" placeholder="Pergunte algo sobre a operação...">
     <button class="btn" onclick="askStayFlowSend(this)" data-i18n="chats.sendBtn">Enviar</button>
   </div>
@@ -2410,21 +2416,46 @@ async function deleteRoleConfirm(roleId){
     }, 180);
   };
 
+  window._askPendingFile = null;
+
+  window.askStayFlowFileSelected = function(input){
+    const file = input.files && input.files[0];
+    window._askPendingFile = file || null;
+    const preview = document.getElementById("askFilePreview");
+    const previewName = document.getElementById("askFilePreviewName");
+    if(file){
+      if(previewName) previewName.textContent = `📷 ${file.name}`;
+      if(preview) preview.style.display = "flex";
+    }else if(preview){
+      preview.style.display = "none";
+    }
+  };
+
+  window.askStayFlowClearFile = function(){
+    window._askPendingFile = null;
+    const fileInput = document.getElementById("askFileInput");
+    if(fileInput) fileInput.value = "";
+    const preview = document.getElementById("askFilePreview");
+    if(preview) preview.style.display = "none";
+  };
+
   window.askStayFlowSend = async function(button){
     if(!button) return;
     const scope = button.closest(".ask-panel");
     if(!scope) return;
 
-    const input = scope.querySelector(".ask-input input");
+    const input = scope.querySelector(".ask-input input[type='text'], .ask-input input:not([type])");
     if(!input) return;
     const text = input.value.trim();
-    if(!text) return;
+    const pendingFile = window._askPendingFile;
+    if(!text && !pendingFile) return;
     input.value = "";
 
     const container = $(".ask-body", scope);
     if(!container) return;
 
-    addMessage(container, text, "user");
+    addMessage(container, pendingFile ? `📷 ${text || "Imagem enviada"}` : text, "user");
+    askStayFlowClearFile();
     button.disabled = true;
 
     const thinking = document.createElement("div");
@@ -2442,13 +2473,24 @@ async function deleteRoleConfirm(roleId){
     const timeoutId = setTimeout(() => controller.abort(), 75000);
 
     try{
-      const res = await fetch("/ask", {
-        method:"POST",
-        credentials:"same-origin",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ message: text, lang: window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt" }),
-        signal: controller.signal
-      });
+      const lang = window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt";
+      let fetchOptions;
+      if(pendingFile){
+        const formData = new FormData();
+        formData.append("message", text);
+        formData.append("lang", lang);
+        formData.append("file", pendingFile);
+        fetchOptions = { method:"POST", credentials:"same-origin", body: formData, signal: controller.signal };
+      }else{
+        fetchOptions = {
+          method:"POST",
+          credentials:"same-origin",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ message: text, lang }),
+          signal: controller.signal
+        };
+      }
+      const res = await fetch("/ask", fetchOptions);
 
       if(res.status === 401){
         thinking.textContent = T('reservations.msg.sessionExpired', 'Sua sessão expirou. Faça login novamente.');
