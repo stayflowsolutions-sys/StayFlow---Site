@@ -11,11 +11,11 @@
 <link rel="stylesheet" href="static/css/reset.css">
 <link rel="stylesheet" href="static/css/app.css">
 <style>
-  /* ===== Extensoes locais - o shell (sidebar/topbar/.page/.kpi/
-     .chat-layout/.chat-item/.messages/.msg) e 100% reaproveitado de
-     app.css, o mesmo de dashboard.html; so o CONTEUDO especifico deste
-     painel (propriedades/ranking/repasses/alertas) tem CSS proprio
-     aqui, sempre derivado da mesma paleta (tokens.css). ===== */
+  /* ===== Extensoes locais - o shell inteiro (sidebar/topbar/.page/
+     .kpi/.chat-layout/.chat-item/.messages/.msg/.hostel-mini/
+     .user-avatar/.notif-panel) e 100% reaproveitado de app.css, o
+     mesmo de dashboard.html; so o CONTEUDO especifico deste painel
+     (propriedades/ranking/repasses/alertas) tem CSS proprio aqui. ===== */
   .menu a.menu-link{
     width:100%;min-height:38px;padding:9px 12px;border-radius:14px;border:1px solid transparent;
     background:transparent;color:#97a5b8;text-align:left;font-size:14px;font-weight:760;letter-spacing:-.2px;
@@ -23,6 +23,7 @@
   }
   .menu a.menu-link:hover{background:#ffffff07;border-color:#ffffff16;color:#f5f9ff;transform:translateX(2px)}
   .menu-divider{margin:10px 0 6px;padding:0 12px;color:#66758a;font-size:10px;font-weight:850;letter-spacing:.16em}
+  .menu button .badge{margin-left:auto;background:#ff5d76;color:#fff;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px}
 
   #adminLoading, #adminError{padding:80px 20px;text-align:center;color:var(--muted)}
   #adminError{display:none;color:#ff9caf}
@@ -34,7 +35,6 @@
   .section-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:26px 0 12px;font-weight:700}
   .section-title:first-child{margin-top:0}
 
-  /* Alerta "precisa de atencao" - trials acabando/inadimplentes */
   .alert-list{display:flex;flex-direction:column;gap:8px}
   .alert-row{display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:15px;text-decoration:none;color:inherit}
   .alert-row.warn{background:#ffbd4a14;border:1px solid #ffbd4a30}
@@ -47,7 +47,6 @@
   .alert-row.danger .right{color:#ff9caf}
   .alert-empty{padding:18px;text-align:center;color:var(--muted);font-size:13px;background:#ffffff05;border-radius:15px}
 
-  /* Propriedades */
   .prop-toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
   .prop-toolbar input{flex:1;min-width:180px;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px}
   .prop-toolbar select{background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px}
@@ -64,7 +63,6 @@
   .prop-row .plan-chip.past_due{background:#ff5d7620;color:#ff9caf;border:1px solid #ff5d7628}
   .prop-empty{padding:40px;text-align:center;color:var(--muted);font-size:13px}
 
-  /* Ranking */
   .rank-row{display:flex;align-items:center;gap:14px;padding:12px 15px;border-radius:15px;border:1px solid #ffffff12;margin-bottom:8px;text-decoration:none;color:inherit;transition:border-color .18s,background .18s}
   .rank-row:hover{border-color:#ffffff30;background:#ffffff07}
   .rank-pos{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;background:#ffffff10;color:var(--muted);flex:none}
@@ -76,19 +74,16 @@
   .rank-bar-fill{height:100%;background:linear-gradient(90deg,#0f8bff,#23d2ff);border-radius:999px}
   .rank-value{font-weight:800;font-size:14px;flex:none}
 
-  /* Repasses */
   .payout-btn{font-size:11.5px;font-weight:760;padding:6px 12px;border-radius:999px;border:1px solid #26e0a030;background:#26e0a018;color:#6ff0bd;cursor:pointer;font-family:inherit}
   .payout-btn:hover{background:#26e0a028}
   .payout-btn:disabled{opacity:.5;cursor:default}
 
-  /* Meu chat - reaproveita .chat-layout/.chat-item/.messages/.msg de
-     app.css (mesmas classes da pagina Chats de verdade), so em 2
-     colunas (sem o 3o painel de perfil de hospede, que nao existe pra
-     um lead comercial). */
-  .chat-layout.my-chat{grid-template-columns:300px minmax(0,1fr)}
+  .chat-layout.two-col{grid-template-columns:300px minmax(0,1fr)}
   .chat-time{font-size:10.5px;color:var(--muted);white-space:nowrap;flex:none}
   .chat-not-configured{padding:40px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
-  .msg-day{opacity:.85}
+
+  #propertySelectorDropdown{max-height:360px;overflow-y:auto}
+  #propertySelectorSearch{width:100%;background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:8px 10px;font-size:12.5px;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -109,7 +104,10 @@
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span>Visão geral</span>
     </button>
     <button type="button" data-tab="chat" onclick="switchAdminTab('chat', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span>Meu chat</span><span class="badge" id="chatUnreadBadge" style="display:none;margin-left:auto;background:#ff5d76;color:#fff;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px">0</span>
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span>Meu chat</span><span class="badge" id="chatUnreadBadge" style="display:none">0</span>
+    </button>
+    <button type="button" data-tab="support" onclick="switchAdminTab('support', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 17v.01"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4.5"/></svg></span><span>Suporte</span><span class="badge" id="supportUnreadBadge" style="display:none">0</span>
     </button>
     <button type="button" data-tab="properties" onclick="switchAdminTab('properties', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="10" width="7" height="10"/><rect x="14" y="6" width="7" height="14"/><path d="M3 10V5l7-2v7"/></svg></span><span>Propriedades</span>
@@ -121,15 +119,7 @@
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6v12"/><path d="M18 6v12"/></svg></span><span>Repasses</span>
     </button>
 
-    <div class="menu-divider">CONTAS</div>
-    <a class="menu-link" href="admin-list.html?kind=lodging">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/><path d="M9 21v-6h6v6"/></svg></span><span>Hospedagens</span>
-    </a>
-    <a class="menu-link" href="admin-list.html?kind=agency">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M2 16.5 21 3l-4 18-5.5-5.5L4 21l1.5-4.5L2 16.5z"/></svg></span><span>Agências</span>
-    </a>
-
-    <button type="button" class="collapse-menu" onclick="toggleSidebar()">
+    <button class="collapse-menu" onclick="toggleSidebar()">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="m21 18-6-6 6-6"/></svg></span><span>Recolher menu</span>
     </button>
   </nav>
@@ -143,7 +133,55 @@
       <p id="pageSubtitle">Visão viva da StayFlow — não é o dashboard de nenhuma conta específica.</p>
     </div>
     <div class="actions">
-      <a href="dashboard.html" class="btn secondary" style="text-decoration:none">Ir pro app normal</a>
+      <div class="hostel-selector-wrap">
+        <div class="hostel-mini" onclick="togglePropertySelector(event)" title="Ir para o dashboard de uma propriedade">
+          <div class="hostel-avatar">🏢</div>
+          <div class="profile-copy">
+            <div class="hostel-name">Propriedades</div>
+            <div class="hostel-meta">Ir para o dashboard de...</div>
+          </div>
+        </div>
+        <div id="propertySelectorDropdown" class="hostel-selector-dropdown" style="display:none">
+          <input type="text" id="propertySelectorSearch" placeholder="Buscar propriedade..." oninput="renderPropertySelector()">
+          <div id="propertySelectorList"></div>
+        </div>
+      </div>
+
+      <div class="hostel-selector-wrap">
+        <button class="btn secondary bell-btn" onclick="toggleAdminNotifPanel(event)" title="Notificações">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="adminNotifBadge" class="notif-badge" style="display:none">0</span>
+        </button>
+        <div id="adminNotifPanel" class="notif-panel" style="display:none">
+          <div class="notif-panel-header"><span>🔔 Notificações</span></div>
+          <div id="adminNotifList"></div>
+        </div>
+      </div>
+
+      <div class="hostel-selector-wrap">
+        <button type="button" class="btn secondary" id="langCurrentBtn" title="Idioma" style="padding:9px 12px;font-weight:800;font-size:12px" data-lang-current>PT</button>
+        <div id="langDropdown" class="hostel-selector-dropdown" style="display:none;min-width:140px">
+          <button type="button" class="hostel-selector-option" data-lang="pt">Português</button>
+          <button type="button" class="hostel-selector-option" data-lang="en">English</button>
+          <button type="button" class="hostel-selector-option" data-lang="es">Español</button>
+          <button type="button" class="hostel-selector-option" data-lang="fr">Français</button>
+          <button type="button" class="hostel-selector-option" data-lang="de">Deutsch</button>
+        </div>
+      </div>
+
+      <div class="hostel-selector-wrap">
+        <div class="user-avatar" id="userMenuTrigger" onclick="toggleUserMenu(event)" title="Menu do usuário">?</div>
+        <div id="userMenuDropdown" class="hostel-selector-dropdown" style="display:none">
+          <div class="profile-copy" style="padding:8px 10px">
+            <div class="user-name" id="adminUserName">—</div>
+            <div class="user-role">Dono · StayFlow</div>
+          </div>
+          <div class="hostel-selector-divider"></div>
+          <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
+            <span>↪ Sair</span>
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -206,7 +244,7 @@
         Nenhum número está marcado como assistente comercial da StayFlow ainda.<br>
         Vá em <strong>Configurações → WhatsApp Business</strong> e marque "Este número responde como → Assistente comercial da StayFlow".
       </div>
-      <div class="chat-layout my-chat" id="chatShell" style="display:none">
+      <div class="chat-layout two-col" id="chatShell" style="display:none">
         <div class="card chat-list" id="chatGuestList"></div>
 
         <div class="card chat-window">
@@ -220,12 +258,39 @@
             <div class="chat-window-head">
               <h2 id="chatActiveName">—</h2>
               <span class="status-pill cold" id="chatActivePhone">—</span>
-              <button type="button" class="btn secondary" id="chatAiToggleBtn" onclick="toggleMyChatAi()" style="flex:0 0 auto;font-size:12px;padding:8px 12px">IA respondendo</button>
             </div>
             <div class="messages" id="chatMessages"></div>
             <div class="chat-input">
-              <input type="text" id="chatInput" placeholder="Escrever mensagem..." onkeydown="if(event.key==='Enter')sendMyChatMessage()">
-              <button type="button" class="btn" onclick="sendMyChatMessage()">Enviar</button>
+              <input type="text" id="chatInput" placeholder="Escrever mensagem...">
+              <button class="btn green" type="button" id="myChatSendBtn" data-mode="assume" onclick="myChatPrimaryBtnClick(this)">Assumir</button>
+              <button class="btn secondary" type="button" id="myChatGiveBackBtn" style="display:none" onclick="giveBackMyChat()">Devolver</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Suporte ===== -->
+    <section class="page" id="page-support">
+      <div class="chat-layout two-col" id="supportShell">
+        <div class="card chat-list" id="supportThreadList"></div>
+
+        <div class="card chat-window">
+          <div id="supportMainEmpty" class="sf-empty">
+            <div>
+              <strong>Nenhum chamado selecionado</strong>
+              <span>Escolhe uma conta à esquerda pra ver a conversa de suporte.</span>
+            </div>
+          </div>
+          <div id="supportMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
+            <div class="chat-window-head">
+              <h2 id="supportActiveName">—</h2>
+              <span class="status-pill ai" id="supportActiveKind">—</span>
+            </div>
+            <div class="messages" id="supportMessages"></div>
+            <div class="chat-input">
+              <input type="text" id="supportAdminInput" placeholder="Responder..." onkeydown="if(event.key==='Enter')sendSupportReply()">
+              <button class="btn" type="button" onclick="sendSupportReply()">Enviar</button>
             </div>
           </div>
         </div>
@@ -279,6 +344,7 @@
 
 </div>
 
+<script src="assets/js/i18n-core.js"></script>
 <script>
   window.toggleSidebar = function(){
     const sidebar = document.getElementById("sidebar");
@@ -286,9 +352,56 @@
     document.getElementById("sidebarOverlay")?.classList.toggle("open", sidebar?.classList.contains("open"));
   };
 
+  window.stayflowLogout = async function(){
+    try{ await fetch("/logout", { method: "POST", credentials: "same-origin" }); }catch(e){}
+    localStorage.removeItem("stayflow_user");
+    window.location.href = "/Login.html";
+  };
+
+  // ===== Dropdowns genericos (propriedades / notificacoes / idioma / usuario) =====
+  function closeAllDropdowns(except){
+    ["propertySelectorDropdown", "adminNotifPanel", "langDropdown", "userMenuDropdown"].forEach(id => {
+      if(id === except) return;
+      const el = document.getElementById(id);
+      if(el) el.style.display = "none";
+    });
+  }
+  window.togglePropertySelector = function(event){
+    if(event) event.stopPropagation();
+    const dd = document.getElementById("propertySelectorDropdown");
+    const opening = dd.style.display === "none";
+    closeAllDropdowns();
+    dd.style.display = opening ? "block" : "none";
+    if(opening){ renderPropertySelector(); document.getElementById("propertySelectorSearch")?.focus(); }
+  };
+  window.toggleAdminNotifPanel = function(event){
+    if(event) event.stopPropagation();
+    const dd = document.getElementById("adminNotifPanel");
+    const opening = dd.style.display === "none";
+    closeAllDropdowns();
+    dd.style.display = opening ? "block" : "none";
+  };
+  window.toggleUserMenu = function(event){
+    if(event) event.stopPropagation();
+    const dd = document.getElementById("userMenuDropdown");
+    const opening = dd.style.display === "none";
+    closeAllDropdowns();
+    dd.style.display = opening ? "block" : "none";
+  };
+  document.addEventListener("click", (event) => {
+    ["propertySelectorDropdown", "adminNotifPanel", "userMenuDropdown"].forEach(id => {
+      const dd = document.getElementById(id);
+      const wrap = dd?.closest(".hostel-selector-wrap");
+      if(dd && dd.style.display !== "none" && wrap && !wrap.contains(event.target)){
+        dd.style.display = "none";
+      }
+    });
+  });
+
   const TAB_TITLES = {
     overview: ["Visão geral", "Visão viva da StayFlow — não é o dashboard de nenhuma conta específica."],
     chat: ["Meu chat", "Conversas reais do número comercial oficial da StayFlow."],
+    support: ["Suporte", "Chamados de ajuda das hospedagens e agências, direto com você."],
     properties: ["Propriedades", "Todas as hospedagens e agências inscritas na StayFlow."],
     ranking: ["Ranking", "Quem mais gera valor pra StayFlow hoje."],
     payouts: ["Repasses", "Saldo devido a hospedagens por indicação de parceiro."],
@@ -389,7 +502,8 @@
     const byStatusText = Object.entries(s.by_status)
       .map(([status, count]) => `${count} ${(STATUS_LABELS[status] || status).toLowerCase()}`)
       .join(" · ") || "Nenhuma conta ainda";
-    document.getElementById("sumByStatus").textContent = byStatusText;
+    const weekly = s.new_hostels_last_7_days ? ` · +${s.new_hostels_last_7_days} essa semana` : "";
+    document.getElementById("sumByStatus").textContent = byStatusText + weekly;
     document.getElementById("sumMrr").textContent = formatMoney(s.total_estimated_mrr, "USD");
     document.getElementById("sumCommission").textContent = formatMoney(s.total_commission_collected, "USD");
 
@@ -447,6 +561,39 @@
     const ranked = [...overviewData.hostels].sort((a, b) => (b.estimated_mrr + b.commission_collected) - (a.estimated_mrr + a.commission_collected));
     document.getElementById("rankList").innerHTML = rankListHtml(ranked);
   }
+
+  function renderPropertySelector(){
+    if(!overviewData) return;
+    const search = document.getElementById("propertySelectorSearch").value.trim().toLowerCase();
+    const filtered = overviewData.hostels.filter(h => !search || (h.hostel_name || "").toLowerCase().includes(search));
+    document.getElementById("propertySelectorList").innerHTML = filtered.length
+      ? filtered.slice(0, 40).map(h => `
+        <button type="button" class="hostel-selector-option" onclick="goToProperty(${h.hostel_id})">
+          <span class="option-name">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || "Sem nome"}</span>
+          <span class="option-role">${h.plan_name || "sem plano"} · ${STATUS_LABELS[h.status] || h.status || "—"}</span>
+        </button>`).join("")
+      : `<div style="padding:14px;text-align:center;color:var(--muted);font-size:12.5px">Nenhuma propriedade encontrada.</div>`;
+  }
+
+  window.goToProperty = async function(hostelId){
+    try{
+      const res = await fetch("/stayflow-admin/impersonate", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostel_id: hostelId }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível entrar nessa conta.");
+        return;
+      }
+      window.location.href = "/app";
+    }catch(e){
+      console.warn("Erro ao entrar na propriedade:", e);
+      alert("Erro de conexão.");
+    }
+  };
 
   async function loadOverview(){
     const res = await fetch("/stayflow-admin/overview", { credentials: "same-origin" });
@@ -524,7 +671,7 @@
     return `
       <div class="chat-item sf-clickable-row ${g.id === myChatActiveGuestId ? "active" : ""}" data-guest-id="${g.id}" onclick="openMyChatGuest(${g.id})">
         <div class="chat-name">
-          <span>${(g.name || g.phone || "Contato sem nome").replace(/</g, "&lt;")}</span>
+          <span>${g.unread ? "🔵 " : ""}${(g.name || g.phone || "Contato sem nome").replace(/</g, "&lt;")}</span>
           <span class="chat-time">${timeAgo(g.last_message_at)}</span>
         </div>
         <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>
@@ -543,17 +690,16 @@
       if(!data.configured) return;
 
       myChatGuests = data.guests || [];
+      const unreadCount = myChatGuests.filter(g => g.unread).length;
       const badge = document.getElementById("chatUnreadBadge");
-      if(myChatGuests.length){
-        badge.style.display = "inline-block";
-        badge.textContent = String(myChatGuests.length);
-      }else{
-        badge.style.display = "none";
-      }
+      if(unreadCount){ badge.style.display = "inline-block"; badge.textContent = String(unreadCount); }
+      else badge.style.display = "none";
 
       document.getElementById("chatGuestList").innerHTML = myChatGuests.length
         ? myChatGuests.map(chatGuestItemHtml).join("")
         : `<div class="sf-empty"><div><strong>Nenhuma conversa ainda.</strong><span>Assim que alguém escrever no WhatsApp da StayFlow, aparece aqui.</span></div></div>`;
+
+      refreshNotifications();
     }catch(e){
       console.warn("Erro ao carregar Meu chat:", e);
     }
@@ -572,9 +718,6 @@
     const isSameGuest = myChatActiveGuestId === guestId;
     myChatActiveGuestId = guestId;
 
-    // Troca a classe "active" na hora, sem esperar rede - a lista em
-    // si so re-renderiza no proximo poll (evita reconstruir a lista
-    // inteira, e o flicker que isso causava, so pra marcar 1 item).
     document.querySelectorAll("#chatGuestList .chat-item").forEach(el => {
       el.classList.toggle("active", Number(el.dataset.guestId) === guestId);
     });
@@ -592,15 +735,21 @@
       document.getElementById("chatActiveName").textContent = data.guest.name || data.guest.phone || "Contato sem nome";
       document.getElementById("chatActivePhone").textContent = data.guest.phone || "—";
 
-      const toggleBtn = document.getElementById("chatAiToggleBtn");
-      const paused = !!data.guest.ai_paused;
-      toggleBtn.textContent = paused ? "IA pausada" : "IA respondendo";
-      toggleBtn.classList.toggle("secondary", !paused);
+      const sendBtn = document.getElementById("myChatSendBtn");
+      const giveBackBtn = document.getElementById("myChatGiveBackBtn");
+      if(data.guest.ai_paused){
+        sendBtn.dataset.mode = "send";
+        sendBtn.textContent = "Enviar";
+        sendBtn.classList.remove("green");
+        giveBackBtn.style.display = "inline-flex";
+      }else{
+        sendBtn.dataset.mode = "assume";
+        sendBtn.textContent = "Assumir";
+        sendBtn.classList.add("green");
+        giveBackBtn.style.display = "none";
+      }
 
       const messages = data.messages || [];
-      // So re-renderiza se realmente mudou algo - senao a rolagem do
-      // usuario (se ele subiu pra ler historico) fica pulando pro
-      // fundo a cada poll, mesmo sem mensagem nova nenhuma.
       if(messages.length !== myChatLastMessageCount){
         const msgsEl = document.getElementById("chatMessages");
         const wasNearBottom = msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight < 80;
@@ -608,30 +757,41 @@
         if(wasNearBottom || myChatLastMessageCount === 0) msgsEl.scrollTop = msgsEl.scrollHeight;
         myChatLastMessageCount = messages.length;
       }
+
+      loadMyChatGuests();
     }catch(e){
       console.warn("Erro ao abrir conversa:", e);
     }
   };
 
-  window.toggleMyChatAi = async function(){
+  // Mesmo padrao Assumir/Enviar/Devolver da pagina Chats de verdade
+  // (assets/js/chats-live.js): enquanto a IA responde, o botao
+  // principal fica verde "Assumir" e so pausa a IA (nao manda o texto
+  // digitado). Depois de assumido, vira "Enviar" normal + aparece
+  // "Devolver" do lado pra passar o controle de volta pra IA.
+  window.myChatPrimaryBtnClick = function(button){
+    if(button.dataset.mode === "assume") setMyChatAiPaused(true);
+    else sendMyChatMessage();
+  };
+  window.giveBackMyChat = function(){ setMyChatAiPaused(false); };
+
+  async function setMyChatAiPaused(paused){
     if(!myChatActiveGuestId) return;
-    const toggleBtn = document.getElementById("chatAiToggleBtn");
-    const nowPaused = toggleBtn.textContent.indexOf("respondendo") !== -1;
     try{
       await fetch(`/stayflow-admin/my-chat/guests/${myChatActiveGuestId}/toggle-ai`, {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paused: nowPaused }),
+        body: JSON.stringify({ paused }),
       });
       myChatLastMessageCount = -1;
       openMyChatGuest(myChatActiveGuestId);
     }catch(e){
       console.warn("Erro ao alternar IA:", e);
     }
-  };
+  }
 
-  window.sendMyChatMessage = async function(){
+  async function sendMyChatMessage(){
     const input = document.getElementById("chatInput");
     const message = input.value.trim();
     if(!message || !myChatActiveGuestId) return;
@@ -650,9 +810,198 @@
       }
       myChatLastMessageCount = -1;
       openMyChatGuest(myChatActiveGuestId);
-      loadMyChatGuests();
     }catch(e){
       console.warn("Erro ao enviar mensagem:", e);
+    }
+  }
+
+  // ===== Suporte =====
+  let supportThreads = [];
+  let supportActiveHostelId = null;
+  let supportLastMessageCount = 0;
+
+  function supportItemHtml(t){
+    const isMine = t.last_message_sender === "stayflow";
+    const preview = t.last_message ? `${isMine ? "Você: " : ""}${t.last_message}` : "Sem mensagens ainda.";
+    return `
+      <div class="chat-item sf-clickable-row ${t.hostel_id === supportActiveHostelId ? "active" : ""}" data-hostel-id="${t.hostel_id}" onclick="openSupportThread(${t.hostel_id})">
+        <div class="chat-name">
+          <span>${t.unread_count > 0 ? "🔵 " : ""}${KIND_ICONS[t.account_kind] || ""} ${(t.hostel_name || "Sem nome").replace(/</g, "&lt;")}</span>
+          <span class="chat-time">${timeAgo(t.last_message_at)}</span>
+        </div>
+        <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>
+      </div>`;
+  }
+
+  async function loadSupportThreads(){
+    try{
+      const res = await fetch("/stayflow-admin/support/threads", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      supportThreads = data.threads || [];
+      const unreadCount = supportThreads.filter(t => t.unread_count > 0).length;
+      const badge = document.getElementById("supportUnreadBadge");
+      if(unreadCount){ badge.style.display = "inline-block"; badge.textContent = String(unreadCount); }
+      else badge.style.display = "none";
+
+      document.getElementById("supportThreadList").innerHTML = supportThreads.length
+        ? supportThreads.map(supportItemHtml).join("")
+        : `<div class="sf-empty"><div><strong>Nenhum chamado ainda.</strong><span>Quando uma hospedagem ou agência pedir ajuda pela aba Suporte do dashboard dela, aparece aqui.</span></div></div>`;
+
+      refreshNotifications();
+    }catch(e){
+      console.warn("Erro ao carregar Suporte:", e);
+    }
+  }
+
+  window.openSupportThread = async function(hostelId){
+    const isSame = supportActiveHostelId === hostelId;
+    supportActiveHostelId = hostelId;
+
+    document.querySelectorAll("#supportThreadList .chat-item").forEach(el => {
+      el.classList.toggle("active", Number(el.dataset.hostelId) === hostelId);
+    });
+
+    document.getElementById("supportMainEmpty").style.display = "none";
+    document.getElementById("supportMainActive").style.display = "flex";
+    if(!isSame) supportLastMessageCount = 0;
+
+    const thread = supportThreads.find(t => t.hostel_id === hostelId);
+    document.getElementById("supportActiveName").textContent = thread ? thread.hostel_name : "—";
+    document.getElementById("supportActiveKind").textContent = thread ? (KIND_ICONS[thread.account_kind] === "✈️" ? "Agência" : "Hospedagem") : "—";
+
+    try{
+      const res = await fetch(`/stayflow-admin/support/threads/${hostelId}`, { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      const messages = data.messages || [];
+      if(messages.length !== supportLastMessageCount){
+        const msgsEl = document.getElementById("supportMessages");
+        const wasNearBottom = msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight < 80;
+        msgsEl.innerHTML = messages.map(m => {
+          const side = m.sender === "stayflow" ? "bot" : "user";
+          const time = parseUtc(m.created_at)?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) || "";
+          return `<div class="msg ${side}">${(m.message || "").replace(/</g, "&lt;")}<div style="font-size:10px;opacity:.7;margin-top:4px">${time}</div></div>`;
+        }).join("") || `<div class="sf-empty"><div><strong>Sem mensagens ainda.</strong></div></div>`;
+        if(wasNearBottom || supportLastMessageCount === 0) msgsEl.scrollTop = msgsEl.scrollHeight;
+        supportLastMessageCount = messages.length;
+      }
+
+      loadSupportThreads();
+    }catch(e){
+      console.warn("Erro ao abrir chamado:", e);
+    }
+  };
+
+  window.sendSupportReply = async function(){
+    const input = document.getElementById("supportAdminInput");
+    const message = input.value.trim();
+    if(!message || !supportActiveHostelId) return;
+    input.value = "";
+    try{
+      const res = await fetch(`/stayflow-admin/support/threads/${supportActiveHostelId}/send`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível enviar.");
+        return;
+      }
+      supportLastMessageCount = -1;
+      openSupportThread(supportActiveHostelId);
+    }catch(e){
+      console.warn("Erro ao responder suporte:", e);
+    }
+  };
+
+  // ===== Notificacoes (sino + som + titulo da aba) =====
+  let lastKnownUnreadTotal = 0;
+  let notifAudioCtx = null;
+
+  function playNotifSound(){
+    try{
+      notifAudioCtx = notifAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const osc = notifAudioCtx.createOscillator();
+      const gain = notifAudioCtx.createGain();
+      osc.connect(gain); gain.connect(notifAudioCtx.destination);
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, notifAudioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.16, notifAudioCtx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, notifAudioCtx.currentTime + 0.28);
+      osc.start();
+      osc.stop(notifAudioCtx.currentTime + 0.3);
+    }catch(e){}
+  }
+
+  const ORIGINAL_TITLE = document.title;
+  let titleFlashTimer = null;
+  function startTitleFlash(){
+    if(titleFlashTimer) return;
+    let on = false;
+    titleFlashTimer = setInterval(() => {
+      document.title = on ? ORIGINAL_TITLE : "🔴 Nova mensagem — " + ORIGINAL_TITLE;
+      on = !on;
+    }, 1200);
+  }
+  function stopTitleFlash(){
+    if(titleFlashTimer){ clearInterval(titleFlashTimer); titleFlashTimer = null; }
+    document.title = ORIGINAL_TITLE;
+  }
+  document.addEventListener("visibilitychange", () => { if(!document.hidden) stopTitleFlash(); });
+
+  document.addEventListener("click", () => {
+    if("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+  }, { once: true });
+
+  function refreshNotifications(){
+    const chatItems = myChatGuests.filter(g => g.unread).map(g => ({
+      kind: "chat", id: g.id, label: g.name || g.phone || "Contato", preview: g.last_message || "", time: g.last_message_at,
+    }));
+    const supportItems = supportThreads.filter(t => t.unread_count > 0).map(t => ({
+      kind: "support", id: t.hostel_id, label: t.hostel_name || "Conta", preview: t.last_message || "", time: t.last_message_at,
+    }));
+    const items = [...chatItems, ...supportItems].sort((a, b) => (b.time || "").localeCompare(a.time || ""));
+
+    const badge = document.getElementById("adminNotifBadge");
+    if(items.length){ badge.style.display = "inline-flex"; badge.textContent = String(items.length); }
+    else badge.style.display = "none";
+
+    document.getElementById("adminNotifList").innerHTML = items.length
+      ? items.map(it => `
+        <button type="button" class="notif-item" onclick="goToNotifItem('${it.kind}', ${it.id})">
+          <span class="notif-item-icon">${it.kind === "chat" ? "💬" : "🆘"}</span>
+          <span><strong>${(it.label || "").replace(/</g, "&lt;")}</strong><br>${(it.preview || "").slice(0, 60).replace(/</g, "&lt;")}</span>
+        </button>`).join("")
+      : `<div class="notif-empty">Nenhuma novidade.</div>`;
+
+    if(items.length > lastKnownUnreadTotal){
+      playNotifSound();
+      if(document.hidden){
+        startTitleFlash();
+        if("Notification" in window && Notification.permission === "granted"){
+          const first = items[0];
+          try{ new Notification("StayFlow — Meu painel", { body: `${first.label}: ${first.preview}`.slice(0, 120) }); }catch(e){}
+        }
+      }
+    }
+    lastKnownUnreadTotal = items.length;
+  }
+
+  window.goToNotifItem = function(kind, id){
+    document.getElementById("adminNotifPanel").style.display = "none";
+    if(kind === "chat"){
+      switchAdminTab("chat", document.querySelector("[data-tab=chat]"));
+      openMyChatGuest(id);
+    }else{
+      switchAdminTab("support", document.querySelector("[data-tab=support]"));
+      openSupportThread(id);
     }
   };
 
@@ -662,9 +1011,22 @@
 
   (async () => {
     try{
+      const meRes = await fetch("/me", { credentials: "same-origin" });
+      const me = await meRes.json();
+      if(me.success && me.user){
+        document.getElementById("adminUserName").textContent = me.user.name || me.user.email || "—";
+        const initial = (me.user.name || me.user.email || "?").trim().charAt(0).toUpperCase();
+        document.getElementById("userMenuTrigger").textContent = initial;
+      }
+
       await loadOverview();
       await loadMyChatGuests();
+      await loadSupportThreads();
       await loadPayouts();
+
+      StayFlowI18n.wireLanguageSwitcher("langCurrentBtn", "langDropdown", {});
+      StayFlowI18n.applyTranslations({}, StayFlowI18n.getInitialLang());
+
       document.getElementById("adminLoading").style.display = "none";
       document.getElementById("pageShell").style.display = "block";
     }catch(e){
@@ -673,12 +1035,15 @@
       document.getElementById("adminError").style.display = "block";
     }
 
-    // Sensacao de painel vivo: dados gerais a cada 45s, lista do chat a
-    // cada 10s, e a conversa aberta (se tiver uma) a cada 5s - pra
-    // parecer de verdade uma caixa de entrada, nao uma pagina estatica.
+    // Sensacao de painel vivo: dados gerais a cada 45s, listas de chat/
+    // suporte a cada 10s, e a conversa aberta (se tiver uma) a cada 5s.
     setInterval(() => { loadOverview().catch(() => {}); }, 45000);
     setInterval(() => { loadMyChatGuests().catch(() => {}); }, 10000);
-    setInterval(() => { if(myChatActiveGuestId) openMyChatGuest(myChatActiveGuestId); }, 5000);
+    setInterval(() => { loadSupportThreads().catch(() => {}); }, 10000);
+    setInterval(() => {
+      if(myChatActiveGuestId) openMyChatGuest(myChatActiveGuestId);
+      if(supportActiveHostelId) openSupportThread(supportActiveHostelId);
+    }, 5000);
   })();
 </script>
 </body>

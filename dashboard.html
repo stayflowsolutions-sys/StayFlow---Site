@@ -820,6 +820,9 @@ async function deleteRoleConfirm(roleId){
     <button data-page="settings" onclick="openPage('settings',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 2.9a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1l.4 2.9h4.8l.4-2.9a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6a7 7 0 0 0 .1-1z"/></svg></span><span data-i18n="nav.settings">Configurações</span>
     </button>
+    <button data-page="support" onclick="openPage('support',this); if(typeof loadSupportThread==='function')loadSupportThread();">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 17v.01"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4.5"/></svg></span><span>Suporte</span><span class="notif-badge" id="supportUnreadBadge" style="display:none;position:static;margin-left:auto"></span>
+    </button>
     <button class="collapse-menu" onclick="toggleSidebar()">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="m21 18-6-6 6-6"/></svg></span><span data-i18n="nav.collapse">Recolher menu</span>
     </button>
@@ -2112,6 +2115,21 @@ async function deleteRoleConfirm(roleId){
   </div>
 </section>
 
+<!-- SUPORTE -->
+<section id="support" class="page">
+  <div class="grid">
+    <div class="card span-12" style="display:flex;flex-direction:column;height:min(640px,72vh)">
+      <h2>💬 Fale com a StayFlow</h2>
+      <p style="color:var(--muted);font-size:13px;margin:-6px 0 0">Manda sua dúvida ou pedido aqui — a equipe da StayFlow responde direto nesta conversa.</p>
+      <div class="messages" id="supportMessages" style="flex:1;min-height:0;overflow-y:auto;margin:14px 0"></div>
+      <div class="chat-input">
+        <input type="text" id="supportInput" placeholder="Escrever mensagem..." onkeydown="if(event.key==='Enter')sendSupportMessage()">
+        <button class="btn" type="button" onclick="sendSupportMessage()">Enviar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- TEAM -->
 <section id="team" class="page">
   <div class="ops-tabs">
@@ -2254,7 +2272,8 @@ async function deleteRoleConfirm(roleId){
     portfolio:    ["nav.portfolio",     "topbar.subtitle.portfolio"],
     partners:     ["nav.partners",      "topbar.subtitle.partners"],
     reports:      ["nav.reports",       "topbar.subtitle.reports"],
-    settings:     ["nav.settings",      "topbar.subtitle.settings"]
+    settings:     ["nav.settings",      "topbar.subtitle.settings"],
+    support:      ["nav.support",       "topbar.subtitle.support"]
   };
 
   function setActiveMenu(pageId, trigger){
@@ -2281,10 +2300,14 @@ async function deleteRoleConfirm(roleId){
     // em vez de um texto legivel.
     const navFallback = document.querySelector(`.menu button[data-page="${pageId}"] [data-i18n]`)?.textContent || titleKey;
     let title   = i18nReady ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, titleKey, navFallback) : navFallback;
-    const subtitle= i18nReady && subtitleKey ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, subtitleKey, "") : "";
+    let subtitle= i18nReady && subtitleKey ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, subtitleKey, "") : "";
     // Agencia parceira (turismo/aluguel) chama guest de "PAX", termo
     // padrao do setor - hospedagem continua "Hospedes" normalmente.
     if(pageId === "guests" && (window.STAYFLOW_SESSION || {}).account_kind === "agency") title = "PAX";
+    if(pageId === "support"){
+      title = "Suporte";
+      subtitle = "Fale direto com a equipe da StayFlow.";
+    }
     if(titleEl) titleEl.textContent = title;
     if(subEl)   subEl.textContent   = subtitle;
   }
@@ -9928,6 +9951,76 @@ window.uploadGuestDocumentUI = async function(guestId){
     localStorage.removeItem("stayflow_settings");
     window.location.href = "/Login.html";
   };
+
+  // ===== Suporte (fala direto com a equipe da StayFlow) =====
+  function supportMsgHtml(m){
+    const side = m.sender === "stayflow" ? "bot" : "user";
+    return `<div class="msg ${side}">${escapeHtml(m.message || "")}</div>`;
+  }
+
+  window.loadSupportThread = async function(){
+    try{
+      const res = await fetch("/support/thread", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+      const container = document.getElementById("supportMessages");
+      if(container){
+        container.innerHTML = (data.messages || []).map(supportMsgHtml).join("")
+          || `<div class="msg bot">Manda sua dúvida ou pedido aqui — a equipe da StayFlow responde direto nesta conversa.</div>`;
+        container.scrollTop = container.scrollHeight;
+      }
+      updateSupportBadge();
+    }catch(e){
+      console.warn("Erro ao carregar suporte:", e);
+    }
+  };
+
+  window.sendSupportMessage = async function(){
+    const input = document.getElementById("supportInput");
+    const message = input.value.trim();
+    if(!message) return;
+    input.value = "";
+    try{
+      const res = await fetch("/support/thread/send", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível enviar a mensagem.");
+        return;
+      }
+      loadSupportThread();
+    }catch(e){
+      console.warn("Erro ao enviar mensagem de suporte:", e);
+    }
+  };
+
+  window.updateSupportBadge = async function(){
+    try{
+      const res = await fetch("/support/unread-count", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      const badge = document.getElementById("supportUnreadBadge");
+      if(!badge) return;
+      if(data.success && data.unread > 0){
+        badge.style.display = "inline-flex";
+        badge.textContent = String(data.unread);
+      }else{
+        badge.style.display = "none";
+      }
+    }catch(e){
+      console.warn("Erro ao checar suporte não lido:", e);
+    }
+  };
+
+  document.addEventListener("stayflow:session-ready", () => {
+    updateSupportBadge();
+    setInterval(updateSupportBadge, 30000);
+  });
 </script>
 
 <script>
@@ -10155,7 +10248,7 @@ window.uploadGuestDocumentUI = async function(guestId){
         console.warn("Erro ao sair da visita:", d.message);
         return;
       }
-      window.location.href = "stayflow-hub.html";
+      window.location.href = "admin.html";
     }catch(e){
       console.error("Erro ao sair da visita:", e);
     }
