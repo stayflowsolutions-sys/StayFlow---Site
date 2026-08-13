@@ -1,494 +1,514 @@
 <!DOCTYPE html>
 <html lang="pt-BR" translate="no">
 <head>
-  <meta charset="UTF-8">
-  <title>Meu painel · StayFlow</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow">
-  <meta name="google" content="notranslate">
-  <link rel="stylesheet" href="static/css/tokens.css">
-  <link rel="stylesheet" href="static/css/reset.css">
-  <link rel="stylesheet" href="static/css/app.css">
-  <style>
-    .admin-wrap{max-width:1320px;margin:0 auto;padding:24px 24px 80px}
-    .admin-switcher{display:flex;gap:6px;margin-bottom:24px;font-size:13px}
-    .admin-switcher a{color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:8px}
-    .admin-switcher a.active{background:#2f7dff20;color:#7fb1ff;font-weight:700}
-    .admin-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
-    .admin-header h1{font-size:24px;margin:0 0 4px}
-    .admin-header p{color:var(--muted);margin:0;font-size:13px}
-    #adminLoading, #adminError{padding:60px;text-align:center;color:var(--muted)}
-    #adminError{display:none;color:#ff9caf}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google" content="notranslate">
+<title>Meu painel · StayFlow</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/assets/images/icon-192.png">
+<link rel="stylesheet" href="static/css/tokens.css">
+<link rel="stylesheet" href="static/css/reset.css">
+<link rel="stylesheet" href="static/css/app.css">
+<style>
+  /* ===== Extensoes locais - o shell (sidebar/topbar/.page) e 100% o
+     mesmo de dashboard.html via app.css; so o CONTEUDO de cada pagina
+     e proprio deste painel. ===== */
+  .menu a.menu-link{
+    width:100%;min-height:38px;padding:9px 12px;border-radius:14px;border:1px solid transparent;
+    background:transparent;color:#97a5b8;text-align:left;font-size:14px;font-weight:760;letter-spacing:-.2px;
+    display:flex;align-items:center;gap:10px;text-decoration:none;transition:background .18s,border-color .18s,transform .18s,color .18s;
+  }
+  .menu a.menu-link:hover{background:#ffffff07;border-color:#ffffff16;color:#f5f9ff;transform:translateX(2px)}
+  .menu-divider{margin:10px 0 6px;padding:0 12px;color:#66758a;font-size:10px;font-weight:850;letter-spacing:.16em}
 
-    /* ===== Shell vivo: sidebar de secoes + conteudo ===== */
-    .dash-shell{display:none;grid-template-columns:200px 1fr;gap:22px;align-items:start}
-    .dash-nav{display:flex;flex-direction:column;gap:4px;position:sticky;top:20px}
-    .dash-nav button{display:flex;align-items:center;gap:9px;text-align:left;background:transparent;border:1px solid transparent;color:var(--muted);font-size:14px;font-weight:700;padding:11px 14px;border-radius:13px;cursor:pointer;font-family:inherit;transition:background .15s,color .15s}
-    .dash-nav button:hover{background:#ffffff08;color:var(--text)}
-    .dash-nav button.active{background:#2f7dff1e;border-color:#2f7dff45;color:#8fbaff}
-    .dash-nav .live-dot{width:7px;height:7px;border-radius:50%;background:#3ddc97;box-shadow:0 0 0 3px #3ddc9730;flex:none}
-    .dash-nav .badge{margin-left:auto;background:#ff5d76;color:#fff;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px}
+  #adminLoading, #adminError{padding:80px 20px;text-align:center;color:var(--muted)}
+  #adminError{display:none;color:#ff9caf}
+  #pageShell{display:none}
 
-    .dash-content{min-width:0}
-    .dash-tab{display:none}
-    .dash-tab.active{display:block}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px}
+  .stat-card .big{font-size:26px;font-weight:800;margin:0 0 6px}
+  .stat-card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+  .stat-card .sub{font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px}
+  .stat-card.commission .big{color:#6ff0bd}
+  @media(max-width:900px){.stat-grid{grid-template-columns:1fr}}
 
-    .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
-    .stat-card .big{font-size:26px;font-weight:800;margin:0 0 6px}
-    .stat-card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
-    .stat-card .sub{font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px}
-    .stat-card.commission .big{color:#6ff0bd}
-    @media(max-width:900px){.stat-grid{grid-template-columns:1fr}.dash-shell{grid-template-columns:1fr}.dash-nav{flex-direction:row;overflow-x:auto;position:static}}
+  .section-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:26px 0 12px;font-weight:700}
+  .section-title:first-child{margin-top:0}
 
-    .section-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:26px 0 12px;font-weight:700}
-    .section-title:first-child{margin-top:0}
+  .prop-toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .prop-toolbar input{flex:1;min-width:180px;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px}
+  .prop-toolbar select{background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px}
+  .prop-list{display:flex;flex-direction:column;gap:8px}
+  .prop-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:15px;background:#0c1828a0;border:1px solid #17304d80;text-decoration:none;color:inherit;cursor:pointer;transition:border-color .15s,transform .15s}
+  .prop-row:hover{border-color:#2f7dff70;transform:translateX(2px)}
+  .prop-row .ico{font-size:20px;flex:none}
+  .prop-row .name{font-weight:700;font-size:14px}
+  .prop-row .meta{font-size:12px;color:var(--muted)}
+  .prop-row .right{margin-left:auto;text-align:right;flex:none}
+  .prop-row .plan-chip{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;background:#ffffff0e;color:var(--muted)}
+  .prop-row .plan-chip.trialing{background:#ffbd4a22;color:#ffbd4a}
+  .prop-row .plan-chip.active{background:#26e0a022;color:#6ff0bd}
+  .prop-row .plan-chip.past_due{background:#ff5d7622;color:#ff9caf}
+  .prop-empty{padding:40px;text-align:center;color:var(--muted);font-size:13px}
 
-    /* ===== Propriedades / ranking: lista viva ===== */
-    .prop-toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-    .prop-toolbar input{flex:1;min-width:180px;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px}
-    .prop-toolbar select{background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px}
-    .prop-list{display:flex;flex-direction:column;gap:8px}
-    .prop-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:15px;background:#0c1828a0;border:1px solid #17304d80;text-decoration:none;color:inherit;cursor:pointer;transition:border-color .15s,transform .15s}
-    .prop-row:hover{border-color:#2f7dff70;transform:translateX(2px)}
-    .prop-row .ico{font-size:20px;flex:none}
-    .prop-row .name{font-weight:700;font-size:14px}
-    .prop-row .meta{font-size:12px;color:var(--muted)}
-    .prop-row .right{margin-left:auto;text-align:right;flex:none}
-    .prop-row .plan-chip{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;background:#ffffff0e;color:var(--muted)}
-    .prop-row .plan-chip.trialing{background:#ffbd4a22;color:#ffbd4a}
-    .prop-row .plan-chip.active{background:#26e0a022;color:#6ff0bd}
-    .prop-row .plan-chip.past_due{background:#ff5d7622;color:#ff9caf}
-    .prop-empty{padding:40px;text-align:center;color:var(--muted);font-size:13px}
+  .rank-row{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:15px;background:#0c1828a0;border:1px solid #17304d80;margin-bottom:8px;text-decoration:none;color:inherit}
+  .rank-row:hover{border-color:#2f7dff70}
+  .rank-pos{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;background:#ffffff0e;color:var(--muted);flex:none}
+  .rank-row:nth-child(1) .rank-pos{background:#ffd75e2e;color:#ffd75e}
+  .rank-row:nth-child(2) .rank-pos{background:#d8dee82e;color:#dbe2ea}
+  .rank-row:nth-child(3) .rank-pos{background:#e0954e2e;color:#e0954e}
+  .rank-bar-wrap{flex:1;min-width:0}
+  .rank-bar-track{height:6px;border-radius:999px;background:#ffffff0e;margin-top:6px;overflow:hidden}
+  .rank-bar-fill{height:100%;background:linear-gradient(90deg,#0f8bff,#23d2ff);border-radius:999px}
+  .rank-value{font-weight:800;font-size:14px;flex:none}
 
-    /* ===== Ranking ===== */
-    .rank-row{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:15px;background:#0c1828a0;border:1px solid #17304d80;margin-bottom:8px;text-decoration:none;color:inherit}
-    .rank-row:hover{border-color:#2f7dff70}
-    .rank-pos{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;background:#ffffff0e;color:var(--muted);flex:none}
-    .rank-row:nth-child(1) .rank-pos{background:#ffd75e2e;color:#ffd75e}
-    .rank-row:nth-child(2) .rank-pos{background:#d8dee82e;color:#dbe2ea}
-    .rank-row:nth-child(3) .rank-pos{background:#e0954e2e;color:#e0954e}
-    .rank-bar-wrap{flex:1;min-width:0}
-    .rank-bar-track{height:6px;border-radius:999px;background:#ffffff0e;margin-top:6px;overflow:hidden}
-    .rank-bar-fill{height:100%;background:linear-gradient(90deg,#0f8bff,#23d2ff);border-radius:999px}
-    .rank-value{font-weight:800;font-size:14px;flex:none}
-
-    /* ===== Meu chat ===== */
-    .chat-shell{display:grid;grid-template-columns:280px 1fr;gap:16px;height:min(640px,72vh);border:1px solid #17304d80;border-radius:20px;overflow:hidden;background:#0a1522}
-    .chat-guest-list{overflow-y:auto;border-right:1px solid #17304d80;padding:8px}
-    .chat-guest-item{display:flex;flex-direction:column;gap:3px;padding:11px 13px;border-radius:13px;cursor:pointer;margin-bottom:3px}
-    .chat-guest-item:hover{background:#ffffff08}
-    .chat-guest-item.active{background:#2f7dff20}
-    .chat-guest-item .name{font-weight:700;font-size:13.5px}
-    .chat-guest-item .preview{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .chat-guest-empty{padding:30px 16px;text-align:center;color:var(--muted);font-size:12.5px}
-    .chat-main{display:flex;flex-direction:column;min-width:0}
-    .chat-main-header{padding:14px 18px;border-bottom:1px solid #17304d80;display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .chat-main-header .name{font-weight:800;font-size:14.5px}
-    .chat-main-header .phone{font-size:11.5px;color:var(--muted)}
-    .chat-ai-toggle{font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:999px;border:1px solid #17304d80;background:transparent;color:var(--muted);cursor:pointer}
-    .chat-ai-toggle.paused{background:#ff5d7622;color:#ff9caf;border-color:#ff5d7650}
-    .chat-messages{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
-    .chat-bubble{max-width:74%;padding:10px 14px;border-radius:16px;font-size:13.5px;line-height:1.45}
-    .chat-bubble.guest{align-self:flex-start;background:#182740;border-bottom-left-radius:4px}
-    .chat-bubble.ai,.chat-bubble.bot{align-self:flex-end;background:linear-gradient(180deg,#0f8bff,#056ee7);border-bottom-right-radius:4px}
-    .chat-bubble .ts{display:block;font-size:10px;color:#ffffffa0;margin-top:4px}
-    .chat-input-row{display:flex;gap:8px;padding:12px;border-top:1px solid #17304d80}
-    .chat-input-row input{flex:1;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13.5px}
-    .chat-input-row button{border-radius:13px;padding:10px 18px;background:linear-gradient(180deg,#0f8bff,#056ee7);color:white;font-weight:800;font-size:13px;border:none;cursor:pointer}
-    .chat-main-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:30px}
-    .chat-not-configured{padding:40px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
-    @media(max-width:760px){.chat-shell{grid-template-columns:1fr;height:auto}.chat-guest-list{border-right:0;border-bottom:1px solid #17304d80;max-height:220px}}
-  </style>
+  .chat-shell{display:grid;grid-template-columns:280px 1fr;gap:0;height:min(640px,72vh);border:1px solid #17304d80;border-radius:20px;overflow:hidden;background:#0a1522}
+  .chat-guest-list{overflow-y:auto;border-right:1px solid #17304d80;padding:8px}
+  .chat-guest-item{display:flex;flex-direction:column;gap:3px;padding:11px 13px;border-radius:13px;cursor:pointer;margin-bottom:3px}
+  .chat-guest-item:hover{background:#ffffff08}
+  .chat-guest-item.active{background:#2f7dff20}
+  .chat-guest-item .name{font-weight:700;font-size:13.5px}
+  .chat-guest-item .preview{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-guest-empty{padding:30px 16px;text-align:center;color:var(--muted);font-size:12.5px}
+  .chat-main{display:flex;flex-direction:column;min-width:0}
+  .chat-main-header{padding:14px 18px;border-bottom:1px solid #17304d80;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .chat-main-header .name{font-weight:800;font-size:14.5px}
+  .chat-main-header .phone{font-size:11.5px;color:var(--muted)}
+  .chat-ai-toggle{font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:999px;border:1px solid #17304d80;background:transparent;color:var(--muted);cursor:pointer}
+  .chat-ai-toggle.paused{background:#ff5d7622;color:#ff9caf;border-color:#ff5d7650}
+  .chat-messages{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+  .chat-bubble{max-width:74%;padding:10px 14px;border-radius:16px;font-size:13.5px;line-height:1.45}
+  .chat-bubble.guest{align-self:flex-start;background:#182740;border-bottom-left-radius:4px}
+  .chat-bubble.ai{align-self:flex-end;background:linear-gradient(180deg,#0f8bff,#056ee7);border-bottom-right-radius:4px}
+  .chat-bubble .ts{display:block;font-size:10px;color:#ffffffa0;margin-top:4px}
+  .chat-input-row{display:flex;gap:8px;padding:12px;border-top:1px solid #17304d80}
+  .chat-input-row input{flex:1;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13.5px}
+  .chat-input-row button{border-radius:13px;padding:10px 18px;background:linear-gradient(180deg,#0f8bff,#056ee7);color:white;font-weight:800;font-size:13px;border:none;cursor:pointer}
+  .chat-main-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:30px}
+  .chat-not-configured{padding:40px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
+  @media(max-width:760px){.chat-shell{grid-template-columns:1fr;height:auto}.chat-guest-list{border-right:0;border-bottom:1px solid #17304d80;max-height:220px}}
+</style>
 </head>
 <body>
-  <div class="admin-wrap">
-    <div class="admin-switcher">
-      <a href="admin.html" class="active">📊 Meu painel</a>
-      <a href="admin-list.html?kind=lodging">🏨 Hospedagens</a>
-      <a href="admin-list.html?kind=agency">✈️ Agências</a>
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<div class="app">
+
+<aside id="sidebar" class="sidebar">
+  <div class="brand-block">
+    <div class="logo-mark" title="StayFlow">
+      <img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo">
     </div>
-
-    <div class="admin-header">
-      <div>
-        <h1>📊 Meu painel</h1>
-        <p>Visão viva da StayFlow — não é o dashboard de nenhuma conta específica.</p>
-      </div>
-      <a href="dashboard.html" style="color:var(--muted);font-size:13px;text-decoration:none">← Voltar pro dashboard</a>
-    </div>
-
-    <div id="adminLoading">Carregando...</div>
-    <div id="adminError">Não foi possível carregar o painel.</div>
-
-    <div class="dash-shell" id="dashShell">
-      <nav class="dash-nav">
-        <button type="button" class="active" data-tab="overview">📊 Visão geral</button>
-        <button type="button" data-tab="properties">🏘 Propriedades</button>
-        <button type="button" data-tab="ranking">🏆 Ranking</button>
-        <button type="button" data-tab="chat"><span class="live-dot"></span> Meu chat<span class="badge" id="chatUnreadBadge" style="display:none">0</span></button>
-      </nav>
-
-      <div class="dash-content">
-        <!-- ===== Visão geral ===== -->
-        <section class="dash-tab active" id="tab-overview">
-          <div class="stat-grid">
-            <div class="card stat-card">
-              <div class="label">Contas</div>
-              <div class="big" id="sumTotalHostels">—</div>
-              <div class="sub" id="sumByStatus">Carregando...</div>
-            </div>
-            <div class="card stat-card">
-              <div class="label">MRR estimado</div>
-              <div class="big" id="sumMrr">—</div>
-              <div class="sub">Baseado no plano contratado de cada conta — cobrança automática (Stripe/Mercado Pago dessa parte) ainda não ligada.</div>
-            </div>
-            <div class="card stat-card commission">
-              <div class="label">Comissão real coletada</div>
-              <div class="big" id="sumCommission">—</div>
-              <div class="sub">Dinheiro real, já processado via Mercado Pago Split de Pagos.</div>
-            </div>
-          </div>
-
-          <div class="section-title">Top 5 do ranking</div>
-          <div id="overviewRankingPreview"></div>
-
-          <div class="section-title">Últimas propriedades inscritas</div>
-          <div class="prop-list" id="overviewRecentList"></div>
-          <div style="font-size:11px;color:var(--muted);margin-top:16px">Os totais acima são somados sem conversão cambial — contas podem operar em moedas diferentes.</div>
-        </section>
-
-        <!-- ===== Propriedades ===== -->
-        <section class="dash-tab" id="tab-properties">
-          <div class="prop-toolbar">
-            <input type="text" id="propSearch" placeholder="Buscar por nome...">
-            <select id="propKindFilter">
-              <option value="">Todos os tipos</option>
-              <option value="lodging">Só hospedagens</option>
-              <option value="agency">Só agências</option>
-            </select>
-            <select id="propStatusFilter">
-              <option value="">Todos os status</option>
-              <option value="trialing">Trial</option>
-              <option value="active">Ativo</option>
-              <option value="past_due">Inadimplente</option>
-              <option value="canceled">Cancelado</option>
-              <option value="comp">Cortesia</option>
-            </select>
-          </div>
-          <div class="prop-list" id="propList"></div>
-        </section>
-
-        <!-- ===== Ranking ===== -->
-        <section class="dash-tab" id="tab-ranking">
-          <p style="color:var(--muted);font-size:13px;margin:0 0 16px">Ordenado por MRR estimado + comissão real coletada — quem mais gera valor pra StayFlow hoje.</p>
-          <div id="rankList"></div>
-        </section>
-
-        <!-- ===== Meu chat ===== -->
-        <section class="dash-tab" id="tab-chat">
-          <div id="chatNotConfigured" class="chat-not-configured" style="display:none">
-            Nenhum número está marcado como assistente comercial da StayFlow ainda.<br>
-            Vá em <strong>Configurações → WhatsApp Business</strong> e marque "Este número responde como → Assistente comercial da StayFlow".
-          </div>
-          <div class="chat-shell" id="chatShell" style="display:none">
-            <div class="chat-guest-list" id="chatGuestList"></div>
-            <div class="chat-main">
-              <div id="chatMainEmpty" class="chat-main-empty">Escolhe uma conversa pra ver as mensagens</div>
-              <div id="chatMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
-                <div class="chat-main-header">
-                  <div>
-                    <div class="name" id="chatActiveName">—</div>
-                    <div class="phone" id="chatActivePhone">—</div>
-                  </div>
-                  <button type="button" class="chat-ai-toggle" id="chatAiToggleBtn" onclick="toggleMyChatAi()">IA respondendo</button>
-                </div>
-                <div class="chat-messages" id="chatMessages"></div>
-                <div class="chat-input-row">
-                  <input type="text" id="chatInput" placeholder="Escrever mensagem..." onkeydown="if(event.key==='Enter')sendMyChatMessage()">
-                  <button type="button" onclick="sendMyChatMessage()">Enviar</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
+    <div class="brand-word">Stay<span>Flow</span></div>
+    <div class="tagline">Painel do operador</div>
   </div>
 
-  <script>
-    function formatMoney(value, currency){
-      const n = Number(value || 0);
-      try{
-        return new Intl.NumberFormat("pt-BR", { style: "currency", currency: currency || "USD" }).format(n);
-      }catch(e){
-        return `${currency || "USD"} ${n.toFixed(2)}`;
-      }
-    }
+  <nav class="menu">
+    <button type="button" data-tab="overview" class="active" onclick="switchAdminTab('overview', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span>Visão geral</span>
+    </button>
+    <button type="button" data-tab="properties" onclick="switchAdminTab('properties', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="10" width="7" height="10"/><rect x="14" y="6" width="7" height="14"/><path d="M3 10V5l7-2v7"/></svg></span><span>Propriedades</span>
+    </button>
+    <button type="button" data-tab="ranking" onclick="switchAdminTab('ranking', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 4"/><path d="M17 6h3a3 3 0 0 1-3 4"/></svg></span><span>Ranking</span>
+    </button>
+    <button type="button" data-tab="chat" onclick="switchAdminTab('chat', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span>Meu chat</span><span class="badge" id="chatUnreadBadge" style="display:none;margin-left:auto;background:#ff5d76;color:#fff;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px">0</span>
+    </button>
 
-    const STATUS_LABELS = {
-      trialing: "Trial", active: "Ativo", past_due: "Inadimplente",
-      canceled: "Cancelado", comp: "Cortesia",
-    };
-    const KIND_ICONS = { lodging: "🏨", agency: "✈️" };
+    <div class="menu-divider">CONTAS</div>
+    <a class="menu-link" href="admin-list.html?kind=lodging">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/><path d="M9 21v-6h6v6"/></svg></span><span>Hospedagens</span>
+    </a>
+    <a class="menu-link" href="admin-list.html?kind=agency">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M2 16.5 21 3l-4 18-5.5-5.5L4 21l1.5-4.5L2 16.5z"/></svg></span><span>Agências</span>
+    </a>
 
-    let overviewData = null;
+    <button type="button" class="collapse-menu" onclick="toggleSidebar()">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="m21 18-6-6 6-6"/></svg></span><span>Recolher menu</span>
+    </button>
+  </nav>
+</aside>
 
-    function timeAgo(iso){
-      if(!iso) return "";
-      const diffMs = Date.now() - new Date(iso.includes("Z") || iso.includes("+") ? iso : iso + "Z").getTime();
-      const mins = Math.floor(diffMs / 60000);
-      if(mins < 1) return "agora";
-      if(mins < 60) return `${mins}min`;
-      const hrs = Math.floor(mins / 60);
-      if(hrs < 24) return `${hrs}h`;
-      return `${Math.floor(hrs / 24)}d`;
-    }
+<div class="main">
+  <header class="topbar">
+    <div>
+      <button class="btn secondary mobile-menu" onclick="toggleSidebar()">☰</button>
+      <h1 id="pageTitle">Visão geral</h1>
+      <p id="pageSubtitle">Visão viva da StayFlow — não é o dashboard de nenhuma conta específica.</p>
+    </div>
+    <div class="actions">
+      <a href="dashboard.html" class="btn secondary" style="text-decoration:none">← Voltar pro dashboard</a>
+    </div>
+  </header>
 
-    function propRowHtml(h){
-      const statusClass = h.status || "";
-      const statusLabel = STATUS_LABELS[h.status] || h.status || "—";
-      const trial = h.trial_days_left != null ? ` · ${h.trial_days_left}d de trial` : "";
-      return `
-        <a class="prop-row" href="admin-hostel.html?id=${h.hostel_id}">
-          <div class="ico">${KIND_ICONS[h.account_kind] || "🏢"}</div>
-          <div>
-            <div class="name">${h.hostel_name || "Sem nome"}</div>
-            <div class="meta">${h.plan_name || "sem plano"}${trial}</div>
-          </div>
-          <div class="right">
-            <span class="plan-chip ${statusClass}">${statusLabel}</span>
-          </div>
-        </a>`;
-    }
+  <div id="adminLoading">Carregando...</div>
+  <div id="adminError">Não foi possível carregar o painel.</div>
 
-    function renderOverview(data){
-      const s = data.summary;
-      document.getElementById("sumTotalHostels").textContent = String(s.total_hostels);
-      const byStatusText = Object.entries(s.by_status)
-        .map(([status, count]) => `${count} ${(STATUS_LABELS[status] || status).toLowerCase()}`)
-        .join(" · ") || "Nenhuma conta ainda";
-      document.getElementById("sumByStatus").textContent = byStatusText;
-      document.getElementById("sumMrr").textContent = formatMoney(s.total_estimated_mrr, "USD");
-      document.getElementById("sumCommission").textContent = formatMoney(s.total_commission_collected, "USD");
+  <div id="pageShell">
+    <!-- ===== Visão geral ===== -->
+    <section class="page active" id="page-overview">
+      <div class="stat-grid">
+        <div class="card stat-card">
+          <div class="label">Contas</div>
+          <div class="big" id="sumTotalHostels">—</div>
+          <div class="sub" id="sumByStatus">Carregando...</div>
+        </div>
+        <div class="card stat-card">
+          <div class="label">MRR estimado</div>
+          <div class="big" id="sumMrr">—</div>
+          <div class="sub">Baseado no plano contratado de cada conta — cobrança automática (Stripe/Mercado Pago dessa parte) ainda não ligada.</div>
+        </div>
+        <div class="card stat-card commission">
+          <div class="label">Comissão real coletada</div>
+          <div class="big" id="sumCommission">—</div>
+          <div class="sub">Dinheiro real, já processado via Mercado Pago Split de Pagos.</div>
+        </div>
+      </div>
 
-      const ranked = [...data.hostels].sort((a, b) => (b.estimated_mrr + b.commission_collected) - (a.estimated_mrr + a.commission_collected));
-      document.getElementById("overviewRankingPreview").innerHTML = rankListHtml(ranked.slice(0, 5));
+      <div class="section-title">Top 5 do ranking</div>
+      <div id="overviewRankingPreview"></div>
 
-      const recent = [...data.hostels].slice(0, 6);
-      document.getElementById("overviewRecentList").innerHTML = recent.length
-        ? recent.map(propRowHtml).join("")
-        : `<div class="prop-empty">Nenhuma propriedade inscrita ainda.</div>`;
-    }
+      <div class="section-title">Últimas propriedades inscritas</div>
+      <div class="prop-list" id="overviewRecentList"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:16px">Os totais acima são somados sem conversão cambial — contas podem operar em moedas diferentes.</div>
+    </section>
 
-    function renderProperties(){
-      if(!overviewData) return;
-      const search = document.getElementById("propSearch").value.trim().toLowerCase();
-      const kind = document.getElementById("propKindFilter").value;
-      const status = document.getElementById("propStatusFilter").value;
+    <!-- ===== Propriedades ===== -->
+    <section class="page" id="page-properties">
+      <div class="prop-toolbar">
+        <input type="text" id="propSearch" placeholder="Buscar por nome...">
+        <select id="propKindFilter">
+          <option value="">Todos os tipos</option>
+          <option value="lodging">Só hospedagens</option>
+          <option value="agency">Só agências</option>
+        </select>
+        <select id="propStatusFilter">
+          <option value="">Todos os status</option>
+          <option value="trialing">Trial</option>
+          <option value="active">Ativo</option>
+          <option value="past_due">Inadimplente</option>
+          <option value="canceled">Cancelado</option>
+          <option value="comp">Cortesia</option>
+        </select>
+      </div>
+      <div class="prop-list" id="propList"></div>
+    </section>
 
-      const filtered = overviewData.hostels.filter(h => {
-        if(search && !(h.hostel_name || "").toLowerCase().includes(search)) return false;
-        if(kind && h.account_kind !== kind) return false;
-        if(status && h.status !== status) return false;
-        return true;
-      });
+    <!-- ===== Ranking ===== -->
+    <section class="page" id="page-ranking">
+      <p style="color:var(--muted);font-size:13px;margin:0 0 16px">Ordenado por MRR estimado + comissão real coletada — quem mais gera valor pra StayFlow hoje.</p>
+      <div id="rankList"></div>
+    </section>
 
-      document.getElementById("propList").innerHTML = filtered.length
-        ? filtered.map(propRowHtml).join("")
-        : `<div class="prop-empty">Nenhuma propriedade encontrada com esses filtros.</div>`;
-    }
-
-    function rankListHtml(ranked){
-      if(!ranked.length) return `<div class="prop-empty">Nenhuma propriedade pra ranquear ainda.</div>`;
-      const maxValue = Math.max(...ranked.map(h => h.estimated_mrr + h.commission_collected), 1);
-      return ranked.map((h, i) => {
-        const value = h.estimated_mrr + h.commission_collected;
-        const pct = Math.max(4, Math.round((value / maxValue) * 100));
-        return `
-          <a class="rank-row" href="admin-hostel.html?id=${h.hostel_id}">
-            <div class="rank-pos">${i + 1}</div>
-            <div class="rank-bar-wrap">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <span style="font-weight:700;font-size:13.5px">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || "Sem nome"}</span>
+    <!-- ===== Meu chat ===== -->
+    <section class="page" id="page-chat">
+      <div id="chatNotConfigured" class="chat-not-configured" style="display:none">
+        Nenhum número está marcado como assistente comercial da StayFlow ainda.<br>
+        Vá em <strong>Configurações → WhatsApp Business</strong> e marque "Este número responde como → Assistente comercial da StayFlow".
+      </div>
+      <div class="chat-shell" id="chatShell" style="display:none">
+        <div class="chat-guest-list" id="chatGuestList"></div>
+        <div class="chat-main">
+          <div id="chatMainEmpty" class="chat-main-empty">Escolhe uma conversa pra ver as mensagens</div>
+          <div id="chatMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
+            <div class="chat-main-header">
+              <div>
+                <div class="name" id="chatActiveName">—</div>
+                <div class="phone" id="chatActivePhone">—</div>
               </div>
-              <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${pct}%"></div></div>
+              <button type="button" class="chat-ai-toggle" id="chatAiToggleBtn" onclick="toggleMyChatAi()">IA respondendo</button>
             </div>
-            <div class="rank-value">${formatMoney(value, "USD")}</div>
-          </a>`;
-      }).join("");
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-row">
+              <input type="text" id="chatInput" placeholder="Escrever mensagem..." onkeydown="if(event.key==='Enter')sendMyChatMessage()">
+              <button type="button" onclick="sendMyChatMessage()">Enviar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+</div>
+
+<script>
+  window.toggleSidebar = function(){
+    const sidebar = document.getElementById("sidebar");
+    if(sidebar) sidebar.classList.toggle("open");
+    document.getElementById("sidebarOverlay")?.classList.toggle("open", sidebar?.classList.contains("open"));
+  };
+
+  const TAB_TITLES = {
+    overview: ["Visão geral", "Visão viva da StayFlow — não é o dashboard de nenhuma conta específica."],
+    properties: ["Propriedades", "Todas as hospedagens e agências inscritas na StayFlow."],
+    ranking: ["Ranking", "Quem mais gera valor pra StayFlow hoje."],
+    chat: ["Meu chat", "Conversas reais do número comercial oficial da StayFlow."],
+  };
+
+  window.switchAdminTab = function(tab, btn){
+    document.querySelectorAll(".menu button[data-tab]").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(`page-${tab}`).classList.add("active");
+    const [title, sub] = TAB_TITLES[tab] || ["", ""];
+    document.getElementById("pageTitle").textContent = title;
+    document.getElementById("pageSubtitle").textContent = sub;
+    document.getElementById("sidebar")?.classList.remove("open");
+    document.getElementById("sidebarOverlay")?.classList.remove("open");
+  };
+
+  function formatMoney(value, currency){
+    const n = Number(value || 0);
+    try{
+      return new Intl.NumberFormat("pt-BR", { style: "currency", currency: currency || "USD" }).format(n);
+    }catch(e){
+      return `${currency || "USD"} ${n.toFixed(2)}`;
     }
+  }
 
-    function renderRanking(){
-      if(!overviewData) return;
-      const ranked = [...overviewData.hostels].sort((a, b) => (b.estimated_mrr + b.commission_collected) - (a.estimated_mrr + a.commission_collected));
-      document.getElementById("rankList").innerHTML = rankListHtml(ranked);
-    }
+  const STATUS_LABELS = {
+    trialing: "Trial", active: "Ativo", past_due: "Inadimplente",
+    canceled: "Cancelado", comp: "Cortesia",
+  };
+  const KIND_ICONS = { lodging: "🏨", agency: "✈️" };
 
-    async function loadOverview(){
-      const res = await fetch("/stayflow-admin/overview", { credentials: "same-origin" });
-      if(res.status === 401 || res.status === 403){ window.location.href = "Login.html"; return; }
-      if(!res.ok) throw new Error("request failed");
-      const data = await res.json();
-      if(!data.success) throw new Error("unsuccessful");
-      overviewData = data;
-      renderOverview(data);
-      renderProperties();
-      renderRanking();
-    }
+  let overviewData = null;
 
-    // ===== Meu chat =====
-    let myChatGuests = [];
-    let myChatActiveGuestId = null;
-    let myChatConfigured = null;
+  function propRowHtml(h){
+    const statusClass = h.status || "";
+    const statusLabel = STATUS_LABELS[h.status] || h.status || "—";
+    const trial = h.trial_days_left != null ? ` · ${h.trial_days_left}d de trial` : "";
+    return `
+      <a class="prop-row" href="admin-hostel.html?id=${h.hostel_id}">
+        <div class="ico">${KIND_ICONS[h.account_kind] || "🏢"}</div>
+        <div>
+          <div class="name">${h.hostel_name || "Sem nome"}</div>
+          <div class="meta">${h.plan_name || "sem plano"}${trial}</div>
+        </div>
+        <div class="right">
+          <span class="plan-chip ${statusClass}">${statusLabel}</span>
+        </div>
+      </a>`;
+  }
 
-    function chatGuestItemHtml(g){
-      const lastMsg = g.total_value != null ? "" : "";
-      return `
-        <div class="chat-guest-item ${g.id === myChatActiveGuestId ? "active" : ""}" onclick="openMyChatGuest(${g.id})">
-          <div class="name">${g.name || g.phone || "Contato sem nome"}</div>
-          <div class="preview">${g.phone || ""} · ${g.message_count || 0} msgs</div>
-        </div>`;
-    }
+  function renderOverview(data){
+    const s = data.summary;
+    document.getElementById("sumTotalHostels").textContent = String(s.total_hostels);
+    const byStatusText = Object.entries(s.by_status)
+      .map(([status, count]) => `${count} ${(STATUS_LABELS[status] || status).toLowerCase()}`)
+      .join(" · ") || "Nenhuma conta ainda";
+    document.getElementById("sumByStatus").textContent = byStatusText;
+    document.getElementById("sumMrr").textContent = formatMoney(s.total_estimated_mrr, "USD");
+    document.getElementById("sumCommission").textContent = formatMoney(s.total_commission_collected, "USD");
 
-    async function loadMyChatGuests(){
-      try{
-        const res = await fetch("/stayflow-admin/my-chat/guests", { credentials: "same-origin" });
-        if(!res.ok) return;
-        const data = await res.json();
-        if(!data.success) return;
+    const ranked = [...data.hostels].sort((a, b) => (b.estimated_mrr + b.commission_collected) - (a.estimated_mrr + a.commission_collected));
+    document.getElementById("overviewRankingPreview").innerHTML = rankListHtml(ranked.slice(0, 5));
 
-        myChatConfigured = data.configured;
-        document.getElementById("chatNotConfigured").style.display = data.configured ? "none" : "block";
-        document.getElementById("chatShell").style.display = data.configured ? "grid" : "none";
-        if(!data.configured) return;
+    const recent = [...data.hostels].slice(0, 6);
+    document.getElementById("overviewRecentList").innerHTML = recent.length
+      ? recent.map(propRowHtml).join("")
+      : `<div class="prop-empty">Nenhuma propriedade inscrita ainda.</div>`;
+  }
 
-        myChatGuests = data.guests || [];
-        const badge = document.getElementById("chatUnreadBadge");
-        if(myChatGuests.length){
-          badge.style.display = "inline-block";
-          badge.textContent = String(myChatGuests.length);
-        }else{
-          badge.style.display = "none";
-        }
+  function renderProperties(){
+    if(!overviewData) return;
+    const search = document.getElementById("propSearch").value.trim().toLowerCase();
+    const kind = document.getElementById("propKindFilter").value;
+    const status = document.getElementById("propStatusFilter").value;
 
-        document.getElementById("chatGuestList").innerHTML = myChatGuests.length
-          ? myChatGuests.map(chatGuestItemHtml).join("")
-          : `<div class="chat-guest-empty">Nenhuma conversa ainda. Assim que alguém escrever no WhatsApp da StayFlow, aparece aqui.</div>`;
-      }catch(e){
-        console.warn("Erro ao carregar Meu chat:", e);
-      }
-    }
-
-    function chatBubbleHtml(m){
-      const role = m.sender === "guest" ? "guest" : "ai";
-      const time = m.created_at ? new Date(m.created_at.includes("Z") ? m.created_at : m.created_at + "Z").toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
-      return `<div class="chat-bubble ${role}">${(m.message || "").replace(/</g, "&lt;")}<span class="ts">${time}</span></div>`;
-    }
-
-    window.openMyChatGuest = async function(guestId){
-      myChatActiveGuestId = guestId;
-      document.querySelectorAll(".chat-guest-item").forEach(el => el.classList.remove("active"));
-      loadMyChatGuests();
-
-      document.getElementById("chatMainEmpty").style.display = "none";
-      document.getElementById("chatMainActive").style.display = "flex";
-
-      try{
-        const res = await fetch(`/stayflow-admin/my-chat/guests/${guestId}`, { credentials: "same-origin" });
-        if(!res.ok) return;
-        const data = await res.json();
-        if(!data.success) return;
-
-        document.getElementById("chatActiveName").textContent = data.guest.name || data.guest.phone || "Contato sem nome";
-        document.getElementById("chatActivePhone").textContent = data.guest.phone || "";
-
-        const toggleBtn = document.getElementById("chatAiToggleBtn");
-        const paused = !!data.guest.ai_paused;
-        toggleBtn.textContent = paused ? "IA pausada — assumido por você" : "IA respondendo";
-        toggleBtn.classList.toggle("paused", paused);
-
-        const msgsEl = document.getElementById("chatMessages");
-        msgsEl.innerHTML = (data.messages || []).map(chatBubbleHtml).join("") || `<div class="chat-guest-empty">Sem mensagens ainda.</div>`;
-        msgsEl.scrollTop = msgsEl.scrollHeight;
-      }catch(e){
-        console.warn("Erro ao abrir conversa:", e);
-      }
-    };
-
-    window.toggleMyChatAi = async function(){
-      if(!myChatActiveGuestId) return;
-      const toggleBtn = document.getElementById("chatAiToggleBtn");
-      const nowPaused = !toggleBtn.classList.contains("paused");
-      try{
-        await fetch(`/stayflow-admin/my-chat/guests/${myChatActiveGuestId}/toggle-ai`, {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paused: nowPaused }),
-        });
-        openMyChatGuest(myChatActiveGuestId);
-      }catch(e){
-        console.warn("Erro ao alternar IA:", e);
-      }
-    };
-
-    window.sendMyChatMessage = async function(){
-      const input = document.getElementById("chatInput");
-      const message = input.value.trim();
-      if(!message || !myChatActiveGuestId) return;
-      input.value = "";
-      try{
-        const res = await fetch(`/stayflow-admin/my-chat/guests/${myChatActiveGuestId}/send-message`, {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message }),
-        });
-        const data = await res.json();
-        if(!data.success){
-          alert(data.message || "Não foi possível enviar a mensagem.");
-          return;
-        }
-        openMyChatGuest(myChatActiveGuestId);
-      }catch(e){
-        console.warn("Erro ao enviar mensagem:", e);
-      }
-    };
-
-    // ===== Navegação entre abas =====
-    document.querySelectorAll(".dash-nav button").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".dash-nav button").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".dash-tab").forEach(t => t.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
-      });
+    const filtered = overviewData.hostels.filter(h => {
+      if(search && !(h.hostel_name || "").toLowerCase().includes(search)) return false;
+      if(kind && h.account_kind !== kind) return false;
+      if(status && h.status !== status) return false;
+      return true;
     });
 
-    document.getElementById("propSearch").addEventListener("input", renderProperties);
-    document.getElementById("propKindFilter").addEventListener("change", renderProperties);
-    document.getElementById("propStatusFilter").addEventListener("change", renderProperties);
+    document.getElementById("propList").innerHTML = filtered.length
+      ? filtered.map(propRowHtml).join("")
+      : `<div class="prop-empty">Nenhuma propriedade encontrada com esses filtros.</div>`;
+  }
 
-    (async () => {
-      try{
-        await loadOverview();
-        await loadMyChatGuests();
-        document.getElementById("adminLoading").style.display = "none";
-        document.getElementById("dashShell").style.display = "grid";
-      }catch(e){
-        console.warn("Erro ao carregar painel StayFlow:", e);
-        document.getElementById("adminLoading").style.display = "none";
-        document.getElementById("adminError").style.display = "block";
+  function rankListHtml(ranked){
+    if(!ranked.length) return `<div class="prop-empty">Nenhuma propriedade pra ranquear ainda.</div>`;
+    const maxValue = Math.max(...ranked.map(h => h.estimated_mrr + h.commission_collected), 1);
+    return ranked.map((h, i) => {
+      const value = h.estimated_mrr + h.commission_collected;
+      const pct = Math.max(4, Math.round((value / maxValue) * 100));
+      return `
+        <a class="rank-row" href="admin-hostel.html?id=${h.hostel_id}">
+          <div class="rank-pos">${i + 1}</div>
+          <div class="rank-bar-wrap">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-weight:700;font-size:13.5px">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || "Sem nome"}</span>
+            </div>
+            <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="rank-value">${formatMoney(value, "USD")}</div>
+        </a>`;
+    }).join("");
+  }
+
+  function renderRanking(){
+    if(!overviewData) return;
+    const ranked = [...overviewData.hostels].sort((a, b) => (b.estimated_mrr + b.commission_collected) - (a.estimated_mrr + a.commission_collected));
+    document.getElementById("rankList").innerHTML = rankListHtml(ranked);
+  }
+
+  async function loadOverview(){
+    const res = await fetch("/stayflow-admin/overview", { credentials: "same-origin" });
+    if(res.status === 401 || res.status === 403){ window.location.href = "Login.html"; return; }
+    if(!res.ok) throw new Error("request failed");
+    const data = await res.json();
+    if(!data.success) throw new Error("unsuccessful");
+    overviewData = data;
+    renderOverview(data);
+    renderProperties();
+    renderRanking();
+  }
+
+  // ===== Meu chat =====
+  let myChatGuests = [];
+  let myChatActiveGuestId = null;
+
+  function chatGuestItemHtml(g){
+    return `
+      <div class="chat-guest-item ${g.id === myChatActiveGuestId ? "active" : ""}" onclick="openMyChatGuest(${g.id})">
+        <div class="name">${g.name || g.phone || "Contato sem nome"}</div>
+        <div class="preview">${g.phone || ""} · ${g.message_count || 0} msgs</div>
+      </div>`;
+  }
+
+  async function loadMyChatGuests(){
+    try{
+      const res = await fetch("/stayflow-admin/my-chat/guests", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      document.getElementById("chatNotConfigured").style.display = data.configured ? "none" : "block";
+      document.getElementById("chatShell").style.display = data.configured ? "grid" : "none";
+      if(!data.configured) return;
+
+      myChatGuests = data.guests || [];
+      const badge = document.getElementById("chatUnreadBadge");
+      if(myChatGuests.length){
+        badge.style.display = "inline-block";
+        badge.textContent = String(myChatGuests.length);
+      }else{
+        badge.style.display = "none";
       }
 
-      // Sensacao de painel vivo: dados gerais a cada 45s, chat a cada 12s
-      // (lista) - se tiver uma conversa aberta, ela tambem se atualiza
-      // junto, sem precisar recarregar a pagina.
-      setInterval(() => { loadOverview().catch(() => {}); }, 45000);
-      setInterval(() => {
-        loadMyChatGuests().catch(() => {});
-        if(myChatActiveGuestId) openMyChatGuest(myChatActiveGuestId);
-      }, 12000);
-    })();
-  </script>
+      document.getElementById("chatGuestList").innerHTML = myChatGuests.length
+        ? myChatGuests.map(chatGuestItemHtml).join("")
+        : `<div class="chat-guest-empty">Nenhuma conversa ainda. Assim que alguém escrever no WhatsApp da StayFlow, aparece aqui.</div>`;
+    }catch(e){
+      console.warn("Erro ao carregar Meu chat:", e);
+    }
+  }
+
+  function chatBubbleHtml(m){
+    const role = m.sender === "guest" ? "guest" : "ai";
+    const time = m.created_at ? new Date(m.created_at.includes("Z") ? m.created_at : m.created_at + "Z").toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+    return `<div class="chat-bubble ${role}">${(m.message || "").replace(/</g, "&lt;")}<span class="ts">${time}</span></div>`;
+  }
+
+  window.openMyChatGuest = async function(guestId){
+    myChatActiveGuestId = guestId;
+    loadMyChatGuests();
+
+    document.getElementById("chatMainEmpty").style.display = "none";
+    document.getElementById("chatMainActive").style.display = "flex";
+
+    try{
+      const res = await fetch(`/stayflow-admin/my-chat/guests/${guestId}`, { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      document.getElementById("chatActiveName").textContent = data.guest.name || data.guest.phone || "Contato sem nome";
+      document.getElementById("chatActivePhone").textContent = data.guest.phone || "";
+
+      const toggleBtn = document.getElementById("chatAiToggleBtn");
+      const paused = !!data.guest.ai_paused;
+      toggleBtn.textContent = paused ? "IA pausada — assumido por você" : "IA respondendo";
+      toggleBtn.classList.toggle("paused", paused);
+
+      const msgsEl = document.getElementById("chatMessages");
+      msgsEl.innerHTML = (data.messages || []).map(chatBubbleHtml).join("") || `<div class="chat-guest-empty">Sem mensagens ainda.</div>`;
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    }catch(e){
+      console.warn("Erro ao abrir conversa:", e);
+    }
+  };
+
+  window.toggleMyChatAi = async function(){
+    if(!myChatActiveGuestId) return;
+    const toggleBtn = document.getElementById("chatAiToggleBtn");
+    const nowPaused = !toggleBtn.classList.contains("paused");
+    try{
+      await fetch(`/stayflow-admin/my-chat/guests/${myChatActiveGuestId}/toggle-ai`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paused: nowPaused }),
+      });
+      openMyChatGuest(myChatActiveGuestId);
+    }catch(e){
+      console.warn("Erro ao alternar IA:", e);
+    }
+  };
+
+  window.sendMyChatMessage = async function(){
+    const input = document.getElementById("chatInput");
+    const message = input.value.trim();
+    if(!message || !myChatActiveGuestId) return;
+    input.value = "";
+    try{
+      const res = await fetch(`/stayflow-admin/my-chat/guests/${myChatActiveGuestId}/send-message`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível enviar a mensagem.");
+        return;
+      }
+      openMyChatGuest(myChatActiveGuestId);
+    }catch(e){
+      console.warn("Erro ao enviar mensagem:", e);
+    }
+  };
+
+  document.getElementById("propSearch").addEventListener("input", renderProperties);
+  document.getElementById("propKindFilter").addEventListener("change", renderProperties);
+  document.getElementById("propStatusFilter").addEventListener("change", renderProperties);
+
+  (async () => {
+    try{
+      await loadOverview();
+      await loadMyChatGuests();
+      document.getElementById("adminLoading").style.display = "none";
+      document.getElementById("pageShell").style.display = "block";
+    }catch(e){
+      console.warn("Erro ao carregar painel StayFlow:", e);
+      document.getElementById("adminLoading").style.display = "none";
+      document.getElementById("adminError").style.display = "block";
+    }
+
+    // Sensacao de painel vivo: dados gerais a cada 45s, chat a cada 12s
+    // (lista) - se tiver uma conversa aberta, ela tambem se atualiza
+    // junto, sem precisar recarregar a pagina.
+    setInterval(() => { loadOverview().catch(() => {}); }, 45000);
+    setInterval(() => {
+      loadMyChatGuests().catch(() => {});
+      if(myChatActiveGuestId) openMyChatGuest(myChatActiveGuestId);
+    }, 12000);
+  })();
+</script>
 </body>
 </html>
