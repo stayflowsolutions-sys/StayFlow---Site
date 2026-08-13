@@ -1304,7 +1304,10 @@ async function deleteRoleConfirm(roleId){
 
   <div data-ops-section="tasks" class="grid">
     <div class="card span-12">
-      <h2 data-i18n="operations.tasks.title">🧹 Tarefas operacionais</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="operations.tasks.title">🧹 Tarefas operacionais</h2>
+        <button type="button" class="btn primary" onclick="openNewTaskModal()" data-i18n="operations.tasks.newBtn">➕ Novo chamado</button>
+      </div>
       <div class="sf-empty" id="opsTasksEmpty">
         <div>
           <strong data-i18n="operations.tasks.emptyTitle">Nenhuma tarefa cadastrada.</strong>
@@ -1317,6 +1320,7 @@ async function deleteRoleConfirm(roleId){
             <th data-i18n="operations.tasks.col.task">Tarefa</th>
             <th data-i18n="operations.tasks.col.owner">Responsável</th>
             <th data-i18n="guests.col.status">Status</th>
+            <th data-i18n="common.action">Ação</th>
           </tr>
         </thead>
         <tbody id="opsTasksBody">
@@ -7900,6 +7904,77 @@ window.switchOperationsTab = function(tabId){
   window.scrollTo({top:0, behavior:"smooth"});
 };
 
+window.openNewTaskModal = function(){
+  openGenericModal(T('operations.tasks.newModalTitle', '🧹 Novo chamado'), `
+    <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('operations.tasks.newModalDesc', 'Pra tarefa avulsa que não é pedido de cozinha, manutenção nem segurança.')}</p>
+    <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.location', 'Local')}</label>
+        <input type="text" id="newTaskLocation" autocomplete="off" placeholder="${T('operations.tasks.locationPlaceholder', 'Opcional')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.urgency', 'Urgência')}</label>
+        <select id="newTaskUrgency" style="width:100%">
+          <option value="low">${T('common.urgency.low', 'Baixa')}</option>
+          <option value="normal" selected>${T('common.urgency.normal', 'Normal')}</option>
+          <option value="high">${T('common.urgency.high', 'Alta')}</option>
+          <option value="urgent">${T('common.urgency.urgent', 'Urgente')}</option>
+        </select>
+      </div>
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.description', 'Descrição')}</label>
+        <textarea id="newTaskDescription" rows="3" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="submitNewTask()">${T('operations.tasks.submitBtn', 'Criar chamado')}</button>
+    </div>
+    <div id="newTaskMessage" class="generic-modal-message"></div>
+  `);
+};
+
+window.submitNewTask = async function(){
+  const msg = document.getElementById("newTaskMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const location = (document.getElementById("newTaskLocation")?.value || "").trim();
+  const description = (document.getElementById("newTaskDescription")?.value || "").trim();
+  const baseUrgency = document.getElementById("newTaskUrgency")?.value || "normal";
+
+  if(!description){
+    if(msg){ msg.textContent = T('operations.tasks.descriptionRequired', 'Descreva a tarefa.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch("/operations/tasks", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ location, description, base_urgency: baseUrgency }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadOperations();
+  }catch(e){
+    console.warn("Erro ao criar tarefa:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+window.resolveTaskUI = async function(ticketId){
+  try{
+    await fetch(`/operations/tasks/${ticketId}/resolve`, { method: "POST", credentials: "same-origin" });
+    loadOperations();
+  }catch(e){
+    console.warn("Erro ao concluir tarefa:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
 async function loadOperations(){
   const tasksEmptyEl = document.getElementById("opsTasksEmpty");
   const tasksTableEl = document.getElementById("opsTasksTable");
@@ -7935,11 +8010,15 @@ async function loadOperations(){
       if(tasksBodyEl){
         tasksBodyEl.innerHTML = "";
         tasks.forEach(t => {
+          const actionHtml = t.ticket_id
+            ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="resolveTaskUI(${t.ticket_id})">${T('operations.tasks.resolveBtn', 'Concluir')}</button>`
+            : "-";
           const row = document.createElement("tr");
           row.innerHTML = `
             <td>${t.task}</td>
             <td>${t.assignee || "-"}</td>
             <td><span class="status-pill warm">${T('reservations.status.pending', 'Pendente')}</span></td>
+            <td>${actionHtml}</td>
           `;
           tasksBodyEl.appendChild(row);
         });
