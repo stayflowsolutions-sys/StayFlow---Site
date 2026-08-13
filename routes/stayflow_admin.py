@@ -37,7 +37,7 @@ from database import (
     PLAN_ROOM_LIMITS,
     PLAN_SEAT_LIMITS,
     get_hostel_id_by_ai_persona,
-    get_guests_list,
+    get_guests_inbox,
     get_guest_profile,
     set_guest_ai_paused,
     send_message_to_guest_now,
@@ -321,7 +321,7 @@ def my_chat_guests():
         "success": True,
         "configured": True,
         "hostel_id": hostel_id,
-        "guests": get_guests_list(hostel_id),
+        "guests": get_guests_inbox(hostel_id),
     })
 
 

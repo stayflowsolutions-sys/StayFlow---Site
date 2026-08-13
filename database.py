@@ -4793,6 +4793,68 @@ def get_guests_list(hostel_id):
     return guests
 
 
+def get_guests_inbox(hostel_id):
+    """
+    Mesma ideia de get_guests_list, mas pensada pra uma CAIXA DE
+    ENTRADA de chat de verdade (usado hoje só pelo "Meu chat" do painel
+    interno, routes/stayflow_admin.py) - ordenada por MENSAGEM MAIS
+    RECENTE (nao por data de cadastro do contato) e com preview/hora da
+    ultima mensagem, igual qualquer app de chat (WhatsApp, Messenger).
+    get_guests_list nao serve pra isso: ordenar por g.created_at faz um
+    contato antigo que acabou de mandar mensagem nova sumir no meio da
+    lista, dando a impressao de "sincronizacao ruim".
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            g.id,
+            g.name,
+            g.phone,
+            g.created_at,
+            (
+                SELECT COUNT(*)
+                FROM messages m
+                JOIN conversations c ON m.conversation_id = c.id
+                WHERE c.guest_id = g.id
+            ) AS message_count,
+            (
+                SELECT m.message
+                FROM messages m
+                JOIN conversations c ON m.conversation_id = c.id
+                WHERE c.guest_id = g.id
+                ORDER BY m.created_at DESC, m.id DESC
+                LIMIT 1
+            ) AS last_message,
+            (
+                SELECT m.sender
+                FROM messages m
+                JOIN conversations c ON m.conversation_id = c.id
+                WHERE c.guest_id = g.id
+                ORDER BY m.created_at DESC, m.id DESC
+                LIMIT 1
+            ) AS last_message_sender,
+            (
+                SELECT m.created_at
+                FROM messages m
+                JOIN conversations c ON m.conversation_id = c.id
+                WHERE c.guest_id = g.id
+                ORDER BY m.created_at DESC, m.id DESC
+                LIMIT 1
+            ) AS last_message_at
+        FROM guests g
+        WHERE g.hostel_id = ?
+        ORDER BY last_message_at DESC, g.created_at DESC
+    """, (hostel_id,))
+
+    guests = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return guests
+
+
 def get_guest_profile(hostel_id, guest_id):
     conn = get_connection()
     cursor = conn.cursor()

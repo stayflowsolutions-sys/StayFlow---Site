@@ -11,9 +11,11 @@
 <link rel="stylesheet" href="static/css/reset.css">
 <link rel="stylesheet" href="static/css/app.css">
 <style>
-  /* ===== Extensoes locais - o shell (sidebar/topbar/.page) e 100% o
-     mesmo de dashboard.html via app.css; so o CONTEUDO de cada pagina
-     e proprio deste painel. ===== */
+  /* ===== Extensoes locais - o shell (sidebar/topbar/.page/.kpi/
+     .chat-layout/.chat-item/.messages/.msg) e 100% reaproveitado de
+     app.css, o mesmo de dashboard.html; so o CONTEUDO especifico deste
+     painel (propriedades/ranking/repasses/alertas) tem CSS proprio
+     aqui, sempre derivado da mesma paleta (tokens.css). ===== */
   .menu a.menu-link{
     width:100%;min-height:38px;padding:9px 12px;border-radius:14px;border:1px solid transparent;
     background:transparent;color:#97a5b8;text-align:left;font-size:14px;font-weight:760;letter-spacing:-.2px;
@@ -26,35 +28,46 @@
   #adminError{display:none;color:#ff9caf}
   #pageShell{display:none}
 
-  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px}
-  .stat-card .big{font-size:26px;font-weight:800;margin:0 0 6px}
-  .stat-card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
-  .stat-card .sub{font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px}
-  .stat-card.commission .big{color:#6ff0bd}
-  @media(max-width:900px){.stat-grid{grid-template-columns:1fr}}
+  .kpi.span-4{grid-column:span 4}
+  @media(max-width:900px){.kpi.span-4{grid-column:span 12}}
 
   .section-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:26px 0 12px;font-weight:700}
   .section-title:first-child{margin-top:0}
 
+  /* Alerta "precisa de atencao" - trials acabando/inadimplentes */
+  .alert-list{display:flex;flex-direction:column;gap:8px}
+  .alert-row{display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:15px;text-decoration:none;color:inherit}
+  .alert-row.warn{background:#ffbd4a14;border:1px solid #ffbd4a30}
+  .alert-row.danger{background:#ff5d7614;border:1px solid #ff5d7630}
+  .alert-row .ico{font-size:17px;flex:none}
+  .alert-row .name{font-weight:700;font-size:13.5px}
+  .alert-row .detail{font-size:12px;color:var(--muted)}
+  .alert-row .right{margin-left:auto;font-size:12px;font-weight:800;flex:none}
+  .alert-row.warn .right{color:#ffd58b}
+  .alert-row.danger .right{color:#ff9caf}
+  .alert-empty{padding:18px;text-align:center;color:var(--muted);font-size:13px;background:#ffffff05;border-radius:15px}
+
+  /* Propriedades */
   .prop-toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
   .prop-toolbar input{flex:1;min-width:180px;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px}
   .prop-toolbar select{background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px}
   .prop-list{display:flex;flex-direction:column;gap:8px}
-  .prop-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:15px;background:#0c1828a0;border:1px solid #17304d80;text-decoration:none;color:inherit;cursor:pointer;transition:border-color .15s,transform .15s}
-  .prop-row:hover{border-color:#2f7dff70;transform:translateX(2px)}
+  .prop-row{display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:15px;border:1px solid #ffffff12;text-decoration:none;color:inherit;cursor:pointer;transition:border-color .18s,background .18s}
+  .prop-row:hover{border-color:#ffffff30;background:#ffffff07}
   .prop-row .ico{font-size:20px;flex:none}
-  .prop-row .name{font-weight:700;font-size:14px}
-  .prop-row .meta{font-size:12px;color:var(--muted)}
+  .prop-row .name{font-weight:760;font-size:13.5px}
+  .prop-row .meta{font-size:12px;color:var(--muted);margin-top:2px}
   .prop-row .right{margin-left:auto;text-align:right;flex:none}
-  .prop-row .plan-chip{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;background:#ffffff0e;color:var(--muted)}
-  .prop-row .plan-chip.trialing{background:#ffbd4a22;color:#ffbd4a}
-  .prop-row .plan-chip.active{background:#26e0a022;color:#6ff0bd}
-  .prop-row .plan-chip.past_due{background:#ff5d7622;color:#ff9caf}
+  .prop-row .plan-chip{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;background:#ffffff10;color:var(--muted)}
+  .prop-row .plan-chip.trialing{background:#ffbd4a20;color:#ffd58b;border:1px solid #ffbd4a26}
+  .prop-row .plan-chip.active{background:#26e0a020;color:#6ff0bd;border:1px solid #26e0a02a}
+  .prop-row .plan-chip.past_due{background:#ff5d7620;color:#ff9caf;border:1px solid #ff5d7628}
   .prop-empty{padding:40px;text-align:center;color:var(--muted);font-size:13px}
 
-  .rank-row{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:15px;background:#0c1828a0;border:1px solid #17304d80;margin-bottom:8px;text-decoration:none;color:inherit}
-  .rank-row:hover{border-color:#2f7dff70}
-  .rank-pos{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;background:#ffffff0e;color:var(--muted);flex:none}
+  /* Ranking */
+  .rank-row{display:flex;align-items:center;gap:14px;padding:12px 15px;border-radius:15px;border:1px solid #ffffff12;margin-bottom:8px;text-decoration:none;color:inherit;transition:border-color .18s,background .18s}
+  .rank-row:hover{border-color:#ffffff30;background:#ffffff07}
+  .rank-pos{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;background:#ffffff10;color:var(--muted);flex:none}
   .rank-row:nth-child(1) .rank-pos{background:#ffd75e2e;color:#ffd75e}
   .rank-row:nth-child(2) .rank-pos{background:#d8dee82e;color:#dbe2ea}
   .rank-row:nth-child(3) .rank-pos{background:#e0954e2e;color:#e0954e}
@@ -63,31 +76,19 @@
   .rank-bar-fill{height:100%;background:linear-gradient(90deg,#0f8bff,#23d2ff);border-radius:999px}
   .rank-value{font-weight:800;font-size:14px;flex:none}
 
-  .chat-shell{display:grid;grid-template-columns:280px 1fr;gap:0;height:min(640px,72vh);border:1px solid #17304d80;border-radius:20px;overflow:hidden;background:#0a1522}
-  .chat-guest-list{overflow-y:auto;border-right:1px solid #17304d80;padding:8px}
-  .chat-guest-item{display:flex;flex-direction:column;gap:3px;padding:11px 13px;border-radius:13px;cursor:pointer;margin-bottom:3px}
-  .chat-guest-item:hover{background:#ffffff08}
-  .chat-guest-item.active{background:#2f7dff20}
-  .chat-guest-item .name{font-weight:700;font-size:13.5px}
-  .chat-guest-item .preview{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .chat-guest-empty{padding:30px 16px;text-align:center;color:var(--muted);font-size:12.5px}
-  .chat-main{display:flex;flex-direction:column;min-width:0}
-  .chat-main-header{padding:14px 18px;border-bottom:1px solid #17304d80;display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .chat-main-header .name{font-weight:800;font-size:14.5px}
-  .chat-main-header .phone{font-size:11.5px;color:var(--muted)}
-  .chat-ai-toggle{font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:999px;border:1px solid #17304d80;background:transparent;color:var(--muted);cursor:pointer}
-  .chat-ai-toggle.paused{background:#ff5d7622;color:#ff9caf;border-color:#ff5d7650}
-  .chat-messages{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
-  .chat-bubble{max-width:74%;padding:10px 14px;border-radius:16px;font-size:13.5px;line-height:1.45}
-  .chat-bubble.guest{align-self:flex-start;background:#182740;border-bottom-left-radius:4px}
-  .chat-bubble.ai{align-self:flex-end;background:linear-gradient(180deg,#0f8bff,#056ee7);border-bottom-right-radius:4px}
-  .chat-bubble .ts{display:block;font-size:10px;color:#ffffffa0;margin-top:4px}
-  .chat-input-row{display:flex;gap:8px;padding:12px;border-top:1px solid #17304d80}
-  .chat-input-row input{flex:1;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13.5px}
-  .chat-input-row button{border-radius:13px;padding:10px 18px;background:linear-gradient(180deg,#0f8bff,#056ee7);color:white;font-weight:800;font-size:13px;border:none;cursor:pointer}
-  .chat-main-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:30px}
+  /* Repasses */
+  .payout-btn{font-size:11.5px;font-weight:760;padding:6px 12px;border-radius:999px;border:1px solid #26e0a030;background:#26e0a018;color:#6ff0bd;cursor:pointer;font-family:inherit}
+  .payout-btn:hover{background:#26e0a028}
+  .payout-btn:disabled{opacity:.5;cursor:default}
+
+  /* Meu chat - reaproveita .chat-layout/.chat-item/.messages/.msg de
+     app.css (mesmas classes da pagina Chats de verdade), so em 2
+     colunas (sem o 3o painel de perfil de hospede, que nao existe pra
+     um lead comercial). */
+  .chat-layout.my-chat{grid-template-columns:300px minmax(0,1fr)}
+  .chat-time{font-size:10.5px;color:var(--muted);white-space:nowrap;flex:none}
   .chat-not-configured{padding:40px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
-  @media(max-width:760px){.chat-shell{grid-template-columns:1fr;height:auto}.chat-guest-list{border-right:0;border-bottom:1px solid #17304d80;max-height:220px}}
+  .msg-day{opacity:.85}
 </style>
 </head>
 <body>
@@ -107,14 +108,17 @@
     <button type="button" data-tab="overview" class="active" onclick="switchAdminTab('overview', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span>Visão geral</span>
     </button>
+    <button type="button" data-tab="chat" onclick="switchAdminTab('chat', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span>Meu chat</span><span class="badge" id="chatUnreadBadge" style="display:none;margin-left:auto;background:#ff5d76;color:#fff;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px">0</span>
+    </button>
     <button type="button" data-tab="properties" onclick="switchAdminTab('properties', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="10" width="7" height="10"/><rect x="14" y="6" width="7" height="14"/><path d="M3 10V5l7-2v7"/></svg></span><span>Propriedades</span>
     </button>
     <button type="button" data-tab="ranking" onclick="switchAdminTab('ranking', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 4"/><path d="M17 6h3a3 3 0 0 1-3 4"/></svg></span><span>Ranking</span>
     </button>
-    <button type="button" data-tab="chat" onclick="switchAdminTab('chat', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span>Meu chat</span><span class="badge" id="chatUnreadBadge" style="display:none;margin-left:auto;background:#ff5d76;color:#fff;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px">0</span>
+    <button type="button" data-tab="payouts" onclick="switchAdminTab('payouts', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6v12"/><path d="M18 6v12"/></svg></span><span>Repasses</span>
     </button>
 
     <div class="menu-divider">CONTAS</div>
@@ -139,7 +143,7 @@
       <p id="pageSubtitle">Visão viva da StayFlow — não é o dashboard de nenhuma conta específica.</p>
     </div>
     <div class="actions">
-      <a href="dashboard.html" class="btn secondary" style="text-decoration:none">← Voltar pro dashboard</a>
+      <a href="dashboard.html" class="btn secondary" style="text-decoration:none">Ir pro app normal</a>
     </div>
   </header>
 
@@ -149,23 +153,44 @@
   <div id="pageShell">
     <!-- ===== Visão geral ===== -->
     <section class="page active" id="page-overview">
-      <div class="stat-grid">
-        <div class="card stat-card">
-          <div class="label">Contas</div>
-          <div class="big" id="sumTotalHostels">—</div>
-          <div class="sub" id="sumByStatus">Carregando...</div>
+      <div class="grid">
+        <div class="card kpi span-4" onclick="switchAdminTab('properties', document.querySelector('[data-tab=properties]'))">
+          <div class="kpi-top">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/><path d="M9 21v-6h6v6"/></svg></div>
+            <div class="kpi-arrow">›</div>
+          </div>
+          <div>
+            <div class="label">Contas</div>
+            <div class="value" id="sumTotalHostels">—</div>
+            <div class="note" id="sumByStatus">Carregando...</div>
+          </div>
         </div>
-        <div class="card stat-card">
-          <div class="label">MRR estimado</div>
-          <div class="big" id="sumMrr">—</div>
-          <div class="sub">Baseado no plano contratado de cada conta — cobrança automática (Stripe/Mercado Pago dessa parte) ainda não ligada.</div>
+        <div class="card kpi span-4">
+          <div class="kpi-top">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></div>
+            <div class="kpi-arrow">›</div>
+          </div>
+          <div>
+            <div class="label">MRR estimado</div>
+            <div class="value" id="sumMrr">—</div>
+            <div class="note">Cobrança automática ainda não ligada — valor de tabela.</div>
+          </div>
         </div>
-        <div class="card stat-card commission">
-          <div class="label">Comissão real coletada</div>
-          <div class="big" id="sumCommission">—</div>
-          <div class="sub">Dinheiro real, já processado via Mercado Pago Split de Pagos.</div>
+        <div class="card kpi span-4" onclick="switchAdminTab('payouts', document.querySelector('[data-tab=payouts]'))">
+          <div class="kpi-top">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div>
+            <div class="kpi-arrow">›</div>
+          </div>
+          <div>
+            <div class="label">Comissão real coletada</div>
+            <div class="value" id="sumCommission">—</div>
+            <div class="note">Dinheiro real, via Mercado Pago Split de Pagos.</div>
+          </div>
         </div>
       </div>
+
+      <div class="section-title">Precisa de atenção</div>
+      <div class="alert-list" id="attentionList"></div>
 
       <div class="section-title">Top 5 do ranking</div>
       <div id="overviewRankingPreview"></div>
@@ -173,6 +198,38 @@
       <div class="section-title">Últimas propriedades inscritas</div>
       <div class="prop-list" id="overviewRecentList"></div>
       <div style="font-size:11px;color:var(--muted);margin-top:16px">Os totais acima são somados sem conversão cambial — contas podem operar em moedas diferentes.</div>
+    </section>
+
+    <!-- ===== Meu chat ===== -->
+    <section class="page" id="page-chat">
+      <div id="chatNotConfigured" class="chat-not-configured" style="display:none">
+        Nenhum número está marcado como assistente comercial da StayFlow ainda.<br>
+        Vá em <strong>Configurações → WhatsApp Business</strong> e marque "Este número responde como → Assistente comercial da StayFlow".
+      </div>
+      <div class="chat-layout my-chat" id="chatShell" style="display:none">
+        <div class="card chat-list" id="chatGuestList"></div>
+
+        <div class="card chat-window">
+          <div id="chatMainEmpty" class="sf-empty">
+            <div>
+              <strong>Nenhuma conversa selecionada</strong>
+              <span>Escolhe um contato à esquerda pra ver as mensagens.</span>
+            </div>
+          </div>
+          <div id="chatMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
+            <div class="chat-window-head">
+              <h2 id="chatActiveName">—</h2>
+              <span class="status-pill cold" id="chatActivePhone">—</span>
+              <button type="button" class="btn secondary" id="chatAiToggleBtn" onclick="toggleMyChatAi()" style="flex:0 0 auto;font-size:12px;padding:8px 12px">IA respondendo</button>
+            </div>
+            <div class="messages" id="chatMessages"></div>
+            <div class="chat-input">
+              <input type="text" id="chatInput" placeholder="Escrever mensagem..." onkeydown="if(event.key==='Enter')sendMyChatMessage()">
+              <button type="button" class="btn" onclick="sendMyChatMessage()">Enviar</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ===== Propriedades ===== -->
@@ -202,31 +259,19 @@
       <div id="rankList"></div>
     </section>
 
-    <!-- ===== Meu chat ===== -->
-    <section class="page" id="page-chat">
-      <div id="chatNotConfigured" class="chat-not-configured" style="display:none">
-        Nenhum número está marcado como assistente comercial da StayFlow ainda.<br>
-        Vá em <strong>Configurações → WhatsApp Business</strong> e marque "Este número responde como → Assistente comercial da StayFlow".
+    <!-- ===== Repasses ===== -->
+    <section class="page" id="page-payouts">
+      <p style="color:var(--muted);font-size:13px;margin:0 0 16px">Saldo devido a cada hospedagem por indicar venda de item de agência parceira — já embutido na taxa cobrada, ainda não repassado.</p>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr><th>Hospedagem</th><th>Cobranças</th><th>Total devido</th><th></th></tr>
+          </thead>
+          <tbody id="payoutTableBody"></tbody>
+        </table>
       </div>
-      <div class="chat-shell" id="chatShell" style="display:none">
-        <div class="chat-guest-list" id="chatGuestList"></div>
-        <div class="chat-main">
-          <div id="chatMainEmpty" class="chat-main-empty">Escolhe uma conversa pra ver as mensagens</div>
-          <div id="chatMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
-            <div class="chat-main-header">
-              <div>
-                <div class="name" id="chatActiveName">—</div>
-                <div class="phone" id="chatActivePhone">—</div>
-              </div>
-              <button type="button" class="chat-ai-toggle" id="chatAiToggleBtn" onclick="toggleMyChatAi()">IA respondendo</button>
-            </div>
-            <div class="chat-messages" id="chatMessages"></div>
-            <div class="chat-input-row">
-              <input type="text" id="chatInput" placeholder="Escrever mensagem..." onkeydown="if(event.key==='Enter')sendMyChatMessage()">
-              <button type="button" onclick="sendMyChatMessage()">Enviar</button>
-            </div>
-          </div>
-        </div>
+      <div class="sf-empty" id="payoutEmpty" style="display:none">
+        <div><strong>Nenhum repasse pendente.</strong></div>
       </div>
     </section>
   </div>
@@ -243,9 +288,10 @@
 
   const TAB_TITLES = {
     overview: ["Visão geral", "Visão viva da StayFlow — não é o dashboard de nenhuma conta específica."],
+    chat: ["Meu chat", "Conversas reais do número comercial oficial da StayFlow."],
     properties: ["Propriedades", "Todas as hospedagens e agências inscritas na StayFlow."],
     ranking: ["Ranking", "Quem mais gera valor pra StayFlow hoje."],
-    chat: ["Meu chat", "Conversas reais do número comercial oficial da StayFlow."],
+    payouts: ["Repasses", "Saldo devido a hospedagens por indicação de parceiro."],
   };
 
   window.switchAdminTab = function(tab, btn){
@@ -267,6 +313,22 @@
     }catch(e){
       return `${currency || "USD"} ${n.toFixed(2)}`;
     }
+  }
+
+  function parseUtc(iso){
+    if(!iso) return null;
+    return new Date(iso.includes("Z") || iso.includes("+") ? iso : iso + "Z");
+  }
+
+  function timeAgo(iso){
+    const d = parseUtc(iso);
+    if(!d) return "";
+    const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+    if(mins < 1) return "agora";
+    if(mins < 60) return `${mins}min`;
+    const hrs = Math.floor(mins / 60);
+    if(hrs < 24) return `${hrs}h`;
+    return `${Math.floor(hrs / 24)}d`;
   }
 
   const STATUS_LABELS = {
@@ -294,6 +356,33 @@
       </a>`;
   }
 
+  function renderAttention(hostels){
+    const rows = [];
+    hostels.forEach(h => {
+      if(h.status === "trialing" && h.trial_days_left != null && h.trial_days_left <= 3){
+        rows.push({ kind: "warn", ico: "⏳", h, detail: h.trial_days_left <= 0 ? "trial vence hoje" : `trial acaba em ${h.trial_days_left}d`, right: `${h.trial_days_left}d` });
+      }
+      if(h.status === "past_due"){
+        rows.push({ kind: "danger", ico: "⚠️", h, detail: "pagamento em atraso", right: "inadimplente" });
+      }
+    });
+
+    const el = document.getElementById("attentionList");
+    if(!rows.length){
+      el.innerHTML = `<div class="alert-empty">Nenhuma conta precisando de atenção agora — trials tranquilos, sem inadimplência.</div>`;
+      return;
+    }
+    el.innerHTML = rows.map(r => `
+      <a class="alert-row ${r.kind}" href="admin-hostel.html?id=${r.h.hostel_id}">
+        <div class="ico">${r.ico}</div>
+        <div>
+          <div class="name">${KIND_ICONS[r.h.account_kind] || ""} ${r.h.hostel_name || "Sem nome"}</div>
+          <div class="detail">${r.detail}</div>
+        </div>
+        <div class="right">${r.right}</div>
+      </a>`).join("");
+  }
+
   function renderOverview(data){
     const s = data.summary;
     document.getElementById("sumTotalHostels").textContent = String(s.total_hostels);
@@ -303,6 +392,8 @@
     document.getElementById("sumByStatus").textContent = byStatusText;
     document.getElementById("sumMrr").textContent = formatMoney(s.total_estimated_mrr, "USD");
     document.getElementById("sumCommission").textContent = formatMoney(s.total_commission_collected, "USD");
+
+    renderAttention(data.hostels);
 
     const ranked = [...data.hostels].sort((a, b) => (b.estimated_mrr + b.commission_collected) - (a.estimated_mrr + a.commission_collected));
     document.getElementById("overviewRankingPreview").innerHTML = rankListHtml(ranked.slice(0, 5));
@@ -369,15 +460,74 @@
     renderRanking();
   }
 
+  // ===== Repasses =====
+  async function loadPayouts(){
+    try{
+      const res = await fetch("/stayflow-admin/partner-ledger", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      const tbody = document.getElementById("payoutTableBody");
+      const empty = document.getElementById("payoutEmpty");
+      if(!data.balances.length){
+        tbody.innerHTML = "";
+        empty.style.display = "flex";
+        return;
+      }
+      empty.style.display = "none";
+      tbody.innerHTML = data.balances.map(b => `
+        <tr>
+          <td>${b.hostel_name || "—"}</td>
+          <td>${b.charge_count}</td>
+          <td>${formatMoney(b.total_owed, b.currency)}</td>
+          <td><button type="button" class="payout-btn" onclick="markPayout(${b.hostel_id}, this)">Marcar como pago</button></td>
+        </tr>`).join("");
+    }catch(e){
+      console.warn("Erro ao carregar repasses:", e);
+    }
+  }
+
+  window.markPayout = async function(hostelId, btn){
+    btn.disabled = true;
+    btn.textContent = "Marcando...";
+    try{
+      const res = await fetch("/stayflow-admin/partner-ledger/payout", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostel_id: hostelId, note: "Marcado como pago via Meu painel" }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível marcar como pago.");
+        btn.disabled = false;
+        btn.textContent = "Marcar como pago";
+        return;
+      }
+      loadPayouts();
+    }catch(e){
+      console.warn("Erro ao marcar repasse:", e);
+      btn.disabled = false;
+      btn.textContent = "Marcar como pago";
+    }
+  };
+
   // ===== Meu chat =====
   let myChatGuests = [];
   let myChatActiveGuestId = null;
+  let myChatLastMessageCount = 0;
 
   function chatGuestItemHtml(g){
+    const isMine = g.last_message_sender === "assistant";
+    const preview = g.last_message ? `${isMine ? "Você: " : ""}${g.last_message}` : "Sem mensagens ainda.";
     return `
-      <div class="chat-guest-item ${g.id === myChatActiveGuestId ? "active" : ""}" onclick="openMyChatGuest(${g.id})">
-        <div class="name">${g.name || g.phone || "Contato sem nome"}</div>
-        <div class="preview">${g.phone || ""} · ${g.message_count || 0} msgs</div>
+      <div class="chat-item sf-clickable-row ${g.id === myChatActiveGuestId ? "active" : ""}" data-guest-id="${g.id}" onclick="openMyChatGuest(${g.id})">
+        <div class="chat-name">
+          <span>${(g.name || g.phone || "Contato sem nome").replace(/</g, "&lt;")}</span>
+          <span class="chat-time">${timeAgo(g.last_message_at)}</span>
+        </div>
+        <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>
       </div>`;
   }
 
@@ -403,24 +553,35 @@
 
       document.getElementById("chatGuestList").innerHTML = myChatGuests.length
         ? myChatGuests.map(chatGuestItemHtml).join("")
-        : `<div class="chat-guest-empty">Nenhuma conversa ainda. Assim que alguém escrever no WhatsApp da StayFlow, aparece aqui.</div>`;
+        : `<div class="sf-empty"><div><strong>Nenhuma conversa ainda.</strong><span>Assim que alguém escrever no WhatsApp da StayFlow, aparece aqui.</span></div></div>`;
     }catch(e){
       console.warn("Erro ao carregar Meu chat:", e);
     }
   }
 
   function chatBubbleHtml(m){
-    const role = m.sender === "guest" ? "guest" : "ai";
-    const time = m.created_at ? new Date(m.created_at.includes("Z") ? m.created_at : m.created_at + "Z").toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
-    return `<div class="chat-bubble ${role}">${(m.message || "").replace(/</g, "&lt;")}<span class="ts">${time}</span></div>`;
+    // Mesma convencao do resto do produto (assets/js/chats-live.js):
+    // sender "user" = quem escreveu (o lead), qualquer outra coisa
+    // ("assistant" ou uma resposta manual) fica do lado do negocio.
+    const side = m.sender === "user" ? "user" : "bot";
+    const time = parseUtc(m.created_at)?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) || "";
+    return `<div class="msg ${side}">${(m.message || "").replace(/</g, "&lt;")}<div style="font-size:10px;opacity:.7;margin-top:4px">${time}</div></div>`;
   }
 
   window.openMyChatGuest = async function(guestId){
+    const isSameGuest = myChatActiveGuestId === guestId;
     myChatActiveGuestId = guestId;
-    loadMyChatGuests();
+
+    // Troca a classe "active" na hora, sem esperar rede - a lista em
+    // si so re-renderiza no proximo poll (evita reconstruir a lista
+    // inteira, e o flicker que isso causava, so pra marcar 1 item).
+    document.querySelectorAll("#chatGuestList .chat-item").forEach(el => {
+      el.classList.toggle("active", Number(el.dataset.guestId) === guestId);
+    });
 
     document.getElementById("chatMainEmpty").style.display = "none";
     document.getElementById("chatMainActive").style.display = "flex";
+    if(!isSameGuest) myChatLastMessageCount = 0;
 
     try{
       const res = await fetch(`/stayflow-admin/my-chat/guests/${guestId}`, { credentials: "same-origin" });
@@ -429,16 +590,24 @@
       if(!data.success) return;
 
       document.getElementById("chatActiveName").textContent = data.guest.name || data.guest.phone || "Contato sem nome";
-      document.getElementById("chatActivePhone").textContent = data.guest.phone || "";
+      document.getElementById("chatActivePhone").textContent = data.guest.phone || "—";
 
       const toggleBtn = document.getElementById("chatAiToggleBtn");
       const paused = !!data.guest.ai_paused;
-      toggleBtn.textContent = paused ? "IA pausada — assumido por você" : "IA respondendo";
-      toggleBtn.classList.toggle("paused", paused);
+      toggleBtn.textContent = paused ? "IA pausada" : "IA respondendo";
+      toggleBtn.classList.toggle("secondary", !paused);
 
-      const msgsEl = document.getElementById("chatMessages");
-      msgsEl.innerHTML = (data.messages || []).map(chatBubbleHtml).join("") || `<div class="chat-guest-empty">Sem mensagens ainda.</div>`;
-      msgsEl.scrollTop = msgsEl.scrollHeight;
+      const messages = data.messages || [];
+      // So re-renderiza se realmente mudou algo - senao a rolagem do
+      // usuario (se ele subiu pra ler historico) fica pulando pro
+      // fundo a cada poll, mesmo sem mensagem nova nenhuma.
+      if(messages.length !== myChatLastMessageCount){
+        const msgsEl = document.getElementById("chatMessages");
+        const wasNearBottom = msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight < 80;
+        msgsEl.innerHTML = messages.map(chatBubbleHtml).join("") || `<div class="sf-empty"><div><strong>Sem mensagens ainda.</strong></div></div>`;
+        if(wasNearBottom || myChatLastMessageCount === 0) msgsEl.scrollTop = msgsEl.scrollHeight;
+        myChatLastMessageCount = messages.length;
+      }
     }catch(e){
       console.warn("Erro ao abrir conversa:", e);
     }
@@ -447,7 +616,7 @@
   window.toggleMyChatAi = async function(){
     if(!myChatActiveGuestId) return;
     const toggleBtn = document.getElementById("chatAiToggleBtn");
-    const nowPaused = !toggleBtn.classList.contains("paused");
+    const nowPaused = toggleBtn.textContent.indexOf("respondendo") !== -1;
     try{
       await fetch(`/stayflow-admin/my-chat/guests/${myChatActiveGuestId}/toggle-ai`, {
         method: "POST",
@@ -455,6 +624,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paused: nowPaused }),
       });
+      myChatLastMessageCount = -1;
       openMyChatGuest(myChatActiveGuestId);
     }catch(e){
       console.warn("Erro ao alternar IA:", e);
@@ -478,7 +648,9 @@
         alert(data.message || "Não foi possível enviar a mensagem.");
         return;
       }
+      myChatLastMessageCount = -1;
       openMyChatGuest(myChatActiveGuestId);
+      loadMyChatGuests();
     }catch(e){
       console.warn("Erro ao enviar mensagem:", e);
     }
@@ -492,6 +664,7 @@
     try{
       await loadOverview();
       await loadMyChatGuests();
+      await loadPayouts();
       document.getElementById("adminLoading").style.display = "none";
       document.getElementById("pageShell").style.display = "block";
     }catch(e){
@@ -500,14 +673,12 @@
       document.getElementById("adminError").style.display = "block";
     }
 
-    // Sensacao de painel vivo: dados gerais a cada 45s, chat a cada 12s
-    // (lista) - se tiver uma conversa aberta, ela tambem se atualiza
-    // junto, sem precisar recarregar a pagina.
+    // Sensacao de painel vivo: dados gerais a cada 45s, lista do chat a
+    // cada 10s, e a conversa aberta (se tiver uma) a cada 5s - pra
+    // parecer de verdade uma caixa de entrada, nao uma pagina estatica.
     setInterval(() => { loadOverview().catch(() => {}); }, 45000);
-    setInterval(() => {
-      loadMyChatGuests().catch(() => {});
-      if(myChatActiveGuestId) openMyChatGuest(myChatActiveGuestId);
-    }, 12000);
+    setInterval(() => { loadMyChatGuests().catch(() => {}); }, 10000);
+    setInterval(() => { if(myChatActiveGuestId) openMyChatGuest(myChatActiveGuestId); }, 5000);
   })();
 </script>
 </body>

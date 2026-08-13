@@ -97,10 +97,12 @@
     function finishLogin(data){
       // Guarda o usuario no localStorage (simples) para uso no front
       localStorage.setItem("stayflow_user", JSON.stringify(data.user));
-      // Login do dono da StayFlow (e-mail na allowlist) cai numa tela
-      // de boas-vindas com atalhos (Agencias/Hospedagens/Painel),
-      // nao direto no dashboard de um hostel especifico.
-      window.location.href = data.is_stayflow_admin ? "stayflow-hub.html" : "/app";
+      // Login do dono da StayFlow (e-mail na allowlist) cai direto no
+      // painel dele (admin.html) - pedido explicito: nao passar por
+      // nenhuma tela intermediaria antes do local principal de trabalho.
+      // stayflow-hub.html continua existindo, so nao e mais o destino
+      // automatico do login.
+      window.location.href = data.is_stayflow_admin ? "admin.html" : "/app";
     }
 
     let pendingTwoFactorToken = null;
