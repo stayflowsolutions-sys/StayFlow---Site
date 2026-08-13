@@ -26,6 +26,7 @@ from database import (
     save_hostel_phone,
     get_hostel_mercadopago_config,
     clear_hostel_mercadopago_config,
+    save_hostel_ai_persona,
 )
 import services.meta_oauth_service as meta_oauth_service
 import services.mercadopago_service as mercadopago_service
@@ -87,6 +88,11 @@ def get_whatsapp_settings(hostel_id):
         # como alternativa de contato em outros canais (Messenger/
         # Instagram).
         "contact_phone": (hostel or {}).get("phone") or "",
+        # 'software' so deve ser usado no numero comercial da propria
+        # StayFlow (ver comentario da coluna hostels.ai_persona em
+        # database.py) - qualquer outro valor/vazio usa o assistente
+        # normal de hospedagem/agencia.
+        "ai_persona": (hostel or {}).get("ai_persona") or "",
     })
 
 
@@ -111,6 +117,10 @@ def update_whatsapp_settings(hostel_id):
 
     save_hostel_whatsapp_config(hostel_id, phone_number_id, access_token)
     save_hostel_phone(hostel_id, contact_phone or None)
+
+    if "ai_persona" in data:
+        ai_persona = (data.get("ai_persona") or "").strip()
+        save_hostel_ai_persona(hostel_id, ai_persona or None)
 
     return jsonify({"success": True})
 

@@ -84,8 +84,12 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     # nos dois casos (ver ai_service.py e decision_engine.py).
     hostel_record = get_hostel(hostel_id) or {}
     account_kind = hostel_record.get("account_kind", "lodging")
+    ai_persona = hostel_record.get("ai_persona")
 
-    opportunity = analyze_message(hostel_id, guest_id, text, history=history, account_kind=account_kind) if is_opportunity_generation_enabled(hostel_id) else None
+    # Modo 'software' (numero comercial da propria StayFlow) nao gera
+    # oportunidade - o conceito (upsell pro hospede de uma hospedagem)
+    # nao existe numa conversa de venda do software em si.
+    opportunity = analyze_message(hostel_id, guest_id, text, history=history, account_kind=account_kind) if ai_persona != "software" and is_opportunity_generation_enabled(hostel_id) else None
 
     # Notificacao push de mensagem nova - tipo separado da oportunidade
     # (analyze_message acima so notifica em oportunidade NOVA de alta
@@ -155,7 +159,7 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
         history, text, guest_phone=guest_phone, hostel_id=hostel_id,
         guest_language=guest_language, guest_id=guest_id, guest_name=known_guest_name,
         channel=channel, hostel_phone=hostel_phone, hostel_name=hostel_name, hostel_type=hostel_type,
-        account_kind=account_kind, agency_category=agency_category,
+        account_kind=account_kind, agency_category=agency_category, ai_persona=ai_persona,
     )
 
     if guest_name:

@@ -513,6 +513,16 @@ def create_database():
     add_column_if_not_exists(cursor, "hostels", "account_kind", "TEXT NOT NULL DEFAULT 'lodging'")
     add_column_if_not_exists(cursor, "hostels", "agency_category", "TEXT")
 
+    # ai_persona troca qual SYSTEM_PROMPT o ask_ai (services/ai_service.py)
+    # usa pro numero de WhatsApp/Instagram/Messenger desse hostel - NULL
+    # (padrao) usa o prompt normal de hospedagem/agencia baseado em
+    # account_kind. 'software' e um caso especial: usado so pelo proprio
+    # numero comercial da StayFlow (o do botao flutuante do site), faz a
+    # IA se apresentar como assistente comercial do software em si, nunca
+    # como recepcao de hospedagem - nao mexe em nada mais (rooms,
+    # portfolio, dashboard), so na persona da IA pra esse hostel_id.
+    add_column_if_not_exists(cursor, "hostels", "ai_persona", "TEXT")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2479,7 +2489,7 @@ def get_hostel(hostel_id):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, name, email, phone, account_kind, agency_category FROM hostels WHERE id = ?",
+        "SELECT id, name, email, phone, account_kind, agency_category, ai_persona FROM hostels WHERE id = ?",
         (hostel_id,)
     )
 
@@ -2487,6 +2497,23 @@ def get_hostel(hostel_id):
     conn.close()
 
     return dict(row) if row else None
+
+
+def save_hostel_ai_persona(hostel_id, ai_persona):
+    """
+    ai_persona: None/'' pra voltar ao prompt normal, ou 'software' pra
+    esse hostel_id virar o assistente comercial da StayFlow (ver
+    comentario da coluna em database.py, e SOFTWARE_SYSTEM_PROMPT em
+    services/ai_service.py).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET ai_persona = ? WHERE id = ?",
+        (ai_persona or None, hostel_id)
+    )
+    conn.commit()
+    conn.close()
 
 
 def save_hostel_phone(hostel_id, phone):
