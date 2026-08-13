@@ -1545,6 +1545,14 @@ body::before{
 .ask-floating:hover{
   transform:translateY(-4px) scale(1.04);
 }
+/* Na aba Chats a barra de envio (botao "Assumir") tambem fica no canto
+   inferior direito - sobe os flutuantes pra nao tampar esse botao. */
+body.chats-page-active .ask-floating{
+  bottom:92px;
+}
+body.chats-page-active .reserva-floating{
+  bottom:170px;
+}
 .reserva-floating{
   position:fixed;
   right:24px;

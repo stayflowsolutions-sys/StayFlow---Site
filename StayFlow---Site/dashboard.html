@@ -2345,6 +2345,12 @@ async function deleteRoleConfirm(roleId){
     // altura livre pra rolar normal.
     const main = document.querySelector(".main");
     if(main) main.classList.toggle("chat-fullscreen", pageId === "chats" && window.innerWidth <= 1100);
+    // O botao flutuante "Ask StayFlow" e fixo no canto inferior direito
+    // da JANELA (position:fixed), nao da pagina - na aba Chats, a barra
+    // de envio (com o botao "Assumir") tambem fica colada no canto
+    // inferior, entao em janelas mais baixas os dois ficam sobrepostos e
+    // o clique vai pro botao errado. Sobe os flutuantes so nessa aba.
+    document.body.classList.toggle("chats-page-active", pageId === "chats");
     if(pageId === "chats"){
       const chatLayout = document.querySelector(".chat-layout");
       if(chatLayout) chatLayout.dataset.mobileView = "list";
