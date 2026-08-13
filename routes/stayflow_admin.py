@@ -15,6 +15,7 @@ continua sendo feito pelos endpoints ja existentes em routes/billing.py
 """
 
 import datetime
+import os
 
 from flask import Blueprint, jsonify, request
 
@@ -48,6 +49,7 @@ from database import (
     mark_support_seen_by_admin,
     list_support_threads,
     set_hostel_is_own_test_account,
+    list_recent_guest_charges,
 )
 from utils.tenant import (
     require_stayflow_admin,
@@ -435,3 +437,45 @@ def set_test_account(hostel_id):
     data = request.get_json() or {}
     set_hostel_is_own_test_account(hostel_id, bool(data.get("is_test")))
     return jsonify({"success": True})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/transactions", methods=["GET"])
+@require_stayflow_admin
+def transactions():
+    """Registro de transacoes (aba Financeiro do Meu painel) - paginado via ?limit=&offset=, filtro opcional ?status=."""
+    try:
+        limit = min(int(request.args.get("limit", 50)), 200)
+        offset = max(int(request.args.get("offset", 0)), 0)
+    except ValueError:
+        return jsonify({"success": False, "message": "limit/offset inválidos."}), 400
+
+    status = request.args.get("status") or None
+    rows, total = list_recent_guest_charges(limit=limit, offset=offset, status=status)
+    return jsonify({"success": True, "transactions": rows, "total": total, "limit": limit, "offset": offset})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/integrations-status", methods=["GET"])
+@require_stayflow_admin
+def integrations_status():
+    """
+    Status (so leitura) das integracoes de NIVEL StayFlow - credenciais
+    unicas da plataforma (app registrado na Meta/Mercado Pago, conta
+    master do Beds24), diferente de credencial POR hostel (essas ficam
+    em Configuracoes de cada conta). Edicao continua sendo via variavel
+    de ambiente no Render, nao por aqui - essa tela e so pra saber o
+    que ja esta ligado sem precisar abrir o painel do Render.
+    """
+    import services.beds24_service as beds24_service
+    import services.mercadopago_service as mercadopago_service
+
+    return jsonify({
+        "success": True,
+        "integrations": {
+            "beds24_master": beds24_service.is_master_account_configured(),
+            "mercadopago_marketplace": mercadopago_service.is_configured(),
+            "meta_app": bool(os.getenv("META_APP_ID") and os.getenv("META_APP_SECRET")),
+            "instagram_app": bool(os.getenv("INSTAGRAM_APP_ID") and os.getenv("INSTAGRAM_APP_SECRET")),
+        },
+        "admin_emails": [e.strip() for e in os.getenv("STAYFLOW_ADMIN_EMAILS", "").split(",") if e.strip()],
+        "software_persona_hostel_id": get_hostel_id_by_ai_persona("software"),
+    })

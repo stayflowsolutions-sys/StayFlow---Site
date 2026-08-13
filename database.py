@@ -1908,6 +1908,41 @@ def set_hostel_is_own_test_account(hostel_id, is_test):
     conn.close()
 
 
+def list_recent_guest_charges(limit=50, offset=0, status=None):
+    """
+    Registro de transacoes CROSS-TENANT (todas as hospedagens/agencias
+    juntas) pra area Financeira do painel interno - guest_charges e a
+    tabela real de cobranca via Mercado Pago Split de Pagos (reservas,
+    passeios, itens de portfolio de agencia parceira). Paginado (limit/
+    offset), mais recente primeiro.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = """
+        SELECT
+            gc.id, gc.hostel_id, h.name AS hostel_name, h.account_kind,
+            gc.charge_type, gc.title, gc.total_amount, gc.currency,
+            gc.commission_pct, gc.status, gc.paid_amount, gc.paid_at,
+            gc.created_at
+        FROM guest_charges gc
+        JOIN hostels h ON h.id = gc.hostel_id
+    """
+    params = []
+    if status:
+        query += " WHERE gc.status = ?"
+        params.append(status)
+    query += " ORDER BY gc.created_at DESC, gc.id DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+    cursor.execute(query, params)
+    rows = [dict(row) for row in cursor.fetchall()]
+
+    cursor.execute("SELECT COUNT(*) AS n FROM guest_charges" + (" WHERE status = ?" if status else ""), ((status,) if status else ()))
+    total = cursor.fetchone()["n"]
+
+    conn.close()
+    return rows, total
+
+
 def count_rooms(hostel_id):
     conn = get_connection()
     cursor = conn.cursor()

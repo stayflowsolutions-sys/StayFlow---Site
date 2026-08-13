@@ -101,31 +101,37 @@
       <img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo">
     </div>
     <div class="brand-word">Stay<span>Flow</span></div>
-    <div class="tagline">Painel do operador</div>
+    <div class="tagline" data-i18n="tagline">Painel do operador</div>
   </div>
 
   <nav class="menu">
     <button type="button" data-tab="overview" class="active" onclick="switchAdminTab('overview', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span>Visão geral</span>
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span data-i18n="nav.overview">Visão geral</span>
     </button>
     <button type="button" data-tab="chat" onclick="switchAdminTab('chat', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span>Meu chat</span><span class="badge" id="chatUnreadBadge" style="display:none">0</span>
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="nav.chat">Meu chat</span><span class="badge" id="chatUnreadBadge" style="display:none">0</span>
     </button>
     <button type="button" data-tab="support" onclick="switchAdminTab('support', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 17v.01"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4.5"/></svg></span><span>Suporte</span><span class="badge" id="supportUnreadBadge" style="display:none">0</span>
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 17v.01"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4.5"/></svg></span><span data-i18n="nav.support">Suporte</span><span class="badge" id="supportUnreadBadge" style="display:none">0</span>
     </button>
     <button type="button" data-tab="properties" onclick="switchAdminTab('properties', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="10" width="7" height="10"/><rect x="14" y="6" width="7" height="14"/><path d="M3 10V5l7-2v7"/></svg></span><span>Propriedades</span>
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="10" width="7" height="10"/><rect x="14" y="6" width="7" height="14"/><path d="M3 10V5l7-2v7"/></svg></span><span data-i18n="nav.properties">Propriedades</span>
+    </button>
+    <button type="button" data-tab="finance" onclick="switchAdminTab('finance', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></span><span data-i18n="nav.finance">Financeiro</span>
     </button>
     <button type="button" data-tab="ranking" onclick="switchAdminTab('ranking', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 4"/><path d="M17 6h3a3 3 0 0 1-3 4"/></svg></span><span>Ranking</span>
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 4"/><path d="M17 6h3a3 3 0 0 1-3 4"/></svg></span><span data-i18n="nav.ranking">Ranking</span>
     </button>
     <button type="button" data-tab="payouts" onclick="switchAdminTab('payouts', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6v12"/><path d="M18 6v12"/></svg></span><span>Repasses</span>
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6v12"/><path d="M18 6v12"/></svg></span><span data-i18n="nav.payouts">Repasses</span>
+    </button>
+    <button type="button" data-tab="config" onclick="switchAdminTab('config', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 2.9a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1l.4 2.9h4.8l.4-2.9a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6a7 7 0 0 0 .1-1z"/></svg></span><span data-i18n="nav.config">Configurações</span>
     </button>
 
     <button class="collapse-menu" onclick="toggleSidebar()">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="m21 18-6-6 6-6"/></svg></span><span>Recolher menu</span>
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/><path d="m21 18-6-6 6-6"/></svg></span><span data-i18n="nav.collapse">Recolher menu</span>
     </button>
   </nav>
 </aside>
@@ -139,32 +145,32 @@
     </div>
     <div class="actions">
       <div class="hostel-selector-wrap">
-        <div class="hostel-mini" onclick="togglePropertySelector(event)" title="Ir para o dashboard de uma propriedade">
+        <div class="hostel-mini" onclick="togglePropertySelector(event)" title="Ir para o dashboard de uma propriedade" data-i18n-title="propertySelector.title">
           <div class="hostel-avatar">🏢</div>
           <div class="profile-copy">
-            <div class="hostel-name">Propriedades</div>
-            <div class="hostel-meta">Ir para o dashboard de...</div>
+            <div class="hostel-name" data-i18n="propertySelector.name">Propriedades</div>
+            <div class="hostel-meta" data-i18n="propertySelector.meta">Ir para o dashboard de...</div>
           </div>
         </div>
         <div id="propertySelectorDropdown" class="hostel-selector-dropdown" style="display:none">
-          <input type="text" id="propertySelectorSearch" placeholder="Buscar propriedade..." oninput="renderPropertySelector()">
+          <input type="text" id="propertySelectorSearch" placeholder="Buscar propriedade..." data-i18n-placeholder="propertySelector.searchPlaceholder" oninput="renderPropertySelector()">
           <div id="propertySelectorList"></div>
         </div>
       </div>
 
       <div class="hostel-selector-wrap">
-        <button class="btn secondary bell-btn" onclick="toggleAdminNotifPanel(event)" title="Notificações">
+        <button class="btn secondary bell-btn" onclick="toggleAdminNotifPanel(event)" title="Notificações" data-i18n-title="notif.button.title">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span id="adminNotifBadge" class="notif-badge" style="display:none">0</span>
         </button>
         <div id="adminNotifPanel" class="notif-panel" style="display:none">
-          <div class="notif-panel-header"><span>🔔 Notificações</span></div>
+          <div class="notif-panel-header"><span data-i18n="notif.title">🔔 Notificações</span></div>
           <div id="adminNotifList"></div>
         </div>
       </div>
 
       <div class="hostel-selector-wrap">
-        <button type="button" class="btn secondary" id="langCurrentBtn" title="Idioma" style="padding:9px 12px;font-weight:800;font-size:12px" data-lang-current>PT</button>
+        <button type="button" class="btn secondary" id="langCurrentBtn" title="Idioma" data-i18n-title="lang.title" style="padding:9px 12px;font-weight:800;font-size:12px" data-lang-current>PT</button>
         <div id="langDropdown" class="hostel-selector-dropdown" style="display:none;min-width:140px">
           <button type="button" class="hostel-selector-option" data-lang="pt">Português</button>
           <button type="button" class="hostel-selector-option" data-lang="en">English</button>
@@ -175,23 +181,23 @@
       </div>
 
       <div class="hostel-selector-wrap">
-        <div class="user-avatar" id="userMenuTrigger" onclick="toggleUserMenu(event)" title="Menu do usuário">?</div>
+        <div class="user-avatar" id="userMenuTrigger" onclick="toggleUserMenu(event)" title="Menu do usuário" data-i18n-title="userMenu.title">?</div>
         <div id="userMenuDropdown" class="hostel-selector-dropdown" style="display:none">
           <div class="profile-copy" style="padding:8px 10px">
             <div class="user-name" id="adminUserName">—</div>
-            <div class="user-role">Dono · StayFlow</div>
+            <div class="user-role" data-i18n="userMenu.role">Dono · StayFlow</div>
           </div>
           <div class="hostel-selector-divider"></div>
           <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
-            <span>↪ Sair</span>
+            <span data-i18n="userMenu.logout">↪ Sair</span>
           </button>
         </div>
       </div>
     </div>
   </header>
 
-  <div id="adminLoading">Carregando...</div>
-  <div id="adminError">Não foi possível carregar o painel.</div>
+  <div id="adminLoading" data-i18n="loading">Carregando...</div>
+  <div id="adminError" data-i18n="error">Não foi possível carregar o painel.</div>
 
   <div id="pageShell">
     <!-- ===== Visão geral ===== -->
@@ -203,9 +209,9 @@
             <div class="kpi-arrow">›</div>
           </div>
           <div>
-            <div class="label">Contas</div>
+            <div class="label" data-i18n="overview.kpi.accounts">Contas</div>
             <div class="value" id="sumTotalHostels">—</div>
-            <div class="note" id="sumByStatus">Carregando...</div>
+            <div class="note" id="sumByStatus" data-i18n="loading">Carregando...</div>
           </div>
         </div>
         <div class="card kpi span-4">
@@ -214,9 +220,9 @@
             <div class="kpi-arrow">›</div>
           </div>
           <div>
-            <div class="label">MRR estimado</div>
+            <div class="label" data-i18n="overview.kpi.mrr">MRR estimado</div>
             <div class="value" id="sumMrr">—</div>
-            <div class="note">Cobrança automática ainda não ligada — valor de tabela.</div>
+            <div class="note" data-i18n="overview.kpi.mrr.note">Cobrança automática ainda não ligada — valor de tabela.</div>
           </div>
         </div>
         <div class="card kpi span-4" onclick="switchAdminTab('payouts', document.querySelector('[data-tab=payouts]'))">
@@ -225,29 +231,29 @@
             <div class="kpi-arrow">›</div>
           </div>
           <div>
-            <div class="label">Comissão real coletada</div>
+            <div class="label" data-i18n="overview.kpi.commission">Comissão real coletada</div>
             <div class="value" id="sumCommission">—</div>
-            <div class="note">Dinheiro real, via Mercado Pago Split de Pagos.</div>
+            <div class="note" data-i18n="overview.kpi.commission.note">Dinheiro real, via Mercado Pago Split de Pagos.</div>
           </div>
         </div>
       </div>
 
-      <div class="section-title">Precisa de atenção</div>
+      <div class="section-title" data-i18n="overview.section.attention">Precisa de atenção</div>
       <div class="alert-list" id="attentionList"></div>
 
-      <div class="section-title">Top 5 do ranking</div>
+      <div class="section-title" data-i18n="overview.section.topRanking">Top 5 do ranking</div>
       <div id="overviewRankingPreview"></div>
 
-      <div class="section-title">Últimas propriedades inscritas</div>
+      <div class="section-title" data-i18n="overview.section.recentProperties">Últimas propriedades inscritas</div>
       <div class="prop-list" id="overviewRecentList"></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:16px">Os totais acima são somados sem conversão cambial — contas podem operar em moedas diferentes.</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:16px" data-i18n="overview.currencyNote">Os totais acima são somados sem conversão cambial — contas podem operar em moedas diferentes.</div>
     </section>
 
     <!-- ===== Meu chat ===== -->
     <section class="page" id="page-chat">
       <div id="chatNotConfigured" class="chat-not-configured" style="display:none">
-        Nenhum número está marcado como assistente comercial da StayFlow ainda.<br>
-        Vá em <strong>Configurações → WhatsApp Business</strong> e marque "Este número responde como → Assistente comercial da StayFlow".
+        <span data-i18n="chat.notConfigured.line1">Nenhum número está marcado como assistente comercial da StayFlow ainda.</span><br>
+        <span data-i18n-html="chat.notConfigured.line2">Vá em <strong>Configurações → WhatsApp Business</strong> e marque "Este número responde como → Assistente comercial da StayFlow".</span>
       </div>
       <div class="chat-layout two-col" id="chatShell" style="display:none">
         <div class="card chat-list" id="chatGuestList"></div>
@@ -255,8 +261,8 @@
         <div class="card chat-window">
           <div id="chatMainEmpty" class="sf-empty">
             <div>
-              <strong>Nenhuma conversa selecionada</strong>
-              <span>Escolhe um contato à esquerda pra ver as mensagens.</span>
+              <strong data-i18n="chat.empty.title">Nenhuma conversa selecionada</strong>
+              <span data-i18n="chat.empty.desc">Escolhe um contato à esquerda pra ver as mensagens.</span>
             </div>
           </div>
           <div id="chatMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
@@ -266,9 +272,9 @@
             </div>
             <div class="messages" id="chatMessages"></div>
             <div class="chat-input">
-              <input type="text" id="chatInput" placeholder="Escrever mensagem...">
-              <button class="btn green" type="button" id="myChatSendBtn" data-mode="assume" onclick="myChatPrimaryBtnClick(this)">Assumir</button>
-              <button class="btn secondary" type="button" id="myChatGiveBackBtn" style="display:none" onclick="giveBackMyChat()">Devolver</button>
+              <input type="text" id="chatInput" placeholder="Escrever mensagem..." data-i18n-placeholder="chat.input.placeholder">
+              <button class="btn green" type="button" id="myChatSendBtn" data-mode="assume" onclick="myChatPrimaryBtnClick(this)" data-i18n="chat.btn.assume">Assumir</button>
+              <button class="btn secondary" type="button" id="myChatGiveBackBtn" style="display:none" onclick="giveBackMyChat()" data-i18n="chat.btn.giveback">Devolver</button>
             </div>
           </div>
         </div>
@@ -283,8 +289,8 @@
         <div class="card chat-window">
           <div id="supportMainEmpty" class="sf-empty">
             <div>
-              <strong>Nenhum chamado selecionado</strong>
-              <span>Escolhe uma conta à esquerda pra ver a conversa de suporte.</span>
+              <strong data-i18n="support.empty.title">Nenhum chamado selecionado</strong>
+              <span data-i18n="support.empty.desc">Escolhe uma conta à esquerda pra ver a conversa de suporte.</span>
             </div>
           </div>
           <div id="supportMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
@@ -294,8 +300,8 @@
             </div>
             <div class="messages" id="supportMessages"></div>
             <div class="chat-input">
-              <input type="text" id="supportAdminInput" placeholder="Responder..." onkeydown="if(event.key==='Enter')sendSupportReply()">
-              <button class="btn" type="button" onclick="sendSupportReply()">Enviar</button>
+              <input type="text" id="supportAdminInput" placeholder="Responder..." data-i18n-placeholder="support.input.placeholder" onkeydown="if(event.key==='Enter')sendSupportReply()">
+              <button class="btn" type="button" onclick="sendSupportReply()" data-i18n="support.btn.send">Enviar</button>
             </div>
           </div>
         </div>
@@ -305,44 +311,109 @@
     <!-- ===== Propriedades ===== -->
     <section class="page" id="page-properties">
       <div class="prop-toolbar">
-        <input type="text" id="propSearch" placeholder="Buscar por nome...">
+        <input type="text" id="propSearch" placeholder="Buscar por nome..." data-i18n-placeholder="properties.search.placeholder">
         <select id="propKindFilter">
-          <option value="">Todos os tipos</option>
-          <option value="lodging">Só hospedagens</option>
-          <option value="agency">Só agências</option>
+          <option value="" data-i18n="properties.filter.allTypes">Todos os tipos</option>
+          <option value="lodging" data-i18n="properties.filter.lodgingOnly">Só hospedagens</option>
+          <option value="agency" data-i18n="properties.filter.agencyOnly">Só agências</option>
         </select>
         <select id="propStatusFilter">
-          <option value="">Todos os status</option>
-          <option value="trialing">Trial</option>
-          <option value="active">Ativo</option>
-          <option value="past_due">Inadimplente</option>
-          <option value="canceled">Cancelado</option>
-          <option value="comp">Cortesia</option>
+          <option value="" data-i18n="properties.filter.allStatus">Todos os status</option>
+          <option value="trialing" data-i18n="status.trialing">Trial</option>
+          <option value="active" data-i18n="status.active">Ativo</option>
+          <option value="past_due" data-i18n="status.past_due">Inadimplente</option>
+          <option value="canceled" data-i18n="status.canceled">Cancelado</option>
+          <option value="comp" data-i18n="status.comp">Cortesia</option>
         </select>
       </div>
       <div class="prop-list" id="propList"></div>
     </section>
 
+    <!-- ===== Financeiro ===== -->
+    <section class="page" id="page-finance">
+      <div class="grid">
+        <div class="card kpi span-4">
+          <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/></svg></div></div>
+          <div><div class="label" data-i18n="finance.kpi.mrr">MRR estimado</div><div class="value" id="finMrr">—</div><div class="note" data-i18n="finance.kpi.mrr.note">Soma de todas as contas.</div></div>
+        </div>
+        <div class="card kpi span-4">
+          <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></div></div>
+          <div><div class="label" data-i18n="finance.kpi.volume">Volume processado</div><div class="value" id="finVolume">—</div><div class="note" data-i18n="finance.kpi.volume.note">Via Mercado Pago Split de Pagos.</div></div>
+        </div>
+        <div class="card kpi span-4 commission">
+          <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div></div>
+          <div><div class="label" data-i18n="finance.kpi.commission">Comissão real coletada</div><div class="value" id="finCommission">—</div><div class="note" data-i18n="finance.kpi.commission.note">Dinheiro real, já processado.</div></div>
+        </div>
+      </div>
+
+      <div class="section-title" data-i18n="finance.section.byProperty">Por propriedade</div>
+      <div class="prop-toolbar">
+        <input type="text" id="finPropSearch" placeholder="Buscar por nome..." data-i18n-placeholder="properties.search.placeholder">
+        <select id="finPropSort">
+          <option value="value" data-i18n="finance.sort.value">Ordenar por valor gerado</option>
+          <option value="name" data-i18n="finance.sort.name">Ordenar por nome</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr><th data-i18n="finance.table.property">Propriedade</th><th data-i18n="finance.table.plan">Plano</th><th data-i18n="finance.table.mrr">MRR</th><th data-i18n="finance.table.volume">Volume processado</th><th data-i18n="finance.table.commission">Comissão</th></tr>
+          </thead>
+          <tbody id="financeTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="section-title" data-i18n="finance.section.transactions">Registro de transações</div>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr><th data-i18n="finance.tx.date">Data</th><th data-i18n="finance.tx.property">Propriedade</th><th data-i18n="finance.tx.description">Descrição</th><th data-i18n="finance.tx.type">Tipo</th><th data-i18n="finance.tx.amount">Valor</th><th data-i18n="finance.tx.commission">Comissão</th><th data-i18n="finance.tx.status">Status</th></tr>
+          </thead>
+          <tbody id="transactionsTableBody"></tbody>
+        </table>
+      </div>
+      <div class="sf-empty" id="transactionsEmpty" style="display:none">
+        <div><strong data-i18n="finance.tx.empty">Nenhuma transação ainda.</strong></div>
+      </div>
+      <div style="display:flex;justify-content:center;margin-top:16px">
+        <button id="transactionsLoadMoreBtn" class="btn secondary" type="button" onclick="loadMoreTransactions()" style="display:none" data-i18n="finance.tx.loadMore">Mostrar mais</button>
+      </div>
+    </section>
+
     <!-- ===== Ranking ===== -->
     <section class="page" id="page-ranking">
-      <p style="color:var(--muted);font-size:13px;margin:0 0 16px">Ordenado por MRR estimado + comissão real coletada — quem mais gera valor pra StayFlow hoje.</p>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="ranking.subtitle">Ordenado por MRR estimado + comissão real coletada — quem mais gera valor pra StayFlow hoje.</p>
       <div id="rankList"></div>
     </section>
 
     <!-- ===== Repasses ===== -->
     <section class="page" id="page-payouts">
-      <p style="color:var(--muted);font-size:13px;margin:0 0 16px">Saldo devido a cada hospedagem por indicar venda de item de agência parceira — já embutido na taxa cobrada, ainda não repassado.</p>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="payouts.subtitle">Saldo devido a cada hospedagem por indicar venda de item de agência parceira — já embutido na taxa cobrada, ainda não repassado.</p>
       <div style="overflow-x:auto">
         <table class="table">
           <thead>
-            <tr><th>Hospedagem</th><th>Cobranças</th><th>Total devido</th><th></th></tr>
+            <tr><th data-i18n="payouts.table.hostel">Hospedagem</th><th data-i18n="payouts.table.charges">Cobranças</th><th data-i18n="payouts.table.total">Total devido</th><th></th></tr>
           </thead>
           <tbody id="payoutTableBody"></tbody>
         </table>
       </div>
       <div class="sf-empty" id="payoutEmpty" style="display:none">
-        <div><strong>Nenhum repasse pendente.</strong></div>
+        <div><strong data-i18n="payouts.empty">Nenhum repasse pendente.</strong></div>
       </div>
+    </section>
+
+    <!-- ===== Configurações ===== -->
+    <section class="page" id="page-config">
+      <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="config.subtitle">Status das integrações de nível StayFlow (credenciais únicas da plataforma) — só leitura. Edição é sempre pelas variáveis de ambiente no Render, nunca por aqui, por segurança.</p>
+
+      <div class="section-title" data-i18n="config.section.integrations">Integrações</div>
+      <div class="prop-list" id="integrationsList"></div>
+
+      <div class="section-title" data-i18n="config.section.persona">Assistente comercial (Meu chat)</div>
+      <div id="softwarePersonaInfo" class="prop-empty" data-i18n="loading">Carregando...</div>
+
+      <div class="section-title" data-i18n="config.section.admins">Administradores da StayFlow</div>
+      <div id="adminEmailsList" class="prop-list"></div>
     </section>
   </div>
 </div>
@@ -351,6 +422,359 @@
 
 <script src="assets/js/i18n-core.js"></script>
 <script>
+  // ===== Traducoes do Meu painel (chrome estatico - dados reais como
+  // nomes de hospede/hospedagem, mensagens e descricoes de transacao
+  // NUNCA sao traduzidos, sao conteudo real, nao texto de interface) =====
+  const ADMIN_I18N = {
+    pt: {
+      "nav.overview": "Visão geral", "nav.chat": "Meu chat", "nav.support": "Suporte",
+      "nav.properties": "Propriedades", "nav.finance": "Financeiro", "nav.ranking": "Ranking",
+      "nav.payouts": "Repasses", "nav.config": "Configurações", "nav.collapse": "Recolher menu",
+      "tagline": "Painel do operador",
+      "topbar.overview.title": "Visão geral", "topbar.overview.subtitle": "Visão viva da StayFlow — não é o dashboard de nenhuma conta específica.",
+      "topbar.chat.title": "Meu chat", "topbar.chat.subtitle": "Conversas reais do número comercial oficial da StayFlow.",
+      "topbar.support.title": "Suporte", "topbar.support.subtitle": "Chamados de ajuda das hospedagens e agências, direto com você.",
+      "topbar.properties.title": "Propriedades", "topbar.properties.subtitle": "Todas as hospedagens e agências inscritas na StayFlow.",
+      "topbar.finance.title": "Financeiro", "topbar.finance.subtitle": "Relatório completo: por propriedade e registro de transações.",
+      "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Quem mais gera valor pra StayFlow hoje.",
+      "topbar.payouts.title": "Repasses", "topbar.payouts.subtitle": "Saldo devido a hospedagens por indicação de parceiro.",
+      "topbar.config.title": "Configurações", "topbar.config.subtitle": "Status das integrações de nível StayFlow.",
+      "propertySelector.name": "Propriedades", "propertySelector.meta": "Ir para o dashboard de...",
+      "propertySelector.title": "Ir para o dashboard de uma propriedade", "propertySelector.searchPlaceholder": "Buscar propriedade...",
+      "propertySelector.empty": "Nenhuma conta de teste marcada ainda.<br>Marca uma no perfil dela (aba Propriedades → abrir a conta → \"Marcar como minha conta de teste\").",
+      "propertySelector.noMatch": "Nenhuma propriedade encontrada.",
+      "notif.title": "🔔 Notificações", "notif.empty": "Nenhuma novidade.", "notif.button.title": "Notificações",
+      "lang.title": "Idioma", "userMenu.title": "Menu do usuário", "userMenu.role": "Dono · StayFlow", "userMenu.logout": "↪ Sair",
+      "loading": "Carregando...", "error": "Não foi possível carregar o painel.",
+      "overview.kpi.accounts": "Contas", "overview.kpi.mrr": "MRR estimado", "overview.kpi.mrr.note": "Cobrança automática ainda não ligada — valor de tabela.",
+      "overview.kpi.commission": "Comissão real coletada", "overview.kpi.commission.note": "Dinheiro real, via Mercado Pago Split de Pagos.",
+      "overview.section.attention": "Precisa de atenção", "overview.section.topRanking": "Top 5 do ranking", "overview.section.recentProperties": "Últimas propriedades inscritas",
+      "overview.currencyNote": "Os totais acima são somados sem conversão cambial — contas podem operar em moedas diferentes.",
+      "overview.attention.empty": "Nenhuma conta precisando de atenção agora — trials tranquilos, sem inadimplência.",
+      "overview.attention.trialToday": "trial vence hoje", "overview.attention.trialDays": "trial acaba em {days}d", "overview.attention.pastDue": "pagamento em atraso", "overview.attention.pastDueTag": "inadimplente",
+      "overview.noProperties": "Nenhuma propriedade inscrita ainda.", "overview.newThisWeek": " · +{n} essa semana",
+      "chat.notConfigured.line1": "Nenhum número está marcado como assistente comercial da StayFlow ainda.",
+      "chat.notConfigured.line2": "Vá em <strong>Configurações → WhatsApp Business</strong> e marque \"Este número responde como → Assistente comercial da StayFlow\".",
+      "chat.empty.title": "Nenhuma conversa selecionada", "chat.empty.desc": "Escolhe um contato à esquerda pra ver as mensagens.",
+      "chat.input.placeholder": "Escrever mensagem...", "chat.btn.assume": "Assumir", "chat.btn.send": "Enviar", "chat.btn.giveback": "Devolver",
+      "chat.aiRespondingLabel": "IA respondendo", "chat.aiPausedLabel": "IA pausada — assumido por você",
+      "chat.noContactName": "Contato sem nome", "chat.you": "Você: ", "chat.noMessagesYet": "Sem mensagens ainda.",
+      "chat.list.empty.title": "Nenhuma conversa ainda.", "chat.list.empty.desc": "Assim que alguém escrever no WhatsApp da StayFlow, aparece aqui.",
+      "support.empty.title": "Nenhum chamado selecionado", "support.empty.desc": "Escolhe uma conta à esquerda pra ver a conversa de suporte.",
+      "support.input.placeholder": "Responder...", "support.btn.send": "Enviar",
+      "support.list.empty.title": "Nenhum chamado ainda.", "support.list.empty.desc": "Quando uma hospedagem ou agência pedir ajuda pela aba Suporte do dashboard dela, aparece aqui.",
+      "support.kind.agency": "Agência", "support.kind.lodging": "Hospedagem", "support.noHostelName": "Sem nome",
+      "properties.search.placeholder": "Buscar por nome...", "properties.filter.allTypes": "Todos os tipos",
+      "properties.filter.lodgingOnly": "Só hospedagens", "properties.filter.agencyOnly": "Só agências",
+      "properties.filter.allStatus": "Todos os status", "properties.noMatch": "Nenhuma propriedade encontrada com esses filtros.",
+      "properties.noPlan": "sem plano", "properties.noName": "Sem nome", "properties.trialSuffix": " · {days}d de trial",
+      "status.trialing": "Trial", "status.active": "Ativo", "status.past_due": "Inadimplente", "status.canceled": "Cancelado", "status.comp": "Cortesia",
+      "finance.kpi.mrr": "MRR estimado", "finance.kpi.mrr.note": "Soma de todas as contas.",
+      "finance.kpi.volume": "Volume processado", "finance.kpi.volume.note": "Via Mercado Pago Split de Pagos.",
+      "finance.kpi.commission": "Comissão real coletada", "finance.kpi.commission.note": "Dinheiro real, já processado.",
+      "finance.section.byProperty": "Por propriedade", "finance.sort.value": "Ordenar por valor gerado", "finance.sort.name": "Ordenar por nome",
+      "finance.table.property": "Propriedade", "finance.table.plan": "Plano", "finance.table.mrr": "MRR", "finance.table.volume": "Volume processado", "finance.table.commission": "Comissão",
+      "finance.section.transactions": "Registro de transações",
+      "finance.tx.date": "Data", "finance.tx.property": "Propriedade", "finance.tx.description": "Descrição", "finance.tx.type": "Tipo", "finance.tx.amount": "Valor", "finance.tx.commission": "Comissão", "finance.tx.status": "Status",
+      "finance.tx.empty": "Nenhuma transação ainda.", "finance.tx.loadMore": "Mostrar mais", "finance.noMatch": "Nenhuma propriedade encontrada.",
+      "tx.status.pending": "Pendente", "tx.status.paid": "Pago", "tx.status.failed": "Falhou", "tx.status.refunded": "Reembolsado", "tx.status.cancelled": "Cancelado",
+      "ranking.subtitle": "Ordenado por MRR estimado + comissão real coletada — quem mais gera valor pra StayFlow hoje.",
+      "ranking.empty": "Nenhuma propriedade pra ranquear ainda.",
+      "payouts.subtitle": "Saldo devido a cada hospedagem por indicar venda de item de agência parceira — já embutido na taxa cobrada, ainda não repassado.",
+      "payouts.table.hostel": "Hospedagem", "payouts.table.charges": "Cobranças", "payouts.table.total": "Total devido",
+      "payouts.empty": "Nenhum repasse pendente.", "payouts.markPaid": "Marcar como pago", "payouts.marking": "Marcando...",
+      "config.subtitle": "Status das integrações de nível StayFlow (credenciais únicas da plataforma) — só leitura. Edição é sempre pelas variáveis de ambiente no Render, nunca por aqui, por segurança.",
+      "config.section.integrations": "Integrações", "config.section.persona": "Assistente comercial (Meu chat)", "config.section.admins": "Administradores da StayFlow",
+      "config.persona.link": "Ver a conta marcada (ID {id}) →", "config.persona.empty": "Nenhuma conta marcada ainda — configure em Configurações → WhatsApp Business de alguma conta.",
+      "config.admins.empty": "Nenhum e-mail configurado.",
+      "config.integration.configured": "Configurado", "config.integration.notConfigured": "Não configurado",
+      "integration.beds24_master.label": "Beds24 (conta master)", "integration.beds24_master.desc": "Sincronização com Booking, Airbnb e Hostelworld.",
+      "integration.mercadopago_marketplace.label": "Mercado Pago (marketplace)", "integration.mercadopago_marketplace.desc": "Split de pagamentos das hospedagens.",
+      "integration.meta_app.label": "App Meta (Facebook/WhatsApp)", "integration.meta_app.desc": "Login, Messenger e WhatsApp Business Platform.",
+      "integration.instagram_app.label": "App Instagram", "integration.instagram_app.desc": "Instagram Direct.",
+      "time.now": "agora", "time.min": "{n}min", "time.hour": "{n}h", "time.day": "{n}d",
+    },
+    en: {
+      "nav.overview": "Overview", "nav.chat": "My chat", "nav.support": "Support",
+      "nav.properties": "Properties", "nav.finance": "Finance", "nav.ranking": "Ranking",
+      "nav.payouts": "Payouts", "nav.config": "Settings", "nav.collapse": "Collapse menu",
+      "tagline": "Operator panel",
+      "topbar.overview.title": "Overview", "topbar.overview.subtitle": "Live view of StayFlow — not any specific account's dashboard.",
+      "topbar.chat.title": "My chat", "topbar.chat.subtitle": "Real conversations from StayFlow's official business number.",
+      "topbar.support.title": "Support", "topbar.support.subtitle": "Help requests from properties and agencies, straight to you.",
+      "topbar.properties.title": "Properties", "topbar.properties.subtitle": "Every lodging and agency signed up on StayFlow.",
+      "topbar.finance.title": "Finance", "topbar.finance.subtitle": "Full report: by property and transaction log.",
+      "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Who generates the most value for StayFlow today.",
+      "topbar.payouts.title": "Payouts", "topbar.payouts.subtitle": "Balance owed to properties for partner referrals.",
+      "topbar.config.title": "Settings", "topbar.config.subtitle": "Status of StayFlow-level integrations.",
+      "propertySelector.name": "Properties", "propertySelector.meta": "Go to the dashboard of...",
+      "propertySelector.title": "Go to a property's dashboard", "propertySelector.searchPlaceholder": "Search property...",
+      "propertySelector.empty": "No test account marked yet.<br>Mark one on its profile (Properties tab → open the account → \"Mark as my test account\").",
+      "propertySelector.noMatch": "No property found.",
+      "notif.title": "🔔 Notifications", "notif.empty": "Nothing new.", "notif.button.title": "Notifications",
+      "lang.title": "Language", "userMenu.title": "User menu", "userMenu.role": "Owner · StayFlow", "userMenu.logout": "↪ Log out",
+      "loading": "Loading...", "error": "Could not load the panel.",
+      "overview.kpi.accounts": "Accounts", "overview.kpi.mrr": "Estimated MRR", "overview.kpi.mrr.note": "Automatic billing not connected yet — list value.",
+      "overview.kpi.commission": "Commission collected", "overview.kpi.commission.note": "Real money, via Mercado Pago Split de Pagos.",
+      "overview.section.attention": "Needs attention", "overview.section.topRanking": "Top 5 ranking", "overview.section.recentProperties": "Latest properties signed up",
+      "overview.currencyNote": "Totals above are added without currency conversion — accounts can operate in different currencies.",
+      "overview.attention.empty": "No account needs attention right now — trials are fine, no overdue payments.",
+      "overview.attention.trialToday": "trial ends today", "overview.attention.trialDays": "trial ends in {days}d", "overview.attention.pastDue": "payment overdue", "overview.attention.pastDueTag": "overdue",
+      "overview.noProperties": "No property signed up yet.", "overview.newThisWeek": " · +{n} this week",
+      "chat.notConfigured.line1": "No number is marked as StayFlow's business assistant yet.",
+      "chat.notConfigured.line2": "Go to <strong>Settings → WhatsApp Business</strong> and set \"This number replies as → StayFlow business assistant\".",
+      "chat.empty.title": "No conversation selected", "chat.empty.desc": "Pick a contact on the left to see the messages.",
+      "chat.input.placeholder": "Type a message...", "chat.btn.assume": "Take over", "chat.btn.send": "Send", "chat.btn.giveback": "Give back",
+      "chat.aiRespondingLabel": "AI is replying", "chat.aiPausedLabel": "AI paused — taken over by you",
+      "chat.noContactName": "Unnamed contact", "chat.you": "You: ", "chat.noMessagesYet": "No messages yet.",
+      "chat.list.empty.title": "No conversations yet.", "chat.list.empty.desc": "As soon as someone writes to StayFlow's WhatsApp, it shows up here.",
+      "support.empty.title": "No ticket selected", "support.empty.desc": "Pick an account on the left to see the support conversation.",
+      "support.input.placeholder": "Reply...", "support.btn.send": "Send",
+      "support.list.empty.title": "No tickets yet.", "support.list.empty.desc": "When a property or agency asks for help from their Support tab, it shows up here.",
+      "support.kind.agency": "Agency", "support.kind.lodging": "Lodging", "support.noHostelName": "No name",
+      "properties.search.placeholder": "Search by name...", "properties.filter.allTypes": "All types",
+      "properties.filter.lodgingOnly": "Lodging only", "properties.filter.agencyOnly": "Agencies only",
+      "properties.filter.allStatus": "All statuses", "properties.noMatch": "No property found with these filters.",
+      "properties.noPlan": "no plan", "properties.noName": "No name", "properties.trialSuffix": " · {days}d trial left",
+      "status.trialing": "Trial", "status.active": "Active", "status.past_due": "Overdue", "status.canceled": "Cancelled", "status.comp": "Comp",
+      "finance.kpi.mrr": "Estimated MRR", "finance.kpi.mrr.note": "Sum of all accounts.",
+      "finance.kpi.volume": "Volume processed", "finance.kpi.volume.note": "Via Mercado Pago Split de Pagos.",
+      "finance.kpi.commission": "Commission collected", "finance.kpi.commission.note": "Real money, already processed.",
+      "finance.section.byProperty": "By property", "finance.sort.value": "Sort by value generated", "finance.sort.name": "Sort by name",
+      "finance.table.property": "Property", "finance.table.plan": "Plan", "finance.table.mrr": "MRR", "finance.table.volume": "Volume processed", "finance.table.commission": "Commission",
+      "finance.section.transactions": "Transaction log",
+      "finance.tx.date": "Date", "finance.tx.property": "Property", "finance.tx.description": "Description", "finance.tx.type": "Type", "finance.tx.amount": "Amount", "finance.tx.commission": "Commission", "finance.tx.status": "Status",
+      "finance.tx.empty": "No transactions yet.", "finance.tx.loadMore": "Show more", "finance.noMatch": "No property found.",
+      "tx.status.pending": "Pending", "tx.status.paid": "Paid", "tx.status.failed": "Failed", "tx.status.refunded": "Refunded", "tx.status.cancelled": "Cancelled",
+      "ranking.subtitle": "Sorted by estimated MRR + commission collected — who generates the most value for StayFlow today.",
+      "ranking.empty": "No property to rank yet.",
+      "payouts.subtitle": "Balance owed to each property for referring a partner-agency sale — already built into the fee charged, not yet paid out.",
+      "payouts.table.hostel": "Property", "payouts.table.charges": "Charges", "payouts.table.total": "Total owed",
+      "payouts.empty": "No pending payouts.", "payouts.markPaid": "Mark as paid", "payouts.marking": "Marking...",
+      "config.subtitle": "Status of StayFlow-level integrations (platform-wide credentials) — read-only. Editing is always via environment variables on Render, never here, for security.",
+      "config.section.integrations": "Integrations", "config.section.persona": "Business assistant (My chat)", "config.section.admins": "StayFlow administrators",
+      "config.persona.link": "View the marked account (ID {id}) →", "config.persona.empty": "No account marked yet — set it up under Settings → WhatsApp Business of some account.",
+      "config.admins.empty": "No email configured.",
+      "config.integration.configured": "Configured", "config.integration.notConfigured": "Not configured",
+      "integration.beds24_master.label": "Beds24 (master account)", "integration.beds24_master.desc": "Sync with Booking, Airbnb and Hostelworld.",
+      "integration.mercadopago_marketplace.label": "Mercado Pago (marketplace)", "integration.mercadopago_marketplace.desc": "Payment split for properties.",
+      "integration.meta_app.label": "Meta app (Facebook/WhatsApp)", "integration.meta_app.desc": "Login, Messenger and WhatsApp Business Platform.",
+      "integration.instagram_app.label": "Instagram app", "integration.instagram_app.desc": "Instagram Direct.",
+      "time.now": "now", "time.min": "{n}min", "time.hour": "{n}h", "time.day": "{n}d",
+    },
+    es: {
+      "nav.overview": "Visión general", "nav.chat": "Mi chat", "nav.support": "Soporte",
+      "nav.properties": "Propiedades", "nav.finance": "Finanzas", "nav.ranking": "Ranking",
+      "nav.payouts": "Pagos a socios", "nav.config": "Configuración", "nav.collapse": "Colapsar menú",
+      "tagline": "Panel del operador",
+      "topbar.overview.title": "Visión general", "topbar.overview.subtitle": "Vista viva de StayFlow — no es el dashboard de ninguna cuenta específica.",
+      "topbar.chat.title": "Mi chat", "topbar.chat.subtitle": "Conversaciones reales del número comercial oficial de StayFlow.",
+      "topbar.support.title": "Soporte", "topbar.support.subtitle": "Pedidos de ayuda de hospedajes y agencias, directo con vos.",
+      "topbar.properties.title": "Propiedades", "topbar.properties.subtitle": "Todos los hospedajes y agencias inscritos en StayFlow.",
+      "topbar.finance.title": "Finanzas", "topbar.finance.subtitle": "Informe completo: por propiedad y registro de transacciones.",
+      "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Quién genera más valor para StayFlow hoy.",
+      "topbar.payouts.title": "Pagos a socios", "topbar.payouts.subtitle": "Saldo adeudado a hospedajes por referir a un socio.",
+      "topbar.config.title": "Configuración", "topbar.config.subtitle": "Estado de las integraciones a nivel StayFlow.",
+      "propertySelector.name": "Propiedades", "propertySelector.meta": "Ir al dashboard de...",
+      "propertySelector.title": "Ir al dashboard de una propiedad", "propertySelector.searchPlaceholder": "Buscar propiedad...",
+      "propertySelector.empty": "Todavía no marcaste ninguna cuenta de prueba.<br>Marcala en su perfil (pestaña Propiedades → abrir la cuenta → \"Marcar como mi cuenta de prueba\").",
+      "propertySelector.noMatch": "No se encontró ninguna propiedad.",
+      "notif.title": "🔔 Notificaciones", "notif.empty": "Nada nuevo.", "notif.button.title": "Notificaciones",
+      "lang.title": "Idioma", "userMenu.title": "Menú de usuario", "userMenu.role": "Dueño · StayFlow", "userMenu.logout": "↪ Salir",
+      "loading": "Cargando...", "error": "No se pudo cargar el panel.",
+      "overview.kpi.accounts": "Cuentas", "overview.kpi.mrr": "MRR estimado", "overview.kpi.mrr.note": "El cobro automático todavía no está conectado — valor de lista.",
+      "overview.kpi.commission": "Comisión real cobrada", "overview.kpi.commission.note": "Dinero real, vía Mercado Pago Split de Pagos.",
+      "overview.section.attention": "Necesita atención", "overview.section.topRanking": "Top 5 del ranking", "overview.section.recentProperties": "Últimas propiedades inscritas",
+      "overview.currencyNote": "Los totales de arriba se suman sin conversión de moneda — cada cuenta puede operar en una moneda distinta.",
+      "overview.attention.empty": "Ninguna cuenta necesita atención ahora — trials tranquilos, sin mora.",
+      "overview.attention.trialToday": "el trial vence hoy", "overview.attention.trialDays": "el trial termina en {days}d", "overview.attention.pastDue": "pago atrasado", "overview.attention.pastDueTag": "en mora",
+      "overview.noProperties": "Todavía no hay ninguna propiedad inscrita.", "overview.newThisWeek": " · +{n} esta semana",
+      "chat.notConfigured.line1": "Todavía ningún número está marcado como asistente comercial de StayFlow.",
+      "chat.notConfigured.line2": "Andá a <strong>Configuración → WhatsApp Business</strong> y marcá \"Este número responde como → Asistente comercial de StayFlow\".",
+      "chat.empty.title": "Ninguna conversación seleccionada", "chat.empty.desc": "Elegí un contacto a la izquierda para ver los mensajes.",
+      "chat.input.placeholder": "Escribir mensaje...", "chat.btn.assume": "Tomar control", "chat.btn.send": "Enviar", "chat.btn.giveback": "Devolver",
+      "chat.aiRespondingLabel": "La IA está respondiendo", "chat.aiPausedLabel": "IA pausada — tomaste el control",
+      "chat.noContactName": "Contacto sin nombre", "chat.you": "Vos: ", "chat.noMessagesYet": "Todavía no hay mensajes.",
+      "chat.list.empty.title": "Todavía no hay conversaciones.", "chat.list.empty.desc": "En cuanto alguien escriba al WhatsApp de StayFlow, aparece acá.",
+      "support.empty.title": "Ningún chamado seleccionado", "support.empty.desc": "Elegí una cuenta a la izquierda para ver la conversación de soporte.",
+      "support.input.placeholder": "Responder...", "support.btn.send": "Enviar",
+      "support.list.empty.title": "Todavía no hay chamados.", "support.list.empty.desc": "Cuando un hospedaje o agencia pida ayuda desde su pestaña Soporte, aparece acá.",
+      "support.kind.agency": "Agencia", "support.kind.lodging": "Hospedaje", "support.noHostelName": "Sin nombre",
+      "properties.search.placeholder": "Buscar por nombre...", "properties.filter.allTypes": "Todos los tipos",
+      "properties.filter.lodgingOnly": "Solo hospedajes", "properties.filter.agencyOnly": "Solo agencias",
+      "properties.filter.allStatus": "Todos los estados", "properties.noMatch": "No se encontró ninguna propiedad con esos filtros.",
+      "properties.noPlan": "sin plan", "properties.noName": "Sin nombre", "properties.trialSuffix": " · {days}d de trial",
+      "status.trialing": "Trial", "status.active": "Activo", "status.past_due": "En mora", "status.canceled": "Cancelado", "status.comp": "Cortesía",
+      "finance.kpi.mrr": "MRR estimado", "finance.kpi.mrr.note": "Suma de todas las cuentas.",
+      "finance.kpi.volume": "Volumen procesado", "finance.kpi.volume.note": "Vía Mercado Pago Split de Pagos.",
+      "finance.kpi.commission": "Comisión real cobrada", "finance.kpi.commission.note": "Dinero real, ya procesado.",
+      "finance.section.byProperty": "Por propiedad", "finance.sort.value": "Ordenar por valor generado", "finance.sort.name": "Ordenar por nombre",
+      "finance.table.property": "Propiedad", "finance.table.plan": "Plan", "finance.table.mrr": "MRR", "finance.table.volume": "Volumen procesado", "finance.table.commission": "Comisión",
+      "finance.section.transactions": "Registro de transacciones",
+      "finance.tx.date": "Fecha", "finance.tx.property": "Propiedad", "finance.tx.description": "Descripción", "finance.tx.type": "Tipo", "finance.tx.amount": "Monto", "finance.tx.commission": "Comisión", "finance.tx.status": "Estado",
+      "finance.tx.empty": "Todavía no hay transacciones.", "finance.tx.loadMore": "Mostrar más", "finance.noMatch": "No se encontró ninguna propiedad.",
+      "tx.status.pending": "Pendiente", "tx.status.paid": "Pagado", "tx.status.failed": "Falló", "tx.status.refunded": "Reembolsado", "tx.status.cancelled": "Cancelado",
+      "ranking.subtitle": "Ordenado por MRR estimado + comisión real cobrada — quién genera más valor para StayFlow hoy.",
+      "ranking.empty": "Todavía no hay ninguna propiedad para rankear.",
+      "payouts.subtitle": "Saldo adeudado a cada hospedaje por referir la venta de un ítem del portfolio de una agencia socia — ya incluido en la tarifa cobrada, aún no pagado.",
+      "payouts.table.hostel": "Hospedaje", "payouts.table.charges": "Cobros", "payouts.table.total": "Total adeudado",
+      "payouts.empty": "No hay pagos pendientes.", "payouts.markPaid": "Marcar como pagado", "payouts.marking": "Marcando...",
+      "config.subtitle": "Estado de las integraciones a nivel StayFlow (credenciales únicas de la plataforma) — solo lectura. La edición siempre es por variables de entorno en Render, nunca desde acá, por seguridad.",
+      "config.section.integrations": "Integraciones", "config.section.persona": "Asistente comercial (Mi chat)", "config.section.admins": "Administradores de StayFlow",
+      "config.persona.link": "Ver la cuenta marcada (ID {id}) →", "config.persona.empty": "Todavía no hay ninguna cuenta marcada — configuralo en Configuración → WhatsApp Business de alguna cuenta.",
+      "config.admins.empty": "No hay ningún correo configurado.",
+      "config.integration.configured": "Configurado", "config.integration.notConfigured": "No configurado",
+      "integration.beds24_master.label": "Beds24 (cuenta master)", "integration.beds24_master.desc": "Sincronización con Booking, Airbnb y Hostelworld.",
+      "integration.mercadopago_marketplace.label": "Mercado Pago (marketplace)", "integration.mercadopago_marketplace.desc": "Split de pagos de los hospedajes.",
+      "integration.meta_app.label": "App de Meta (Facebook/WhatsApp)", "integration.meta_app.desc": "Login, Messenger y WhatsApp Business Platform.",
+      "integration.instagram_app.label": "App de Instagram", "integration.instagram_app.desc": "Instagram Direct.",
+      "time.now": "ahora", "time.min": "{n}min", "time.hour": "{n}h", "time.day": "{n}d",
+    },
+    fr: {
+      "nav.overview": "Vue d'ensemble", "nav.chat": "Mon chat", "nav.support": "Support",
+      "nav.properties": "Propriétés", "nav.finance": "Finances", "nav.ranking": "Classement",
+      "nav.payouts": "Reversements", "nav.config": "Paramètres", "nav.collapse": "Réduire le menu",
+      "tagline": "Panneau de l'opérateur",
+      "topbar.overview.title": "Vue d'ensemble", "topbar.overview.subtitle": "Vue en direct de StayFlow — pas le tableau de bord d'un compte spécifique.",
+      "topbar.chat.title": "Mon chat", "topbar.chat.subtitle": "Conversations réelles du numéro professionnel officiel de StayFlow.",
+      "topbar.support.title": "Support", "topbar.support.subtitle": "Demandes d'aide des hébergements et agences, directement avec vous.",
+      "topbar.properties.title": "Propriétés", "topbar.properties.subtitle": "Tous les hébergements et agences inscrits sur StayFlow.",
+      "topbar.finance.title": "Finances", "topbar.finance.subtitle": "Rapport complet : par propriété et journal des transactions.",
+      "topbar.ranking.title": "Classement", "topbar.ranking.subtitle": "Qui génère le plus de valeur pour StayFlow aujourd'hui.",
+      "topbar.payouts.title": "Reversements", "topbar.payouts.subtitle": "Solde dû aux propriétés pour parrainage de partenaire.",
+      "topbar.config.title": "Paramètres", "topbar.config.subtitle": "État des intégrations au niveau StayFlow.",
+      "propertySelector.name": "Propriétés", "propertySelector.meta": "Aller au tableau de bord de...",
+      "propertySelector.title": "Aller au tableau de bord d'une propriété", "propertySelector.searchPlaceholder": "Rechercher une propriété...",
+      "propertySelector.empty": "Aucun compte de test marqué pour l'instant.<br>Marquez-en un sur son profil (onglet Propriétés → ouvrir le compte → \"Marquer comme mon compte de test\").",
+      "propertySelector.noMatch": "Aucune propriété trouvée.",
+      "notif.title": "🔔 Notifications", "notif.empty": "Rien de nouveau.", "notif.button.title": "Notifications",
+      "lang.title": "Langue", "userMenu.title": "Menu utilisateur", "userMenu.role": "Propriétaire · StayFlow", "userMenu.logout": "↪ Se déconnecter",
+      "loading": "Chargement...", "error": "Impossible de charger le panneau.",
+      "overview.kpi.accounts": "Comptes", "overview.kpi.mrr": "MRR estimé", "overview.kpi.mrr.note": "Facturation automatique pas encore connectée — valeur catalogue.",
+      "overview.kpi.commission": "Commission réelle collectée", "overview.kpi.commission.note": "Argent réel, via Mercado Pago Split de Pagos.",
+      "overview.section.attention": "Nécessite votre attention", "overview.section.topRanking": "Top 5 du classement", "overview.section.recentProperties": "Dernières propriétés inscrites",
+      "overview.currencyNote": "Les totaux ci-dessus sont additionnés sans conversion de devise — les comptes peuvent opérer dans des devises différentes.",
+      "overview.attention.empty": "Aucun compte ne nécessite d'attention pour l'instant — essais tranquilles, aucun impayé.",
+      "overview.attention.trialToday": "l'essai se termine aujourd'hui", "overview.attention.trialDays": "l'essai se termine dans {days}j", "overview.attention.pastDue": "paiement en retard", "overview.attention.pastDueTag": "impayé",
+      "overview.noProperties": "Aucune propriété inscrite pour l'instant.", "overview.newThisWeek": " · +{n} cette semaine",
+      "chat.notConfigured.line1": "Aucun numéro n'est encore marqué comme assistant commercial de StayFlow.",
+      "chat.notConfigured.line2": "Allez dans <strong>Paramètres → WhatsApp Business</strong> et cochez \"Ce numéro répond comme → Assistant commercial StayFlow\".",
+      "chat.empty.title": "Aucune conversation sélectionnée", "chat.empty.desc": "Choisissez un contact à gauche pour voir les messages.",
+      "chat.input.placeholder": "Écrire un message...", "chat.btn.assume": "Prendre le relais", "chat.btn.send": "Envoyer", "chat.btn.giveback": "Rendre à l'IA",
+      "chat.aiRespondingLabel": "L'IA répond", "chat.aiPausedLabel": "IA en pause — vous avez pris le relais",
+      "chat.noContactName": "Contact sans nom", "chat.you": "Vous : ", "chat.noMessagesYet": "Aucun message pour l'instant.",
+      "chat.list.empty.title": "Aucune conversation pour l'instant.", "chat.list.empty.desc": "Dès que quelqu'un écrit au WhatsApp de StayFlow, ça apparaît ici.",
+      "support.empty.title": "Aucun ticket sélectionné", "support.empty.desc": "Choisissez un compte à gauche pour voir la conversation de support.",
+      "support.input.placeholder": "Répondre...", "support.btn.send": "Envoyer",
+      "support.list.empty.title": "Aucun ticket pour l'instant.", "support.list.empty.desc": "Quand un hébergement ou une agence demande de l'aide depuis son onglet Support, ça apparaît ici.",
+      "support.kind.agency": "Agence", "support.kind.lodging": "Hébergement", "support.noHostelName": "Sans nom",
+      "properties.search.placeholder": "Rechercher par nom...", "properties.filter.allTypes": "Tous les types",
+      "properties.filter.lodgingOnly": "Hébergements seulement", "properties.filter.agencyOnly": "Agences seulement",
+      "properties.filter.allStatus": "Tous les statuts", "properties.noMatch": "Aucune propriété trouvée avec ces filtres.",
+      "properties.noPlan": "sans forfait", "properties.noName": "Sans nom", "properties.trialSuffix": " · {days}j d'essai restants",
+      "status.trialing": "Essai", "status.active": "Actif", "status.past_due": "Impayé", "status.canceled": "Annulé", "status.comp": "Offert",
+      "finance.kpi.mrr": "MRR estimé", "finance.kpi.mrr.note": "Somme de tous les comptes.",
+      "finance.kpi.volume": "Volume traité", "finance.kpi.volume.note": "Via Mercado Pago Split de Pagos.",
+      "finance.kpi.commission": "Commission réelle collectée", "finance.kpi.commission.note": "Argent réel, déjà traité.",
+      "finance.section.byProperty": "Par propriété", "finance.sort.value": "Trier par valeur générée", "finance.sort.name": "Trier par nom",
+      "finance.table.property": "Propriété", "finance.table.plan": "Forfait", "finance.table.mrr": "MRR", "finance.table.volume": "Volume traité", "finance.table.commission": "Commission",
+      "finance.section.transactions": "Journal des transactions",
+      "finance.tx.date": "Date", "finance.tx.property": "Propriété", "finance.tx.description": "Description", "finance.tx.type": "Type", "finance.tx.amount": "Montant", "finance.tx.commission": "Commission", "finance.tx.status": "Statut",
+      "finance.tx.empty": "Aucune transaction pour l'instant.", "finance.tx.loadMore": "Afficher plus", "finance.noMatch": "Aucune propriété trouvée.",
+      "tx.status.pending": "En attente", "tx.status.paid": "Payé", "tx.status.failed": "Échoué", "tx.status.refunded": "Remboursé", "tx.status.cancelled": "Annulé",
+      "ranking.subtitle": "Trié par MRR estimé + commission réelle collectée — qui génère le plus de valeur pour StayFlow aujourd'hui.",
+      "ranking.empty": "Aucune propriété à classer pour l'instant.",
+      "payouts.subtitle": "Solde dû à chaque hébergement pour avoir référé la vente d'un article du portfolio d'une agence partenaire — déjà inclus dans les frais facturés, pas encore reversé.",
+      "payouts.table.hostel": "Hébergement", "payouts.table.charges": "Facturations", "payouts.table.total": "Total dû",
+      "payouts.empty": "Aucun reversement en attente.", "payouts.markPaid": "Marquer comme payé", "payouts.marking": "Marquage...",
+      "config.subtitle": "État des intégrations au niveau StayFlow (identifiants uniques de la plateforme) — lecture seule. La modification se fait toujours via les variables d'environnement sur Render, jamais ici, pour la sécurité.",
+      "config.section.integrations": "Intégrations", "config.section.persona": "Assistant commercial (Mon chat)", "config.section.admins": "Administrateurs StayFlow",
+      "config.persona.link": "Voir le compte marqué (ID {id}) →", "config.persona.empty": "Aucun compte marqué pour l'instant — configurez-le dans Paramètres → WhatsApp Business d'un compte.",
+      "config.admins.empty": "Aucun e-mail configuré.",
+      "config.integration.configured": "Configuré", "config.integration.notConfigured": "Non configuré",
+      "integration.beds24_master.label": "Beds24 (compte master)", "integration.beds24_master.desc": "Synchronisation avec Booking, Airbnb et Hostelworld.",
+      "integration.mercadopago_marketplace.label": "Mercado Pago (marketplace)", "integration.mercadopago_marketplace.desc": "Répartition des paiements des hébergements.",
+      "integration.meta_app.label": "App Meta (Facebook/WhatsApp)", "integration.meta_app.desc": "Connexion, Messenger et WhatsApp Business Platform.",
+      "integration.instagram_app.label": "App Instagram", "integration.instagram_app.desc": "Instagram Direct.",
+      "time.now": "maintenant", "time.min": "{n}min", "time.hour": "{n}h", "time.day": "{n}j",
+    },
+    de: {
+      "nav.overview": "Übersicht", "nav.chat": "Mein Chat", "nav.support": "Support",
+      "nav.properties": "Unterkünfte", "nav.finance": "Finanzen", "nav.ranking": "Rangliste",
+      "nav.payouts": "Auszahlungen", "nav.config": "Einstellungen", "nav.collapse": "Menü einklappen",
+      "tagline": "Betreiber-Panel",
+      "topbar.overview.title": "Übersicht", "topbar.overview.subtitle": "Live-Ansicht von StayFlow — nicht das Dashboard eines bestimmten Kontos.",
+      "topbar.chat.title": "Mein Chat", "topbar.chat.subtitle": "Echte Gespräche der offiziellen Geschäftsnummer von StayFlow.",
+      "topbar.support.title": "Support", "topbar.support.subtitle": "Hilfeanfragen von Unterkünften und Agenturen, direkt an Sie.",
+      "topbar.properties.title": "Unterkünfte", "topbar.properties.subtitle": "Alle bei StayFlow angemeldeten Unterkünfte und Agenturen.",
+      "topbar.finance.title": "Finanzen", "topbar.finance.subtitle": "Vollständiger Bericht: nach Objekt und Transaktionsprotokoll.",
+      "topbar.ranking.title": "Rangliste", "topbar.ranking.subtitle": "Wer heute den meisten Wert für StayFlow generiert.",
+      "topbar.payouts.title": "Auszahlungen", "topbar.payouts.subtitle": "Saldo, der Unterkünften für Partnerempfehlungen geschuldet wird.",
+      "topbar.config.title": "Einstellungen", "topbar.config.subtitle": "Status der Integrationen auf StayFlow-Ebene.",
+      "propertySelector.name": "Unterkünfte", "propertySelector.meta": "Zum Dashboard von...",
+      "propertySelector.title": "Zum Dashboard einer Unterkunft gehen", "propertySelector.searchPlaceholder": "Unterkunft suchen...",
+      "propertySelector.empty": "Noch kein Testkonto markiert.<br>Markieren Sie eines im Profil (Reiter Unterkünfte → Konto öffnen → \"Als mein Testkonto markieren\").",
+      "propertySelector.noMatch": "Keine Unterkunft gefunden.",
+      "notif.title": "🔔 Benachrichtigungen", "notif.empty": "Nichts Neues.", "notif.button.title": "Benachrichtigungen",
+      "lang.title": "Sprache", "userMenu.title": "Benutzermenü", "userMenu.role": "Inhaber · StayFlow", "userMenu.logout": "↪ Abmelden",
+      "loading": "Wird geladen...", "error": "Panel konnte nicht geladen werden.",
+      "overview.kpi.accounts": "Konten", "overview.kpi.mrr": "Geschätzter MRR", "overview.kpi.mrr.note": "Automatische Abrechnung noch nicht angebunden — Listenwert.",
+      "overview.kpi.commission": "Erhaltene Provision", "overview.kpi.commission.note": "Echtes Geld, über Mercado Pago Split de Pagos.",
+      "overview.section.attention": "Braucht Aufmerksamkeit", "overview.section.topRanking": "Top 5 der Rangliste", "overview.section.recentProperties": "Zuletzt angemeldete Unterkünfte",
+      "overview.currencyNote": "Die Summen oben werden ohne Währungsumrechnung addiert — Konten können in unterschiedlichen Währungen arbeiten.",
+      "overview.attention.empty": "Aktuell braucht kein Konto Aufmerksamkeit — Testphasen laufen ruhig, keine Zahlungsrückstände.",
+      "overview.attention.trialToday": "Testphase endet heute", "overview.attention.trialDays": "Testphase endet in {days}T", "overview.attention.pastDue": "Zahlung überfällig", "overview.attention.pastDueTag": "überfällig",
+      "overview.noProperties": "Noch keine Unterkunft angemeldet.", "overview.newThisWeek": " · +{n} diese Woche",
+      "chat.notConfigured.line1": "Noch keine Nummer ist als StayFlow-Vertriebsassistent markiert.",
+      "chat.notConfigured.line2": "Gehen Sie zu <strong>Einstellungen → WhatsApp Business</strong> und setzen Sie \"Diese Nummer antwortet als → StayFlow-Vertriebsassistent\".",
+      "chat.empty.title": "Kein Gespräch ausgewählt", "chat.empty.desc": "Wählen Sie links einen Kontakt, um die Nachrichten zu sehen.",
+      "chat.input.placeholder": "Nachricht schreiben...", "chat.btn.assume": "Übernehmen", "chat.btn.send": "Senden", "chat.btn.giveback": "Zurückgeben",
+      "chat.aiRespondingLabel": "KI antwortet", "chat.aiPausedLabel": "KI pausiert — von Ihnen übernommen",
+      "chat.noContactName": "Kontakt ohne Namen", "chat.you": "Sie: ", "chat.noMessagesYet": "Noch keine Nachrichten.",
+      "chat.list.empty.title": "Noch keine Gespräche.", "chat.list.empty.desc": "Sobald jemand an StayFlows WhatsApp schreibt, erscheint es hier.",
+      "support.empty.title": "Kein Ticket ausgewählt", "support.empty.desc": "Wählen Sie links ein Konto, um das Support-Gespräch zu sehen.",
+      "support.input.placeholder": "Antworten...", "support.btn.send": "Senden",
+      "support.list.empty.title": "Noch keine Tickets.", "support.list.empty.desc": "Wenn eine Unterkunft oder Agentur über ihren Support-Reiter um Hilfe bittet, erscheint es hier.",
+      "support.kind.agency": "Agentur", "support.kind.lodging": "Unterkunft", "support.noHostelName": "Ohne Namen",
+      "properties.search.placeholder": "Nach Namen suchen...", "properties.filter.allTypes": "Alle Typen",
+      "properties.filter.lodgingOnly": "Nur Unterkünfte", "properties.filter.agencyOnly": "Nur Agenturen",
+      "properties.filter.allStatus": "Alle Status", "properties.noMatch": "Keine Unterkunft mit diesen Filtern gefunden.",
+      "properties.noPlan": "kein Tarif", "properties.noName": "Ohne Namen", "properties.trialSuffix": " · noch {days}T Testphase",
+      "status.trialing": "Testphase", "status.active": "Aktiv", "status.past_due": "Überfällig", "status.canceled": "Gekündigt", "status.comp": "Kostenlos",
+      "finance.kpi.mrr": "Geschätzter MRR", "finance.kpi.mrr.note": "Summe aller Konten.",
+      "finance.kpi.volume": "Verarbeitetes Volumen", "finance.kpi.volume.note": "Über Mercado Pago Split de Pagos.",
+      "finance.kpi.commission": "Erhaltene Provision", "finance.kpi.commission.note": "Echtes Geld, bereits verarbeitet.",
+      "finance.section.byProperty": "Nach Unterkunft", "finance.sort.value": "Nach generiertem Wert sortieren", "finance.sort.name": "Nach Namen sortieren",
+      "finance.table.property": "Unterkunft", "finance.table.plan": "Tarif", "finance.table.mrr": "MRR", "finance.table.volume": "Verarbeitetes Volumen", "finance.table.commission": "Provision",
+      "finance.section.transactions": "Transaktionsprotokoll",
+      "finance.tx.date": "Datum", "finance.tx.property": "Unterkunft", "finance.tx.description": "Beschreibung", "finance.tx.type": "Typ", "finance.tx.amount": "Betrag", "finance.tx.commission": "Provision", "finance.tx.status": "Status",
+      "finance.tx.empty": "Noch keine Transaktionen.", "finance.tx.loadMore": "Mehr anzeigen", "finance.noMatch": "Keine Unterkunft gefunden.",
+      "tx.status.pending": "Ausstehend", "tx.status.paid": "Bezahlt", "tx.status.failed": "Fehlgeschlagen", "tx.status.refunded": "Erstattet", "tx.status.cancelled": "Storniert",
+      "ranking.subtitle": "Sortiert nach geschätztem MRR + erhaltener Provision — wer heute den meisten Wert für StayFlow generiert.",
+      "ranking.empty": "Noch keine Unterkunft zum Ranken.",
+      "payouts.subtitle": "Saldo, der jeder Unterkunft für die Vermittlung eines Verkaufs aus dem Portfolio einer Partneragentur geschuldet wird — bereits in der berechneten Gebühr enthalten, noch nicht ausgezahlt.",
+      "payouts.table.hostel": "Unterkunft", "payouts.table.charges": "Belastungen", "payouts.table.total": "Gesamt geschuldet",
+      "payouts.empty": "Keine ausstehenden Auszahlungen.", "payouts.markPaid": "Als bezahlt markieren", "payouts.marking": "Wird markiert...",
+      "config.subtitle": "Status der Integrationen auf StayFlow-Ebene (plattformweite Zugangsdaten) — nur lesend. Änderungen erfolgen aus Sicherheitsgründen immer über Umgebungsvariablen auf Render, nie hier.",
+      "config.section.integrations": "Integrationen", "config.section.persona": "Vertriebsassistent (Mein Chat)", "config.section.admins": "StayFlow-Administratoren",
+      "config.persona.link": "Markiertes Konto ansehen (ID {id}) →", "config.persona.empty": "Noch kein Konto markiert — richten Sie es unter Einstellungen → WhatsApp Business eines Kontos ein.",
+      "config.admins.empty": "Keine E-Mail konfiguriert.",
+      "config.integration.configured": "Konfiguriert", "config.integration.notConfigured": "Nicht konfiguriert",
+      "integration.beds24_master.label": "Beds24 (Master-Konto)", "integration.beds24_master.desc": "Synchronisierung mit Booking, Airbnb und Hostelworld.",
+      "integration.mercadopago_marketplace.label": "Mercado Pago (Marketplace)", "integration.mercadopago_marketplace.desc": "Zahlungsaufteilung der Unterkünfte.",
+      "integration.meta_app.label": "Meta-App (Facebook/WhatsApp)", "integration.meta_app.desc": "Login, Messenger und WhatsApp Business Platform.",
+      "integration.instagram_app.label": "Instagram-App", "integration.instagram_app.desc": "Instagram Direct.",
+      "time.now": "gerade eben", "time.min": "{n}min", "time.hour": "{n}Std", "time.day": "{n}T",
+    },
+  };
+
+  function AT(key, ph){
+    const lang = (window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt");
+    let text = StayFlowI18n.t(ADMIN_I18N, lang, key, ADMIN_I18N.pt[key] || key);
+    if(ph){ Object.keys(ph).forEach(token => { text = text.replace(`{${token}}`, ph[token]); }); }
+    return text;
+  }
+
   window.toggleSidebar = function(){
     const sidebar = document.getElementById("sidebar");
     if(sidebar) sidebar.classList.toggle("open");
@@ -403,26 +827,33 @@
     });
   });
 
-  const TAB_TITLES = {
-    overview: ["Visão geral", "Visão viva da StayFlow — não é o dashboard de nenhuma conta específica."],
-    chat: ["Meu chat", "Conversas reais do número comercial oficial da StayFlow."],
-    support: ["Suporte", "Chamados de ajuda das hospedagens e agências, direto com você."],
-    properties: ["Propriedades", "Todas as hospedagens e agências inscritas na StayFlow."],
-    ranking: ["Ranking", "Quem mais gera valor pra StayFlow hoje."],
-    payouts: ["Repasses", "Saldo devido a hospedagens por indicação de parceiro."],
-  };
-
+  let currentAdminTab = "overview";
   window.switchAdminTab = function(tab, btn){
     document.querySelectorAll(".menu button[data-tab]").forEach(b => b.classList.remove("active"));
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById(`page-${tab}`).classList.add("active");
-    const [title, sub] = TAB_TITLES[tab] || ["", ""];
-    document.getElementById("pageTitle").textContent = title;
-    document.getElementById("pageSubtitle").textContent = sub;
+    currentAdminTab = tab;
+    document.getElementById("pageTitle").textContent = AT(`topbar.${tab}.title`);
+    document.getElementById("pageSubtitle").textContent = AT(`topbar.${tab}.subtitle`);
     document.getElementById("sidebar")?.classList.remove("open");
     document.getElementById("sidebarOverlay")?.classList.remove("open");
   };
+
+  // Re-renderiza tudo que foi montado via JS (nao pega pelo data-i18n
+  // automatico do applyTranslations, que so cobre texto estatico do
+  // HTML) - chamado sempre que o idioma muda, pra nao deixar listas
+  // ja carregadas presas no idioma anterior.
+  function refreshAllTranslatedContent(){
+    document.getElementById("pageTitle").textContent = AT(`topbar.${currentAdminTab}.title`);
+    document.getElementById("pageSubtitle").textContent = AT(`topbar.${currentAdminTab}.subtitle`);
+    if(overviewData){ renderOverview(overviewData); renderProperties(); renderRanking(); renderFinanceSummary(); renderFinanceTable(); }
+    if(myChatGuests.length || myChatActiveGuestId != null) loadMyChatGuests();
+    if(supportThreads.length || supportActiveHostelId != null) loadSupportThreads();
+    loadPayouts();
+    loadIntegrationsStatus();
+    if(txOffset > 0) loadTransactions(true);
+  }
 
   function formatMoney(value, currency){
     const n = Number(value || 0);
@@ -442,34 +873,31 @@
     const d = parseUtc(iso);
     if(!d) return "";
     const mins = Math.floor((Date.now() - d.getTime()) / 60000);
-    if(mins < 1) return "agora";
-    if(mins < 60) return `${mins}min`;
+    if(mins < 1) return AT("time.now");
+    if(mins < 60) return AT("time.min", { n: mins });
     const hrs = Math.floor(mins / 60);
-    if(hrs < 24) return `${hrs}h`;
-    return `${Math.floor(hrs / 24)}d`;
+    if(hrs < 24) return AT("time.hour", { n: hrs });
+    return AT("time.day", { n: Math.floor(hrs / 24) });
   }
 
-  const STATUS_LABELS = {
-    trialing: "Trial", active: "Ativo", past_due: "Inadimplente",
-    canceled: "Cancelado", comp: "Cortesia",
-  };
+  const STATUS_KEYS = ["trialing", "active", "past_due", "canceled", "comp"];
+  function statusLabel(status){ return STATUS_KEYS.includes(status) ? AT(`status.${status}`) : (status || "—"); }
   const KIND_ICONS = { lodging: "🏨", agency: "✈️" };
 
   let overviewData = null;
 
   function propRowHtml(h){
     const statusClass = h.status || "";
-    const statusLabel = STATUS_LABELS[h.status] || h.status || "—";
-    const trial = h.trial_days_left != null ? ` · ${h.trial_days_left}d de trial` : "";
+    const trial = h.trial_days_left != null ? AT("properties.trialSuffix", { days: h.trial_days_left }) : "";
     return `
       <a class="prop-row" href="admin-hostel.html?id=${h.hostel_id}">
         <div class="ico">${KIND_ICONS[h.account_kind] || "🏢"}</div>
         <div>
-          <div class="name">${h.hostel_name || "Sem nome"}</div>
-          <div class="meta">${h.plan_name || "sem plano"}${trial}</div>
+          <div class="name">${h.hostel_name || AT("properties.noName")}</div>
+          <div class="meta">${h.plan_name || AT("properties.noPlan")}${trial}</div>
         </div>
         <div class="right">
-          <span class="plan-chip ${statusClass}">${statusLabel}</span>
+          <span class="plan-chip ${statusClass}">${statusLabel(h.status)}</span>
         </div>
       </a>`;
   }
@@ -478,23 +906,23 @@
     const rows = [];
     hostels.forEach(h => {
       if(h.status === "trialing" && h.trial_days_left != null && h.trial_days_left <= 3){
-        rows.push({ kind: "warn", ico: "⏳", h, detail: h.trial_days_left <= 0 ? "trial vence hoje" : `trial acaba em ${h.trial_days_left}d`, right: `${h.trial_days_left}d` });
+        rows.push({ kind: "warn", ico: "⏳", h, detail: h.trial_days_left <= 0 ? AT("overview.attention.trialToday") : AT("overview.attention.trialDays", { days: h.trial_days_left }), right: `${h.trial_days_left}d` });
       }
       if(h.status === "past_due"){
-        rows.push({ kind: "danger", ico: "⚠️", h, detail: "pagamento em atraso", right: "inadimplente" });
+        rows.push({ kind: "danger", ico: "⚠️", h, detail: AT("overview.attention.pastDue"), right: AT("overview.attention.pastDueTag") });
       }
     });
 
     const el = document.getElementById("attentionList");
     if(!rows.length){
-      el.innerHTML = `<div class="alert-empty">Nenhuma conta precisando de atenção agora — trials tranquilos, sem inadimplência.</div>`;
+      el.innerHTML = `<div class="alert-empty">${AT("overview.attention.empty")}</div>`;
       return;
     }
     el.innerHTML = rows.map(r => `
       <a class="alert-row ${r.kind}" href="admin-hostel.html?id=${r.h.hostel_id}">
         <div class="ico">${r.ico}</div>
         <div>
-          <div class="name">${KIND_ICONS[r.h.account_kind] || ""} ${r.h.hostel_name || "Sem nome"}</div>
+          <div class="name">${KIND_ICONS[r.h.account_kind] || ""} ${r.h.hostel_name || AT("properties.noName")}</div>
           <div class="detail">${r.detail}</div>
         </div>
         <div class="right">${r.right}</div>
@@ -505,9 +933,9 @@
     const s = data.summary;
     document.getElementById("sumTotalHostels").textContent = String(s.total_hostels);
     const byStatusText = Object.entries(s.by_status)
-      .map(([status, count]) => `${count} ${(STATUS_LABELS[status] || status).toLowerCase()}`)
-      .join(" · ") || "Nenhuma conta ainda";
-    const weekly = s.new_hostels_last_7_days ? ` · +${s.new_hostels_last_7_days} essa semana` : "";
+      .map(([status, count]) => `${count} ${statusLabel(status).toLowerCase()}`)
+      .join(" · ") || AT("overview.noProperties");
+    const weekly = s.new_hostels_last_7_days ? AT("overview.newThisWeek", { n: s.new_hostels_last_7_days }) : "";
     document.getElementById("sumByStatus").textContent = byStatusText + weekly;
     document.getElementById("sumMrr").textContent = formatMoney(s.total_estimated_mrr, "USD");
     document.getElementById("sumCommission").textContent = formatMoney(s.total_commission_collected, "USD");
@@ -520,7 +948,7 @@
     const recent = [...data.hostels].slice(0, 6);
     document.getElementById("overviewRecentList").innerHTML = recent.length
       ? recent.map(propRowHtml).join("")
-      : `<div class="prop-empty">Nenhuma propriedade inscrita ainda.</div>`;
+      : `<div class="prop-empty">${AT("overview.noProperties")}</div>`;
   }
 
   function renderProperties(){
@@ -538,11 +966,11 @@
 
     document.getElementById("propList").innerHTML = filtered.length
       ? filtered.map(propRowHtml).join("")
-      : `<div class="prop-empty">Nenhuma propriedade encontrada com esses filtros.</div>`;
+      : `<div class="prop-empty">${AT("properties.noMatch")}</div>`;
   }
 
   function rankListHtml(ranked){
-    if(!ranked.length) return `<div class="prop-empty">Nenhuma propriedade pra ranquear ainda.</div>`;
+    if(!ranked.length) return `<div class="prop-empty">${AT("ranking.empty")}</div>`;
     const maxValue = Math.max(...ranked.map(h => h.estimated_mrr + h.commission_collected), 1);
     return ranked.map((h, i) => {
       const value = h.estimated_mrr + h.commission_collected;
@@ -552,7 +980,7 @@
           <div class="rank-pos">${i + 1}</div>
           <div class="rank-bar-wrap">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-weight:700;font-size:13.5px">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || "Sem nome"}</span>
+              <span style="font-weight:700;font-size:13.5px">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || AT("properties.noName")}</span>
             </div>
             <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${pct}%"></div></div>
           </div>
@@ -579,10 +1007,10 @@
     document.getElementById("propertySelectorList").innerHTML = filtered.length
       ? filtered.map(h => `
         <button type="button" class="hostel-selector-option" onclick="goToProperty(${h.hostel_id})">
-          <span class="option-name">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || "Sem nome"}</span>
-          <span class="option-role">${h.plan_name || "sem plano"} · ${STATUS_LABELS[h.status] || h.status || "—"}</span>
+          <span class="option-name">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || AT("properties.noName")}</span>
+          <span class="option-role">${h.plan_name || AT("properties.noPlan")} · ${statusLabel(h.status)}</span>
         </button>`).join("")
-      : `<div style="padding:14px;text-align:center;color:var(--muted);font-size:12.5px">Nenhuma conta de teste marcada ainda.<br>Marca uma no perfil dela (aba Propriedades → abrir a conta → "Marcar como minha conta de teste").</div>`;
+      : `<div style="padding:14px;text-align:center;color:var(--muted);font-size:12.5px">${testAccounts.length ? AT("propertySelector.noMatch") : AT("propertySelector.empty")}</div>`;
   }
 
   window.goToProperty = async function(hostelId){
@@ -615,9 +1043,121 @@
     renderOverview(data);
     renderProperties();
     renderRanking();
+    renderFinanceSummary();
+    renderFinanceTable();
   }
 
   // ===== Repasses =====
+  // ===== Financeiro =====
+  function renderFinanceTable(){
+    if(!overviewData) return;
+    const search = document.getElementById("finPropSearch").value.trim().toLowerCase();
+    const sortBy = document.getElementById("finPropSort").value;
+
+    let rows = overviewData.hostels.filter(h => !search || (h.hostel_name || "").toLowerCase().includes(search));
+    rows = [...rows].sort((a, b) => sortBy === "name"
+      ? (a.hostel_name || "").localeCompare(b.hostel_name || "")
+      : (b.estimated_mrr + b.commission_collected) - (a.estimated_mrr + a.commission_collected));
+
+    document.getElementById("financeTableBody").innerHTML = rows.length
+      ? rows.map(h => `
+        <tr>
+          <td><a href="admin-hostel.html?id=${h.hostel_id}" style="color:#7bc2ff;text-decoration:none">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || AT("properties.noName")}</a></td>
+          <td>${h.plan_name || AT("properties.noPlan")}</td>
+          <td>${formatMoney(h.estimated_mrr, "USD")}</td>
+          <td>${formatMoney(h.guest_payment_volume, h.currency)}</td>
+          <td>${formatMoney(h.commission_collected, h.currency)}</td>
+        </tr>`).join("")
+      : `<tr><td colspan="5" style="text-align:center;color:var(--muted)">${AT("finance.noMatch")}</td></tr>`;
+  }
+
+  function renderFinanceSummary(){
+    if(!overviewData) return;
+    document.getElementById("finMrr").textContent = formatMoney(overviewData.summary.total_estimated_mrr, "USD");
+    document.getElementById("finCommission").textContent = formatMoney(overviewData.summary.total_commission_collected, "USD");
+    const volume = overviewData.hostels.reduce((sum, h) => sum + (h.guest_payment_volume || 0), 0);
+    document.getElementById("finVolume").textContent = formatMoney(volume, "USD");
+  }
+
+  const TX_STATUS_KEYS = ["pending", "paid", "failed", "refunded", "cancelled"];
+  function txStatusLabel(status){ return TX_STATUS_KEYS.includes(status) ? AT(`tx.status.${status}`) : (status || "—"); }
+  let txOffset = 0;
+  const TX_PAGE_SIZE = 30;
+
+  async function loadTransactions(reset){
+    if(reset) txOffset = 0;
+    try{
+      const res = await fetch(`/stayflow-admin/transactions?limit=${TX_PAGE_SIZE}&offset=${txOffset}`, { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      const tbody = document.getElementById("transactionsTableBody");
+      const empty = document.getElementById("transactionsEmpty");
+      const rowsHtml = data.transactions.map(t => `
+        <tr>
+          <td>${parseUtc(t.created_at)?.toLocaleDateString("pt-BR") || "—"}</td>
+          <td><a href="admin-hostel.html?id=${t.hostel_id}" style="color:#7bc2ff;text-decoration:none">${KIND_ICONS[t.account_kind] || ""} ${t.hostel_name || "—"}</a></td>
+          <td>${(t.title || "").replace(/</g, "&lt;")}</td>
+          <td>${t.charge_type || "—"}</td>
+          <td>${formatMoney(t.total_amount, t.currency)}</td>
+          <td>${t.commission_pct}%</td>
+          <td><span class="plan-chip ${t.status === "paid" ? "active" : t.status === "pending" ? "trialing" : "past_due"}">${txStatusLabel(t.status)}</span></td>
+        </tr>`).join("");
+
+      if(txOffset === 0) tbody.innerHTML = rowsHtml; else tbody.innerHTML += rowsHtml;
+      empty.style.display = (txOffset === 0 && !data.transactions.length) ? "flex" : "none";
+
+      txOffset += data.transactions.length;
+      document.getElementById("transactionsLoadMoreBtn").style.display = txOffset < data.total ? "inline-flex" : "none";
+    }catch(e){
+      console.warn("Erro ao carregar transações:", e);
+    }
+  }
+  window.loadMoreTransactions = function(){ loadTransactions(false); };
+
+  function loadFinance(){
+    renderFinanceSummary();
+    renderFinanceTable();
+    loadTransactions(true);
+  }
+
+  // ===== Configurações =====
+  async function loadIntegrationsStatus(){
+    try{
+      const res = await fetch("/stayflow-admin/integrations-status", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      const INTEGRATION_ICONS = { beds24_master: "🔗", mercadopago_marketplace: "💳", meta_app: "📘", instagram_app: "📷" };
+      document.getElementById("integrationsList").innerHTML = Object.entries(data.integrations).map(([key, ok]) => {
+        const ico = INTEGRATION_ICONS[key] || "🔌";
+        const label = AT(`integration.${key}.label`);
+        const desc = AT(`integration.${key}.desc`);
+        return `
+          <div class="prop-row" style="cursor:default">
+            <div class="ico">${ico}</div>
+            <div><div class="name">${label}</div><div class="meta">${desc}</div></div>
+            <div class="right"><span class="plan-chip ${ok ? "active" : "past_due"}">${ok ? AT("config.integration.configured") : AT("config.integration.notConfigured")}</span></div>
+          </div>`;
+      }).join("");
+
+      const personaEl = document.getElementById("softwarePersonaInfo");
+      if(data.software_persona_hostel_id){
+        personaEl.innerHTML = `<a href="admin-hostel.html?id=${data.software_persona_hostel_id}" style="color:#7bc2ff;text-decoration:none">${AT("config.persona.link", { id: data.software_persona_hostel_id })}</a>`;
+      }else{
+        personaEl.textContent = AT("config.persona.empty");
+      }
+
+      document.getElementById("adminEmailsList").innerHTML = data.admin_emails.length
+        ? data.admin_emails.map(e => `<div class="prop-row" style="cursor:default"><div class="ico">👤</div><div class="name">${e}</div></div>`).join("")
+        : `<div class="prop-empty">${AT("config.admins.empty")}</div>`;
+    }catch(e){
+      console.warn("Erro ao carregar status das integrações:", e);
+    }
+  }
+
   async function loadPayouts(){
     try{
       const res = await fetch("/stayflow-admin/partner-ledger", { credentials: "same-origin" });
@@ -638,7 +1178,7 @@
           <td>${b.hostel_name || "—"}</td>
           <td>${b.charge_count}</td>
           <td>${formatMoney(b.total_owed, b.currency)}</td>
-          <td><button type="button" class="payout-btn" onclick="markPayout(${b.hostel_id}, this)">Marcar como pago</button></td>
+          <td><button type="button" class="payout-btn" onclick="markPayout(${b.hostel_id}, this)">${AT("payouts.markPaid")}</button></td>
         </tr>`).join("");
     }catch(e){
       console.warn("Erro ao carregar repasses:", e);
@@ -647,7 +1187,7 @@
 
   window.markPayout = async function(hostelId, btn){
     btn.disabled = true;
-    btn.textContent = "Marcando...";
+    btn.textContent = AT("payouts.marking");
     try{
       const res = await fetch("/stayflow-admin/partner-ledger/payout", {
         method: "POST",
@@ -659,14 +1199,14 @@
       if(!data.success){
         alert(data.message || "Não foi possível marcar como pago.");
         btn.disabled = false;
-        btn.textContent = "Marcar como pago";
+        btn.textContent = AT("payouts.markPaid");
         return;
       }
       loadPayouts();
     }catch(e){
       console.warn("Erro ao marcar repasse:", e);
       btn.disabled = false;
-      btn.textContent = "Marcar como pago";
+      btn.textContent = AT("payouts.markPaid");
     }
   };
 
@@ -677,11 +1217,11 @@
 
   function chatGuestItemHtml(g){
     const isMine = g.last_message_sender === "assistant";
-    const preview = g.last_message ? `${isMine ? "Você: " : ""}${g.last_message}` : "Sem mensagens ainda.";
+    const preview = g.last_message ? `${isMine ? AT("chat.you") : ""}${g.last_message}` : AT("chat.noMessagesYet");
     return `
       <div class="chat-item sf-clickable-row ${g.id === myChatActiveGuestId ? "active" : ""}" data-guest-id="${g.id}" onclick="openMyChatGuest(${g.id})">
         <div class="chat-name">
-          <span>${g.unread ? "🔵 " : ""}${(g.name || g.phone || "Contato sem nome").replace(/</g, "&lt;")}</span>
+          <span>${g.unread ? "🔵 " : ""}${(g.name || g.phone || AT("chat.noContactName")).replace(/</g, "&lt;")}</span>
           <span class="chat-time">${timeAgo(g.last_message_at)}</span>
         </div>
         <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>
@@ -707,7 +1247,7 @@
 
       document.getElementById("chatGuestList").innerHTML = myChatGuests.length
         ? myChatGuests.map(chatGuestItemHtml).join("")
-        : `<div class="sf-empty"><div><strong>Nenhuma conversa ainda.</strong><span>Assim que alguém escrever no WhatsApp da StayFlow, aparece aqui.</span></div></div>`;
+        : `<div class="sf-empty"><div><strong>${AT("chat.list.empty.title")}</strong><span>${AT("chat.list.empty.desc")}</span></div></div>`;
 
       refreshNotifications();
     }catch(e){
@@ -742,19 +1282,19 @@
       const data = await res.json();
       if(!data.success) return;
 
-      document.getElementById("chatActiveName").textContent = data.guest.name || data.guest.phone || "Contato sem nome";
+      document.getElementById("chatActiveName").textContent = data.guest.name || data.guest.phone || AT("chat.noContactName");
       document.getElementById("chatActivePhone").textContent = data.guest.phone || "—";
 
       const sendBtn = document.getElementById("myChatSendBtn");
       const giveBackBtn = document.getElementById("myChatGiveBackBtn");
       if(data.guest.ai_paused){
         sendBtn.dataset.mode = "send";
-        sendBtn.textContent = "Enviar";
+        sendBtn.textContent = AT("chat.btn.send");
         sendBtn.classList.remove("green");
         giveBackBtn.style.display = "inline-flex";
       }else{
         sendBtn.dataset.mode = "assume";
-        sendBtn.textContent = "Assumir";
+        sendBtn.textContent = AT("chat.btn.assume");
         sendBtn.classList.add("green");
         giveBackBtn.style.display = "none";
       }
@@ -763,7 +1303,7 @@
       if(messages.length !== myChatLastMessageCount){
         const msgsEl = document.getElementById("chatMessages");
         const wasNearBottom = msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight < 80;
-        msgsEl.innerHTML = messages.map(chatBubbleHtml).join("") || `<div class="sf-empty"><div><strong>Sem mensagens ainda.</strong></div></div>`;
+        msgsEl.innerHTML = messages.map(chatBubbleHtml).join("") || `<div class="sf-empty"><div><strong>${AT("chat.noMessagesYet")}</strong></div></div>`;
         if(wasNearBottom || myChatLastMessageCount === 0) msgsEl.scrollTop = msgsEl.scrollHeight;
         myChatLastMessageCount = messages.length;
       }
@@ -832,11 +1372,11 @@
 
   function supportItemHtml(t){
     const isMine = t.last_message_sender === "stayflow";
-    const preview = t.last_message ? `${isMine ? "Você: " : ""}${t.last_message}` : "Sem mensagens ainda.";
+    const preview = t.last_message ? `${isMine ? AT("chat.you") : ""}${t.last_message}` : AT("chat.noMessagesYet");
     return `
       <div class="chat-item sf-clickable-row ${t.hostel_id === supportActiveHostelId ? "active" : ""}" data-hostel-id="${t.hostel_id}" onclick="openSupportThread(${t.hostel_id})">
         <div class="chat-name">
-          <span>${t.unread_count > 0 ? "🔵 " : ""}${KIND_ICONS[t.account_kind] || ""} ${(t.hostel_name || "Sem nome").replace(/</g, "&lt;")}</span>
+          <span>${t.unread_count > 0 ? "🔵 " : ""}${KIND_ICONS[t.account_kind] || ""} ${(t.hostel_name || AT("support.noHostelName")).replace(/</g, "&lt;")}</span>
           <span class="chat-time">${timeAgo(t.last_message_at)}</span>
         </div>
         <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>
@@ -858,7 +1398,7 @@
 
       document.getElementById("supportThreadList").innerHTML = supportThreads.length
         ? supportThreads.map(supportItemHtml).join("")
-        : `<div class="sf-empty"><div><strong>Nenhum chamado ainda.</strong><span>Quando uma hospedagem ou agência pedir ajuda pela aba Suporte do dashboard dela, aparece aqui.</span></div></div>`;
+        : `<div class="sf-empty"><div><strong>${AT("support.list.empty.title")}</strong><span>${AT("support.list.empty.desc")}</span></div></div>`;
 
       refreshNotifications();
     }catch(e){
@@ -880,7 +1420,7 @@
 
     const thread = supportThreads.find(t => t.hostel_id === hostelId);
     document.getElementById("supportActiveName").textContent = thread ? thread.hostel_name : "—";
-    document.getElementById("supportActiveKind").textContent = thread ? (KIND_ICONS[thread.account_kind] === "✈️" ? "Agência" : "Hospedagem") : "—";
+    document.getElementById("supportActiveKind").textContent = thread ? (thread.account_kind === "agency" ? AT("support.kind.agency") : AT("support.kind.lodging")) : "—";
 
     try{
       const res = await fetch(`/stayflow-admin/support/threads/${hostelId}`, { credentials: "same-origin" });
@@ -896,7 +1436,7 @@
           const side = m.sender === "stayflow" ? "bot" : "user";
           const time = parseUtc(m.created_at)?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) || "";
           return `<div class="msg ${side}">${(m.message || "").replace(/</g, "&lt;")}<div style="font-size:10px;opacity:.7;margin-top:4px">${time}</div></div>`;
-        }).join("") || `<div class="sf-empty"><div><strong>Sem mensagens ainda.</strong></div></div>`;
+        }).join("") || `<div class="sf-empty"><div><strong>${AT("chat.noMessagesYet")}</strong></div></div>`;
         if(wasNearBottom || supportLastMessageCount === 0) msgsEl.scrollTop = msgsEl.scrollHeight;
         supportLastMessageCount = messages.length;
       }
@@ -972,10 +1512,10 @@
 
   function refreshNotifications(){
     const chatItems = myChatGuests.filter(g => g.unread).map(g => ({
-      kind: "chat", id: g.id, label: g.name || g.phone || "Contato", preview: g.last_message || "", time: g.last_message_at,
+      kind: "chat", id: g.id, label: g.name || g.phone || AT("chat.noContactName"), preview: g.last_message || "", time: g.last_message_at,
     }));
     const supportItems = supportThreads.filter(t => t.unread_count > 0).map(t => ({
-      kind: "support", id: t.hostel_id, label: t.hostel_name || "Conta", preview: t.last_message || "", time: t.last_message_at,
+      kind: "support", id: t.hostel_id, label: t.hostel_name || AT("support.noHostelName"), preview: t.last_message || "", time: t.last_message_at,
     }));
     const items = [...chatItems, ...supportItems].sort((a, b) => (b.time || "").localeCompare(a.time || ""));
 
@@ -989,7 +1529,7 @@
           <span class="notif-item-icon">${it.kind === "chat" ? "💬" : "🆘"}</span>
           <span><strong>${(it.label || "").replace(/</g, "&lt;")}</strong><br>${(it.preview || "").slice(0, 60).replace(/</g, "&lt;")}</span>
         </button>`).join("")
-      : `<div class="notif-empty">Nenhuma novidade.</div>`;
+      : `<div class="notif-empty">${AT("notif.empty")}</div>`;
 
     if(items.length > lastKnownUnreadTotal){
       playNotifSound();
@@ -1018,6 +1558,8 @@
   document.getElementById("propSearch").addEventListener("input", renderProperties);
   document.getElementById("propKindFilter").addEventListener("change", renderProperties);
   document.getElementById("propStatusFilter").addEventListener("change", renderProperties);
+  document.getElementById("finPropSearch").addEventListener("input", renderFinanceTable);
+  document.getElementById("finPropSort").addEventListener("change", renderFinanceTable);
 
   (async () => {
     try{
@@ -1033,9 +1575,11 @@
       await loadMyChatGuests();
       await loadSupportThreads();
       await loadPayouts();
+      loadFinance();
+      loadIntegrationsStatus();
 
-      StayFlowI18n.wireLanguageSwitcher("langCurrentBtn", "langDropdown", {});
-      StayFlowI18n.applyTranslations({}, StayFlowI18n.getInitialLang());
+      StayFlowI18n.applyTranslations(ADMIN_I18N, StayFlowI18n.getInitialLang());
+      StayFlowI18n.wireLanguageSwitcher("langCurrentBtn", "langDropdown", ADMIN_I18N, refreshAllTranslatedContent);
 
       document.getElementById("adminLoading").style.display = "none";
       document.getElementById("pageShell").style.display = "flex";
