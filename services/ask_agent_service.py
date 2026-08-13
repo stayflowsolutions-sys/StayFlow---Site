@@ -45,6 +45,11 @@ from database import (
     get_reservation_balance,
     record_reservation_payment,
     close_indefinite_stay,
+    get_menu_items,
+    create_kitchen_order,
+    create_maintenance_ticket,
+    create_security_incident,
+    notify_on_duty_staff_for_ticket,
 )
 
 load_dotenv()
@@ -77,6 +82,13 @@ Regra crítica pra pedidos de reposição a fornecedor (nunca pule etapa):
 3. Se o usuário pedir pra cancelar ou mudar algo antes de confirmar, use cancel_supplier_order.
 4. Quando o usuário disser que um pedido chegou (ex: "chegaram os pães"), use confirm_supplier_order_received pra dar entrada automática no estoque — não peça pra ele fazer isso manualmente.
 
+Às vezes o usuário manda uma FOTO junto da mensagem (tirada na hora ou escolhida da galeria) — pode ser praticamente qualquer coisa: lista de compra escrita à mão, pedido de comida anotado no balcão, algo quebrado que precisa de manutenção, uma ocorrência de segurança, um documento, etc. Leia a imagem com atenção e decida pra qual setor aquilo faz sentido, agindo direto com a ferramenta certa:
+- Item pra comprar/repor no estoque → siga a regra de pedido a fornecedor abaixo (propose → confirmação → send).
+- Pedido de comida/bebida → create_kitchen_order (confira os nomes exatos com get_kitchen_menu antes).
+- Algo quebrado, manutenção, reparo → create_maintenance_ticket.
+- Ocorrência, incidente, algo suspeito → create_security_incident.
+Diferente do pedido a fornecedor, esses 3 chamados (cozinha/manutenção/segurança) podem ser criados direto, sem precisar de confirmação prévia — mas SE a imagem for ambígua (não estiver claro o que é, ou pra qual setor mandar, ou faltar informação essencial tipo local), NÃO adivinhe: pergunte à pessoa antes de agir. Se não for nada acionável (ex: um documento só pra consulta), descreva o que você viu e pergunte o que ela quer fazer.
+
 Regra crítica pra mensagem proativa a um hóspede (mesma lógica, nunca pule etapa):
 1. Quando o usuário pedir pra avisar/mandar mensagem pra um hóspede, componha um texto natural e educado pro contexto pedido, e use propose_guest_message pra deixar pronto — mostre o texto exato pro usuário antes de qualquer coisa. NUNCA chame send_guest_message nesse mesmo passo.
 2. Se a MENSAGEM SEGUINTE do usuário for uma confirmação simples (ex: "sim", "pode mandar", "manda", "confirma", "ok"), isso SEMPRE significa "envie o rascunho que acabei de propor" — chame send_guest_message imediatamente, SEM propor de novo e SEM pedir confirmação de novo. Só peça confirmação de novo se o usuário pedir pra mudar o texto.
@@ -89,6 +101,51 @@ def _guest_details(hostel_id, guest_id):
     if not profile:
         raise ValueError("Hóspede não encontrado.")
     return profile
+
+
+# Os 3 wrappers abaixo espelham o que os botoes manuais de Cozinha/
+# Manutencao/Seguranca ja fazem no dashboard (routes/kitchen.py,
+# routes/maintenance.py, routes/patrimonial_security.py): cria o
+# chamado E avisa quem esta de plantao no setor certo, no mesmo passo -
+# pensado pro fluxo de "chegou uma foto/lista, a IA decide pra onde
+# mandar" (ver SYSTEM_PROMPT), nao so pergunta.
+
+def _create_kitchen_order_by_name(hostel_id, location, items):
+    """items: [{"item_name": str, "quantity": int, "notes": str opcional}] - resolve pelo nome porque a IA nao sabe o menu_item_id de cor."""
+    menu = get_menu_items(hostel_id, active_only=True)
+    menu_by_name = {m["name"].strip().lower(): m["id"] for m in menu}
+
+    resolved, unresolved = [], []
+    for item in items:
+        name = (item.get("item_name") or "").strip()
+        menu_item_id = menu_by_name.get(name.lower())
+        if menu_item_id:
+            resolved.append({
+                "menu_item_id": menu_item_id,
+                "quantity": int(item.get("quantity") or 1),
+                "notes": item.get("notes"),
+            })
+        else:
+            unresolved.append(name)
+
+    if unresolved:
+        raise ValueError(f"Item(ns) não encontrado(s) no cardápio: {', '.join(unresolved)}. Use get_kitchen_menu pra ver os nomes exatos antes de tentar de novo.")
+
+    ticket_id = create_kitchen_order(hostel_id, location, resolved, channel="ask_stayflow")
+    notify_on_duty_staff_for_ticket(hostel_id, ticket_id, "kitchen")
+    return {"ticket_id": ticket_id, "status": "Pedido lançado e cozinha avisada."}
+
+
+def _create_maintenance_ticket(hostel_id, location, description, category=None, base_urgency="normal"):
+    ticket_id = create_maintenance_ticket(hostel_id, location, description, category=category, base_urgency=base_urgency, channel="ask_stayflow")
+    notify_on_duty_staff_for_ticket(hostel_id, ticket_id, "maintenance")
+    return {"ticket_id": ticket_id, "status": "Chamado aberto e manutenção avisada."}
+
+
+def _create_security_incident(hostel_id, location, description, incident_type=None, base_urgency="high"):
+    ticket_id = create_security_incident(hostel_id, location, description, incident_type=incident_type, reported_via="staff_patrol", base_urgency=base_urgency, channel="ask_stayflow")
+    notify_on_duty_staff_for_ticket(hostel_id, ticket_id, "patrimonial_security")
+    return {"ticket_id": ticket_id, "status": "Chamado aberto e segurança avisada."}
 
 
 TOOLS_CATALOG = [
@@ -728,6 +785,90 @@ TOOLS_CATALOG = [
             }
         }
     },
+    {
+        "permission": "kitchen",
+        "function": lambda hostel_id: get_menu_items(hostel_id, active_only=True),
+        "spec": {
+            "type": "function",
+            "function": {
+                "name": "get_kitchen_menu",
+                "description": "Lista os itens ativos do cardápio da cozinha (nome e preço). Use antes de create_kitchen_order pra saber os nomes exatos cadastrados.",
+                "parameters": {"type": "object", "properties": {}}
+            }
+        }
+    },
+    {
+        "permission": "kitchen",
+        "function": lambda hostel_id, location, items: _create_kitchen_order_by_name(hostel_id, location, items),
+        "spec": {
+            "type": "function",
+            "function": {
+                "name": "create_kitchen_order",
+                "description": "Lança um pedido de cozinha (ex: quando uma foto/lista mostra itens de comida/bebida pedidos no balcão) e já avisa quem está de plantão na cozinha. Use get_kitchen_menu primeiro pra confirmar os nomes exatos dos itens.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {"type": "string", "description": "Ex: 'Mesa 4', 'Quarto 12'"},
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "item_name": {"type": "string", "description": "Nome exato do item no cardápio"},
+                                    "quantity": {"type": "integer"},
+                                    "notes": {"type": "string"}
+                                },
+                                "required": ["item_name", "quantity"]
+                            }
+                        }
+                    },
+                    "required": ["location", "items"]
+                }
+            }
+        }
+    },
+    {
+        "permission": "maintenance",
+        "function": lambda hostel_id, location, description, category=None, base_urgency="normal": _create_maintenance_ticket(hostel_id, location, description, category, base_urgency),
+        "spec": {
+            "type": "function",
+            "function": {
+                "name": "create_maintenance_ticket",
+                "description": "Abre um chamado de manutenção (ex: foto/relato de algo quebrado ou pra consertar) e já avisa quem está de plantão na manutenção.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {"type": "string"},
+                        "description": {"type": "string"},
+                        "category": {"type": "string"},
+                        "base_urgency": {"type": "string", "enum": ["low", "normal", "high", "urgent"]}
+                    },
+                    "required": ["location", "description"]
+                }
+            }
+        }
+    },
+    {
+        "permission": "patrimonial_security",
+        "function": lambda hostel_id, location, description, incident_type=None, base_urgency="high": _create_security_incident(hostel_id, location, description, incident_type, base_urgency),
+        "spec": {
+            "type": "function",
+            "function": {
+                "name": "create_security_incident",
+                "description": "Abre um chamado de segurança patrimonial (ex: foto/relato de ocorrência, ronda) e já avisa quem está de plantão na segurança.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {"type": "string"},
+                        "description": {"type": "string"},
+                        "incident_type": {"type": "string"},
+                        "base_urgency": {"type": "string", "enum": ["low", "normal", "high", "urgent"]}
+                    },
+                    "required": ["location", "description"]
+                }
+            }
+        }
+    },
 ]
 
 MAX_TOOL_ROUNDS = 6
@@ -737,7 +878,7 @@ def _default_json(obj):
     return str(obj)
 
 
-def ask_agent(hostel_id, user_id, history, message, lang="pt"):
+def ask_agent(hostel_id, user_id, history, message, lang="pt", image_data_url=None):
     """
     Agente do Ask StayFlow - responde perguntas e executa ações reais
     usando dado do hostel, via function calling de verdade (loop
@@ -748,6 +889,11 @@ def ask_agent(hostel_id, user_id, history, message, lang="pt"):
     Pedido a fornecedor e sempre propose -> (confirmacao do usuario) ->
     send, nunca envia direto - ver SYSTEM_PROMPT. lang vem do idioma
     atual do Dashboard de quem esta perguntando.
+
+    image_data_url (opcional): foto tirada na hora ou escolhida da
+    galeria (data URI base64, ver routes/ask.py) - vira um content part
+    "image_url" na mensagem do usuario, gpt-4.1-mini le direto sem
+    precisar de OCR separado.
     """
     permissions = get_effective_permissions(user_id, hostel_id)
     allowed_tools = [t for t in TOOLS_CATALOG if t["permission"] in permissions]
@@ -759,10 +905,16 @@ def ask_agent(hostel_id, user_id, history, message, lang="pt"):
         language_instruction=f"Responda sempre em {language_name}, independente do idioma dos dados internos que as ferramentas devolverem."
     )
 
+    if image_data_url:
+        user_content = [{"type": "text", "text": message or "Veja essa imagem e me diga o que precisa ser feito."}]
+        user_content.append({"type": "image_url", "image_url": {"url": image_data_url}})
+    else:
+        user_content = message
+
     messages = (
         [{"role": "system", "content": system_prompt}]
         + history
-        + [{"role": "user", "content": message}]
+        + [{"role": "user", "content": user_content}]
     )
 
     for _ in range(MAX_TOOL_ROUNDS):
