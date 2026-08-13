@@ -1036,6 +1036,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "chats.updateStateConnError": "Erro de conexão ao atualizar a conversa.",
     "chats.sendMessageFailed": "Não foi possível enviar a mensagem.",
     "chats.sendMessageConnError": "Erro de conexão ao enviar a mensagem.",
+    "chats.attachPhotoTitle": "Anexar foto",
+    "chats.sendPhotoFailed": "Não foi possível enviar a foto.",
+    "chats.sendPhotoConnError": "Erro de conexão ao enviar a foto.",
 
     // ===== Dashboard (home) =====
     "home.kpi.occupancyLabel": "Ocupação",
@@ -2082,6 +2085,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "chats.updateStateConnError": "Connection error updating the conversation.",
     "chats.sendMessageFailed": "Couldn't send the message.",
     "chats.sendMessageConnError": "Connection error sending the message.",
+    "chats.attachPhotoTitle": "Attach photo",
+    "chats.sendPhotoFailed": "Couldn't send the photo.",
+    "chats.sendPhotoConnError": "Connection error sending the photo.",
 
     "home.kpi.occupancyLabel": "Occupancy",
     "home.kpi.occupancyNote": "Awaiting real data",
@@ -3127,6 +3133,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "chats.updateStateConnError": "Error de conexión al actualizar la conversación.",
     "chats.sendMessageFailed": "No se pudo enviar el mensaje.",
     "chats.sendMessageConnError": "Error de conexión al enviar el mensaje.",
+    "chats.attachPhotoTitle": "Adjuntar foto",
+    "chats.sendPhotoFailed": "No se pudo enviar la foto.",
+    "chats.sendPhotoConnError": "Error de conexión al enviar la foto.",
 
     "home.kpi.occupancyLabel": "Ocupación",
     "home.kpi.occupancyNote": "Esperando datos reales",
@@ -4172,6 +4181,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "chats.updateStateConnError": "Erreur de connexion lors de la mise à jour de la conversation.",
     "chats.sendMessageFailed": "Impossible d'envoyer le message.",
     "chats.sendMessageConnError": "Erreur de connexion lors de l'envoi du message.",
+    "chats.attachPhotoTitle": "Joindre une photo",
+    "chats.sendPhotoFailed": "Impossible d'envoyer la photo.",
+    "chats.sendPhotoConnError": "Erreur de connexion lors de l'envoi de la photo.",
 
     "home.kpi.occupancyLabel": "Occupation",
     "home.kpi.occupancyNote": "En attente de données réelles",
@@ -5217,6 +5229,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "chats.updateStateConnError": "Verbindungsfehler beim Aktualisieren der Unterhaltung.",
     "chats.sendMessageFailed": "Nachricht konnte nicht gesendet werden.",
     "chats.sendMessageConnError": "Verbindungsfehler beim Senden der Nachricht.",
+    "chats.attachPhotoTitle": "Foto anhängen",
+    "chats.sendPhotoFailed": "Foto konnte nicht gesendet werden.",
+    "chats.sendPhotoConnError": "Verbindungsfehler beim Senden des Fotos.",
 
     "home.kpi.occupancyLabel": "Auslastung",
     "home.kpi.occupancyNote": "Warte auf echte Daten",
