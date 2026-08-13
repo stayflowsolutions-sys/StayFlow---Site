@@ -216,7 +216,16 @@
               selectorMsg.textContent = selectData.message || "Não foi possível entrar nessa conta.";
               return;
             }
-            finishLogin(selectData);
+            // Escolher uma conta especifica aqui sempre vai pro
+            // dashboard DELA (/app), mesmo que a pessoa seja admin da
+            // StayFlow - diferente do botao dedicado "Meu painel" (que
+            // nao passa por /select-hostel nenhum). finishLogin() nao
+            // serve aqui porque ele manda todo admin StayFlow pro
+            // admin.html incondicionalmente, o que fazia os 3 botoes de
+            // conta (StayFlow/Turismo/Locadora) carem todos no mesmo
+            // lugar do botao "Meu painel" - bug real, corrigido.
+            localStorage.setItem("stayflow_user", JSON.stringify(selectData.user));
+            window.location.href = "/app";
           }catch(err){
             console.error(err);
             selectorMsg.textContent = "Erro ao tentar entrar. Tente novamente.";
