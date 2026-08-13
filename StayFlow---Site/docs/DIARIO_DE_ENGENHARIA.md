@@ -5469,3 +5469,273 @@ existir. O protocolo formal (leitura sequencial de 100%, sem atalho)
 já estava registrado desde a versão 1.3.0 exatamente por causa de um
 episódio parecido; não seguir esse protocolo de novo, mesmo sem má
 intenção, repete o mesmo erro que ele foi criado pra evitar.
+
+## SESSÃO 10 - 13/08/2026
+
+### Contexto no início da sessão
+
+Sessão de documentação pura, pedida explicitamente pelo usuário depois
+de uma rodada real de desenvolvimento que aconteceu entre a v1.46.0 e
+agora, sem que nenhum dos dois documentos tivesse sido atualizado no
+processo. Nove funcionalidades novas já em produção (confirmadas pelo
+histórico de commits do repositório `HostelBot`, HEAD em `88d7f45`)
+mais uma contradição real encontrada no próprio Documento Mestre sobre
+o estado do Billing. O pedido foi explícito: os dois documentos
+"100% atualizados agora", editando de verdade (não só relatando o que
+falta). Antes de escrever qualquer coisa, cada um dos nove itens foi
+verificado direto no código-fonte (`routes/*.py`, `database.py`,
+`services/*.py`, `dashboard.html`, `Register.html`, `planos.html`) -
+nomes de rota, tabela e função só entraram nos documentos depois de
+confirmados, não presumidos a partir do resumo do commit.
+
+### StayFlow Hub: painel interno da StayFlow + impersonation
+
+Até aqui o acesso interno da própria StayFlow (não do cliente) só
+existia como proteção de endpoint, sem nenhuma tela. Dois commits
+seguidos mudaram isso: primeiro uma visão geral de todas as hospedagens
+e agências clientes com receita/comissão (`GET
+/stayflow-admin/overview`, `admin.html`/`admin-list.html`/
+`admin-hostel.html`), depois o Hub propriamente dito com a capacidade
+de entrar direto no dashboard de qualquer conta cliente
+(`stayflow-hub.html`).
+
+Dois números são mostrados separados de propósito: MRR estimado (a
+partir de `PLAN_PRICES`, só uma estimativa de tabela - a cobrança real
+da assinatura StayFlow ainda não está automatizada, ver mais abaixo) e
+comissão de fato coletada via Mercado Pago Split (soma real sobre
+`guest_charges`). Misturar os dois teria dado a impressão de receita
+que não existe de verdade.
+
+A autorização não usa uma role "superadmin" no banco - é allowlist de
+e-mail (`STAYFLOW_ADMIN_EMAILS`, checada por
+`utils.tenant.is_stayflow_admin_email`), a mesma filosofia de "recurso
+desligado em silêncio sem a variável de ambiente" já usada pra
+`META_APP_SECRET` e as chaves VAPID. A impersonation em si
+(`POST /stayflow-admin/impersonate`) não cria vínculo nenhum em
+`hostel_memberships` - só reaponta `sessions.hostel_id` pra conta
+visitada, guardando o hostel de origem em
+`sessions.impersonating_from_hostel_id` (coluna nova) pra saber voltar
+depois (`POST /stayflow-admin/stop-impersonating`). Cada visita fica
+registrada em `impersonation_log` (início/fim), embora ainda não exista
+nenhuma tela que leia esse histórico - fica registrado como limitação
+conhecida, não como faltando. `utils/tenant.py` documenta no próprio
+código essa liberação de acesso como uma exceção deliberada à regra de
+ouro de que `hostel_id` nunca deveria vir de fora da sessão - segunda
+exceção desse tipo no sistema.
+
+### Contas de agência parceira (Portfólio/Parceiros) e IA agency-aware
+
+Item que já constava no roadmap informal do usuário ("Portfólio/
+Parceiros") ganhou schema e comportamento reais. `hostels` passou a
+carregar `account_kind` (`lodging` ou `agency`) e `agency_category`
+(turismo, aluguel de carro, bike ou equipamento) - reaproveitando a
+mesma linha, sem criar uma entidade de agência separada. Uma agência
+cadastra seu catálogo em `portfolio_items`; qualquer hospedagem pode
+optar por vender um item desse catálogo via `partner_offers`
+(`UNIQUE(hostel_id, portfolio_item_id)`); quando isso acontece e o
+hóspede paga pela agência via Mercado Pago Split, a comissão devida à
+hospedagem que indicou fica registrada em `partner_referral_ledger`
+(`guest_charges` ganhou `referring_hostel_id` e
+`referring_hostel_commission_pct`) - pago "por fora" hoje, sem
+processador de payout automático, e conferível pelo StayFlow Hub
+(`GET /stayflow-admin/partner-ledger`).
+
+O lado de IA foi construído num ramo separado de propósito, pra não
+arriscar o fluxo de reserva de hospedagem que já funciona: `ask_ai`
+(`services/ai_service.py`) e `analyze_message`/`analyze_with_ai`
+(`services/decision_engine.py`) passaram a receber `account_kind`, e
+quando é `agency` usam um prompt de sistema e um conjunto de
+ferramentas próprios (`AGENCY_SYSTEM_PROMPT`/`AGENCY_TOOLS`, com
+`get_offerings` consultando o portfólio) - sem tentar reservar quarto
+ou fazer check-in, conceito que simplesmente não existe pra esse tipo
+de conta. O Dashboard também esconde Estoque/Operações/Eventos/KPIs de
+hospedagem quando a conta é agência, e troca "hóspede" por "PAX" nesse
+contexto.
+
+### Opportunity Center sugerindo item de parceiro
+
+Consequência direta do item anterior: quando o Decision Engine
+identifica intent `tour` numa conversa e a própria hospedagem não
+vende esse tipo de experiência, mas existe algum item habilitado em
+`partner_offers`, a oportunidade criada grava
+`suggested_partner_item_id` apontando pro primeiro item disponível.
+Deliberadamente simples por enquanto - não há matching semântico entre
+o que o hóspede pediu e o item sugerido, só a checagem de que existe
+algo disponível pro intent `tour`. Registrado como dívida técnica
+conhecida, não como bug. No Frontend, `stayflow-live.js` mostra a
+sugestão com botão "Oferecer parceiro", que abre o mesmo modal de
+cobrança já usado pra qualquer cobrança via Mercado Pago Split, só que
+pré-preenchido - nenhuma lógica de cobrança nova foi criada pra isso.
+
+### Cadastro self-serve com página pública de planos
+
+A Fase 1 do Billing (tabela `billing`, planos, trial de 30 dias, comp
+accounts) já estava em produção fazia tempo, mas só era ativável pelo
+StayFlow Hub, manualmente, por um administrador. Isso mudou: `planos.html`
+é a página pública nova (3 planos reais - Starter US$89, Business
+US$349, Enterprise US$699+ negociado, valores em `PLAN_PRICES`), com
+cada botão linkando pra `Register.html?plan=starter` (ou `business`/
+`enterprise`). `Register.html` lê esse parâmetro da URL, mostra o plano
+escolhido antes de completar o cadastro, e manda `plan_name` no corpo
+de `POST /register`.
+
+Verificado direto no código pra não registrar isso errado: `/register`
+chama `set_billing_plan(hostel_id, plan_name)` quando o plano não é
+Starter, mas quem realmente cria a linha de trial de 30 dias é
+`get_billing_info` (chamada internamente por `set_billing_plan` antes
+de fazer o UPDATE) - função que já existia desde a Fase 1 e cria
+`status='trialing'` com `trial_ends_at` 30 dias à frente pra qualquer
+hostel novo, plano Starter por padrão. Ou seja: o trial automático
+nunca foi novo nesta sessão, o que é novo é (a) a página pública de
+preços e (b) `/register` aceitar o plano escolhido e ativá-lo sozinho,
+sem passar pelo Hub. Essa descoberta foi o gatilho direto pra revisar a
+seção de Billing do Documento Mestre (ver fechamento desta sessão mais
+abaixo).
+
+### Importador de dados via CSV
+
+Construído em cinco commits incrementais, um tipo de dado por vez:
+Quartos, Hóspedes, Reservas, Equipe e Portfólio. Fica em Configurações,
+com modelo de CSV pronto pra baixar por tipo. O parsing é feito
+inteiramente no Frontend, com um parser próprio em JavaScript
+(`parseImportCSV`, sem biblioteca externa - mesma filosofia de não
+depender de CDN externo já usada no resto do projeto) que já lida com
+campo entre aspas com vírgula interna; o backend só recebe
+`{"rows": [...]}` já estruturado (`POST /rooms/import`,
+`/guests/import`, `/reservations/import`, `/team/import`,
+`/portfolio/items/import`).
+
+Alguns detalhes valem registro porque não são óbvios: importar
+reservas usa `source="import"` e `notify=False` - de propósito, pra
+não tentar sincronizar cada linha importada com o Beds24 nem disparar
+o webhook de saída durante uma carga em massa (o que faria sentido pra
+uma reserva nova de verdade, não pra migração de dados históricos).
+Importar equipe cria a função (role) citada na planilha com zero
+permissões se ela ainda não existir, em vez de rejeitar a linha -
+começa fechada, o administrador libera depois. Os dois já respeitam os
+limites do plano contratado (`check_room_limit`/`check_seat_limit`),
+então uma importação grande não contorna o teto do Billing.
+
+### Tour de introdução (onboarding)
+
+Slide explicando os blocos do Dashboard no primeiro acesso de cada
+pessoa, mais uma dica curta por item de menu na primeira vez que é
+clicado. Implementação própria, sem biblioteca de tour externa
+(intro.js, shepherd.js) - mesmo padrão de não depender de dependência
+de terceiro pra algo que dá pra construir direto. A decisão mais
+relevante foi onde guardar a preferência: em banco (`users
+.onboarding_dismissed` pra desligar tudo, `user_feature_intros` -
+`UNIQUE(user_id, feature_key)` - pra cada item já visto), não em
+`localStorage`, porque a mesma pessoa loga em mais de um dispositivo
+(o sistema de identidade única de pessoa da Sessão 5 já cobre isso) e
+o tour reaparecendo num celular novo depois de já ter sido dispensado
+no PC seria uma regressão de experiência.
+
+De brinde nesse mesmo commit, corrigida uma armadilha real de migração:
+`_migrate_users_to_memberships` reconstrói a tabela `users` com uma
+lista fixa de colunas sempre que roda num banco novo, e
+`onboarding_dismissed` estava sendo descartado silenciosamente por não
+constar nessa lista - mesma classe de bug já corrigida antes pra
+`totp_secret`/`totp_enabled` (Sessão 9) e `must_change_password`.
+Corrigido preservando a coluna, com comentário no código pra não
+repetir com a próxima coluna nova em `users`.
+
+### Botões de chamado manual + aba "Tarefas" em Operações
+
+As rotas de Cozinha, Manutenção e Segurança Patrimonial (`POST
+/kitchen/orders`, `/maintenance/tickets`,
+`/patrimonial-security/incidents`) já existiam desde 04/08/2026 e já
+notificavam quem está de plantão via `notify_on_duty_staff_for_ticket`
+- só que sem nenhum botão no Dashboard ligado a elas. A equipe só
+conseguia abrir um chamado indiretamente, pedindo pra IA pelo Ask
+StayFlow ou esperando um hóspede reportar. Corrigido só no Frontend,
+sem tocar em nenhuma rota: cada aba ganhou seu botão de abrir chamado
+manual. Estacionamento, que já tinha um conceito ligeiramente diferente
+(chamado sempre associado a um veículo específico), ganhou um botão
+dedicado que abre um seletor de veículo antes de reusar a mesma rota
+`POST /parking/vehicles/<id>/valet-request`.
+
+A aba "Tarefas" resolve um problema diferente: chamado que não se
+encaixa em nenhuma das quatro categorias fixas (o exemplo usado no
+próprio código é "trocar lâmpada do corredor"). Em vez de criar uma
+tabela nova, `POST /operations/tasks` reaproveita `tickets` com
+`type='task'` - decisão consciente de não duplicar o sistema de
+urgência/fila que os outros quatro tipos já usam. A diferença real é
+que tarefa avulsa não tem setor de plantão fixo, então não dispara
+notificação automática nenhuma; conclui com `POST
+/operations/tasks/<id>/resolve` e aparece com botão "concluir" próprio
+na mesma lista de alertas que já mostrava limpeza pendente (que resolve
+sozinha, ao marcar a cama como limpa, sem esse botão).
+
+### Ask StayFlow ganha visão de imagem
+
+`POST /ask` passou a aceitar `multipart/form-data` com um arquivo
+opcional, além do JSON puro que já existia. Restrito a
+`image/jpeg`/`image/png`/`image/webp` - decisão explícita registrada no
+próprio código: é o formato que a câmera do celular gera na hora, e é
+o único que o modelo consegue realmente "ver" via `image_url` (PDF
+ficou de fora). A imagem vira data URI em base64 e é passada pra
+`ask_agent(..., image_data_url=...)`
+(`services/ask_agent_service.py`) - vale registrar que esse módulo
+específico usa o modelo `gpt-4.1-mini` da OpenAI, não Claude/Anthropic
+(diferente da suposição inicial de investigação desta sessão, corrigida
+depois de ler o código de verdade).
+
+A partir da foto, a IA decide sozinha o que fazer: reposição de
+estoque, pedido de cozinha (`_create_kitchen_order_by_name`), chamado
+de manutenção (`_create_maintenance_ticket`) ou incidente de segurança
+(`_create_security_incident`) - as três novas ferramentas terminam
+chamando `notify_on_duty_staff_for_ticket`, o mesmo mecanismo dos
+botões manuais descritos acima, sem duplicar lógica de notificação.
+Diferente do fluxo de reposição a fornecedor (que sempre pede
+confirmação explícita antes de mandar algo pra fora do sistema), esses
+três não exigem aprovação prévia - mas o prompt de sistema instrui a IA
+a perguntar em vez de adivinhar quando a foto for ambígua ou faltar
+informação essencial, e isso foi confirmado na descrição do próprio
+commit como testado na prática.
+
+### Correção da contradição de Billing no Documento Mestre
+
+Ao revisar o Capítulo 17 pra registrar o cadastro self-serve, ficou
+claro que a seção 17.2 estava desatualizada de um jeito que não era só
+"faltando uma linha nova" - ela descrevia Billing como "modelo de
+cobrança em definição, sem processador nem plano ativo", o que
+contradizia diretamente a Fase 1 (planos/trial/comp accounts) que já
+estava em produção há mais tempo do que essa frase sugeria, e agora
+contradizia ainda mais com o cadastro self-serve recém-registrado.
+Reescrito com cuidado pra não trocar um exagero por outro: Billing Fase
+1 está de fato em produção (planos reais, trial automático de 30 dias,
+página pública, ativação sem aprovação manual), mas a cobrança
+recorrente automática da PRÓPRIA assinatura StayFlow (cobrar o cliente
+StayFlow depois que o trial acaba, Fase 2-3 com Stripe/Mercado Pago)
+continua sendo só schema stub, sem processador ligado - hoje é
+100% manual/honra, sem trava de bloqueio por inadimplência. Repetido
+explicitamente no texto pra não confundir: isso não tem nada a ver com
+o Mercado Pago Split guest-facing (cobrança do hóspede pelo hostel),
+que já é real e está em produção desde bem antes desta sessão.
+
+### Atualização do Documento Mestre e do Diário de Engenharia
+
+Os nove itens acima, mais a correção de Billing, foram escritos nos
+capítulos correspondentes do Documento Mestre: 11.3 (lista de
+arquivos - `planos.html`, `Register.html`, `admin.html`/
+`admin-list.html`/`admin-hostel.html`/`stayflow-hub.html`, aba Tarefas
+e Portfólio/Parceiros na descrição do `dashboard.html`), 12.3 (schema -
+`portfolio_items`/`partner_offers`/`partner_referral_ledger`,
+`impersonation_log`, `user_feature_intros`, colunas novas em
+`hostels`/`sessions`/`opportunities`/`guest_charges`/`users`, e
+correção da descrição de `billing`), 14.3 (Decision Engine
+agency-aware), 15.4 (módulo Portfólio/Parceiros na lista do Dashboard),
+16.4 (Opportunity Center sugerindo parceiro), 16.14 (botões de chamado
+manual + aba Tarefas), 16.27 (Ask StayFlow com visão de imagem) e uma
+seção nova, 16.33 ("StayFlow Hub, Importador de Dados (CSV) e Tour de
+Onboarding"), pra agrupar os três itens sem capítulo óbvio de destino.
+Versão do Documento Mestre avançada de 1.46.0 pra 1.47.0, com uma nova
+linha na tabela de Controle de Versões, e corrigido de brinde um
+resíduo real esquecido em revisões anteriores: a última linha do
+arquivo ainda dizia "Fim da Versão Oficial 1.6.0", desatualizada desde
+muito antes desta sessão.
+
+Mirror do backend (`HostelBot/StayFlow---Site/docs/`) sincronizado com
+as mesmas duas versões finais, mantendo a prática estabelecida desde a
+Sessão 9 de versionar os documentos também no repositório do backend.
