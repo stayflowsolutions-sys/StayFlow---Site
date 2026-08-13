@@ -1454,7 +1454,10 @@ async function deleteRoleConfirm(roleId){
       </table>
     </div>
     <div class="card">
-      <h2 data-i18n="parking.valet.title">🔑 Solicitações de manobrista</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0" data-i18n="parking.valet.title">🔑 Solicitações de manobrista</h2>
+        <button type="button" class="btn primary" onclick="openNewValetRequestModal()" data-i18n="parking.valet.newBtn">➕ Novo chamado de manobrista</button>
+      </div>
       <div class="sf-empty" id="parkingValetEmpty">
         <div>
           <strong data-i18n="parking.valet.emptyTitle">Nenhuma solicitação pendente.</strong>
@@ -8737,6 +8740,61 @@ async function loadParking(){
     console.warn("Erro ao carregar /parking/valet-requests:", e);
   }
 }
+
+window.openNewValetRequestModal = async function(){
+  openGenericModal(T('parking.valet.newModalTitle', '🔑 Novo chamado de manobrista'), `<p style="color:var(--muted);font-size:13px">Carregando veículos…</p>`);
+
+  let vehicles = [];
+  try{
+    const res = await fetch("/parking/vehicles", { credentials: "same-origin" });
+    if(res.ok) vehicles = await res.json();
+  }catch(e){
+    console.warn("Erro ao carregar veículos pra chamado de manobrista:", e);
+  }
+
+  if(!vehicles.length){
+    document.getElementById("genericModalBody").innerHTML = `<p style="color:var(--muted);font-size:13px">${T('parking.valet.noVehicles', 'Nenhum veículo registrado ainda. Adicione o veículo primeiro.')}</p>`;
+    return;
+  }
+
+  const optionsHtml = vehicles.map(v => `<option value="${v.id}">${v.plate || "(sem placa)"} - ${v.model || "-"} · ${v.guest_name || "-"}</option>`).join("");
+
+  document.getElementById("genericModalBody").innerHTML = `
+    <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('parking.valet.newModalDesc', 'Pra quando o hóspede pede o carro no balcão, não pelo chat.')}</p>
+    <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('parking.valet.vehicleLabel', 'Veículo')}</label>
+    <select id="newValetVehicleId" style="width:100%;margin-bottom:14px">${optionsHtml}</select>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="btn" type="button" onclick="submitNewValetRequest()">${T('parking.valet.submitBtn', 'Chamar carro')}</button>
+    </div>
+    <div id="newValetMessage" class="generic-modal-message"></div>
+  `;
+};
+
+window.submitNewValetRequest = async function(){
+  const msg = document.getElementById("newValetMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const vehicleId = document.getElementById("newValetVehicleId")?.value;
+  if(!vehicleId) return;
+
+  try{
+    const res = await fetch(`/parking/vehicles/${vehicleId}/valet-request`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ channel: "dashboard" }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadParking();
+  }catch(e){
+    console.warn("Erro ao criar chamado de manobrista:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
 
 window.requestValetUI = async function(vehicleId){
   try{
