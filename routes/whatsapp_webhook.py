@@ -2,16 +2,9 @@ import os
 
 from flask import Blueprint, request, jsonify
 
-from database import (
-    get_hostel_id_by_whatsapp_phone_number_id,
-    get_hostel_whatsapp_config,
-    get_or_create_guest,
-    save_guest_document,
-)
+from database import get_hostel_id_by_whatsapp_phone_number_id, get_hostel_whatsapp_config
 from routes.chat import process_incoming_message
 from services.whatsapp_service import download_whatsapp_media, send_whatsapp_message
-from services.memory_service import save_message
-from services.message_service import save_message_db
 from utils.webhook_security import verify_meta_signature
 
 whatsapp_webhook_bp = Blueprint("whatsapp_webhook", __name__)
@@ -22,21 +15,23 @@ whatsapp_webhook_bp = Blueprint("whatsapp_webhook", __name__)
 VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "stayflow-verify-token")
 
 
-def handle_incoming_document_image(hostel_id, guest_phone, image_data):
+def handle_incoming_photo(hostel_id, guest_phone, image_data):
     """
-    Processa uma foto enviada pelo hospede (ex: documento de
-    identidade) - baixa o arquivo de verdade da API da Meta (2 passos:
-    URL temporaria, depois o arquivo), grava no disco e no banco, e
-    confirma o recebimento por texto direto (sem passar pela IA de
-    conversa, ja que ela nao analisa o conteudo da imagem).
+    Foto enviada pelo hospede NA CONVERSA (nao documento de identidade
+    - esse fluxo continua existindo separado, so que agora precisa ser
+    iniciado pela equipe via upload manual no perfil do hospede, ja que
+    nao da pra saber automaticamente se uma foto qualquer "e" um
+    documento). Baixa o arquivo de verdade da API da Meta (2 passos:
+    URL temporaria, depois o arquivo) e entrega pro pipeline normal de
+    mensagem - a partir dali e so mais uma mensagem, com foto, passando
+    pela IA (que agora enxerga o conteudo via visao) e podendo ser
+    assumida manualmente como qualquer outra.
     """
     media_id = image_data.get("id")
     if not media_id:
         return
 
-    guest_id = get_or_create_guest(hostel_id, guest_phone)
     phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)
-
     file_bytes, mime_type = download_whatsapp_media(media_id, access_token)
 
     if not file_bytes:
@@ -46,18 +41,10 @@ def handle_incoming_document_image(hostel_id, guest_phone, image_data):
         )
         return
 
-    save_guest_document(hostel_id, guest_id, file_bytes, mime_type, whatsapp_media_id=media_id)
-
-    # Registra na conversa normal (visivel no historico/Chats), igual
-    # uma mensagem de texto - so pra equipe saber que uma foto chegou
-    # sem precisar abrir a pasta de documentos.
-    placeholder = "[Hóspede enviou uma foto de documento]"
-    save_message(hostel_id, guest_phone, "user", placeholder)
-    save_message_db(hostel_id, guest_phone, "user", placeholder)
-
-    send_whatsapp_message(
-        phone_number_id, access_token, guest_phone,
-        "Recebi seu documento, obrigado! 📄✅"
+    caption = image_data.get("caption", "")
+    process_incoming_message(
+        hostel_id, guest_phone, caption, channel="whatsapp", send_reply=True,
+        media_bytes=file_bytes, media_mime_type=mime_type,
     )
 
 
@@ -121,7 +108,7 @@ def receive_message():
             return jsonify({"status": "unknown_hostel"}), 200
 
         if message_type == "image":
-            handle_incoming_document_image(hostel_id, guest_phone, incoming.get("image", {}))
+            handle_incoming_photo(hostel_id, guest_phone, incoming.get("image", {}))
         elif text:
             process_incoming_message(hostel_id, guest_phone, text, channel="whatsapp", send_reply=True)
 

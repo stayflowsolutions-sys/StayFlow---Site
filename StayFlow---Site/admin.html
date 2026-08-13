@@ -304,6 +304,8 @@
             </div>
             <div class="messages" id="chatMessages"></div>
             <div class="chat-input">
+              <button class="btn secondary" type="button" onclick="document.getElementById('myChatPhotoInput').click()" data-i18n-title="chat.attachPhotoTitle" title="Anexar foto" style="flex:0 0 auto">📷</button>
+              <input type="file" id="myChatPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="sendMyChatPhoto(this)">
               <input type="text" id="chatInput" placeholder="Escrever mensagem..." data-i18n-placeholder="chat.input.placeholder">
               <button class="btn green" type="button" id="myChatSendBtn" data-mode="assume" onclick="myChatPrimaryBtnClick(this)" data-i18n="chat.btn.assume">Assumir</button>
               <button class="btn secondary" type="button" id="myChatGiveBackBtn" style="display:none" onclick="giveBackMyChat()" data-i18n="chat.btn.giveback">Devolver</button>
@@ -671,7 +673,7 @@
       "chat.notConfigured.line1": "Nenhum número está marcado como assistente comercial da StayFlow ainda.",
       "chat.notConfigured.line2": "Vá em <strong>Configurações → WhatsApp Business</strong> e marque \"Este número responde como → Assistente comercial da StayFlow\".",
       "chat.empty.title": "Nenhuma conversa selecionada", "chat.empty.desc": "Escolhe um contato à esquerda pra ver as mensagens.",
-      "chat.input.placeholder": "Escrever mensagem...", "chat.btn.assume": "Assumir", "chat.btn.send": "Enviar", "chat.btn.giveback": "Devolver",
+      "chat.input.placeholder": "Escrever mensagem...", "chat.btn.assume": "Assumir", "chat.btn.send": "Enviar", "chat.btn.giveback": "Devolver", "chat.attachPhotoTitle": "Anexar foto",
       "chat.aiRespondingLabel": "IA respondendo", "chat.aiPausedLabel": "IA pausada — assumido por você",
       "chat.noContactName": "Contato sem nome", "chat.you": "Você: ", "chat.noMessagesYet": "Sem mensagens ainda.",
       "chat.list.empty.title": "Nenhuma conversa ainda.", "chat.list.empty.desc": "Assim que alguém escrever no WhatsApp da StayFlow, aparece aqui.",
@@ -768,7 +770,7 @@
       "chat.notConfigured.line1": "No number is marked as StayFlow's business assistant yet.",
       "chat.notConfigured.line2": "Go to <strong>Settings → WhatsApp Business</strong> and set \"This number replies as → StayFlow business assistant\".",
       "chat.empty.title": "No conversation selected", "chat.empty.desc": "Pick a contact on the left to see the messages.",
-      "chat.input.placeholder": "Type a message...", "chat.btn.assume": "Take over", "chat.btn.send": "Send", "chat.btn.giveback": "Give back",
+      "chat.input.placeholder": "Type a message...", "chat.btn.assume": "Take over", "chat.btn.send": "Send", "chat.btn.giveback": "Give back", "chat.attachPhotoTitle": "Attach photo",
       "chat.aiRespondingLabel": "AI is replying", "chat.aiPausedLabel": "AI paused — taken over by you",
       "chat.noContactName": "Unnamed contact", "chat.you": "You: ", "chat.noMessagesYet": "No messages yet.",
       "chat.list.empty.title": "No conversations yet.", "chat.list.empty.desc": "As soon as someone writes to StayFlow's WhatsApp, it shows up here.",
@@ -865,7 +867,7 @@
       "chat.notConfigured.line1": "Todavía ningún número está marcado como asistente comercial de StayFlow.",
       "chat.notConfigured.line2": "Andá a <strong>Configuración → WhatsApp Business</strong> y marcá \"Este número responde como → Asistente comercial de StayFlow\".",
       "chat.empty.title": "Ninguna conversación seleccionada", "chat.empty.desc": "Elegí un contacto a la izquierda para ver los mensajes.",
-      "chat.input.placeholder": "Escribir mensaje...", "chat.btn.assume": "Tomar control", "chat.btn.send": "Enviar", "chat.btn.giveback": "Devolver",
+      "chat.input.placeholder": "Escribir mensaje...", "chat.btn.assume": "Tomar control", "chat.btn.send": "Enviar", "chat.btn.giveback": "Devolver", "chat.attachPhotoTitle": "Adjuntar foto",
       "chat.aiRespondingLabel": "La IA está respondiendo", "chat.aiPausedLabel": "IA pausada — tomaste el control",
       "chat.noContactName": "Contacto sin nombre", "chat.you": "Vos: ", "chat.noMessagesYet": "Todavía no hay mensajes.",
       "chat.list.empty.title": "Todavía no hay conversaciones.", "chat.list.empty.desc": "En cuanto alguien escriba al WhatsApp de StayFlow, aparece acá.",
@@ -962,7 +964,7 @@
       "chat.notConfigured.line1": "Aucun numéro n'est encore marqué comme assistant commercial de StayFlow.",
       "chat.notConfigured.line2": "Allez dans <strong>Paramètres → WhatsApp Business</strong> et cochez \"Ce numéro répond comme → Assistant commercial StayFlow\".",
       "chat.empty.title": "Aucune conversation sélectionnée", "chat.empty.desc": "Choisissez un contact à gauche pour voir les messages.",
-      "chat.input.placeholder": "Écrire un message...", "chat.btn.assume": "Prendre le relais", "chat.btn.send": "Envoyer", "chat.btn.giveback": "Rendre à l'IA",
+      "chat.input.placeholder": "Écrire un message...", "chat.btn.assume": "Prendre le relais", "chat.btn.send": "Envoyer", "chat.btn.giveback": "Rendre à l'IA", "chat.attachPhotoTitle": "Joindre une photo",
       "chat.aiRespondingLabel": "L'IA répond", "chat.aiPausedLabel": "IA en pause — vous avez pris le relais",
       "chat.noContactName": "Contact sans nom", "chat.you": "Vous : ", "chat.noMessagesYet": "Aucun message pour l'instant.",
       "chat.list.empty.title": "Aucune conversation pour l'instant.", "chat.list.empty.desc": "Dès que quelqu'un écrit au WhatsApp de StayFlow, ça apparaît ici.",
@@ -1059,7 +1061,7 @@
       "chat.notConfigured.line1": "Noch keine Nummer ist als StayFlow-Vertriebsassistent markiert.",
       "chat.notConfigured.line2": "Gehen Sie zu <strong>Einstellungen → WhatsApp Business</strong> und setzen Sie \"Diese Nummer antwortet als → StayFlow-Vertriebsassistent\".",
       "chat.empty.title": "Kein Gespräch ausgewählt", "chat.empty.desc": "Wählen Sie links einen Kontakt, um die Nachrichten zu sehen.",
-      "chat.input.placeholder": "Nachricht schreiben...", "chat.btn.assume": "Übernehmen", "chat.btn.send": "Senden", "chat.btn.giveback": "Zurückgeben",
+      "chat.input.placeholder": "Nachricht schreiben...", "chat.btn.assume": "Übernehmen", "chat.btn.send": "Senden", "chat.btn.giveback": "Zurückgeben", "chat.attachPhotoTitle": "Foto anhängen",
       "chat.aiRespondingLabel": "KI antwortet", "chat.aiPausedLabel": "KI pausiert — von Ihnen übernommen",
       "chat.noContactName": "Kontakt ohne Namen", "chat.you": "Sie: ", "chat.noMessagesYet": "Noch keine Nachrichten.",
       "chat.list.empty.title": "Noch keine Gespräche.", "chat.list.empty.desc": "Sobald jemand an StayFlows WhatsApp schreibt, erscheint es hier.",
@@ -1994,6 +1996,14 @@
     // ("assistant" ou uma resposta manual) fica do lado do negocio.
     const side = m.sender === "user" ? "user" : "bot";
     const time = parseUtc(m.created_at)?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) || "";
+    if(m.has_media){
+      // URL autenticada por sessao de admin StayFlow, nao a
+      // /guests/chat-media/<id>/file normal (essa exige hostel_id de
+      // sessao de hospedagem/agencia, que o admin nao tem aqui).
+      const src = `/stayflow-admin/my-chat/media/${m.id}/file`;
+      const caption = m.message ? `<div class="msg-photo-caption">${(m.message || "").replace(/</g, "&lt;")}</div>` : "";
+      return `<div class="msg ${side} msg-photo-wrap"><a href="${src}" target="_blank" rel="noopener"><img class="msg-photo" src="${src}" alt="Foto" loading="lazy"></a>${caption}<div style="font-size:10px;opacity:.7;margin-top:4px;padding:0 5px 5px">${time}</div></div>`;
+    }
     return `<div class="msg ${side}">${(m.message || "").replace(/</g, "&lt;")}<div style="font-size:10px;opacity:.7;margin-top:4px">${time}</div></div>`;
   }
 
@@ -2097,6 +2107,39 @@
       console.warn("Erro ao enviar mensagem:", e);
     }
   }
+
+  window.sendMyChatPhoto = async function(fileInput){
+    if(!fileInput || !fileInput.files || !fileInput.files[0] || !myChatActiveGuestId) return;
+
+    const file = fileInput.files[0];
+    const input = document.getElementById("chatInput");
+    const caption = input ? input.value.trim() : "";
+
+    const formData = new FormData();
+    formData.append("file", file);
+    if(caption) formData.append("caption", caption);
+
+    try{
+      const res = await fetch(`/stayflow-admin/my-chat/guests/${myChatActiveGuestId}/send-photo`, {
+        method: "POST",
+        credentials: "same-origin",
+        body: formData,
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível enviar a foto.");
+        return;
+      }
+      if(input) input.value = "";
+      myChatLastMessageCount = -1;
+      openMyChatGuest(myChatActiveGuestId);
+    }catch(e){
+      console.warn("Erro ao enviar foto:", e);
+      alert("Erro de conexão ao enviar a foto.");
+    }finally{
+      fileInput.value = "";
+    }
+  };
 
   // ===== Suporte =====
   let supportThreads = [];

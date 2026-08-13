@@ -1079,6 +1079,15 @@ def create_database():
     )
     """)
 
+    # Suporte a foto NA CONVERSA (diferente de guest_documents, que e so
+    # pra foto de documento de identidade) - media_path fica NULL pra
+    # mensagem de texto normal, preenchido quando a mensagem e uma foto
+    # (com ou sem legenda em "message"). Ver save_chat_media_file/
+    # save_message_db_for_guest.
+    add_column_if_not_exists(cursor, "messages", "media_path", "TEXT")
+    add_column_if_not_exists(cursor, "messages", "media_mime_type", "TEXT")
+    add_column_if_not_exists(cursor, "messages", "media_token", "TEXT")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS leads (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2442,6 +2451,81 @@ _DOCUMENTS_MIME_EXTENSIONS = {
 }
 
 
+_CHAT_MEDIA_MIME_EXTENSIONS = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+}
+
+
+def save_chat_media_file(hostel_id, guest_id, file_bytes, mime_type):
+    """
+    Grava uma foto trocada NA CONVERSA (nao documento de identidade -
+    ver guest_documents/save_guest_document, fluxo separado) no disco
+    persistente, mesmo padrao de pasta/nome aleatorio. O token (16 hex,
+    64 bits de entropia) e o proprio nome do arquivo sem extensao -
+    reaproveitado como chave publica e nao-adivinhavel na rota
+    /media/chat/<token> (app.py), que serve a foto pra API da Meta
+    buscar ao ENVIAR pro hospede (essas APIs exigem uma URL publica,
+    sem cookie de sessao - nao da pra usar a rota autenticada
+    /guests/chat-media/<id>/file, essa e so pra exibir na tela da equipe).
+    """
+    extension = _CHAT_MEDIA_MIME_EXTENSIONS.get(mime_type, "bin")
+    token = secrets.token_hex(8)
+
+    media_dir = os.path.join(
+        os.getenv("STAYFLOW_DATA_DIR", "."), "chat_media", str(hostel_id), str(guest_id)
+    )
+    os.makedirs(media_dir, exist_ok=True)
+
+    filename = f"{token}.{extension}"
+    file_path = os.path.join(media_dir, filename)
+
+    with open(file_path, "wb") as f:
+        f.write(file_bytes)
+
+    return file_path, token
+
+
+def get_chat_media_by_token(token):
+    """Lookup publico (sem hostel_id) pra rota /media/chat/<token> - a seguranca vem da entropia do token, nao de auth."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT media_path, media_mime_type FROM messages WHERE media_token = ?",
+        (token,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_message_media(hostel_id, message_id):
+    """
+    Resolve o arquivo de uma mensagem-foto pro endpoint de servir a
+    imagem, ja validando que a mensagem pertence mesmo a esse hostel
+    (via guest_id) - sem isso, um id sequencial deixaria uma hospedagem
+    ver foto de outra so trocando o numero na URL.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT m.media_path, m.media_mime_type
+        FROM messages m
+        JOIN conversations c ON m.conversation_id = c.id
+        JOIN guests g ON g.id = c.guest_id
+        WHERE m.id = ? AND g.hostel_id = ? AND m.media_path IS NOT NULL
+        """,
+        (message_id, hostel_id)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    return dict(row) if row else None
+
+
 def save_guest_document(hostel_id, guest_id, file_bytes, mime_type, whatsapp_media_id=None):
     """
     Grava o arquivo de documento no disco persistente
@@ -2520,14 +2604,12 @@ def send_message_to_guest_now(hostel_id, guest_id, message):
     Envio manual e direto da equipe pro hospede (compose box do Chat) -
     diferente do propose->confirm do Ask StayFlow, aqui a equipe ja
     esta dentro da conversa especifica daquele hospede, entao o envio
-    e imediato. Grava tanto no memory_service (JSON, historico da IA)
-    quanto no message_service (SQL, usado pelas telas) - sender='staff'
-    pra distinguir de mensagem gerada pela IA ('assistant').
+    e imediato. Despacha pro canal de verdade do hospede (WhatsApp,
+    Messenger ou Instagram - ver resolve_guest_channel_target), nao
+    mais so WhatsApp: antes disso, responder manualmente um hospede que
+    escreveu pelo Messenger/Instagram silenciosamente nao fazia nada
+    (tentava mandar como se fosse WhatsApp, sem telefone valido).
     """
-    from services.whatsapp_service import send_whatsapp_message
-    from services.memory_service import save_message as save_memory_message
-    from services.message_service import save_message_db
-
     message = (message or "").strip()
     if not message:
         raise ValueError("A mensagem nao pode ser vazia.")
@@ -2544,12 +2626,79 @@ def send_message_to_guest_now(hostel_id, guest_id, message):
     if not guest:
         raise ValueError("Hospede nao encontrado.")
 
-    phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)
-    sent = send_whatsapp_message(phone_number_id, access_token, guest["phone"], message)
+    channel, target = resolve_guest_channel_target(hostel_id, guest_id)
+    sent = _dispatch_reservation_status_message(hostel_id, guest_id, channel, target, message)
+
+    return {"sent": sent, "phone": guest["phone"]}
+
+
+def _public_media_url(token):
+    """
+    URL publica (sem auth) de uma foto de chat, pra API da Meta buscar
+    sozinha ao ENVIAR pro hospede - ver rota /media/chat/<token> em
+    app.py e o comentario de save_chat_media_file sobre o porque disso
+    ser necessariamente publico. STAYFLOW_PUBLIC_URL so precisa ser
+    configurada se o dominio de producao mudar - em dev local sem essa
+    env var, o link gerado nao e alcancavel de fora, mas isso so afeta
+    o ENVIO de foto pela equipe (recebimento e visualizacao continuam
+    funcionando, ja que usam a rota autenticada, nao essa).
+    """
+    base = os.getenv("STAYFLOW_PUBLIC_URL", "https://stayflowsolutions.com").rstrip("/")
+    return f"{base}/media/chat/{token}"
+
+
+def send_chat_photo_to_guest_now(hostel_id, guest_id, file_bytes, mime_type, caption=""):
+    """
+    Par de send_message_to_guest_now, mas envia FOTO em vez de texto -
+    mesmo despacho por canal (resolve_guest_channel_target). As 3 APIs
+    (WhatsApp/Instagram/Messenger) exigem um link publico pra buscar a
+    imagem sozinhas; Messenger e Instagram nao aceitam legenda junto da
+    foto (diferente do WhatsApp), entao a legenda, se houver, sai como
+    uma segunda mensagem de texto logo em seguida nesses dois canais.
+    """
+    caption = (caption or "").strip()
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT phone FROM guests WHERE id = ? AND hostel_id = ?", (guest_id, hostel_id))
+    guest = cursor.fetchone()
+    conn.close()
+    if not guest:
+        raise ValueError("Hospede nao encontrado.")
+
+    channel, target = resolve_guest_channel_target(hostel_id, guest_id)
+    if not target:
+        return {"sent": False, "phone": guest["phone"]}
+
+    file_path, token = save_chat_media_file(hostel_id, guest_id, file_bytes, mime_type)
+    image_link = _public_media_url(token)
+
+    if channel == "whatsapp":
+        from services.whatsapp_service import send_whatsapp_image
+        phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)
+        sent = send_whatsapp_image(phone_number_id, access_token, target, image_link, caption)
+    elif channel == "instagram":
+        from services.instagram_service import send_instagram_image, send_instagram_message
+        instagram_business_id, access_token = get_hostel_instagram_config(hostel_id)
+        sent = send_instagram_image(access_token, instagram_business_id, target, image_link)
+        if sent and caption:
+            send_instagram_message(access_token, instagram_business_id, target, caption)
+    else:
+        from services.messenger_service import send_messenger_image, send_messenger_message
+        _, access_token = get_hostel_facebook_config(hostel_id)
+        sent = send_messenger_image(access_token, target, image_link)
+        if sent and caption:
+            send_messenger_message(access_token, target, caption)
 
     if sent:
-        save_memory_message(hostel_id, guest["phone"], "assistant", message)
-        save_message_db(hostel_id, guest["phone"], "staff", message)
+        from services.memory_service import save_message as save_memory_message
+        memory_key = target if channel == "whatsapp" else f"{channel}:{target}"
+        memory_text = f"[foto] {caption}".strip() if caption else "[foto]"
+        save_memory_message(hostel_id, memory_key, "assistant", memory_text)
+        save_message_db_for_guest(
+            guest_id, "staff", caption, channel=channel,
+            media_path=file_path, media_mime_type=mime_type, media_token=token
+        )
 
     return {"sent": sent, "phone": guest["phone"]}
 
@@ -3846,7 +3995,7 @@ def get_or_create_conversation(guest_id, channel="api"):
     return conversation_id
 
 
-def save_message_db(hostel_id, phone, sender, message):
+def save_message_db(hostel_id, phone, sender, message, media_path=None, media_mime_type=None, media_token=None):
     guest_id = get_or_create_guest(hostel_id, phone)
     conversation_id = get_or_create_conversation(guest_id)
 
@@ -3855,17 +4004,20 @@ def save_message_db(hostel_id, phone, sender, message):
 
     cursor.execute(
         """
-        INSERT INTO messages (conversation_id, sender, message)
-        VALUES (?, ?, ?)
+        INSERT INTO messages (conversation_id, sender, message, media_path, media_mime_type, media_token)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (conversation_id, sender, message)
+        (conversation_id, sender, message, media_path, media_mime_type, media_token)
     )
+    message_id = cursor.lastrowid
 
     conn.commit()
     conn.close()
 
+    return message_id
 
-def save_message_db_for_guest(guest_id, sender, message, channel="api"):
+
+def save_message_db_for_guest(guest_id, sender, message, channel="api", media_path=None, media_mime_type=None, media_token=None):
     """
     Mesmo resultado de save_message_db, mas recebe guest_id ja
     resolvido em vez de telefone - usada pelo pipeline de mensagem
@@ -3883,14 +4035,17 @@ def save_message_db_for_guest(guest_id, sender, message, channel="api"):
 
     cursor.execute(
         """
-        INSERT INTO messages (conversation_id, sender, message)
-        VALUES (?, ?, ?)
+        INSERT INTO messages (conversation_id, sender, message, media_path, media_mime_type, media_token)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (conversation_id, sender, message)
+        (conversation_id, sender, message, media_path, media_mime_type, media_token)
     )
+    message_id = cursor.lastrowid
 
     conn.commit()
     conn.close()
+
+    return message_id
 
 
 def save_lead_db(hostel_id, phone, interest):
@@ -5356,7 +5511,8 @@ def get_guest_profile(hostel_id, guest_id):
     guest_dict["channel"] = get_guest_channel(hostel_id, guest_id)
 
     cursor.execute("""
-        SELECT m.sender, m.message, m.created_at
+        SELECT m.id, m.sender, m.message, m.created_at, m.media_mime_type,
+               CASE WHEN m.media_path IS NOT NULL THEN 1 ELSE 0 END AS has_media
         FROM messages m
         JOIN conversations c
             ON m.conversation_id = c.id
@@ -6940,6 +7096,33 @@ _RESERVATION_ADDRESS_LABEL = {"pt": "Endereço", "en": "Address", "es": "Direcci
 _RESERVATION_FROM_LABEL = {"pt": "a partir das", "en": "from", "es": "a partir de las", "fr": "à partir de", "de": "ab"}
 
 
+def resolve_guest_channel_target(hostel_id, guest_id):
+    """
+    Resolve (channel, target) de um hospede pra despacho de mensagem -
+    identidade de canal mais recente em guest_channel_identities, ou
+    fallback 'whatsapp' + telefone pra hospede antigo sem identidade de
+    canal registrada. Compartilhado entre notify_guest_reservation_status
+    e o envio manual da equipe pelo Chat (send_message_to_guest_now/
+    send_chat_photo_to_guest_now) - so um lugar decidindo "pra onde essa
+    mensagem vai", nunca assumindo WhatsApp por padrao.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT channel, external_id FROM guest_channel_identities WHERE hostel_id = ? AND guest_id = ? ORDER BY id DESC LIMIT 1",
+        (hostel_id, guest_id)
+    )
+    identity = cursor.fetchone()
+    if identity:
+        channel, target = identity["channel"], identity["external_id"]
+    else:
+        cursor.execute("SELECT phone FROM guests WHERE id = ?", (guest_id,))
+        guest_row = cursor.fetchone()
+        channel, target = "whatsapp", (guest_row["phone"] if guest_row else None)
+    conn.close()
+    return channel, target
+
+
 def notify_guest_reservation_status(hostel_id, reservation_id, status):
     """
     Avisa o hospede de volta, no mesmo canal onde ele esta conversando
@@ -6965,19 +7148,12 @@ def notify_guest_reservation_status(hostel_id, reservation_id, status):
         return
 
     guest_id = reservation["guest_id"]
+    conn.close()
 
-    cursor.execute(
-        "SELECT channel, external_id FROM guest_channel_identities WHERE hostel_id = ? AND guest_id = ? ORDER BY id DESC LIMIT 1",
-        (hostel_id, guest_id)
-    )
-    identity = cursor.fetchone()
-    if identity:
-        channel, target = identity["channel"], identity["external_id"]
-    else:
-        cursor.execute("SELECT phone FROM guests WHERE id = ?", (guest_id,))
-        guest_row = cursor.fetchone()
-        channel, target = "whatsapp", (guest_row["phone"] if guest_row else None)
+    channel, target = resolve_guest_channel_target(hostel_id, guest_id)
 
+    conn = get_connection()
+    cursor = conn.cursor()
     cursor.execute("SELECT address, checkin FROM settings WHERE hostel_id = ?", (hostel_id,))
     settings_row = cursor.fetchone()
     conn.close()
@@ -7010,8 +7186,18 @@ def notify_guest_reservation_status(hostel_id, reservation_id, status):
     _dispatch_reservation_status_message(hostel_id, guest_id, channel, target, message)
 
 
-def _dispatch_reservation_status_message(hostel_id, guest_id, channel, target, message):
+def _dispatch_reservation_status_message(hostel_id, guest_id, channel, target, message, sender="staff"):
+    """
+    Retorna True/False se enviou. `sender` grava quem "falou" na mensagem
+    (messages.sender) - 'staff' pro uso normal (confirmacao/cancelamento
+    e envio manual pelo Chat), mantido parametrizavel porque essa mesma
+    funcao acabou virando o unico ponto de despacho de TEXTO pro
+    hospede (ver send_message_to_guest_now), nao so pra status de reserva.
+    """
     from services.memory_service import save_message as save_memory_message
+
+    if not target:
+        return False
 
     if channel == "whatsapp":
         from services.whatsapp_service import send_whatsapp_message
@@ -7031,7 +7217,9 @@ def _dispatch_reservation_status_message(hostel_id, guest_id, channel, target, m
 
     if sent:
         save_memory_message(hostel_id, memory_key, "assistant", message)
-        save_message_db_for_guest(guest_id, "staff", message, channel=channel)
+        save_message_db_for_guest(guest_id, sender, message, channel=channel)
+
+    return sent
 
 
 def create_supplier_record(hostel_id, name, phone="", email=""):

@@ -115,6 +115,16 @@ function stayflowFormatDateDivider(dateStr) {
     return template.replace("{day}", day).replace("{month}", month).replace("{year}", year);
 }
 
+// Bolha de foto (mensagem com msg.has_media=1) - a URL e sempre
+// autenticada (/guests/chat-media/<id>/file, cookie de sessao), nao a
+// URL publica /media/chat/<token> (essa e so pra API da Meta buscar ao
+// ENVIAR, ver database.py:_public_media_url).
+function chatMediaBubbleHtml(msg) {
+    const src = `/guests/chat-media/${msg.id}/file`;
+    const caption = msg.message ? `<div class="msg-photo-caption">${escapeHtml(msg.message)}</div>` : "";
+    return `<a href="${src}" target="_blank" rel="noopener"><img class="msg-photo" src="${src}" alt="Foto" loading="lazy"></a>${caption}`;
+}
+
 async function loadChats() {
     try {
         const response = await fetch("/chats");
@@ -281,7 +291,12 @@ async function loadGuestProfile(guestId) {
 
                     const div = document.createElement("div");
                     div.className = `msg ${msg.sender === "user" ? "user" : "bot"}`;
-                    div.textContent = msg.message;
+                    if (msg.has_media) {
+                        div.classList.add("msg-photo-wrap");
+                        div.innerHTML = chatMediaBubbleHtml(msg);
+                    } else {
+                        div.textContent = msg.message;
+                    }
                     chatMessages.appendChild(div);
                 });
                 chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -462,6 +477,59 @@ window.sendMessageToGuestUI = async function (button) {
         alert(T('chats.sendMessageConnError', 'Erro de conexão ao enviar a mensagem.'));
     } finally {
         button.disabled = false;
+    }
+};
+
+// Envio manual de FOTO - par de sendMessageToGuestUI. Usa o que
+// estiver digitado na caixa de texto (se algo) como legenda, e limpa
+// o campo depois - nao existe uma pre-visualizacao antes de enviar
+// (diferente do WhatsApp de verdade), a foto ja sai assim que
+// escolhida, igual o envio de texto ja funciona hoje.
+window.sendPhotoToGuestUI = async function (fileInput) {
+    if (!fileInput || !fileInput.files || !fileInput.files[0] || !stayflowCurrentGuestId) return;
+
+    const file = fileInput.files[0];
+    const scope = fileInput.closest(".chat-window");
+    const textInput = scope ? scope.querySelector(".chat-input input[type='text'], .chat-input input:not([type])") : null;
+    const caption = textInput ? textInput.value.trim() : "";
+
+    const container = document.getElementById("chatMessages");
+    let previewDiv = null;
+    if (container) {
+        previewDiv = document.createElement("div");
+        previewDiv.className = "msg user msg-photo-wrap";
+        const previewUrl = URL.createObjectURL(file);
+        previewDiv.innerHTML = `<img class="msg-photo" src="${previewUrl}" alt="Foto">` +
+            (caption ? `<div class="msg-photo-caption">${escapeHtml(caption)}</div>` : "");
+        previewDiv.style.opacity = "0.6";
+        container.appendChild(previewDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    if (caption) formData.append("caption", caption);
+
+    try {
+        const res = await fetch(`/guests/${stayflowCurrentGuestId}/send-photo`, {
+            method: "POST",
+            credentials: "same-origin",
+            body: formData
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.message || T('chats.sendPhotoFailed', 'Não foi possível enviar a foto.'));
+            if (previewDiv) previewDiv.remove();
+            return;
+        }
+        if (textInput) textInput.value = "";
+        if (previewDiv) previewDiv.style.opacity = "1";
+        loadGuestProfile(stayflowCurrentGuestId);
+    } catch (err) {
+        alert(T('chats.sendPhotoConnError', 'Erro de conexão ao enviar a foto.'));
+        if (previewDiv) previewDiv.remove();
+    } finally {
+        fileInput.value = "";
     }
 };
 

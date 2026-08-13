@@ -766,7 +766,7 @@ OPERATIONAL_TOOLS = [
 MAX_TOOL_ROUNDS = 4
 
 
-def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None, hostel_name=None, hostel_type=None, account_kind="lodging", agency_category=None, ai_persona=None):
+def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None, hostel_name=None, hostel_type=None, account_kind="lodging", agency_category=None, ai_persona=None, image_data_url=None):
     # So sugere o WhatsApp como canal alternativo quando a conversa NAO
     # e no proprio WhatsApp (nao faz sentido sugerir o hospede ir pro
     # canal em que ja esta) e o hostel realmente tem um numero
@@ -903,10 +903,24 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             hostel_type_label=hostel_type_label
         )
 
+    # image_data_url: quando o hospede manda uma foto no chat (nao um
+    # documento de identidade - esse fluxo e separado), a mensagem vira
+    # multimodal (visao da OpenAI) em vez de texto puro, pra IA reagir
+    # ao CONTEUDO da foto de verdade (ex: reclamacao com foto do quarto)
+    # e nao so ver um placeholder tipo "[foto]". So a mensagem ATUAL usa
+    # esse formato - o historico (history) continua so texto.
+    if image_data_url:
+        user_content = [
+            {"type": "text", "text": message or "(the guest sent a photo with no caption)"},
+            {"type": "image_url", "image_url": {"url": image_data_url}},
+        ]
+    else:
+        user_content = message
+
     messages = (
         [{"role": "system", "content": system_prompt}]
         + history
-        + [{"role": "user", "content": message}]
+        + [{"role": "user", "content": user_content}]
     )
 
     # As ferramentas de reserva/preco/cama (hospedagem) ou de portfolio

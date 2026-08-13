@@ -58,6 +58,44 @@ def send_whatsapp_message(phone_number_id, access_token, to, message):
         return False
 
 
+def send_whatsapp_image(phone_number_id, access_token, to, image_link, caption=""):
+    """
+    Envia uma foto pelo WhatsApp Business - a API exige um link publico
+    HTTPS que os servidores da Meta conseguem buscar sozinhos (nao um
+    upload direto de bytes), por isso quem chama monta a URL publica do
+    media (ver rota /media/chat/<token> em app.py) antes de chegar aqui.
+    Mesmo contrato de send_whatsapp_message (nunca levanta excecao).
+    """
+    if not phone_number_id or not access_token:
+        print("WhatsApp não configurado para este hostel — foto gerada mas não enviada.")
+        return False
+
+    url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{phone_number_id}/messages"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    image_payload = {"link": image_link}
+    if caption:
+        image_payload["caption"] = caption
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "image",
+        "image": image_payload,
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        if response.status_code >= 400:
+            print("Erro ao enviar foto WhatsApp:", response.status_code, response.text)
+            return False
+        return True
+    except Exception as error:
+        print("Erro de conexão ao enviar foto WhatsApp:", error)
+        return False
+
+
 def download_whatsapp_media(media_id, access_token):
     """
     Baixa uma midia recebida do WhatsApp (ex: foto de documento) - e

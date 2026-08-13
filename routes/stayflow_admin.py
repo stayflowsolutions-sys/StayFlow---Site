@@ -18,7 +18,7 @@ import datetime
 import os
 import secrets
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 
 from database import (
     get_stayflow_admin_overview,
@@ -43,6 +43,8 @@ from database import (
     get_guest_profile,
     set_guest_ai_paused,
     send_message_to_guest_now,
+    send_chat_photo_to_guest_now,
+    get_message_media,
     mark_guest_seen_by_admin,
     count_new_hostels_last_days,
     create_support_message,
@@ -488,6 +490,61 @@ def my_chat_send_message(guest_id):
         return jsonify({"success": False, "message": "WhatsApp não configurado — mensagem não enviada."}), 502
 
     return jsonify({"success": True, **result})
+
+
+_MY_CHAT_ALLOWED_PHOTO_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+@stayflow_admin_bp.route("/stayflow-admin/my-chat/guests/<int:guest_id>/send-photo", methods=["POST"])
+@require_stayflow_admin
+def my_chat_send_photo(guest_id):
+    """Par de my_chat_send_message, mas foto - mesmo despacho por canal de routes/guests.py:send_photo_to_guest_route."""
+    hostel_id = _get_software_hostel_id()
+    if not hostel_id:
+        return jsonify({"success": False, "message": "Nenhum número marcado como assistente comercial da StayFlow ainda."}), 404
+
+    file = request.files.get("file")
+    if not file or not file.filename:
+        return jsonify({"success": False, "message": "Nenhuma foto enviada."}), 400
+
+    mime_type = file.mimetype
+    if mime_type not in _MY_CHAT_ALLOWED_PHOTO_MIME_TYPES:
+        return jsonify({"success": False, "message": "Formato não suportado. Envie JPG, PNG ou WEBP."}), 400
+
+    caption = request.form.get("caption", "")
+
+    try:
+        result = send_chat_photo_to_guest_now(hostel_id, guest_id, file.read(), mime_type, caption)
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+
+    if not result["sent"]:
+        return jsonify({"success": False, "message": "Não foi possível enviar a foto — canal do hóspede não configurado."}), 502
+
+    return jsonify({"success": True, **result})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/my-chat/media/<int:message_id>/file", methods=["GET"])
+@require_stayflow_admin
+def my_chat_media_file(message_id):
+    """
+    Serve uma foto do "Meu chat" pra tela da equipe (autenticado por
+    sessao de admin StayFlow, nao por membership de hostel - por isso
+    nao reaproveita /guests/chat-media/<id>/file, que exige hostel_id
+    de sessao normal). hostel_id vem sempre do numero comercial da
+    StayFlow (_get_software_hostel_id), nunca de parametro da URL -
+    evita qualquer chance de um admin ver foto de outro hostel por essa
+    rota.
+    """
+    hostel_id = _get_software_hostel_id()
+    if not hostel_id:
+        return jsonify({"error": "Not configured"}), 404
+
+    media = get_message_media(hostel_id, message_id)
+    if not media:
+        return jsonify({"error": "Media not found"}), 404
+
+    return send_file(media["media_path"], mimetype=media["media_mime_type"])
 
 
 # "Suporte" - 1 thread continuo por hostel_id entre a equipe daquela

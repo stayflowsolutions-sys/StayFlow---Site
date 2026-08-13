@@ -1373,6 +1373,19 @@ body::before{
   border:1px solid #0b84ff16;
   margin-left:auto;
 }
+.msg.msg-photo-wrap{
+  padding:6px;
+}
+.msg-photo{
+  display:block;
+  max-width:240px;
+  width:100%;
+  border-radius:10px;
+  cursor:pointer;
+}
+.msg-photo-caption{
+  padding:7px 5px 2px;
+}
 
 /* Divisor de data entre mensagens, estilo WhatsApp */
 .date-divider{

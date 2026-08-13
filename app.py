@@ -1,8 +1,9 @@
 import os
+import re
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, send_file, abort
 
-from database import create_database
+from database import create_database, get_chat_media_by_token
 
 from routes.chat import chat_bp
 from routes.chats import chats_bp
@@ -138,6 +139,30 @@ def web_app_manifest():
     # sw.js) pra referencia relativa <link rel="manifest"> funcionar
     # em qualquer pagina que a inclua (dashboard.html, Login.html etc).
     return send_from_directory(FRONTEND_DIR, "manifest.json", mimetype="application/manifest+json")
+
+
+_CHAT_MEDIA_TOKEN_RE = re.compile(r"^[0-9a-f]{16}$")
+
+
+@app.route("/media/chat/<token>")
+def public_chat_media(token):
+    """
+    Serve uma foto de chat SEM autenticacao - unica excecao no site a
+    isso, necessaria porque as APIs de envio de imagem da Meta
+    (WhatsApp/Instagram/Messenger) buscam a URL sozinhas, sem cookie de
+    sessao. A seguranca vem so da entropia do token (16 hex = 64 bits,
+    ver save_chat_media_file em database.py) - por isso a validacao de
+    formato aqui embaixo, pra nunca nem chegar a consultar o banco com
+    algo que claramente nao e um token gerado pelo sistema.
+    """
+    if not _CHAT_MEDIA_TOKEN_RE.match(token):
+        abort(404)
+
+    media = get_chat_media_by_token(token)
+    if not media:
+        abort(404)
+
+    return send_file(media["media_path"], mimetype=media["media_mime_type"])
 
 
 # Serve qualquer página .html solta na raiz do frontend

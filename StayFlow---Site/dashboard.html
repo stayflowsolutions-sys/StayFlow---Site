@@ -1080,6 +1080,8 @@ async function deleteRoleConfirm(roleId){
 
       <div class="chat-input" style="position:relative">
         <button class="btn secondary" type="button" id="chatQuickReplyTrigger" onclick="toggleQuickReplyPicker(event)" data-i18n-title="chats.quickReplyTitle" title="Respostas rápidas" style="flex:0 0 auto">💬</button>
+        <button class="btn secondary" type="button" id="chatAttachPhotoTrigger" onclick="document.getElementById('chatPhotoInput').click()" data-i18n-title="chats.attachPhotoTitle" title="Anexar foto" style="flex:0 0 auto">📷</button>
+        <input type="file" id="chatPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="sendPhotoToGuestUI(this)">
         <input data-i18n-placeholder="chats.inputPlaceholder" placeholder="Escrever mensagem como recepção...">
         <button class="btn green" type="button" id="chatSendBtn" data-mode="assume" onclick="chatPrimaryBtnClick(this)" data-i18n="chats.takeoverBtn">Assumir</button>
         <button class="btn secondary" type="button" id="chatGiveBackBtn" style="display:none" onclick="giveBackChatUI()" data-i18n="chats.giveBackToAiBtn">Devolver</button>

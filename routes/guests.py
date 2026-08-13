@@ -4,11 +4,13 @@ from database import (
     get_guest_profile,
     set_guest_ai_paused,
     send_message_to_guest_now,
+    send_chat_photo_to_guest_now,
     get_guest_document_file,
     update_guest_profile,
     save_guest_document,
     erase_guest_data,
     get_or_create_guest,
+    get_message_media,
 )
 from services.translation_service import translate_opportunity_fields
 from utils.tenant import require_permission
@@ -16,6 +18,7 @@ from utils.tenant import require_permission
 guests_bp = Blueprint("guests", __name__)
 
 _ALLOWED_DOCUMENT_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
+_ALLOWED_CHAT_PHOTO_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
 @guests_bp.route("/guests", methods=["GET"])
@@ -111,6 +114,41 @@ def send_message_to_guest_route(hostel_id, guest_id):
         return jsonify({"success": False, "message": "WhatsApp não configurado para este hostel — mensagem não enviada."}), 502
 
     return jsonify({"success": True, **result})
+
+
+@guests_bp.route("/guests/<int:guest_id>/send-photo", methods=["POST"])
+@require_permission("chats")
+def send_photo_to_guest_route(hostel_id, guest_id):
+    file = request.files.get("file")
+    if not file or not file.filename:
+        return jsonify({"success": False, "message": "Nenhuma foto enviada."}), 400
+
+    mime_type = file.mimetype
+    if mime_type not in _ALLOWED_CHAT_PHOTO_MIME_TYPES:
+        return jsonify({"success": False, "message": "Formato não suportado. Envie JPG, PNG ou WEBP."}), 400
+
+    caption = request.form.get("caption", "")
+
+    try:
+        result = send_chat_photo_to_guest_now(hostel_id, guest_id, file.read(), mime_type, caption)
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+
+    if not result["sent"]:
+        return jsonify({"success": False, "message": "Não foi possível enviar a foto — canal do hóspede não configurado."}), 502
+
+    return jsonify({"success": True, **result})
+
+
+@guests_bp.route("/guests/chat-media/<int:message_id>/file", methods=["GET"])
+@require_permission("chats")
+def get_chat_media_file_route(hostel_id, message_id):
+    media = get_message_media(hostel_id, message_id)
+
+    if not media:
+        return jsonify({"error": "Media not found"}), 404
+
+    return send_file(media["media_path"], mimetype=media["media_mime_type"])
 
 
 @guests_bp.route("/guests/documents/<int:document_id>/file", methods=["GET"])

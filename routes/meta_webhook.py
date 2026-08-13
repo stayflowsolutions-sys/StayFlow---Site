@@ -7,12 +7,8 @@ from database import (
     get_hostel_facebook_config,
     get_hostel_id_by_instagram_id,
     get_hostel_instagram_config,
-    get_or_create_guest_by_channel,
-    save_guest_document,
-    save_message_db_for_guest,
 )
 from routes.chat import process_incoming_message
-from services.memory_service import save_message
 from services.messenger_service import get_messenger_user_profile, download_messenger_attachment, send_messenger_message
 from services.instagram_service import get_instagram_user_profile, download_instagram_attachment, send_instagram_message
 from utils.webhook_security import verify_meta_signature
@@ -152,15 +148,13 @@ _CHANNEL_ADAPTERS = {
 }
 
 
-def handle_incoming_document_image(hostel_id, channel, external_id, attachment_url, adapter, config):
+def handle_incoming_photo(hostel_id, channel, external_id, attachment_url, caption, guest_name, adapter, config):
     """
-    Processa uma foto enviada pelo hospede (ex: documento de
-    identidade) - baixa o arquivo de verdade, grava no disco e no
-    banco, e confirma o recebimento por texto direto (sem passar pela
-    IA de conversa, ja que ela nao analisa o conteudo da imagem) -
-    mesmo padrao ja usado pro WhatsApp
-    (routes/whatsapp_webhook.py:handle_incoming_document_image).
-    Generica por canal (Messenger/Instagram) via `adapter`.
+    Foto enviada pelo hospede NA CONVERSA (nao documento de identidade
+    - ver comentario equivalente em routes/whatsapp_webhook.py:
+    handle_incoming_photo). Baixa o arquivo de verdade e entrega pro
+    pipeline normal de mensagem - generica por canal (Messenger/
+    Instagram) via `adapter`.
     """
     file_bytes, mime_type = adapter["download"](attachment_url)
 
@@ -168,17 +162,10 @@ def handle_incoming_document_image(hostel_id, channel, external_id, attachment_u
         adapter["send"](config, external_id, "Não consegui receber sua foto agora, pode tentar mandar de novo?")
         return
 
-    guest_id = get_or_create_guest_by_channel(hostel_id, channel, external_id)
-    save_guest_document(hostel_id, guest_id, file_bytes, mime_type)
-
-    # Registra na conversa normal (visivel no historico/Chats), igual
-    # uma mensagem de texto - so pra equipe saber que uma foto chegou
-    # sem precisar abrir a pasta de documentos.
-    placeholder = "[Hóspede enviou uma foto de documento]"
-    save_message(hostel_id, f"{channel}:{external_id}", "user", placeholder)
-    save_message_db_for_guest(guest_id, "user", placeholder, channel=channel)
-
-    adapter["send"](config, external_id, "Recebi seu documento, obrigado! 📄✅")
+    process_incoming_message(
+        hostel_id, external_id, caption or "", channel=channel, send_reply=True, name=guest_name,
+        media_bytes=file_bytes, media_mime_type=mime_type,
+    )
 
 
 @meta_webhook_bp.route("/webhook/meta", methods=["GET"])
@@ -281,7 +268,8 @@ def receive_message():
                 if image_attachment:
                     url = (image_attachment.get("payload") or {}).get("url")
                     if url:
-                        handle_incoming_document_image(hostel_id, channel, sender_id, url, adapter, config)
+                        guest_name = adapter["profile"](config, sender_id)
+                        handle_incoming_photo(hostel_id, channel, sender_id, url, text, guest_name, adapter, config)
                 elif text:
                     # Busca o nome do perfil a cada mensagem - so e
                     # realmente GRAVADO na primeira vez (get_or_create_

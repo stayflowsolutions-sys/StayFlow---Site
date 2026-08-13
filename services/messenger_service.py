@@ -40,6 +40,35 @@ def send_messenger_message(page_access_token, psid, message):
         return False
 
 
+def send_messenger_image(page_access_token, psid, image_link):
+    """Retorna True se enviou com sucesso, False se falhou - nunca levanta excecao."""
+    if not page_access_token:
+        print("Messenger não configurado para este hostel — foto gerada mas não enviada.")
+        return False
+
+    url = f"{API_BASE}/me/messages"
+    payload = {
+        "recipient": {"id": psid},
+        "message": {"attachment": {"type": "image", "payload": {"url": image_link, "is_reusable": False}}},
+        "messaging_type": "RESPONSE",
+    }
+
+    try:
+        response = requests.post(
+            url,
+            params={"access_token": page_access_token},
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code >= 400:
+            print("Erro ao enviar foto Messenger:", response.status_code, response.text)
+            return False
+        return True
+    except requests.RequestException as error:
+        print("Erro de conexão ao enviar foto Messenger:", error)
+        return False
+
+
 def get_messenger_user_profile(page_access_token, psid):
     """
     Busca nome do perfil do Messenger pelo PSID - a conversa ja chega

@@ -49,7 +49,7 @@ def _dispatch_send(hostel_id, channel, external_id, answer):
         print(f"Sem envio configurado pro canal '{channel}' ainda.")
 
 
-def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", send_reply=False, name=None):
+def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", send_reply=False, name=None, media_bytes=None, media_mime_type=None):
     """
     Núcleo do processamento de uma mensagem recebida — guest, memória,
     IA, persistência, lead e oportunidade. Reaproveitado pelo endpoint
@@ -61,16 +61,39 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     `name`, quando informado (Messenger/Instagram entregam o nome do
     perfil automaticamente), só é gravado na criação do hóspede - a IA
     já sabe usar sem perguntar de novo (ver guest_name em ask_ai).
+
+    `media_bytes`/`media_mime_type`: quando o hospede manda uma FOTO
+    (nao documento de identidade - esse fluxo continua separado, ver
+    save_guest_document), `text` e a legenda (pode vir vazia). A foto
+    e salva, vira parte visivel da conversa (media_path na mensagem) e
+    a IA recebe ela de verdade via visao (ask_ai/image_data_url) -
+    antes disso, toda foto era desviada pra "documento" e a IA nunca
+    via o conteudo.
     """
     guest_phone_for_record = external_id if channel == "whatsapp" else None
     guest_id = get_or_create_guest_by_channel(hostel_id, channel, external_id, phone=guest_phone_for_record, name=name)
 
     memory_key = _memory_key(channel, external_id)
 
-    save_message(hostel_id, memory_key, "user", text)
-    save_message_db_for_guest(guest_id, "user", text, channel=channel)
+    media_path = None
+    media_token = None
+    image_data_url = None
+    if media_bytes:
+        from database import save_chat_media_file
+        import base64
+        media_path, media_token = save_chat_media_file(hostel_id, guest_id, media_bytes, media_mime_type)
+        image_data_url = f"data:{media_mime_type};base64,{base64.b64encode(media_bytes).decode('ascii')}"
 
-    save_lead(hostel_id, external_id, text)
+    # texto "de apoio" so pra memoria/lead/oportunidade/push (todos
+    # esperam uma string com conteudo) - a mensagem de verdade gravada
+    # no banco (linha abaixo) mantem a legenda original, mesmo vazia,
+    # ja que quem le a conversa ve a foto do lado.
+    text_for_context = text if text else ("(foto)" if media_bytes else text)
+
+    save_message(hostel_id, memory_key, "user", text_for_context)
+    save_message_db_for_guest(guest_id, "user", text, channel=channel, media_path=media_path, media_mime_type=media_mime_type if media_bytes else None, media_token=media_token)
+
+    save_lead(hostel_id, external_id, text_for_context)
 
     # Buscado uma vez só e reaproveitado tanto pra analise de oportunidade
     # quanto pra IA de atendimento logo abaixo - a analise agora avalia a
@@ -89,7 +112,7 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     # Modo 'software' (numero comercial da propria StayFlow) nao gera
     # oportunidade - o conceito (upsell pro hospede de uma hospedagem)
     # nao existe numa conversa de venda do software em si.
-    opportunity = analyze_message(hostel_id, guest_id, text, history=history, account_kind=account_kind) if ai_persona != "software" and is_opportunity_generation_enabled(hostel_id) else None
+    opportunity = analyze_message(hostel_id, guest_id, text_for_context, history=history, account_kind=account_kind) if ai_persona != "software" and is_opportunity_generation_enabled(hostel_id) else None
 
     # Notificacao push de mensagem nova - tipo separado da oportunidade
     # (analyze_message acima so notifica em oportunidade NOVA de alta
@@ -105,7 +128,7 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
         send_push_to_hostel(
             hostel_id,
             title=f"💬 {guest_name_for_push}",
-            body=text[:120],
+            body=text_for_context[:120],
             url="/app",
             notification_type="chat_message",
         )
@@ -160,6 +183,7 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
         guest_language=guest_language, guest_id=guest_id, guest_name=known_guest_name,
         channel=channel, hostel_phone=hostel_phone, hostel_name=hostel_name, hostel_type=hostel_type,
         account_kind=account_kind, agency_category=agency_category, ai_persona=ai_persona,
+        image_data_url=image_data_url,
     )
 
     if guest_name:

@@ -43,6 +43,34 @@ def send_instagram_message(access_token, instagram_business_id, igsid, message):
         return False
 
 
+def send_instagram_image(access_token, instagram_business_id, igsid, image_link):
+    """Retorna True se enviou com sucesso, False se falhou - nunca levanta excecao."""
+    if not access_token or not instagram_business_id:
+        print("Instagram não configurado para este hostel — foto gerada mas não enviada.")
+        return False
+
+    url = f"{API_BASE}/{instagram_business_id}/messages"
+    payload = {
+        "recipient": {"id": igsid},
+        "message": {"attachment": {"type": "image", "payload": {"url": image_link}}},
+    }
+
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": f"Bearer {access_token}"},
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code >= 400:
+            print("Erro ao enviar foto Instagram:", response.status_code, response.text)
+            return False
+        return True
+    except requests.RequestException as error:
+        print("Erro de conexão ao enviar foto Instagram:", error)
+        return False
+
+
 def get_instagram_user_profile(access_token, igsid):
     """
     Tentativa best-effort de buscar nome/username de quem mandou a
