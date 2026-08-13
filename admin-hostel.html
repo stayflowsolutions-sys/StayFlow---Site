@@ -53,6 +53,7 @@
         <p id="hostelSub">Carregando...</p>
       </div>
       <div style="display:flex;align-items:center;gap:14px">
+        <button type="button" id="testAccountBtn" onclick="toggleTestAccount()" style="background:transparent;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-weight:700;padding:10px 16px;font-size:13px;cursor:pointer">☆ Marcar como minha conta de teste</button>
         <button type="button" id="enterDashboardBtn" onclick="enterDashboard()">🔑 Entrar no dashboard</button>
         <a href="admin.html" style="color:var(--muted);font-size:13px;text-decoration:none">← Voltar pro painel</a>
       </div>
@@ -193,6 +194,36 @@
       document.getElementById("statOccupancy").textContent = `${op.occupancy_pct}%`;
     }
 
+    let isTestAccount = false;
+    window.toggleTestAccount = async function(){
+      const params = new URLSearchParams(window.location.search);
+      const hostelId = Number(params.get("id"));
+      const btn = document.getElementById("testAccountBtn");
+      const newValue = !isTestAccount;
+      btn.disabled = true;
+      try{
+        const res = await fetch(`/stayflow-admin/hostel/${hostelId}/test-account`, {
+          method: "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_test: newValue }),
+        });
+        const d = await res.json();
+        if(!res.ok || !d.success){
+          alert(d.message || "Não foi possível atualizar.");
+          return;
+        }
+        isTestAccount = newValue;
+        btn.textContent = isTestAccount ? "★ Sua conta de teste" : "☆ Marcar como minha conta de teste";
+        btn.style.color = isTestAccount ? "#ffd75e" : "var(--muted)";
+        btn.style.borderColor = isTestAccount ? "#ffd75e60" : "var(--line)";
+      }catch(e){
+        console.warn("Erro ao marcar conta de teste:", e);
+        alert("Erro de conexão.");
+      }finally{
+        btn.disabled = false;
+      }
+    };
+
     window.enterDashboard = async function(){
       const btn = document.getElementById("enterDashboardBtn");
       const params = new URLSearchParams(window.location.search);
@@ -251,6 +282,12 @@
         document.getElementById("hostelSub").textContent = `${planLabel(d.plan_name)}${trialText}${kindTag} · ${d.hostel_email || "sem e-mail"}${d.hostel_phone ? " · " + d.hostel_phone : ""}`;
 
         document.getElementById(d.account_kind === "agency" ? "navAgencias" : "navHospedagens").classList.add("active");
+
+        isTestAccount = !!d.is_own_test_account;
+        const testBtn = document.getElementById("testAccountBtn");
+        testBtn.textContent = isTestAccount ? "★ Sua conta de teste" : "☆ Marcar como minha conta de teste";
+        testBtn.style.color = isTestAccount ? "#ffd75e" : "var(--muted)";
+        testBtn.style.borderColor = isTestAccount ? "#ffd75e60" : "var(--line)";
 
         if(d.plan_name) document.getElementById("planSelect").value = d.plan_name;
         if(d.status) document.getElementById("statusSelect").value = d.status;
