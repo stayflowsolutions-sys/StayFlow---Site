@@ -513,6 +513,15 @@ def create_database():
     add_column_if_not_exists(cursor, "hostels", "account_kind", "TEXT NOT NULL DEFAULT 'lodging'")
     add_column_if_not_exists(cursor, "hostels", "agency_category", "TEXT")
 
+    # Marca uma conta como conta de TESTE do proprio dono da StayFlow
+    # (ex: um hostel e uma agencia fake que ele usa pra testar feature
+    # nova ou fazer demo pra prospect) - diferente de qualquer cliente
+    # real. So usada pelo seletor rapido de "Propriedades" no topo do
+    # Meu painel (admin.html), que deve mostrar so essas contas, nunca
+    # a lista inteira de clientes (essa fica na aba "Propriedades" do
+    # menu lateral, com busca).
+    add_column_if_not_exists(cursor, "hostels", "is_own_test_account", "INTEGER DEFAULT 0")
+
     # ai_persona troca qual SYSTEM_PROMPT o ask_ai (services/ai_service.py)
     # usa pro numero de WhatsApp/Instagram/Messenger desse hostel - NULL
     # (padrao) usa o prompt normal de hospedagem/agencia baseado em
@@ -1862,6 +1871,7 @@ def get_stayflow_admin_overview(account_kind=None):
     query = """
         SELECT
             h.id AS hostel_id, h.name AS hostel_name, h.account_kind,
+            h.is_own_test_account,
             b.plan_name, b.status, b.trial_ends_at,
             COALESCE(gc.volume_paid, 0) AS guest_payment_volume,
             COALESCE(gc.commission_earned, 0) AS commission_collected
@@ -1885,6 +1895,17 @@ def get_stayflow_admin_overview(account_kind=None):
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return rows
+
+
+def set_hostel_is_own_test_account(hostel_id, is_test):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET is_own_test_account = ? WHERE id = ?",
+        (1 if is_test else 0, hostel_id)
+    )
+    conn.commit()
+    conn.close()
 
 
 def count_rooms(hostel_id):
@@ -2532,7 +2553,7 @@ def get_hostel(hostel_id):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, name, email, phone, account_kind, agency_category, ai_persona FROM hostels WHERE id = ?",
+        "SELECT id, name, email, phone, account_kind, agency_category, ai_persona, is_own_test_account FROM hostels WHERE id = ?",
         (hostel_id,)
     )
 

@@ -47,6 +47,7 @@ from database import (
     get_support_messages,
     mark_support_seen_by_admin,
     list_support_threads,
+    set_hostel_is_own_test_account,
 )
 from utils.tenant import (
     require_stayflow_admin,
@@ -88,6 +89,7 @@ def overview():
             "hostel_id": row["hostel_id"],
             "hostel_name": row["hostel_name"],
             "account_kind": row["account_kind"],
+            "is_own_test_account": bool(row["is_own_test_account"]),
             "plan_name": plan_name,
             "status": row["status"],
             "trial_days_left": _trial_days_left(row["status"], row["trial_ends_at"]),
@@ -191,6 +193,7 @@ def hostel_profile(hostel_id):
         "hostel_email": hostel["email"],
         "hostel_phone": hostel["phone"],
         "account_kind": hostel["account_kind"],
+        "is_own_test_account": bool(hostel["is_own_test_account"]),
         "agency_category": hostel.get("agency_category"),
         "agency_category_label": AGENCY_CATEGORY_LABELS.get(hostel.get("agency_category")),
         "plan_name": plan_name,
@@ -414,4 +417,21 @@ def support_thread_send(hostel_id):
         return jsonify({"success": False, "message": "Mensagem vazia."}), 400
 
     create_support_message(hostel_id, "stayflow", message)
+    return jsonify({"success": True})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/hostel/<int:hostel_id>/test-account", methods=["POST"])
+@require_stayflow_admin
+def set_test_account(hostel_id):
+    """
+    Marca/desmarca uma conta como conta de TESTE do proprio dono da
+    StayFlow (ver comentario da coluna hostels.is_own_test_account em
+    database.py) - so essas aparecem no seletor rapido de "Propriedades"
+    no topo do Meu painel.
+    """
+    if not get_hostel(hostel_id):
+        return jsonify({"success": False, "message": "Conta não encontrada."}), 404
+
+    data = request.get_json() or {}
+    set_hostel_is_own_test_account(hostel_id, bool(data.get("is_test")))
     return jsonify({"success": True})

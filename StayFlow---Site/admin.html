@@ -27,7 +27,12 @@
 
   #adminLoading, #adminError{padding:80px 20px;text-align:center;color:var(--muted)}
   #adminError{display:none;color:#ff9caf}
-  #pageShell{display:none}
+  /* #pageShell precisa ser um container flex de verdade (mesma
+     estrutura de <main class="main"> no dashboard normal) - sem isso,
+     ".page{flex:1 1 auto}" (app.css) nao tem contra o que resolver
+     altura, e a lista/conversa do chat nunca ganha sua propria rolagem
+     interna (a pagina inteira tenta rolar junto, travado). */
+  #pageShell{display:none;flex:1;min-height:0;flex-direction:column}
 
   .kpi.span-4{grid-column:span 4}
   @media(max-width:900px){.kpi.span-4{grid-column:span 12}}
@@ -92,7 +97,7 @@
 
 <aside id="sidebar" class="sidebar">
   <div class="brand-block">
-    <div class="logo-mark" title="StayFlow">
+    <div class="logo-mark" title="StayFlow" style="cursor:pointer" onclick="switchAdminTab('overview', document.querySelector('[data-tab=overview]'))">
       <img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo">
     </div>
     <div class="brand-word">Stay<span>Flow</span></div>
@@ -564,15 +569,20 @@
 
   function renderPropertySelector(){
     if(!overviewData) return;
+    // So as SUAS contas de teste (hostels.is_own_test_account, marcada
+    // no perfil de cada conta em admin-hostel.html) - nao a lista
+    // inteira de clientes reais, que fica na aba "Propriedades" do
+    // menu lateral, com busca.
+    const testAccounts = overviewData.hostels.filter(h => h.is_own_test_account);
     const search = document.getElementById("propertySelectorSearch").value.trim().toLowerCase();
-    const filtered = overviewData.hostels.filter(h => !search || (h.hostel_name || "").toLowerCase().includes(search));
+    const filtered = testAccounts.filter(h => !search || (h.hostel_name || "").toLowerCase().includes(search));
     document.getElementById("propertySelectorList").innerHTML = filtered.length
-      ? filtered.slice(0, 40).map(h => `
+      ? filtered.map(h => `
         <button type="button" class="hostel-selector-option" onclick="goToProperty(${h.hostel_id})">
           <span class="option-name">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || "Sem nome"}</span>
           <span class="option-role">${h.plan_name || "sem plano"} · ${STATUS_LABELS[h.status] || h.status || "—"}</span>
         </button>`).join("")
-      : `<div style="padding:14px;text-align:center;color:var(--muted);font-size:12.5px">Nenhuma propriedade encontrada.</div>`;
+      : `<div style="padding:14px;text-align:center;color:var(--muted);font-size:12.5px">Nenhuma conta de teste marcada ainda.<br>Marca uma no perfil dela (aba Propriedades → abrir a conta → "Marcar como minha conta de teste").</div>`;
   }
 
   window.goToProperty = async function(hostelId){
@@ -1028,7 +1038,7 @@
       StayFlowI18n.applyTranslations({}, StayFlowI18n.getInitialLang());
 
       document.getElementById("adminLoading").style.display = "none";
-      document.getElementById("pageShell").style.display = "block";
+      document.getElementById("pageShell").style.display = "flex";
     }catch(e){
       console.warn("Erro ao carregar painel StayFlow:", e);
       document.getElementById("adminLoading").style.display = "none";
