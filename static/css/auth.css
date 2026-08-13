@@ -42,8 +42,8 @@ body{
   margin-bottom:18px;
 }
 .logo img{
-  width:120px;
-  height:120px;
+  width:180px;
+  height:180px;
   object-fit:contain;
   filter:drop-shadow(0 12px 28px #0b84ff55);
 }

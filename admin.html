@@ -89,6 +89,17 @@
 
   #propertySelectorDropdown{max-height:360px;overflow-y:auto}
   #propertySelectorSearch{width:100%;background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:8px 10px;font-size:12.5px;margin-bottom:6px}
+
+  /* Reforco de rolagem mobile - o menu ficou mais comprido que o do
+     dashboard normal (mais abas: Financeiro, Config, Despesas, Equipe
+     etc), entao vale garantir explicitamente que tanto a sidebar
+     inteira quanto o .menu dentro dela rolem por toque, mesmo se algum
+     navegador mobile precisar do prefixo -webkit-overflow-scrolling
+     (Safari iOS antigo) pra ativar rolagem por inercia. */
+  @media(max-width:1100px){
+    #sidebar.sidebar{ -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+    #sidebar .menu{ -webkit-overflow-scrolling:touch; overscroll-behavior:contain; max-height:none; }
+  }
 </style>
 </head>
 <body>
@@ -122,9 +133,6 @@
     </button>
     <button type="button" data-tab="ranking" onclick="switchAdminTab('ranking', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 4"/><path d="M17 6h3a3 3 0 0 1-3 4"/></svg></span><span data-i18n="nav.ranking">Ranking</span>
-    </button>
-    <button type="button" data-tab="payouts" onclick="switchAdminTab('payouts', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6v12"/><path d="M18 6v12"/></svg></span><span data-i18n="nav.payouts">Repasses</span>
     </button>
     <button type="button" data-tab="config" onclick="switchAdminTab('config', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 2.9a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1l.4 2.9h4.8l.4-2.9a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6a7 7 0 0 0 .1-1z"/></svg></span><span data-i18n="nav.config">Configurações</span>
@@ -225,7 +233,7 @@
             <div class="note" data-i18n="overview.kpi.mrr.note">Cobrança automática ainda não ligada — valor de tabela.</div>
           </div>
         </div>
-        <div class="card kpi span-4" onclick="switchAdminTab('payouts', document.querySelector('[data-tab=payouts]'))">
+        <div class="card kpi span-4" onclick="switchAdminTab('finance', document.querySelector('[data-tab=finance]'))">
           <div class="kpi-top">
             <div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div>
             <div class="kpi-arrow">›</div>
@@ -378,16 +386,8 @@
       <div style="display:flex;justify-content:center;margin-top:16px">
         <button id="transactionsLoadMoreBtn" class="btn secondary" type="button" onclick="loadMoreTransactions()" style="display:none" data-i18n="finance.tx.loadMore">Mostrar mais</button>
       </div>
-    </section>
 
-    <!-- ===== Ranking ===== -->
-    <section class="page" id="page-ranking">
-      <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="ranking.subtitle">Ordenado por MRR estimado + comissão real coletada — quem mais gera valor pra StayFlow hoje.</p>
-      <div id="rankList"></div>
-    </section>
-
-    <!-- ===== Repasses ===== -->
-    <section class="page" id="page-payouts">
+      <div class="section-title" data-i18n="finance.section.payouts">Repasses</div>
       <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="payouts.subtitle">Saldo devido a cada hospedagem por indicar venda de item de agência parceira — já embutido na taxa cobrada, ainda não repassado.</p>
       <div style="overflow-x:auto">
         <table class="table">
@@ -400,6 +400,12 @@
       <div class="sf-empty" id="payoutEmpty" style="display:none">
         <div><strong data-i18n="payouts.empty">Nenhum repasse pendente.</strong></div>
       </div>
+    </section>
+
+    <!-- ===== Ranking ===== -->
+    <section class="page" id="page-ranking">
+      <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="ranking.subtitle">Ordenado por MRR estimado + comissão real coletada — quem mais gera valor pra StayFlow hoje.</p>
+      <div id="rankList"></div>
     </section>
 
     <!-- ===== Configurações ===== -->
@@ -429,7 +435,7 @@
     pt: {
       "nav.overview": "Visão geral", "nav.chat": "Meu chat", "nav.support": "Suporte",
       "nav.properties": "Propriedades", "nav.finance": "Financeiro", "nav.ranking": "Ranking",
-      "nav.payouts": "Repasses", "nav.config": "Configurações", "nav.collapse": "Recolher menu",
+      "nav.config": "Configurações", "nav.collapse": "Recolher menu",
       "tagline": "Painel do operador",
       "topbar.overview.title": "Visão geral", "topbar.overview.subtitle": "Visão viva da StayFlow — não é o dashboard de nenhuma conta específica.",
       "topbar.chat.title": "Meu chat", "topbar.chat.subtitle": "Conversas reais do número comercial oficial da StayFlow.",
@@ -437,7 +443,6 @@
       "topbar.properties.title": "Propriedades", "topbar.properties.subtitle": "Todas as hospedagens e agências inscritas na StayFlow.",
       "topbar.finance.title": "Financeiro", "topbar.finance.subtitle": "Relatório completo: por propriedade e registro de transações.",
       "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Quem mais gera valor pra StayFlow hoje.",
-      "topbar.payouts.title": "Repasses", "topbar.payouts.subtitle": "Saldo devido a hospedagens por indicação de parceiro.",
       "topbar.config.title": "Configurações", "topbar.config.subtitle": "Status das integrações de nível StayFlow.",
       "propertySelector.name": "Propriedades", "propertySelector.meta": "Ir para o dashboard de...",
       "propertySelector.title": "Ir para o dashboard de uma propriedade", "propertySelector.searchPlaceholder": "Buscar propriedade...",
@@ -474,7 +479,7 @@
       "finance.kpi.commission": "Comissão real coletada", "finance.kpi.commission.note": "Dinheiro real, já processado.",
       "finance.section.byProperty": "Por propriedade", "finance.sort.value": "Ordenar por valor gerado", "finance.sort.name": "Ordenar por nome",
       "finance.table.property": "Propriedade", "finance.table.plan": "Plano", "finance.table.mrr": "MRR", "finance.table.volume": "Volume processado", "finance.table.commission": "Comissão",
-      "finance.section.transactions": "Registro de transações",
+      "finance.section.transactions": "Registro de transações", "finance.section.payouts": "Repasses",
       "finance.tx.date": "Data", "finance.tx.property": "Propriedade", "finance.tx.description": "Descrição", "finance.tx.type": "Tipo", "finance.tx.amount": "Valor", "finance.tx.commission": "Comissão", "finance.tx.status": "Status",
       "finance.tx.empty": "Nenhuma transação ainda.", "finance.tx.loadMore": "Mostrar mais", "finance.noMatch": "Nenhuma propriedade encontrada.",
       "tx.status.pending": "Pendente", "tx.status.paid": "Pago", "tx.status.failed": "Falhou", "tx.status.refunded": "Reembolsado", "tx.status.cancelled": "Cancelado",
@@ -497,7 +502,7 @@
     en: {
       "nav.overview": "Overview", "nav.chat": "My chat", "nav.support": "Support",
       "nav.properties": "Properties", "nav.finance": "Finance", "nav.ranking": "Ranking",
-      "nav.payouts": "Payouts", "nav.config": "Settings", "nav.collapse": "Collapse menu",
+      "nav.config": "Settings", "nav.collapse": "Collapse menu",
       "tagline": "Operator panel",
       "topbar.overview.title": "Overview", "topbar.overview.subtitle": "Live view of StayFlow — not any specific account's dashboard.",
       "topbar.chat.title": "My chat", "topbar.chat.subtitle": "Real conversations from StayFlow's official business number.",
@@ -505,7 +510,6 @@
       "topbar.properties.title": "Properties", "topbar.properties.subtitle": "Every lodging and agency signed up on StayFlow.",
       "topbar.finance.title": "Finance", "topbar.finance.subtitle": "Full report: by property and transaction log.",
       "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Who generates the most value for StayFlow today.",
-      "topbar.payouts.title": "Payouts", "topbar.payouts.subtitle": "Balance owed to properties for partner referrals.",
       "topbar.config.title": "Settings", "topbar.config.subtitle": "Status of StayFlow-level integrations.",
       "propertySelector.name": "Properties", "propertySelector.meta": "Go to the dashboard of...",
       "propertySelector.title": "Go to a property's dashboard", "propertySelector.searchPlaceholder": "Search property...",
@@ -542,7 +546,7 @@
       "finance.kpi.commission": "Commission collected", "finance.kpi.commission.note": "Real money, already processed.",
       "finance.section.byProperty": "By property", "finance.sort.value": "Sort by value generated", "finance.sort.name": "Sort by name",
       "finance.table.property": "Property", "finance.table.plan": "Plan", "finance.table.mrr": "MRR", "finance.table.volume": "Volume processed", "finance.table.commission": "Commission",
-      "finance.section.transactions": "Transaction log",
+      "finance.section.transactions": "Transaction log", "finance.section.payouts": "Payouts",
       "finance.tx.date": "Date", "finance.tx.property": "Property", "finance.tx.description": "Description", "finance.tx.type": "Type", "finance.tx.amount": "Amount", "finance.tx.commission": "Commission", "finance.tx.status": "Status",
       "finance.tx.empty": "No transactions yet.", "finance.tx.loadMore": "Show more", "finance.noMatch": "No property found.",
       "tx.status.pending": "Pending", "tx.status.paid": "Paid", "tx.status.failed": "Failed", "tx.status.refunded": "Refunded", "tx.status.cancelled": "Cancelled",
@@ -565,7 +569,7 @@
     es: {
       "nav.overview": "Visión general", "nav.chat": "Mi chat", "nav.support": "Soporte",
       "nav.properties": "Propiedades", "nav.finance": "Finanzas", "nav.ranking": "Ranking",
-      "nav.payouts": "Pagos a socios", "nav.config": "Configuración", "nav.collapse": "Colapsar menú",
+      "nav.config": "Configuración", "nav.collapse": "Colapsar menú",
       "tagline": "Panel del operador",
       "topbar.overview.title": "Visión general", "topbar.overview.subtitle": "Vista viva de StayFlow — no es el dashboard de ninguna cuenta específica.",
       "topbar.chat.title": "Mi chat", "topbar.chat.subtitle": "Conversaciones reales del número comercial oficial de StayFlow.",
@@ -573,7 +577,6 @@
       "topbar.properties.title": "Propiedades", "topbar.properties.subtitle": "Todos los hospedajes y agencias inscritos en StayFlow.",
       "topbar.finance.title": "Finanzas", "topbar.finance.subtitle": "Informe completo: por propiedad y registro de transacciones.",
       "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Quién genera más valor para StayFlow hoy.",
-      "topbar.payouts.title": "Pagos a socios", "topbar.payouts.subtitle": "Saldo adeudado a hospedajes por referir a un socio.",
       "topbar.config.title": "Configuración", "topbar.config.subtitle": "Estado de las integraciones a nivel StayFlow.",
       "propertySelector.name": "Propiedades", "propertySelector.meta": "Ir al dashboard de...",
       "propertySelector.title": "Ir al dashboard de una propiedad", "propertySelector.searchPlaceholder": "Buscar propiedad...",
@@ -610,7 +613,7 @@
       "finance.kpi.commission": "Comisión real cobrada", "finance.kpi.commission.note": "Dinero real, ya procesado.",
       "finance.section.byProperty": "Por propiedad", "finance.sort.value": "Ordenar por valor generado", "finance.sort.name": "Ordenar por nombre",
       "finance.table.property": "Propiedad", "finance.table.plan": "Plan", "finance.table.mrr": "MRR", "finance.table.volume": "Volumen procesado", "finance.table.commission": "Comisión",
-      "finance.section.transactions": "Registro de transacciones",
+      "finance.section.transactions": "Registro de transacciones", "finance.section.payouts": "Pagos a socios",
       "finance.tx.date": "Fecha", "finance.tx.property": "Propiedad", "finance.tx.description": "Descripción", "finance.tx.type": "Tipo", "finance.tx.amount": "Monto", "finance.tx.commission": "Comisión", "finance.tx.status": "Estado",
       "finance.tx.empty": "Todavía no hay transacciones.", "finance.tx.loadMore": "Mostrar más", "finance.noMatch": "No se encontró ninguna propiedad.",
       "tx.status.pending": "Pendiente", "tx.status.paid": "Pagado", "tx.status.failed": "Falló", "tx.status.refunded": "Reembolsado", "tx.status.cancelled": "Cancelado",
@@ -633,7 +636,7 @@
     fr: {
       "nav.overview": "Vue d'ensemble", "nav.chat": "Mon chat", "nav.support": "Support",
       "nav.properties": "Propriétés", "nav.finance": "Finances", "nav.ranking": "Classement",
-      "nav.payouts": "Reversements", "nav.config": "Paramètres", "nav.collapse": "Réduire le menu",
+      "nav.config": "Paramètres", "nav.collapse": "Réduire le menu",
       "tagline": "Panneau de l'opérateur",
       "topbar.overview.title": "Vue d'ensemble", "topbar.overview.subtitle": "Vue en direct de StayFlow — pas le tableau de bord d'un compte spécifique.",
       "topbar.chat.title": "Mon chat", "topbar.chat.subtitle": "Conversations réelles du numéro professionnel officiel de StayFlow.",
@@ -641,7 +644,6 @@
       "topbar.properties.title": "Propriétés", "topbar.properties.subtitle": "Tous les hébergements et agences inscrits sur StayFlow.",
       "topbar.finance.title": "Finances", "topbar.finance.subtitle": "Rapport complet : par propriété et journal des transactions.",
       "topbar.ranking.title": "Classement", "topbar.ranking.subtitle": "Qui génère le plus de valeur pour StayFlow aujourd'hui.",
-      "topbar.payouts.title": "Reversements", "topbar.payouts.subtitle": "Solde dû aux propriétés pour parrainage de partenaire.",
       "topbar.config.title": "Paramètres", "topbar.config.subtitle": "État des intégrations au niveau StayFlow.",
       "propertySelector.name": "Propriétés", "propertySelector.meta": "Aller au tableau de bord de...",
       "propertySelector.title": "Aller au tableau de bord d'une propriété", "propertySelector.searchPlaceholder": "Rechercher une propriété...",
@@ -678,7 +680,7 @@
       "finance.kpi.commission": "Commission réelle collectée", "finance.kpi.commission.note": "Argent réel, déjà traité.",
       "finance.section.byProperty": "Par propriété", "finance.sort.value": "Trier par valeur générée", "finance.sort.name": "Trier par nom",
       "finance.table.property": "Propriété", "finance.table.plan": "Forfait", "finance.table.mrr": "MRR", "finance.table.volume": "Volume traité", "finance.table.commission": "Commission",
-      "finance.section.transactions": "Journal des transactions",
+      "finance.section.transactions": "Journal des transactions", "finance.section.payouts": "Reversements",
       "finance.tx.date": "Date", "finance.tx.property": "Propriété", "finance.tx.description": "Description", "finance.tx.type": "Type", "finance.tx.amount": "Montant", "finance.tx.commission": "Commission", "finance.tx.status": "Statut",
       "finance.tx.empty": "Aucune transaction pour l'instant.", "finance.tx.loadMore": "Afficher plus", "finance.noMatch": "Aucune propriété trouvée.",
       "tx.status.pending": "En attente", "tx.status.paid": "Payé", "tx.status.failed": "Échoué", "tx.status.refunded": "Remboursé", "tx.status.cancelled": "Annulé",
@@ -701,7 +703,7 @@
     de: {
       "nav.overview": "Übersicht", "nav.chat": "Mein Chat", "nav.support": "Support",
       "nav.properties": "Unterkünfte", "nav.finance": "Finanzen", "nav.ranking": "Rangliste",
-      "nav.payouts": "Auszahlungen", "nav.config": "Einstellungen", "nav.collapse": "Menü einklappen",
+      "nav.config": "Einstellungen", "nav.collapse": "Menü einklappen",
       "tagline": "Betreiber-Panel",
       "topbar.overview.title": "Übersicht", "topbar.overview.subtitle": "Live-Ansicht von StayFlow — nicht das Dashboard eines bestimmten Kontos.",
       "topbar.chat.title": "Mein Chat", "topbar.chat.subtitle": "Echte Gespräche der offiziellen Geschäftsnummer von StayFlow.",
@@ -709,7 +711,6 @@
       "topbar.properties.title": "Unterkünfte", "topbar.properties.subtitle": "Alle bei StayFlow angemeldeten Unterkünfte und Agenturen.",
       "topbar.finance.title": "Finanzen", "topbar.finance.subtitle": "Vollständiger Bericht: nach Objekt und Transaktionsprotokoll.",
       "topbar.ranking.title": "Rangliste", "topbar.ranking.subtitle": "Wer heute den meisten Wert für StayFlow generiert.",
-      "topbar.payouts.title": "Auszahlungen", "topbar.payouts.subtitle": "Saldo, der Unterkünften für Partnerempfehlungen geschuldet wird.",
       "topbar.config.title": "Einstellungen", "topbar.config.subtitle": "Status der Integrationen auf StayFlow-Ebene.",
       "propertySelector.name": "Unterkünfte", "propertySelector.meta": "Zum Dashboard von...",
       "propertySelector.title": "Zum Dashboard einer Unterkunft gehen", "propertySelector.searchPlaceholder": "Unterkunft suchen...",
@@ -746,7 +747,7 @@
       "finance.kpi.commission": "Erhaltene Provision", "finance.kpi.commission.note": "Echtes Geld, bereits verarbeitet.",
       "finance.section.byProperty": "Nach Unterkunft", "finance.sort.value": "Nach generiertem Wert sortieren", "finance.sort.name": "Nach Namen sortieren",
       "finance.table.property": "Unterkunft", "finance.table.plan": "Tarif", "finance.table.mrr": "MRR", "finance.table.volume": "Verarbeitetes Volumen", "finance.table.commission": "Provision",
-      "finance.section.transactions": "Transaktionsprotokoll",
+      "finance.section.transactions": "Transaktionsprotokoll", "finance.section.payouts": "Auszahlungen",
       "finance.tx.date": "Datum", "finance.tx.property": "Unterkunft", "finance.tx.description": "Beschreibung", "finance.tx.type": "Typ", "finance.tx.amount": "Betrag", "finance.tx.commission": "Provision", "finance.tx.status": "Status",
       "finance.tx.empty": "Noch keine Transaktionen.", "finance.tx.loadMore": "Mehr anzeigen", "finance.noMatch": "Keine Unterkunft gefunden.",
       "tx.status.pending": "Ausstehend", "tx.status.paid": "Bezahlt", "tx.status.failed": "Fehlgeschlagen", "tx.status.refunded": "Erstattet", "tx.status.cancelled": "Storniert",
@@ -1120,6 +1121,7 @@
     renderFinanceSummary();
     renderFinanceTable();
     loadTransactions(true);
+    loadPayouts();
   }
 
   // ===== Configurações =====
@@ -1574,7 +1576,6 @@
       await loadOverview();
       await loadMyChatGuests();
       await loadSupportThreads();
-      await loadPayouts();
       loadFinance();
       loadIntegrationsStatus();
 

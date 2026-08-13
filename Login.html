@@ -46,11 +46,11 @@
     <div id="loginMessage" class="error"></div>
 
     <div class="small">
-      Ainda não tem acesso? Fale com o administrador do hostel para criar um usuário.
+      Ainda não tem acesso? Fale com o administrador da sua hospedagem ou agência para criar um usuário.
     </div>
 
     <div class="small">
-      Seu hostel ainda não tem conta na StayFlow? <a href="Register.html">Criar conta</a>
+      Sua hospedagem ou agência ainda não tem conta na StayFlow? <a href="Register.html">Criar conta</a>
     </div>
   </div>
 
@@ -61,8 +61,8 @@
       <p>Smart Stay Solutions</p>
     </div>
 
-    <h2>Escolha o hostel</h2>
-    <p>Sua conta tem acesso a mais de um hostel. Selecione qual voce
+    <h2>Escolha a conta</h2>
+    <p>Sua conta tem acesso a mais de uma hospedagem/agência. Selecione qual voce
     quer usar agora.</p>
 
     <div id="hostelList"></div>
@@ -159,7 +159,44 @@
       const list = document.getElementById("hostelList");
       list.innerHTML = "";
 
-      data.hostels.forEach(h => {
+      // "Meu painel" (StayFlow Admin) vem primeiro e maior - so aparece
+      // pra quem tem o e-mail na allowlist/equipe StayFlow (ver
+      // is_stayflow_admin em routes/auth.py). Vai direto pra admin.html,
+      // sem passar por /select-hostel (acesso nao depende de hostel
+      // nenhum aqui).
+      if(data.is_stayflow_admin){
+        const adminBtn = document.createElement("button");
+        adminBtn.type = "button";
+        adminBtn.className = "auth-btn";
+        adminBtn.style.marginBottom = "16px";
+        adminBtn.style.fontSize = "16px";
+        adminBtn.style.padding = "16px";
+        adminBtn.textContent = "🛠 StayFlow — Admin (Meu painel)";
+        adminBtn.addEventListener("click", () => {
+          window.location.href = "admin.html";
+        });
+        list.appendChild(adminBtn);
+
+        const divider = document.createElement("div");
+        divider.className = "small";
+        divider.style.margin = "4px 0 14px";
+        divider.style.textAlign = "center";
+        divider.textContent = "— ou entre direto numa conta —";
+        list.appendChild(divider);
+      }
+
+      // Hospedagens antes de agencias; entre agencias, turismo antes das
+      // demais (aluguel de carro/bike/equipamento) - so pra bater com a
+      // ordem que faz mais sentido pro dia a dia hoje.
+      const sorted = [...data.hostels].sort((a, b) => {
+        const kindRank = h => h.account_kind === "agency" ? 1 : 0;
+        if(kindRank(a) !== kindRank(b)) return kindRank(a) - kindRank(b);
+        const catRank = h => h.agency_category === "turismo" ? 0 : 1;
+        if(catRank(a) !== catRank(b)) return catRank(a) - catRank(b);
+        return (a.hostel_name || "").localeCompare(b.hostel_name || "");
+      });
+
+      sorted.forEach(h => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "auth-btn";
@@ -176,7 +213,7 @@
             });
             const selectData = await res.json();
             if (!res.ok || !selectData.success){
-              selectorMsg.textContent = selectData.message || "Nao foi possivel entrar nesse hostel.";
+              selectorMsg.textContent = selectData.message || "Não foi possível entrar nessa conta.";
               return;
             }
             finishLogin(selectData);
