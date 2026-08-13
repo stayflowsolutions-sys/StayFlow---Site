@@ -361,14 +361,26 @@ def me():
     session_id = session.get("session_id")
     session_data = get_valid_session(session_id) if session_id else None
 
-    # hostel_id None cobre tanto "sem sessao" quanto "sessao pending"
-    # (login multi-hostel sem escolha ainda) - em ambos os casos, /me
-    # nao tem um payload completo pra devolver.
-    if not session_data or not session_data["hostel_id"]:
+    if not session_data:
         return jsonify({"success": False, "message": "Not authenticated."}), 401
 
+    hostel_id = session_data["hostel_id"]
+
+    if not hostel_id:
+        # hostel_id None cobre 2 casos bem diferentes: (a) sessao
+        # "pending" de login multi-hostel sem escolha ainda feita - sem
+        # payload valido pra devolver aqui, 401 mesmo; (b) membro da
+        # equipe StayFlow SEM NENHUMA hostel_membership (ver
+        # build_session_payload) - esse tem payload valido, mesmo com
+        # hostel_id None. So distingue os dois checando se a pessoa tem
+        # hostel nenhum: se tem, era pra ter escolhido um (caso a); se
+        # nao tem nenhum e e admin StayFlow, e o caso b.
+        user = get_user_by_id(session_data["user_id"])
+        if not user or not is_stayflow_admin_email(user["email"]) or get_user_hostels(user["id"]):
+            return jsonify({"success": False, "message": "Not authenticated."}), 401
+
     payload = build_session_payload(
-        session_data["user_id"], session_data["hostel_id"],
+        session_data["user_id"], hostel_id,
         impersonating_from_hostel_id=session_data.get("impersonating_from_hostel_id"),
     )
 
