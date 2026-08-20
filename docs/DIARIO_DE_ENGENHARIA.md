@@ -5739,3 +5739,93 @@ muito antes desta sessão.
 Mirror do backend (`HostelBot/StayFlow---Site/docs/`) sincronizado com
 as mesmas duas versões finais, mantendo a prática estabelecida desde a
 Sessão 9 de versionar os documentos também no repositório do backend.
+
+## SESSÃO 11 - 20/08/2026
+
+### Suporte real a fotos no chat
+
+Antes desta sessão, qualquer imagem recebida de um hóspede pelo
+WhatsApp/Instagram/Messenger era arquivada automaticamente como "foto
+de documento de identidade", mesmo quando não tinha nada a ver com
+isso, e a IA nunca via a imagem de verdade — só sabia que "um arquivo
+chegou". Implementado suporte de verdade: `messages.media_path`/
+`media_mime_type`/`media_token` (colunas novas) guardam a mídia real;
+os webhooks (`routes/whatsapp_webhook.py`, `routes/meta_webhook.py`)
+passam a encaminhar a foto pelo pipeline normal de atendimento
+(`process_incoming_message`, agora aceitando `media_bytes`/
+`media_mime_type`) em vez do fluxo antigo "sempre é documento";
+`ask_ai()` (`services/ai_service.py`) ganhou um parâmetro
+`image_data_url` que monta o conteúdo multimodal (`image_url`) quando
+existe foto, então a IA reage de verdade ao que está na imagem.
+Equipe também pode mandar foto pro hóspede (`POST
+/guests/<id>/send-photo` e o equivalente em "Meu chat",
+`routes/guests.py`/`routes/stayflow_admin.py`), despachada pelo canal
+real do hóspede via `send_whatsapp_image`/`send_messenger_image`/
+`send_instagram_image` (`services/*_service.py`) — corrigido de brinde
+um bug real encontrado no processo: `send_message_to_guest_now` só
+mandava mensagem por WhatsApp antes, não importava qual fosse o canal
+de origem do hóspede. Nova rota pública `GET /media/chat/<token>`
+(`app.py`, token de 16 caracteres hex validado por regex, sem sessão)
+existe porque as próprias APIs da Meta baixam a imagem que a StayFlow
+manda de volta, e não têm como autenticar com cookie de sessão.
+Testado com três scripts próprios contra banco SQLite temporário antes
+de sincronizar pros três locais de código (`StayFlow---Site`,
+`HostelBot` raiz, `HostelBot/StayFlow---Site`) e publicar. Documentado
+no Documento Mestre, seção 16.2.
+
+### Nova regra: documentar ao terminar, não quando lembrado
+
+No meio da sessão, ao planejar a feature de Prospecção (abaixo), o
+assistente presumiu — sem checar — que a feature de StayFlow Hub/
+impersonation (Sessão 10) ainda não estava documentada, e chegou a
+escrever isso num plano. O usuário corrigiu na hora: "confere direito
+no código, já arrumamos isso" — checado de novo, a Sessão 10 já tinha
+documentado tudo (Documento Mestre 16.33, Diário acima). O erro real
+não foi a mensagem errada em si, foi o hábito: documentação vinha
+sendo tratada como passo à parte, pedido depois, em vez de parte do
+fechamento de cada tarefa — o que já tinha acontecido de verdade uma
+vez antes (a rodada inteira de nove funcionalidades da Sessão 10, só
+documentada quando cobrada). Regra registrada de forma permanente
+(memória do assistente, `feedback_update_docs_after_task`): toda
+tarefa de código só conta como terminada depois do Documento Mestre e
+deste Diário atualizados, não como um pedido separado.
+
+### Nova aba "Prospecção" no painel interno
+
+Contexto: o usuário está começando a prospectar hospedagens piloto
+para a StayFlow, por duas vias — abordagem presencial (sem hora
+marcada, começando pelo hostel Dale) e abordagem digital (WhatsApp,
+e-mail, Instagram), reaproveitando contatos de quando trabalhava com
+pacotes de viagem numa agência em Bariloche, enquanto aguarda resposta
+do Diplomatic Hotel (já em prospecção havia mais tempo, ver v1.40.0).
+Para organizar isso, uma planilha (Google Sheets) foi montada fora do
+sistema com as colunas Nome, Hospedagem, Prioridade, Canal, Status,
+Último contato, Próxima ação, Data da próxima ação e Observações. O
+usuário pediu pra essa lista morar dentro do próprio painel interno da
+StayFlow em vez de numa aba de navegador separada.
+
+Implementado reaproveitando ponta a ponta o padrão já existente da aba
+Despesas (`admin.html` + `routes/stayflow_admin.py` + `database.py`),
+por ser estruturalmente idêntico ao que se precisava: tabela não-tenant
+(sem `hostel_id`, dado da própria StayFlow), form inline de criar/
+editar, filtro por status, badge de pendência no menu. Tabela nova
+`stayflow_leads`, CRUD completo (`create_stayflow_lead`,
+`list_stayflow_leads` com filtro opcional por status/prioridade,
+`get_stayflow_lead`, `update_stayflow_lead` por allowlist dinâmica de
+campos, `delete_stayflow_lead`), rotas `GET/POST /stayflow-admin/leads`
+e `PATCH/DELETE /stayflow-admin/leads/<id>` protegidas por
+`@require_stayflow_admin`. Diferente do resto do painel, o conteúdo da
+aba (formulário, cabeçalhos de tabela) ficou só em português, sem
+`data-i18n` completo — é ferramenta de uso exclusivo do usuário, não
+faz sentido i18n aqui; só o item de menu e o título/subtítulo do
+topbar ganharam chave de tradução nos 5 idiomas, pro mecanismo de
+troca de aba não quebrar. Testado com dois scripts próprios: um contra
+o banco direto (create/list/get/update/delete/filtros/ordenação por
+data de próxima ação), outro contra as rotas Flask de verdade (cliente
+de teste com autenticação simulada, cobrindo os casos de validação —
+nome vazio, prioridade/status inválidos — e o caso de sessão ausente,
+401). Documentado no Documento Mestre, seção 16.34, e na tabela de
+Controle de Versões (v1.48.0 fotos no chat, v1.49.0 Prospecção).
+
+Mirror do backend (`HostelBot/StayFlow---Site/docs/`) sincronizado com
+as mesmas versões finais, mesma prática das sessões anteriores.

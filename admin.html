@@ -148,6 +148,9 @@
     <button type="button" data-tab="expenses" onclick="switchAdminTab('expenses', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 9h10"/><path d="M7 13h10"/><path d="M7 17h6"/></svg></span><span data-i18n="nav.expenses">Despesas</span><span class="badge" id="expensesDueBadge" style="display:none">0</span>
     </button>
+    <button type="button" data-tab="prospects" onclick="switchAdminTab('prospects', this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/></svg></span><span data-i18n="nav.prospects">Prospecção</span><span class="badge" id="prospectsFollowupBadge" style="display:none">0</span>
+    </button>
     <button type="button" data-tab="team" onclick="switchAdminTab('team', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span><span data-i18n="nav.team">Equipe</span>
     </button>
@@ -544,6 +547,127 @@
       </div>
     </section>
 
+    <!-- ===== Prospecção (CRM leve de outreach comercial - so uso interno, sem i18n no conteudo) ===== -->
+    <section class="page" id="page-prospects">
+      <div class="grid">
+        <div class="card kpi span-4">
+          <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.3" opacity=".7"/><path d="M15.3 20c0-2.4 1.6-4.6 4.2-5.2" opacity=".7"/></svg></div></div>
+          <div><div class="label">Total de contatos</div><div class="value" id="leadsTotalCount">—</div><div class="note" id="leadsHighPriorityCount"></div></div>
+        </div>
+        <div class="card kpi span-4">
+          <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div></div>
+          <div><div class="label">Piloto ativo</div><div class="value" id="leadsPilotCount">—</div><div class="note"></div></div>
+        </div>
+        <div class="card kpi span-4">
+          <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></div></div>
+          <div><div class="label">Aguardando resposta</div><div class="value" id="leadsWaitingCount">—</div><div class="note"></div></div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:26px 0 12px">
+        <div class="section-title" style="margin:0">Prospecção</div>
+        <button type="button" class="btn" onclick="openLeadForm()">+ Novo contato</button>
+      </div>
+
+      <div id="leadFormCard" class="card" style="display:none;margin-bottom:18px">
+        <div class="grid">
+          <div class="span-6">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Nome</label>
+            <input type="text" id="leadName" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-6">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Hospedagem</label>
+            <input type="text" id="leadProperty" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-4">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Prioridade</label>
+            <select id="leadPriority" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+              <option value="alta">Alta</option>
+              <option value="media" selected>Média</option>
+              <option value="baixa">Baixa</option>
+            </select>
+          </div>
+          <div class="span-4">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Canal</label>
+            <select id="leadChannel" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+              <option value="whatsapp">WhatsApp</option>
+              <option value="email">E-mail</option>
+              <option value="instagram">Instagram</option>
+              <option value="presencial">Presencial</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div class="span-4">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Status</label>
+            <select id="leadStatus" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+              <option value="a_contatar">A contatar</option>
+              <option value="mensagem_enviada">Mensagem enviada</option>
+              <option value="respondeu">Respondeu</option>
+              <option value="call_agendada">Call agendada</option>
+              <option value="call_feita">Call feita</option>
+              <option value="piloto_ativo">Piloto ativo</option>
+              <option value="sem_interesse">Sem interesse</option>
+              <option value="perdido">Perdido</option>
+            </select>
+          </div>
+          <div class="span-4">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Último contato</label>
+            <input type="date" id="leadLastContact" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-4">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Data da próxima ação</label>
+            <input type="date" id="leadNextActionDate" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-4">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Próxima ação</label>
+            <input type="text" id="leadNextAction" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-12">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Observações</label>
+            <input type="text" id="leadNotes" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+          <button type="button" class="btn secondary" onclick="closeLeadForm()">Cancelar</button>
+          <button type="button" class="btn" onclick="saveLead()">Salvar</button>
+        </div>
+      </div>
+
+      <div class="prop-toolbar">
+        <select id="leadStatusFilter" onchange="loadLeads()">
+          <option value="">Todos os status</option>
+          <option value="a_contatar">A contatar</option>
+          <option value="mensagem_enviada">Mensagem enviada</option>
+          <option value="respondeu">Respondeu</option>
+          <option value="call_agendada">Call agendada</option>
+          <option value="call_feita">Call feita</option>
+          <option value="piloto_ativo">Piloto ativo</option>
+          <option value="sem_interesse">Sem interesse</option>
+          <option value="perdido">Perdido</option>
+        </select>
+        <select id="leadPriorityFilter" onchange="loadLeads()">
+          <option value="">Todas as prioridades</option>
+          <option value="alta">Alta</option>
+          <option value="media">Média</option>
+          <option value="baixa">Baixa</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nome</th><th>Hospedagem</th><th>Prioridade</th><th>Canal</th>
+              <th>Status</th><th>Próxima ação</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="leadsTableBody"></tbody>
+        </table>
+      </div>
+      <div class="sf-empty" id="leadsEmpty" style="display:none">
+        <div><strong>Nenhum contato cadastrado ainda.</strong></div>
+      </div>
+    </section>
+
     <!-- ===== Equipe ===== -->
     <section class="page" id="page-team">
       <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="team.subtitle">Quem tem acesso ao Meu painel, além do seu próprio login. Cada pessoa ganha acesso completo — não existe permissão parcial aqui ainda.</p>
@@ -627,8 +751,9 @@
       "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Quem mais gera valor pra StayFlow hoje.",
       "topbar.config.title": "Configurações", "topbar.config.subtitle": "Status das integrações de nível StayFlow.",
       "topbar.expenses.title": "Despesas", "topbar.expenses.subtitle": "Custos da própria StayFlow — hosting, ferramentas, impostos.",
+      "topbar.prospects.title": "Prospecção", "topbar.prospects.subtitle": "Contatos de hospedagens em prospecção comercial.",
       "topbar.team.title": "Equipe", "topbar.team.subtitle": "Quem tem acesso ao Meu painel.",
-      "nav.expenses": "Despesas", "nav.team": "Equipe",
+      "nav.expenses": "Despesas", "nav.prospects": "Prospecção", "nav.team": "Equipe",
       "expenses.kpi.pending": "Pendentes", "expenses.kpi.dueSoon": "Vencendo em 7 dias", "expenses.kpi.paidThisMonth": "Pagas este mês",
       "expenses.section.list": "Despesas", "expenses.newBtn": "+ Nova despesa",
       "expenses.form.title": "Título", "expenses.form.category": "Categoria", "expenses.form.recurrence": "Recorrência",
@@ -724,8 +849,9 @@
       "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Who generates the most value for StayFlow today.",
       "topbar.config.title": "Settings", "topbar.config.subtitle": "Status of StayFlow-level integrations.",
       "topbar.expenses.title": "Expenses", "topbar.expenses.subtitle": "StayFlow's own costs — hosting, tools, taxes.",
+      "topbar.prospects.title": "Prospecting", "topbar.prospects.subtitle": "Sales outreach contacts.",
       "topbar.team.title": "Team", "topbar.team.subtitle": "Who has access to My panel.",
-      "nav.expenses": "Expenses", "nav.team": "Team",
+      "nav.expenses": "Expenses", "nav.prospects": "Prospecting", "nav.team": "Team",
       "expenses.kpi.pending": "Pending", "expenses.kpi.dueSoon": "Due in 7 days", "expenses.kpi.paidThisMonth": "Paid this month",
       "expenses.section.list": "Expenses", "expenses.newBtn": "+ New expense",
       "expenses.form.title": "Title", "expenses.form.category": "Category", "expenses.form.recurrence": "Recurrence",
@@ -821,8 +947,9 @@
       "topbar.ranking.title": "Ranking", "topbar.ranking.subtitle": "Quién genera más valor para StayFlow hoy.",
       "topbar.config.title": "Configuración", "topbar.config.subtitle": "Estado de las integraciones a nivel StayFlow.",
       "topbar.expenses.title": "Gastos", "topbar.expenses.subtitle": "Costos propios de StayFlow — hosting, herramientas, impuestos.",
+      "topbar.prospects.title": "Prospección", "topbar.prospects.subtitle": "Contactos de prospección comercial.",
       "topbar.team.title": "Equipo", "topbar.team.subtitle": "Quién tiene acceso a Mi panel.",
-      "nav.expenses": "Gastos", "nav.team": "Equipo",
+      "nav.expenses": "Gastos", "nav.prospects": "Prospección", "nav.team": "Equipo",
       "expenses.kpi.pending": "Pendientes", "expenses.kpi.dueSoon": "Vencen en 7 días", "expenses.kpi.paidThisMonth": "Pagados este mes",
       "expenses.section.list": "Gastos", "expenses.newBtn": "+ Nuevo gasto",
       "expenses.form.title": "Título", "expenses.form.category": "Categoría", "expenses.form.recurrence": "Recurrencia",
@@ -918,8 +1045,9 @@
       "topbar.ranking.title": "Classement", "topbar.ranking.subtitle": "Qui génère le plus de valeur pour StayFlow aujourd'hui.",
       "topbar.config.title": "Paramètres", "topbar.config.subtitle": "État des intégrations au niveau StayFlow.",
       "topbar.expenses.title": "Dépenses", "topbar.expenses.subtitle": "Coûts propres de StayFlow — hébergement, outils, impôts.",
+      "topbar.prospects.title": "Prospection", "topbar.prospects.subtitle": "Contacts de prospection commerciale.",
       "topbar.team.title": "Équipe", "topbar.team.subtitle": "Qui a accès à Mon panneau.",
-      "nav.expenses": "Dépenses", "nav.team": "Équipe",
+      "nav.expenses": "Dépenses", "nav.prospects": "Prospection", "nav.team": "Équipe",
       "expenses.kpi.pending": "En attente", "expenses.kpi.dueSoon": "Échéance sous 7 jours", "expenses.kpi.paidThisMonth": "Payées ce mois-ci",
       "expenses.section.list": "Dépenses", "expenses.newBtn": "+ Nouvelle dépense",
       "expenses.form.title": "Titre", "expenses.form.category": "Catégorie", "expenses.form.recurrence": "Récurrence",
@@ -1015,8 +1143,9 @@
       "topbar.ranking.title": "Rangliste", "topbar.ranking.subtitle": "Wer heute den meisten Wert für StayFlow generiert.",
       "topbar.config.title": "Einstellungen", "topbar.config.subtitle": "Status der Integrationen auf StayFlow-Ebene.",
       "topbar.expenses.title": "Ausgaben", "topbar.expenses.subtitle": "Eigene Kosten von StayFlow — Hosting, Tools, Steuern.",
+      "topbar.prospects.title": "Akquise", "topbar.prospects.subtitle": "Kontakte für die Vertriebsakquise.",
       "topbar.team.title": "Team", "topbar.team.subtitle": "Wer Zugriff auf Mein Panel hat.",
-      "nav.expenses": "Ausgaben", "nav.team": "Team",
+      "nav.expenses": "Ausgaben", "nav.prospects": "Akquise", "nav.team": "Team",
       "expenses.kpi.pending": "Ausstehend", "expenses.kpi.dueSoon": "Fällig in 7 Tagen", "expenses.kpi.paidThisMonth": "Diesen Monat bezahlt",
       "expenses.section.list": "Ausgaben", "expenses.newBtn": "+ Neue Ausgabe",
       "expenses.form.title": "Titel", "expenses.form.category": "Kategorie", "expenses.form.recurrence": "Wiederholung",
@@ -1187,6 +1316,7 @@
     loadIntegrationsStatus();
     if(txOffset > 0) loadTransactions(true);
     loadExpenses();
+    loadLeads();
     loadTeam();
     renderGrowthChart();
   }
@@ -1824,6 +1954,146 @@
 
   document.getElementById("expStatusFilter").addEventListener("change", loadExpenses);
 
+  // ===== Prospecção (CRM leve de outreach comercial) =====
+  let leadsCache = [];
+  let editingLeadId = null;
+
+  const LEAD_STATUS_LABELS = {
+    a_contatar: "A contatar", mensagem_enviada: "Mensagem enviada", respondeu: "Respondeu",
+    call_agendada: "Call agendada", call_feita: "Call feita", piloto_ativo: "Piloto ativo",
+    sem_interesse: "Sem interesse", perdido: "Perdido",
+  };
+  const LEAD_STATUS_STYLE = {
+    a_contatar: "background:#fff3cd18;border-color:#fff3cd40;color:#e0c25a",
+    mensagem_enviada: "background:#dcebff18;border-color:#dcebff40;color:#6fa8ff",
+    respondeu: "background:#e4d9ff18;border-color:#e4d9ff40;color:#b48cf0",
+    call_agendada: "background:#d6f5e818;border-color:#d6f5e840;color:#3ddc97",
+    call_feita: "background:#d6f5e818;border-color:#d6f5e840;color:#3ddc97",
+    piloto_ativo: "background:#c8f2c818;border-color:#c8f2c840;color:#4fd94f",
+    sem_interesse: "background:#f0f0f018;border-color:#f0f0f040;color:#9aa3af",
+    perdido: "background:#fbd9d918;border-color:#fbd9d940;color:#ff9caf",
+  };
+  const LEAD_PRIORITY_LABELS = { alta: "Alta", media: "Média", baixa: "Baixa" };
+  const LEAD_CHANNEL_LABELS = { whatsapp: "WhatsApp", email: "E-mail", instagram: "Instagram", presencial: "Presencial", outro: "Outro" };
+
+  window.openLeadForm = function(lead){
+    editingLeadId = lead ? lead.id : null;
+    document.getElementById("leadName").value = lead ? lead.name : "";
+    document.getElementById("leadProperty").value = lead ? (lead.property_name || "") : "";
+    document.getElementById("leadPriority").value = lead ? lead.priority : "media";
+    document.getElementById("leadChannel").value = lead ? (lead.channel || "whatsapp") : "whatsapp";
+    document.getElementById("leadStatus").value = lead ? lead.status : "a_contatar";
+    document.getElementById("leadLastContact").value = lead ? (lead.last_contact_date || "") : "";
+    document.getElementById("leadNextActionDate").value = lead ? (lead.next_action_date || "") : "";
+    document.getElementById("leadNextAction").value = lead ? (lead.next_action || "") : "";
+    document.getElementById("leadNotes").value = lead ? (lead.notes || "") : "";
+    document.getElementById("leadFormCard").style.display = "block";
+  };
+  window.closeLeadForm = function(){
+    document.getElementById("leadFormCard").style.display = "none";
+    editingLeadId = null;
+  };
+
+  window.saveLead = async function(){
+    const name = document.getElementById("leadName").value.trim();
+    if(!name){
+      alert("Nome é obrigatório.");
+      return;
+    }
+    const payload = {
+      name,
+      property_name: document.getElementById("leadProperty").value.trim() || null,
+      priority: document.getElementById("leadPriority").value,
+      channel: document.getElementById("leadChannel").value,
+      status: document.getElementById("leadStatus").value,
+      last_contact_date: document.getElementById("leadLastContact").value || null,
+      next_action_date: document.getElementById("leadNextActionDate").value || null,
+      next_action: document.getElementById("leadNextAction").value.trim() || null,
+      notes: document.getElementById("leadNotes").value.trim() || null,
+    };
+    try{
+      const url = editingLeadId ? `/stayflow-admin/leads/${editingLeadId}` : "/stayflow-admin/leads";
+      const res = await fetch(url, {
+        method: editingLeadId ? "PATCH" : "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível salvar.");
+        return;
+      }
+      closeLeadForm();
+      loadLeads();
+    }catch(e){
+      console.warn("Erro ao salvar contato:", e);
+    }
+  };
+
+  window.deleteLead = async function(id){
+    if(!confirm("Excluir este contato?")) return;
+    try{
+      await fetch(`/stayflow-admin/leads/${id}`, { method: "DELETE", credentials: "same-origin" });
+      loadLeads();
+    }catch(e){
+      console.warn("Erro ao excluir contato:", e);
+    }
+  };
+
+  function leadRowHtml(l){
+    const today = new Date().toISOString().slice(0, 10);
+    const isOverdue = l.next_action_date && l.next_action_date < today && !["piloto_ativo", "sem_interesse", "perdido"].includes(l.status);
+    const nextActionLabel = l.next_action_date ? parseUtc(l.next_action_date + "T00:00:00")?.toLocaleDateString("pt-BR") : "—";
+    return `
+      <tr>
+        <td>${(l.name || "").replace(/</g, "&lt;")}</td>
+        <td>${(l.property_name || "—").replace(/</g, "&lt;")}</td>
+        <td>${LEAD_PRIORITY_LABELS[l.priority] || l.priority}</td>
+        <td>${LEAD_CHANNEL_LABELS[l.channel] || (l.channel || "—")}</td>
+        <td><span class="plan-chip" style="${LEAD_STATUS_STYLE[l.status] || ""}">${LEAD_STATUS_LABELS[l.status] || l.status}</span></td>
+        <td style="${isOverdue ? "color:#ff9caf;font-weight:700" : ""}">${nextActionLabel}${l.next_action ? ` — ${l.next_action.replace(/</g, "&lt;")}` : ""}</td>
+        <td style="white-space:nowrap">
+          <button type="button" class="payout-btn" onclick='openLeadForm(${JSON.stringify(l).replace(/'/g, "&#39;")})'>Editar</button>
+          <button type="button" class="payout-btn" style="background:#ff5d7618;border-color:#ff5d7630;color:#ff9caf;margin-left:6px" onclick="deleteLead(${l.id})">Excluir</button>
+        </td>
+      </tr>`;
+  }
+
+  async function loadLeads(){
+    try{
+      const res = await fetch("/stayflow-admin/leads", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      const statusFilter = document.getElementById("leadStatusFilter").value;
+      const priorityFilter = document.getElementById("leadPriorityFilter").value;
+      leadsCache = data.leads || [];
+      let filtered = leadsCache;
+      if(statusFilter) filtered = filtered.filter(l => l.status === statusFilter);
+      if(priorityFilter) filtered = filtered.filter(l => l.priority === priorityFilter);
+
+      document.getElementById("leadsTableBody").innerHTML = filtered.length ? filtered.map(leadRowHtml).join("") : "";
+      document.getElementById("leadsEmpty").style.display = filtered.length ? "none" : "flex";
+
+      document.getElementById("leadsTotalCount").textContent = String(leadsCache.length);
+      const highPriority = leadsCache.filter(l => l.priority === "alta").length;
+      document.getElementById("leadsHighPriorityCount").textContent = highPriority ? `${highPriority} de prioridade alta` : "";
+
+      document.getElementById("leadsPilotCount").textContent = String(leadsCache.filter(l => l.status === "piloto_ativo").length);
+      document.getElementById("leadsWaitingCount").textContent = String(leadsCache.filter(l => l.status === "a_contatar" || l.status === "mensagem_enviada").length);
+
+      const today = new Date().toISOString().slice(0, 10);
+      const overdue = leadsCache.filter(l => l.next_action_date && l.next_action_date < today && !["piloto_ativo", "sem_interesse", "perdido"].includes(l.status));
+      const badge = document.getElementById("prospectsFollowupBadge");
+      if(overdue.length){ badge.style.display = "inline-block"; badge.textContent = String(overdue.length); }
+      else badge.style.display = "none";
+    }catch(e){
+      console.warn("Erro ao carregar contatos:", e);
+    }
+  }
+
   // ===== Ask StayFlow (Meu painel) =====
   let askAdminHistory = [];
 
@@ -2353,6 +2623,7 @@
       loadFinance();
       loadIntegrationsStatus();
       loadExpenses();
+      loadLeads();
       loadTeam();
       loadGrowth();
 

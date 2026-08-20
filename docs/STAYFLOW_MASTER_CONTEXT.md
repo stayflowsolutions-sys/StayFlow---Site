@@ -175,6 +175,8 @@
 | 1.46.0 | 05/08/2026 | Oficial | Auditoria completa e correção do Documento Mestre e do Diário de Engenharia, motivada por cobrança explícita do usuário depois de uma auditoria anterior (nesta mesma sessão) ter sido apresentada como "revisão completa" sem seguir o protocolo formal de leitura sequencial de 100% do conteúdo. Repetida com rigor total: leitura sequencial confirmada das 8190 linhas do Documento Mestre e das 5397 linhas do Diário, mais verificação cruzada contra o código real (`utils/permissions.py`, `dashboard.html`, estrutura de pastas). Achados reais, não presentes em nenhuma auditoria anterior: (1) o catálogo de permissões estava documentado como 15 chaves em três pontos (12.3, 16.21, 16.22) quando `ALL_PERMISSIONS` já tinha 20 — faltavam 5 chaves (`kitchen`, `maintenance`, `patrimonial_security`, `parking`, `scheduling`) adicionadas em 04/08/2026 junto com um módulo operacional inteiro (5 áreas novas com IA integrada) que nunca chegou a ser registrado nem no Documento Mestre nem no Diário, apesar de já estar em produção; (2) dentro da própria seção 16.22, duas menções residuais a "14 permissões" sobreviveram à correção anterior (12→14→15) sem nunca chegar a 15, inconsistentes com o "15" corrigido na mesma seção; (3) o módulo de Escala (`routes/scheduling.py` — setores, grade de turnos, consulta de quem está de plantão, pedido/aceite de cobertura de turno, aba própria dentro de Equipe) não tinha nenhum registro em lugar nenhum do documento; (4) a lista de abas do Frontend no Capítulo 11.3 não mencionava a aba Eventos (existente desde a v1.45.0); (5) `docs/CHECKLIST_ATIVO.md`, citado em três pontos do Documento Mestre e dois do Diário como "fonte única de prioridades de trabalho" ainda em uso, não existe mais no repositório — sem registro de quando ou por que foi removido. Corrigidos todos os pontos acima; nova seção 16.32 documenta o módulo de Escala; nova nota na seção 9.1 documenta o desaparecimento do `CHECKLIST_ATIVO.md`. De quebra, resolvida uma dívida antiga registrada no próprio Diário (Sessão 7): `HostelBot/StayFlow---Site/docs/` estava sem rastreamento no Git desde 23/07/2026 (robocopy `/MIR` sem excluir `docs/`) — os dois documentos passaram a ser versionados de verdade também no repositório do backend. |
 
 | 1.47.0 | 13/08/2026 | Oficial | Rodada grande de funcionalidades construídas desde a v1.46.0 e nunca registradas neste documento até esta auditoria: (1) StayFlow Hub — painel interno da própria StayFlow (não do cliente), acesso por allowlist de e-mail (`STAYFLOW_ADMIN_EMAILS`, sem role "superadmin" no banco), listando todas as hospedagens/agências clientes com MRR estimado (tabela de preço, `PLAN_PRICES`) separado de propósito da comissão real de fato coletada (Mercado Pago Split, via `guest_charges`); ganhou impersonation real (`POST /stayflow-admin/impersonate`, reaponta `sessions.hostel_id` preservando o hostel de origem em `sessions.impersonating_from_hostel_id`, com registro em `impersonation_log`) — ver nova seção 16.33; (2) contas de agência parceira (Portfólio/Parceiros): `hostels.account_kind` (`lodging`/`agency`) e `agency_category`, catálogo `portfolio_items`, opt-in de outra hospedagem em `partner_offers`, comissão a pagar em `partner_referral_ledger`; Ask StayFlow e IA de atendimento (`services/ai_service.py`/`services/decision_engine.py`) passam a receber `account_kind` e trocam de prompt/ferramentas quando é agência (não tenta fluxo de reserva de quarto/check-in) — ver 14.3; (3) corrigido bug real de i18n: condição de corrida entre `assets/js/i18n-core.js` e `assets/js/i18n-dashboard-data.js` (o segundo carrega depois, perto do fim do `<body>`) matava silenciosamente `T()` e a atualização do título do topbar com `ReferenceError` quando chamados na janela entre os dois scripts — afetava de forma intermitente o modal de Câmbio, Escala, Equipe e Chats; (4) Opportunity Center passa a sugerir item de parceiro (`opportunities.suggested_partner_item_id`) quando a hospedagem não vende o que o hóspede pediu e existe algum item habilitado em `partner_offers` — hoje restrito ao intent `tour` do Decision Engine e sem matching semântico (sempre o primeiro item habilitado) — ver 16.4; (5) cadastro self-serve com plano escolhido: `planos.html` novo (página pública de preços, 3 planos reais — `PLAN_PRICES`: Starter US$89, Business US$349, Enterprise US$699+ negociado), `Register.html` lê `?plan=` da URL e envia `plan_name` para `POST /register`, que ativa o hostel automaticamente nesse plano via `set_billing_plan` sem aprovação manual — ver correção da seção 17.2/17.3 mais abaixo; (6) importador de dados via CSV (parser próprio em JavaScript, sem biblioteca externa) para Quartos, Hóspedes, Reservas, Equipe e Portfólio (`POST /rooms/import`, `/guests/import`, `/reservations/import`, `/team/import`, `/portfolio/items/import`) — ver nova seção 16.33; (7) tour de introdução no primeiro acesso (slides explicando os blocos do Dashboard, mais dica pontual por item de menu na primeira vez que é clicado), preferência gravada por pessoa em `users.onboarding_dismissed`/`user_feature_intros` (banco, não localStorage — funciona em qualquer dispositivo) — ver nova seção 16.33; (8) módulo de Operações ganhou botões de abrir chamado manual nas abas Cozinha/Manutenção/Segurança Patrimonial (reaproveitando rotas que já existiam sem nenhum botão ligado a elas) mais um botão dedicado de Estacionamento, e aba própria "Tarefas" para chamado avulso sem setor fixo (`POST /operations/tasks`, reaproveita a tabela `tickets` já existente com `type='task'`, sem notificação automática de plantão, diferente dos outros quatro tipos) — ver 16.14; (9) Ask StayFlow ganhou visão de imagem: `POST /ask` passa a aceitar `multipart/form-data` com foto (JPEG/PNG/WebP, convertida em data URI base64), e a IA (modelo `gpt-4.1-mini`, não Claude/Anthropic) decide sozinha se a foto é caso de reposição de estoque, pedido de cozinha, chamado de manutenção ou incidente de segurança, perguntando em vez de adivinhar quando a foto é ambígua — ver 16.27. De quebra, corrigida contradição real nas seções 17.2/17.3: o texto descrevia Billing como "modelo de cobrança em definição, sem processador nem plano ativo", desatualizado desde a Fase 1 (planos/trial/comp accounts, já em produção há mais tempo que este documento registrava) — reescrito refletindo o que de fato existe hoje e o que ainda não existe (cobrança recorrente automática da própria assinatura StayFlow, via Stripe/Mercado Pago Fase 2-3, continua só schema stub — não confundir com o Mercado Pago Split guest-facing, que já é real desde antes). |
+| 1.48.0 | 19/08/2026 | Oficial | Suporte real a fotos no chat (WhatsApp/Instagram/Messenger). Antes, qualquer imagem recebida de um hóspede era arquivada automaticamente como "documento de identidade" e a IA nunca via a imagem. `messages.media_path`/`media_mime_type`/`media_token` (novo) guardam a mídia de verdade; webhooks (`routes/whatsapp_webhook.py`, `routes/meta_webhook.py`) passam a encaminhar a foto pro pipeline normal (`process_incoming_message`, aceitando `media_bytes`/`media_mime_type`); `ask_ai()` (`services/ai_service.py`) ganhou suporte a visão (conteúdo multimodal `image_url`, modelo com visão). Equipe também pode enviar foto pro hóspede (`POST /guests/<id>/send-photo` e equivalente em "Meu chat"), despachada pelo canal real do hóspede via `send_whatsapp_image`/`send_messenger_image`/`send_instagram_image` — corrigido de brinde um bug real: `send_message_to_guest_now` só mandava por WhatsApp antes, independente do canal de origem do hóspede. Rota pública `GET /media/chat/<token>` (token de 16 caracteres hex, sem sessão) existe porque as APIs da Meta baixam a imagem enviada e não conseguem autenticar com cookie de sessão. Testado via scripts próprios contra banco temporário antes de sincronizar pros três locais e publicar — ver 16.2. |
+| 1.49.0 | 20/08/2026 | Oficial | Nova aba "Prospecção" no painel interno da StayFlow (`admin.html`) — CRM leve de outreach comercial, uso exclusivo da própria StayFlow (não é feature client-facing de hospedagem nenhuma). Motivada pelo usuário começar a prospectar hospedagens piloto (abordagem presencial e digital via WhatsApp/e-mail/Instagram) e querer controlar a lista de contatos dentro do próprio painel em vez de planilha externa. Tabela nova `stayflow_leads` (sem `hostel_id`, mesma categoria não-tenant de `stayflow_expenses`/`stayflow_team`): nome, hospedagem, prioridade (alta/média/baixa), canal (WhatsApp/e-mail/Instagram/presencial/outro), status (a contatar → mensagem enviada → respondeu → call agendada → call feita → piloto ativo, ou sem interesse/perdido), datas de último contato e próxima ação, observações. CRUD completo via `POST`/`PATCH`/`DELETE /stayflow-admin/leads`, protegido por `@require_stayflow_admin`, mesmo padrão de rotas/validação de `stayflow_admin.py` já usado pra despesas. Badge no menu e destaque visual em vermelho quando a data da próxima ação já venceu. Conteúdo da aba (formulário/tabela) fica só em português, sem i18n completo — ferramenta de uso pessoal do usuário, diferente do resto do painel — ver seção 16.34. |
 
 
 
@@ -5334,7 +5336,26 @@ Centralizar todas as conversas realizadas pela plataforma.
 
 \- integração com IA;
 
-\- atualização automática das informações operacionais.
+\- atualização automática das informações operacionais;
+
+\- \*\*fotos (adicionado em versão 1.48.0)\*\*: antes, toda imagem recebida
+  de um hóspede era arquivada automaticamente como "documento de
+  identidade", mesmo sem ser uma foto de documento, e a IA nunca via a
+  imagem. Agora `messages.media\_path`/`media\_mime\_type`/`media\_token`
+  guardam a mídia de verdade, o webhook do WhatsApp/Meta passa a
+  encaminhar a foto pro pipeline normal de atendimento
+  (`process\_incoming\_message`, que aceita `media\_bytes`/
+  `media\_mime\_type`), e `ask\_ai()` (`services/ai\_service.py`) ganhou
+  suporte a visão (conteúdo multimodal `image\_url`), então a IA reage
+  de verdade ao que está na foto em vez de ignorá-la. Equipe também
+  pode enviar foto pro hóspede (`POST /guests/<id>/send-photo` e
+  equivalente em "Meu chat"), despachada pelo canal real do hóspede
+  (`send\_whatsapp\_image`/`send\_messenger\_image`/`send\_instagram\_image`
+  — corrigido de brinde um bug real: `send\_message\_to\_guest\_now` só
+  mandava por WhatsApp antes, independente do canal de origem do
+  hóspede). Rota pública `GET /media/chat/<token>` (token de 16
+  caracteres hex, sem sessão) existe porque as APIs da Meta baixam a
+  imagem enviada, e não conseguem autenticar com cookie de sessão.
 
 
 
@@ -7272,6 +7293,71 @@ vez, sem depender de treinamento externo ou documentação lida à parte.
 
 
 
+\## 16.34 Prospecção (CRM leve de outreach comercial)
+
+
+
+\*\*Status:\*\* Implementado e validado em produção (adicionado em 20/08/2026, versão 1.49.0)
+
+
+
+\### Objetivo
+
+
+
+Dar à própria equipe da StayFlow (não ao cliente) um lugar dentro do
+painel interno pra organizar a prospecção de hospedagens piloto —
+substitui uma planilha externa que era mantida fora do sistema.
+
+
+
+\### Capacidades atuais
+
+
+
+\- tabela `stayflow\_leads`, sem `hostel\_id` (mesma categoria não-tenant
+  de `stayflow\_expenses`/`stayflow\_team`, dado da própria StayFlow, não
+  de um cliente): nome, hospedagem, prioridade (`alta`/`media`/`baixa`),
+  canal (`whatsapp`/`email`/`instagram`/`presencial`/`outro`), status
+  (`a\_contatar` → `mensagem\_enviada` → `respondeu` → `call\_agendada` →
+  `call\_feita` → `piloto\_ativo`, ou `sem\_interesse`/`perdido`), data do
+  último contato, próxima ação (texto + data), observações;
+
+\- `GET/POST /stayflow-admin/leads` e `PATCH/DELETE
+  /stayflow-admin/leads/<id>`, todas `@require\_stayflow\_admin`, mesmo
+  padrão de validação (allowlist de valores aceitos pra
+  prioridade/canal/status) e de `UPDATE` dinâmico por allowlist de
+  campos já usado em `update\_stayflow\_expense`;
+
+\- aba "Prospecção" em `admin.html`, mesmo componente visual (cards de
+  KPI, formulário inline de criar/editar, tabela com filtro) já usado
+  na aba Despesas — status renderizado como selo colorido (`plan-chip`
+  com cor por status), e a data da próxima ação aparece em vermelho
+  quando já venceu, com um badge de contagem no item de menu;
+
+\- diferente do resto do painel, o conteúdo da aba (rótulos do
+  formulário, cabeçalhos da tabela) fica só em português, sem
+  `data-i18n` — é ferramenta de uso exclusivo do usuário, não faz
+  sentido i18n completo aqui; só o item de menu e o título/subtítulo do
+  topbar têm chave de tradução, pra não quebrar o mecanismo de troca de
+  aba (que sempre busca `topbar.<aba>.title/subtitle`).
+
+
+
+\### Limitações conhecidas
+
+
+
+Sem notificação automática (e-mail/push) de follow-up vencido — só o
+destaque visual na tabela e o badge no menu. Sem importação em lote da
+planilha anterior (lista pequena, recadastrada manualmente).
+
+
+
+\---
+
+
+
 \## 16.18 Critério para atualização
 
 
@@ -8860,4 +8946,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.47.0\*\*
+\*\*Fim da Versão Oficial 1.49.0\*\*
