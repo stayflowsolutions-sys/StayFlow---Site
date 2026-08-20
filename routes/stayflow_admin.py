@@ -58,6 +58,10 @@ from database import (
     update_stayflow_expense,
     delete_stayflow_expense,
     mark_stayflow_expense_paid,
+    create_stayflow_lead,
+    list_stayflow_leads,
+    update_stayflow_lead,
+    delete_stayflow_lead,
     list_stayflow_team,
     add_stayflow_team_member,
     remove_stayflow_team_member,
@@ -711,6 +715,68 @@ def expenses_mark_paid(expense_id):
     except ValueError as error:
         return jsonify({"success": False, "message": str(error)}), 404
     return jsonify({"success": True, **result})
+
+
+_LEAD_PRIORITIES = {"alta", "media", "baixa"}
+_LEAD_CHANNELS = {"whatsapp", "email", "instagram", "presencial", "outro"}
+_LEAD_STATUSES = {"a_contatar", "mensagem_enviada", "respondeu", "call_agendada", "call_feita", "piloto_ativo", "sem_interesse", "perdido"}
+
+
+@stayflow_admin_bp.route("/stayflow-admin/leads", methods=["GET"])
+@require_stayflow_admin
+def leads_list():
+    status = request.args.get("status") or None
+    priority = request.args.get("priority") or None
+    return jsonify({"success": True, "leads": list_stayflow_leads(status=status, priority=priority)})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/leads", methods=["POST"])
+@require_stayflow_admin
+def leads_create():
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"success": False, "message": "Nome é obrigatório."}), 400
+
+    priority = data.get("priority") or "media"
+    if priority not in _LEAD_PRIORITIES:
+        return jsonify({"success": False, "message": "Prioridade inválida."}), 400
+
+    channel = data.get("channel") or None
+    if channel and channel not in _LEAD_CHANNELS:
+        return jsonify({"success": False, "message": "Canal inválido."}), 400
+
+    status = data.get("status") or "a_contatar"
+    if status not in _LEAD_STATUSES:
+        return jsonify({"success": False, "message": "Status inválido."}), 400
+
+    lead_id = create_stayflow_lead(
+        name, (data.get("property_name") or "").strip() or None, priority, channel, status,
+        data.get("last_contact_date") or None, (data.get("next_action") or "").strip() or None,
+        data.get("next_action_date") or None, (data.get("notes") or "").strip() or None
+    )
+    return jsonify({"success": True, "lead_id": lead_id}), 201
+
+
+@stayflow_admin_bp.route("/stayflow-admin/leads/<int:lead_id>", methods=["PATCH"])
+@require_stayflow_admin
+def leads_update(lead_id):
+    data = request.get_json() or {}
+    if "priority" in data and data["priority"] not in _LEAD_PRIORITIES:
+        return jsonify({"success": False, "message": "Prioridade inválida."}), 400
+    if "channel" in data and data["channel"] and data["channel"] not in _LEAD_CHANNELS:
+        return jsonify({"success": False, "message": "Canal inválido."}), 400
+    if "status" in data and data["status"] not in _LEAD_STATUSES:
+        return jsonify({"success": False, "message": "Status inválido."}), 400
+    update_stayflow_lead(lead_id, **data)
+    return jsonify({"success": True})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/leads/<int:lead_id>", methods=["DELETE"])
+@require_stayflow_admin
+def leads_delete(lead_id):
+    delete_stayflow_lead(lead_id)
+    return jsonify({"success": True})
 
 
 # ===== Equipe da propria StayFlow =====

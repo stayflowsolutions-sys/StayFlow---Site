@@ -573,6 +573,25 @@ def create_database():
     )
     """)
 
+    # Prospeccao de vendas (CRM leve, 100% interno - equivalente digital
+    # da planilha de outreach do proprio dono da StayFlow, ver aba
+    # "Prospeccao" em admin.html). Nao tem hostel_id, e da StayFlow.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS stayflow_leads (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        property_name TEXT,
+        priority TEXT NOT NULL DEFAULT 'media',
+        channel TEXT,
+        status TEXT NOT NULL DEFAULT 'a_contatar',
+        last_contact_date TEXT,
+        next_action TEXT,
+        next_action_date TEXT,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS stayflow_team (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -5318,6 +5337,72 @@ def delete_stayflow_expense(expense_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM stayflow_expenses WHERE id = ?", (expense_id,))
+    conn.commit()
+    conn.close()
+
+
+def create_stayflow_lead(name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO stayflow_leads (name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes))
+    lead_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return lead_id
+
+
+def list_stayflow_leads(status=None, priority=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM stayflow_leads"
+    clauses = []
+    params = []
+    if status:
+        clauses.append("status = ?")
+        params.append(status)
+    if priority:
+        clauses.append("priority = ?")
+        params.append(priority)
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
+    query += " ORDER BY (next_action_date IS NULL), next_action_date ASC, id DESC"
+    cursor.execute(query, tuple(params))
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def get_stayflow_lead(lead_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM stayflow_leads WHERE id = ?", (lead_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def update_stayflow_lead(lead_id, **fields):
+    if not fields:
+        return
+    allowed = {"name", "property_name", "priority", "channel", "status", "last_contact_date", "next_action", "next_action_date", "notes"}
+    updates = {k: v for k, v in fields.items() if k in allowed}
+    if not updates:
+        return
+    conn = get_connection()
+    cursor = conn.cursor()
+    set_clause = ", ".join(f"{k} = ?" for k in updates)
+    cursor.execute(f"UPDATE stayflow_leads SET {set_clause} WHERE id = ?", (*updates.values(), lead_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_stayflow_lead(lead_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM stayflow_leads WHERE id = ?", (lead_id,))
     conn.commit()
     conn.close()
 
