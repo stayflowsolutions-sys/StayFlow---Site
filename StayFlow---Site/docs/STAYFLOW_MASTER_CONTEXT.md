@@ -4075,10 +4075,13 @@ Eventos.
 
 
 Sustentam contas de agência parceira (Portfólio/Parceiros): `hostels`
-ganhou as colunas `account\_kind` (`lodging`/`agency`) e
-`agency\_category` (`turismo`, `aluguel\_carro`, `aluguel\_bike`,
-`aluguel\_equipamentos`) — não é entidade nova, é a mesma linha de
-hostel reaproveitada. `portfolio\_items` é o catálogo de itens de uma
+ganhou as colunas `account\_kind` (`lodging`/`agency`), `agency\_category`
+(8 grupos: `turismo`, `aluguel\_carro`, `aluguel\_bike`,
+`aluguel\_equipamentos`, `imobiliaria`, `automotivo`, `comercio`,
+`servico\_generico` — ampliado em 20/08/2026, versão 1.50.0, ver 14.3)
+e `agency\_subcategory` (texto livre, detalhe dentro dos grupos
+`automotivo`/`comercio`, mesma versão) — não é entidade nova, é a mesma
+linha de hostel reaproveitada. `portfolio\_items` é o catálogo de itens de uma
 agência (nome, descrição, foto, categoria, preço fixo ou variável).
 `partner\_offers` é o opt-in de uma hospedagem para vender um item de
 outra (`UNIQUE(hostel\_id, portfolio\_item\_id)`). `partner\_referral\_ledger`
@@ -4773,6 +4776,14 @@ automotive shop specializing in Funilaria e pintura.", ou frase limpa
 sem esse trecho quando a subcategoria está vazia). `Register.html`
 pede o grupo e, só quando é automotivo/comércio, um segundo seletor
 (presets + campo livre) pra subcategoria.
+
+De quebra, mesma versão: contas `agency` (sem reserva/check-in) ganham
+`dispatch\_opportunity\_webhook` (`database.py`) como evento de
+conversão pro webhook de saída genérico — dispara `opportunity\_created`/
+`opportunity\_updated` toda vez que o Decision Engine cria ou atualiza
+uma oportunidade aberta, chamado direto de `analyze\_message` logo após
+o commit. Analógo ao `dispatch\_reservation\_webhook` que hospedagem já
+tinha (v1.27.0) — ver seção 16.25 pro detalhe completo do mecanismo.
 
 
 

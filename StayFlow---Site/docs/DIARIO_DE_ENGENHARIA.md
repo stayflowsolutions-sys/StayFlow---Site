@@ -5966,15 +5966,30 @@ Mirror do backend sincronizado com as mesmas versões finais.
 
 ### Marcar contas candidatas a treinamento pago na Prospecção
 
-Ainda na mesma sessão, a conversa virou estratégia comercial: quanto
-tempo oferecer de piloto (decidido: 30-45 dias padrão, 60-90 pra
-imobiliária, sempre com checkpoint marcado — não um ano fixo, pra não
-sufocar o caixa nem perder urgência) e se caberia cobrar treinamento
-presencial pra operações grandes tipo o Diplomatic Hotel (equipe
-numerosa, mudança de fluxo de trabalho é mais drástica que num hostel
-pequeno). O usuário topou a sugestão de já deixar a aba Prospecção
-preparada pra marcar quais contas são candidatas a isso, conforme
-forem entrando.
+Ainda na mesma sessão, a conversa virou estratégia comercial, em três
+partes: (1) quanto tempo oferecer de piloto — decidido 30-45 dias
+padrão, 60-90 pra imobiliária, sempre com checkpoint marcado, não um
+ano fixo, pra não sufocar o caixa nem perder urgência; (2) o usuário
+esclareceu que o piloto não é totalmente de graça — StayFlow ganha
+comissão por venda de upgrade e a comissão real do split do Mercado
+Pago já durante o piloto, sem mensalidade fixa nesse período. Isso
+muda a conta de risco de caixa do item (1): comissão que já entra
+proporcional ao uso reduz a pressão de prazo pra converter, MAS só
+funciona de verdade nas verticais onde o pagamento passa pela
+plataforma (hospedagem, e dá pra estender pra estética automotiva/
+película/estamparia) — pra imobiliária o negócio comum fecha fora do
+chat (contrato tradicional), então a comissão pode nunca aparecer, e
+o checkpoint continua sendo o critério prático: "a comissão já paga a
+conta desse piloto?" decide se estica, cobra mensalidade, ou os dois;
+(3) se caberia cobrar treinamento presencial pra operações grandes
+tipo o Diplomatic Hotel (equipe numerosa, mudança de fluxo de trabalho
+é mais drástica que num hostel pequeno) — recomendado como serviço
+pago à parte, com preço por faixa de tamanho de equipe (não negociado
+caso a caso) e primeiro treinamento gratuito/barato especificamente
+durante o piloto, pra não arriscar o piloto fracassar por adoção fraca
+da equipe. O usuário topou a sugestão de já deixar a aba Prospecção
+preparada pra marcar quais contas são candidatas a treinamento,
+conforme forem entrando.
 
 Implementado como flag simples, não um sistema de tags genérico (fora
 de escopo pro que foi pedido): `stayflow_leads.training_candidate`
