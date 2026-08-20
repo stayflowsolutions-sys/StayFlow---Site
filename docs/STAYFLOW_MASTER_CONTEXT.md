@@ -177,6 +177,8 @@
 | 1.47.0 | 13/08/2026 | Oficial | Rodada grande de funcionalidades construídas desde a v1.46.0 e nunca registradas neste documento até esta auditoria: (1) StayFlow Hub — painel interno da própria StayFlow (não do cliente), acesso por allowlist de e-mail (`STAYFLOW_ADMIN_EMAILS`, sem role "superadmin" no banco), listando todas as hospedagens/agências clientes com MRR estimado (tabela de preço, `PLAN_PRICES`) separado de propósito da comissão real de fato coletada (Mercado Pago Split, via `guest_charges`); ganhou impersonation real (`POST /stayflow-admin/impersonate`, reaponta `sessions.hostel_id` preservando o hostel de origem em `sessions.impersonating_from_hostel_id`, com registro em `impersonation_log`) — ver nova seção 16.33; (2) contas de agência parceira (Portfólio/Parceiros): `hostels.account_kind` (`lodging`/`agency`) e `agency_category`, catálogo `portfolio_items`, opt-in de outra hospedagem em `partner_offers`, comissão a pagar em `partner_referral_ledger`; Ask StayFlow e IA de atendimento (`services/ai_service.py`/`services/decision_engine.py`) passam a receber `account_kind` e trocam de prompt/ferramentas quando é agência (não tenta fluxo de reserva de quarto/check-in) — ver 14.3; (3) corrigido bug real de i18n: condição de corrida entre `assets/js/i18n-core.js` e `assets/js/i18n-dashboard-data.js` (o segundo carrega depois, perto do fim do `<body>`) matava silenciosamente `T()` e a atualização do título do topbar com `ReferenceError` quando chamados na janela entre os dois scripts — afetava de forma intermitente o modal de Câmbio, Escala, Equipe e Chats; (4) Opportunity Center passa a sugerir item de parceiro (`opportunities.suggested_partner_item_id`) quando a hospedagem não vende o que o hóspede pediu e existe algum item habilitado em `partner_offers` — hoje restrito ao intent `tour` do Decision Engine e sem matching semântico (sempre o primeiro item habilitado) — ver 16.4; (5) cadastro self-serve com plano escolhido: `planos.html` novo (página pública de preços, 3 planos reais — `PLAN_PRICES`: Starter US$89, Business US$349, Enterprise US$699+ negociado), `Register.html` lê `?plan=` da URL e envia `plan_name` para `POST /register`, que ativa o hostel automaticamente nesse plano via `set_billing_plan` sem aprovação manual — ver correção da seção 17.2/17.3 mais abaixo; (6) importador de dados via CSV (parser próprio em JavaScript, sem biblioteca externa) para Quartos, Hóspedes, Reservas, Equipe e Portfólio (`POST /rooms/import`, `/guests/import`, `/reservations/import`, `/team/import`, `/portfolio/items/import`) — ver nova seção 16.33; (7) tour de introdução no primeiro acesso (slides explicando os blocos do Dashboard, mais dica pontual por item de menu na primeira vez que é clicado), preferência gravada por pessoa em `users.onboarding_dismissed`/`user_feature_intros` (banco, não localStorage — funciona em qualquer dispositivo) — ver nova seção 16.33; (8) módulo de Operações ganhou botões de abrir chamado manual nas abas Cozinha/Manutenção/Segurança Patrimonial (reaproveitando rotas que já existiam sem nenhum botão ligado a elas) mais um botão dedicado de Estacionamento, e aba própria "Tarefas" para chamado avulso sem setor fixo (`POST /operations/tasks`, reaproveita a tabela `tickets` já existente com `type='task'`, sem notificação automática de plantão, diferente dos outros quatro tipos) — ver 16.14; (9) Ask StayFlow ganhou visão de imagem: `POST /ask` passa a aceitar `multipart/form-data` com foto (JPEG/PNG/WebP, convertida em data URI base64), e a IA (modelo `gpt-4.1-mini`, não Claude/Anthropic) decide sozinha se a foto é caso de reposição de estoque, pedido de cozinha, chamado de manutenção ou incidente de segurança, perguntando em vez de adivinhar quando a foto é ambígua — ver 16.27. De quebra, corrigida contradição real nas seções 17.2/17.3: o texto descrevia Billing como "modelo de cobrança em definição, sem processador nem plano ativo", desatualizado desde a Fase 1 (planos/trial/comp accounts, já em produção há mais tempo que este documento registrava) — reescrito refletindo o que de fato existe hoje e o que ainda não existe (cobrança recorrente automática da própria assinatura StayFlow, via Stripe/Mercado Pago Fase 2-3, continua só schema stub — não confundir com o Mercado Pago Split guest-facing, que já é real desde antes). |
 | 1.48.0 | 19/08/2026 | Oficial | Suporte real a fotos no chat (WhatsApp/Instagram/Messenger). Antes, qualquer imagem recebida de um hóspede era arquivada automaticamente como "documento de identidade" e a IA nunca via a imagem. `messages.media_path`/`media_mime_type`/`media_token` (novo) guardam a mídia de verdade; webhooks (`routes/whatsapp_webhook.py`, `routes/meta_webhook.py`) passam a encaminhar a foto pro pipeline normal (`process_incoming_message`, aceitando `media_bytes`/`media_mime_type`); `ask_ai()` (`services/ai_service.py`) ganhou suporte a visão (conteúdo multimodal `image_url`, modelo com visão). Equipe também pode enviar foto pro hóspede (`POST /guests/<id>/send-photo` e equivalente em "Meu chat"), despachada pelo canal real do hóspede via `send_whatsapp_image`/`send_messenger_image`/`send_instagram_image` — corrigido de brinde um bug real: `send_message_to_guest_now` só mandava por WhatsApp antes, independente do canal de origem do hóspede. Rota pública `GET /media/chat/<token>` (token de 16 caracteres hex, sem sessão) existe porque as APIs da Meta baixam a imagem enviada e não conseguem autenticar com cookie de sessão. Testado via scripts próprios contra banco temporário antes de sincronizar pros três locais e publicar — ver 16.2. |
 | 1.49.0 | 20/08/2026 | Oficial | Nova aba "Prospecção" no painel interno da StayFlow (`admin.html`) — CRM leve de outreach comercial, uso exclusivo da própria StayFlow (não é feature client-facing de hospedagem nenhuma). Motivada pelo usuário começar a prospectar hospedagens piloto (abordagem presencial e digital via WhatsApp/e-mail/Instagram) e querer controlar a lista de contatos dentro do próprio painel em vez de planilha externa. Tabela nova `stayflow_leads` (sem `hostel_id`, mesma categoria não-tenant de `stayflow_expenses`/`stayflow_team`): nome, hospedagem, prioridade (alta/média/baixa), canal (WhatsApp/e-mail/Instagram/presencial/outro), status (a contatar → mensagem enviada → respondeu → call agendada → call feita → piloto ativo, ou sem interesse/perdido), datas de último contato e próxima ação, observações. CRUD completo via `POST`/`PATCH`/`DELETE /stayflow-admin/leads`, protegido por `@require_stayflow_admin`, mesmo padrão de rotas/validação de `stayflow_admin.py` já usado pra despesas. Badge no menu e destaque visual em vermelho quando a data da próxima ação já venceu. Conteúdo da aba (formulário/tabela) fica só em português, sem i18n completo — ferramenta de uso pessoal do usuário, diferente do resto do painel — ver seção 16.34. |
+| 1.50.0 | 20/08/2026 | Oficial | Contexto de IA separado por categoria de negócio, não mais um prompt genérico com rótulo trocado — motivada pelo usuário ter vários pilotos reais interessados em verticais bem diferentes entre si (imobiliária, estética/película automotiva, estamparia, loja online) e apontar que "cada um deve ter o seu próprio contexto, separadamente". `database.AGENCY_CATEGORIES` reorganizada em 8 grupos: `turismo`, `aluguel_carro`, `aluguel_bike`, `aluguel_equipamentos`, `imobiliaria`, `automotivo`, `comercio`, `servico_generico` (catch-all/fallback) — "automotivo"/"comercio" são GRUPOS (mesmo espírito de `hostel_type` livre pra hospedagem: a variedade real dentro deles, ex. estética/película/mecânica/funilaria e pintura/elétrica/borracharia/auto peças, é grande demais pra prompt por subtipo), com detalhe livre na coluna nova `hostels.agency_subcategory` (presets + "+ Novo tipo...", mesmo padrão de `hostel_type`). `services/ai_service.py`: `AGENCY_SYSTEM_PROMPT` único vira `AGENCY_CATEGORY_PROMPTS`, um prompt COMPLETO por grupo (vocabulário e perguntas específicas do negócio real, ex.: imobiliária fala de "imóvel"/"visita"), com `agency_subcategory` interpolado dinamicamente via `{agency_subcategory_line}` nos grupos automotivo/comércio. Espinha dorsal de garantias do produto (nunca inventar preço/item, sempre checar `get_offerings`, nunca fechar venda sozinho) idêntica em todas. `services/decision_engine.py` ganha o mesmo tratamento pro `business_context` usado na análise de oportunidade (em nível de grupo, sem subcategoria). De quebra, o usuário pediu que essas contas também tivessem a mesma integração com sistema próprio (PMS) que hospedagem já tinha (`dispatch_reservation_webhook`, v1.27.0) — como conta `agency` não tem reserva/check-in, criado `dispatch_opportunity_webhook` (`database.py`), disparado pelo Decision Engine (`opportunity_created`/`opportunity_updated`) toda vez que uma oportunidade é criada ou atualizada pra uma conta `agency` com webhook configurado; texto do modal de Configurações → Integrações passa a variar por `account_kind` (5 idiomas) pra não falar de "reserva" com quem não tem esse conceito. `Register.html` ganhou seletor em cascata (grupo → subcategoria livre, só pra automotivo/comércio) e o rótulo "PAX"/"Clientes" em `dashboard.html` foi atualizado — "PAX" continua só pra turismo/aluguel (termo do setor), demais grupos usam "Clientes". Testado com scripts próprios: os 8 prompts formatam sem erro e são todos distintos, subcategoria interpola certo (com e sem valor) só nos grupos automotivo/comércio, fallback pra categoria desconhecida cai em `servico_generico` sem quebrar, e o webhook de oportunidade dispara corretamente pra conta `agency` (criação e atualização) e NÃO dispara pra `lodging` (que continua só na reserva). |
+| 1.51.0 | 20/08/2026 | Oficial | Nova flag `stayflow_leads.training_candidate` na aba Prospecção (`admin.html`) — pedido do usuário ao refletir sobre o caso do Diplomatic Hotel (equipe numerosa): operações grandes podem precisar de treinamento presencial/remoto pago pra adoção da equipe inteira, separado da mensalidade/comissão do piloto, e ele queria marcar quais contas são candidatas a isso sem perder o fio conforme os pilotos forem entrando. Flag simples (checkbox no formulário, selo 🎓 na linha da tabela, filtro "Só candidatos a treinamento"), não um sistema de tags genérico — escopo mínimo pro que foi pedido. Testado com três cenários: criar já marcado, marcar/desmarcar depois via `PATCH`, e — mais importante — migração seguindo o padrão `add_column_if_not_exists` num banco simulando produção (tabela já existia sem a coluna, com um registro real) confirmando que nenhum contato cadastrado antes desta versão se perde. |
 
 
 
@@ -4722,15 +4724,55 @@ Principais responsabilidades:
 (`analyze\_message`/`analyze\_with\_ai`) e `services/ai\_service.py`
 (`ask\_ai`) passam a receber `account\_kind` (`lodging`/`agency`) e mudam
 de comportamento quando o hostel é uma conta de agência parceira —
-prompt de sistema próprio (`AGENCY\_SYSTEM\_PROMPT`), ferramentas
-próprias (`AGENCY\_TOOLS`, com `get\_offerings` consultando o portfólio
-da agência) e nenhuma tentativa de fluxo de reserva de quarto/check-in,
-que não faz sentido para esse tipo de conta. Quando o intent
-identificado é `tour` e existe algum item de portfólio parceiro
+ferramentas próprias (`AGENCY\_TOOLS`, com `get\_offerings` consultando o
+portfólio da agência) e nenhuma tentativa de fluxo de reserva de
+quarto/check-in, que não faz sentido para esse tipo de conta. Quando o
+intent identificado é `tour` e existe algum item de portfólio parceiro
 habilitado para a hospedagem, o Decision Engine também passa a sugerir
 esse item na oportunidade criada (`suggested\_partner\_item\_id`) — ver
 16.4. Ver Capítulo 16, nova seção 16.33, para o schema completo de
 contas de agência (Portfólio/Parceiros).
+
+\*\*Contexto separado por categoria de negócio, não só por tipo de
+conta (atualizado em 20/08/2026, versão 1.50.0):\*\* até aqui, TODAS as
+categorias de agência (turismo, aluguel de carro/bike/equipamento)
+compartilhavam um único `AGENCY\_SYSTEM\_PROMPT`, só trocando um rótulo
+(`agency\_category\_label`) dentro do texto — não era um contexto de
+verdade separado por tipo de negócio, era um prompt genérico com um
+substantivo diferente. Motivado pelo usuário querer receber pilotos de
+verticais bem diferentes entre si (imobiliária, estética/película
+automotiva, estamparia, loja online), corrigido: cada categoria agora
+tem seu próprio prompt COMPLETO em `AGENCY\_CATEGORY\_PROMPTS`
+(`services/ai\_service.py`), com vocabulário e perguntas específicas do
+negócio real (ex.: imobiliária pergunta tipo de imóvel/bairro/orçamento
+e fala de "visita", não de "disponibilidade"). A espinha dorsal que
+garante o produto (nunca inventar preço/item, sempre checar
+`get\_offerings`, nunca fechar a venda sozinho) é deliberadamente
+idêntica em todas as categorias — só o "sabor" de negócio muda.
+Categoria ausente ou não mapeada cai no prompt `servico\_generico`
+(catch-all). Mesmo padrão aplicado ao `business\_context` do Decision
+Engine (`\_AGENCY\_CATEGORY\_BUSINESS\_CONTEXT`).
+
+`database.AGENCY\_CATEGORIES` (8 valores): `turismo`, `aluguel\_carro`,
+`aluguel\_bike`, `aluguel\_equipamentos`, `imobiliaria`, `automotivo`,
+`comercio`, `servico\_generico`. \*\*"automotivo" e "comercio" são GRUPOS,
+não categorias fechadas\*\* — mesmo espírito de `account\_kind = "lodging"`
+ter `hostel\_type` como campo livre pra hostel/pousada/hotel/etc: a
+variedade real dentro de "automotivo" (estética, película, mecânica,
+funilaria e pintura, elétrica, borracharia, peças de carro/moto/
+caminhão/máquinas — "auto peças" sozinho foi desdobrado em 4 presets,
+por pedido do usuário: peça de carro ≠ peça de moto/caminhão/máquina,
+catálogo e vocabulário bem diferentes) ou de "comércio" (são "muitas"
+categorias, nas palavras do usuário) é grande
+demais pra virar prompt separado por subtipo. Nova coluna
+`hostels.agency\_subcategory` (texto livre, mesmo padrão de
+`hostel\_type`/"+ Novo tipo...", com presets em
+`database.AGENCY\_SUBCATEGORY\_PRESETS`) guarda o detalhe dentro do
+grupo — entra no prompt via `{agency\_subcategory\_line}` ("...an
+automotive shop specializing in Funilaria e pintura.", ou frase limpa
+sem esse trecho quando a subcategoria está vazia). `Register.html`
+pede o grupo e, só quando é automotivo/comércio, um segundo seletor
+(presets + campo livre) pra subcategoria.
 
 
 
@@ -6566,7 +6608,16 @@ expor ao cliente final nenhuma plataforma terceira no meio do processo.
   uma URL em Configurações → Integrações e recebe um `POST` JSON
   assinado (`X-StayFlow-Signature`, HMAC-SHA256) para toda reserva
   criada, alterada, cancelada ou com check-in/check-out feito, de
-  qualquer origem;
+  qualquer origem — só pra `account\_kind = "lodging"` (`dispatch\_reservation\_webhook`).
+  Contas `agency` (imobiliária, estética automotiva, loja online etc.)
+  não têm reserva/check-in, então usam um evento equivalente:
+  `dispatch\_opportunity\_webhook` (`database.py`, adicionado em
+  20/08/2026, versão 1.50.0) dispara `opportunity\_created`/
+  `opportunity\_updated` sempre que o Decision Engine cria ou atualiza
+  uma oportunidade aberta pra essa conta — é o evento de conversão
+  real desse tipo de negócio, no lugar da reserva. Texto do modal de
+  configuração muda de acordo com `account\_kind` pra não falar de
+  "reserva" pra quem não tem esse conceito;
 
 \- \*\*proteção multi-canal contra overbooking já em produção, não apenas
   planejada\*\*: `find\_available\_beds` (mecanismo de disponibilidade
@@ -7340,7 +7391,14 @@ substitui uma planilha externa que era mantida fora do sistema.
   `data-i18n` — é ferramenta de uso exclusivo do usuário, não faz
   sentido i18n completo aqui; só o item de menu e o título/subtítulo do
   topbar têm chave de tradução, pra não quebrar o mecanismo de troca de
-  aba (que sempre busca `topbar.<aba>.title/subtitle`).
+  aba (que sempre busca `topbar.<aba>.title/subtitle`);
+
+\- `stayflow\_leads.training\_candidate` (adicionado em 20/08/2026, versão
+  1.51.0) — flag simples (não um sistema de tags genérico) pra marcar
+  contas de operação grande (ex: hotel com equipe numerosa) como
+  candidatas a treinamento presencial/remoto pago, separado da
+  mensalidade/comissão do piloto. Checkbox no formulário, selo 🎓 na
+  linha da tabela, filtro "Só candidatos a treinamento" na toolbar.
 
 
 
@@ -8946,4 +9004,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.49.0\*\*
+\*\*Fim da Versão Oficial 1.51.0\*\*
