@@ -512,6 +512,11 @@ def create_database():
     # de proposito pra nao colidir.
     add_column_if_not_exists(cursor, "hostels", "account_kind", "TEXT NOT NULL DEFAULT 'lodging'")
     add_column_if_not_exists(cursor, "hostels", "agency_category", "TEXT")
+    # Detalhe livre DENTRO de agency_category, so relevante pros grupos
+    # "automotivo"/"comercio" (ver AGENCY_SUBCATEGORY_PRESETS) - mesmo
+    # padrao de campo livre que hostel_type ja usa pra hospedagem
+    # (presets + "+ Novo tipo..." aceita qualquer texto).
+    add_column_if_not_exists(cursor, "hostels", "agency_subcategory", "TEXT")
 
     # Marca uma conta como conta de TESTE do proprio dono da StayFlow
     # (ex: um hostel e uma agencia fake que ele usa pra testar feature
@@ -588,9 +593,15 @@ def create_database():
         next_action TEXT,
         next_action_date TEXT,
         notes TEXT,
+        training_candidate INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    # Marca contas de operacao grande (ex: Diplomatic Hotel, equipe
+    # numerosa) como candidatas a treinamento presencial/remoto pago -
+    # so uma flag simples pra filtrar na lista, sem virar um sistema de
+    # tags genericas (nao pedido, escopo minimo pro que foi pedido).
+    add_column_if_not_exists(cursor, "stayflow_leads", "training_candidate", "INTEGER NOT NULL DEFAULT 0")
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS stayflow_team (
@@ -2807,7 +2818,7 @@ def get_hostel(hostel_id):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, name, email, phone, account_kind, agency_category, ai_persona, is_own_test_account FROM hostels WHERE id = ?",
+        "SELECT id, name, email, phone, account_kind, agency_category, agency_subcategory, ai_persona, is_own_test_account FROM hostels WHERE id = ?",
         (hostel_id,)
     )
 
@@ -2876,13 +2887,47 @@ DEFAULT_REFERRAL_COMMISSION_PCT = 5
 
 # Categorias de agencia parceira - lista simples de proposito, pra
 # adicionar uma categoria nova ser so uma linha aqui (mesmo espirito de
-# ALL_PERMISSIONS em utils/permissions.py).
-AGENCY_CATEGORIES = ["turismo", "aluguel_carro", "aluguel_bike", "aluguel_equipamentos"]
+# ALL_PERMISSIONS em utils/permissions.py). Cada categoria tem seu
+# PROPRIO prompt de IA (ver AGENCY_CATEGORY_PROMPTS em services/ai_service.py),
+# nao so um rotulo trocado dentro de um prompt compartilhado.
+# "servico_generico" e o catch-all/fallback.
+#
+# "automotivo" e "comercio" sao GRUPOS (mesmo espirito de account_kind
+# "lodging" ter hostel_type como campo livre pra hostel/pousada/hotel/etc):
+# a variedade real dentro deles (estetica, pelicula, mecanica, funilaria
+# e pintura, eletrica, borracharia, auto pecas... ou as "muitas"
+# categorias de comercio) e grande demais pra virar prompt separado por
+# tipo - o prompt e um so por GRUPO, e hostels.agency_subcategory (campo
+# livre, mesmo padrao de hostel_type/"+ Novo tipo...") entra como
+# detalhe dentro dele.
+AGENCY_CATEGORIES = [
+    "turismo", "aluguel_carro", "aluguel_bike", "aluguel_equipamentos",
+    "imobiliaria", "automotivo", "comercio", "servico_generico",
+]
 AGENCY_CATEGORY_LABELS = {
     "turismo": "Turismo",
     "aluguel_carro": "Aluguel de carro",
     "aluguel_bike": "Aluguel de bike",
     "aluguel_equipamentos": "Aluguel de equipamentos",
+    "imobiliaria": "Imobiliária",
+    "automotivo": "Automotivo (estética, película, mecânica...)",
+    "comercio": "Comércio (loja, estamparia...)",
+    "servico_generico": "Outro tipo de negócio",
+}
+
+# Presets de subcategoria por grupo - so pra preencher o seletor rapido
+# no cadastro/configuracoes; o campo em si e livre (igual hostel_type),
+# entao qualquer texto digitado em "+ Novo tipo..." e valido tambem.
+# "Auto pecas" sozinho era vago demais (peca de carro != peca de moto/
+# caminhao/maquina - catalogo e vocabulario bem diferentes) - pedido do
+# usuario pra desdobrar em vez de deixar um preset generico so.
+AGENCY_SUBCATEGORY_PRESETS = {
+    "automotivo": [
+        "Estética automotiva", "Película automotiva", "Mecânica",
+        "Funilaria e pintura", "Elétrica automotiva", "Borracharia",
+        "Peças de carro", "Peças de moto", "Peças de caminhão", "Peças de máquinas",
+    ],
+    "comercio": ["Loja online", "Estamparia"],
 }
 
 
@@ -3011,7 +3056,7 @@ def get_user_hostels(user_id):
 
 
 def create_identity_and_hostel(name, email, password_hash, hostel_name, hostel_email,
-                                account_kind="lodging", agency_category=None):
+                                account_kind="lodging", agency_category=None, agency_subcategory=None):
     """
     Cria uma identidade nova, um hostel novo, a role "Admin" (com
     todas as permissoes) nesse hostel, e o vinculo entre a pessoa e
@@ -3035,8 +3080,8 @@ def create_identity_and_hostel(name, email, password_hash, hostel_name, hostel_e
         user_id = cursor.lastrowid
 
         cursor.execute(
-            "INSERT INTO hostels (name, email, account_kind, agency_category) VALUES (?, ?, ?, ?)",
-            (hostel_name, hostel_email, account_kind, agency_category)
+            "INSERT INTO hostels (name, email, account_kind, agency_category, agency_subcategory) VALUES (?, ?, ?, ?, ?)",
+            (hostel_name, hostel_email, account_kind, agency_category, agency_subcategory)
         )
         hostel_id = cursor.lastrowid
 
@@ -5341,13 +5386,13 @@ def delete_stayflow_expense(expense_id):
     conn.close()
 
 
-def create_stayflow_lead(name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes):
+def create_stayflow_lead(name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes, training_candidate=False):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO stayflow_leads (name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes))
+        INSERT INTO stayflow_leads (name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes, training_candidate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes, 1 if training_candidate else 0))
     lead_id = cursor.lastrowid
     conn.commit()
     conn.close()
@@ -5387,10 +5432,12 @@ def get_stayflow_lead(lead_id):
 def update_stayflow_lead(lead_id, **fields):
     if not fields:
         return
-    allowed = {"name", "property_name", "priority", "channel", "status", "last_contact_date", "next_action", "next_action_date", "notes"}
+    allowed = {"name", "property_name", "priority", "channel", "status", "last_contact_date", "next_action", "next_action_date", "notes", "training_candidate"}
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         return
+    if "training_candidate" in updates:
+        updates["training_candidate"] = 1 if updates["training_candidate"] else 0
     conn = get_connection()
     cursor = conn.cursor()
     set_clause = ", ".join(f"{k} = ?" for k in updates)
@@ -8850,6 +8897,54 @@ def dispatch_reservation_webhook(hostel_id, reservation_id, event_type):
     from services.outbound_webhook_service import send_webhook
     result = send_webhook(url, secret, event_type, payload)
     print(f"Webhook de saida (hostel {hostel_id}, reserva {reservation_id}, evento {event_type}): {result}")
+
+
+def dispatch_opportunity_webhook(hostel_id, guest_id, opportunity_id, event_type):
+    """
+    Equivalente de dispatch_reservation_webhook, mas pra conta account_kind
+    'agency' (imobiliaria, estetica automotiva, loja online, etc.) - esses
+    negocios nao tem reserva/check-in, o evento real que o sistema proprio
+    do cliente quer saber e "surgiu (ou evoluiu) uma oportunidade real",
+    ja que e isso que substitui a reserva como "conversao" pra esse tipo de
+    conta. So chamada quando account_kind == "agency" (ver decision_engine.py
+    analyze_message) - hospedagem continua so em dispatch_reservation_webhook,
+    pra nao duplicar sinal em cima do que ja existe pra reserva.
+
+    Nunca levanta excecao - mesmo principio de dispatch_reservation_webhook:
+    uma falha ao notificar o webhook do cliente nao pode derrubar a
+    analise/gravacao da oportunidade em si.
+    """
+    try:
+        url, secret = get_hostel_outbound_webhook(hostel_id)
+        if not url:
+            return
+
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT o.id, o.type, o.description, o.status, o.score, o.urgency,
+                   o.estimated_value, o.next_action,
+                   g.name AS guest_name, g.phone, g.email
+            FROM opportunities o
+            LEFT JOIN guests g ON g.id = o.guest_id
+            WHERE o.id = ? AND o.guest_id = ?
+            """,
+            (opportunity_id, guest_id)
+        )
+        row = cursor.fetchone()
+        conn.close()
+        if not row:
+            return
+
+        payload = dict(row)
+    except Exception as error:
+        print(f"Erro ao montar payload do webhook de saida (hostel {hostel_id}, oportunidade {opportunity_id}):", error)
+        return
+
+    from services.outbound_webhook_service import send_webhook
+    result = send_webhook(url, secret, event_type, payload)
+    print(f"Webhook de saida (hostel {hostel_id}, oportunidade {opportunity_id}, evento {event_type}): {result}")
 
 
 def get_hostel_id_by_beds24_property_id(property_id):

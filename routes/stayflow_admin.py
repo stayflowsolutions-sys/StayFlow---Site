@@ -753,7 +753,8 @@ def leads_create():
     lead_id = create_stayflow_lead(
         name, (data.get("property_name") or "").strip() or None, priority, channel, status,
         data.get("last_contact_date") or None, (data.get("next_action") or "").strip() or None,
-        data.get("next_action_date") or None, (data.get("notes") or "").strip() or None
+        data.get("next_action_date") or None, (data.get("notes") or "").strip() or None,
+        training_candidate=bool(data.get("training_candidate"))
     )
     return jsonify({"success": True, "lead_id": lead_id}), 201
 

@@ -5829,3 +5829,165 @@ Controle de Versões (v1.48.0 fotos no chat, v1.49.0 Prospecção).
 
 Mirror do backend (`HostelBot/StayFlow---Site/docs/`) sincronizado com
 as mesmas versões finais, mesma prática das sessões anteriores.
+
+### Contexto de IA separado por categoria de negócio (não mais rótulo trocado)
+
+Ainda na mesma sessão, o usuário — animado com a resposta que teve de
+conhecidos interessados em pilotar a StayFlow (mãe e amigos numa
+imobiliária, um amigo com estética automotiva, outro com película
+automotiva, outro com estamparia e loja online no Mercado Livre) —
+pediu pra generalizar de vez o suporte a "lojas e prestadores de
+serviço, com catálogo e tudo". Antes de qualquer código, ele apontou
+um problema real na arquitetura: `account_kind = "agency"` já existe
+desde a rodada anterior (turismo, aluguel de carro/bike/equipamento),
+mas TODAS essas categorias compartilhavam o mesmo
+`AGENCY_SYSTEM_PROMPT`, só trocando um rótulo (`agency_category_label`)
+dentro do texto — não era um contexto de verdade separado por tipo de
+negócio, era um prompt genérico com um substantivo diferente. Frase
+literal do usuário: "cada um deve ter o seu próprio contexto,
+separadamente".
+
+Decisão de arquitetura (registrada em plano antes de codar): não criar
+um `account_kind` novo por vertical — isso quebraria a premissa de
+duas categorias exatas que `applyAccountKindVisibility`/
+`hideNavItemsWithoutPermission` (`dashboard.html`) assumem hoje
+(comparação `===` estrita contra uma única string). `account_kind =
+"agency"` já significa estruturalmente "negócio com catálogo, sem
+quartos/reservas", o que já serve bem pra imobiliária/estética
+automotiva/etc. O que mudou foi `agency_category` deixar de ser só um
+rótulo cosmético e passar a selecionar um prompt de sistema INTEIRO e
+separado.
+
+Implementado (primeira passada, corrigida logo abaixo):
+`database.AGENCY_CATEGORIES` ampliada de 4 pra 10 valores (as 4
+antigas + `imobiliaria`, `estetica_automotiva`, `pelicula_automotiva`,
+`estamparia`, `loja_online`, `servico_generico` como catch-all/fallback).
+Em `services/ai_service.py`, o
+`AGENCY_SYSTEM_PROMPT` único virou `AGENCY_CATEGORY_PROMPTS` — uma
+função `_build_agency_prompt` monta um prompt completo por categoria a
+partir de um esqueleto comum (`_AGENCY_PROMPT_SKELETON`), preenchendo
+a descrição do negócio, as perguntas específicas ("Informação que você
+está reunindo"), o substantivo usado pra falar do catálogo, e a frase
+de handoff pro time — mas a espinha dorsal que garante o produto
+(nunca inventar preço/item, sempre checar `get_offerings`, nunca
+fechar venda sozinho) é deliberadamente idêntica em todas, por serem
+garantias do produto, não "sabor" de nicho. `services/decision_engine.py`
+ganhou o mesmo tratamento pro `business_context` usado na análise de
+oportunidade (`_AGENCY_CATEGORY_BUSINESS_CONTEXT`). `routes/chat.py`
+passou a extrair `agency_category` mais cedo (antes só existia perto
+do `ask_ai`) pra alimentar também o `analyze_message`.
+
+No meio da implementação, o usuário adicionou mais um requisito real:
+"eles também devem ter integração com PMS do local caso já tenham
+sistema" — o mesmo webhook de saída que hospedagem já tem
+(`dispatch_reservation_webhook`, v1.27.0) devia existir pras contas
+`agency` novas. Como esse tipo de conta não tem reserva/check-in,
+investigado o pipeline de oportunidades (`analyze_message`,
+`services/decision_engine.py`) pra achar o evento equivalente: o
+momento em que uma oportunidade é criada (ou atualizada, se a mesma
+conversa evolui) É o evento de conversão real desse tipo de negócio.
+Criado `dispatch_opportunity_webhook` (`database.py`, mesmo formato de
+`dispatch_reservation_webhook` — nunca levanta exceção, busca
+hóspede/oportunidade e manda `POST` assinado), chamado direto de
+`analyze_message` logo após o commit, só quando `account_kind ==
+"agency"` (hospedagem continua só na reserva, sem duplicar sinal).
+Texto do modal de Configurações → Integrações (`settings.outboundWebhook.intro`)
+passou a variar por `account_kind` nos 5 idiomas, pra não falar de
+"reserva" com quem não tem esse conceito.
+
+Também corrigido de brinde, no mesmo pacote: `Register.html` (as
+categorias no seletor, copy do tipo de conta deixou de dizer só
+"Agência parceira"), e o relabel "Hóspedes" → "PAX"/"Clientes" em
+`dashboard.html` (3 pontos no código) — antes qualquer conta `agency`
+virava "PAX", termo que não faz sentido pra estética automotiva ou
+estamparia; agora só turismo/aluguel mantêm "PAX" (termo do setor),
+as categorias novas usam "Clientes". Precisou adicionar
+`agency_category` na resposta de sessão (`routes/auth.py`
+`build_session_payload`), que antes só expunha `account_kind`.
+
+Antes de testar, o usuário revisou a lista de 10 categorias e apontou
+uma inconsistência de modelagem: "estética automotiva e películas
+podem estar juntos... assim como hospedagem que tem as categorias
+hostel, pousada etc, a parte automotiva pode ter suas categorias como
+estética, películas, mecânica, funilaria e pintura, elétrica,
+borracharia, auto peças, etc, assim como o comércio também deve ter
+suas categorias que são muitas". Ou seja: `estetica_automotiva`/
+`pelicula_automotiva`/`estamparia`/`loja_online` como 4 categorias
+"top-level" separadas era o MESMO erro de modelagem que a sessão tinha
+acabado de corrigir num nível diferente — só que ao contrário: turismo/
+locação eram genéricas demais compartilhando um prompt, e automotivo/
+comércio ficariam granulares demais como 4 categorias fixas quando a
+variedade real (mecânica, funilaria e pintura, elétrica, borracharia,
+auto peças, e "muitas" no comércio) é grande demais pra virar prompt
+próprio por subtipo. Correção: as 4 viraram 2 GRUPOS
+(`automotivo`/`comercio`), com o detalhe específico guardado numa
+coluna nova, `hostels.agency_subcategory` — campo livre com presets,
+mesmo padrão exato que `hostel_type` já usa pra hospedagem (hostel/
+pousada/hotel/resort/flat + "+ Novo tipo..."). O prompt de IA
+(`AGENCY_CATEGORY_PROMPTS["automotivo"]`/`["comercio"]`) interpola a
+subcategoria dinamicamente via `{agency_subcategory_line}` ("...an
+automotive shop specializing in Funilaria e pintura." — ou frase limpa,
+sem esse trecho, quando a conta não preencheu subcategoria nenhuma).
+`Register.html` ganhou um terceiro seletor em cascata, só visível pra
+automotivo/comércio, com os presets de `database.AGENCY_SUBCATEGORY_PRESETS`
+e a mesma opção "+ Outro (digite abaixo)". `database.AGENCY_CATEGORIES`
+final: 8 grupos, não 10 categorias.
+
+Testado com quatro scripts próprios contra banco SQLite temporário: os
+8 prompts formatam sem erro e são todos distintos entre si (nenhum
+texto duplicado); a interpolação de subcategoria funciona com e sem
+valor (frase limpa, sem "specializing in" pendurado, quando vazia) e é
+ignorada sem erro pelas categorias que não usam esse placeholder; o
+fallback pra categoria desconhecida cai em `servico_generico`; o
+`business_context` do Decision Engine tem uma frase própria por grupo
+com o mesmo fallback; e o webhook de oportunidade — testado via
+`analyze_message` de ponta a ponta, com `analyze_with_ai` mockado pra
+não bater na OpenAI de verdade — dispara `opportunity_created` na
+primeira mensagem, `opportunity_updated` numa segunda mensagem da
+mesma conversa, e confirmadamente NÃO dispara pra conta `lodging` (que
+segue exclusiva no webhook de reserva). Documentado no Documento
+Mestre, seção 14.3 (contexto por categoria/grupo) e seção 16.25
+(webhook de oportunidade), mais a tabela de Controle de Versões
+(v1.50.0).
+
+Ainda no mesmo pacote, o usuário revisou os presets de "automotivo" e
+apontou que "auto peças" sozinho ficou vago demais: "em autopeças deve
+haver uma subcategoria mais depois de criado que é carro/moto/
+caminhao/maquinas". Em vez de adicionar um quarto nível de cascata na
+UI só pra esse caso, o preset único "Auto peças" foi desdobrado
+diretamente em 4 presets mais específicos na mesma lista plana
+(`database.AGENCY_SUBCATEGORY_PRESETS["automotivo"]`): "Peças de
+carro", "Peças de moto", "Peças de caminhão", "Peças de máquinas" —
+como `agency_subcategory` já é texto livre (não um enum fechado), isso
+captura a mesma informação que um terceiro nível de seletor daria, sem
+precisar construir mais uma camada de cascata JS pra um único caso.
+
+Mirror do backend sincronizado com as mesmas versões finais.
+
+### Marcar contas candidatas a treinamento pago na Prospecção
+
+Ainda na mesma sessão, a conversa virou estratégia comercial: quanto
+tempo oferecer de piloto (decidido: 30-45 dias padrão, 60-90 pra
+imobiliária, sempre com checkpoint marcado — não um ano fixo, pra não
+sufocar o caixa nem perder urgência) e se caberia cobrar treinamento
+presencial pra operações grandes tipo o Diplomatic Hotel (equipe
+numerosa, mudança de fluxo de trabalho é mais drástica que num hostel
+pequeno). O usuário topou a sugestão de já deixar a aba Prospecção
+preparada pra marcar quais contas são candidatas a isso, conforme
+forem entrando.
+
+Implementado como flag simples, não um sistema de tags genérico (fora
+de escopo pro que foi pedido): `stayflow_leads.training_candidate`
+(nova coluna, `add_column_if_not_exists`), checkbox no formulário de
+criar/editar contato, selo 🎓 direto no nome na linha da tabela, e um
+filtro "Só candidatos a treinamento" na toolbar (client-side, mesmo
+padrão dos filtros de status/prioridade que já existiam). Testado com
+`database.py` isoladamente (marcar na criação, marcar/desmarcar depois
+via update) e — o teste que mais importava aqui — simulando uma tabela
+`stayflow_leads` de PRODUÇÃO sem essa coluna, com um registro real já
+cadastrado (o próprio Diplomatic Hotel como exemplo), confirmando que
+rodar a migração não apaga nem corrompe nenhum contato já cadastrado
+antes desta versão. Documentado no Documento Mestre, seção 16.34, e na
+tabela de Controle de Versões (v1.51.0).
+
+Mirror do backend sincronizado com as mesmas versões finais.

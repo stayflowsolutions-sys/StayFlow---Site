@@ -127,6 +127,8 @@ def build_session_payload(user_id, hostel_id, impersonating_from_hostel_id=None)
         "hostel_id": hostel_id,
         "hostel_name": hostel["name"] if hostel else None,
         "account_kind": hostel["account_kind"] if hostel else "lodging",
+        "agency_category": hostel["agency_category"] if hostel else None,
+        "agency_subcategory": hostel["agency_subcategory"] if hostel else None,
         "role_name": role_name,
         "permissions": permissions,
         "hostels": hostels,
@@ -145,6 +147,7 @@ def register():
     password = data.get("password", "").strip()
     account_kind = data.get("account_kind", "lodging").strip() or "lodging"
     agency_category = (data.get("agency_category") or "").strip() or None
+    agency_subcategory = (data.get("agency_subcategory") or "").strip() or None
     plan_name = (data.get("plan_name") or "").strip() or None
 
     if not hostel_name:
@@ -163,6 +166,7 @@ def register():
         return jsonify({"success": False, "message": "Categoria de agência inválida."}), 400
     if account_kind == "lodging":
         agency_category = None
+        agency_subcategory = None
     if plan_name and plan_name not in PLAN_PRICES:
         return jsonify({"success": False, "message": "Plano inválido."}), 400
 
@@ -174,7 +178,7 @@ def register():
     try:
         result = create_identity_and_hostel(
             admin_name, email, password_hash, hostel_name, email,
-            account_kind=account_kind, agency_category=agency_category
+            account_kind=account_kind, agency_category=agency_category, agency_subcategory=agency_subcategory
         )
     except sqlite3.IntegrityError:
         return jsonify({"success": False, "message": "This email is already registered."}), 409

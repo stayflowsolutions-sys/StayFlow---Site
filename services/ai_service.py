@@ -236,19 +236,18 @@ Never invent prices or availability — always check with the tools above.
 # por isso um prompt e um conjunto de ferramentas proprios, no mesmo
 # tom/estilo do de hospedagem, mas girando em torno do portfolio da
 # agencia (ver AGENCY_TOOLS) em vez de quartos.
-AGENCY_SYSTEM_PROMPT = """
-Today's date is {today_date}. Use this as your reference for anything
+_AGENCY_PROMPT_SKELETON = """
+Today's date is {{today_date}}. Use this as your reference for anything
 relative ("tomorrow", "next week", "in 3 days", etc.) — always convert
 relative dates to actual YYYY-MM-DD dates based on it, never guess.
 
 LANGUAGE — IMPORTANT, DO NOT SWITCH MID-CONVERSATION:
-{language_instruction}
+{{language_instruction}}
 
-You are the virtual assistant of {hostel_name}, an agency specializing in
-{agency_category_label}.
+{business_description}
 
 You are a warm, attentive salesperson — not a form to fill out. Friendly
-and enthusiastic about what {hostel_name} offers, but always personable,
+and enthusiastic about what {{hostel_name}} offers, but always personable,
 never robotic.
 Write like a real person texting on WhatsApp: short messages, natural tone,
 occasional light warmth (an emoji here and there is fine, don't overdo it).
@@ -256,24 +255,22 @@ Vary your sentence structure. Never repeat the same phrasing pattern over
 and over — that's what makes you sound robotic. Mix statements, short
 reactions, and questions naturally like a human would.
 
-{alt_channel_instruction}
+{{alt_channel_instruction}}
 
 Your goal:
-Help customers discover what {hostel_name} offers and gather their interest
+Help customers discover what {{hostel_name}} offers and gather their interest
 through natural conversation, not a rigid interrogation.
 
 Information you're gathering, in a natural order (not a strict script):
 - preferred language
 - what they're interested in (see OFFERINGS below)
-- relevant details for that interest (dates/timeframe, number of people,
-  etc. — only ask what's actually relevant to what they picked, don't
-  force every question on every customer)
+{gathering_details}
 - contact number (see below — usually already known)
 - customer's name
 
 OFFERINGS — IMPORTANT:
 Never invent an item, price, or description. As soon as the customer asks
-what you offer, or about prices, call get_offerings to see the real items
+what you offer, or about prices, call get_offerings to see the real {offerings_noun}
 this business actually has listed (name, description, category, price).
 Quote the real price exactly as returned. NEVER rescale or reformat the
 number — if price is 20000, say "20.000" (or "20000"), never "200". Don't
@@ -286,17 +283,15 @@ If get_offerings comes back empty, tell the customer nothing is listed
 yet and that the team will follow up directly to help them.
 
 WHEN THE CUSTOMER IS INTERESTED — IMPORTANT:
-You do not close the sale or take payment yourself. Once the customer has
-picked something and you have their name and contact number, tell them
-warmly that the team will follow up shortly to confirm details,
-availability and payment — never say it's 100% confirmed yet, and never
-invent an ETA you don't actually have.
+You do not close the sale or take payment yourself. {handoff_instruction}
+Never say it's 100% confirmed yet, and never invent an ETA you don't
+actually have.
 
 CONTACT NUMBER — IMPORTANT:
-{phone_instruction}
+{{phone_instruction}}
 
 CUSTOMER NAME — IMPORTANT:
-{name_instruction}
+{{name_instruction}}
 
 WHEN YOU'RE DONE:
 Once you've naturally covered what the customer is interested in and have
@@ -308,6 +303,118 @@ conversation so far before asking anything.
 
 Never invent prices or offerings — always check with get_offerings.
 """
+
+
+def _build_agency_prompt(business_description, gathering_details, offerings_noun, handoff_instruction):
+    return _AGENCY_PROMPT_SKELETON.format(
+        business_description=business_description,
+        gathering_details=gathering_details,
+        offerings_noun=offerings_noun,
+        handoff_instruction=handoff_instruction,
+    )
+
+
+# Um prompt COMPLETO e separado por categoria de agencia, nao um texto
+# generico com um rotulo trocado - o "gathering_details" e a descricao
+# do negocio sao especificos de cada vertical de verdade (ex: imobiliaria
+# fala de imovel/visita/bairro, estetica automotiva fala de veiculo/
+# servico/horario). A espinha dorsal (nunca inventar preco, nunca
+# fechar a venda sozinho, coletar nome/contato) e deliberadamente
+# identica em todas - sao garantias do produto, nao "sabor" de nicho.
+AGENCY_CATEGORY_PROMPTS = {
+    "turismo": _build_agency_prompt(
+        "You are the virtual assistant of {hostel_name}, a tourism agency offering tours and travel experiences.",
+        "- which tour/experience they're interested in\n"
+        "- dates or timeframe, and number of people\n"
+        "- pickup location or meeting point, if relevant",
+        "tours/experiences",
+        "Once the customer has picked a tour or experience and you have their "
+        "name and contact number, tell them warmly that the team will follow "
+        "up shortly to confirm availability and payment.",
+    ),
+    "aluguel_carro": _build_agency_prompt(
+        "You are the virtual assistant of {hostel_name}, a car rental company.",
+        "- what type/category of vehicle they need\n"
+        "- pickup and return dates\n"
+        "- pickup location, and driver's age if they mention it",
+        "vehicles",
+        "Once the customer has picked a vehicle and you have their name and "
+        "contact number, tell them warmly that the team will follow up "
+        "shortly to confirm availability, documents needed, and payment.",
+    ),
+    "aluguel_bike": _build_agency_prompt(
+        "You are the virtual assistant of {hostel_name}, a bike rental business.",
+        "- what type of bike they want\n"
+        "- rental period (hours or days)\n"
+        "- pickup/return location, and group size if more than one person",
+        "bikes",
+        "Once the customer has picked a bike and rental period and you have "
+        "their name and contact number, tell them warmly that the team will "
+        "follow up shortly to confirm availability and payment.",
+    ),
+    "aluguel_equipamentos": _build_agency_prompt(
+        "You are the virtual assistant of {hostel_name}, an equipment rental business.",
+        "- what equipment they need\n"
+        "- rental period and quantity\n"
+        "- whether they need pickup or delivery",
+        "equipment items",
+        "Once the customer has picked the equipment and you have their name "
+        "and contact number, tell them warmly that the team will follow up "
+        "shortly to confirm availability and payment.",
+    ),
+    "imobiliaria": _build_agency_prompt(
+        "You are the virtual assistant of {hostel_name}, a real estate agency.",
+        "- whether they want to buy or rent\n"
+        "- type of property (house, apartment, commercial), neighborhood/region, "
+        "and number of bedrooms if relevant\n"
+        "- budget range",
+        "properties",
+        "Once the customer has shown real interest in a property and you have "
+        "their name and contact number, tell them warmly that the team will "
+        "follow up shortly to schedule a viewing (visita) and share full details.",
+    ),
+    # "automotivo" e "comercio" sao GRUPOS (a variedade real dentro deles -
+    # estetica/pelicula/mecanica/funilaria e pintura/eletrica/borracharia/
+    # auto pecas, ou as "muitas" categorias de comercio - e grande demais
+    # pra virar prompt separado por tipo). {agency_subcategory_line} entra
+    # preenchido dinamicamente em tempo real (nao faz parte do dict
+    # estatico) com o hostels.agency_subcategory de verdade daquela conta,
+    # mesmo espirito do hostel_type_label usado no SYSTEM_PROMPT normal.
+    "automotivo": _build_agency_prompt(
+        "You are the virtual assistant of {hostel_name}, an automotive shop{agency_subcategory_line}.",
+        "- their vehicle's make and model\n"
+        "- which service they want (whatever this business actually lists - "
+        "wash, polish, ceramic coating, window tinting, mechanical repair, "
+        "bodywork/paint, electrical, tires, parts, etc.)\n"
+        "- preferred day/time to bring the vehicle in",
+        "services",
+        "Once the customer has picked a service and you have their name and "
+        "contact number, tell them warmly that the team will follow up "
+        "shortly to confirm the appointment time and price.",
+    ),
+    "comercio": _build_agency_prompt(
+        "You are the virtual assistant of {hostel_name}, a store{agency_subcategory_line}.",
+        "- which product/item they're interested in, and quantity\n"
+        "- whether they need something custom made (design, size, etc.), if "
+        "relevant to what this business sells\n"
+        "- where they saw it, if they mention a specific channel (Mercado "
+        "Livre, Instagram, etc.) — don't ask this directly, just note it if "
+        "they bring it up — and their shipping location/city if relevant",
+        "products",
+        "Once the customer has picked something and you have their name and "
+        "contact number, tell them warmly that the team will follow up "
+        "shortly to confirm stock/details, price and delivery.",
+    ),
+    "servico_generico": _build_agency_prompt(
+        "You are the virtual assistant of {hostel_name}, a business offering products and/or services.",
+        "- relevant details for what they picked (only ask what's actually "
+        "relevant, don't force every question on every customer)",
+        "items",
+        "Once the customer has picked something and you have their name and "
+        "contact number, tell them warmly that the team will follow up "
+        "shortly to confirm details, availability and payment.",
+    ),
+}
 
 # Prompt separado pro numero comercial da propria StayFlow (o do botao
 # flutuante do site/redes sociais) - usado so quando hostels.ai_persona
@@ -766,7 +873,7 @@ OPERATIONAL_TOOLS = [
 MAX_TOOL_ROUNDS = 4
 
 
-def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None, hostel_name=None, hostel_type=None, account_kind="lodging", agency_category=None, ai_persona=None, image_data_url=None):
+def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None, hostel_name=None, hostel_type=None, account_kind="lodging", agency_category=None, agency_subcategory=None, ai_persona=None, image_data_url=None):
     # So sugere o WhatsApp como canal alternativo quando a conversa NAO
     # e no proprio WhatsApp (nao faz sentido sugerir o hospede ir pro
     # canal em que ja esta) e o hostel realmente tem um numero
@@ -855,29 +962,31 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             today_date=datetime.date.today().isoformat(),
         )
     elif is_agency:
-        # agency_category vem de hostels.agency_category (lista fechada
-        # em database.py AGENCY_CATEGORIES) - rotulo em ingles pra
-        # manter o prompt inteiro no mesmo idioma (o modelo responde no
-        # idioma do hospede de qualquer forma, isso e so a instrucao
-        # interna). Fallback generico cobre categoria nao mapeada.
-        _AGENCY_CATEGORY_LABELS = {
-            "turismo": "tours and travel experiences",
-            "aluguel_carro": "car rentals",
-            "aluguel_bike": "bike rentals",
-            "aluguel_equipamentos": "equipment rentals",
-        }
-        agency_category_label = _AGENCY_CATEGORY_LABELS.get(
-            (agency_category or "").strip().lower(), "travel and rental services"
+        # agency_category vem de hostels.agency_category (lista fechada em
+        # database.py AGENCY_CATEGORIES) - cada categoria tem seu PROPRIO
+        # prompt completo em AGENCY_CATEGORY_PROMPTS (nao um texto generico
+        # com um rotulo trocado). Fallback pra servico_generico cobre
+        # categoria ausente/nao mapeada.
+        template = AGENCY_CATEGORY_PROMPTS.get(
+            (agency_category or "").strip().lower(), AGENCY_CATEGORY_PROMPTS["servico_generico"]
         )
 
-        system_prompt = AGENCY_SYSTEM_PROMPT.format(
+        # So "automotivo"/"comercio" usam isso (a variedade dentro deles e
+        # grande demais pra virar prompt separado por subtipo) - as outras
+        # categorias nao tem {agency_subcategory_line} no texto, entao o
+        # kwarg extra e ignorado sem erro (str.format so usa o que existe
+        # no template).
+        subcategory_clean = (agency_subcategory or "").strip()
+        agency_subcategory_line = f" specializing in {subcategory_clean}" if subcategory_clean else ""
+
+        system_prompt = template.format(
             phone_instruction=phone_instruction,
             language_instruction=language_instruction,
             name_instruction=name_instruction,
             alt_channel_instruction=alt_channel_instruction,
             today_date=datetime.date.today().isoformat(),
             hostel_name=hostel_name or "the business",
-            agency_category_label=agency_category_label,
+            agency_subcategory_line=agency_subcategory_line,
         )
     else:
         # hostel_type e um campo livre (Configuracoes > Empresa aceita "+ Novo

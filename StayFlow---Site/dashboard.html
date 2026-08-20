@@ -2303,9 +2303,9 @@ async function deleteRoleConfirm(roleId){
     const navFallback = document.querySelector(`.menu button[data-page="${pageId}"] [data-i18n]`)?.textContent || titleKey;
     let title   = i18nReady ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, titleKey, navFallback) : navFallback;
     let subtitle= i18nReady && subtitleKey ? StayFlowI18n.t(STAYFLOW_DASHBOARD_I18N, lang, subtitleKey, "") : "";
-    // Agencia parceira (turismo/aluguel) chama guest de "PAX", termo
-    // padrao do setor - hospedagem continua "Hospedes" normalmente.
-    if(pageId === "guests" && (window.STAYFLOW_SESSION || {}).account_kind === "agency") title = "PAX";
+    // Agencia parceira chama guest de "PAX" (turismo/locacao) ou
+    // "Clientes" (demais categorias) - hospedagem continua "Hospedes".
+    if(pageId === "guests" && (window.STAYFLOW_SESSION || {}).account_kind === "agency") title = agencyGuestNoun(window.STAYFLOW_SESSION);
     if(pageId === "support"){
       title = "Suporte";
       subtitle = "Fale direto com a equipe da StayFlow.";
@@ -3169,8 +3169,14 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openOutboundWebhookSettingsModal = function(){
+    // Agencia parceira (imobiliaria, estetica automotiva, loja online etc.)
+    // nao tem reserva/check-in - o texto padrao (hospedagem) confundiria.
+    const isAgencyAccount = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
+    const webhookIntro = isAgencyAccount
+      ? T('settings.outboundWebhook.introAgency', 'Se você já tem um sistema próprio, cadastre aqui uma URL sua — toda vez que uma oportunidade nova (cliente interessado) é detectada numa conversa, um aviso automático (POST) é disparado pra ela.')
+      : T('settings.outboundWebhook.intro', 'Se você já tem um sistema próprio e usa o StayFlow só pra atendimento/IA, cadastre aqui uma URL sua — toda reserva criada, alterada, cancelada ou com check-in/check-out feito dispara um aviso automático (POST) pra ela, de qualquer origem (WhatsApp, manual ou canais como Booking/Airbnb).');
     openGenericModal(T('settings.outboundWebhook.title', '📡 Webhook de saída'), `
-      <p style="font-size:13px;color:var(--muted);margin:0 0 14px">${T('settings.outboundWebhook.intro', 'Se você já tem um sistema próprio e usa o StayFlow só pra atendimento/IA, cadastre aqui uma URL sua — toda reserva criada, alterada, cancelada ou com check-in/check-out feito dispara um aviso automático (POST) pra ela, de qualquer origem (WhatsApp, manual ou canais como Booking/Airbnb).')}</p>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 14px">${webhookIntro}</p>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
         <input type="url" id="outboundWebhookUrl" placeholder="https://seusistema.com/webhook" style="flex:1;min-width:240px;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:8px 12px;">
@@ -7546,7 +7552,20 @@ const AGENCY_CATEGORY_LABELS = {
   aluguel_carro: "Aluguel de carro",
   aluguel_bike: "Aluguel de bike",
   aluguel_equipamentos: "Aluguel de equipamentos",
+  imobiliaria: "Imobiliária",
+  automotivo: "Automotivo",
+  comercio: "Comércio",
+  servico_generico: "Outro tipo de negócio",
 };
+
+// "PAX" e termo de turismo/locacao - pras categorias novas (imobiliaria,
+// estetica automotiva, etc.) "Clientes" faz mais sentido. Hospedagem
+// (account_kind !== "agency") nunca cai aqui, continua "Hospedes" normal.
+const PAX_STYLE_CATEGORIES = new Set(["turismo", "aluguel_carro", "aluguel_bike", "aluguel_equipamentos"]);
+function agencyGuestNoun(session){
+  const category = (session || {}).agency_category;
+  return PAX_STYLE_CATEGORIES.has(category) ? "PAX" : "Clientes";
+}
 
 let portfolioItemsCache = [];
 
@@ -10216,13 +10235,14 @@ window.uploadGuestDocumentUI = async function(guestId){
     try{ applyAccountKindVisibility(session.account_kind); }catch(e){ console.error("Erro ao aplicar visibilidade por tipo de conta:", e); }
     try{ hideNavItemsWithoutPermission(session.permissions || [], session.account_kind); }catch(e){ console.error("Erro ao esconder itens de menu sem permissao:", e); }
     try{
-      // Agencia parceira chama guest de "PAX" (termo padrao do setor de
-      // turismo/locacao) - hospedagem continua "Hospedes" normalmente.
+      // Agencia parceira chama guest de "PAX" (turismo/locacao) ou
+      // "Clientes" (demais categorias) - hospedagem continua "Hospedes".
       if(session.account_kind === "agency"){
+        const noun = agencyGuestNoun(session);
         const navGuestsLabel = document.getElementById("navGuestsLabel");
         const guestsSectionTitle = document.getElementById("guestsSectionTitle");
-        if(navGuestsLabel) navGuestsLabel.textContent = "PAX";
-        if(guestsSectionTitle) guestsSectionTitle.textContent = "👥 PAX";
+        if(navGuestsLabel) navGuestsLabel.textContent = noun;
+        if(guestsSectionTitle) guestsSectionTitle.textContent = "👥 " + noun;
       }
     }catch(e){ console.error("Erro ao ajustar rotulo de PAX:", e); }
     try{
@@ -10568,10 +10588,11 @@ window.uploadGuestDocumentUI = async function(guestId){
     // "Hospedes"/"Guests".
     try{
       if((window.STAYFLOW_SESSION || {}).account_kind === "agency"){
+        const noun = agencyGuestNoun(window.STAYFLOW_SESSION);
         const navGuestsLabel = document.getElementById("navGuestsLabel");
         const guestsSectionTitle = document.getElementById("guestsSectionTitle");
-        if(navGuestsLabel) navGuestsLabel.textContent = "PAX";
-        if(guestsSectionTitle) guestsSectionTitle.textContent = "👥 PAX";
+        if(navGuestsLabel) navGuestsLabel.textContent = noun;
+        if(guestsSectionTitle) guestsSectionTitle.textContent = "👥 " + noun;
       }
     }catch(e){ console.error("Erro ao reaplicar rotulo de PAX:", e); }
   });

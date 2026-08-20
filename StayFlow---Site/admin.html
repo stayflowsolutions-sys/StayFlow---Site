@@ -626,6 +626,12 @@
             <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Observações</label>
             <input type="text" id="leadNotes" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
           </div>
+          <div class="span-12">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+              <input type="checkbox" id="leadTrainingCandidate" style="width:auto;margin:0">
+              🎓 Operação grande — candidata a treinamento pago
+            </label>
+          </div>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
           <button type="button" class="btn secondary" onclick="closeLeadForm()">Cancelar</button>
@@ -651,6 +657,10 @@
           <option value="media">Média</option>
           <option value="baixa">Baixa</option>
         </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="leadTrainingFilter" onchange="loadLeads()" style="width:auto;margin:0">
+          🎓 Só candidatos a treinamento
+        </label>
       </div>
       <div style="overflow-x:auto">
         <table class="table">
@@ -1987,6 +1997,7 @@
     document.getElementById("leadNextActionDate").value = lead ? (lead.next_action_date || "") : "";
     document.getElementById("leadNextAction").value = lead ? (lead.next_action || "") : "";
     document.getElementById("leadNotes").value = lead ? (lead.notes || "") : "";
+    document.getElementById("leadTrainingCandidate").checked = !!(lead && lead.training_candidate);
     document.getElementById("leadFormCard").style.display = "block";
   };
   window.closeLeadForm = function(){
@@ -2010,6 +2021,7 @@
       next_action_date: document.getElementById("leadNextActionDate").value || null,
       next_action: document.getElementById("leadNextAction").value.trim() || null,
       notes: document.getElementById("leadNotes").value.trim() || null,
+      training_candidate: document.getElementById("leadTrainingCandidate").checked,
     };
     try{
       const url = editingLeadId ? `/stayflow-admin/leads/${editingLeadId}` : "/stayflow-admin/leads";
@@ -2047,7 +2059,7 @@
     const nextActionLabel = l.next_action_date ? parseUtc(l.next_action_date + "T00:00:00")?.toLocaleDateString("pt-BR") : "—";
     return `
       <tr>
-        <td>${(l.name || "").replace(/</g, "&lt;")}</td>
+        <td>${(l.name || "").replace(/</g, "&lt;")}${l.training_candidate ? ' <span title="Candidata a treinamento pago">🎓</span>' : ""}</td>
         <td>${(l.property_name || "—").replace(/</g, "&lt;")}</td>
         <td>${LEAD_PRIORITY_LABELS[l.priority] || l.priority}</td>
         <td>${LEAD_CHANNEL_LABELS[l.channel] || (l.channel || "—")}</td>
@@ -2069,10 +2081,12 @@
 
       const statusFilter = document.getElementById("leadStatusFilter").value;
       const priorityFilter = document.getElementById("leadPriorityFilter").value;
+      const trainingFilter = document.getElementById("leadTrainingFilter").checked;
       leadsCache = data.leads || [];
       let filtered = leadsCache;
       if(statusFilter) filtered = filtered.filter(l => l.status === statusFilter);
       if(priorityFilter) filtered = filtered.filter(l => l.priority === priorityFilter);
+      if(trainingFilter) filtered = filtered.filter(l => !!l.training_candidate);
 
       document.getElementById("leadsTableBody").innerHTML = filtered.length ? filtered.map(leadRowHtml).join("") : "";
       document.getElementById("leadsEmpty").style.display = filtered.length ? "none" : "flex";

@@ -4,7 +4,7 @@ import re
 from openai import OpenAI
 from dotenv import load_dotenv
 
-from database import get_connection, get_enabled_partner_items_for_hostel
+from database import get_connection, get_enabled_partner_items_for_hostel, dispatch_opportunity_webhook
 
 load_dotenv()
 
@@ -59,7 +59,24 @@ def fallback_analysis(message):
     }
 
 
-def analyze_with_ai(message, history=None, account_kind="lodging"):
+# O que conta como "oportunidade" muda por categoria - um lead quente
+# numa imobiliaria (visita agendada) nao e a mesma coisa que um upsell
+# numa estetica automotiva (servico extra oferecido). Mesmo espirito
+# de AGENCY_CATEGORY_PROMPTS em ai_service.py: contexto proprio por
+# categoria, nao um rotulo generico trocado. "servico_generico"/
+# categoria ausente cai no fallback generico de sempre.
+_AGENCY_CATEGORY_BUSINESS_CONTEXT = {
+    "turismo": "a tourism agency and its customer, discussing a tour or travel experience",
+    "aluguel_carro": "a car rental company and its customer",
+    "aluguel_bike": "a bike rental business and its customer",
+    "aluguel_equipamentos": "an equipment rental business and its customer",
+    "imobiliaria": "a real estate agency and its customer, discussing a property to buy or rent",
+    "automotivo": "an automotive shop (detailing, tinting, mechanic, bodywork, parts, etc.) and its customer, discussing a service for their vehicle",
+    "comercio": "a store and its customer, discussing a product",
+}
+
+
+def analyze_with_ai(message, history=None, account_kind="lodging", agency_category=None):
     # Analisa a CONVERSA (ultimas mensagens reais, se houver), nao so a
     # mensagem isolada que acabou de chegar - uma mensagem curta tipo
     # "sim" ou "pode ser dia 20" so faz sentido junto do que veio antes.
@@ -74,11 +91,12 @@ def analyze_with_ai(message, history=None, account_kind="lodging"):
             lines.append(f"{speaker}: {item.get('content', '')}")
         conversation_block = "Conversa ate agora (mais antiga primeiro):\n" + "\n".join(lines) + "\n\n"
 
-    business_context = (
-        "a tour/rental agency and its customer"
-        if account_kind == "agency"
-        else "a hostel/hotel and its guest"
-    )
+    if account_kind == "agency":
+        business_context = _AGENCY_CATEGORY_BUSINESS_CONTEXT.get(
+            (agency_category or "").strip().lower(), "a business and its customer"
+        )
+    else:
+        business_context = "a hostel/hotel and its guest"
     prompt = f"""
 Analyze this conversation between {business_context}, and return ONLY
 valid JSON. Judge the opportunity based on the CONVERSATION AS A WHOLE,
@@ -144,7 +162,7 @@ Rules:
         return fallback_analysis(message)
 
 
-def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lodging"):
+def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lodging", agency_category=None):
     """
     guest_id vem ja resolvido pelo chamador (routes/chat.py, via
     get_or_create_guest_by_channel) - antes essa funcao recebia
@@ -156,7 +174,7 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
     if _is_filler_message(message):
         return None
 
-    analysis = analyze_with_ai(message, history=history, account_kind=account_kind)
+    analysis = analyze_with_ai(message, history=history, account_kind=account_kind, agency_category=agency_category)
 
     if analysis.get("intent") == "general":
         # "general" nunca vira oportunidade (nao e venda/reserva), mas
@@ -246,6 +264,7 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
                 existing["id"]
             )
         )
+        opportunity_id = existing["id"]
     else:
         cursor.execute(
             """
@@ -275,6 +294,7 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
                 suggested_partner_item_id
             )
         )
+        opportunity_id = cursor.lastrowid
 
     cursor.execute("SELECT name FROM guests WHERE id = ?", (guest_id,))
     guest_row = cursor.fetchone()
@@ -282,6 +302,18 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
 
     conn.commit()
     conn.close()
+
+    # Contas 'agency' (imobiliaria, estetica automotiva, loja online etc.)
+    # nao tem reserva/check-in - a oportunidade E o evento de conversao
+    # pra esse tipo de negocio, entao e ela que dispara o webhook de saida
+    # genérico (se o cliente tiver um sistema proprio cadastrado em
+    # Configuracoes -> Integracoes). Hospedagem continua so avisando via
+    # reserva (dispatch_reservation_webhook), pra nao duplicar sinal.
+    if account_kind == "agency":
+        dispatch_opportunity_webhook(
+            hostel_id, guest_id, opportunity_id,
+            "opportunity_created" if is_new_opportunity else "opportunity_updated"
+        )
 
     # So notifica em oportunidade NOVA (nao em toda mensagem que
     # atualiza uma ja existente) - senao uma conversa longa e urgente
