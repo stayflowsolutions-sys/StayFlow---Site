@@ -1306,6 +1306,10 @@
     btn.classList.add("active");
     document.getElementById(`page-${tab}`).classList.add("active");
     currentAdminTab = tab;
+    // O flutuante "Ask StayFlow" fica fixo no canto inferior direito da
+    // janela - na aba Meu chat, o botao "Assumir" da barra de envio
+    // tambem fica ali, sobrepondo os dois. Sobe o flutuante so nessa aba.
+    document.body.classList.toggle("admin-chat-tab-active", tab === "chat");
     document.getElementById("pageTitle").textContent = AT(`topbar.${tab}.title`);
     document.getElementById("pageSubtitle").textContent = AT(`topbar.${tab}.subtitle`);
     document.getElementById("sidebar")?.classList.remove("open");
