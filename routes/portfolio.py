@@ -6,7 +6,6 @@ from database import (
     get_portfolio_item,
     list_portfolio_items,
     update_portfolio_item,
-    AGENCY_CATEGORIES,
 )
 from utils.tenant import require_permission
 
@@ -39,9 +38,10 @@ def create_portfolio_item_route(hostel_id):
         return error
 
     data = request.get_json() or {}
-    category = data.get("category")
-    if category and category not in AGENCY_CATEGORIES:
-        return jsonify({"success": False, "message": "Categoria inválida."}), 400
+    # category e texto livre (nome do produto/servico, ex: "Camisetas"),
+    # nao a categoria de NEGOCIO da agencia (AGENCY_CATEGORIES) - eram
+    # confundidas antes, corrigido junto com o campo do frontend.
+    category = (data.get("category") or "").strip() or None
 
     try:
         item = create_portfolio_item(
@@ -80,10 +80,7 @@ def import_portfolio_items_route(hostel_id):
     created = 0
     errors = []
     for i, row in enumerate(rows):
-        category = row.get("category") or None
-        if category and category not in AGENCY_CATEGORIES:
-            errors.append({"row": i + 1, "message": f"Categoria '{category}' inválida."})
-            continue
+        category = (row.get("category") or "").strip() or None
         try:
             create_portfolio_item(
                 hostel_id,
