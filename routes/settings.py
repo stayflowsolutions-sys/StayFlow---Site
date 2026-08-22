@@ -77,6 +77,9 @@ def get_whatsapp_settings(hostel_id):
     phone_number_id, access_token = get_hostel_whatsapp_config(hostel_id)
     hostel = get_hostel(hostel_id)
 
+    oauth_available = meta_oauth_service.is_whatsapp_embedded_signup_configured()
+    embedded_signup_config = meta_oauth_service.get_whatsapp_embedded_signup_config() if oauth_available else {}
+
     return jsonify({
         "phone_number_id": phone_number_id or "",
         # Nunca devolve o token de verdade pro frontend por segurança —
@@ -93,6 +96,11 @@ def get_whatsapp_settings(hostel_id):
         # database.py) - qualquer outro valor/vazio usa o assistente
         # normal de hospedagem/agencia.
         "ai_persona": (hostel or {}).get("ai_persona") or "",
+        # app_id/config_id nao sao segredo (o FB.login() do navegador
+        # precisa deles direto, sem passar pelo backend) - so aparecem
+        # quando a configuration de Embedded Signup existe de verdade.
+        "oauth_available": oauth_available,
+        **embedded_signup_config,
     })
 
 
@@ -122,6 +130,31 @@ def update_whatsapp_settings(hostel_id):
         ai_persona = (data.get("ai_persona") or "").strip()
         save_hostel_ai_persona(hostel_id, ai_persona or None)
 
+    return jsonify({"success": True})
+
+
+@settings_bp.route("/settings/whatsapp/embedded-signup", methods=["POST"])
+@require_permission("settings")
+def whatsapp_embedded_signup(hostel_id):
+    """
+    Fecha o WhatsApp Embedded Signup - recebe o que o frontend juntou
+    do fluxo JS (FB.login() + evento postMessage WA_EMBEDDED_SIGNUP) e
+    troca por uma conta pronta pra usar, mesmo destino final
+    (save_hostel_whatsapp_config) do fluxo manual que ja existia.
+    """
+    data = request.get_json() or {}
+    code = data.get("code")
+    phone_number_id = data.get("phone_number_id")
+    waba_id = data.get("waba_id")
+
+    if not code or not phone_number_id or not waba_id:
+        return jsonify({"success": False, "message": "Dados incompletos do WhatsApp Embedded Signup."}), 400
+
+    access_token, error = meta_oauth_service.exchange_whatsapp_embedded_signup(code, phone_number_id, waba_id)
+    if error:
+        return jsonify({"success": False, "message": error}), 400
+
+    save_hostel_whatsapp_config(hostel_id, phone_number_id, access_token)
     return jsonify({"success": True})
 
 

@@ -243,15 +243,20 @@ def static_files(filename):
 # nenhum risco de regressao:
 _CSP_DIRECTIVES = (
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
+    # connect.facebook.net: SDK JS oficial da Meta, necessario pro
+    # WhatsApp Embedded Signup (FB.login() no navegador) - unico host
+    # externo liberado aqui de proposito, mesmo cuidado do resto da
+    # CSP (nada de wildcard genérico).
+    "script-src 'self' 'unsafe-inline' https://connect.facebook.net",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
     # Se uma injecao de script AINDA acontecesse (ex: bug futuro sem
     # escape), isso impede o payload de mandar dados roubados pra um
     # servidor externo via fetch/XHR/WebSocket - so pode falar com o
-    # proprio stayflowsolutions.com.
-    "connect-src 'self'",
+    # proprio stayflowsolutions.com (+ os hosts da Meta que o SDK do
+    # WhatsApp Embedded Signup precisa chamar diretamente do navegador).
+    "connect-src 'self' https://connect.facebook.net https://graph.facebook.com",
     # Camera de vigilancia (Seguranca Patrimonial) embute uma URL
     # externa configurada por cada hostel - nao da pra saber o dominio
     # com antecedencia, por isso https: generico em vez de um dominio
