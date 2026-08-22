@@ -2234,13 +2234,21 @@
   let myChatActiveGuestId = null;
   let myChatLastMessageCount = 0;
 
+  const CHAT_CHANNEL_BADGE_COLORS = { whatsapp: "#3ddc97", messenger: "#7b61ff", instagram: "#e1306c", api: "#3ddc97" };
+  const CHAT_CHANNEL_LABELS = { whatsapp: "WhatsApp", messenger: "Messenger", instagram: "Instagram", api: "API" };
+  function chatChannelBadgeHtml(channel){
+    const key = (channel || "whatsapp").toLowerCase().trim();
+    const color = CHAT_CHANNEL_BADGE_COLORS[key] || "#7bc2ff";
+    const label = CHAT_CHANNEL_LABELS[key] || key;
+    return `<span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:.02em;color:${color};border:1px solid ${color}55;background:${color}18;border-radius:999px;padding:1px 7px;white-space:nowrap;margin-left:6px">${label}</span>`;
+  }
   function chatGuestItemHtml(g){
     const isMine = g.last_message_sender === "assistant";
     const preview = g.last_message ? `${isMine ? AT("chat.you") : ""}${g.last_message}` : AT("chat.noMessagesYet");
     return `
       <div class="chat-item sf-clickable-row ${g.id === myChatActiveGuestId ? "active" : ""}" data-guest-id="${g.id}" onclick="openMyChatGuest(${g.id})">
         <div class="chat-name">
-          <span>${g.unread ? "🔵 " : ""}${(g.name || g.phone || AT("chat.noContactName")).replace(/</g, "&lt;")}</span>
+          <span>${g.unread ? "🔵 " : ""}${(g.name || g.phone || AT("chat.noContactName")).replace(/</g, "&lt;")}${chatChannelBadgeHtml(g.channel)}</span>
           <span class="chat-time">${timeAgo(g.last_message_at)}</span>
         </div>
         <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>
