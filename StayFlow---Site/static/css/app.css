@@ -1573,10 +1573,11 @@ body.chats-page-active .ask-floating{
 }
 /* Mesmo problema, mas no painel interno (admin.html, aba "Meu chat") -
    o botao "Assumir" da barra de envio fica no mesmo canto do floating.
-   So desktop, so nessa aba. */
+   So desktop, so nessa aba. Sobe só o suficiente pra ficar acima da
+   barra de envio, sem disparar pro meio da tela. */
 @media(min-width:641px){
   body.admin-chat-tab-active .ask-floating{
-    bottom:281px;
+    bottom:100px;
   }
 }
 body.chats-page-active .reserva-floating{
