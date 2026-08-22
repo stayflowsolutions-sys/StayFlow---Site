@@ -447,6 +447,12 @@
       <div class="section-title" data-i18n="config.section.persona">Assistente comercial (Meu chat)</div>
       <div id="softwarePersonaInfo" class="prop-empty" data-i18n="loading">Carregando...</div>
 
+      <div class="section-title">Notificações do painel (alarmes de compromisso)</div>
+      <div class="card" style="padding:16px 18px;margin-bottom:18px">
+        <p id="adminPushStatusMessage" style="color:var(--muted);font-size:13px;margin:0 0 10px"></p>
+        <button type="button" class="btn" id="adminPushToggleBtn" onclick="toggleAdminPushNotifications()" style="display:none">Ativar neste dispositivo</button>
+      </div>
+
       <div class="section-title" data-i18n="config.section.admins">Administradores da StayFlow</div>
       <div id="adminEmailsList" class="prop-list"></div>
     </section>
@@ -610,17 +616,36 @@
               <option value="perdido">Perdido</option>
             </select>
           </div>
-          <div class="span-4">
+          <div class="span-3">
             <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Último contato</label>
             <input type="date" id="leadLastContact" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
           </div>
-          <div class="span-4">
-            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Data da próxima ação</label>
+          <div class="span-3">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Data do compromisso</label>
             <input type="date" id="leadNextActionDate" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
           </div>
-          <div class="span-4">
+          <div class="span-3">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Horário</label>
+            <input type="time" id="leadNextActionTime" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-3">
             <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Próxima ação</label>
             <input type="text" id="leadNextAction" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+          </div>
+          <div class="span-12" id="leadAlarmRow" style="display:none">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Avisar antes do compromisso</label>
+            <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="checkbox" id="leadAlarm30" style="width:auto;margin:0" checked> 30 min antes
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="checkbox" id="leadAlarm10" style="width:auto;margin:0" checked> 10 min antes
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px">
+                Outro (min, separado por vírgula):
+                <input type="text" id="leadAlarmCustom" placeholder="ex: 60" style="width:90px;background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:6px 10px;font-size:12px">
+              </label>
+            </div>
           </div>
           <div class="span-12">
             <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">Observações</label>
@@ -1776,7 +1801,135 @@
     }catch(e){
       console.warn("Erro ao carregar status das integrações:", e);
     }
+    refreshAdminPushToggleState();
   }
+
+  // ===== Notificações push do painel interno (alarmes de compromisso
+  // da Prospecção) - reaproveita EXATAMENTE o mesmo endpoint/fluxo ja
+  // usado pelo dashboard das hospedagens (/push/status, /push/subscribe,
+  // sw.js): o login do admin e dono do hostel_id=1 ("StayFlow", conta
+  // de teste do proprio usuario), entao a mesma inscricao serve. =====
+  function adminUrlBase64ToUint8Array(base64String){
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for(let i = 0; i < rawData.length; i++){
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  async function getAdminPushSubscription(){
+    if(!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
+    try{
+      const registration = await navigator.serviceWorker.ready;
+      return await registration.pushManager.getSubscription();
+    }catch(e){
+      return null;
+    }
+  }
+
+  async function refreshAdminPushToggleState(){
+    const btn = document.getElementById("adminPushToggleBtn");
+    const msgEl = document.getElementById("adminPushStatusMessage");
+    if(!btn || !msgEl) return;
+
+    if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)){
+      btn.style.display = "none";
+      msgEl.textContent = "Este navegador não suporta notificações push.";
+      return;
+    }
+
+    try{
+      await navigator.serviceWorker.register("/sw.js");
+    }catch(e){
+      console.warn("Erro ao registrar service worker:", e);
+    }
+
+    const subscription = await getAdminPushSubscription();
+
+    try{
+      const params = subscription ? `?endpoint=${encodeURIComponent(subscription.endpoint)}` : "";
+      const res = await fetch(`/push/status${params}`, { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      if(!data.configured){
+        btn.style.display = "none";
+        msgEl.textContent = "";
+        return;
+      }
+
+      window.STAYFLOW_ADMIN_VAPID_PUBLIC_KEY = data.public_key;
+      btn.style.display = "";
+
+      if(subscription && data.this_device_subscribed){
+        btn.textContent = "Desativar neste dispositivo";
+        btn.dataset.subscribed = "true";
+        msgEl.textContent = "Alarmes de compromisso vão notificar este dispositivo.";
+      }else{
+        btn.textContent = "Ativar neste dispositivo";
+        btn.dataset.subscribed = "false";
+        msgEl.textContent = "Ative pra receber um alarme antes de cada compromisso da Prospecção.";
+      }
+    }catch(e){
+      console.warn("Erro ao carregar status de notificações push:", e);
+    }
+  }
+
+  window.toggleAdminPushNotifications = async function(){
+    const btn = document.getElementById("adminPushToggleBtn");
+    const msgEl = document.getElementById("adminPushStatusMessage");
+    if(!btn) return;
+
+    const isSubscribed = btn.dataset.subscribed === "true";
+    btn.disabled = true;
+
+    try{
+      if(isSubscribed){
+        const subscription = await getAdminPushSubscription();
+        if(subscription){
+          await fetch("/push/subscribe", {
+            method: "DELETE", credentials: "same-origin",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ endpoint: subscription.endpoint })
+          });
+          await subscription.unsubscribe();
+        }
+      }else{
+        const permission = await Notification.requestPermission();
+        if(permission !== "granted"){
+          if(msgEl) msgEl.textContent = "Permissão de notificação negada pelo navegador.";
+          return;
+        }
+
+        if(!window.STAYFLOW_ADMIN_VAPID_PUBLIC_KEY){
+          if(msgEl) msgEl.textContent = "Notificações push ainda não estão configuradas neste servidor.";
+          return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: adminUrlBase64ToUint8Array(window.STAYFLOW_ADMIN_VAPID_PUBLIC_KEY),
+        });
+
+        const subJson = subscription.toJSON();
+        await fetch("/push/subscribe", {
+          method: "POST", credentials: "same-origin",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ endpoint: subJson.endpoint, keys: subJson.keys })
+        });
+      }
+    }catch(e){
+      console.warn("Erro ao alternar notificações push:", e);
+      if(msgEl) msgEl.textContent = "Erro de conexão.";
+    }finally{
+      btn.disabled = false;
+      refreshAdminPushToggleState();
+    }
+  };
 
   async function loadPayouts(){
     try{
@@ -1990,6 +2143,27 @@
   const LEAD_PRIORITY_LABELS = { alta: "Alta", media: "Média", baixa: "Baixa" };
   const LEAD_CHANNEL_LABELS = { whatsapp: "WhatsApp", email: "E-mail", instagram: "Instagram", presencial: "Presencial", outro: "Outro" };
 
+  function updateLeadAlarmRowVisibility(){
+    const hasTime = !!document.getElementById("leadNextActionTime").value;
+    document.getElementById("leadAlarmRow").style.display = hasTime ? "block" : "none";
+  }
+  document.getElementById("leadNextActionTime")?.addEventListener("change", updateLeadAlarmRowVisibility);
+
+  function applyAlarmOffsetsToForm(offsetsStr){
+    const offsets = (offsetsStr || "").split(",").map(o => o.trim()).filter(Boolean);
+    document.getElementById("leadAlarm30").checked = offsets.includes("30");
+    document.getElementById("leadAlarm10").checked = offsets.includes("10");
+    document.getElementById("leadAlarmCustom").value = offsets.filter(o => o !== "30" && o !== "10").join(",");
+  }
+  function alarmOffsetsFromForm(){
+    const offsets = [];
+    if(document.getElementById("leadAlarm30").checked) offsets.push("30");
+    if(document.getElementById("leadAlarm10").checked) offsets.push("10");
+    const custom = document.getElementById("leadAlarmCustom").value.trim();
+    if(custom) offsets.push(custom);
+    return offsets.join(",") || null;
+  }
+
   window.openLeadForm = function(lead){
     editingLeadId = lead ? lead.id : null;
     document.getElementById("leadName").value = lead ? lead.name : "";
@@ -1999,9 +2173,12 @@
     document.getElementById("leadStatus").value = lead ? lead.status : "a_contatar";
     document.getElementById("leadLastContact").value = lead ? (lead.last_contact_date || "") : "";
     document.getElementById("leadNextActionDate").value = lead ? (lead.next_action_date || "") : "";
+    document.getElementById("leadNextActionTime").value = lead ? (lead.next_action_time || "") : "";
     document.getElementById("leadNextAction").value = lead ? (lead.next_action || "") : "";
     document.getElementById("leadNotes").value = lead ? (lead.notes || "") : "";
     document.getElementById("leadTrainingCandidate").checked = !!(lead && lead.training_candidate);
+    applyAlarmOffsetsToForm(lead ? lead.alarm_offsets_minutes : "30,10");
+    updateLeadAlarmRowVisibility();
     document.getElementById("leadFormCard").style.display = "block";
   };
   window.closeLeadForm = function(){
@@ -2015,6 +2192,7 @@
       alert("Nome é obrigatório.");
       return;
     }
+    const nextActionTime = document.getElementById("leadNextActionTime").value || null;
     const payload = {
       name,
       property_name: document.getElementById("leadProperty").value.trim() || null,
@@ -2023,6 +2201,8 @@
       status: document.getElementById("leadStatus").value,
       last_contact_date: document.getElementById("leadLastContact").value || null,
       next_action_date: document.getElementById("leadNextActionDate").value || null,
+      next_action_time: nextActionTime,
+      alarm_offsets_minutes: nextActionTime ? alarmOffsetsFromForm() : null,
       next_action: document.getElementById("leadNextAction").value.trim() || null,
       notes: document.getElementById("leadNotes").value.trim() || null,
       training_candidate: document.getElementById("leadTrainingCandidate").checked,
@@ -2061,6 +2241,8 @@
     const today = new Date().toISOString().slice(0, 10);
     const isOverdue = l.next_action_date && l.next_action_date < today && !["piloto_ativo", "sem_interesse", "perdido"].includes(l.status);
     const nextActionLabel = l.next_action_date ? parseUtc(l.next_action_date + "T00:00:00")?.toLocaleDateString("pt-BR") : "—";
+    const timeLabel = l.next_action_time ? ` ${l.next_action_time}` : "";
+    const alarmBadge = (l.next_action_time && l.alarm_offsets_minutes) ? ' <span title="Alarme ativo (' + l.alarm_offsets_minutes.replace(/</g, "&lt;") + ' min antes)">🔔</span>' : "";
     return `
       <tr>
         <td>${(l.name || "").replace(/</g, "&lt;")}${l.training_candidate ? ' <span title="Candidata a treinamento pago">🎓</span>' : ""}</td>
@@ -2068,7 +2250,7 @@
         <td>${LEAD_PRIORITY_LABELS[l.priority] || l.priority}</td>
         <td>${LEAD_CHANNEL_LABELS[l.channel] || (l.channel || "—")}</td>
         <td><span class="plan-chip" style="${LEAD_STATUS_STYLE[l.status] || ""}">${LEAD_STATUS_LABELS[l.status] || l.status}</span></td>
-        <td style="${isOverdue ? "color:#ff9caf;font-weight:700" : ""}">${nextActionLabel}${l.next_action ? ` — ${l.next_action.replace(/</g, "&lt;")}` : ""}</td>
+        <td style="${isOverdue ? "color:#ff9caf;font-weight:700" : ""}">${nextActionLabel}${timeLabel}${alarmBadge}${l.next_action ? ` — ${l.next_action.replace(/</g, "&lt;")}` : ""}</td>
         <td style="white-space:nowrap">
           <button type="button" class="payout-btn" onclick='openLeadForm(${JSON.stringify(l).replace(/'/g, "&#39;")})'>Editar</button>
           <button type="button" class="payout-btn" style="background:#ff5d7618;border-color:#ff5d7630;color:#ff9caf;margin-left:6px" onclick="deleteLead(${l.id})">Excluir</button>
