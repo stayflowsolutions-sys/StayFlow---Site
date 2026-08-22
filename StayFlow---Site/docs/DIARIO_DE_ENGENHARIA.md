@@ -6114,3 +6114,115 @@ adicionadas à lista de trabalho pra retomar:
 Nenhum desses foi corrigido ainda nesta sessão — ficaram na fila
 depois do alarme de compromisso, por pedido explícito do usuário de
 "enfileirar, não abandonar o que já estava em andamento".
+
+### Auditoria completa por pendências (Master Context + Diário) e rodada de correções
+
+Usuário pediu uma checagem final: "tem mais alguma coisa parada ou
+pendente que vamos terminar tudo". Duas investigações completas em
+paralelo (protocolo de leitura sequencial 100%, sem pular trecho) nos
+dois documentos — 6.116 linhas do Diário, 9.038 do Master Context —
+levantaram uma lista grande de pendências reais, algumas de meses
+(Hostel Lagares real nunca cadastrado, arquitetura de deploy manual,
+japonês nunca adicionado, App Review do Instagram nunca confirmado
+como enviado, WhatsApp Embedded Signup só como intenção registrada).
+De brinde, a auditoria achou duas inconsistências no próprio Master
+Context: cabeçalho de versão desatualizado (dizia 1.47.0/13-08 com o
+conteúdo já em 1.52.0) e uma contradição real sobre envio de
+notificação de reserva via Instagram (seção 16.10 dizia que não
+funcionava, seção 16.26 dizia que funcionava — conferido no código:
+funciona, 16.10 estava desatualizada). Ambas corrigidas.
+
+Usuário decidiu: esquecer de vez o Hostel Lagares como piloto (não é
+mais candidato) e adiar a segunda conta de WhatsApp Brasil — os dois
+saíram da lista. Do resto, pediu pra eu mesmo ordenar por relevância e
+já ir corrigindo, avisando o que fosse fazendo, sem perguntar de novo
+a cada item.
+
+Executado nesta rodada (pequenos e médios primeiro): botão "Teste
+grátis" já apontava certo (falso alarme do diário antigo); dropdown de
+idioma/usuário cortado no mobile corrigido (bug de meses — `left:0`
+fazia o dropdown nascer fora da tela nos dois últimos botões da barra,
+resolvido ancorando pela direita só no mobile); limpeza de
+`templates/components/` (7 arquivos vazios, nunca usados),
+`teste-users.html` e `_screenshots_revisao/`; tela de histórico de
+visitas do Hub (o log já existia desde a v1.47.0, só faltava UI);
+upload real de foto no Portfólio (antes só aceitava URL colada — nova
+tabela `portfolio_photos`, rota pública `/media/portfolio/<token>`,
+mesmo padrão do chat). De brinde nessa última, achada e corrigida uma
+regressão real: a correção de categoria do Portfólio da sessão
+anterior tinha deixado o *backend* (`routes/portfolio.py`) ainda
+validando contra `AGENCY_CATEGORIES` — qualquer categoria de produto
+digitada que não fosse um dos 8 códigos de negócio dava 400 "Categoria
+inválida". Corrigido antes de qualquer cliente real esbarrar nisso.
+
+Idiomas novos (japonês + italiano) foram reclassificados de "correção
+rápida" pra "precisa planejar": o dicionário de i18n do dashboard tem
+mais de 1.000 chaves por idioma (5.275 linhas pra 5 idiomas hoje) —
+traduzir isso às cegas, sem forma de testar visualmente quebra de
+layout em script CJK, é tarefa grande demais pra encaixar como item
+pequeno.
+
+Pedido explícito de processo, registrado como regra permanente: quando
+uma instrução nova chega enquanto outra tarefa está em andamento,
+enfileirar e avisar quando começar a próxima — nunca abandonar o que
+já estava sendo feito, a menos que interfira diretamente (nesse caso,
+ponderar com o usuário antes).
+
+Ordem de prioridade escolhida pros itens grandes restantes (a pedido
+do usuário, "escolha você"): WhatsApp Embedded Signup → Nuvemshop/
+Tiendanube → Agente de IA (persona/tom/escalonamento) → resposta
+automática em conversa assumida → matching semântico do Opportunity
+Center → arquitetura de deploy → cobrança automática (Billing Fase
+2-3) → CSP sem unsafe-inline → idiomas novos. Critério: impacto nos
+pilotos ativos agora (Hotel Camelo, rede de 3 hotéis via Miguel Seda)
+pesou mais que dívida técnica sem efeito visível pro cliente.
+
+### WhatsApp Embedded Signup (v1.53.0)
+
+Primeiro item grande da lista. Investigação prévia (background agent)
+mapeou o padrão existente de Facebook/Instagram OAuth
+(`services/meta_oauth_service.py`, `routes/meta_oauth.py`) e confirmou
+um achado importante: o WhatsApp Embedded Signup da Meta **não segue
+o mesmo desenho de redirect de página inteira** — é SDK JavaScript
+(`FB.login()` com um `config_id` próprio), aberto num popup dentro da
+própria página do dashboard, sem nunca sair da StayFlow. O resultado
+chega em dois canais ao mesmo tempo: o `code` no callback do
+`FB.login()`, e `phone_number_id`/`waba_id` via evento `postMessage`
+(`WA_EMBEDDED_SIGNUP`) disparado pelo próprio popup da Meta. Como isso
+roda todo dentro da página já autenticada (nunca existe uma rota
+pública de callback), o `state` anti-CSRF que Facebook/Instagram
+precisam não faz falta aqui — a coluna `hostels.whatsapp_oauth_state`,
+criada preventivamente havia sessões pra esse fluxo, acabou ficando
+sem uso real (desenho mais simples do que se esperava, não é problema).
+
+Implementado: helper comum de troca "code → token de longa duração"
+extraído de `exchange_code_for_page` (agora reaproveitado também pelo
+WhatsApp, evitando duplicar a lógica); `exchange_whatsapp_embedded_signup`
+troca o token, registra o número na Cloud API (`POST
+/<phone_number_id>/register`, com um PIN de 6 dígitos gerado na hora —
+só exigência técnica da API, nunca visto/reutilizado pelo usuário) e
+inscreve o app da StayFlow nos webhooks da WABA (`POST
+/<waba_id>/subscribed_apps`), pra mensagem já cair no
+`/webhook/whatsapp` que já existia. Nova env var `WHATSAPP_CONFIG_ID`
+— diferente de `FACEBOOK_CONFIG_ID` (só server-side), essa precisa ser
+exposta pro frontend, já que o `FB.login()` do navegador a usa
+diretamente; não é segredo, é um identificador público de
+configuração. `GET /settings/whatsapp` passou a expor
+`oauth_available`/`app_id`/`config_id`.
+
+Frontend: botão "Conectar via WhatsApp" ao lado do formulário manual
+existente (só aparece com `oauth_available`), SDK da Meta carregado
+sob demanda (só quando o botão é clicado, não em toda carga do
+dashboard), listener de `message` pra capturar o evento
+`WA_EMBEDDED_SIGNUP`, e um POST final juntando `code` +
+`phone_number_id` + `waba_id`. A CSP (`app.py`) precisou de uma
+exceção nova — `connect.facebook.net` liberado em `script-src` e
+`connect-src`/`graph.facebook.com` em `connect-src` — único host
+externo aberto na CSP até agora, necessário pro SDK JS funcionar.
+
+Mesma limitação do App Review do Instagram: só funciona de ponta a
+ponta depois que existir, de verdade, uma "WhatsApp Embedded Signup
+configuration" criada no painel de developers da Meta pro App da
+StayFlow (gera o `config_id` real) — até lá, o botão fica escondido,
+mesmo comportamento que Facebook/Instagram já têm sem suas respectivas
+configurações. Bloqueio de configuração externa, não de código.
