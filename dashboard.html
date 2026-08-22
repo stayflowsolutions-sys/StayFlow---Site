@@ -7650,8 +7650,11 @@ window.openPortfolioItemModal = function(itemId){
         <input type="number" min="0" step="0.01" id="portfolioItemPrice" value="${item && item.price ? item.price : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
       </div>
       <div style="grid-column:span 12">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.photoLabel', 'URL da foto (opcional)')}</label>
-        <input type="text" id="portfolioItemPhoto" value="${item && item.photo_url ? escapeHtml(item.photo_url) : ""}" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.photoLabel', 'Foto (opcional)')}</label>
+        <div style="display:flex;align-items:center;gap:12px">
+          ${item && item.photo_url ? `<img id="portfolioItemPhotoPreview" src="${escapeHtml(item.photo_url)}" style="width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line)">` : `<img id="portfolioItemPhotoPreview" style="width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:none">`}
+          <input type="file" id="portfolioItemPhotoFile" accept="image/jpeg,image/png,image/webp" onchange="previewPortfolioItemPhoto(this)" style="flex:1;color:var(--muted);font-size:12px">
+        </div>
       </div>
       <div style="grid-column:span 12">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.description', 'Descrição')}</label>
@@ -7664,6 +7667,13 @@ window.openPortfolioItemModal = function(itemId){
     </div>
     <div id="portfolioItemMessage" class="generic-modal-message"></div>
   `);
+};
+
+window.previewPortfolioItemPhoto = function(input){
+  const preview = document.getElementById("portfolioItemPhotoPreview");
+  if(!preview || !input.files || !input.files[0]) return;
+  preview.src = URL.createObjectURL(input.files[0]);
+  preview.style.display = "block";
 };
 
 window.submitPortfolioItem = async function(itemId){
@@ -7682,7 +7692,6 @@ window.submitPortfolioItem = async function(itemId){
     category: document.getElementById("portfolioItemCategory")?.value || null,
     price_type: priceType,
     price: priceType === "fixed" ? (document.getElementById("portfolioItemPrice")?.value || 0) : null,
-    photo_url: document.getElementById("portfolioItemPhoto")?.value.trim() || null,
     description: document.getElementById("portfolioItemDescription")?.value.trim() || null,
   };
 
@@ -7697,6 +7706,26 @@ window.submitPortfolioItem = async function(itemId){
       if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
       return;
     }
+
+    // Upload de foto e um passo separado (multipart, nao JSON) - so
+    // roda se a pessoa escolheu um arquivo novo; precisa do id do item,
+    // que so existe depois do POST acima quando e um item novo.
+    const photoFile = document.getElementById("portfolioItemPhotoFile")?.files?.[0];
+    if(photoFile){
+      const savedItemId = itemId || data.item.id;
+      const formData = new FormData();
+      formData.append("photo", photoFile);
+      const photoRes = await fetch(`/portfolio/items/${savedItemId}/photo`, {
+        method: "POST", credentials: "same-origin", body: formData
+      });
+      const photoData = await photoRes.json();
+      if(!photoRes.ok || !photoData.success){
+        if(msg){ msg.textContent = photoData.message || T('portfolio.photoUploadError', 'Item salvo, mas a foto não pôde ser enviada.'); msg.classList.add("error"); }
+        loadPortfolio();
+        return;
+      }
+    }
+
     closeGenericModal();
     loadPortfolio();
   }catch(e){
