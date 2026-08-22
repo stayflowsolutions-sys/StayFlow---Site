@@ -7411,15 +7411,36 @@ substitui uma planilha externa que era mantida fora do sistema.
   mensalidade/comissão do piloto. Checkbox no formulário, selo 🎓 na
   linha da tabela, filtro "Só candidatos a treinamento" na toolbar.
 
+\- Alarme real de compromisso (adicionado em 22/08/2026, versão 1.52.0)
+  — `stayflow\_leads.next\_action\_time` (hora do compromisso, além da
+  data que já existia) e `alarm\_offsets\_minutes` (minutos antes do
+  compromisso pra avisar, ex. `"30,10"`, editável no formulário via
+  checkboxes de 30/10 min + campo livre). Entrega via Web Push nativo
+  (reaproveita a MESMA infraestrutura já usada pelo dashboard das
+  hospedagens desde a v1.43.0 — `services/push\_service.py`, `sw.js`,
+  `/push/subscribe` — sem rota nova: o login do painel interno é dono
+  do `hostel\_id=1`, então a inscrição já funciona sem mudança de
+  backend). Checagem feita por uma thread em background iniciada em
+  `app.py` (acorda a cada 60s, sem dependência nova tipo APScheduler);
+  como o `Procfile` roda 3 workers do gunicorn em paralelo, a
+  deduplicação usa uma tabela de "claim" (`stayflow\_lead\_alarms\_fired`,
+  `INSERT OR IGNORE` com `UNIQUE(lead\_id, offset\_minutes)`) em vez de
+  lock distribuído. Fuso horário fixo em `America/Argentina/Mendoza`
+  (`services/lead\_alarm\_service.py`) — decisão deliberada, já que essa
+  é uma ferramenta de uso pessoal do usuário, não multi-tenant. Alarme
+  nunca respeita horário de silêncio (diferente de `send\_push\_to\_hostel`),
+  porque é um aviso pessoal que o usuário configurou explicitamente,
+  não uma notificação de hóspede que pode esperar. Selo 🔔 na tabela
+  indica compromisso com alarme ativo.
+
 
 
 \### Limitações conhecidas
 
 
 
-Sem notificação automática (e-mail/push) de follow-up vencido — só o
-destaque visual na tabela e o badge no menu. Sem importação em lote da
-planilha anterior (lista pequena, recadastrada manualmente).
+Sem importação em lote da planilha anterior (lista pequena,
+recadastrada manualmente).
 
 
 
