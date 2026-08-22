@@ -1266,6 +1266,21 @@ def create_database():
     )
     """)
 
+    # Upload real de foto do item (antes so aceitava URL colada) -
+    # mesmo padrao de token opaco de save_chat_media_file, servido sem
+    # autenticacao em /media/portfolio/<token> (app.py) porque o
+    # catalogo pode ser mostrado pro hospede dentro da conversa.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS portfolio_photos (
+        token TEXT PRIMARY KEY,
+        hostel_id INTEGER NOT NULL,
+        item_id INTEGER NOT NULL,
+        file_path TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # Opt-in de uma hospedagem num item do portfolio de uma agencia -
     # UNIQUE(hostel_id, portfolio_item_id) pra ligar/desligar ser sempre
     # um upsert, mesmo padrao de commission_rates acima.
@@ -6724,6 +6739,52 @@ def mark_guest_charge_paid(hostel_id, guest_charge_id, mp_payment_id, paid_amoun
 
 
 # --- Portfolio de agencia parceira + opt-in de hospedagem ---------------
+
+def save_portfolio_item_photo(hostel_id, item_id, file_bytes, mime_type):
+    """
+    Grava a foto de um item do portfolio no disco persistente, mesmo
+    padrao de pasta/token aleatorio de save_chat_media_file (chat).
+    Devolve (file_path, token) - o caller grava photo_url apontando
+    pra /media/portfolio/<token>.
+    """
+    extension = _CHAT_MEDIA_MIME_EXTENSIONS.get(mime_type, "bin")
+    token = secrets.token_hex(8)
+
+    photo_dir = os.path.join(
+        os.getenv("STAYFLOW_DATA_DIR", "."), "portfolio_photos", str(hostel_id), str(item_id)
+    )
+    os.makedirs(photo_dir, exist_ok=True)
+
+    filename = f"{token}.{extension}"
+    file_path = os.path.join(photo_dir, filename)
+
+    with open(file_path, "wb") as f:
+        f.write(file_bytes)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO portfolio_photos (token, hostel_id, item_id, file_path, mime_type) VALUES (?, ?, ?, ?, ?)",
+        (token, hostel_id, item_id, file_path, mime_type)
+    )
+    conn.commit()
+    conn.close()
+
+    return file_path, token
+
+
+def get_portfolio_photo_by_token(token):
+    """Lookup publico (sem hostel_id) pra rota /media/portfolio/<token> - seguranca vem da entropia do token, mesmo padrao do chat."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT file_path, mime_type FROM portfolio_photos WHERE token = ?",
+        (token,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
 
 def create_portfolio_item(hostel_id, name, description=None, photo_url=None, category=None,
                            price_type="fixed", price=None):

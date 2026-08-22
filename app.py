@@ -5,7 +5,7 @@ import time
 
 from flask import Flask, send_from_directory, send_file, abort
 
-from database import create_database, get_chat_media_by_token
+from database import create_database, get_chat_media_by_token, get_portfolio_photo_by_token
 
 from routes.chat import chat_bp
 from routes.chats import chats_bp
@@ -186,6 +186,19 @@ def public_chat_media(token):
         abort(404)
 
     return send_file(media["media_path"], mimetype=media["media_mime_type"])
+
+
+@app.route("/media/portfolio/<token>")
+def public_portfolio_photo(token):
+    """Serve a foto de um item do portfolio sem autenticacao, mesmo motivo/padrao de public_chat_media acima - o catalogo pode ser mostrado dentro de uma conversa com o hospede."""
+    if not _CHAT_MEDIA_TOKEN_RE.match(token):
+        abort(404)
+
+    photo = get_portfolio_photo_by_token(token)
+    if not photo:
+        abort(404)
+
+    return send_file(photo["file_path"], mimetype=photo["mime_type"])
 
 
 # Serve qualquer página .html solta na raiz do frontend

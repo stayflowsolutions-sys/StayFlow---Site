@@ -6,10 +6,13 @@ from database import (
     get_portfolio_item,
     list_portfolio_items,
     update_portfolio_item,
+    save_portfolio_item_photo,
 )
 from utils.tenant import require_permission
 
 portfolio_bp = Blueprint("portfolio", __name__)
+
+_ALLOWED_PHOTO_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
 def _require_agency(hostel_id):
@@ -110,3 +113,33 @@ def update_portfolio_item_route(hostel_id, item_id):
     data = request.get_json() or {}
     item = update_portfolio_item(hostel_id, item_id, **data)
     return jsonify({"success": True, "item": item})
+
+
+@portfolio_bp.route("/portfolio/items/<int:item_id>/photo", methods=["POST"])
+@require_permission("portfolio")
+def upload_portfolio_item_photo_route(hostel_id, item_id):
+    """Upload real de arquivo (antes so aceitava URL colada) - mesmo padrao de multipart/form-data ja usado pra foto de chat."""
+    error = _require_agency(hostel_id)
+    if error:
+        return error
+
+    if not get_portfolio_item(hostel_id, item_id):
+        return jsonify({"success": False, "message": "Item não encontrado."}), 404
+
+    file = request.files.get("photo")
+    if not file or not file.filename:
+        return jsonify({"success": False, "message": "Nenhum arquivo enviado."}), 400
+
+    mime_type = file.mimetype
+    if mime_type not in _ALLOWED_PHOTO_MIME_TYPES:
+        return jsonify({"success": False, "message": "Formato inválido — use JPEG, PNG ou WebP."}), 400
+
+    file_bytes = file.read()
+    if len(file_bytes) > 8 * 1024 * 1024:
+        return jsonify({"success": False, "message": "Arquivo muito grande (máximo 8MB)."}), 400
+
+    _, token = save_portfolio_item_photo(hostel_id, item_id, file_bytes, mime_type)
+    photo_url = f"/media/portfolio/{token}"
+    item = update_portfolio_item(hostel_id, item_id, photo_url=photo_url)
+
+    return jsonify({"success": True, "item": item, "photo_url": photo_url})
