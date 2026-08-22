@@ -1971,6 +1971,17 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     text-overflow:ellipsis;
     white-space:nowrap;
   }
+  /* Dropdown de idioma e do menu do usuario ficam nos ultimos botoes
+     do .actions, perto da borda direita real da tela no mobile - com
+     left:0;right:0 (padrao desktop) o dropdown "nasce" na borda
+     esquerda do proprio botao e estoura pra fora da tela, sendo
+     cortado por qualquer ancestral com overflow-x:hidden. Ancora pela
+     direita em vez da esquerda so nessa largura. */
+  #langDropdown,
+  #userMenuDropdown{
+    left:auto;
+    right:0;
+  }
   .actions>*{
     min-width:0;
     flex-shrink:1;
