@@ -69,6 +69,7 @@ from database import (
     get_account_growth_by_month,
     snapshot_todays_metrics,
     get_metrics_history,
+    get_impersonation_log,
 )
 from utils.tenant import (
     require_stayflow_admin,
@@ -405,6 +406,13 @@ def stop_impersonating(hostel_id):
     set_session_impersonation(session_id, None)
 
     return jsonify({"success": True})
+
+
+@stayflow_admin_bp.route("/stayflow-admin/impersonation-log", methods=["GET"])
+@require_stayflow_admin
+def impersonation_log():
+    """Historico de visitas do Hub - o log ja era gravado desde a v1.47.0, so nao tinha tela pra ler."""
+    return jsonify({"success": True, "log": get_impersonation_log()})
 
 
 @stayflow_admin_bp.route("/stayflow-admin/partner-ledger/payout", methods=["POST"])

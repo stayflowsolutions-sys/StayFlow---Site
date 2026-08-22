@@ -455,6 +455,9 @@
 
       <div class="section-title" data-i18n="config.section.admins">Administradores da StayFlow</div>
       <div id="adminEmailsList" class="prop-list"></div>
+
+      <div class="section-title">Histórico de visitas (Hub)</div>
+      <div id="impersonationLogList" class="prop-list"></div>
     </section>
 
     <!-- ===== Despesas ===== -->
@@ -1802,6 +1805,38 @@
       console.warn("Erro ao carregar status das integrações:", e);
     }
     refreshAdminPushToggleState();
+    loadImpersonationLog();
+  }
+
+  async function loadImpersonationLog(){
+    try{
+      const res = await fetch("/stayflow-admin/impersonation-log", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      const listEl = document.getElementById("impersonationLogList");
+      if(!data.log.length){
+        listEl.innerHTML = `<div class="prop-empty">Nenhuma visita registrada ainda.</div>`;
+        return;
+      }
+      listEl.innerHTML = data.log.map(entry => {
+        const started = parseUtc(entry.started_at)?.toLocaleString("pt-BR") || entry.started_at;
+        const endedLabel = entry.ended_at
+          ? parseUtc(entry.ended_at)?.toLocaleString("pt-BR") || entry.ended_at
+          : "em andamento";
+        return `
+          <div class="prop-row" style="cursor:default">
+            <div class="ico">👁️</div>
+            <div>
+              <div class="name">${(entry.hostel_name || "Conta removida").replace(/</g, "&lt;")}</div>
+              <div class="meta">${(entry.admin_email || "—").replace(/</g, "&lt;")} · ${started} → ${endedLabel}</div>
+            </div>
+          </div>`;
+      }).join("");
+    }catch(e){
+      console.warn("Erro ao carregar histórico de visitas:", e);
+    }
   }
 
   // ===== Notificações push do painel interno (alarmes de compromisso

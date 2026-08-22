@@ -3230,6 +3230,34 @@ def log_impersonation_end(admin_user_id, hostel_id):
     conn.close()
 
 
+def get_impersonation_log(limit=100):
+    """
+    Historico de visitas do Hub (StayFlow admin entrando no dashboard
+    de uma conta de cliente) - o log ja era gravado desde a v1.47.0,
+    mas nao existia nenhuma tela pra ler. So leitura, sem paginacao
+    completa (limit simples) - uso interno, volume baixo.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT
+            l.id, l.started_at, l.ended_at,
+            u.email AS admin_email,
+            h.id AS hostel_id, h.name AS hostel_name
+        FROM impersonation_log l
+        LEFT JOIN users u ON u.id = l.admin_user_id
+        LEFT JOIN hostels h ON h.id = l.hostel_id
+        ORDER BY l.started_at DESC
+        LIMIT ?
+        """,
+        (limit,)
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
 def update_session_hostel(session_id, hostel_id):
     """
     Preenche/atualiza o hostel_id de uma sessao ja existente - usado
