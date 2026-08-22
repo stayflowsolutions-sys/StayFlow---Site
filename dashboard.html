@@ -7608,7 +7608,7 @@ function renderPortfolioList(){
 
     card.innerHTML = `
       <div style="font-weight:700;margin-bottom:4px">${escapeHtml(item.name)}</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${escapeHtml(AGENCY_CATEGORY_LABELS[item.category] || item.category || "")}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${escapeHtml(item.category || "")}</div>
       <div style="font-size:18px;font-weight:800;color:var(--blue)">${priceLabel}</div>
       ${!item.active ? `<div style="font-size:11px;color:var(--red);margin-top:6px">${T('portfolio.inactiveTag', 'Inativo')}</div>` : ""}
     `;
@@ -7619,9 +7619,7 @@ function renderPortfolioList(){
 window.openPortfolioItemModal = function(itemId){
   const item = itemId ? portfolioItemsCache.find(i => i.id === itemId) : null;
 
-  const categoryOptions = Object.entries(AGENCY_CATEGORY_LABELS)
-    .map(([value, label]) => `<option value="${value}" ${item && item.category === value ? "selected" : ""}>${escapeHtml(label)}</option>`)
-    .join("");
+  const existingCategories = [...new Set(portfolioItemsCache.map(i => i.category).filter(Boolean))];
 
   openGenericModal(item ? T('portfolio.modal.editTitle', 'Editar item') : T('portfolio.modal.newTitle', 'Novo item'), `
     <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
@@ -7631,7 +7629,8 @@ window.openPortfolioItemModal = function(itemId){
       </div>
       <div style="grid-column:span 6">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.categoryLabel', 'Categoria')}</label>
-        <select id="portfolioItemCategory" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">${categoryOptions}</select>
+        <input type="text" id="portfolioItemCategory" list="portfolioItemCategoryOptions" value="${item && item.category ? escapeHtml(item.category) : ""}" autocomplete="off" placeholder="${T('portfolio.categoryPlaceholder', 'ex: Camisetas, Passeio de bike...')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <datalist id="portfolioItemCategoryOptions">${existingCategories.map(c => `<option value="${escapeHtml(c)}">`).join("")}</datalist>
       </div>
       <div style="grid-column:span 6">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.priceTypeLabel', 'Preço')}</label>
