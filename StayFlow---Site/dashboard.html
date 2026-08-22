@@ -5145,9 +5145,15 @@ async function loadReservations(){
     if(tableEl) tableEl.style.display = "table";
     if(bodyEl) bodyEl.innerHTML = "";
 
+    const todayIso = new Date().toISOString().slice(0, 10);
+
     reservations.forEach(r => {
       const row = document.createElement("tr");
       const statusClass = reservationStatusPillClass(r.status);
+      // Checkout vencido sem ninguem ter registrado a saida - nao existia
+      // nenhum aviso disso antes, pedido explicito do usuario. Mesmo
+      // criterio visual ja usado na Prospeccao pra data vencida.
+      const isOverdue = r.stay_type !== "indefinite" && r.status === "confirmed" && !r.checked_out_at && r.checkout_date && r.checkout_date < todayIso;
 
       if(r.stay_type === "indefinite"){
         const balance = Number(r.balance || 0);
@@ -5178,7 +5184,7 @@ async function loadReservations(){
       row.innerHTML = `
         <td>${guestNameLink(r.guest_id, r.guest_name)}</td>
         <td>${r.room_type || "-"}${r.bed ? " · " + r.bed : ""}</td>
-        <td>${r.checkin_date || "-"} → ${r.checkout_date || "-"}</td>
+        <td style="${isOverdue ? "color:#ff9caf;font-weight:700" : ""}">${r.checkin_date || "-"} → ${r.checkout_date || "-"}${isOverdue ? `<div style="font-size:11px;font-weight:700">${T('reservations.checkoutOverdueLabel', 'Checkout atrasado')}</div>` : ""}</td>
         <td>${channelDisplayLabel(r.source)}</td>
         <td>
           <span class="status-pill ${statusClass}">${(r.status || "pending").toUpperCase()}</span>
