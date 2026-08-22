@@ -5216,6 +5216,7 @@ def get_guests_inbox(hostel_id):
             and g["last_message_at"]
             and (not g["admin_last_seen_at"] or g["last_message_at"] > g["admin_last_seen_at"])
         )
+        g["channel"] = get_guest_channel(hostel_id, g["id"])
 
     return guests
 
