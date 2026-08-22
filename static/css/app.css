@@ -1563,6 +1563,14 @@ body::before{
 body.chats-page-active .ask-floating{
   bottom:92px;
 }
+/* So no desktop: nessa largura o botao "Assumir conversa" fica mais alto
+   e cobre o floating mesmo nos 92px acima - sobe mais uns 5cm so aqui,
+   sem mexer no mobile (que usa outro layout de barra de envio). */
+@media(min-width:641px){
+  body.chats-page-active .ask-floating{
+    bottom:281px;
+  }
+}
 body.chats-page-active .reserva-floating{
   bottom:170px;
 }
