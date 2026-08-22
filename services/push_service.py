@@ -78,3 +78,27 @@ def send_push_to_hostel(hostel_id, title, body, url=None, notification_type=None
         result = send_push_to_subscription(subscription, title, body, url)
         if result == "expired":
             delete_push_subscription(hostel_id, subscription["endpoint"])
+
+
+_ADMIN_HOSTEL_ID = 1  # conta "StayFlow" - propria conta de teste do dono, ver stayflow_admin.py:_get_software_hostel_id
+
+
+def send_push_to_admin(title, body, url=None):
+    """
+    Manda pra todos os dispositivos inscritos no painel interno (Meu
+    painel) do proprio dono da StayFlow - usado pelos alarmes de
+    compromisso da Prospeccao (services/lead_alarm_service.py).
+    Diferente de send_push_to_hostel: nao respeita horario de silencio
+    nem preferencia de tipo de notificacao, porque isso e um alarme
+    pessoal que o usuario configurou explicitamente, nao um aviso de
+    hospede que pode esperar.
+    """
+    if not is_push_configured():
+        return
+
+    from database import delete_push_subscription, get_push_subscriptions
+
+    for subscription in get_push_subscriptions(_ADMIN_HOSTEL_ID):
+        result = send_push_to_subscription(subscription, title, body, url)
+        if result == "expired":
+            delete_push_subscription(_ADMIN_HOSTEL_ID, subscription["endpoint"])

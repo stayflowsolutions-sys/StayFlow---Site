@@ -16,6 +16,7 @@ continua sendo feito pelos endpoints ja existentes em routes/billing.py
 
 import datetime
 import os
+import re
 import secrets
 
 from flask import Blueprint, jsonify, request, send_file
@@ -720,6 +721,27 @@ def expenses_mark_paid(expense_id):
 _LEAD_PRIORITIES = {"alta", "media", "baixa"}
 _LEAD_CHANNELS = {"whatsapp", "email", "instagram", "presencial", "outro"}
 _LEAD_STATUSES = {"a_contatar", "mensagem_enviada", "respondeu", "call_agendada", "call_feita", "piloto_ativo", "sem_interesse", "perdido"}
+_LEAD_TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
+
+
+def _normalize_alarm_offsets(raw):
+    """
+    "30, 10 ,5" -> "30,10,5" (só inteiros positivos, sem duplicar) -
+    None/vazio vira None (sem alarme configurado). Levanta ValueError
+    se algum pedaço não for um inteiro válido, pro caller devolver 400.
+    """
+    if not raw:
+        return None
+    seen = []
+    for part in str(raw).split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if not part.isdigit() or int(part) <= 0:
+            raise ValueError(part)
+        if part not in seen:
+            seen.append(part)
+    return ",".join(seen) or None
 
 
 @stayflow_admin_bp.route("/stayflow-admin/leads", methods=["GET"])
@@ -750,11 +772,21 @@ def leads_create():
     if status not in _LEAD_STATUSES:
         return jsonify({"success": False, "message": "Status inválido."}), 400
 
+    next_action_time = (data.get("next_action_time") or "").strip() or None
+    if next_action_time and not _LEAD_TIME_RE.match(next_action_time):
+        return jsonify({"success": False, "message": "Horário do compromisso inválido (use HH:MM)."}), 400
+
+    try:
+        alarm_offsets_minutes = _normalize_alarm_offsets(data.get("alarm_offsets_minutes"))
+    except ValueError:
+        return jsonify({"success": False, "message": "Alarme inválido (use minutos separados por vírgula)."}), 400
+
     lead_id = create_stayflow_lead(
         name, (data.get("property_name") or "").strip() or None, priority, channel, status,
         data.get("last_contact_date") or None, (data.get("next_action") or "").strip() or None,
         data.get("next_action_date") or None, (data.get("notes") or "").strip() or None,
-        training_candidate=bool(data.get("training_candidate"))
+        training_candidate=bool(data.get("training_candidate")),
+        next_action_time=next_action_time, alarm_offsets_minutes=alarm_offsets_minutes
     )
     return jsonify({"success": True, "lead_id": lead_id}), 201
 
@@ -769,6 +801,13 @@ def leads_update(lead_id):
         return jsonify({"success": False, "message": "Canal inválido."}), 400
     if "status" in data and data["status"] not in _LEAD_STATUSES:
         return jsonify({"success": False, "message": "Status inválido."}), 400
+    if data.get("next_action_time") and not _LEAD_TIME_RE.match(data["next_action_time"]):
+        return jsonify({"success": False, "message": "Horário do compromisso inválido (use HH:MM)."}), 400
+    if "alarm_offsets_minutes" in data:
+        try:
+            data["alarm_offsets_minutes"] = _normalize_alarm_offsets(data.get("alarm_offsets_minutes"))
+        except ValueError:
+            return jsonify({"success": False, "message": "Alarme inválido (use minutos separados por vírgula)."}), 400
     update_stayflow_lead(lead_id, **data)
     return jsonify({"success": True})
 

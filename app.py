@@ -1,5 +1,7 @@
 import os
 import re
+import threading
+import time
 
 from flask import Flask, send_from_directory, send_file, abort
 
@@ -59,6 +61,27 @@ app.config.update(
 )
 
 create_database()
+
+
+def _lead_alarm_loop():
+    """
+    Laço em background que checa a cada 60s se algum compromisso da
+    Prospecção entrou na janela de algum alarme configurado (ver
+    services/lead_alarm_service.py). O Procfile roda 3 workers do
+    gunicorn, ou seja, isso roda em paralelo 3x - a deduplicação é
+    resolvida via claim_lead_alarm (INSERT OR IGNORE), não aqui.
+    """
+    from services.lead_alarm_service import check_lead_alarms
+
+    while True:
+        try:
+            check_lead_alarms()
+        except Exception as error:
+            print("Erro ao checar alarmes de compromisso:", error)
+        time.sleep(60)
+
+
+threading.Thread(target=_lead_alarm_loop, daemon=True).start()
 
 app.register_blueprint(chat_bp)
 app.register_blueprint(chats_bp)

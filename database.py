@@ -602,6 +602,25 @@ def create_database():
     # so uma flag simples pra filtrar na lista, sem virar um sistema de
     # tags genericas (nao pedido, escopo minimo pro que foi pedido).
     add_column_if_not_exists(cursor, "stayflow_leads", "training_candidate", "INTEGER NOT NULL DEFAULT 0")
+    # Hora do compromisso (next_action_date so tinha data) e quais
+    # alarmes disparar antes dela, ex: "30,10" (minutos) - usado pelo
+    # laco de checagem em services/lead_alarm_service.py.
+    add_column_if_not_exists(cursor, "stayflow_leads", "next_action_time", "TEXT")
+    add_column_if_not_exists(cursor, "stayflow_leads", "alarm_offsets_minutes", "TEXT")
+
+    # Registro de "ja disparei esse alarme" - evita notificacao
+    # duplicada quando os 3 workers do gunicorn rodam o laco de
+    # checagem em paralelo: so quem ganha o INSERT (UNIQUE) manda a
+    # notificacao de verdade.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS stayflow_lead_alarms_fired (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        lead_id INTEGER NOT NULL,
+        offset_minutes INTEGER NOT NULL,
+        fired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(lead_id, offset_minutes)
+    )
+    """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS stayflow_team (
@@ -5387,13 +5406,13 @@ def delete_stayflow_expense(expense_id):
     conn.close()
 
 
-def create_stayflow_lead(name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes, training_candidate=False):
+def create_stayflow_lead(name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes, training_candidate=False, next_action_time=None, alarm_offsets_minutes=None):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO stayflow_leads (name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes, training_candidate)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes, 1 if training_candidate else 0))
+        INSERT INTO stayflow_leads (name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes, training_candidate, next_action_time, alarm_offsets_minutes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (name, property_name, priority, channel, status, last_contact_date, next_action, next_action_date, notes, 1 if training_candidate else 0, next_action_time, alarm_offsets_minutes))
     lead_id = cursor.lastrowid
     conn.commit()
     conn.close()
@@ -5433,7 +5452,7 @@ def get_stayflow_lead(lead_id):
 def update_stayflow_lead(lead_id, **fields):
     if not fields:
         return
-    allowed = {"name", "property_name", "priority", "channel", "status", "last_contact_date", "next_action", "next_action_date", "notes", "training_candidate"}
+    allowed = {"name", "property_name", "priority", "channel", "status", "last_contact_date", "next_action", "next_action_date", "notes", "training_candidate", "next_action_time", "alarm_offsets_minutes"}
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         return
@@ -5453,6 +5472,77 @@ def delete_stayflow_lead(lead_id):
     cursor.execute("DELETE FROM stayflow_leads WHERE id = ?", (lead_id,))
     conn.commit()
     conn.close()
+
+
+_LEAD_ALARM_INACTIVE_STATUSES = ("call_feita", "piloto_ativo", "sem_interesse", "perdido")
+
+
+def get_due_lead_alarms(now_local):
+    """
+    Devolve uma lista de (lead_id, offset_minutes, lead_dict) pros
+    alarmes que ja deveriam ter disparado (horario do compromisso menos
+    o offset ja chegou, mas o compromisso em si ainda nao passou) e
+    ainda nao tem registro em stayflow_lead_alarms_fired. `now_local`
+    e um datetime NAIVE representando a hora local (mesma referencia
+    de fuso usada quando o usuario digitou next_action_time - ver
+    services/lead_alarm_service.py). Poucas dezenas de leads no maximo
+    (CRM interno), entao o calculo de data/hora e feito em Python em
+    vez de aritmetica fragil sobre colunas TEXT em SQL puro.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    placeholders = ", ".join("?" for _ in _LEAD_ALARM_INACTIVE_STATUSES)
+    cursor.execute(f"""
+        SELECT * FROM stayflow_leads
+        WHERE next_action_date IS NOT NULL
+          AND next_action_time IS NOT NULL
+          AND alarm_offsets_minutes IS NOT NULL
+          AND status NOT IN ({placeholders})
+    """, _LEAD_ALARM_INACTIVE_STATUSES)
+    leads = [dict(row) for row in cursor.fetchall()]
+
+    due = []
+    for lead in leads:
+        try:
+            compromisso_dt = datetime.datetime.strptime(
+                f"{lead['next_action_date']} {lead['next_action_time']}", "%Y-%m-%d %H:%M"
+            )
+        except ValueError:
+            continue
+
+        offsets = [int(o.strip()) for o in lead["alarm_offsets_minutes"].split(",") if o.strip().isdigit()]
+        for offset in offsets:
+            target = compromisso_dt - datetime.timedelta(minutes=offset)
+            if target <= now_local < compromisso_dt:
+                cursor.execute(
+                    "SELECT 1 FROM stayflow_lead_alarms_fired WHERE lead_id = ? AND offset_minutes = ?",
+                    (lead["id"], offset)
+                )
+                if not cursor.fetchone():
+                    due.append((lead["id"], offset, lead))
+
+    conn.close()
+    return due
+
+
+def claim_lead_alarm(lead_id, offset_minutes):
+    """
+    Tenta "reivindicar" o disparo de um alarme especifico - com 3
+    workers do gunicorn rodando o mesmo laco de checagem em paralelo
+    (ver app.py), so quem ganhar essa insercao (UNIQUE em lead_id+
+    offset_minutes) deve mandar a notificacao de verdade; os outros
+    veem 0 linhas afetadas e desistem, sem precisar de lock nenhum.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT OR IGNORE INTO stayflow_lead_alarms_fired (lead_id, offset_minutes) VALUES (?, ?)",
+        (lead_id, offset_minutes)
+    )
+    won = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return won
 
 
 def mark_stayflow_expense_paid(expense_id):
