@@ -6006,3 +6006,111 @@ antes desta versão. Documentado no Documento Mestre, seção 16.34, e na
 tabela de Controle de Versões (v1.51.0).
 
 Mirror do backend sincronizado com as mesmas versões finais.
+
+## SESSÃO 12 - 22/08/2026
+
+### Correções pontuais de UI: selo de canal no Meu chat e botão Ask StayFlow
+
+Usuário reportou que uma mensagem antiga no "Meu chat" (painel interno)
+respondeu se identificando como "Hostel Lagares" — investigado a fundo
+(rotina do webhook, resolução de `hostel_id` por `whatsapp_phone_number_id`,
+lista completa de contas em produção) e confirmado que NÃO é bug de
+isolamento entre contas: o hostel `id=1` já se chamou "Hostel Lagares"
+antes de virar a conta de demonstração "StayFlow" (renomeação feita e
+já documentada numa sessão anterior) — a mensagem antiga só carregava o
+nome antigo. Nenhuma mistura de dado entre contas encontrada.
+
+O que era bug real: `get_guests_inbox` (usado só pelo "Meu chat") não
+devolvia o canal (`whatsapp`/`instagram`/`messenger`) de cada contato,
+diferente da aba Chats normal das hospedagens, que já mostra isso via
+`get_guest_channel`. Corrigido chamando `get_guest_channel` por guest
+dentro de `get_guests_inbox`, e adicionado o mesmo selo colorido
+(`chatChannelBadgeHtml`, cores iguais ao `channelBadgeHtml` de
+`dashboard.html`) na lista do admin.
+
+Também corrigido: o botão flutuante "Ask StayFlow" sobrepunha o botão
+"Assumir" da barra de envio em duas telas diferentes — `dashboard.html`
+(aba Chats das hospedagens, via `body.chats-page-active`) e, separado,
+`admin.html` (aba "Meu chat" do painel interno, que usa outro fluxo de
+troca de aba e nunca herdava a classe do dashboard). Resolvido com uma
+classe própria pro painel interno (`admin-chat-tab-active`, setada em
+`switchAdminTab`) e uma regra CSS `@media(min-width:641px)` (só
+desktop) pra cada uma das duas telas — a primeira tentativa subiu
+demais (281px, foi parar no meio da tela), ajustado pra 100px depois do
+usuário reportar visualmente.
+
+De quebra, corrigida também: a conta "Estamparia Exemplo" (demo real
+criada numa sessão anterior pro amigo do usuário) não aparecia no
+seletor rápido de "Propriedades" no topo do painel interno — esse
+seletor só lista contas marcadas como `is_own_test_account`, então
+bastou chamar `POST /stayflow-admin/hostel/6/test-account` pra marcar.
+
+### Alarme real de compromisso na Prospecção (v1.52.0)
+
+Usuário já tinha dois compromissos reais cadastrados na Prospecção
+(Hotel Camelo, segunda 10h; Miguel Seda, segunda 14h) e pediu um
+alarme antes de cada um. Primeira tentativa foi uma rotina agendada do
+próprio Claude Code (`RemoteTrigger` + `PushNotification`) — rejeitada
+explicitamente pelo usuário: "to falando pro Stayflow me notificar,
+não o Claude. Quero que o app esteja ligado pra me avisar", depois
+refinado pra 30 e 10 minutos antes, com opção de configurar/selecionar
+o alarme por compromisso. Planejado via Plan Mode antes de implementar.
+
+Investigação encontrou toda a infraestrutura de Web Push já pronta e
+funcionando desde a v1.43.0 (`services/push_service.py`, `sw.js`,
+`routes/push.py` com `/push/status`/`/push/subscribe`, todos genéricos
+por `hostel_id`/`user_id`) — só nunca tinha sido ligada ao painel
+interno (`admin.html`, que não registrava service worker nem assinava
+push nenhuma vez). Como o login do painel interno é dono do
+`hostel_id=1` ("StayFlow", conta de teste do próprio usuário), bastou
+copiar o MESMO fluxo cliente já usado em `dashboard.html` pro
+`admin.html` — zero rota nova de subscribe/unsubscribe.
+
+Não existia nenhum scheduler/cron no projeto (confirmado: sem
+APScheduler, sem rota de cron, `Procfile` roda `gunicorn --workers 3`).
+Resolvido com uma thread daemon simples em `app.py`, acordando a cada
+60s. Como os 3 workers rodam esse laço em paralelo, a deduplicação usa
+uma tabela de "claim" nova (`stayflow_lead_alarms_fired`, `INSERT OR
+IGNORE` com `UNIQUE(lead_id, offset_minutes)`) — só quem ganha a
+inserção manda a notificação de verdade, sem precisar de lock
+distribuído nem fila.
+
+`stayflow_leads` ganhou `next_action_time` (hora do compromisso, o
+campo antigo só tinha data) e `alarm_offsets_minutes` (minutos antes,
+ex. `"30,10"`). Formulário da Prospecção ganhou campo de horário +
+checkboxes de 30/10 min + campo livre pra outros minutos. Nova função
+`send_push_to_admin` (`services/push_service.py`) — diferente de
+`send_push_to_hostel`, não respeita horário de silêncio nem preferência
+de tipo de notificação, porque é um alarme pessoal explicitamente
+configurado, não um aviso de hóspede que pode esperar. Fuso horário
+fixo em `America/Argentina/Mendoza` (`services/lead_alarm_service.py`)
+— decisão deliberada, é ferramenta de uso pessoal do usuário, não
+multi-tenant. Selo 🔔 na tabela indica compromisso com alarme ativo.
+Os dois compromissos já cadastrados (Hotel Camelo, Miguel Seda) foram
+atualizados via API com horário e alarme 30/10 min. Documentado no
+Documento Mestre, seção 16.34 (v1.52.0).
+
+### Pendências levantadas nesta sessão, ainda não resolvidas
+
+Registradas pelo usuário durante revisão ao vivo do painel, todas
+adicionadas à lista de trabalho pra retomar:
+
+- Cadastro de item do Portfólio (`Meu Portfólio` → "Novo item") parece
+  reaproveitar a lista de `AGENCY_CATEGORIES` (Turismo/Aluguel de
+  carro/Imobiliária/Automotivo/Comércio/...) como "Categoria" do
+  produto — isso é a categoria do NEGÓCIO, não do item/produto
+  individual (ex: uma estamparia não deveria escolher "Comércio" como
+  categoria de uma camiseta). Formulário de criação também parece
+  limitado demais de forma geral — revisar todos os campos.
+- Reservas com data de check-out já vencida continuam com status
+  `CONFIRMED` indefinidamente — sem marcação de atraso, sem aviso, sem
+  geração de oportunidade/alerta de checkout. Sistema não avisa
+  check-in feito nem check-in pendente vencido.
+- Vários hóspedes na aba Reservas aparecem com o nome em texto simples
+  (não clicável), enquanto outros são link pro perfil (`guestNameLink`,
+  v1.34.0) — suspeita: reservas manuais sem `guest_id` vinculado (só
+  nome digitado) não geram o link. Precisa confirmar e corrigir.
+
+Nenhum desses foi corrigido ainda nesta sessão — ficaram na fila
+depois do alarme de compromisso, por pedido explícito do usuário de
+"enfileirar, não abandonar o que já estava em andamento".
