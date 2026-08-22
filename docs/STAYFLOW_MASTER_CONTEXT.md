@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.47.0
+\*\*Versão:\*\* 1.52.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 13/08/2026
+\*\*Última atualização:\*\* 22/08/2026
 
 
 
@@ -5850,8 +5850,11 @@ check-out).
 
 \- ao confirmar ou cancelar uma reserva originada de chat, o hóspede é
   avisado de volta no mesmo canal (`notify\_guest\_reservation\_status`),
-  com horário de check-in e endereço na confirmação (WhatsApp e
-  Messenger; Instagram ainda sem envio de mensagem implementado);
+  com horário de check-in e endereço na confirmação (WhatsApp,
+  Messenger e Instagram — corrigido nesta auditoria: esta seção estava
+  desatualizada, dizendo que Instagram não tinha envio implementado;
+  o código (`database.py`) já suporta os três canais desde a v1.37.0,
+  como a seção 16.26 já registrava corretamente);
 
 \- suporte a hóspede de Longa Duração (estadia sem data de saída fixa,
   saldo devedor/crédito calculado sob demanda — ver 16.6);
@@ -9036,4 +9039,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.51.0\*\*
+\*\*Fim da Versão Oficial 1.52.0\*\*
