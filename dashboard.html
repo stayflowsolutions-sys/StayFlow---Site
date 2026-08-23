@@ -1993,6 +1993,16 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" onclick="openNuvemshopSettingsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.nuvemshop.title">🛍️ Nuvemshop / Tiendanube</h2>
+            <p class="settings-summary-desc" id="nuvemshopSummaryDesc" data-i18n="settings.nuvemshop.desc">Conecte sua loja online pra sincronizar o catálogo e ser avisado de pedidos novos.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openNotificationsModal()">
         <div class="settings-summary-row">
           <div>
@@ -2791,6 +2801,65 @@ async function deleteRoleConfirm(roleId){
       <div id="instagramMessage" class="generic-modal-message"></div>
     `);
     loadInstagramSettings();
+  };
+
+  window.openNuvemshopSettingsModal = function(){
+    openGenericModal(T('settings.nuvemshop.title', '🛍️ Nuvemshop / Tiendanube'), `
+      <p style="margin-bottom:14px">${T('settings.nuvemshop.desc', 'Conecte sua loja online pra sincronizar o catálogo em Meu Portfólio e ser avisado de pedidos novos.')}</p>
+
+      <div id="nuvemshopConnected" style="display:none">
+        <p style="margin:0 0 12px">
+          <span>${T('settings.nuvemshop.statusLabel', 'Status:')}</span>
+          <strong style="color:#3ddc97">${T('settings.nuvemshop.statusActive', 'Conectado')}</strong>
+        </p>
+        <button type="button" class="btn red" onclick="disconnectNuvemshop()">${T('settings.nuvemshop.disconnectBtn', 'Desconectar')}</button>
+      </div>
+
+      <div id="nuvemshopNotConnected">
+        <button type="button" class="btn" onclick="connectNuvemshop()">${T('settings.nuvemshop.connectBtn', 'Conectar loja')}</button>
+      </div>
+    `);
+    loadNuvemshopSettings();
+  };
+
+  window.loadNuvemshopSettings = async function(){
+    try{
+      const res = await fetch("/settings/nuvemshop", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const summaryDesc = document.getElementById("nuvemshopSummaryDesc");
+      if(summaryDesc){
+        summaryDesc.textContent = data.connected
+          ? T('settings.nuvemshop.summaryConnected', '✅ Conectado')
+          : T('settings.nuvemshop.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+      }
+
+      const connectedEl = document.getElementById("nuvemshopConnected");
+      const notConnectedEl = document.getElementById("nuvemshopNotConnected");
+      if(!connectedEl || !notConnectedEl) return;
+
+      connectedEl.style.display = data.connected ? "block" : "none";
+      notConnectedEl.style.display = data.connected ? "none" : "block";
+    }catch(e){
+      console.warn("Erro ao carregar configuração da Nuvemshop:", e);
+    }
+  };
+
+  window.connectNuvemshop = function(){
+    window.location.href = "/oauth/nuvemshop/connect";
+  };
+
+  window.disconnectNuvemshop = async function(){
+    const confirmed = await stayflowConfirm(T('settings.nuvemshop.disconnectConfirm', 'Desconectar a loja? O catálogo para de sincronizar até reconectar.'));
+    if(!confirmed) return;
+
+    try{
+      await fetch("/settings/nuvemshop", { method: "DELETE", credentials: "same-origin" });
+      loadNuvemshopSettings();
+    }catch(e){
+      console.warn("Erro ao desconectar Nuvemshop:", e);
+    }
   };
 
   window.saveWhatsappSettings = async function(){
@@ -3725,6 +3794,10 @@ async function deleteRoleConfirm(roleId){
           <span>${T('settings.communication.pushTypeNewEvent', 'Novo evento cadastrado')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="new_event" id="pushTypeNewEvent">
         </label>
+        <label data-required-permission="portfolio" data-required-account-kind="agency" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeNuvemshopOrder', 'Novo pedido na loja (Nuvemshop)')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="nuvemshop_order" id="pushTypeNuvemshopOrder">
+        </label>
         <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeChatMessage', 'Toda mensagem nova no chat')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="chat_message" id="pushTypeChatMessage">
@@ -3783,7 +3856,7 @@ async function deleteRoleConfirm(roleId){
       const bellInput = document.getElementById("alertChannelsCheckbox");
       if(bellInput) bellInput.checked = Array.isArray(data.alert_channels) && data.alert_channels.includes("dashboard");
 
-      const defaultPushTypes = ["opportunity", "reservation", "guest_needs_attention", "assumed_conversation", "kitchen_order", "maintenance_ticket", "security_incident", "valet_request", "new_event"];
+      const defaultPushTypes = ["opportunity", "reservation", "guest_needs_attention", "assumed_conversation", "kitchen_order", "maintenance_ticket", "security_incident", "valet_request", "new_event", "nuvemshop_order"];
       const pushTypes = Array.isArray(data.push_notification_types) ? data.push_notification_types : defaultPushTypes;
       const pushTypeCheckboxIds = {
         opportunity: "pushTypeOpportunity",
@@ -3796,6 +3869,7 @@ async function deleteRoleConfirm(roleId){
         security_incident: "pushTypeSecurityIncident",
         valet_request: "pushTypeValetRequest",
         chat_message: "pushTypeChatMessage",
+        nuvemshop_order: "pushTypeNuvemshopOrder",
       };
       Object.entries(pushTypeCheckboxIds).forEach(([type, elementId]) => {
         const input = document.getElementById(elementId);
@@ -10436,6 +10510,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadOutboundWebhookSettings === "function") loadOutboundWebhookSettings();
     if (typeof loadFacebookSettings === "function") loadFacebookSettings();
     if (typeof loadInstagramSettings === "function") loadInstagramSettings();
+    if (typeof loadNuvemshopSettings === "function") loadNuvemshopSettings();
     if (typeof loadMercadoPagoSettings === "function") loadMercadoPagoSettings();
     if (typeof loadQuickReplies === "function") loadQuickReplies();
     if (typeof loadNotificationsSummary === "function") loadNotificationsSummary();
@@ -10674,7 +10749,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     portfolio: ["loadPortfolio"],
     partners: ["loadPartners"],
     reports: ["loadReports"],
-    settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings", "loadBillingSummary"]
+    settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings", "loadNuvemshopSettings", "loadBillingSummary"]
   };
 
   function reloadDynamicContent(pageId){
