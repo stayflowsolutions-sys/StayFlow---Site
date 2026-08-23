@@ -59,3 +59,27 @@ def verify_meta_signature(request):
             return True
 
     return False
+
+
+def verify_nuvemshop_signature(request):
+    """
+    Mesmo objetivo de verify_meta_signature (confirmar que o POST veio
+    mesmo da Nuvemshop), mas formato diferente - nao da pra reaproveitar
+    a funcao acima: header proprio (x-linkedstore-hmac-sha256, sem
+    prefixo "sha256=" na frente do hash) e secret proprio
+    (NUVEMSHOP_CLIENT_SECRET). Mesmo criterio de falha aberta (True)
+    quando o secret nao esta configurado, pelo mesmo motivo (nao
+    derrubar ambiente local/dev sem credencial).
+    """
+    secret = os.getenv("NUVEMSHOP_CLIENT_SECRET")
+    if not secret:
+        print("AVISO: NUVEMSHOP_CLIENT_SECRET não configurado - assinatura do webhook não verificada.")
+        return True
+
+    expected_signature = request.headers.get("x-linkedstore-hmac-sha256", "")
+    if not expected_signature:
+        return False
+
+    raw_body = request.get_data()
+    computed_signature = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected_signature, computed_signature)

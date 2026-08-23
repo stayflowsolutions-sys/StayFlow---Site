@@ -27,10 +27,13 @@ from database import (
     get_hostel_mercadopago_config,
     clear_hostel_mercadopago_config,
     save_hostel_ai_persona,
+    get_hostel_nuvemshop_config,
+    clear_hostel_nuvemshop_config,
 )
 import services.meta_oauth_service as meta_oauth_service
 import services.mercadopago_service as mercadopago_service
 import services.beds24_service as beds24_service
+import services.nuvemshop_service as nuvemshop_service
 from utils.tenant import require_permission
 
 
@@ -50,7 +53,7 @@ _DEFAULT_ALERT_CHANNELS = ["dashboard"]
 _DEFAULT_PUSH_NOTIFICATION_TYPES = [
     "opportunity", "reservation", "guest_needs_attention", "assumed_conversation",
     "kitchen_order", "maintenance_ticket", "security_incident", "valet_request",
-    "new_event",
+    "new_event", "nuvemshop_order",
 ]
 
 # Listas fechadas - timezone e currency nao sao categorias abertas
@@ -546,6 +549,29 @@ def update_instagram_settings(hostel_id):
 @require_permission("settings")
 def delete_instagram_settings(hostel_id):
     clear_hostel_instagram_config(hostel_id)
+    return jsonify({"success": True})
+
+
+@settings_bp.route("/settings/nuvemshop", methods=["GET"])
+@require_permission("settings")
+def get_nuvemshop_settings(hostel_id):
+    """
+    So OAuth - diferente de Facebook/Instagram, a Nuvemshop nao expoe
+    facilmente um "gere seu proprio token" fora do fluxo de conexao,
+    entao nao existe formulario manual aqui.
+    """
+    store_id, access_token = get_hostel_nuvemshop_config(hostel_id)
+    return jsonify({
+        "store_id": store_id or "",
+        "connected": bool(store_id and access_token),
+        "oauth_available": nuvemshop_service.is_nuvemshop_configured(),
+    })
+
+
+@settings_bp.route("/settings/nuvemshop", methods=["DELETE"])
+@require_permission("settings")
+def delete_nuvemshop_settings(hostel_id):
+    clear_hostel_nuvemshop_config(hostel_id)
     return jsonify({"success": True})
 
 

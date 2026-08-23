@@ -47,6 +47,8 @@ from routes.stayflow_admin import stayflow_admin_bp
 from routes.portfolio import portfolio_bp
 from routes.partners import partners_bp
 from routes.support import support_bp
+from routes.nuvemshop_oauth import nuvemshop_oauth_bp
+from routes.nuvemshop_webhook import nuvemshop_webhook_bp
 
 app = Flask(__name__, static_folder=None)
 
@@ -123,6 +125,8 @@ app.register_blueprint(portfolio_bp)
 app.register_blueprint(partners_bp)
 app.register_blueprint(onboarding_bp)
 app.register_blueprint(support_bp)
+app.register_blueprint(nuvemshop_oauth_bp)
+app.register_blueprint(nuvemshop_webhook_bp)
 
 # Caminho do frontend: por padrão assume que a pasta do site fica ao lado
 # da pasta do backend (ex: C:\StayFlow\backend + C:\StayFlow\StayFlow---Site).

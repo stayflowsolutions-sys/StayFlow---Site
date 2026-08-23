@@ -488,6 +488,13 @@ def create_database():
     # MESMAS duas colunas; so o state anti-CSRF do OAuth e novo aqui.
     add_column_if_not_exists(cursor, "hostels", "whatsapp_oauth_state", "TEXT")
 
+    # Nuvemshop/Tiendanube (mesma empresa, nome diferente por pais) -
+    # loja online de contas agency/comercio. OAuth por redirect, mesmo
+    # padrao de Facebook/Instagram acima.
+    add_column_if_not_exists(cursor, "hostels", "nuvemshop_store_id", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "nuvemshop_access_token", "TEXT")
+    add_column_if_not_exists(cursor, "hostels", "nuvemshop_oauth_state", "TEXT")
+
     # Mercado Pago (Split de Pagos) - cada hostel conecta a propria
     # conta MP via OAuth pra receber pagamento de hospede (reserva,
     # passeio/excursao, aluguel) direto na conta dele, com a comissao
@@ -1264,6 +1271,22 @@ def create_database():
         active INTEGER NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
+    """)
+
+    # Itens sincronizados automaticamente de uma loja externa
+    # (Nuvemshop/Tiendanube) - external_id/source seguem o mesmo
+    # vocabulario ja usado em guest_channel_identities pra "isso veio
+    # de fora, nao foi digitado a mao". Indice unico PARCIAL (so entre
+    # linhas com external_id preenchido) garante upsert idempotente na
+    # sincronizacao sem nunca afetar item cadastrado manualmente (que
+    # fica com external_id NULL - SQLite trata cada NULL como distinto,
+    # nunca colide).
+    add_column_if_not_exists(cursor, "portfolio_items", "external_id", "TEXT")
+    add_column_if_not_exists(cursor, "portfolio_items", "source", "TEXT")
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_portfolio_items_external
+        ON portfolio_items(hostel_id, source, external_id)
+        WHERE external_id IS NOT NULL
     """)
 
     # Upload real de foto do item (antes so aceitava URL colada) -
@@ -4323,6 +4346,75 @@ def consume_hostel_facebook_oauth_state(hostel_id, state):
     return valid
 
 
+# ===== NUVEMSHOP / TIENDANUBE =====
+
+def get_hostel_nuvemshop_config(hostel_id):
+    """Retorna (store_id, access_token) do hostel, ou (None, None)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT nuvemshop_store_id, nuvemshop_access_token FROM hostels WHERE id = ?",
+        (hostel_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None, None
+    return row["nuvemshop_store_id"], row["nuvemshop_access_token"]
+
+
+def save_hostel_nuvemshop_config(hostel_id, store_id, access_token):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET nuvemshop_store_id = ?, nuvemshop_access_token = ? WHERE id = ?",
+        (store_id, access_token, hostel_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def clear_hostel_nuvemshop_config(hostel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE hostels SET nuvemshop_store_id = NULL, nuvemshop_access_token = NULL WHERE id = ?",
+        (hostel_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def save_hostel_nuvemshop_oauth_state(hostel_id, state):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE hostels SET nuvemshop_oauth_state = ? WHERE id = ?", (state, hostel_id))
+    conn.commit()
+    conn.close()
+
+
+def consume_hostel_nuvemshop_oauth_state(hostel_id, state):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT nuvemshop_oauth_state FROM hostels WHERE id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    valid = bool(row and row["nuvemshop_oauth_state"] and row["nuvemshop_oauth_state"] == state)
+    cursor.execute("UPDATE hostels SET nuvemshop_oauth_state = NULL WHERE id = ?", (hostel_id,))
+    conn.commit()
+    conn.close()
+    return valid
+
+
+def get_hostel_id_by_nuvemshop_store_id(store_id):
+    """Resolve qual hostel e dono de uma loja Nuvemshop - usado pelo webhook."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM hostels WHERE nuvemshop_store_id = ?", (str(store_id),))
+    row = cursor.fetchone()
+    conn.close()
+    return row["id"] if row else None
+
+
 # ===== INSTAGRAM DIRECT =====
 
 def get_hostel_id_by_instagram_id(instagram_business_id):
@@ -6784,6 +6876,49 @@ def get_portfolio_photo_by_token(token):
     row = cursor.fetchone()
     conn.close()
     return dict(row) if row else None
+
+
+def upsert_portfolio_item_from_external(hostel_id, source, external_id, name, description=None,
+                                          photo_url=None, price=None):
+    """
+    Sincroniza um item vindo de fonte externa (hoje: Nuvemshop) pra
+    dentro de portfolio_items - a MESMA tabela que ja alimenta
+    get_offerings/a IA, sem precisar mudar nada em ai_service.py.
+    Idempotente via INSERT...ON CONFLICT no indice unico parcial
+    (hostel_id, source, external_id) - roda de novo sem duplicar linha,
+    e nunca toca item cadastrado a mao (external_id NULL nesse caso).
+    Preco sempre "fixed" (loja online nao tem o conceito de "a
+    combinar" que agencia de turismo tem).
+    """
+    price = float(price or 0)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO portfolio_items (hostel_id, name, description, photo_url, price_type, price, source, external_id)
+        VALUES (?, ?, ?, ?, 'fixed', ?, ?, ?)
+        ON CONFLICT(hostel_id, source, external_id) DO UPDATE SET
+            name = excluded.name,
+            description = excluded.description,
+            photo_url = excluded.photo_url,
+            price = excluded.price
+        """,
+        (hostel_id, name, description, photo_url, price, source, str(external_id))
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_portfolio_item_by_external_id(hostel_id, source, external_id):
+    """Remove um item sincronizado quando o produto e apagado na fonte externa (ex: webhook product/deleted)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM portfolio_items WHERE hostel_id = ? AND source = ? AND external_id = ?",
+        (hostel_id, source, str(external_id))
+    )
+    conn.commit()
+    conn.close()
 
 
 def create_portfolio_item(hostel_id, name, description=None, photo_url=None, category=None,
