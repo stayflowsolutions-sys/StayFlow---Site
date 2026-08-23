@@ -6226,3 +6226,47 @@ configuration" criada no painel de developers da Meta pro App da
 StayFlow (gera o `config_id` real) — até lá, o botão fica escondido,
 mesmo comportamento que Facebook/Instagram já têm sem suas respectivas
 configurações. Bloqueio de configuração externa, não de código.
+
+### Integração Nuvemshop/Tiendanube (v1.54.0)
+
+Segundo item grande da lista de prioridades. Pesquisa na documentação
+oficial (`tiendanube.github.io/api-documentation`) confirmou: OAuth
+2.0 restrito (só `authorization_code`, token não expira — só invalida
+se o lojista desinstalar o app), autorização em
+`www.tiendanube.com/apps/{client_id}/authorize`, troca de código em
+`POST .../apps/authorize/token` já devolvendo o `user_id` (ID da loja)
+junto com o token, sem precisar de uma chamada separada tipo
+`/me/accounts` do Facebook. Um detalhe pego só na segunda busca (a
+primeira deu um header errado): a API usa `Authorization: Bearer
+{token}` de verdade (não `Authentication: bearer` como uma fonte menos
+precisa sugeriu), exige um header `User-Agent` identificando o app em
+toda chamada, e o caminho é versionado por data
+(`api.tiendanube.com/2025-03/`, não `/v1/`) — mesmo domínio serve
+Argentina e Brasil, resolvendo de graça a dúvida que o plano tinha
+registrado sobre domínio diferente por país.
+
+Decisão de arquitetura que valeu a pena conferir antes de implementar:
+em vez de criar uma tabela nova pro catálogo sincronizado, `portfolio_items`
+(a mesma que já alimenta `get_offerings`/a IA desde a criação do
+Portfólio) ganhou `external_id`/`source` — vocabulário emprestado de
+`guest_channel_identities` (único precedente real de "isso veio de
+fora" no schema, achado numa investigação dedicada antes de inventar
+um nome novo). Idempotência via índice único PARCIAL (`WHERE
+external_id IS NOT NULL`), não uma constraint normal — assim item
+cadastrado à mão (que fica com `external_id` `NULL`) nunca esbarra na
+regra de unicidade, já que o SQLite trata cada `NULL` como distinto.
+Sincronização inicial roda completa assim que a loja conecta (sem
+esperar o primeiro webhook), e os eventos `product/created`,
+`product/updated`, `product/deleted`, `order/paid` mantêm tudo
+atualizado depois — o último dispara um push novo (`nuvemshop_order`)
+avisando o pedido pago.
+
+Webhook validado com uma função de assinatura própria
+(`verify_nuvemshop_signature`, `utils/webhook_security.py`) em vez de
+generalizar a da Meta — o header (`x-linkedstore-hmac-sha256`, hash
+puro sem prefixo `sha256=`) e o secret são diferentes o suficiente pra
+não valer a pena forçar reaproveitamento. Fora de escopo desta rodada,
+registrado explicitamente: sincronizar estoque/variantes, mandar dado
+de volta pra Nuvemshop (só leitura por enquanto), e Mercado Livre
+(plataforma própria separada, self-contida, seguirá como pendência à
+parte quando o usuário decidir priorizar).
