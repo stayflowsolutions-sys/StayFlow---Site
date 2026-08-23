@@ -1,0 +1,19 @@
+/* ==============================
+   StayFlow — Entry point opcional
+   Nenhuma página da raiz usa este arquivo hoje (cada uma linka
+   tokens.css + reset.css + o próprio arquivo de página). Isso é
+   proposital: um único arquivo que importa app.css + landing.css +
+   auth.css juntos reintroduziria a colisão de seletores (.card,
+   .btn, .messages, .brand-word significam coisas diferentes em
+   cada página — ver plano de refatoração).
+
+   Existe só como referência/ponto de entrada único, caso um dia
+   você precise carregar tudo de uma vez (ex.: um preview interno).
+   Para as páginas de produção, prefira linkar os arquivos
+   específicos de cada uma.
+   ============================== */
+@import url("tokens.css");
+@import url("reset.css");
+@import url("app.css");
+@import url("landing.css");
+@import url("auth.css");

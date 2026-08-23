@@ -1,0 +1,16 @@
+/* ==============================
+   StayFlow — Reset universal
+   Só o que é idêntico nas 3 telas (app, landing, auth).
+   Cada arquivo de página mantém seu próprio body/background,
+   que tem variações intencionais entre telas.
+   ============================== */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+button,input{font-family:inherit}
+button{
+  border:none;
+  cursor:pointer;
+  color:inherit;
+  background:none;
+}
+a{text-decoration:none;color:inherit}

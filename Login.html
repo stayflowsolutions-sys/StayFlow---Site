@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <title>Login · StayFlow</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google" content="notranslate">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#03070d">
+  <link rel="icon" href="/assets/images/icon-192.png">
+  <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="StayFlow">
+  <script>
+    if("serviceWorker" in navigator){
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(e => console.warn("Erro ao registrar service worker:", e));
+      });
+    }
+  </script>
+  <link rel="stylesheet" href="static/css/tokens.css">
+  <link rel="stylesheet" href="static/css/reset.css">
+  <link rel="stylesheet" href="static/css/auth.css">
+</head>
+<body>
+  <div class="auth-card" id="loginCard">
+    <div class="logo">
+      <img src="assets/images/logo2.png" alt="StayFlow">
+      <h1>Stay<span>Flow</span></h1>
+      <p>Smart Stay Solutions</p>
+    </div>
+
+    <h2>Entrar</h2>
+    <p>Use o email e a senha cadastrados para acessar o painel StayFlow.</p>
+
+    <form id="loginForm">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required>
+
+      <label for="password">Senha</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+      <button type="submit" class="auth-btn">Entrar</button>
+    </form>
+
+    <div id="loginMessage" class="error"></div>
+
+    <div class="small">
+      Ainda não tem acesso? Fale com o administrador da sua hospedagem ou agência para criar um usuário.
+    </div>
+
+    <div class="small">
+      Sua hospedagem ou agência ainda não tem conta na StayFlow? <a href="Register.html">Criar conta</a>
+    </div>
+  </div>
+
+  <div id="hostelSelector" class="auth-card" style="display:none;">
+    <div class="logo">
+      <img src="assets/images/logo2.png" alt="StayFlow">
+      <h1>Stay<span>Flow</span></h1>
+      <p>Smart Stay Solutions</p>
+    </div>
+
+    <h2>Escolha a conta</h2>
+    <p>Sua conta tem acesso a mais de uma hospedagem/agência. Selecione qual voce
+    quer usar agora.</p>
+
+    <div id="hostelList"></div>
+
+    <div id="hostelSelectorMessage" class="error"></div>
+  </div>
+
+  <div id="twoFactorCard" class="auth-card" style="display:none;">
+    <div class="logo">
+      <img src="assets/images/logo2.png" alt="StayFlow">
+      <h1>Stay<span>Flow</span></h1>
+      <p>Smart Stay Solutions</p>
+    </div>
+
+    <h2>Verificação em duas etapas</h2>
+    <p>Digite o código de 6 dígitos do seu app autenticador (ou um código de backup, se perdeu acesso ao app).</p>
+
+    <form id="twoFactorForm">
+      <label for="twoFactorCode">Código</label>
+      <input id="twoFactorCode" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" required>
+
+      <button type="submit" class="auth-btn">Confirmar</button>
+    </form>
+
+    <div id="twoFactorMessage" class="error"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("loginForm");
+    const msg  = document.getElementById("loginMessage");
+
+    function finishLogin(data){
+      // Guarda o usuario no localStorage (simples) para uso no front
+      localStorage.setItem("stayflow_user", JSON.stringify(data.user));
+      // Login do dono da StayFlow (e-mail na allowlist) cai direto no
+      // painel dele (admin.html) - pedido explicito: nao passar por
+      // nenhuma tela intermediaria antes do local principal de trabalho.
+      // De la, ele troca de propriedade pelo seletor no topo do painel.
+      window.location.href = data.is_stayflow_admin ? "admin.html" : "/app";
+    }
+
+    let pendingTwoFactorToken = null;
+
+    function showTwoFactorStep(challengeToken){
+      pendingTwoFactorToken = challengeToken;
+      document.getElementById("loginCard").style.display = "none";
+      document.getElementById("hostelSelector").style.display = "none";
+      document.getElementById("twoFactorCard").style.display = "block";
+      const codeInput = document.getElementById("twoFactorCode");
+      codeInput.value = "";
+      codeInput.focus();
+    }
+
+    document.getElementById("twoFactorForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const twoFactorMsg = document.getElementById("twoFactorMessage");
+      twoFactorMsg.textContent = "";
+
+      const code = document.getElementById("twoFactorCode").value.trim();
+      if (!code){
+        twoFactorMsg.textContent = "Digite o código.";
+        return;
+      }
+
+      try{
+        const res = await fetch("/login/2fa", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ challenge_token: pendingTwoFactorToken, code })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success){
+          twoFactorMsg.textContent = data.message || "Código inválido.";
+          return;
+        }
+
+        if (data.needs_hostel_selection){
+          document.getElementById("twoFactorCard").style.display = "none";
+          showHostelSelector(data);
+          return;
+        }
+
+        finishLogin(data);
+      }catch(err){
+        console.error(err);
+        twoFactorMsg.textContent = "Erro ao verificar código. Tente novamente.";
+      }
+    });
+
+    function showHostelSelector(data){
+      document.getElementById("loginCard").style.display = "none";
+      const selector = document.getElementById("hostelSelector");
+      const list = document.getElementById("hostelList");
+      list.innerHTML = "";
+
+      // "Meu painel" (StayFlow Admin) vem primeiro e maior - so aparece
+      // pra quem tem o e-mail na allowlist/equipe StayFlow (ver
+      // is_stayflow_admin em routes/auth.py). Vai direto pra admin.html,
+      // sem passar por /select-hostel (acesso nao depende de hostel
+      // nenhum aqui).
+      if(data.is_stayflow_admin){
+        const adminBtn = document.createElement("button");
+        adminBtn.type = "button";
+        adminBtn.className = "auth-btn";
+        adminBtn.style.marginBottom = "16px";
+        adminBtn.style.fontSize = "16px";
+        adminBtn.style.padding = "16px";
+        adminBtn.textContent = "🛠 StayFlow — Admin (Meu painel)";
+        adminBtn.addEventListener("click", () => {
+          window.location.href = "admin.html";
+        });
+        list.appendChild(adminBtn);
+
+        const divider = document.createElement("div");
+        divider.className = "small";
+        divider.style.margin = "4px 0 14px";
+        divider.style.textAlign = "center";
+        divider.textContent = "— ou entre direto numa conta —";
+        list.appendChild(divider);
+      }
+
+      // Hospedagens antes de agencias; entre agencias, turismo antes das
+      // demais (aluguel de carro/bike/equipamento) - so pra bater com a
+      // ordem que faz mais sentido pro dia a dia hoje.
+      const sorted = [...data.hostels].sort((a, b) => {
+        const kindRank = h => h.account_kind === "agency" ? 1 : 0;
+        if(kindRank(a) !== kindRank(b)) return kindRank(a) - kindRank(b);
+        const catRank = h => h.agency_category === "turismo" ? 0 : 1;
+        if(catRank(a) !== catRank(b)) return catRank(a) - catRank(b);
+        return (a.hostel_name || "").localeCompare(b.hostel_name || "");
+      });
+
+      sorted.forEach(h => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "auth-btn";
+        btn.style.marginBottom = "10px";
+        btn.textContent = `${h.hostel_name} (${h.role_name})`;
+        btn.addEventListener("click", async () => {
+          const selectorMsg = document.getElementById("hostelSelectorMessage");
+          selectorMsg.textContent = "";
+          try{
+            const res = await fetch("/select-hostel", {
+              method: "POST",
+              headers: {"Content-Type": "application/json"},
+              body: JSON.stringify({ hostel_id: h.hostel_id })
+            });
+            const selectData = await res.json();
+            if (!res.ok || !selectData.success){
+              selectorMsg.textContent = selectData.message || "Não foi possível entrar nessa conta.";
+              return;
+            }
+            // Escolher uma conta especifica aqui sempre vai pro
+            // dashboard DELA (/app), mesmo que a pessoa seja admin da
+            // StayFlow - diferente do botao dedicado "Meu painel" (que
+            // nao passa por /select-hostel nenhum). finishLogin() nao
+            // serve aqui porque ele manda todo admin StayFlow pro
+            // admin.html incondicionalmente, o que fazia os 3 botoes de
+            // conta (StayFlow/Turismo/Locadora) carem todos no mesmo
+            // lugar do botao "Meu painel" - bug real, corrigido.
+            localStorage.setItem("stayflow_user", JSON.stringify(selectData.user));
+            window.location.href = "/app";
+          }catch(err){
+            console.error(err);
+            selectorMsg.textContent = "Erro ao tentar entrar. Tente novamente.";
+          }
+        });
+        list.appendChild(btn);
+      });
+
+      selector.style.display = "block";
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "";
+
+      const email = document.getElementById("email").value.trim().toLowerCase();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password){
+        msg.textContent = "Preencha email e senha.";
+        return;
+      }
+
+      try{
+        const res = await fetch("/login", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success){
+          msg.textContent = data.message || "Email ou senha inválidos.";
+          return;
+        }
+
+        if (data.needs_2fa){
+          showTwoFactorStep(data.challenge_token);
+          return;
+        }
+
+        if (data.needs_hostel_selection){
+          showHostelSelector(data);
+          return;
+        }
+
+        finishLogin(data);
+
+      }catch(err){
+        console.error(err);
+        msg.textContent = "Erro ao tentar logar. Tente novamente.";
+      }
+    });
+  </script>
+</body>
+</html>
