@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.59.0
+\*\*Versão:\*\* 1.60.0
 
 
 
@@ -187,6 +187,7 @@
 | 1.57.0 | 23/08/2026 | Oficial | Matching semântico na sugestão de item de parceiro do Opportunity Center, quinto item grande da lista pós-auditoria — resolve a dívida técnica registrada desde a v1.47.0 ("sempre o primeiro item habilitado, sem matching semântico"). A sugestão (`opportunities.suggested_partner_item_id`) usa a MESMA chamada de IA que já classifica a conversa (`services/decision_engine.py::analyze_with_ai()`), sem round-trip extra: quando a conta é `lodging` e existe algum item habilitado em Parceiros (`get_enabled_partner_items_for_hostel`, que ganhou `description` no `SELECT` pra dar mais contexto), a lista de candidatos (id/nome/categoria/descrição) entra no mesmo prompt e o schema JSON de resposta ganha `suggested_partner_item_id`. Continua restrito a `intent == "tour"` (mesma decisão de produto da v1.47.0 — `upsell` é genérico demais); a mudança é só em COMO escolher entre os candidatos, não em QUANDO sugerir. Validação defensiva: o id devolvido pela IA só é aceito se realmente está entre os ids oferecidos no prompt, protegendo contra alucinação. Contas sem nenhum item de Parceiro habilitado não ganham o bloco novo no prompt — custo de token idêntico a antes. |
 | 1.58.0 | 23/08/2026 | Oficial | Consolidação da arquitetura de deploy do frontend, sexto item grande da lista pós-auditoria — resolve a dívida técnica registrada desde a v1.4.0 (cópia manual do frontend pra dentro do repositório do backend). `HostelBot/StayFlow---Site/` (a cópia que o Render de fato publica, já que ele builda um repositório só por serviço) deixou de ser uma pasta com arquivos copiados à mão (`cp`/`xcopy`/`robocopy`) e virou um `git subtree` do repositório `StayFlow---Site` — sincronizar passa a ser um comando único (`bash sync_frontend.sh`, novo, wrapper de `git subtree pull --squash`), sem risco de esquecer de copiar algum arquivo. Também removida uma terceira cópia órfã (`HostelBot/admin.html`, na raiz do repositório do backend, fora de `StayFlow---Site/`) — versão antiga, não referenciada por nenhuma rota do Flask (que serve tudo via `FRONTEND_DIR`), resíduo de uma estrutura anterior. `HostelBot` ganhou `.gitattributes` (`eol=lf`) pra eliminar ruído de diff causado pela normalização de quebra de linha que o `git checkout` aplica ao trazer o subtree (CRLF), diferente do que a cópia manual antiga preservava por acidente. Verificado com `diff` recursivo (ignorando só quebra de linha) que o conteúdo do subtree é byte-idêntico ao canônico, e que o Flask continua importando e servindo `FRONTEND_DIR` normalmente — nenhuma configuração do Render precisou mudar, o caminho servido continua o mesmo de sempre. Fora de escopo, deliberadamente: separar o frontend como Static Site próprio do Render (a solução "definitiva" do Roadmap) — envolveria cookies de sessão cross-domain, CORS e reconfiguração do escopo do Service Worker, risco real demais pra pilotos reais ativos agora, pra um ganho que o subtree já entrega sem mexer em topologia de produção. |
 | 1.59.0 | 23/08/2026 | Oficial | Billing Fase 2 — cobrança recorrente automática da própria assinatura StayFlow, sétimo item grande da lista pós-auditoria, resolvendo a única frente de Billing que ainda era 100% manual/honra (`payment_processor`/`processor_customer_id`/`processor_subscription_id` existiam como schema stub desde a Fase 1, nunca escritos por ninguém). Decisão de processador: Mercado Pago (API `preapproval`, assinatura recorrente nativa), não Stripe — motivo prático, não só técnico: Stripe não abre conta padrão pra recebedor domiciliado na Argentina (o monotributo do usuário), o que inviabilizaria receber o dinheiro de verdade. Usa uma credencial NOVA e separada (`MERCADOPAGO_PLATFORM_ACCESS_TOKEN`, a conta MP da própria StayFlow) — diferente da credencial OAuth do Split guest-facing (`MERCADOPAGO_CLIENT_ID`/`SECRET`, por-hostel), já que aqui é a StayFlow recebendo do hostel, direção de dinheiro oposta à do Split. Novo `services/mercadopago_billing_service.py` (`create_preapproval`/`get_preapproval`/`cancel_preapproval`/`get_authorized_payment`), novas rotas `POST /billing/subscribe` (gera o link de checkout), `GET /billing/subscribe/return` (retorno pós-checkout) e `POST /billing/cancel`; novo webhook `POST /webhook/mercadopago-billing` (idempotência própria via `mp_billing_webhook_events`, separada de `mp_webhook_events` do Split) tratando tanto `subscription_preapproval` (autorização/cancelamento) quanto `subscription_authorized_payment` (cobrança mensal individual, exige uma consulta a mais em `/authorized_payments/{id}` pra resolver a qual assinatura pertence). Preço cobrado em ARS (`PLAN_PRICES_ARS`, mantido manualmente — motor de câmbio automático continua fora de escopo, dívida separada e já conhecida). Novo laço em `app.py` (`_billing_trial_expiration_loop`, roda a cada hora) marca `past_due` quem terminou o trial de 30 dias sem nunca ter assinado (`database.expire_stale_trials()`) — decisão explícita de escopo: isso é só bookkeeping, NÃO bloqueia nenhuma rota/feature por inadimplência nesta rodada, risco considerado alto demais de derrubar um piloto real (Hotel Camelo, rede do Miguel Seda) por engano numa primeira versão; trava de acesso fica pra uma decisão separada e explícita depois que a cobrança em si estiver validada em produção. UI nova em Configurações → Billing: botão "Assinar agora" (quando sem assinatura ativa) ou "Cancelar assinatura" (quando ativa), tratamento de retorno via `?billing_return=1` (mesmo padrão genérico já usado pelas integrações OAuth). Pré-requisito externo pra funcionar em produção (mesmo tipo de bloqueio já registrado pro WhatsApp Embedded Signup e pro App Review do Instagram): usuário precisa gerar um Access Token de produção na própria conta Mercado Pago dele. |
+| 1.60.0 | 23/08/2026 | Oficial | Oitavo item da lista pós-auditoria (remoção do `unsafe-inline` do CSP) reavaliado com números concretos e a decisão de v1.39.0 CONFIRMADA, não esquecida — sem mudança de código. Contagem atual: ~341 atributos de evento inline (`onclick`/`onchange`/`onsubmit`/`oninput`/`onkeydown`, 81% em `dashboard.html` com 10.881 linhas, 17% em `admin.html`), crescido de ~186 desde a v1.39.0 (confirma que o custo só aumenta com o tempo); ~990 atributos `style=` inline (82% em `dashboard.html`). Achado técnico novo (não estava registrado antes): por especificação CSP nível 2+, um navegador que entende `'nonce-...'` em `script-src` IGNORA `'unsafe-inline'` na mesma diretiva — não existe migração incremental possível (nonce só nos poucos `<script>` inline quebraria todos os `onclick` de uma vez em navegador moderno); `'unsafe-hashes'` (CSP3) não resolve `style-src` porque boa parte dos 990 atributos é gerada dinamicamente via JS, invalidando hash estático. Decisão: continua sendo defesa em profundidade sobre um vetor que `connect-src 'self'` já fecha (o mais grave, exfiltração via XSS) — não vale o risco de regressão espalhada num arquivo de quase 11 mil linhas sem capacidade de teste visual, sem demanda real (ex: cliente enterprise exigindo auditoria formal) pra justificar agora. Ver seção "Decisão permanente registrada" (Capítulo 16) pra o registro completo. |
 
 
 
@@ -6923,6 +6924,31 @@ avaliado como refatoração grande demais pra fazer sem capacidade de
 teste visual real; `connect-src 'self'` já fecha o vetor mais grave
 (exfiltração de dados por XSS), independente dessa exceção.
 
+**Revisão desta decisão (23/08/2026, versão 1.60.0):** item reavaliado
+com números concretos, não só revisitado — a decisão de não remover
+`unsafe-inline` foi CONFIRMADA, não esquecida. Contagem atual: ~341
+atributos de evento inline (`onclick`/`onchange`/`onsubmit`/`oninput`/
+`onkeydown`), 81% em `dashboard.html` (10.881 linhas) e 17% em
+`admin.html` (2.896 linhas) — crescido de ~186 (`onclick`/`onchange`/
+`onsubmit`) desde a v1.39.0, confirmando que o custo só aumenta com o
+tempo, nunca diminui; mais ~990 atributos `style=` inline (82% em
+`dashboard.html`). Achado técnico novo que fecha a porta de uma
+migração incremental: por especificação, assim que `script-src` ganha
+um `'nonce-...'`, todo navegador compatível com CSP nível 2+ **ignora
+`'unsafe-inline'` na mesma diretiva** — ou seja, não dá pra adicionar
+nonce só nos ~14 blocos `<script>` inline mantendo os ~341 `onclick`
+funcionando via `unsafe-inline` ao mesmo tempo; seria tudo ou nada.
+Pra `style-src`, `'unsafe-hashes'` (CSP3) exigiria valor estático, e
+boa parte dos 990 `style=` é gerada dinamicamente via JS (template
+string com valor interpolado), invalidando hash fixo. Conclusão:
+continua sendo puramente defesa em profundidade (o vetor grave já
+está fechado por `connect-src 'self'`), sem meio-termo possível, e o
+risco de regressão espalhada num arquivo de quase 11 mil linhas sem
+teste visual automatizado não se justifica sem uma demanda real
+(cliente enterprise pedindo auditoria de segurança formal, por
+exemplo) — não é dívida técnica de rotina, é decisão de escopo válida
+até que essa demanda apareça.
+
 
 
 \---
@@ -9079,4 +9105,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.59.0\*\*
+\*\*Fim da Versão Oficial 1.60.0\*\*
