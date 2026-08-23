@@ -173,7 +173,8 @@ def get_settings(hostel_id):
         SELECT hostel_name, hostel_type, legal_name, tax_id, address,
                timezone, currency, checkin, checkout, logo_url,
                opportunity_generation, alert_channels, push_notification_types,
-               quiet_hours_start, quiet_hours_end, ai_enabled, ai_custom_instructions
+               quiet_hours_start, quiet_hours_end, ai_enabled, ai_custom_instructions,
+               simple_auto_reply_enabled
         FROM settings
         WHERE hostel_id = ?
     """, (hostel_id,))
@@ -187,6 +188,7 @@ def get_settings(hostel_id):
         payload["alert_channels"] = _DEFAULT_ALERT_CHANNELS
         payload["push_notification_types"] = _DEFAULT_PUSH_NOTIFICATION_TYPES
         payload["ai_enabled"] = True
+        payload["simple_auto_reply_enabled"] = False
         payload["success"] = True
         return jsonify(payload)
 
@@ -205,6 +207,7 @@ def get_settings(hostel_id):
     payload["alert_channels"] = alert_channels
     payload["push_notification_types"] = push_notification_types
     payload["ai_enabled"] = bool(row["ai_enabled"]) if row["ai_enabled"] is not None else True
+    payload["simple_auto_reply_enabled"] = bool(row["simple_auto_reply_enabled"])
     payload["success"] = True
 
     return jsonify(payload)
@@ -247,6 +250,9 @@ def update_settings(hostel_id):
 
     if "ai_enabled" in data:
         updates["ai_enabled"] = 1 if data["ai_enabled"] else 0
+
+    if "simple_auto_reply_enabled" in data:
+        updates["simple_auto_reply_enabled"] = 1 if data["simple_auto_reply_enabled"] else 0
 
     if "alert_channels" in data:
         updates["alert_channels"] = json.dumps(data["alert_channels"])

@@ -15,6 +15,7 @@ from database import (
     is_ai_enabled,
     get_hostel_type,
     get_ai_custom_instructions,
+    is_simple_auto_reply_enabled,
 )
 from services.ai_service import ask_ai
 from services.memory_service import save_message, get_history
@@ -146,7 +147,25 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     # assumida manualmente pela equipe - nos dois casos, resposta da IA
     # fica pulada, mas mensagem/oportunidade continuam sendo salvas.
     conversation_assumed = is_guest_ai_paused_by_id(guest_id)
-    if not is_ai_enabled(hostel_id) or conversation_assumed:
+
+    # Excecao: mesmo com a conversa assumida, se a hospedagem ligou
+    # "Resposta automatica pra duvidas simples" e essa mensagem
+    # especifica classificou como baixo risco (mesma analise de
+    # oportunidade que ja rodou acima, sem chamar a IA de novo so pra
+    # isso), a IA ainda responde essa UNICA mensagem - ai_paused
+    # continua true, a equipe segue dona da conversa. intent
+    # "human_help" ou urgencia acima de "low" nunca qualificam aqui,
+    # de proposito (ja e o sinal que o decision engine da pra "isso
+    # precisa de humano").
+    simple_auto_reply = (
+        conversation_assumed
+        and opportunity is not None
+        and opportunity.get("intent") in ("general", "follow_up")
+        and opportunity.get("urgency") == "low"
+        and is_simple_auto_reply_enabled(hostel_id)
+    )
+
+    if not is_ai_enabled(hostel_id) or (conversation_assumed and not simple_auto_reply):
         # So notifica no caso de conversa assumida (nao no interruptor
         # geral do hostel, que e uma escolha deliberada e ampla, nao um
         # "esqueceram de responder"). Ninguem vai responder essa mensagem

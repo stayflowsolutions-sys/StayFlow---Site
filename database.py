@@ -1397,6 +1397,11 @@ def create_database():
     # get_ai_custom_instructions acima e services/ai_service.py.
     add_column_if_not_exists(cursor, "settings", "ai_custom_instructions", "TEXT")
 
+    # Mesmo com conversa assumida (guests.ai_paused), deixa a IA
+    # responder sozinha duvidas simples - ver is_simple_auto_reply_enabled
+    # acima e routes/chat.py.
+    add_column_if_not_exists(cursor, "settings", "simple_auto_reply_enabled", "INTEGER DEFAULT 0")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS reservations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -4739,6 +4744,25 @@ def is_ai_enabled(hostel_id):
         return True
 
     return bool(row["ai_enabled"])
+
+
+def is_simple_auto_reply_enabled(hostel_id):
+    """
+    Preferencia por hospedagem: mesmo com uma conversa assumida
+    (guests.ai_paused), deixa a IA responder sozinha duvidas simples
+    (ver routes/chat.py::process_incoming_message). Desligado por
+    padrao (diferente de is_ai_enabled) - e um comportamento novo, nao
+    faz sentido ligar sozinho sem o dono saber que existe.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT simple_auto_reply_enabled FROM settings WHERE hostel_id = ?",
+        (hostel_id,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return bool(row and row["simple_auto_reply_enabled"])
 
 
 def is_within_quiet_hours(hostel_id):
