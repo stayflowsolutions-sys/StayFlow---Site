@@ -6535,3 +6535,42 @@ importam corretamente. Pré-requisito externo pra funcionar em produção
 (mesmo padrão de bloqueio já visto no WhatsApp Embedded Signup e no
 App Review do Instagram): usuário precisa gerar um Access Token de
 produção na própria conta Mercado Pago dele.
+
+### Remoção do unsafe-inline do CSP — reavaliado e confirmado (v1.60.0)
+
+Oitavo item da fila. Investigado o tamanho real antes de propor
+qualquer mudança: já existia uma decisão registrada desde a v1.39.0
+(04/08/2026) tratando isso como "refatoração grande demais pra fazer
+sem capacidade de teste visual real" — a investigação desta sessão
+confirmou essa avaliação com números atualizados, não a contradisse.
+
+Números: ~341 atributos de evento inline (`onclick`/`onchange`/
+`onsubmit`/`oninput`/`onkeydown`), 81% concentrados em `dashboard.html`
+(10.881 linhas) e 17% em `admin.html` — crescido de ~186 desde a
+v1.39.0, confirmando que esperar só piora o problema, nunca melhora.
+Mais ~990 atributos `style=` inline, 82% também em `dashboard.html`.
+Zero infraestrutura de nonce existente pra reaproveitar.
+
+Achado técnico novo, que fecha de vez a ideia de "fazer aos poucos":
+por especificação CSP nível 2+, um navegador que entende
+`'nonce-...'`/hash numa diretiva **ignora `'unsafe-inline'` na mesma
+diretiva**, mesmo que ainda esteja listado (existe só como fallback
+pra navegador antigo que nem entende nonce). Ou seja, adicionar nonce
+só nos ~14 blocos `<script>` inline (que seria barato) quebraria os
+~341 `onclick` em QUALQUER navegador atualizado no mesmo instante —
+não existe meio-termo, é tudo ou nada. Pra `style-src`, `'unsafe-hashes'`
+(CSP3) exigiria valor estático, e boa parte dos 990 `style=` é gerada
+dinamicamente via JS (template string com valor interpolado),
+invalidando hash fixo.
+
+Usuário perguntou, antes de eu confirmar a decisão de não mexer, se
+isso algum dia vira obrigatório (nesse caso seria mais barato fazer
+agora, com o número menor, do que depois). Resposta dada: não existe
+prazo técnico dos navegadores — `unsafe-inline` continua sendo aceito
+indefinidamente, não é uma API sendo descontinuada. O único cenário
+onde isso vira bloqueio de verdade é comercial, não técnico: um
+cliente enterprise pedindo auditoria de segurança formal como
+condição de contrato. Decisão final do usuário: não mexer agora,
+documentar a decisão revisada. Registrado na seção "Decisão permanente
+registrada" do Documento Mestre com os números atuais, pra quem
+reabrir essa dívida no futuro já ter a resposta pronta.
