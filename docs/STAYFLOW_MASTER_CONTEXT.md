@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.57.0
+\*\*Versão:\*\* 1.58.0
 
 
 
@@ -185,6 +185,7 @@
 | 1.55.0 | 23/08/2026 | Oficial | Card "Agente de IA" em Configurações → IA StayFlow ativado — era um placeholder morto desde sempre (`opacity:.5`, sem nenhum campo real, condição de liberação citando o Ask StayFlow que nunca teve relação de verdade com essa feature). Terceiro item grande da lista pós-auditoria. Novo `settings.ai_custom_instructions` (texto livre, até 2000 caracteres, validado no backend) — cada hospedagem/agência pode escrever instruções de persona/tom/regras específicas do próprio negócio. `services/ai_service.py::ask_ai()` ganha `custom_instructions=None`, interpolado como uma seção ADICIONAL (`{custom_instructions_section}`) no fim de `SYSTEM_PROMPT` (hospedagem) e `_AGENCY_PROMPT_SKELETON` (agência) — deliberadamente fora de `SOFTWARE_SYSTEM_PROMPT` (número comercial da própria StayFlow, não configurável por cliente). A seção deixa explícito que as instruções do dono NUNCA substituem a espinha dorsal de segurança (nunca inventar preço, nunca fechar venda sozinha) — testado renderizando os 9 templates (SYSTEM_PROMPT + 8 categorias de agência) com e sem instrução customizada, sem erro de formatação. Reaproveita 100% o mecanismo genérico de Configurações (`_SETTINGS_TEXT_FIELDS`) pra leitura/escrita, sem endpoint novo. |
 | 1.56.0 | 23/08/2026 | Oficial | "Resposta automática para dúvidas simples" ativada — quarto item grande da lista, mesmo padrão de placeholder morto do item anterior (checkbox `checked disabled`, texto "depende do recurso de assumir conversa" — recurso que já funciona há tempo). Hoje "assumir conversa" (`guests.ai_paused`) é tudo ou nada: equipe assume, IA para de responder 100% até alguém devolver. Novo comportamento opcional (`settings.simple_auto_reply_enabled`, desligado por padrão): mesmo com a conversa assumida, se a mensagem classificar como baixo risco, a IA ainda responde essa mensagem pontual — `ai_paused` continua `true`, a equipe segue dona da conversa. Decisão de arquitetura: reaproveita a classificação que `services/decision_engine.py::analyze_message()` já calcula ANTES do gate de `ai_paused` em `routes/chat.py` (campos `intent`/`urgency`, sem chamada de IA extra só pra isso) — critério de "dúvida simples" é `intent in ("general", "follow_up")` E `urgency == "low"`; `intent == "human_help"` ou qualquer urgência acima de `low` mantêm o silêncio de sempre. Consequência aceita conscientemente: como essa classificação só existe quando "Geração de oportunidades" está ligada, o recurso novo depende dela (documentado na própria UI) em vez de rodar uma segunda chamada de IA só pra classificar. De quebra: o push `assumed_conversation` (que antes disparava sempre que chegava mensagem numa conversa assumida) passa a ser suprimido especificamente quando a IA já respondeu a dúvida sozinha — sem isso, a equipe seria alarmada com "hóspede esperando" mesmo depois do problema já ter sido resolvido. |
 | 1.57.0 | 23/08/2026 | Oficial | Matching semântico na sugestão de item de parceiro do Opportunity Center, quinto item grande da lista pós-auditoria — resolve a dívida técnica registrada desde a v1.47.0 ("sempre o primeiro item habilitado, sem matching semântico"). A sugestão (`opportunities.suggested_partner_item_id`) usa a MESMA chamada de IA que já classifica a conversa (`services/decision_engine.py::analyze_with_ai()`), sem round-trip extra: quando a conta é `lodging` e existe algum item habilitado em Parceiros (`get_enabled_partner_items_for_hostel`, que ganhou `description` no `SELECT` pra dar mais contexto), a lista de candidatos (id/nome/categoria/descrição) entra no mesmo prompt e o schema JSON de resposta ganha `suggested_partner_item_id`. Continua restrito a `intent == "tour"` (mesma decisão de produto da v1.47.0 — `upsell` é genérico demais); a mudança é só em COMO escolher entre os candidatos, não em QUANDO sugerir. Validação defensiva: o id devolvido pela IA só é aceito se realmente está entre os ids oferecidos no prompt, protegendo contra alucinação. Contas sem nenhum item de Parceiro habilitado não ganham o bloco novo no prompt — custo de token idêntico a antes. |
+| 1.58.0 | 23/08/2026 | Oficial | Consolidação da arquitetura de deploy do frontend, sexto item grande da lista pós-auditoria — resolve a dívida técnica registrada desde a v1.4.0 (cópia manual do frontend pra dentro do repositório do backend). `HostelBot/StayFlow---Site/` (a cópia que o Render de fato publica, já que ele builda um repositório só por serviço) deixou de ser uma pasta com arquivos copiados à mão (`cp`/`xcopy`/`robocopy`) e virou um `git subtree` do repositório `StayFlow---Site` — sincronizar passa a ser um comando único (`bash sync_frontend.sh`, novo, wrapper de `git subtree pull --squash`), sem risco de esquecer de copiar algum arquivo. Também removida uma terceira cópia órfã (`HostelBot/admin.html`, na raiz do repositório do backend, fora de `StayFlow---Site/`) — versão antiga, não referenciada por nenhuma rota do Flask (que serve tudo via `FRONTEND_DIR`), resíduo de uma estrutura anterior. `HostelBot` ganhou `.gitattributes` (`eol=lf`) pra eliminar ruído de diff causado pela normalização de quebra de linha que o `git checkout` aplica ao trazer o subtree (CRLF), diferente do que a cópia manual antiga preservava por acidente. Verificado com `diff` recursivo (ignorando só quebra de linha) que o conteúdo do subtree é byte-idêntico ao canônico, e que o Flask continua importando e servindo `FRONTEND_DIR` normalmente — nenhuma configuração do Render precisou mudar, o caminho servido continua o mesmo de sempre. Fora de escopo, deliberadamente: separar o frontend como Static Site próprio do Render (a solução "definitiva" do Roadmap) — envolveria cookies de sessão cross-domain, CORS e reconfiguração do escopo do Service Worker, risco real demais pra pilotos reais ativos agora, pra um ganho que o subtree já entrega sem mexer em topologia de produção. |
 
 
 
@@ -2714,27 +2715,41 @@ Cada projeto possui responsabilidades independentes e bem definidas.
 
 
 
-\*\*Nota crítica de infraestrutura (atualizada em 13/07/2026, versão 1.4.0):\*\*
-o ambiente de hospedagem (Render) builda apenas um repositório por serviço.
-Por isso, além do repositório `StayFlow---Site` independente (onde o
-desenvolvimento do frontend efetivamente acontece), existe uma \*\*cópia
-física\*\* de todo o conteúdo do frontend dentro de
-`HostelBot/StayFlow---Site/`, versionada dentro do próprio repositório do
-backend. É essa cópia interna, não o repositório `StayFlow---Site`
+\*\*Nota crítica de infraestrutura (atualizada em 23/08/2026, versão
+1.58.0):\*\* o ambiente de hospedagem (Render) builda apenas um
+repositório por serviço. Por isso, além do repositório `StayFlow---Site`
+independente (onde o desenvolvimento do frontend efetivamente
+acontece), existe uma cópia de todo o conteúdo do frontend dentro de
+`HostelBot/StayFlow---Site/`, versionada dentro do próprio repositório
+do backend. É essa cópia interna, não o repositório `StayFlow---Site`
 sozinho, que o Render de fato publica em produção.
 
+Até a v1.57.0 essa cópia era mantida à mão (`cp`/`xcopy`/`robocopy`,
+arquivo por arquivo) — dívida técnica ativa que já causou retrabalho e
+divergência real entre os repositórios quando um passo era esquecido.
+Desde a v1.58.0, `HostelBot/StayFlow---Site/` é um \*\*git subtree\*\* do
+repositório `StayFlow---Site` (não mais arquivos soltos copiados à
+mão): sincronizar passa a ser um único comando —
+`bash sync_frontend.sh` na raiz do `HostelBot` (wrapper de
+`git subtree pull --squash`) — seguido de `git push` depois de revisar
+a mudança. Isso elimina o risco de esquecer de copiar algum arquivo
+(o git garante conteúdo idêntico ao commitado no `StayFlow---Site`),
+mas continua sendo dois repositórios de fato — não virou monorepo, e
+o Render continua servindo exatamente o mesmo caminho de sempre, sem
+nenhuma mudança de configuração do lado dele. De brinde, resolveu uma
+terceira cópia órfã que existia solta na raiz do `HostelBot`
+(`admin.html`, versão antiga e desatualizada, não referenciada por
+nenhuma rota) — removida.
 
-
-Isso significa que \*\*toda alteração de frontend precisa ser replicada
-manualmente\*\* para dentro do `HostelBot` (cópia de arquivo + commit + push
-nos dois repositórios) antes de chegar ao ar. Esse processo manual é uma
-dívida técnica conhecida e ativa — gera risco real de divergência entre os
-dois repositórios se um dos dois passos for esquecido, e já causou
-retrabalho e confusão real durante o desenvolvimento. A resolução
-definitiva (separar o frontend como Static Site próprio do Render, com o
-Backend expondo apenas API, possivelmente num subdomínio dedicado) está
-registrada no Roadmap Oficial (Capítulo 17) como item a resolver quando a
-prioridade operacional atual estiver concluída.
+A resolução definitiva do ponto de vista arquitetural (separar o
+frontend como Static Site próprio do Render, com o Backend expondo
+apenas API, possivelmente num subdomínio dedicado) continua
+deliberadamente fora de escopo: implicaria reconfigurar cookies de
+sessão entre domínios, CORS e o escopo do Service Worker (push/PWA),
+com corte de DNS — risco real demais pra uma base com pilotos reais
+ativos, pra um ganho que a solução do subtree já entrega (fim da
+cópia manual) sem mexer em topologia de produção. Continua registrada
+no Roadmap Oficial (Capítulo 17) como decisão adiada, não esquecida.
 
 
 
@@ -9053,4 +9068,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.57.0\*\*
+\*\*Fim da Versão Oficial 1.58.0\*\*

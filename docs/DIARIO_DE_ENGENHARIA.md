@@ -6369,3 +6369,67 @@ está entre os ids que foram oferecidos no prompt (`set` de
 `partner_items` já buscados), protegendo contra a IA "inventar" um id
 fora da lista. Testado via checagem de sintaxe, assinatura da função
 (`inspect.signature`) e import completo do app sem erro.
+
+### Consolidação da arquitetura de deploy do frontend (v1.58.0)
+
+Sexto item grande da lista pós-auditoria, e o mais antigo dos seis —
+dívida registrada desde a v1.4.0 (13/07/2026): o Render builda só um
+repositório por serviço, então o conteúdo de `StayFlow---Site/` (repo
+canônico do frontend) precisa existir fisicamente dentro do
+`HostelBot` (`HostelBot/StayFlow---Site/`) pra chegar em produção. Até
+agora isso era mantido copiando arquivo por arquivo à mão
+(`cp`/`xcopy`/`robocopy`) e commitando duas vezes, uma em cada repo —
+processo que já causou divergência e retrabalho real ao longo da
+história do projeto, inclusive dentro desta própria sessão (a
+documentação teve que ser copiada manualmente a cada versão nova).
+
+Investigação antes de mexer em qualquer coisa: confirmado que
+`HostelBot/StayFlow---Site/` é uma pasta comum (sem `.git` próprio,
+sem submodule) rastreada como parte normal do repositório do backend;
+que não existe nenhum script versionado de sincronização (tudo
+manual até hoje); e que existia uma **terceira cópia**, órfã, na raiz
+do próprio `HostelBot`: um `admin.html` desatualizado (sem
+Prospecção, sem foto no chat, sem push do painel interno) que não
+correspondia a nenhuma rota ativa — todas as rotas de página HTML do
+Flask servem via `FRONTEND_DIR`, nunca da raiz do backend. Resíduo
+morto de uma estrutura anterior, removido com segurança.
+
+Decisão de arquitetura tomada explicitamente: NÃO fazer a separação
+"definitiva" já cogitada no Roadmap (frontend como Static Site próprio
+do Render, backend virando API pura num subdomínio) — isso implicaria
+reconfigurar cookies de sessão entre domínios, CORS e o escopo do
+Service Worker (push/PWA), com corte de DNS, risco real demais pra uma
+base com pilotos reais ativos (Hotel Camelo, rede do Miguel Seda,
+estamparia) agora. Em vez disso, atacada a causa concreta do
+retrabalho — a cópia manual em si — sem mexer em domínio/topologia de
+produção: `HostelBot/StayFlow---Site/` virou um **git subtree** do
+repositório `StayFlow---Site` (`git subtree add --prefix=StayFlow---Site
+<url> main --squash`). Migração feita com cautela: `diff -r` completo
+entre canônico e cópia aninhada ANTES de mexer (zero diferenças,
+baseline confirmado), `git rm -r` da pasta antiga + commit, depois
+`git subtree add`, e `diff -r` de novo depois pra confirmar que o
+conteúdo continuava equivalente.
+
+Achado no meio do caminho: o `git subtree add` fez um checkout de
+verdade (fetch + read-tree), e como `core.autocrlf=true` está ligado
+nos dois repos, isso converteu quebra de linha LF→CRLF em vários
+arquivos — divergência que a cópia manual antiga nunca expunha
+(`cp` não mexe em quebra de linha, só preservava os bytes como
+estavam). Confirmado com checksum ignorando quebra de linha que o
+conteúdo continuava 100% idêntico (zero diferença real), e resolvido
+de forma permanente com `.gitattributes` (`eol=lf`) no `HostelBot`,
+pra eliminar esse ruído em todo `git subtree pull` futuro.
+
+Resultado prático: sincronizar frontend → backend deixou de ser
+"copiar arquivo por arquivo e torcer pra não esquecer nenhum" e virou
+um comando único — `bash sync_frontend.sh` (novo, wrapper de
+`git subtree pull --squash` com a URL já embutida), seguido de
+`git push` manual depois de revisar (nenhuma automação de push —
+mesma disciplina de sempre confirmar antes de publicar). Continuam
+sendo dois repositórios de verdade (não virou monorepo), e nada mudou
+do lado do Render — mesmo caminho, mesma variável `STAYFLOW_FRONTEND_DIR`,
+zero reconfiguração necessária. Verificado ao final: `python -c "import
+app"` continua funcionando, `FRONTEND_DIR` resolve normalmente, e o
+script de sync roda sem erro (testado logo após a migração, quando não
+havia nada novo pra puxar — confirmou "already at commit" sem
+quebrar).
