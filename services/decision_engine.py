@@ -76,7 +76,7 @@ _AGENCY_CATEGORY_BUSINESS_CONTEXT = {
 }
 
 
-def analyze_with_ai(message, history=None, account_kind="lodging", agency_category=None):
+def analyze_with_ai(message, history=None, account_kind="lodging", agency_category=None, partner_items=None):
     # Analisa a CONVERSA (ultimas mensagens reais, se houver), nao so a
     # mensagem isolada que acabou de chegar - uma mensagem curta tipo
     # "sim" ou "pode ser dia 20" so faz sentido junto do que veio antes.
@@ -97,6 +97,29 @@ def analyze_with_ai(message, history=None, account_kind="lodging", agency_catego
         )
     else:
         business_context = "a hostel/hotel and its guest"
+
+    # Lista de itens de parceiro que ESSA hospedagem ja ativou
+    # (Parceiros) - deixa a mesma chamada de IA tambem escolher qual
+    # item combina com o pedido do hospede, em vez de uma segunda
+    # chamada separada so pra isso. So entra no prompt quando existe
+    # pelo menos um item (custo zero pra quem nao usa Parceiros).
+    partner_items_block = ""
+    if partner_items:
+        items_lines = "\n".join(
+            f'- id {item["id"]}: {item["name"]} ({item.get("category") or "sem categoria"})'
+            + (f' - {item["description"]}' if item.get("description") else "")
+            for item in partner_items
+        )
+        partner_items_block = f"""
+This business also has partner items available to offer when the guest
+asks for something the business itself does not sell directly:
+{items_lines}
+
+If (and only if) the guest's request genuinely matches one of these
+items, include its id as "suggested_partner_item_id". If none of them
+are a real match, use null - never force a suggestion.
+"""
+
     prompt = f"""
 Analyze this conversation between {business_context}, and return ONLY
 valid JSON. Judge the opportunity based on the CONVERSATION AS A WHOLE,
@@ -106,7 +129,7 @@ before.
 
 {conversation_block}Latest message just received:
 {message}
-
+{partner_items_block}
 Return this exact structure:
 {{
   "intent": "booking",
@@ -114,7 +137,8 @@ Return this exact structure:
   "urgency": "high",
   "estimated_value": 420,
   "description": "Cliente demonstrou alta intenção de reservar.",
-  "next_action": "Responder em até 10 minutos."
+  "next_action": "Responder em até 10 minutos.",
+  "suggested_partner_item_id": null
 }}
 
 Rules:
@@ -131,6 +155,8 @@ Rules:
 - estimated_value must be a number
 - description must be in Portuguese
 - next_action must be in Portuguese
+- suggested_partner_item_id must be one of the ids listed above, or null
+  if no partner items were listed or none genuinely match
 - return only JSON, no markdown, no explanation
 """
 
@@ -174,7 +200,20 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
     if _is_filler_message(message):
         return None
 
-    analysis = analyze_with_ai(message, history=history, account_kind=account_kind, agency_category=agency_category)
+    # Busca os itens de parceiro ANTES da analise pra IA poder escolher
+    # qual combina com o pedido na MESMA chamada, em vez de sempre
+    # sugerir "o primeiro item habilitado" depois (dívida tecnica
+    # documentada desde a v1.47.0). So pra contas lodging - agencia
+    # nao tem "Parceiros" pra oferecer pro proprio cliente.
+    partner_items = get_enabled_partner_items_for_hostel(hostel_id) if account_kind == "lodging" else []
+
+    analysis = analyze_with_ai(
+        message,
+        history=history,
+        account_kind=account_kind,
+        agency_category=agency_category,
+        partner_items=partner_items,
+    )
 
     if analysis.get("intent") == "general":
         # "general" nunca vira oportunidade (nao e venda/reserva), mas
@@ -209,16 +248,19 @@ def analyze_message(hostel_id, guest_id, message, history=None, account_kind="lo
 
     # Quando o hospede pede um passeio/excursao (intent='tour') e a
     # hospedagem ja tem algum item de portfolio de agencia parceira
-    # ativado (Parceiros), sugere o primeiro disponivel - a equipe pode
-    # oferecer isso ao hospede mesmo sem a hospedagem vender aquilo
-    # ela mesma. So pra 'tour' de proposito (o unico intent que mapeia
+    # ativado (Parceiros), usa o id que a propria IA escolheu (mesma
+    # chamada acima, ja viu a lista de candidatos e o pedido real do
+    # hospede) - so pra 'tour' de proposito (o unico intent que mapeia
     # claramente pra categoria de agencia hoje - 'upsell' e generico
     # demais, cobre coisas sem nada a ver, tipo upgrade de quarto).
+    # Valida contra os ids realmente oferecidos pra nao aceitar uma
+    # alucinacao da IA (id inventado, fora da lista que foi mandada).
     suggested_partner_item_id = None
-    if analysis.get("intent") == "tour":
-        partner_items = get_enabled_partner_items_for_hostel(hostel_id)
-        if partner_items:
-            suggested_partner_item_id = partner_items[0]["id"]
+    if analysis.get("intent") == "tour" and partner_items:
+        candidate_ids = {item["id"] for item in partner_items}
+        raw_suggestion = analysis.get("suggested_partner_item_id")
+        if raw_suggestion in candidate_ids:
+            suggested_partner_item_id = raw_suggestion
 
     conn = get_connection()
     cursor = conn.cursor()

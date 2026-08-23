@@ -7099,7 +7099,7 @@ def get_enabled_partner_items_for_hostel(hostel_id):
     cursor = conn.cursor()
     cursor.execute(
         """
-        SELECT pi.id, pi.name, pi.category, pi.price_type, pi.price,
+        SELECT pi.id, pi.name, pi.category, pi.description, pi.price_type, pi.price,
                pi.hostel_id AS agency_hostel_id, h.name AS agency_name
         FROM partner_offers po
         JOIN portfolio_items pi ON pi.id = po.portfolio_item_id
