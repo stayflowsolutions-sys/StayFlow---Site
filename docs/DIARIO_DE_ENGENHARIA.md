@@ -6433,3 +6433,105 @@ app"` continua funcionando, `FRONTEND_DIR` resolve normalmente, e o
 script de sync roda sem erro (testado logo após a migração, quando não
 havia nada novo pra puxar — confirmou "already at commit" sem
 quebrar).
+
+### Comparação competitiva com a Aoki e fila de melhorias
+
+Usuário pediu pesquisa sobre a Aoki (ia.aoki), concorrente argentina de
+Mar del Plata (chatbot de IA pra WhatsApp/Instagram, ~21 pessoas,
+Meta Business Partner, prêmio de inovação industrial 2022, contrato
+com a Municipalidade de General Pueyrredón, programa de revenda "Plan
+Partner" com comissão recorrente 25/30/35%). Avaliação honesta: em
+marketing/equipe/validação externa a Aoki está muito à frente (438
+posts, 34,3 mil seguidores, +300 clientes claimados) - fato, sem
+disfarçar. Mas o produto deles é raso pra hotelaria especificamente
+(sem reserva, mapa de quartos, PMS, financeiro) - é essencialmente um
+chatbot de vendas genérico multi-vertical (gastronomia, saúde,
+cooperativas) com CRM básico por cima, não uma plataforma de operação.
+
+Do lado do produto, identificado um gap real (confirmado no código,
+não só inferido da concorrência): `routes/executive.py` só tem
+contagem agregada total (`total_messages`/`total_guests`/`open_opportunities`),
+sem série temporal por período; `statistics.html` existe mas é página
+órfã sem nenhum dado real ligado. A Aoki mostra métricas por
+dia/semana/mês. Adicionado à fila: dashboard de métricas de chat por
+período. Do lado de GTM (não é código): formalizar um programa de
+parceiro/indicação com comissão recorrente, inspirado no "Plan
+Partner" deles - literalmente o que o Miguel Seda já faz informalmente
+trazendo a rede de 3 hotéis dele.
+
+Usuário instruiu: terminar a fila já em andamento primeiro (Billing
+Fase 2-3, CSP, idiomas), depois entrar nesses itens novos. Adicionado
+ao final da fila de prioridades.
+
+### Billing Fase 2 — cobrança recorrente automática (v1.59.0)
+
+Sétimo item grande da lista pós-auditoria, e a última frente de
+Billing ainda 100% manual/honra: a tabela `billing` já tinha
+`payment_processor`/`processor_customer_id`/`processor_subscription_id`
+como colunas vazias desde a Fase 1, e `set_billing_plan()` já aceitava
+esses parâmetros, mas nenhum chamador os usava. Trial de 30 dias era
+criado automático, mas nada verificava se tinha vencido - `status`
+nunca mudava sozinho.
+
+Investigação (`routes/billing.py`, schema de `billing`,
+`services/mercadopago_service.py` inteiro) confirmou: zero decisão
+anterior registrada sobre Stripe vs Mercado Pago pra essa cobrança
+específica (sempre apareciam juntos, entre parênteses, como opção em
+aberto); zero uso de `preapproval` (API de assinatura recorrente do
+MP) em qualquer lugar do código; zero linha de Stripe (nem SDK
+instalado, nem variável de ambiente lida).
+
+Decisão de arquitetura tomada nesta sessão: Mercado Pago, não Stripe -
+motivo prático, não só técnico. Stripe não abre conta padrão pra
+recebedor domiciliado na Argentina (o monotributo do usuário) - sem
+conta capaz de receber o dinheiro, a integração ficaria bloqueada
+igual outras pendências já registradas (App Review do Instagram,
+credencial MP). Decisão explicitamente registrada no plano e nos docs
+pra poder ser revertida se o usuário algum dia tiver como receber via
+Stripe (entidade no exterior, por exemplo).
+
+Achado importante que mudou a arquitetura: essa cobrança é o INVERSO
+do Split guest-facing que já existe. No Split, cada HOSTEL conecta a
+própria conta MP via OAuth e recebe o dinheiro do hóspede. Aqui é a
+StayFlow que precisa RECEBER a mensalidade do hostel - não dá pra
+reaproveitar o token OAuth por-hostel, precisa de uma credencial nova
+e única da conta MP da própria StayFlow
+(`MERCADOPAGO_PLATFORM_ACCESS_TOKEN`). Reaproveitado do Split: só o
+PADRÃO (webhook idempotente via tabela dedicada, nunca lança exceção,
+sempre responde 200), não o fluxo em si - por isso
+`mp_billing_webhook_events` é uma tabela separada de `mp_webhook_events`.
+
+Moeda: ARS, não USD. `PLAN_PRICES` (89/349/699) sempre foi só
+estimativa de MRR pro painel interno, nunca dinheiro cobrado de
+verdade - uma conta MP argentina cobra em ARS. Em vez de construir o
+motor de câmbio/FX (dívida já conhecida e deliberadamente adiada),
+criado `PLAN_PRICES_ARS` separado, mantido manualmente (mesmo espírito
+de preço fixo ajustado de vez em quando).
+
+Decisão de escopo mais importante: bloqueio de acesso por
+inadimplência ficou de fora desta rodada, de propósito. O laço novo em
+`app.py` (`_billing_trial_expiration_loop`, roda a cada hora,
+reaproveitando o mesmo padrão de daemon thread do alarme de
+compromisso) só atualiza `status` pra `past_due` quando o trial vence
+sem assinatura - puro bookkeeping, aparece certo na tela, mas não
+trava rota nenhuma. Motivo: um bug numa trava de acesso bloquearia um
+piloto real ativo (Hotel Camelo, rede do Miguel Seda) por engano -
+risco alto demais pra shippar junto com a primeira versão da cobrança
+em si. Fica registrado como decisão separada pra quando a cobrança já
+estiver validada em produção.
+
+Peça que faltava resolver no meio do caminho: a notificação
+`subscription_authorized_payment` (cobrança mensal individual) só traz
+o id do PAGAMENTO, não o id da assinatura - foi preciso adicionar
+`get_authorized_payment` (consulta a `/authorized_payments/{id}`) só
+pra descobrir a qual `preapproval_id` (e portanto qual hostel) aquele
+pagamento pertence, antes de decidir se marca `active` ou `past_due`.
+
+Testado: `python -c "import app"` sem erro, todas as rotas novas
+(`/billing/subscribe`, `/billing/subscribe/return`, `/billing/cancel`,
+`/webhook/mercadopago-billing`) aparecem em `url_map.iter_rules()`,
+símbolos novos de `database.py` e `services/mercadopago_billing_service.py`
+importam corretamente. Pré-requisito externo pra funcionar em produção
+(mesmo padrão de bloqueio já visto no WhatsApp Embedded Signup e no
+App Review do Instagram): usuário precisa gerar um Access Token de
+produção na própria conta Mercado Pago dele.
