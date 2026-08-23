@@ -4145,10 +4145,83 @@ async function deleteRoleConfirm(roleId){
           <p style="color:var(--muted);font-size:12px;margin:0 0 6px">${T('settings.billing.addonsTitle', 'Add-ons ativos')}</p>
           ${addonsHtml}
         </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #ffffff12">
+          ${_billingSubscriptionActionsHtml(data)}
+        </div>
       `;
     }catch(e){
       console.warn("Erro ao carregar resumo de Billing:", e);
     }
+  };
+
+  function _billingSubscriptionActionsHtml(data){
+    if(data.status === "comp"){
+      return `<p style="color:var(--muted);font-size:12px;margin:0">${T('settings.billing.compNote', 'Conta cortesia — sem cobrança.')}</p>`;
+    }
+    if(data.payment_processor && data.status === "active"){
+      return `<button class="btn red" type="button" onclick="cancelBillingSubscription()">${T('settings.billing.cancelBtn', 'Cancelar assinatura')}</button>`;
+    }
+    if(data.payment_processor && data.status === "trialing"){
+      return `<p style="color:var(--muted);font-size:12px;margin:0">${T('settings.billing.pendingConfirmation', 'Assinatura enviada — aguardando confirmação do pagamento.')}</p>`;
+    }
+    const priceLine = data.subscription_price_ars
+      ? `<p style="color:var(--muted);font-size:12px;margin:0 0 8px">${T('settings.billing.priceArsLine', 'ARS {price}/mês, cobrado automaticamente via Mercado Pago', {price: data.subscription_price_ars.toLocaleString('es-AR')})}</p>`
+      : "";
+    return `${priceLine}<button class="btn" type="button" onclick="subscribeBillingPlan('${data.plan_name}')">${T('settings.billing.subscribeBtn', 'Assinar agora')}</button>`;
+  }
+
+  window.subscribeBillingPlan = async function(planName){
+    const confirmed = await stayflowConfirm(T('settings.billing.subscribeConfirm', 'Você será levado ao Mercado Pago pra autorizar a cobrança mensal automática. Continuar?'));
+    if(!confirmed) return;
+
+    try{
+      const res = await fetch("/billing/subscribe", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify({plan_name: planName}),
+      });
+      const data = await res.json();
+      if(data.success && data.init_point){
+        window.location.href = data.init_point;
+      }else{
+        alert(data.message || T('settings.billing.subscribeError', 'Não foi possível iniciar a assinatura.'));
+      }
+    }catch(e){
+      console.warn("Erro ao assinar plano:", e);
+      alert(T('settings.billing.subscribeError', 'Não foi possível iniciar a assinatura.'));
+    }
+  };
+
+  window.cancelBillingSubscription = async function(){
+    const confirmed = await stayflowConfirm(T('settings.billing.cancelConfirm', 'Cancelar a assinatura? A cobrança automática mensal para.'));
+    if(!confirmed) return;
+
+    try{
+      const res = await fetch("/billing/cancel", { method: "POST", credentials: "same-origin" });
+      const data = await res.json();
+      if(data.success){
+        alert(T('settings.billing.cancelSuccess', 'Assinatura cancelada.'));
+        loadBillingSummary();
+      }else{
+        alert(data.message || T('settings.billing.cancelError', 'Não foi possível cancelar a assinatura.'));
+      }
+    }catch(e){
+      console.warn("Erro ao cancelar assinatura:", e);
+      alert(T('settings.billing.cancelError', 'Não foi possível cancelar a assinatura.'));
+    }
+  };
+
+  window.handleBillingReturn = function(){
+    const params = new URLSearchParams(window.location.search);
+    if(!params.get("billing_return")) return;
+
+    openPage("settings", document.querySelector('[data-page="settings"]'));
+    switchSettingsSection("billing");
+    loadBillingSummary();
+
+    const cleanUrl = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, document.title, cleanUrl);
   };
 
   window.openGeneralSettingsModal = function(){
@@ -10524,6 +10597,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if (typeof loadTwoFactorStatus === "function") loadTwoFactorStatus();
 
     if (typeof handleMetaOAuthReturn === "function") handleMetaOAuthReturn();
+    if (typeof handleBillingReturn === "function") handleBillingReturn();
 
     if (typeof stayflowInitOnboarding === "function") stayflowInitOnboarding();
   });
