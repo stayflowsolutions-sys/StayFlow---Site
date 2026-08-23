@@ -6331,3 +6331,41 @@ propósito: o push `assumed_conversation` (que antes disparava sempre
 que chegava mensagem numa conversa assumida) passou a ser suprimido
 quando a IA já respondeu a dúvida sozinha — sem isso a equipe seria
 alarmada com "hóspede esperando" mesmo com o problema já resolvido.
+
+### Matching semântico na sugestão de item de parceiro (v1.57.0)
+
+Quinto item grande da lista pós-auditoria. Dívida técnica registrada
+desde a v1.47.0: quando o Opportunity Center detecta `intent == "tour"`
+e a hospedagem tem algum item de Parceiros habilitado, ele sempre
+sugeria o PRIMEIRO item da lista, sem nenhuma relação com o que o
+hóspede realmente pediu — na prática, provavelmente a equipe já
+ignorava a sugestão por saber que era aleatória.
+
+Investigação (`services/decision_engine.py::analyze_message()`)
+confirmou o código exato da dívida: `partner_items[0]["id"]` sem
+qualquer comparação com o pedido do hóspede. E confirmou que o
+universo de candidatos é sempre pequeno — são só os itens que a
+PRÓPRIA hospedagem já ativou manualmente na tela Parceiros, sem
+paginação em lugar nenhum do fluxo — então dava pra resolver isso sem
+embeddings/busca vetorial, só injetando a lista direto no prompt que
+já existe.
+
+Decisão de arquitetura: em vez de uma segunda chamada de IA só pra
+escolher o item, a MESMA chamada que já classifica a conversa
+(`analyze_with_ai`) passou a receber a lista de candidatos (id, nome,
+categoria, descrição) e a devolver `suggested_partner_item_id` dentro
+do mesmo JSON que já pedia `intent`/`urgency`/etc. — zero round-trip
+extra, zero custo adicional pra quem não usa Parceiros (o bloco só
+entra no prompt quando existem itens habilitados). `get_enabled_partner_items_for_hostel`
+(`database.py`) ganhou `pi.description` no `SELECT` (só tinha
+name/category/price) pra dar mais contexto de matching.
+
+Mantido de propósito o gate `intent == "tour"` que já existia (decisão
+de produto antiga: `upsell` é genérico demais, cobre coisas sem
+relação nenhuma, tipo upgrade de quarto) — a mudança é só em COMO
+escolher entre os candidatos, não em QUANDO sugerir. Validação
+defensiva adicionada: o id que a IA devolve só é aceito se realmente
+está entre os ids que foram oferecidos no prompt (`set` de
+`partner_items` já buscados), protegendo contra a IA "inventar" um id
+fora da lista. Testado via checagem de sintaxe, assinatura da função
+(`inspect.signature`) e import completo do app sem erro.
