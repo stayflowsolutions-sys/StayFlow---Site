@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.56.0
+\*\*Versão:\*\* 1.57.0
 
 
 
@@ -184,6 +184,7 @@
 | 1.54.0 | 23/08/2026 | Oficial | Integração Nuvemshop/Tiendanube (mesma empresa, nome diferente por país — Tiendanube na Argentina, Nuvemshop no Brasil), segundo item grande da lista de prioridades pós-auditoria. Contas `agency` de loja online ganham um card em Configurações → Comunicação pra conectar a loja via OAuth 2.0 (redirect com `state` anti-CSRF, mesmo padrão de Facebook/Instagram — pesquisa confirmou API versionada `api.tiendanube.com/2025-03`, header `Authorization: Bearer` + `User-Agent` obrigatório, domínio único servindo os dois países). Ao conectar: sincroniza todo o catálogo existente de uma vez e registra webhooks (`product/created`, `product/updated`, `product/deleted`, `order/paid`). Decisão de arquitetura: em vez de criar tabela nova pro catálogo, `portfolio_items` (a MESMA que já alimenta `get_offerings`/a IA) ganhou `external_id`/`source` — mesmo vocabulário já usado em `guest_channel_identities`, único precedente real de "dado veio de fonte externa" no schema — com índice único PARCIAL (`WHERE external_id IS NOT NULL`) garantindo sincronização idempotente sem nunca afetar item cadastrado manualmente (que fica com `external_id` `NULL`, e SQLite trata cada `NULL` como distinto). `order/paid` dispara push (novo tipo `nuvemshop_order`) com o resumo do pedido. Assinatura do webhook validada por `verify_nuvemshop_signature` (`utils/webhook_security.py`) — função própria, não reaproveita `verify_meta_signature`, já que o header (`x-linkedstore-hmac-sha256`, sem prefixo `sha256=`) e o secret (`NUVEMSHOP_CLIENT_SECRET`) são diferentes. Fora de escopo desta rodada: sincronizar estoque/variantes, mandar dado de volta pra Nuvemshop (só leitura), e Mercado Livre (plataforma própria separada, pendência à parte). |
 | 1.55.0 | 23/08/2026 | Oficial | Card "Agente de IA" em Configurações → IA StayFlow ativado — era um placeholder morto desde sempre (`opacity:.5`, sem nenhum campo real, condição de liberação citando o Ask StayFlow que nunca teve relação de verdade com essa feature). Terceiro item grande da lista pós-auditoria. Novo `settings.ai_custom_instructions` (texto livre, até 2000 caracteres, validado no backend) — cada hospedagem/agência pode escrever instruções de persona/tom/regras específicas do próprio negócio. `services/ai_service.py::ask_ai()` ganha `custom_instructions=None`, interpolado como uma seção ADICIONAL (`{custom_instructions_section}`) no fim de `SYSTEM_PROMPT` (hospedagem) e `_AGENCY_PROMPT_SKELETON` (agência) — deliberadamente fora de `SOFTWARE_SYSTEM_PROMPT` (número comercial da própria StayFlow, não configurável por cliente). A seção deixa explícito que as instruções do dono NUNCA substituem a espinha dorsal de segurança (nunca inventar preço, nunca fechar venda sozinha) — testado renderizando os 9 templates (SYSTEM_PROMPT + 8 categorias de agência) com e sem instrução customizada, sem erro de formatação. Reaproveita 100% o mecanismo genérico de Configurações (`_SETTINGS_TEXT_FIELDS`) pra leitura/escrita, sem endpoint novo. |
 | 1.56.0 | 23/08/2026 | Oficial | "Resposta automática para dúvidas simples" ativada — quarto item grande da lista, mesmo padrão de placeholder morto do item anterior (checkbox `checked disabled`, texto "depende do recurso de assumir conversa" — recurso que já funciona há tempo). Hoje "assumir conversa" (`guests.ai_paused`) é tudo ou nada: equipe assume, IA para de responder 100% até alguém devolver. Novo comportamento opcional (`settings.simple_auto_reply_enabled`, desligado por padrão): mesmo com a conversa assumida, se a mensagem classificar como baixo risco, a IA ainda responde essa mensagem pontual — `ai_paused` continua `true`, a equipe segue dona da conversa. Decisão de arquitetura: reaproveita a classificação que `services/decision_engine.py::analyze_message()` já calcula ANTES do gate de `ai_paused` em `routes/chat.py` (campos `intent`/`urgency`, sem chamada de IA extra só pra isso) — critério de "dúvida simples" é `intent in ("general", "follow_up")` E `urgency == "low"`; `intent == "human_help"` ou qualquer urgência acima de `low` mantêm o silêncio de sempre. Consequência aceita conscientemente: como essa classificação só existe quando "Geração de oportunidades" está ligada, o recurso novo depende dela (documentado na própria UI) em vez de rodar uma segunda chamada de IA só pra classificar. De quebra: o push `assumed_conversation` (que antes disparava sempre que chegava mensagem numa conversa assumida) passa a ser suprimido especificamente quando a IA já respondeu a dúvida sozinha — sem isso, a equipe seria alarmada com "hóspede esperando" mesmo depois do problema já ter sido resolvido. |
+| 1.57.0 | 23/08/2026 | Oficial | Matching semântico na sugestão de item de parceiro do Opportunity Center, quinto item grande da lista pós-auditoria — resolve a dívida técnica registrada desde a v1.47.0 ("sempre o primeiro item habilitado, sem matching semântico"). A sugestão (`opportunities.suggested_partner_item_id`) usa a MESMA chamada de IA que já classifica a conversa (`services/decision_engine.py::analyze_with_ai()`), sem round-trip extra: quando a conta é `lodging` e existe algum item habilitado em Parceiros (`get_enabled_partner_items_for_hostel`, que ganhou `description` no `SELECT` pra dar mais contexto), a lista de candidatos (id/nome/categoria/descrição) entra no mesmo prompt e o schema JSON de resposta ganha `suggested_partner_item_id`. Continua restrito a `intent == "tour"` (mesma decisão de produto da v1.47.0 — `upsell` é genérico demais); a mudança é só em COMO escolher entre os candidatos, não em QUANDO sugerir. Validação defensiva: o id devolvido pela IA só é aceito se realmente está entre os ids oferecidos no prompt, protegendo contra alucinação. Contas sem nenhum item de Parceiro habilitado não ganham o bloco novo no prompt — custo de token idêntico a antes. |
 
 
 
@@ -5495,11 +5496,19 @@ Apresentar oportunidades identificadas automaticamente pelos motores de intelig�
 
   de `portfolio\_items` habilitado via `partner\_offers`, a oportunidade
 
-  grava `suggested\_partner\_item\_id` (sempre o primeiro item
+  grava `suggested\_partner\_item\_id`. Desde a versão 1.57.0 (23/08/2026)
 
-  habilitado, sem matching semântico com o pedido do hóspede — dívida
+  a escolha tem matching semântico de verdade: a mesma chamada de IA
 
-  técnica conhecida) e o Frontend (`stayflow-live.js`) mostra "💡
+  do `analyze\_with\_ai` recebe a lista de itens habilitados (nome,
+
+  categoria, descrição) e escolhe qual combina com o pedido real do
+
+  hóspede, com validação contra a lista de ids oferecidos pra não
+
+  aceitar uma escolha alucinada — dívida técnica registrada na v1.47.0
+
+  agora resolvida. O Frontend (`stayflow-live.js`) mostra "💡
 
   Sugestão: {item} via {agência}" com botão "Oferecer parceiro" que
 
@@ -9044,4 +9053,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.56.0\*\*
+\*\*Fim da Versão Oficial 1.57.0\*\*
