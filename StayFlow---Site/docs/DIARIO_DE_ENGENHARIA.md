@@ -6270,3 +6270,64 @@ registrado explicitamente: sincronizar estoque/variantes, mandar dado
 de volta pra Nuvemshop (só leitura por enquanto), e Mercado Livre
 (plataforma própria separada, self-contida, seguirá como pendência à
 parte quando o usuário decidir priorizar).
+
+### Agente de IA — persona/tom customizados (v1.55.0)
+
+Terceiro item grande da lista. Investigação prévia confirmou que o
+card "Agente de IA (persona, tom, regras de escalonamento)" era um
+placeholder morto desde sempre — a condição citada ("disponível quando
+o Ask StayFlow tiver function calling") nunca teve relação real com
+essa feature (Ask StayFlow é o copiloto interno do dashboard, sistema
+separado do `ask_ai()` de atendimento) e já estava cumprida há tempo;
+a feature em si nunca foi construída.
+
+Decisão que valeu a pena confirmar antes de implementar: um campo de
+texto livre (`settings.ai_custom_instructions`), não três campos
+estruturados — o parênteses do título descreve o TIPO de coisa que
+cabe ali, não exige inputs separados. Interpolado como uma seção
+ADICIONAL no fim dos templates de prompt (`{custom_instructions_section}`,
+mesmo padrão de placeholder dinâmico já usado por
+`{agency_subcategory_line}`), com uma frase deixando explícito que as
+instruções do dono nunca substituem a espinha dorsal de segurança
+(nunca inventar preço, nunca fechar venda sozinha) — testado
+renderizando os 9 templates reais (hospedagem + 8 categorias de
+agência) com e sem instrução customizada antes de subir, sem erro de
+`.format()`. Deliberadamente fora de `SOFTWARE_SYSTEM_PROMPT` (número
+comercial da própria StayFlow). Reaproveitou 100% o mecanismo genérico
+de Configurações já existente (`_SETTINGS_TEXT_FIELDS`) — só a
+validação de tamanho (2000 caracteres) precisou de um `if` a mais no
+handler.
+
+### Resposta automática pra dúvidas simples em conversa assumida (v1.56.0)
+
+Quarto item grande, mesmo padrão de placeholder morto do anterior
+(checkbox `checked disabled`, sem `data-setting` nenhum, texto
+"depende do recurso de assumir conversa" — recurso que já funciona
+desde sessões bem anteriores). Meio-termo pedido: hoje "assumir
+conversa" é tudo ou nada, a IA some completamente até alguém devolver;
+o pedido era deixar a IA ainda responder sozinha PERGUNTAS SIMPLES
+mesmo com a conversa assumida, ficando calada em qualquer coisa mais
+complexa.
+
+Achado que evitou construir um classificador do zero: `services/decision_engine.py::analyze_message()`
+já roda ANTES do gate de `ai_paused` em `routes/chat.py`, e já devolve
+`intent` (`booking/tour/upsell/human_help/follow_up/general`) e
+`urgency` (`low/medium/high`) — a própria regra do decision engine já
+sobe a urgência quando o hóspede parece frustrado ou pede algo que a
+IA não teria confiança de resolver sozinha, que é basicamente o
+inverso de "pergunta simples". Critério adotado: `intent in ("general", "follow_up")`
+E `urgency == "low"` — qualquer `human_help` ou urgência acima de
+`low` mantém o silêncio de sempre. Isso significou reestruturar um
+`if` só (routes/chat.py, bloco de `conversation_assumed`) em vez de
+inventar uma segunda chamada de IA pra classificar.
+
+Trade-off aceito conscientemente e documentado na própria UI: essa
+classificação só existe quando "Geração de oportunidades" está ligada
+— em vez de pagar o custo/latência de uma chamada de IA extra só pra
+classificar quando essa opção estiver desligada, o recurso novo
+simplesmente exige que ela esteja ativa (já vem ligada por padrão, não
+é uma limitação real na prática). Efeito colateral corrigido de
+propósito: o push `assumed_conversation` (que antes disparava sempre
+que chegava mensagem numa conversa assumida) passou a ser suprimido
+quando a IA já respondeu a dúvida sozinha — sem isso a equipe seria
+alarmada com "hóspede esperando" mesmo com o problema já resolvido.
