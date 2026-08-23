@@ -1392,6 +1392,11 @@ def create_database():
     # Notificacoes.
     add_column_if_not_exists(cursor, "settings", "push_notification_types", "TEXT")
 
+    # Instrucoes livres de persona/tom/regras especificas do negocio,
+    # configuradas em Configuracoes -> IA StayFlow - ver
+    # get_ai_custom_instructions acima e services/ai_service.py.
+    add_column_if_not_exists(cursor, "settings", "ai_custom_instructions", "TEXT")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS reservations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -4693,6 +4698,23 @@ def get_hostel_type(hostel_id):
     row = cursor.fetchone()
     conn.close()
     return row["hostel_type"] if row and row["hostel_type"] else None
+
+
+def get_ai_custom_instructions(hostel_id):
+    """
+    Instrucoes livres que o dono do negocio escreveu em Configuracoes
+    -> IA StayFlow (persona/tom/regras especificas do negocio dele) -
+    mesmo padrao de get_hostel_type acima. Interpolada como uma secao
+    ADICIONAL no prompt (services/ai_service.py), nunca substituindo a
+    espinha dorsal de seguranca (nunca inventar preco, nunca fechar
+    venda sozinho).
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT ai_custom_instructions FROM settings WHERE hostel_id = ?", (hostel_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["ai_custom_instructions"] if row and row["ai_custom_instructions"] else None
 
 
 def is_ai_enabled(hostel_id):

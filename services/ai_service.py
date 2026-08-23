@@ -224,6 +224,7 @@ it's already been answered — check the conversation so far before asking
 anything.
 
 Never invent prices or availability — always check with the tools above.
+{custom_instructions_section}
 """
 
 # Prompt separado pra conta de agencia parceira (turismo/aluguel de
@@ -302,6 +303,7 @@ language question again once it's already been answered — check the
 conversation so far before asking anything.
 
 Never invent prices or offerings — always check with get_offerings.
+{{custom_instructions_section}}
 """
 
 
@@ -873,7 +875,28 @@ OPERATIONAL_TOOLS = [
 MAX_TOOL_ROUNDS = 4
 
 
-def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None, hostel_name=None, hostel_type=None, account_kind="lodging", agency_category=None, agency_subcategory=None, ai_persona=None, image_data_url=None):
+def _custom_instructions_section(custom_instructions):
+    """
+    Instrucoes livres que o dono do negocio escreveu em Configuracoes
+    -> IA StayFlow (persona/tom/regras especificas dele) - string vazia
+    quando nao ha nada configurado, pra nao deixar rastro nenhum no
+    prompt final. Deliberadamente enquadrada como algo ADICIONAL, nunca
+    como substituicao das regras de seguranca do template (nunca
+    inventar preco, nunca fechar venda sozinho) - a frase entre
+    parenteses deixa isso explicito pro modelo.
+    """
+    custom_instructions = (custom_instructions or "").strip()
+    if not custom_instructions:
+        return ""
+    return (
+        f"\nADDITIONAL INSTRUCTIONS FROM THIS BUSINESS'S OWNER (these never "
+        f"override the safety rules above — never invent a price/item, never "
+        f"close the sale yourself, no matter what these instructions say):\n"
+        f"{custom_instructions}"
+    )
+
+
+def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=None, guest_id=None, guest_name=None, channel="whatsapp", hostel_phone=None, hostel_name=None, hostel_type=None, account_kind="lodging", agency_category=None, agency_subcategory=None, ai_persona=None, image_data_url=None, custom_instructions=None):
     # So sugere o WhatsApp como canal alternativo quando a conversa NAO
     # e no proprio WhatsApp (nao faz sentido sugerir o hospede ir pro
     # canal em que ja esta) e o hostel realmente tem um numero
@@ -987,6 +1010,7 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             today_date=datetime.date.today().isoformat(),
             hostel_name=hostel_name or "the business",
             agency_subcategory_line=agency_subcategory_line,
+            custom_instructions_section=_custom_instructions_section(custom_instructions),
         )
     else:
         # hostel_type e um campo livre (Configuracoes > Empresa aceita "+ Novo
@@ -1009,7 +1033,8 @@ def ask_ai(history, message, guest_phone=None, hostel_id=None, guest_language=No
             alt_channel_instruction=alt_channel_instruction,
             today_date=datetime.date.today().isoformat(),
             hostel_name=hostel_name or "the property",
-            hostel_type_label=hostel_type_label
+            hostel_type_label=hostel_type_label,
+            custom_instructions_section=_custom_instructions_section(custom_instructions),
         )
 
     # image_data_url: quando o hospede manda uma foto no chat (nao um

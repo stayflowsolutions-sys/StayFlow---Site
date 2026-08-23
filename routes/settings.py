@@ -46,8 +46,10 @@ settings_bp = Blueprint("settings", __name__)
 _SETTINGS_TEXT_FIELDS = [
     "hostel_name", "hostel_type", "legal_name", "tax_id", "address",
     "timezone", "currency", "checkin", "checkout", "logo_url",
-    "quiet_hours_start", "quiet_hours_end",
+    "quiet_hours_start", "quiet_hours_end", "ai_custom_instructions",
 ]
+
+_AI_CUSTOM_INSTRUCTIONS_MAX_LENGTH = 2000
 
 _DEFAULT_ALERT_CHANNELS = ["dashboard"]
 _DEFAULT_PUSH_NOTIFICATION_TYPES = [
@@ -171,7 +173,7 @@ def get_settings(hostel_id):
         SELECT hostel_name, hostel_type, legal_name, tax_id, address,
                timezone, currency, checkin, checkout, logo_url,
                opportunity_generation, alert_channels, push_notification_types,
-               quiet_hours_start, quiet_hours_end, ai_enabled
+               quiet_hours_start, quiet_hours_end, ai_enabled, ai_custom_instructions
         FROM settings
         WHERE hostel_id = ?
     """, (hostel_id,))
@@ -220,6 +222,9 @@ def update_settings(hostel_id):
 
     if "currency" in data and data["currency"] and data["currency"] not in _VALID_CURRENCIES:
         return jsonify({"success": False, "message": "currency inválida."}), 400
+
+    if "ai_custom_instructions" in data and len(data["ai_custom_instructions"] or "") > _AI_CUSTOM_INSTRUCTIONS_MAX_LENGTH:
+        return jsonify({"success": False, "message": f"Instruções muito longas (máximo {_AI_CUSTOM_INSTRUCTIONS_MAX_LENGTH} caracteres)."}), 400
 
     conn = get_connection()
     cursor = conn.cursor()

@@ -14,6 +14,7 @@ from database import (
     is_opportunity_generation_enabled,
     is_ai_enabled,
     get_hostel_type,
+    get_ai_custom_instructions,
 )
 from services.ai_service import ask_ai
 from services.memory_service import save_message, get_history
@@ -179,12 +180,13 @@ def process_incoming_message(hostel_id, external_id, text, channel="whatsapp", s
     hostel_phone = hostel_record.get("phone")
     hostel_name = hostel_record.get("name")
     hostel_type = get_hostel_type(hostel_id)
+    custom_instructions = get_ai_custom_instructions(hostel_id)
     answer, guest_name, guest_language_detected = ask_ai(
         history, text, guest_phone=guest_phone, hostel_id=hostel_id,
         guest_language=guest_language, guest_id=guest_id, guest_name=known_guest_name,
         channel=channel, hostel_phone=hostel_phone, hostel_name=hostel_name, hostel_type=hostel_type,
         account_kind=account_kind, agency_category=agency_category, agency_subcategory=agency_subcategory,
-        ai_persona=ai_persona, image_data_url=image_data_url,
+        ai_persona=ai_persona, image_data_url=image_data_url, custom_instructions=custom_instructions,
     )
 
     if guest_name:
