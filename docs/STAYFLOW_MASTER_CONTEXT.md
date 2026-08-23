@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.58.0
+\*\*Versão:\*\* 1.59.0
 
 
 
@@ -186,6 +186,7 @@
 | 1.56.0 | 23/08/2026 | Oficial | "Resposta automática para dúvidas simples" ativada — quarto item grande da lista, mesmo padrão de placeholder morto do item anterior (checkbox `checked disabled`, texto "depende do recurso de assumir conversa" — recurso que já funciona há tempo). Hoje "assumir conversa" (`guests.ai_paused`) é tudo ou nada: equipe assume, IA para de responder 100% até alguém devolver. Novo comportamento opcional (`settings.simple_auto_reply_enabled`, desligado por padrão): mesmo com a conversa assumida, se a mensagem classificar como baixo risco, a IA ainda responde essa mensagem pontual — `ai_paused` continua `true`, a equipe segue dona da conversa. Decisão de arquitetura: reaproveita a classificação que `services/decision_engine.py::analyze_message()` já calcula ANTES do gate de `ai_paused` em `routes/chat.py` (campos `intent`/`urgency`, sem chamada de IA extra só pra isso) — critério de "dúvida simples" é `intent in ("general", "follow_up")` E `urgency == "low"`; `intent == "human_help"` ou qualquer urgência acima de `low` mantêm o silêncio de sempre. Consequência aceita conscientemente: como essa classificação só existe quando "Geração de oportunidades" está ligada, o recurso novo depende dela (documentado na própria UI) em vez de rodar uma segunda chamada de IA só pra classificar. De quebra: o push `assumed_conversation` (que antes disparava sempre que chegava mensagem numa conversa assumida) passa a ser suprimido especificamente quando a IA já respondeu a dúvida sozinha — sem isso, a equipe seria alarmada com "hóspede esperando" mesmo depois do problema já ter sido resolvido. |
 | 1.57.0 | 23/08/2026 | Oficial | Matching semântico na sugestão de item de parceiro do Opportunity Center, quinto item grande da lista pós-auditoria — resolve a dívida técnica registrada desde a v1.47.0 ("sempre o primeiro item habilitado, sem matching semântico"). A sugestão (`opportunities.suggested_partner_item_id`) usa a MESMA chamada de IA que já classifica a conversa (`services/decision_engine.py::analyze_with_ai()`), sem round-trip extra: quando a conta é `lodging` e existe algum item habilitado em Parceiros (`get_enabled_partner_items_for_hostel`, que ganhou `description` no `SELECT` pra dar mais contexto), a lista de candidatos (id/nome/categoria/descrição) entra no mesmo prompt e o schema JSON de resposta ganha `suggested_partner_item_id`. Continua restrito a `intent == "tour"` (mesma decisão de produto da v1.47.0 — `upsell` é genérico demais); a mudança é só em COMO escolher entre os candidatos, não em QUANDO sugerir. Validação defensiva: o id devolvido pela IA só é aceito se realmente está entre os ids oferecidos no prompt, protegendo contra alucinação. Contas sem nenhum item de Parceiro habilitado não ganham o bloco novo no prompt — custo de token idêntico a antes. |
 | 1.58.0 | 23/08/2026 | Oficial | Consolidação da arquitetura de deploy do frontend, sexto item grande da lista pós-auditoria — resolve a dívida técnica registrada desde a v1.4.0 (cópia manual do frontend pra dentro do repositório do backend). `HostelBot/StayFlow---Site/` (a cópia que o Render de fato publica, já que ele builda um repositório só por serviço) deixou de ser uma pasta com arquivos copiados à mão (`cp`/`xcopy`/`robocopy`) e virou um `git subtree` do repositório `StayFlow---Site` — sincronizar passa a ser um comando único (`bash sync_frontend.sh`, novo, wrapper de `git subtree pull --squash`), sem risco de esquecer de copiar algum arquivo. Também removida uma terceira cópia órfã (`HostelBot/admin.html`, na raiz do repositório do backend, fora de `StayFlow---Site/`) — versão antiga, não referenciada por nenhuma rota do Flask (que serve tudo via `FRONTEND_DIR`), resíduo de uma estrutura anterior. `HostelBot` ganhou `.gitattributes` (`eol=lf`) pra eliminar ruído de diff causado pela normalização de quebra de linha que o `git checkout` aplica ao trazer o subtree (CRLF), diferente do que a cópia manual antiga preservava por acidente. Verificado com `diff` recursivo (ignorando só quebra de linha) que o conteúdo do subtree é byte-idêntico ao canônico, e que o Flask continua importando e servindo `FRONTEND_DIR` normalmente — nenhuma configuração do Render precisou mudar, o caminho servido continua o mesmo de sempre. Fora de escopo, deliberadamente: separar o frontend como Static Site próprio do Render (a solução "definitiva" do Roadmap) — envolveria cookies de sessão cross-domain, CORS e reconfiguração do escopo do Service Worker, risco real demais pra pilotos reais ativos agora, pra um ganho que o subtree já entrega sem mexer em topologia de produção. |
+| 1.59.0 | 23/08/2026 | Oficial | Billing Fase 2 — cobrança recorrente automática da própria assinatura StayFlow, sétimo item grande da lista pós-auditoria, resolvendo a única frente de Billing que ainda era 100% manual/honra (`payment_processor`/`processor_customer_id`/`processor_subscription_id` existiam como schema stub desde a Fase 1, nunca escritos por ninguém). Decisão de processador: Mercado Pago (API `preapproval`, assinatura recorrente nativa), não Stripe — motivo prático, não só técnico: Stripe não abre conta padrão pra recebedor domiciliado na Argentina (o monotributo do usuário), o que inviabilizaria receber o dinheiro de verdade. Usa uma credencial NOVA e separada (`MERCADOPAGO_PLATFORM_ACCESS_TOKEN`, a conta MP da própria StayFlow) — diferente da credencial OAuth do Split guest-facing (`MERCADOPAGO_CLIENT_ID`/`SECRET`, por-hostel), já que aqui é a StayFlow recebendo do hostel, direção de dinheiro oposta à do Split. Novo `services/mercadopago_billing_service.py` (`create_preapproval`/`get_preapproval`/`cancel_preapproval`/`get_authorized_payment`), novas rotas `POST /billing/subscribe` (gera o link de checkout), `GET /billing/subscribe/return` (retorno pós-checkout) e `POST /billing/cancel`; novo webhook `POST /webhook/mercadopago-billing` (idempotência própria via `mp_billing_webhook_events`, separada de `mp_webhook_events` do Split) tratando tanto `subscription_preapproval` (autorização/cancelamento) quanto `subscription_authorized_payment` (cobrança mensal individual, exige uma consulta a mais em `/authorized_payments/{id}` pra resolver a qual assinatura pertence). Preço cobrado em ARS (`PLAN_PRICES_ARS`, mantido manualmente — motor de câmbio automático continua fora de escopo, dívida separada e já conhecida). Novo laço em `app.py` (`_billing_trial_expiration_loop`, roda a cada hora) marca `past_due` quem terminou o trial de 30 dias sem nunca ter assinado (`database.expire_stale_trials()`) — decisão explícita de escopo: isso é só bookkeeping, NÃO bloqueia nenhuma rota/feature por inadimplência nesta rodada, risco considerado alto demais de derrubar um piloto real (Hotel Camelo, rede do Miguel Seda) por engano numa primeira versão; trava de acesso fica pra uma decisão separada e explícita depois que a cobrança em si estiver validada em produção. UI nova em Configurações → Billing: botão "Assinar agora" (quando sem assinatura ativa) ou "Cancelar assinatura" (quando ativa), tratamento de retorno via `?billing_return=1` (mesmo padrão genérico já usado pelas integrações OAuth). Pré-requisito externo pra funcionar em produção (mesmo tipo de bloqueio já registrado pro WhatsApp Embedded Signup e pro App Review do Instagram): usuário precisa gerar um Access Token de produção na própria conta Mercado Pago dele. |
 
 
 
@@ -7626,33 +7627,39 @@ Prioridades atuais:
 
   e destravar a Conversations API (ver Capítulo 16, seção 16.26);
 
-\- \*\*cobrança recorrente automática da própria assinatura StayFlow
+\- ~~cobrança recorrente automática da própria assinatura StayFlow
 
-  (Billing Fase 2-3)\*\*: única frente de Billing ainda sem construção
+  (Billing Fase 2-3)~~: \*\*resolvido na v1.59.0\*\* (23/08/2026) — ver
 
-  real. Billing Fase 1 (planos, trial, comp accounts — tabela
+  Capítulo 16, seção 16.4-bis (ou busca por "Billing Fase 2" no
 
-  `billing`) já está em produção há mais tempo do que este documento
+  changelog). Decisão: Mercado Pago (API `preapproval`), não Stripe —
 
-  registrava, com cadastro self-serve (`planos.html` + `Register.html`
+  Stripe não abre conta padrão pra recebedor domiciliado na Argentina
 
-  + `/register`) ativando automaticamente o hostel no plano escolhido
+  (monotributo), inviabilizando o recebimento do dinheiro. Usa uma
 
-  com trial de 30 dias, sem aprovação manual (ver 16.33 e correção
+  credencial própria da conta MP da StayFlow
 
-  desta seção registrada na v1.47.0, Capítulo 18). O que de fato ainda
+  (`MERCADOPAGO_PLATFORM_ACCESS_TOKEN`), diferente da credencial OAuth
 
-  não existe é cobrar o cliente StayFlow na prática depois do trial —
+  usada pelo Split guest-facing (que é por-hostel). Cobrança em ARS
 
-  nenhum processador (Stripe/Mercado Pago) está ligado para \*essa\*
+  (`PLAN_PRICES_ARS`, mantido manualmente, sem motor de câmbio
 
-  cobrança, hoje 100% manual/honra, sem trava de bloqueio por
+  automático — essa parte continua fora de escopo). Bloqueio de acesso
 
-  inadimplência. Não confundir com o Mercado Pago Split guest-facing
+  por inadimplência foi deixado deliberadamente de fora desta rodada —
 
-  (cobrança do hóspede pelo hostel), que já é real e está em produção
+  hoje o trial vencido sem assinatura só atualiza o `status` pra
 
-  desde antes;
+  `past_due` (bookkeeping), sem travar nenhuma rota. Não confundir com
+
+  o Mercado Pago Split guest-facing (cobrança do hóspede pelo hostel),
+
+  que já era real e está em produção desde antes, com credencial e
+
+  fluxo completamente separados;
 
 \- avaliar estratégia de atendimento para hóspedes localizados no Brasil,
 
@@ -7770,27 +7777,31 @@ Entre elas:
 
   canal e funil de conversão já está implementada, ver Capítulo 16);
 
-\- cobrança recorrente automática da própria assinatura StayFlow
+\- ~~cobrança recorrente automática da própria assinatura StayFlow
 
-  (Billing Fase 2-3, processador Stripe/Mercado Pago) — planos, trial
-
-  e cadastro self-serve (Fase 1) já estão em produção, ver 17.2;
+  (Billing Fase 2-3)~~ — \*\*resolvido na v1.59.0\*\*, ver 17.2;
 
 \- Automações Operacionais;
 
-\- Separação definitiva de infraestrutura de deploy — hoje o Frontend é
+\- Separação definitiva de infraestrutura de deploy (Frontend como
 
-  publicado através de uma cópia manual mantida dentro do repositório do
+  Static Site independente do Render, Backend exposto só como API,
 
-  Backend (ver nota crítica no Capítulo 9), o que exige replicação manual
+  possivelmente em subdomínio dedicado) — a v1.58.0 já eliminou a
 
-  de toda alteração de Frontend. Solução de longo prazo identificada:
+  cópia manual arquivo-por-arquivo (`HostelBot/StayFlow---Site/` virou
 
-  Frontend publicado como Static Site independente, Backend exposto
+  `git subtree`, sincronizado com um comando só, ver nota crítica no
 
-  apenas como API (possivelmente em subdomínio dedicado), eliminando a
+  Capítulo 9), mas a separação de domínio/topologia em si continua
 
-  cópia manual.
+  deliberadamente adiada: implicaria cookies de sessão cross-domain,
+
+  CORS e reconfiguração do escopo do Service Worker, risco real demais
+
+  pra pilotos ativos agora, pra um ganho que o subtree já entrega sem
+
+  mexer em produção.
 
 
 
@@ -9068,4 +9079,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.58.0\*\*
+\*\*Fim da Versão Oficial 1.59.0\*\*
