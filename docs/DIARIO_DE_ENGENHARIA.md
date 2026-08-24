@@ -6728,3 +6728,78 @@ com o esperado, mensagem de 20 dias atrás corretamente excluída da
 janela diária de 14 dias. `statistics.html` (página órfã confirmada -
 só ela mesma se referenciava, dado 100% fake, fora do design system)
 removida de brinde, mesmo perfil das órfãs já limpas na v1.53.0.
+
+### 3 ajustes no painel interno: F5, Despesas/Financeiro, Comunicação (v1.64.0)
+
+`admin.html` virou o painel principal do usuário no dia a dia, e 3
+pedidos nasceram de uso ao vivo hoje. Durante o planejamento, usuário
+pediu de quebra que o WhatsApp tivesse clique único pra conectar
+"igual Facebook e Instagram" - achado real: o WhatsApp já TINHA isso
+(Embedded Signup, v1.53.0), só nunca tinha sido ligado no painel
+interno.
+
+**F5**: investigação confirmou `switchAdminTab()` sem nenhuma
+persistência - `currentAdminTab` só variável JS em memória,
+`page-overview` hardcoded como `active` no HTML estático. Corrigido
+com `localStorage`, mesmo padrão já usado pelo idioma
+(`stayflow_lang`).
+
+**Despesas → sub-aba de Financeiro**: achado que mudou a expectativa
+antes de mexer - o botão "+ Nova despesa" JÁ usava a classe CSS padrão
+do sistema (`class="btn"`, idêntica à de Prospecção/Equipe). A
+sensação de "fora do padrão" que o usuário reportou não vinha de CSS
+divergente nenhum - vinha de estar num item de menu separado, fora do
+contexto financeiro. Resolvido só com reorganização estrutural (pill
+switcher dentro de Financeiro, mesmo padrão `.ops-tabs`/`.ops-tab` já
+usado em Operações/Eventos/Equipe no dashboard normal), sem tocar no
+CSS do botão em si.
+
+**Comunicação em Configurações**: aqui apareceu a parte mais
+interessante da investigação. Configurações do painel interno só
+tinha status agregado READ-ONLY de credenciais de PLATAFORMA (App
+Meta, Beds24 master, etc) - zero conectividade por conta, mesmo "Meu
+chat" já rodando em cima de uma hospedagem real marcada como
+"assistente comercial" (`hostels.ai_persona='software'`). Pra
+conectar o WhatsApp dessa conta hoje, o usuário precisava ir em
+`dashboard.html` de outra tela - sem link nem atalho dentro do próprio
+painel interno.
+
+Solução com dois mecanismos DIFERENTES, por uma limitação técnica real
+descoberta na investigação: o login do `admin.html` não carrega
+`hostel_id` de tenant nenhum na sessão (`@require_stayflow_admin`,
+diferente de `@require_permission` que dashboard.html usa) - não dá
+pra chamar `/settings/*` direto de lá. Resolvido criando rotas NOVAS
+e FINAS em `routes/stayflow_admin.py`
+(`/stayflow-admin/software-persona/*`) que resolvem o hostel fixo
+internamente (`get_hostel_id_by_ai_persona("software")`) e chamam as
+MESMAS funções que `routes/settings.py` já usa - zero lógica de
+negócio duplicada, só a camada de autorização muda.
+
+Mas WhatsApp e Facebook/Instagram não puderam usar exatamente o mesmo
+mecanismo: WhatsApp Embedded Signup roda via `FB.login()` direto no
+navegador (SDK JS), sem precisar de nenhum `redirect_uri` registrado
+na Meta - dá pra reproduzir 100% dentro do `admin.html`, sem sair da
+tela, nova rota espelhando `/settings/whatsapp/embedded-signup`.
+Facebook/Instagram usam OAuth com redirect DE VERDADE pra Meta, e o
+callback é uma URL fixa já registrada no painel de developer (não dá
+pra duplicar sem reconfigurar o app lá, mudança externa fora do que dá
+pra fazer só por código). Solução: o botão "Conectar" chama
+`/stayflow-admin/impersonate` (mecanismo do Hub que já existia) pra
+"entrar" na conta persona, e navega pro fluxo OAuth normal - ao
+terminar, o usuário cai no dashboard da conta impersonada, com o
+banner "Sair da visualização" já existente pra voltar. Não é tão
+direto quanto o WhatsApp, mas ainda resolve o pedido de "clique em vez
+de colar token manualmente", reaproveitando um mecanismo de navegação
+que o usuário já conhece do Hub.
+
+De quebra, corrigido: o badge de despesa vencida/vencendo
+(`expensesDueBadge`) migrou do antigo botão de menu "Despesas" (que
+deixou de existir) pro botão "Financeiro".
+
+Testado: `python -c "import app"` sem erro após as rotas novas;
+funções de banco por trás das rotas testadas com banco isolado
+(marcar/ler/limpar persona, WhatsApp, Facebook - todos batendo
+exatamente com o esperado); `tools/check_i18n_parity.py` confirmando
+paridade das 16 chaves novas de Comunicação + 1 de Financeiro nos 11
+idiomas do `ADMIN_I18N`; checagem de balanceamento de chaves `{}` no
+arquivo inteiro (HTML+JS misturado) sem erro.
