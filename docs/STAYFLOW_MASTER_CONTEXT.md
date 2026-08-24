@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.60.0
+\*\*Versão:\*\* 1.63.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 22/08/2026
+\*\*Última atualização:\*\* 24/08/2026
 
 
 
@@ -188,6 +188,9 @@
 | 1.58.0 | 23/08/2026 | Oficial | Consolidação da arquitetura de deploy do frontend, sexto item grande da lista pós-auditoria — resolve a dívida técnica registrada desde a v1.4.0 (cópia manual do frontend pra dentro do repositório do backend). `HostelBot/StayFlow---Site/` (a cópia que o Render de fato publica, já que ele builda um repositório só por serviço) deixou de ser uma pasta com arquivos copiados à mão (`cp`/`xcopy`/`robocopy`) e virou um `git subtree` do repositório `StayFlow---Site` — sincronizar passa a ser um comando único (`bash sync_frontend.sh`, novo, wrapper de `git subtree pull --squash`), sem risco de esquecer de copiar algum arquivo. Também removida uma terceira cópia órfã (`HostelBot/admin.html`, na raiz do repositório do backend, fora de `StayFlow---Site/`) — versão antiga, não referenciada por nenhuma rota do Flask (que serve tudo via `FRONTEND_DIR`), resíduo de uma estrutura anterior. `HostelBot` ganhou `.gitattributes` (`eol=lf`) pra eliminar ruído de diff causado pela normalização de quebra de linha que o `git checkout` aplica ao trazer o subtree (CRLF), diferente do que a cópia manual antiga preservava por acidente. Verificado com `diff` recursivo (ignorando só quebra de linha) que o conteúdo do subtree é byte-idêntico ao canônico, e que o Flask continua importando e servindo `FRONTEND_DIR` normalmente — nenhuma configuração do Render precisou mudar, o caminho servido continua o mesmo de sempre. Fora de escopo, deliberadamente: separar o frontend como Static Site próprio do Render (a solução "definitiva" do Roadmap) — envolveria cookies de sessão cross-domain, CORS e reconfiguração do escopo do Service Worker, risco real demais pra pilotos reais ativos agora, pra um ganho que o subtree já entrega sem mexer em topologia de produção. |
 | 1.59.0 | 23/08/2026 | Oficial | Billing Fase 2 — cobrança recorrente automática da própria assinatura StayFlow, sétimo item grande da lista pós-auditoria, resolvendo a única frente de Billing que ainda era 100% manual/honra (`payment_processor`/`processor_customer_id`/`processor_subscription_id` existiam como schema stub desde a Fase 1, nunca escritos por ninguém). Decisão de processador: Mercado Pago (API `preapproval`, assinatura recorrente nativa), não Stripe — motivo prático, não só técnico: Stripe não abre conta padrão pra recebedor domiciliado na Argentina (o monotributo do usuário), o que inviabilizaria receber o dinheiro de verdade. Usa uma credencial NOVA e separada (`MERCADOPAGO_PLATFORM_ACCESS_TOKEN`, a conta MP da própria StayFlow) — diferente da credencial OAuth do Split guest-facing (`MERCADOPAGO_CLIENT_ID`/`SECRET`, por-hostel), já que aqui é a StayFlow recebendo do hostel, direção de dinheiro oposta à do Split. Novo `services/mercadopago_billing_service.py` (`create_preapproval`/`get_preapproval`/`cancel_preapproval`/`get_authorized_payment`), novas rotas `POST /billing/subscribe` (gera o link de checkout), `GET /billing/subscribe/return` (retorno pós-checkout) e `POST /billing/cancel`; novo webhook `POST /webhook/mercadopago-billing` (idempotência própria via `mp_billing_webhook_events`, separada de `mp_webhook_events` do Split) tratando tanto `subscription_preapproval` (autorização/cancelamento) quanto `subscription_authorized_payment` (cobrança mensal individual, exige uma consulta a mais em `/authorized_payments/{id}` pra resolver a qual assinatura pertence). Preço cobrado em ARS (`PLAN_PRICES_ARS`, mantido manualmente — motor de câmbio automático continua fora de escopo, dívida separada e já conhecida). Novo laço em `app.py` (`_billing_trial_expiration_loop`, roda a cada hora) marca `past_due` quem terminou o trial de 30 dias sem nunca ter assinado (`database.expire_stale_trials()`) — decisão explícita de escopo: isso é só bookkeeping, NÃO bloqueia nenhuma rota/feature por inadimplência nesta rodada, risco considerado alto demais de derrubar um piloto real (Hotel Camelo, rede do Miguel Seda) por engano numa primeira versão; trava de acesso fica pra uma decisão separada e explícita depois que a cobrança em si estiver validada em produção. UI nova em Configurações → Billing: botão "Assinar agora" (quando sem assinatura ativa) ou "Cancelar assinatura" (quando ativa), tratamento de retorno via `?billing_return=1` (mesmo padrão genérico já usado pelas integrações OAuth). Pré-requisito externo pra funcionar em produção (mesmo tipo de bloqueio já registrado pro WhatsApp Embedded Signup e pro App Review do Instagram): usuário precisa gerar um Access Token de produção na própria conta Mercado Pago dele. |
 | 1.60.0 | 23/08/2026 | Oficial | Oitavo item da lista pós-auditoria (remoção do `unsafe-inline` do CSP) reavaliado com números concretos e a decisão de v1.39.0 CONFIRMADA, não esquecida — sem mudança de código. Contagem atual: ~341 atributos de evento inline (`onclick`/`onchange`/`onsubmit`/`oninput`/`onkeydown`, 81% em `dashboard.html` com 10.881 linhas, 17% em `admin.html`), crescido de ~186 desde a v1.39.0 (confirma que o custo só aumenta com o tempo); ~990 atributos `style=` inline (82% em `dashboard.html`). Achado técnico novo (não estava registrado antes): por especificação CSP nível 2+, um navegador que entende `'nonce-...'` em `script-src` IGNORA `'unsafe-inline'` na mesma diretiva — não existe migração incremental possível (nonce só nos poucos `<script>` inline quebraria todos os `onclick` de uma vez em navegador moderno); `'unsafe-hashes'` (CSP3) não resolve `style-src` porque boa parte dos 990 atributos é gerada dinamicamente via JS, invalidando hash estático. Decisão: continua sendo defesa em profundidade sobre um vetor que `connect-src 'self'` já fecha (o mais grave, exfiltração via XSS) — não vale o risco de regressão espalhada num arquivo de quase 11 mil linhas sem capacidade de teste visual, sem demanda real (ex: cliente enterprise exigindo auditoria formal) pra justificar agora. Ver seção "Decisão permanente registrada" (Capítulo 16) pra o registro completo. |
+| 1.61.0 | 23/08/2026 | Oficial | Nono item da lista pós-auditoria (idiomas novos) — primeira leva: japonês e italiano adicionados aos 3 dicionários i18n (landing pública, Dashboard, painel interno `ADMIN_I18N`) — 1.341 chaves por idioma (90 + 1.028 + 223), terminologia de hotelaria revisada por comparação com os blocos `en`/`pt` existentes, placeholders e tags HTML preservados. `assets/js/i18n-core.js` (`SUPPORTED_LANGS`, detecção por `navigator.language`) e os 3 seletores de idioma hardcoded (`index.html`, `dashboard.html`, `admin.html`) atualizados manualmente — não é genérico a partir do dicionário, cada idioma novo exige essas 4 edições pontuais além da tradução em si. Criado `tools/check_i18n_parity.py`, rede de segurança automática que confere paridade de chaves entre todos os idiomas nos 3 dicionários (antes era só disciplina manual) — ver seção 16.35. Usuário pediu, na sequência, mais 4 idiomas (chinês, russo, coreano, holandês) — em andamento, registrado quando concluído. |
+| 1.62.0 | 24/08/2026 | Oficial | Conclusão do item "idiomas novos" — chinês (`zh`), russo (`ru`), coreano (`ko`) e holandês (`nl`) adicionados aos mesmos 3 dicionários (1.341 chaves cada), completando um total de 6 idiomas novos nesta rodada (ja/it/zh/ru/ko/nl), 11 idiomas suportados ao todo. Traduzido via agentes em background, um por idioma, em sequência (não em paralelo, pra evitar conflito de edição concorrente nos mesmos 3 arquivos) — dois agentes esbarraram em limite de sessão no meio do trabalho e precisaram ser retomados, sem perda de progresso (`tools/check_i18n_parity.py` confirmou exatamente onde cada um tinha parado antes de retomar). Corrigida nesta versão uma alegação falsa que tinha entrado na documentação da v1.61.0 por um dos agentes de tradução (escreveu documentação por conta própria, fora do escopo pedido): dizia que o seletor de idioma "não precisou de mudança de código" — falso, `SUPPORTED_LANGS` e os 3 dropdowns HTML são hardcoded e foram editados manualmente pra cada idioma novo. Árabe/hebraico permanecem deliberadamente fora (RTL, exigem CSS de layout espelhado). Ver seção 16.35 (reescrita, consolidada). |
+| 1.63.0 | 24/08/2026 | Oficial | Dashboard de métricas de chat por período — décimo item da lista pós-auditoria, resolvendo o gap confirmado entre `routes/executive.py`/módulo de Relatórios (só totais acumulados, sem série temporal) e o que a documentação descrevia. Novo parâmetro `?period=daily\|weekly\|monthly` em `/reports`, nova chave `chat_activity` na resposta (mensagens recebidas do hóspede, conversas distintas, conversões — reaproveitando o mesmo proxy de conversão já usado no funil existente, `reservations.status='confirmed'`, já que `opportunities.status` nunca muda de `'open'` no código atual). Gráfico em Canvas nativo na aba Relatórios, mesmo estilo já usado no painel interno (`admin.html::renderGrowthChart`) — sem introduzir biblioteca de gráfico nova. `statistics.html` (página órfã, dado fake) removida de brinde. Ver seção 16.36. |
 
 
 
@@ -7507,6 +7510,164 @@ recadastrada manualmente).
 
 
 
+\## 16.35 Seis idiomas novos nos dicionários i18n (ja/it/zh/ru/ko/nl)
+
+
+
+\*\*Status:\*\* Implementado e validado (23-24/08/2026, versões 1.61.0 a
+1.62.0). Pedido inicial era só japonês e italiano; usuário lembrou de
+um pedido anterior de "encher de idiomas" e pediu mais 4 (chinês
+mandarim simplificado, russo, coreano, holandês) na mesma sessão.
+Árabe/hebraico (RTL) ficaram deliberadamente fora, registrados como
+pendência à parte — exigem trabalho de CSS de layout espelhado
+(`dir="rtl"`), não é só tradução de texto.
+
+
+
+\### Objetivo
+
+
+
+Atender a pendência "idiomas novos" registrada na auditoria de
+22/08/2026 (Sessão 12) — os 3 dicionários de tradução do produto
+(landing pública, Dashboard das hospedagens, painel interno da própria
+StayFlow) tinham 5 idiomas (pt/en/es/fr/de) desde a v1.12.0 e nunca
+tinham sido expandidos, apesar de pilotos e leads internacionais fora
+desses 5 mercados.
+
+
+
+\### O que foi adicionado
+
+
+
+\- \*\*Japonês (`ja`), italiano (`it`), chinês (`zh`), russo (`ru`),
+  coreano (`ko`) e holandês (`nl`)\*\*, nos 3 dicionários:
+  `assets/js/i18n-landing-data.js` (90 chaves), `assets/js/i18n-dashboard-data.js`
+  (1.028 chaves à época da tradução, mais 9 chaves novas da feature de
+  métricas de chat adicionadas depois — ver 16.36) e o objeto
+  `ADMIN\_I18N` dentro de `admin.html` (223 chaves) — total de 1.341
+  chaves por idioma, ~8.046 chaves novas ao todo pros 6 idiomas juntos;
+
+\- terminologia de hotelaria/PMS revisada por comparação direta com os
+  blocos `en`/`pt` existentes em cada tradução (ex.: "Modalidade de
+  quarto" vira "Categoria camera" em italiano, "客室カテゴリー" em
+  japonês, "객실 유형" em coreano; "Beliche" vira "Letto a
+  castello"/"二段ベッド"/"2층 침대"), não tradução literal palavra por
+  palavra;
+
+\- placeholders (`{price}`, `{days}`, `{count}` etc.) e tags HTML
+  (`<strong>`, `<br>`) preservados exatamente iguais em todo idioma,
+  só o texto muda;
+
+\- cada idioma usa a convenção de aspas nativa apropriada onde o
+  original tem aspas internas (japonês: 「」; chinês/coreano: aspas
+  retas escapadas, consistente com o resto do arquivo; russo: aspas
+  angulares « » quando aplicável);
+
+\- \*\*correção de um erro registrado nesta mesma seção antes\*\*: o
+  seletor de idioma NÃO é genérico — `assets/js/i18n-core.js` tem
+  `SUPPORTED\_LANGS` hardcoded (ganhou os 6 códigos novos), e os 3
+  dropdowns visíveis (`index.html`, `dashboard.html`, `admin.html`)
+  são blocos HTML fixos, sem nenhum vindo de array JS. Cada idioma
+  novo exigiu editar os 4 pontos manualmente (motor + 3 dropdowns),
+  além da tradução em si — a versão anterior desta nota dizia o
+  contrário por engano, já corrigida.
+
+
+
+\### Ferramenta nova: `tools/check\_i18n\_parity.py`
+
+
+
+Não existia nenhuma rede de segurança automática garantindo que todo
+idioma tivesse exatamente o mesmo conjunto de chaves nos 3 dicionários
+— a paridade era só disciplina manual, arriscada num arquivo de mais
+de 1.000 chaves por idioma. Script novo faz o parsing dos blocos de
+cada idioma (balanceamento de chaves `{}` que ignora chaves dentro de
+literais de string, pra não confundir `"ARS {price}/mês"` com uma
+chave de bloco), extrai o conjunto de chaves de cada um e falha
+(código de saída 1) se qualquer idioma tiver chave faltando ou
+sobrando em qualquer um dos 3 arquivos. Uso: `python
+tools/check\_i18n\_parity.py`. Deve ser rodado sempre que um idioma novo
+for adicionado ou uma chave nova for criada em qualquer dicionário.
+
+
+
+\---
+
+
+
+\## 16.36 Dashboard de métricas de chat por período
+
+
+
+\*\*Status:\*\* Implementado e validado (24/08/2026, versão 1.63.0).
+
+
+
+\### Objetivo
+
+
+
+Item motivado por comparação competitiva com a Aoki (ia.aoki,
+concorrente argentino de chatbot IA multi-vertical), que mostra
+"mensagens recebidas / conversas / conversões" com filtro por período
+— gap real confirmado no código: `routes/executive.py` e o módulo de
+Relatórios (`get\_reports\_summary`) só tinham totais acumulados desde
+sempre, sem nenhuma agregação por tempo, apesar da documentação
+descrever o funil/receita por canal como "implementado" (era, mas sem
+quebra temporal).
+
+
+
+\### O que foi adicionado
+
+
+
+\- `database.get\_reports\_summary(hostel\_id, period="daily")` ganha
+  parâmetro de período (`daily`/`weekly`/`monthly`, janela fixa de
+  14 dias / 12 semanas / 12 meses respectivamente) e uma chave nova na
+  resposta JSON, `chat\_activity`: lista de `{bucket, messages\_received,
+  conversations, conversions}` por período, usando `strftime` do
+  SQLite pra agrupar (mesmo padrão já usado em
+  `get\_account\_growth\_by\_month`, painel interno);
+
+\- `messages\_received` = `COUNT(*)` de `messages` com `sender='user'`
+  (hóspede) — confirmado que os 3 valores reais gravados em
+  `messages.sender` são `'user'`/`'assistant'`/`'staff'` (lidos direto
+  dos 2 pontos de `INSERT INTO messages` e seus chamadores, não
+  documentação desatualizada); `conversations` = conversas distintas
+  ativas no bucket; `conversions` reaproveita o MESMO proxy já usado
+  no funil existente (`reservations.status='confirmed'`), não um
+  conceito novo — `opportunities.status` nunca muda de `'open'` em
+  lugar nenhum do código hoje, não é sinal de conversão utilizável;
+
+\- `routes/reports.py` valida `?period=` contra os 3 valores aceitos
+  (400 se inválido);
+
+\- UI nova na aba Relatórios (`dashboard.html`): card "Atividade de
+  chat" com 3 botões de período e um gráfico em Canvas nativo (linha
+  com gradiente, 3 séries — mensagens/conversas/conversões), seguindo
+  o mesmo estilo já estabelecido em `admin.html::renderGrowthChart`
+  (painel interno) — não existia nenhuma biblioteca de gráfico
+  carregada em lugar nenhum do frontend, decisão deliberada de não
+  introduzir uma dependência nova só pra isso;
+
+\- `statistics.html` (página órfã, confirmado que só ela mesma se
+  referenciava, dado 100% hardcoded/fake, fora do design system,
+  padrão de navegação multi-página que não bate com a SPA real)
+  removida de brinde — mesmo perfil de órfãs já removidas na v1.53.0.
+
+
+
+Testado com dado real (hostel de teste isolado): contagem de mensagens
+por dia, conversas distintas e conversões batendo exatamente com
+`SELECT` manual equivalente; janela de período respeitada (mensagem de
+20 dias atrás corretamente excluída da janela diária de 14 dias).
+
+
+
 \## 16.18 Critério para atualização
 
 
@@ -9105,4 +9266,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.60.0\*\*
+\*\*Fim da Versão Oficial 1.63.0\*\*

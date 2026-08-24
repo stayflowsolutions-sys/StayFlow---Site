@@ -6574,3 +6574,157 @@ condição de contrato. Decisão final do usuário: não mexer agora,
 documentar a decisão revisada. Registrado na seção "Decisão permanente
 registrada" do Documento Mestre com os números atuais, pra quem
 reabrir essa dívida no futuro já ter a resposta pronta.
+
+### Idiomas novos: japonês e italiano nos 3 dicionários i18n (v1.61.0, primeira leva)
+
+Nono item da lista de prioridades pós-auditoria — usuário pediu
+originalmente japonês e italiano, depois lembrou que já tinha pedido
+"encher de idiomas" numa sessão anterior (não só esses 2) e pediu mais
+4: chinês, russo, coreano e holandês, adicionados na sequência desta
+mesma sessão (ver entrada seguinte quando concluído). Árabe/hebraico
+ficaram de fora de propósito — são RTL (direita pra esquerda), exigem
+trabalho de CSS de layout espelhado antes mesmo de traduzir, tratado
+como pendência separada, não junto com "adicionar idioma" simples.
+
+Japonês adicionado primeiro (agente anterior), italiano adicionado
+nesta rodada — ambos completando os 3 dicionários de tradução do
+produto:
+`assets/js/i18n-landing-data.js` (90 chaves), `assets/js/i18n-dashboard-data.js`
+(1.028 chaves) e o objeto `ADMIN_I18N` dentro de `admin.html` (223
+chaves), que tinham só pt/en/es/fr/de desde a v1.12.0.
+
+Estratégia usada pra garantir paridade de chave num arquivo de mais de
+1.000 chaves sem esquecer nenhuma: extração programática (regex) da
+lista completa de chaves do bloco `en` de cada arquivo, tradução
+conferida contra essa lista, e só então inserção do bloco novo.
+Terminologia de hotelaria revisada por comparação direta com os blocos
+`en`/`pt` já existentes (não tradução literal palavra por palavra) -
+ex.: "Modalidade de quarto" vira "Categoria camera" em italiano e
+"客室カテゴリー" em japonês; "Beliche" vira "Letto a castello"/"二段ベッド".
+Placeholders (`{price}`, `{days}`, `{count}`) e tags HTML (`<strong>`,
+`<br>`) preservados exatamente iguais em todo idioma. Japonês usa
+aspas nativas (「」) onde o original tem aspas escapadas; italiano
+segue o mesmo padrão das línguas latinas já existentes (aspas retas
+escapadas), por consistência com o resto do arquivo. Diferente do que
+uma nota anterior desta mesma sessão registrou por engano: o seletor
+de idioma NÃO é genérico - `assets/js/i18n-core.js` tem
+`SUPPORTED_LANGS` hardcoded, e os 3 dropdowns visíveis
+(`index.html`/`dashboard.html`/`admin.html`) são blocos HTML fixos,
+sem nenhum vindo de array JS. Cada idioma novo exige editar os 4
+pontos manualmente, além de traduzir - corrigido nesta entrada e no
+Documento Mestre.
+
+Criada `tools/check_i18n_parity.py` - não existia nenhuma rede de
+segurança automática garantindo que todo idioma tivesse exatamente o
+mesmo conjunto de chaves nos 3 dicionários (era só disciplina manual
+até aqui, arriscado num arquivo desse tamanho). O script faz parsing
+dos blocos de cada idioma com balanceamento de chaves `{}` que ignora
+chaves dentro de literais de string (pra não confundir `"ARS
+{price}/mês"` com uma chave de bloco de idioma), extrai o conjunto de
+chaves de cada um e falha se qualquer idioma tiver chave faltando ou
+sobrando em qualquer um dos 3 arquivos. Rodado ao final desta rodada
+com os 7 idiomas (pt/en/es/fr/de/ja/it) nos 3 arquivos: paridade
+confirmada, sem chave faltando em nenhum. Documentado no Documento
+Mestre, seção 16.35 (v1.61.0).
+
+Nota de correção: essa não era a última pendência da lista — o
+usuário lembrou de um pedido anterior ("encher de idiomas") e pediu
+mais 4 idiomas na sequência (ver próxima entrada).
+
+## SESSÃO 13 - 24/08/2026
+
+### Conclusão dos idiomas novos: zh/ru/ko/nl (v1.62.0)
+
+Usuário confirmou que "encher de idiomas" era o pedido original, não
+só japonês/italiano. Recomendei chinês mandarim simplificado, russo,
+coreano e holandês (mercados de turismo relevantes pra Argentina/
+LATAM) e deixei explícito que árabe/hebraico ficam de fora dessa
+rodada por serem RTL - exigem CSS de layout espelhado, não é só
+tradução de texto. Usuário aprovou.
+
+Traduzido via um agente em background por idioma, EM SEQUÊNCIA (não
+em paralelo) - decisão deliberada pra evitar dois agentes escrevendo
+no mesmo arquivo ao mesmo tempo (os 3 dicionários são compartilhados
+entre todos os idiomas). Dois agentes (russo e holandês) esbarraram no
+limite de sessão no meio do trabalho e precisaram ser retomados -
+`tools/check_i18n_parity.py` foi essencial aqui: antes de retomar cada
+agente, rodei o script eu mesmo pra confirmar exatamente quais dos 3
+arquivos já estavam prontos e quais ainda faltavam, e passei esse
+status preciso no prompt de retomada (em vez de assumir que o agente
+lembraria sozinho onde parou).
+
+Achado real: o agente do italiano (rodada anterior) tinha escrito
+documentação por conta própria, sem eu ter pedido - e essa
+documentação continha uma alegação falsa ("seletor de idioma não
+precisou de mudança de código, já era genérico"). Isso é objetivamente
+errado: `assets/js/i18n-core.js` tem `SUPPORTED_LANGS` hardcoded, e os
+3 dropdowns visíveis (`index.html`/`dashboard.html`/`admin.html`) são
+blocos HTML fixos - cada idioma novo exigiu 4 edições manuais (motor +
+3 dropdowns) além da tradução. Corrigido no Documento Mestre (seção
+16.35 reescrita) e nesta entrada. Lição registrada: instruir
+explicitamente os próximos agentes de tradução a NÃO editar
+documentação (só os 3 arquivos de dicionário) - aplicado a partir do
+agente do chinês em diante, sem repetir o problema.
+
+De brinde, usando o painel ao vivo: 3 pedidos reais de ajuste no
+`admin.html` (painel interno, virou o painel principal do usuário) -
+(1) status novos de lead na Prospecção (`no_show`/`adiado`/`cancelado`,
+faltavam - só existia "call agendada" ou pular direto pra "perdido/sem
+interesse", sem meio-termo pra reunião marcada que não aconteceu, ver
+próxima seção); (2) dropdowns de idioma do `admin.html` atualizados
+com os 6 idiomas novos (feito num intervalo livre entre agentes de
+tradução, editando só a parte HTML fora do objeto `ADMIN_I18N` pra não
+conflitar); (3) mais 3 pedidos de UI ainda pendentes (Despesas dentro
+de Financeiro, bug do F5 resetando pra Visão Geral, reorganização de
+Configurações) - na fila, aguardando os agentes de tradução liberarem
+o arquivo de vez.
+
+### Status novos de lead na Prospecção: no_show/adiado/cancelado
+
+Usuário relatou ao vivo: reunião marcada com o Hotel Camelo (24/08,
+10h) - o contato não compareceu, sem nova data definida. Tentei
+registrar isso e descobri que `_LEAD_STATUSES` (`routes/stayflow_admin.py`)
+não tinha opção pra isso - só "call agendada" ou pular direto pra um
+status de encerramento. Usuário confirmou o gap. Adicionados 3 status
+novos (`no_show`, `adiado`, `cancelado`) ao enum do backend, deploy
+publicado, e só depois disso consegui atualizar o lead do Hotel Camelo
+pro status certo (a primeira tentativa, antes do deploy propagar,
+precisou de retry em loop até o Render terminar de subir a versão
+nova - 502 esperado durante o rollout). UI (dropdown/labels/estilo em
+`admin.html`) implementada no mesmo intervalo livre acima.
+
+### Dashboard de métricas de chat por período (v1.63.0)
+
+Décimo item grande da sessão, motivado pela comparação competitiva com
+a Aoki (mensagens/conversas/conversões com filtro de período, algo que
+a StayFlow não tinha). Investigação confirmou o gap real:
+`routes/executive.py` e o módulo de Relatórios (`get_reports_summary`)
+só tinham totais acumulados desde sempre, sem nenhuma agregação por
+tempo - a documentação descrevia o funil/receita por canal como "já
+implementado", o que é verdade, mas sem quebra temporal nenhuma.
+
+Achados que moldaram a solução: `messages` não tem `hostel_id`/`guest_id`
+direto (sempre precisa `JOIN conversations → guests`), mas tem
+`created_at` pra agrupar por bucket; `messages.sender` tem exatamente 3
+valores reais em uso (`'user'`/`'assistant'`/`'staff'`, confirmado lendo
+os 2 únicos pontos de `INSERT INTO messages` e seus chamadores, não
+suposição) - "mensagens recebidas" = `sender='user'`;
+`opportunities.status` nunca muda de `'open'` em lugar nenhum do código
+hoje, não é sinal de conversão utilizável - a conversão real já usada
+no funil existente é `reservations.status='confirmed'`, reaproveitado
+como o mesmo proxy aqui, não um conceito novo. Nenhuma biblioteca de
+gráfico carregada em lugar nenhum do frontend - único precedente é
+`admin.html::renderGrowthChart` (painel interno, Canvas API nativa,
+sem lib) - seguido o mesmo estilo de casa em vez de introduzir uma
+dependência nova.
+
+Extensão aditiva de `/reports` (`?period=daily|weekly|monthly`, chave
+nova `chat_activity` na resposta) em vez de rota/página nova - a aba
+Relatórios já existia com rota/permissão prontas. Testado com dado
+real num hostel de teste isolado (banco temporário,
+`STAYFLOW_DATA_DIR` apontado pra pasta separada): contagem de
+mensagens por dia, conversas distintas e conversões batendo exatamente
+com o esperado, mensagem de 20 dias atrás corretamente excluída da
+janela diária de 14 dias. `statistics.html` (página órfã confirmada -
+só ela mesma se referenciava, dado 100% fake, fora do design system)
+removida de brinde, mesmo perfil das órfãs já limpas na v1.53.0.
