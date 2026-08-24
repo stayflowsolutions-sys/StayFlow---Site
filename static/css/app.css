@@ -202,6 +202,11 @@ body::before{
 .hostel-selector-option.active{
   background:rgba(11,132,255,.14);
 }
+.reports-period-btn.active{
+  background:rgba(11,132,255,.24);
+  border-color:#0b84ff55;
+  color:#fff;
+}
 .hostel-selector-option .option-name{
   font-weight:800;
   font-size:13px;

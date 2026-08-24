@@ -5,7 +5,7 @@
 // idioma, pra nao duplicar a mesma engine em 2 lugares.
 
 (function () {
-  const SUPPORTED_LANGS = ["pt", "en", "es", "fr", "de"];
+  const SUPPORTED_LANGS = ["pt", "en", "es", "fr", "de", "ja", "it", "zh", "ru", "ko", "nl"];
   const STORAGE_KEY = "stayflow_lang";
 
   function getInitialLang() {
@@ -20,6 +20,12 @@
     if (browser.startsWith("es")) return "es";
     if (browser.startsWith("fr")) return "fr";
     if (browser.startsWith("de")) return "de";
+    if (browser.startsWith("ja")) return "ja";
+    if (browser.startsWith("it")) return "it";
+    if (browser.startsWith("zh")) return "zh";
+    if (browser.startsWith("ru")) return "ru";
+    if (browser.startsWith("ko")) return "ko";
+    if (browser.startsWith("nl")) return "nl";
     return "en";
   }
 

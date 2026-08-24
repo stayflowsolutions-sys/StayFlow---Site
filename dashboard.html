@@ -879,6 +879,12 @@ async function deleteRoleConfirm(roleId){
         <button type="button" class="hostel-selector-option" data-lang="es">Español</button>
         <button type="button" class="hostel-selector-option" data-lang="fr">Français</button>
         <button type="button" class="hostel-selector-option" data-lang="de">Deutsch</button>
+        <button type="button" class="hostel-selector-option" data-lang="ja">日本語</button>
+        <button type="button" class="hostel-selector-option" data-lang="it">Italiano</button>
+        <button type="button" class="hostel-selector-option" data-lang="zh">中文</button>
+        <button type="button" class="hostel-selector-option" data-lang="ru">Русский</button>
+        <button type="button" class="hostel-selector-option" data-lang="ko">한국어</button>
+        <button type="button" class="hostel-selector-option" data-lang="nl">Nederlands</button>
       </div>
     </div>
 
@@ -1833,6 +1839,29 @@ async function deleteRoleConfirm(roleId){
           <!-- preenchido por live -->
         </tbody>
       </table>
+    </div>
+
+    <div class="card span-12">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+        <h2 style="margin:0" data-i18n="reports.chatActivityTitle">💬 Atividade de chat</h2>
+        <div id="reportsPeriodSelector" style="display:flex;gap:6px">
+          <button type="button" class="btn secondary reports-period-btn active" data-period="daily" onclick="setReportsPeriod('daily')" data-i18n="reports.period.daily">Diário</button>
+          <button type="button" class="btn secondary reports-period-btn" data-period="weekly" onclick="setReportsPeriod('weekly')" data-i18n="reports.period.weekly">Semanal</button>
+          <button type="button" class="btn secondary reports-period-btn" data-period="monthly" onclick="setReportsPeriod('monthly')" data-i18n="reports.period.monthly">Mensal</button>
+        </div>
+      </div>
+      <div class="sf-empty" id="reportsChatActivityEmpty">
+        <div>
+          <strong data-i18n="reports.chatActivityEmptyTitle">Nenhuma atividade de chat no período.</strong>
+          <span data-i18n="reports.chatActivityEmptyDesc">Assim que houver mensagens de hóspedes, o gráfico mostra mensagens recebidas, conversas e conversões ao longo do tempo.</span>
+        </div>
+      </div>
+      <div id="reportsChatActivityLegend" style="display:none;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;color:var(--muted)">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#23d2ff;margin-right:5px"></span><span data-i18n="reports.chatActivityLegend.messages">Mensagens recebidas</span></span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ffb020;margin-right:5px"></span><span data-i18n="reports.chatActivityLegend.conversations">Conversas</span></span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3ddc97;margin-right:5px"></span><span data-i18n="reports.chatActivityLegend.conversions">Conversões</span></span>
+      </div>
+      <canvas id="reportsChatActivityCanvas" style="width:100%;height:220px;display:none"></canvas>
     </div>
 
     <div class="card span-12">
@@ -6810,9 +6839,19 @@ window.submitReturnFromLaundry = async function(event){
 
 // ===== RELATÓRIOS: /reports =====
 
+window._reportsPeriod = "daily";
+
+window.setReportsPeriod = function(period){
+  window._reportsPeriod = period;
+  document.querySelectorAll(".reports-period-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-period") === period);
+  });
+  loadReports();
+};
+
 async function loadReports(){
   try{
-    const res = await fetch("/reports", { credentials: "same-origin" });
+    const res = await fetch(`/reports?period=${window._reportsPeriod}`, { credentials: "same-origin" });
     if(!res.ok) return;
 
     const data = await res.json();
@@ -6855,10 +6894,117 @@ async function loadReports(){
       }
     }
 
+    // Atividade de chat por periodo
+    const chatEmpty = document.getElementById("reportsChatActivityEmpty");
+    const chatLegend = document.getElementById("reportsChatActivityLegend");
+    const chatCanvas = document.getElementById("reportsChatActivityCanvas");
+    const chatActivity = data.chat_activity || [];
+
+    if(chatActivity.length){
+      if(chatEmpty) chatEmpty.style.display = "none";
+      if(chatLegend) chatLegend.style.display = "flex";
+      if(chatCanvas) chatCanvas.style.display = "block";
+      window._reportsChatActivityData = chatActivity;
+      renderChatActivityChart(chatActivity);
+    }else{
+      if(chatEmpty) chatEmpty.style.display = "flex";
+      if(chatLegend) chatLegend.style.display = "none";
+      if(chatCanvas) chatCanvas.style.display = "none";
+    }
+
   }catch(e){
     console.warn("Erro ao carregar /reports:", e);
   }
 }
+
+// Grafico de linha simples em Canvas nativo (mesmo estilo do
+// growthCanvas do painel interno da StayFlow) - 3 series finas
+// (mensagens recebidas/conversas/conversoes) sem biblioteca externa,
+// ja que nenhuma pagina do dashboard do cliente carrega chart lib.
+function renderChatActivityChart(data){
+  const canvas = document.getElementById("reportsChatActivityCanvas");
+  if(!canvas || !data || !data.length) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || canvas.parentElement.clientWidth;
+  const cssH = 220;
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const padL = 32, padR = 12, padT = 14, padB = 24;
+  const plotW = cssW - padL - padR;
+  const plotH = cssH - padT - padB;
+
+  const maxValue = Math.max(
+    ...data.map(d => Math.max(d.messages_received, d.conversations, d.conversions)),
+    1
+  );
+
+  const xForIndex = i => padL + (data.length <= 1 ? plotW / 2 : plotW * i / (data.length - 1));
+  const yForValue = v => padT + plotH - (plotH * v / maxValue);
+
+  // Grade horizontal leve + rotulo do eixo Y
+  ctx.strokeStyle = "#ffffff0e";
+  ctx.lineWidth = 1;
+  ctx.fillStyle = "#65758b";
+  ctx.font = "10.5px Inter, sans-serif";
+  for(let i = 0; i <= 3; i++){
+    const y = padT + plotH - (plotH * i / 3);
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(padL + plotW, y);
+    ctx.stroke();
+    ctx.fillText(String(Math.round(maxValue * i / 3)), 2, y + 3);
+  }
+
+  // Serie principal (mensagens recebidas) com area preenchida em gradiente
+  ctx.beginPath();
+  data.forEach((d, i) => {
+    const x = xForIndex(i), y = yForValue(d.messages_received);
+    if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.lineTo(xForIndex(data.length - 1), padT + plotH);
+  ctx.lineTo(padL, padT + plotH);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+  grad.addColorStop(0, "#23d2ff33");
+  grad.addColorStop(1, "#23d2ff02");
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  function drawLine(getValue, color){
+    ctx.beginPath();
+    data.forEach((d, i) => {
+      const x = xForIndex(i), y = yForValue(getValue(d));
+      if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  drawLine(d => d.messages_received, "#23d2ff");
+  drawLine(d => d.conversations, "#ffb020");
+  drawLine(d => d.conversions, "#3ddc97");
+
+  // Rotulo do eixo X: so mostra alguns buckets (inicio, meio, fim) pra
+  // nao empilhar texto quando tem muitos pontos (ex: 84 dias semanais).
+  ctx.fillStyle = "#65758b";
+  ctx.font = "10px Inter, sans-serif";
+  const labelIndexes = new Set([0, Math.floor((data.length - 1) / 2), data.length - 1]);
+  labelIndexes.forEach(i => {
+    if(i < 0 || i >= data.length) return;
+    const x = xForIndex(i);
+    ctx.fillText(data[i].bucket, Math.max(padL, x - 20), cssH - 6);
+  });
+}
+
+window.addEventListener("resize", () => {
+  if(window._reportsChatActivityData) renderChatActivityChart(window._reportsChatActivityData);
+});
 
 // ===== FINANCEIRO: /finance =====
 
