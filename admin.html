@@ -374,6 +374,7 @@
       <div class="ops-tabs">
         <button type="button" class="ops-tab active" data-finance-tab="overview" onclick="switchFinanceTab('overview')" data-i18n="finance.tab.overview">📊 Visão geral</button>
         <button type="button" class="ops-tab" data-finance-tab="expenses" onclick="switchFinanceTab('expenses')" data-i18n="nav.expenses">Despesas</button>
+        <button type="button" class="ops-tab" data-finance-tab="referral" onclick="switchFinanceTab('referral')" data-i18n="finance.tab.referral">🤝 Indicações</button>
       </div>
 
       <div id="financeTabOverview">
@@ -533,6 +534,44 @@
       <div class="sf-empty" id="expensesEmpty" style="display:none">
         <div><strong data-i18n="expenses.empty">Nenhuma despesa cadastrada.</strong></div>
       </div>
+      </div>
+
+      <div id="financeTabReferral" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+          <div class="section-title" style="margin:0" data-i18n="referral.section.title">Comissão de indicação</div>
+          <button type="button" class="btn" onclick="openCreateReferralPartnerForm()" data-i18n="referral.manualPartner.btn">+ Parceiro manual</button>
+        </div>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="referral.subtitle">Comissão recorrente devida a cada parceiro (hotel cliente ou promotor externo) por hotéis indicados que estão pagando assinatura — mesmo modelo de repasse manual do quadro acima.</p>
+
+        <div id="referralPartnerForm" class="card" style="display:none;margin-bottom:16px">
+          <div class="grid">
+            <div class="span-6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="referral.manualPartner.name">Nome</label>
+              <input type="text" id="referralPartnerName" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+            </div>
+            <div class="span-6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="referral.manualPartner.note">Nota de contato (opcional)</label>
+              <input type="text" id="referralPartnerContactNote" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+            </div>
+          </div>
+          <div id="referralPartnerFormMessage" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+            <button type="button" class="btn secondary" onclick="closeCreateReferralPartnerForm()" data-i18n="expenses.form.cancel">Cancelar</button>
+            <button type="button" class="btn" onclick="submitCreateReferralPartner()" data-i18n="expenses.form.save">Salvar</button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="table">
+            <thead>
+              <tr><th data-i18n="referral.table.partner">Parceiro</th><th data-i18n="referral.table.code">Código</th><th data-i18n="payouts.table.charges">Cobranças</th><th data-i18n="payouts.table.total">Total devido</th><th></th></tr>
+            </thead>
+            <tbody id="referralPayoutTableBody"></tbody>
+          </table>
+        </div>
+        <div class="sf-empty" id="referralPayoutEmpty" style="display:none">
+          <div><strong data-i18n="referral.empty">Nenhuma comissão de indicação pendente.</strong></div>
+        </div>
       </div>
     </section>
 
@@ -817,6 +856,17 @@
       "nav.overview": "Visão geral", "nav.chat": "Meu chat", "nav.support": "Suporte",
       "nav.properties": "Propriedades", "nav.finance": "Financeiro", "nav.ranking": "Ranking",
       "finance.tab.overview": "📊 Visão geral",
+      "finance.tab.referral": "🤝 Indicações",
+      "referral.section.title": "Comissão de indicação",
+      "referral.manualPartner.btn": "+ Parceiro manual",
+      "referral.subtitle": "Comissão recorrente devida a cada parceiro (hotel cliente ou promotor externo) por hotéis indicados que estão pagando assinatura — mesmo modelo de repasse manual do quadro acima.",
+      "referral.manualPartner.name": "Nome",
+      "referral.manualPartner.note": "Nota de contato (opcional)",
+      "referral.table.partner": "Parceiro",
+      "referral.table.code": "Código",
+      "referral.empty": "Nenhuma comissão de indicação pendente.",
+      "referral.manualPartner.nameRequired": "Nome é obrigatório.",
+      "referral.manualPartner.createdMsg": "Parceiro criado! Código de indicação",
       "config.section.communication": "Comunicação (canais do assistente comercial)",
       "settings.whatsapp.connectBtn": "Conectar via WhatsApp",
       "settings.whatsapp.summaryConnected": "✅ Conectado",
@@ -932,6 +982,17 @@
       "nav.overview": "Overview", "nav.chat": "My chat", "nav.support": "Support",
       "nav.properties": "Properties", "nav.finance": "Finance", "nav.ranking": "Ranking",
       "finance.tab.overview": "📊 Overview",
+      "finance.tab.referral": "🤝 Referrals",
+      "referral.section.title": "Referral commission",
+      "referral.manualPartner.btn": "+ Manual partner",
+      "referral.subtitle": "Recurring commission owed to each partner (client hotel or external promoter) for referred hotels currently paying a subscription — same manual payout model as the panel above.",
+      "referral.manualPartner.name": "Name",
+      "referral.manualPartner.note": "Contact note (optional)",
+      "referral.table.partner": "Partner",
+      "referral.table.code": "Code",
+      "referral.empty": "No referral commission pending.",
+      "referral.manualPartner.nameRequired": "Name is required.",
+      "referral.manualPartner.createdMsg": "Partner created! Referral code",
       "config.section.communication": "Communication (commercial assistant channels)",
       "settings.whatsapp.connectBtn": "Connect via WhatsApp",
       "settings.whatsapp.summaryConnected": "✅ Connected",
@@ -1047,6 +1108,17 @@
       "nav.overview": "Visión general", "nav.chat": "Mi chat", "nav.support": "Soporte",
       "nav.properties": "Propiedades", "nav.finance": "Finanzas", "nav.ranking": "Ranking",
       "finance.tab.overview": "📊 Visión general",
+      "finance.tab.referral": "🤝 Referidos",
+      "referral.section.title": "Comisión de referidos",
+      "referral.manualPartner.btn": "+ Parceiro manual",
+      "referral.subtitle": "Comisión recurrente adeudada a cada parceiro (hotel cliente o promotor externo) por hoteles referidos que están pagando una suscripción — mismo modelo de repase manual del cuadro de arriba.",
+      "referral.manualPartner.name": "Nombre",
+      "referral.manualPartner.note": "Nota de contacto (opcional)",
+      "referral.table.partner": "Parceiro",
+      "referral.table.code": "Código",
+      "referral.empty": "Ninguna comisión de referidos pendiente.",
+      "referral.manualPartner.nameRequired": "El nombre es obligatorio.",
+      "referral.manualPartner.createdMsg": "¡Parceiro creado! Código de referido",
       "config.section.communication": "Comunicación (canales del asistente comercial)",
       "settings.whatsapp.connectBtn": "Conectar vía WhatsApp",
       "settings.whatsapp.summaryConnected": "✅ Conectado",
@@ -1162,6 +1234,17 @@
       "nav.overview": "Vue d'ensemble", "nav.chat": "Mon chat", "nav.support": "Support",
       "nav.properties": "Propriétés", "nav.finance": "Finances", "nav.ranking": "Classement",
       "finance.tab.overview": "📊 Vue d'ensemble",
+      "finance.tab.referral": "🤝 Parrainages",
+      "referral.section.title": "Commission de parrainage",
+      "referral.manualPartner.btn": "+ Partenaire manuel",
+      "referral.subtitle": "Commission récurrente due à chaque partenaire (hôtel client ou promoteur externe) pour les hôtels parrainés qui paient actuellement un abonnement — même modèle de versement manuel que le tableau ci-dessus.",
+      "referral.manualPartner.name": "Nom",
+      "referral.manualPartner.note": "Note de contact (facultatif)",
+      "referral.table.partner": "Partenaire",
+      "referral.table.code": "Code",
+      "referral.empty": "Aucune commission de parrainage en attente.",
+      "referral.manualPartner.nameRequired": "Le nom est obligatoire.",
+      "referral.manualPartner.createdMsg": "Partenaire créé ! Code de parrainage",
       "config.section.communication": "Communication (canaux de l'assistant commercial)",
       "settings.whatsapp.connectBtn": "Connecter via WhatsApp",
       "settings.whatsapp.summaryConnected": "✅ Connecté",
@@ -1277,6 +1360,17 @@
       "nav.overview": "Übersicht", "nav.chat": "Mein Chat", "nav.support": "Support",
       "nav.properties": "Unterkünfte", "nav.finance": "Finanzen", "nav.ranking": "Rangliste",
       "finance.tab.overview": "📊 Übersicht",
+      "finance.tab.referral": "🤝 Empfehlungen",
+      "referral.section.title": "Empfehlungsprovision",
+      "referral.manualPartner.btn": "+ Manueller Partner",
+      "referral.subtitle": "Wiederkehrende Provision, die jedem Partner (Kundenhotel oder externer Promoter) für empfohlene Hotels geschuldet wird, die derzeit ein Abo bezahlen — gleiches manuelles Auszahlungsmodell wie im Feld oben.",
+      "referral.manualPartner.name": "Name",
+      "referral.manualPartner.note": "Kontaktnotiz (optional)",
+      "referral.table.partner": "Partner",
+      "referral.table.code": "Code",
+      "referral.empty": "Keine ausstehende Empfehlungsprovision.",
+      "referral.manualPartner.nameRequired": "Name ist erforderlich.",
+      "referral.manualPartner.createdMsg": "Partner erstellt! Empfehlungscode",
       "config.section.communication": "Kommunikation (Kanäle des Vertriebsassistenten)",
       "settings.whatsapp.connectBtn": "Über WhatsApp verbinden",
       "settings.whatsapp.summaryConnected": "✅ Verbunden",
@@ -1395,6 +1489,17 @@
       "nav.properties": "施設",
       "nav.finance": "財務",
       "finance.tab.overview": "📊 概要",
+      "finance.tab.referral": "🤝 紹介",
+      "referral.section.title": "紹介報酬",
+      "referral.manualPartner.btn": "+ 手動でパートナー登録",
+      "referral.subtitle": "現在サブスクリプションを支払っている紹介先ホテルについて、各パートナー（顧客ホテルまたは外部プロモーター）に支払うべき継続報酬 — 上の表と同じ手動精算モデルです。",
+      "referral.manualPartner.name": "名前",
+      "referral.manualPartner.note": "連絡先メモ（任意）",
+      "referral.table.partner": "パートナー",
+      "referral.table.code": "コード",
+      "referral.empty": "保留中の紹介報酬はありません。",
+      "referral.manualPartner.nameRequired": "名前は必須です。",
+      "referral.manualPartner.createdMsg": "パートナーを作成しました！紹介コード",
       "config.section.communication": "コミュニケーション（営業アシスタントのチャネル）",
       "settings.whatsapp.connectBtn": "WhatsApp経由で接続",
       "settings.whatsapp.summaryConnected": "✅ 接続済み",
@@ -1638,6 +1743,17 @@
       "nav.properties": "Strutture",
       "nav.finance": "Finanze",
       "finance.tab.overview": "📊 Panoramica",
+      "finance.tab.referral": "🤝 Segnalazioni",
+      "referral.section.title": "Commissione di segnalazione",
+      "referral.manualPartner.btn": "+ Partner manuale",
+      "referral.subtitle": "Commissione ricorrente dovuta a ogni partner (hotel cliente o promotore esterno) per gli hotel segnalati che stanno pagando un abbonamento — stesso modello di rimborso manuale del riquadro sopra.",
+      "referral.manualPartner.name": "Nome",
+      "referral.manualPartner.note": "Nota di contatto (facoltativa)",
+      "referral.table.partner": "Partner",
+      "referral.table.code": "Codice",
+      "referral.empty": "Nessuna commissione di segnalazione in sospeso.",
+      "referral.manualPartner.nameRequired": "Il nome è obbligatorio.",
+      "referral.manualPartner.createdMsg": "Partner creato! Codice di segnalazione",
       "config.section.communication": "Comunicazione (canali dell'assistente commerciale)",
       "settings.whatsapp.connectBtn": "Connetti tramite WhatsApp",
       "settings.whatsapp.summaryConnected": "✅ Connesso",
@@ -1881,6 +1997,17 @@
       "nav.properties": "物业",
       "nav.finance": "财务",
       "finance.tab.overview": "📊 概览",
+      "finance.tab.referral": "🤝 推荐",
+      "referral.section.title": "推荐佣金",
+      "referral.manualPartner.btn": "+ 手动添加合作伙伴",
+      "referral.subtitle": "因推荐的酒店正在支付订阅费用，而欠每位合作伙伴（客户酒店或外部推广人）的持续佣金 — 与上方表格相同的手动结算模式。",
+      "referral.manualPartner.name": "姓名",
+      "referral.manualPartner.note": "联系备注（可选）",
+      "referral.table.partner": "合作伙伴",
+      "referral.table.code": "推荐码",
+      "referral.empty": "没有待结算的推荐佣金。",
+      "referral.manualPartner.nameRequired": "姓名为必填项。",
+      "referral.manualPartner.createdMsg": "合作伙伴已创建！推荐码",
       "config.section.communication": "沟通渠道（商务助理频道）",
       "settings.whatsapp.connectBtn": "通过WhatsApp连接",
       "settings.whatsapp.summaryConnected": "✅ 已连接",
@@ -2123,6 +2250,17 @@
       "nav.properties": "Объекты",
       "nav.finance": "Финансы",
       "finance.tab.overview": "📊 Обзор",
+      "finance.tab.referral": "🤝 Рекомендации",
+      "referral.section.title": "Комиссия за рекомендации",
+      "referral.manualPartner.btn": "+ Партнёр вручную",
+      "referral.subtitle": "Регулярная комиссия, причитающаяся каждому партнёру (отелю-клиенту или внешнему промоутеру) за рекомендованные отели, которые сейчас оплачивают подписку — та же модель ручной выплаты, что и в таблице выше.",
+      "referral.manualPartner.name": "Имя",
+      "referral.manualPartner.note": "Заметка о контакте (необязательно)",
+      "referral.table.partner": "Партнёр",
+      "referral.table.code": "Код",
+      "referral.empty": "Нет ожидающих выплат по рекомендациям.",
+      "referral.manualPartner.nameRequired": "Имя обязательно.",
+      "referral.manualPartner.createdMsg": "Партнёр создан! Код рекомендации",
       "config.section.communication": "Коммуникация (каналы коммерческого ассистента)",
       "settings.whatsapp.connectBtn": "Подключить через WhatsApp",
       "settings.whatsapp.summaryConnected": "✅ Подключено",
@@ -2366,6 +2504,17 @@
       "nav.properties": "숙박시설",
       "nav.finance": "재무",
       "finance.tab.overview": "📊 개요",
+      "finance.tab.referral": "🤝 추천",
+      "referral.section.title": "추천 수수료",
+      "referral.manualPartner.btn": "+ 수동 파트너 추가",
+      "referral.subtitle": "현재 구독료를 결제 중인 추천 호텔에 대해 각 파트너(고객 호텔 또는 외부 프로모터)에게 지급해야 할 지속 수수료 — 위 표와 동일한 수동 정산 방식입니다.",
+      "referral.manualPartner.name": "이름",
+      "referral.manualPartner.note": "연락처 메모 (선택 사항)",
+      "referral.table.partner": "파트너",
+      "referral.table.code": "코드",
+      "referral.empty": "대기 중인 추천 수수료가 없습니다.",
+      "referral.manualPartner.nameRequired": "이름은 필수입니다.",
+      "referral.manualPartner.createdMsg": "파트너가 생성되었습니다! 추천 코드",
       "config.section.communication": "커뮤니케이션 (영업 어시스턴트 채널)",
       "settings.whatsapp.connectBtn": "WhatsApp로 연결",
       "settings.whatsapp.summaryConnected": "✅ 연결됨",
@@ -2609,6 +2758,17 @@
       "nav.properties": "Accommodaties",
       "nav.finance": "Financiën",
       "finance.tab.overview": "📊 Overzicht",
+      "finance.tab.referral": "🤝 Verwijzingen",
+      "referral.section.title": "Verwijzingscommissie",
+      "referral.manualPartner.btn": "+ Handmatige partner",
+      "referral.subtitle": "Terugkerende commissie verschuldigd aan elke partner (klanthotel of externe promotor) voor doorverwezen hotels die momenteel een abonnement betalen — zelfde handmatige uitbetalingsmodel als het paneel hierboven.",
+      "referral.manualPartner.name": "Naam",
+      "referral.manualPartner.note": "Contactnotitie (optioneel)",
+      "referral.table.partner": "Partner",
+      "referral.table.code": "Code",
+      "referral.empty": "Geen openstaande verwijzingscommissie.",
+      "referral.manualPartner.nameRequired": "Naam is verplicht.",
+      "referral.manualPartner.createdMsg": "Partner aangemaakt! Verwijzingscode",
       "config.section.communication": "Communicatie (kanalen van de commerciële assistent)",
       "settings.whatsapp.connectBtn": "Verbinden via WhatsApp",
       "settings.whatsapp.summaryConnected": "✅ Verbonden",
@@ -2934,6 +3094,7 @@
     document.querySelector(`#page-finance .ops-tab[data-finance-tab="${sub}"]`)?.classList.add("active");
     document.getElementById("financeTabOverview").style.display = sub === "overview" ? "" : "none";
     document.getElementById("financeTabExpenses").style.display = sub === "expenses" ? "" : "none";
+    document.getElementById("financeTabReferral").style.display = sub === "referral" ? "" : "none";
   };
 
   // Re-renderiza tudo que foi montado via JS (nao pega pelo data-i18n
@@ -2947,6 +3108,7 @@
     if(myChatGuests.length || myChatActiveGuestId != null) loadMyChatGuests();
     if(supportThreads.length || supportActiveHostelId != null) loadSupportThreads();
     loadPayouts();
+    loadSubscriptionReferralLedger();
     loadIntegrationsStatus();
     if(txOffset > 0) loadTransactions(true);
     loadExpenses();
@@ -3360,6 +3522,7 @@
     renderFinanceTable();
     loadTransactions(true);
     loadPayouts();
+    loadSubscriptionReferralLedger();
   }
 
   // ===== Configurações =====
@@ -3742,6 +3905,100 @@
       console.warn("Erro ao marcar repasse:", e);
       btn.disabled = false;
       btn.textContent = AT("payouts.markPaid");
+    }
+  };
+
+  // ===== Programa de indicacao (comissao de assinatura) =====
+  async function loadSubscriptionReferralLedger(){
+    try{
+      const res = await fetch("/stayflow-admin/subscription-referral-ledger", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data.success) return;
+
+      const tbody = document.getElementById("referralPayoutTableBody");
+      const empty = document.getElementById("referralPayoutEmpty");
+      if(!data.balances.length){
+        tbody.innerHTML = "";
+        empty.style.display = "flex";
+        return;
+      }
+      empty.style.display = "none";
+      tbody.innerHTML = data.balances.map(b => `
+        <tr>
+          <td>${b.partner_name || "—"}</td>
+          <td>${b.referral_code || "—"}</td>
+          <td>${b.payment_count}</td>
+          <td>${formatMoney(b.total_owed, b.currency)}</td>
+          <td><button type="button" class="payout-btn" onclick="markSubscriptionReferralPayout(${b.referring_partner_id}, this)">${AT("payouts.markPaid")}</button></td>
+        </tr>`).join("");
+    }catch(e){
+      console.warn("Erro ao carregar comissão de indicação:", e);
+    }
+  }
+
+  window.markSubscriptionReferralPayout = async function(referringPartnerId, btn){
+    btn.disabled = true;
+    btn.textContent = AT("payouts.marking");
+    try{
+      const res = await fetch("/stayflow-admin/subscription-referral-ledger/payout", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referring_partner_id: referringPartnerId, note: "Marcado como pago via Meu painel" }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível marcar como pago.");
+        btn.disabled = false;
+        btn.textContent = AT("payouts.markPaid");
+        return;
+      }
+      loadSubscriptionReferralLedger();
+    }catch(e){
+      console.warn("Erro ao marcar comissão de indicação:", e);
+      btn.disabled = false;
+      btn.textContent = AT("payouts.markPaid");
+    }
+  };
+
+  window.openCreateReferralPartnerForm = function(){
+    document.getElementById("referralPartnerName").value = "";
+    document.getElementById("referralPartnerContactNote").value = "";
+    document.getElementById("referralPartnerFormMessage").textContent = "";
+    document.getElementById("referralPartnerForm").style.display = "block";
+  };
+
+  window.closeCreateReferralPartnerForm = function(){
+    document.getElementById("referralPartnerForm").style.display = "none";
+  };
+
+  window.submitCreateReferralPartner = async function(){
+    const name = document.getElementById("referralPartnerName").value.trim();
+    const contactNote = document.getElementById("referralPartnerContactNote").value.trim();
+    const msg = document.getElementById("referralPartnerFormMessage");
+    if(!name){
+      msg.textContent = AT("referral.manualPartner.nameRequired");
+      return;
+    }
+    try{
+      const res = await fetch("/stayflow-admin/referral-partners", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, contact_note: contactNote || null }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        msg.textContent = data.message || "Erro";
+        return;
+      }
+      closeCreateReferralPartnerForm();
+      alert(`${AT("referral.manualPartner.createdMsg")}: ${data.partner.referral_code}`);
+      loadSubscriptionReferralLedger();
+    }catch(e){
+      console.warn("Erro ao criar parceiro de indicação:", e);
+      msg.textContent = "Erro de conexão.";
     }
   };
 

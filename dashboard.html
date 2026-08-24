@@ -2122,6 +2122,16 @@ async function deleteRoleConfirm(roleId){
         <div id="billingSummaryContent"><p style="color:var(--muted)" data-i18n="common.loading">Carregando...</p></div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="billing" onclick="openReferralSettingsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.referral.title">🤝 Programa de indicação</h2>
+            <p class="settings-summary-desc" id="referralSummaryDesc" data-i18n="settings.referral.intro">Indique outras hospedagens pro StayFlow e ganhe comissão recorrente enquanto elas continuarem assinando.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <div class="card settings-summary-card" data-settings-section="integracoes" data-required-account-kind="lodging" onclick="openBeds24SettingsModal()">
         <div class="settings-summary-row">
           <div>
@@ -3193,6 +3203,86 @@ async function deleteRoleConfirm(roleId){
     }catch(e){
       console.warn("Erro ao desconectar Mercado Pago:", e);
     }
+  };
+
+  window.openReferralSettingsModal = function(){
+    openGenericModal(T('settings.referral.title', '🤝 Programa de indicação'), `
+      <p style="margin-bottom:14px">${T('settings.referral.desc', 'Compartilhe seu link com outras hospedagens. Toda hospedagem que se cadastrar por ele e assinar um plano gera comissão recorrente pra você, enquanto ela continuar pagando.')}</p>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input id="referralLinkInput" type="text" readonly style="flex:1;padding:10px;border-radius:10px;border:1px solid #ffffff22;background:#0d1421;color:#fff">
+        <button type="button" class="btn" onclick="copyReferralLink(this)">${T('settings.referral.copyBtn', 'Copiar')}</button>
+      </div>
+
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+        <div>
+          <div style="font-size:12px;color:var(--muted)">${T('settings.referral.totalAccruedLabel', 'Comissão acumulada')}</div>
+          <strong id="referralTotalAccrued">—</strong>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--muted)">${T('settings.referral.totalPaidLabel', 'Já recebido')}</div>
+          <strong id="referralTotalPaid">—</strong>
+        </div>
+      </div>
+
+      <h3 style="font-size:13px;font-weight:800;margin:0 0 8px">${T('settings.referral.referredListTitle', 'Hospedagens indicadas')}</h3>
+      <div id="referralReferredList"><p style="color:var(--muted);font-size:13px" data-i18n="common.loading">Carregando...</p></div>
+    `);
+    loadReferralSettings();
+  };
+
+  window.loadReferralSettings = async function(){
+    try{
+      const res = await fetch("/settings/referral", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const link = `${location.origin}/Register.html?ref=${data.referral_code}`;
+
+      const summaryDesc = document.getElementById("referralSummaryDesc");
+      if(summaryDesc){
+        summaryDesc.textContent = data.referred_hostels.length > 0
+          ? T('settings.referral.summaryWithReferrals', '{count} hospedagem(ns) indicada(s)').replace('{count}', data.referred_hostels.length)
+          : T('settings.referral.intro', 'Indique outras hospedagens pro StayFlow e ganhe comissão recorrente enquanto elas continuarem assinando.');
+      }
+
+      const linkInput = document.getElementById("referralLinkInput");
+      if(linkInput) linkInput.value = link;
+
+      const accruedEl = document.getElementById("referralTotalAccrued");
+      if(accruedEl) accruedEl.textContent = `ARS ${Number(data.total_accrued || 0).toLocaleString('es-AR')}`;
+
+      const paidEl = document.getElementById("referralTotalPaid");
+      if(paidEl) paidEl.textContent = `ARS ${Number(data.total_paid_out || 0).toLocaleString('es-AR')}`;
+
+      const listEl = document.getElementById("referralReferredList");
+      if(listEl){
+        if(data.referred_hostels.length === 0){
+          listEl.innerHTML = `<p style="color:var(--muted);font-size:13px">${T('settings.referral.referredListEmpty', 'Nenhuma hospedagem indicada ainda.')}</p>`;
+        }else{
+          listEl.innerHTML = data.referred_hostels.map(h => `
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #ffffff12">
+              <span>${h.name}</span>
+              <span style="color:var(--muted);font-size:12px">${h.billing_status || 'trialing'}</span>
+            </div>
+          `).join('');
+        }
+      }
+    }catch(e){
+      console.warn("Erro ao carregar programa de indicação:", e);
+    }
+  };
+
+  window.copyReferralLink = function(button){
+    const input = document.getElementById("referralLinkInput");
+    if(!input || !input.value) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+      const original = button.textContent;
+      button.textContent = T('settings.referral.copiedBtn', 'Copiado!');
+      setTimeout(() => { button.textContent = original; }, 1500);
+    }).catch(() => {
+      alert(input.value);
+    });
   };
 
   window.loadInstagramSettings = async function(){
