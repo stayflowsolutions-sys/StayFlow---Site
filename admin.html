@@ -140,13 +140,10 @@
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="10" width="7" height="10"/><rect x="14" y="6" width="7" height="14"/><path d="M3 10V5l7-2v7"/></svg></span><span data-i18n="nav.properties">Propriedades</span>
     </button>
     <button type="button" data-tab="finance" onclick="switchAdminTab('finance', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></span><span data-i18n="nav.finance">Financeiro</span>
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></span><span data-i18n="nav.finance">Financeiro</span><span class="badge" id="expensesDueBadge" style="display:none">0</span>
     </button>
     <button type="button" data-tab="ranking" onclick="switchAdminTab('ranking', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 4"/><path d="M17 6h3a3 3 0 0 1-3 4"/></svg></span><span data-i18n="nav.ranking">Ranking</span>
-    </button>
-    <button type="button" data-tab="expenses" onclick="switchAdminTab('expenses', this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 9h10"/><path d="M7 13h10"/><path d="M7 17h6"/></svg></span><span data-i18n="nav.expenses">Despesas</span><span class="badge" id="expensesDueBadge" style="display:none">0</span>
     </button>
     <button type="button" data-tab="prospects" onclick="switchAdminTab('prospects', this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/></svg></span><span data-i18n="nav.prospects">Prospecção</span><span class="badge" id="prospectsFollowupBadge" style="display:none">0</span>
@@ -374,6 +371,12 @@
 
     <!-- ===== Financeiro ===== -->
     <section class="page" id="page-finance">
+      <div class="ops-tabs">
+        <button type="button" class="ops-tab active" data-finance-tab="overview" onclick="switchFinanceTab('overview')" data-i18n="finance.tab.overview">📊 Visão geral</button>
+        <button type="button" class="ops-tab" data-finance-tab="expenses" onclick="switchFinanceTab('expenses')" data-i18n="nav.expenses">Despesas</button>
+      </div>
+
+      <div id="financeTabOverview">
       <div class="grid">
         <div class="card kpi span-4">
           <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/></svg></div></div>
@@ -435,39 +438,9 @@
       <div class="sf-empty" id="payoutEmpty" style="display:none">
         <div><strong data-i18n="payouts.empty">Nenhum repasse pendente.</strong></div>
       </div>
-    </section>
-
-    <!-- ===== Ranking ===== -->
-    <section class="page" id="page-ranking">
-      <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="ranking.subtitle">Ordenado por MRR estimado + comissão real coletada — quem mais gera valor pra StayFlow hoje.</p>
-      <div id="rankList"></div>
-    </section>
-
-    <!-- ===== Configurações ===== -->
-    <section class="page" id="page-config">
-      <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="config.subtitle">Status das integrações de nível StayFlow (credenciais únicas da plataforma) — só leitura. Edição é sempre pelas variáveis de ambiente no Render, nunca por aqui, por segurança.</p>
-
-      <div class="section-title" data-i18n="config.section.integrations">Integrações</div>
-      <div class="prop-list" id="integrationsList"></div>
-
-      <div class="section-title" data-i18n="config.section.persona">Assistente comercial (Meu chat)</div>
-      <div id="softwarePersonaInfo" class="prop-empty" data-i18n="loading">Carregando...</div>
-
-      <div class="section-title">Notificações do painel (alarmes de compromisso)</div>
-      <div class="card" style="padding:16px 18px;margin-bottom:18px">
-        <p id="adminPushStatusMessage" style="color:var(--muted);font-size:13px;margin:0 0 10px"></p>
-        <button type="button" class="btn" id="adminPushToggleBtn" onclick="toggleAdminPushNotifications()" style="display:none">Ativar neste dispositivo</button>
       </div>
 
-      <div class="section-title" data-i18n="config.section.admins">Administradores da StayFlow</div>
-      <div id="adminEmailsList" class="prop-list"></div>
-
-      <div class="section-title">Histórico de visitas (Hub)</div>
-      <div id="impersonationLogList" class="prop-list"></div>
-    </section>
-
-    <!-- ===== Despesas ===== -->
-    <section class="page" id="page-expenses">
+      <div id="financeTabExpenses" style="display:none">
       <div class="grid">
         <div class="card kpi span-4">
           <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 9h10"/><path d="M7 13h10"/></svg></div></div>
@@ -560,6 +533,58 @@
       <div class="sf-empty" id="expensesEmpty" style="display:none">
         <div><strong data-i18n="expenses.empty">Nenhuma despesa cadastrada.</strong></div>
       </div>
+      </div>
+    </section>
+
+    <!-- ===== Ranking ===== -->
+    <section class="page" id="page-ranking">
+      <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="ranking.subtitle">Ordenado por MRR estimado + comissão real coletada — quem mais gera valor pra StayFlow hoje.</p>
+      <div id="rankList"></div>
+    </section>
+
+    <!-- ===== Configurações ===== -->
+    <section class="page" id="page-config">
+      <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="config.subtitle">Status das integrações de nível StayFlow (credenciais únicas da plataforma) — só leitura. Edição é sempre pelas variáveis de ambiente no Render, nunca por aqui, por segurança.</p>
+
+      <div class="section-title" data-i18n="config.section.integrations">Integrações</div>
+      <div class="prop-list" id="integrationsList"></div>
+
+      <div class="section-title" data-i18n="config.section.persona">Assistente comercial (Meu chat)</div>
+      <div id="softwarePersonaInfo" class="prop-empty" data-i18n="loading">Carregando...</div>
+
+      <div class="section-title" data-i18n="config.section.communication">Comunicação (canais do assistente comercial)</div>
+      <div class="grid" id="adminCommCardsWrap" style="display:none">
+        <div class="card span-4">
+          <p style="font-size:13px;font-weight:800;margin:0 0 6px">📱 WhatsApp</p>
+          <p id="adminWhatsappStatus" style="color:var(--muted);font-size:12px;margin:0 0 12px" data-i18n="loading">Carregando...</p>
+          <button type="button" class="btn" id="adminWhatsappConnectBtn" onclick="connectAdminWhatsappEmbedded()" style="display:none" data-i18n="settings.whatsapp.connectBtn">Conectar via WhatsApp</button>
+        </div>
+        <div class="card span-4">
+          <p style="font-size:13px;font-weight:800;margin:0 0 6px">💬 Facebook Messenger</p>
+          <p id="adminFacebookStatus" style="color:var(--muted);font-size:12px;margin:0 0 12px" data-i18n="loading">Carregando...</p>
+          <button type="button" class="btn" id="adminFacebookConnectBtn" onclick="connectAdminPersonaChannel('facebook')" data-i18n="settings.facebook.connectBtn">Conectar Facebook</button>
+          <button type="button" class="btn red" id="adminFacebookDisconnectBtn" onclick="disconnectAdminPersonaChannel('facebook')" style="display:none" data-i18n="settings.facebook.disconnectBtn">Desconectar</button>
+        </div>
+        <div class="card span-4">
+          <p style="font-size:13px;font-weight:800;margin:0 0 6px">📷 Instagram Direct</p>
+          <p id="adminInstagramStatus" style="color:var(--muted);font-size:12px;margin:0 0 12px" data-i18n="loading">Carregando...</p>
+          <button type="button" class="btn" id="adminInstagramConnectBtn" onclick="connectAdminPersonaChannel('instagram')" data-i18n="settings.instagram.connectBtn">Conectar Instagram</button>
+          <button type="button" class="btn red" id="adminInstagramDisconnectBtn" onclick="disconnectAdminPersonaChannel('instagram')" style="display:none" data-i18n="settings.instagram.disconnectBtn">Desconectar</button>
+        </div>
+      </div>
+      <div class="prop-empty" id="adminCommCardsEmpty" data-i18n="config.persona.empty">Nenhuma hospedagem marcada como assistente comercial ainda.</div>
+
+      <div class="section-title">Notificações do painel (alarmes de compromisso)</div>
+      <div class="card" style="padding:16px 18px;margin-bottom:18px">
+        <p id="adminPushStatusMessage" style="color:var(--muted);font-size:13px;margin:0 0 10px"></p>
+        <button type="button" class="btn" id="adminPushToggleBtn" onclick="toggleAdminPushNotifications()" style="display:none">Ativar neste dispositivo</button>
+      </div>
+
+      <div class="section-title" data-i18n="config.section.admins">Administradores da StayFlow</div>
+      <div id="adminEmailsList" class="prop-list"></div>
+
+      <div class="section-title">Histórico de visitas (Hub)</div>
+      <div id="impersonationLogList" class="prop-list"></div>
     </section>
 
     <!-- ===== Prospecção (CRM leve de outreach comercial - so uso interno, sem i18n no conteudo) ===== -->
@@ -791,6 +816,23 @@
     pt: {
       "nav.overview": "Visão geral", "nav.chat": "Meu chat", "nav.support": "Suporte",
       "nav.properties": "Propriedades", "nav.finance": "Financeiro", "nav.ranking": "Ranking",
+      "finance.tab.overview": "📊 Visão geral",
+      "config.section.communication": "Comunicação (canais do assistente comercial)",
+      "settings.whatsapp.connectBtn": "Conectar via WhatsApp",
+      "settings.whatsapp.summaryConnected": "✅ Conectado",
+      "settings.whatsapp.summaryNotConnected": "Não configurado ainda — clique pra conectar",
+      "settings.whatsapp.msg.oauthUnavailable": "Conexão automática ainda não está disponível.",
+      "settings.whatsapp.msg.oauthIncomplete": "Conexão incompleta — tenta de novo.",
+      "settings.facebook.connectBtn": "Conectar Facebook",
+      "settings.facebook.disconnectBtn": "Desconectar",
+      "settings.facebook.summaryConnected": "✅ Conectado",
+      "settings.facebook.summaryNotConnected": "Não conectado ainda — clique pra conectar",
+      "settings.facebook.disconnectConfirm": "Desconectar o Facebook? O Messenger deixa de funcionar até reconectar.",
+      "settings.instagram.connectBtn": "Conectar Instagram",
+      "settings.instagram.disconnectBtn": "Desconectar",
+      "settings.instagram.summaryConnected": "✅ Conectado",
+      "settings.instagram.summaryNotConnected": "Não conectado ainda — clique pra conectar",
+      "settings.instagram.disconnectConfirm": "Desconectar o Instagram? O Direct deixa de funcionar até reconectar.",
       "nav.config": "Configurações", "nav.collapse": "Recolher menu",
       "tagline": "Painel do operador",
       "topbar.overview.title": "Visão geral", "topbar.overview.subtitle": "Visão viva da StayFlow — não é o dashboard de nenhuma conta específica.",
@@ -889,6 +931,23 @@
     en: {
       "nav.overview": "Overview", "nav.chat": "My chat", "nav.support": "Support",
       "nav.properties": "Properties", "nav.finance": "Finance", "nav.ranking": "Ranking",
+      "finance.tab.overview": "📊 Overview",
+      "config.section.communication": "Communication (commercial assistant channels)",
+      "settings.whatsapp.connectBtn": "Connect via WhatsApp",
+      "settings.whatsapp.summaryConnected": "✅ Connected",
+      "settings.whatsapp.summaryNotConnected": "Not set up yet — click to connect",
+      "settings.whatsapp.msg.oauthUnavailable": "Automatic connection isn't available yet.",
+      "settings.whatsapp.msg.oauthIncomplete": "Incomplete connection — try again.",
+      "settings.facebook.connectBtn": "Connect Facebook",
+      "settings.facebook.disconnectBtn": "Disconnect",
+      "settings.facebook.summaryConnected": "✅ Connected",
+      "settings.facebook.summaryNotConnected": "Not connected yet — click to connect",
+      "settings.facebook.disconnectConfirm": "Disconnect Facebook? Messenger will stop working until you reconnect.",
+      "settings.instagram.connectBtn": "Connect Instagram",
+      "settings.instagram.disconnectBtn": "Disconnect",
+      "settings.instagram.summaryConnected": "✅ Connected",
+      "settings.instagram.summaryNotConnected": "Not connected yet — click to connect",
+      "settings.instagram.disconnectConfirm": "Disconnect Instagram? Direct will stop working until you reconnect.",
       "nav.config": "Settings", "nav.collapse": "Collapse menu",
       "tagline": "Operator panel",
       "topbar.overview.title": "Overview", "topbar.overview.subtitle": "Live view of StayFlow — not any specific account's dashboard.",
@@ -987,6 +1046,23 @@
     es: {
       "nav.overview": "Visión general", "nav.chat": "Mi chat", "nav.support": "Soporte",
       "nav.properties": "Propiedades", "nav.finance": "Finanzas", "nav.ranking": "Ranking",
+      "finance.tab.overview": "📊 Visión general",
+      "config.section.communication": "Comunicación (canales del asistente comercial)",
+      "settings.whatsapp.connectBtn": "Conectar vía WhatsApp",
+      "settings.whatsapp.summaryConnected": "✅ Conectado",
+      "settings.whatsapp.summaryNotConnected": "Aún no configurado — hacé clic para conectar",
+      "settings.whatsapp.msg.oauthUnavailable": "La conexión automática todavía no está disponible.",
+      "settings.whatsapp.msg.oauthIncomplete": "Conexión incompleta — intentá de nuevo.",
+      "settings.facebook.connectBtn": "Conectar Facebook",
+      "settings.facebook.disconnectBtn": "Desconectar",
+      "settings.facebook.summaryConnected": "✅ Conectado",
+      "settings.facebook.summaryNotConnected": "Aún no conectado — hacé clic para conectar",
+      "settings.facebook.disconnectConfirm": "¿Desconectar Facebook? Messenger deja de funcionar hasta que reconectes.",
+      "settings.instagram.connectBtn": "Conectar Instagram",
+      "settings.instagram.disconnectBtn": "Desconectar",
+      "settings.instagram.summaryConnected": "✅ Conectado",
+      "settings.instagram.summaryNotConnected": "Aún no conectado — hacé clic para conectar",
+      "settings.instagram.disconnectConfirm": "¿Desconectar Instagram? Direct deja de funcionar hasta que reconectes.",
       "nav.config": "Configuración", "nav.collapse": "Colapsar menú",
       "tagline": "Panel del operador",
       "topbar.overview.title": "Visión general", "topbar.overview.subtitle": "Vista viva de StayFlow — no es el dashboard de ninguna cuenta específica.",
@@ -1085,6 +1161,23 @@
     fr: {
       "nav.overview": "Vue d'ensemble", "nav.chat": "Mon chat", "nav.support": "Support",
       "nav.properties": "Propriétés", "nav.finance": "Finances", "nav.ranking": "Classement",
+      "finance.tab.overview": "📊 Vue d'ensemble",
+      "config.section.communication": "Communication (canaux de l'assistant commercial)",
+      "settings.whatsapp.connectBtn": "Connecter via WhatsApp",
+      "settings.whatsapp.summaryConnected": "✅ Connecté",
+      "settings.whatsapp.summaryNotConnected": "Pas encore configuré — cliquez pour connecter",
+      "settings.whatsapp.msg.oauthUnavailable": "La connexion automatique n'est pas encore disponible.",
+      "settings.whatsapp.msg.oauthIncomplete": "Connexion incomplète — réessayez.",
+      "settings.facebook.connectBtn": "Connecter Facebook",
+      "settings.facebook.disconnectBtn": "Déconnecter",
+      "settings.facebook.summaryConnected": "✅ Connecté",
+      "settings.facebook.summaryNotConnected": "Pas encore connecté — cliquez pour connecter",
+      "settings.facebook.disconnectConfirm": "Déconnecter Facebook ? Messenger cessera de fonctionner jusqu'à la reconnexion.",
+      "settings.instagram.connectBtn": "Connecter Instagram",
+      "settings.instagram.disconnectBtn": "Déconnecter",
+      "settings.instagram.summaryConnected": "✅ Connecté",
+      "settings.instagram.summaryNotConnected": "Pas encore connecté — cliquez pour connecter",
+      "settings.instagram.disconnectConfirm": "Déconnecter Instagram ? Direct cessera de fonctionner jusqu'à la reconnexion.",
       "nav.config": "Paramètres", "nav.collapse": "Réduire le menu",
       "tagline": "Panneau de l'opérateur",
       "topbar.overview.title": "Vue d'ensemble", "topbar.overview.subtitle": "Vue en direct de StayFlow — pas le tableau de bord d'un compte spécifique.",
@@ -1183,6 +1276,23 @@
     de: {
       "nav.overview": "Übersicht", "nav.chat": "Mein Chat", "nav.support": "Support",
       "nav.properties": "Unterkünfte", "nav.finance": "Finanzen", "nav.ranking": "Rangliste",
+      "finance.tab.overview": "📊 Übersicht",
+      "config.section.communication": "Kommunikation (Kanäle des Vertriebsassistenten)",
+      "settings.whatsapp.connectBtn": "Über WhatsApp verbinden",
+      "settings.whatsapp.summaryConnected": "✅ Verbunden",
+      "settings.whatsapp.summaryNotConnected": "Noch nicht eingerichtet — zum Verbinden klicken",
+      "settings.whatsapp.msg.oauthUnavailable": "Die automatische Verbindung ist noch nicht verfügbar.",
+      "settings.whatsapp.msg.oauthIncomplete": "Verbindung unvollständig — versuch es erneut.",
+      "settings.facebook.connectBtn": "Facebook verbinden",
+      "settings.facebook.disconnectBtn": "Trennen",
+      "settings.facebook.summaryConnected": "✅ Verbunden",
+      "settings.facebook.summaryNotConnected": "Noch nicht verbunden — zum Verbinden klicken",
+      "settings.facebook.disconnectConfirm": "Facebook trennen? Messenger funktioniert erst nach erneuter Verbindung wieder.",
+      "settings.instagram.connectBtn": "Instagram verbinden",
+      "settings.instagram.disconnectBtn": "Trennen",
+      "settings.instagram.summaryConnected": "✅ Verbunden",
+      "settings.instagram.summaryNotConnected": "Noch nicht verbunden — zum Verbinden klicken",
+      "settings.instagram.disconnectConfirm": "Instagram trennen? Direct funktioniert erst nach erneuter Verbindung wieder.",
       "nav.config": "Einstellungen", "nav.collapse": "Menü einklappen",
       "tagline": "Betreiber-Panel",
       "topbar.overview.title": "Übersicht", "topbar.overview.subtitle": "Live-Ansicht von StayFlow — nicht das Dashboard eines bestimmten Kontos.",
@@ -1284,6 +1394,23 @@
       "nav.support": "サポート",
       "nav.properties": "施設",
       "nav.finance": "財務",
+      "finance.tab.overview": "📊 概要",
+      "config.section.communication": "コミュニケーション（営業アシスタントのチャネル）",
+      "settings.whatsapp.connectBtn": "WhatsApp経由で接続",
+      "settings.whatsapp.summaryConnected": "✅ 接続済み",
+      "settings.whatsapp.summaryNotConnected": "まだ設定されていません — クリックして接続",
+      "settings.whatsapp.msg.oauthUnavailable": "自動接続はまだ利用できません。",
+      "settings.whatsapp.msg.oauthIncomplete": "接続が不完全です。もう一度お試しください。",
+      "settings.facebook.connectBtn": "Facebookを接続",
+      "settings.facebook.disconnectBtn": "切断",
+      "settings.facebook.summaryConnected": "✅ 接続済み",
+      "settings.facebook.summaryNotConnected": "まだ接続されていません — クリックして接続",
+      "settings.facebook.disconnectConfirm": "Facebookを切断しますか？再接続するまでMessengerは機能しません。",
+      "settings.instagram.connectBtn": "Instagramを接続",
+      "settings.instagram.disconnectBtn": "切断",
+      "settings.instagram.summaryConnected": "✅ 接続済み",
+      "settings.instagram.summaryNotConnected": "まだ接続されていません — クリックして接続",
+      "settings.instagram.disconnectConfirm": "Instagramを切断しますか？再接続するまでDirectは機能しません。",
       "nav.ranking": "ランキング",
       "nav.config": "設定",
       "nav.collapse": "メニューを折りたたむ",
@@ -1510,6 +1637,23 @@
       "nav.support": "Supporto",
       "nav.properties": "Strutture",
       "nav.finance": "Finanze",
+      "finance.tab.overview": "📊 Panoramica",
+      "config.section.communication": "Comunicazione (canali dell'assistente commerciale)",
+      "settings.whatsapp.connectBtn": "Connetti tramite WhatsApp",
+      "settings.whatsapp.summaryConnected": "✅ Connesso",
+      "settings.whatsapp.summaryNotConnected": "Non ancora configurato — clicca per connettere",
+      "settings.whatsapp.msg.oauthUnavailable": "La connessione automatica non è ancora disponibile.",
+      "settings.whatsapp.msg.oauthIncomplete": "Connessione incompleta — riprova.",
+      "settings.facebook.connectBtn": "Connetti Facebook",
+      "settings.facebook.disconnectBtn": "Disconnetti",
+      "settings.facebook.summaryConnected": "✅ Connesso",
+      "settings.facebook.summaryNotConnected": "Non ancora connesso — clicca per connettere",
+      "settings.facebook.disconnectConfirm": "Disconnettere Facebook? Messenger smetterà di funzionare finché non ti riconnetti.",
+      "settings.instagram.connectBtn": "Connetti Instagram",
+      "settings.instagram.disconnectBtn": "Disconnetti",
+      "settings.instagram.summaryConnected": "✅ Connesso",
+      "settings.instagram.summaryNotConnected": "Non ancora connesso — clicca per connettere",
+      "settings.instagram.disconnectConfirm": "Disconnettere Instagram? Direct smetterà di funzionare finché non ti riconnetti.",
       "nav.ranking": "Classifica",
       "nav.config": "Impostazioni",
       "nav.collapse": "Comprimi menu",
@@ -1736,6 +1880,23 @@
       "nav.support": "支持",
       "nav.properties": "物业",
       "nav.finance": "财务",
+      "finance.tab.overview": "📊 概览",
+      "config.section.communication": "沟通渠道（商务助理频道）",
+      "settings.whatsapp.connectBtn": "通过WhatsApp连接",
+      "settings.whatsapp.summaryConnected": "✅ 已连接",
+      "settings.whatsapp.summaryNotConnected": "尚未设置 — 点击连接",
+      "settings.whatsapp.msg.oauthUnavailable": "自动连接功能尚不可用。",
+      "settings.whatsapp.msg.oauthIncomplete": "连接不完整 — 请重试。",
+      "settings.facebook.connectBtn": "连接Facebook",
+      "settings.facebook.disconnectBtn": "断开连接",
+      "settings.facebook.summaryConnected": "✅ 已连接",
+      "settings.facebook.summaryNotConnected": "尚未连接 — 点击连接",
+      "settings.facebook.disconnectConfirm": "断开Facebook连接？在重新连接之前，Messenger将无法使用。",
+      "settings.instagram.connectBtn": "连接Instagram",
+      "settings.instagram.disconnectBtn": "断开连接",
+      "settings.instagram.summaryConnected": "✅ 已连接",
+      "settings.instagram.summaryNotConnected": "尚未连接 — 点击连接",
+      "settings.instagram.disconnectConfirm": "断开Instagram连接？在重新连接之前，Direct将无法使用。",
       "nav.ranking": "排行榜",
       "nav.config": "设置",
       "nav.collapse": "收起菜单",
@@ -1961,6 +2122,23 @@
       "nav.support": "Поддержка",
       "nav.properties": "Объекты",
       "nav.finance": "Финансы",
+      "finance.tab.overview": "📊 Обзор",
+      "config.section.communication": "Коммуникация (каналы коммерческого ассистента)",
+      "settings.whatsapp.connectBtn": "Подключить через WhatsApp",
+      "settings.whatsapp.summaryConnected": "✅ Подключено",
+      "settings.whatsapp.summaryNotConnected": "Ещё не настроено — нажмите, чтобы подключить",
+      "settings.whatsapp.msg.oauthUnavailable": "Автоматическое подключение пока недоступно.",
+      "settings.whatsapp.msg.oauthIncomplete": "Подключение не завершено — попробуйте снова.",
+      "settings.facebook.connectBtn": "Подключить Facebook",
+      "settings.facebook.disconnectBtn": "Отключить",
+      "settings.facebook.summaryConnected": "✅ Подключено",
+      "settings.facebook.summaryNotConnected": "Ещё не подключено — нажмите, чтобы подключить",
+      "settings.facebook.disconnectConfirm": "Отключить Facebook? Messenger перестанет работать до повторного подключения.",
+      "settings.instagram.connectBtn": "Подключить Instagram",
+      "settings.instagram.disconnectBtn": "Отключить",
+      "settings.instagram.summaryConnected": "✅ Подключено",
+      "settings.instagram.summaryNotConnected": "Ещё не подключено — нажмите, чтобы подключить",
+      "settings.instagram.disconnectConfirm": "Отключить Instagram? Direct перестанет работать до повторного подключения.",
       "nav.ranking": "Рейтинг",
       "nav.config": "Настройки",
       "nav.collapse": "Свернуть меню",
@@ -2187,6 +2365,23 @@
       "nav.support": "지원",
       "nav.properties": "숙박시설",
       "nav.finance": "재무",
+      "finance.tab.overview": "📊 개요",
+      "config.section.communication": "커뮤니케이션 (영업 어시스턴트 채널)",
+      "settings.whatsapp.connectBtn": "WhatsApp로 연결",
+      "settings.whatsapp.summaryConnected": "✅ 연결됨",
+      "settings.whatsapp.summaryNotConnected": "아직 설정되지 않음 — 클릭하여 연결",
+      "settings.whatsapp.msg.oauthUnavailable": "자동 연결은 아직 사용할 수 없습니다.",
+      "settings.whatsapp.msg.oauthIncomplete": "연결이 불완전합니다 — 다시 시도하세요.",
+      "settings.facebook.connectBtn": "Facebook 연결",
+      "settings.facebook.disconnectBtn": "연결 해제",
+      "settings.facebook.summaryConnected": "✅ 연결됨",
+      "settings.facebook.summaryNotConnected": "아직 연결되지 않음 — 클릭하여 연결",
+      "settings.facebook.disconnectConfirm": "Facebook 연결을 해제하시겠습니까? 다시 연결할 때까지 Messenger가 작동하지 않습니다.",
+      "settings.instagram.connectBtn": "Instagram 연결",
+      "settings.instagram.disconnectBtn": "연결 해제",
+      "settings.instagram.summaryConnected": "✅ 연결됨",
+      "settings.instagram.summaryNotConnected": "아직 연결되지 않음 — 클릭하여 연결",
+      "settings.instagram.disconnectConfirm": "Instagram 연결을 해제하시겠습니까? 다시 연결할 때까지 Direct가 작동하지 않습니다.",
       "nav.ranking": "랭킹",
       "nav.config": "설정",
       "nav.collapse": "메뉴 접기",
@@ -2413,6 +2608,23 @@
       "nav.support": "Ondersteuning",
       "nav.properties": "Accommodaties",
       "nav.finance": "Financiën",
+      "finance.tab.overview": "📊 Overzicht",
+      "config.section.communication": "Communicatie (kanalen van de commerciële assistent)",
+      "settings.whatsapp.connectBtn": "Verbinden via WhatsApp",
+      "settings.whatsapp.summaryConnected": "✅ Verbonden",
+      "settings.whatsapp.summaryNotConnected": "Nog niet ingesteld — klik om te verbinden",
+      "settings.whatsapp.msg.oauthUnavailable": "Automatisch verbinden is nog niet beschikbaar.",
+      "settings.whatsapp.msg.oauthIncomplete": "Verbinding onvolledig — probeer het opnieuw.",
+      "settings.facebook.connectBtn": "Facebook verbinden",
+      "settings.facebook.disconnectBtn": "Verbinding verbreken",
+      "settings.facebook.summaryConnected": "✅ Verbonden",
+      "settings.facebook.summaryNotConnected": "Nog niet verbonden — klik om te verbinden",
+      "settings.facebook.disconnectConfirm": "Facebook loskoppelen? Messenger werkt niet meer totdat je opnieuw verbindt.",
+      "settings.instagram.connectBtn": "Instagram verbinden",
+      "settings.instagram.disconnectBtn": "Verbinding verbreken",
+      "settings.instagram.summaryConnected": "✅ Verbonden",
+      "settings.instagram.summaryNotConnected": "Nog niet verbonden — klik om te verbinden",
+      "settings.instagram.disconnectConfirm": "Instagram loskoppelen? Direct werkt niet meer totdat je opnieuw verbindt.",
       "nav.ranking": "Ranglijst",
       "nav.config": "Instellingen",
       "nav.collapse": "Menu inklappen",
@@ -2700,6 +2912,10 @@
     btn.classList.add("active");
     document.getElementById(`page-${tab}`).classList.add("active");
     currentAdminTab = tab;
+    // Persiste a aba atual pra sobreviver a um F5 - antes disso o
+    // painel sempre voltava pra Visao Geral (unico estado que nascia
+    // "active" no HTML estatico), mesmo estando em outra aba.
+    localStorage.setItem("stayflow_admin_tab", tab);
     // O flutuante "Ask StayFlow" fica fixo no canto inferior direito da
     // janela - na aba Meu chat, o botao "Assumir" da barra de envio
     // tambem fica ali, sobrepondo os dois. Sobe o flutuante so nessa aba.
@@ -2708,6 +2924,16 @@
     document.getElementById("pageSubtitle").textContent = AT(`topbar.${tab}.subtitle`);
     document.getElementById("sidebar")?.classList.remove("open");
     document.getElementById("sidebarOverlay")?.classList.remove("open");
+  };
+
+  // Despesas mora dentro de Financeiro como sub-aba (antes era item de
+  // menu proprio) - mesmo padrao ja usado em Operacoes/Eventos/Equipe
+  // (.ops-tabs/.ops-tab), sem reduzir o menu lateral.
+  window.switchFinanceTab = function(sub){
+    document.querySelectorAll('#page-finance .ops-tab').forEach(b => b.classList.remove("active"));
+    document.querySelector(`#page-finance .ops-tab[data-finance-tab="${sub}"]`)?.classList.add("active");
+    document.getElementById("financeTabOverview").style.display = sub === "overview" ? "" : "none";
+    document.getElementById("financeTabExpenses").style.display = sub === "expenses" ? "" : "none";
   };
 
   // Re-renderiza tudo que foi montado via JS (nao pega pelo data-i18n
@@ -3164,6 +3390,11 @@
         personaEl.textContent = AT("config.persona.empty");
       }
 
+      window.STAYFLOW_ADMIN_PERSONA_ID = data.software_persona_hostel_id || null;
+      document.getElementById("adminCommCardsWrap").style.display = data.software_persona_hostel_id ? "grid" : "none";
+      document.getElementById("adminCommCardsEmpty").style.display = data.software_persona_hostel_id ? "none" : "block";
+      if(data.software_persona_hostel_id) loadAdminCommunicationCards();
+
       document.getElementById("adminEmailsList").innerHTML = data.admin_emails.length
         ? data.admin_emails.map(e => `<div class="prop-row" style="cursor:default"><div class="ico">👤</div><div class="name">${e}</div></div>`).join("")
         : `<div class="prop-empty">${AT("config.admins.empty")}</div>`;
@@ -3172,6 +3403,136 @@
     }
     refreshAdminPushToggleState();
     loadImpersonationLog();
+  }
+
+  // ===== Comunicacao da conta "persona software" (Meu chat) - reusa
+  // os endpoints /stayflow-admin/software-persona/* (mesma logica de
+  // routes/settings.py, so autorizacao de admin em vez de tenant). =====
+  window.ADMIN_PERSONA_WHATSAPP_OAUTH = null;
+
+  async function loadAdminCommunicationCards(){
+    try{
+      const res = await fetch("/stayflow-admin/software-persona/whatsapp", { credentials: "same-origin" });
+      const data = await res.json();
+      if(data.success){
+        const connected = Boolean(data.phone_number_id) && data.has_access_token;
+        document.getElementById("adminWhatsappStatus").textContent = connected
+          ? `${AT("settings.whatsapp.summaryConnected")}${data.contact_phone ? ` (${data.contact_phone})` : ""}`
+          : AT("settings.whatsapp.summaryNotConnected");
+        window.ADMIN_PERSONA_WHATSAPP_OAUTH = data.oauth_available ? { appId: data.app_id, configId: data.config_id } : null;
+        document.getElementById("adminWhatsappConnectBtn").style.display = data.oauth_available ? "inline-block" : "none";
+      }
+    }catch(e){ console.warn("Erro ao carregar WhatsApp (persona):", e); }
+
+    for(const channel of ["facebook", "instagram"]){
+      try{
+        const res = await fetch(`/stayflow-admin/software-persona/${channel}`, { credentials: "same-origin" });
+        const data = await res.json();
+        const statusEl = document.getElementById(`admin${channel === "facebook" ? "Facebook" : "Instagram"}Status`);
+        const connectBtn = document.getElementById(`admin${channel === "facebook" ? "Facebook" : "Instagram"}ConnectBtn`);
+        const disconnectBtn = document.getElementById(`admin${channel === "facebook" ? "Facebook" : "Instagram"}DisconnectBtn`);
+        if(data.success){
+          statusEl.textContent = data.connected
+            ? AT(`settings.${channel}.summaryConnected`)
+            : AT(`settings.${channel}.summaryNotConnected`);
+          connectBtn.style.display = data.connected ? "none" : "inline-block";
+          disconnectBtn.style.display = data.connected ? "inline-block" : "none";
+        }
+      }catch(e){ console.warn(`Erro ao carregar ${channel} (persona):`, e); }
+    }
+  }
+
+  window.connectAdminPersonaChannel = async function(channel){
+    // Facebook/Instagram usam OAuth com redirect e callback fixo
+    // registrado na Meta - nao da pra repetir esse fluxo direto aqui
+    // dentro do painel interno (sem hostel_id de tenant na sessao).
+    // Em vez disso, "entra" na conta persona via impersonate (mesmo
+    // mecanismo do Hub) e navega pro fluxo normal - ao terminar, o
+    // usuario ve o banner de "Sair da visualização" pra voltar aqui.
+    try{
+      const res = await fetch("/stayflow-admin/impersonate", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ hostel_id: window.STAYFLOW_ADMIN_PERSONA_ID }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Não foi possível abrir a conta do assistente comercial.");
+        return;
+      }
+      window.location.href = `/oauth/${channel}/connect`;
+    }catch(e){
+      console.warn("Erro ao iniciar conexão:", e);
+    }
+  };
+
+  window.disconnectAdminPersonaChannel = async function(channel){
+    if(!await stayflowConfirm(AT(`settings.${channel}.disconnectConfirm`))) return;
+    try{
+      await fetch(`/stayflow-admin/software-persona/${channel}`, { method: "DELETE", credentials: "same-origin" });
+      loadAdminCommunicationCards();
+    }catch(e){ console.warn(`Erro ao desconectar ${channel}:`, e); }
+  };
+
+  window.connectAdminWhatsappEmbedded = function(){
+    const config = window.ADMIN_PERSONA_WHATSAPP_OAUTH;
+    if(!config){
+      alert(AT("settings.whatsapp.msg.oauthUnavailable"));
+      return;
+    }
+
+    function launch(){
+      window.FB.init({ appId: config.appId, xfbml: false, version: "v20.0" });
+
+      let sessionInfo = null;
+      function onMessage(event){
+        if(typeof event.origin !== "string" || !event.origin.endsWith("facebook.com")) return;
+        try{
+          const payload = JSON.parse(event.data);
+          if(payload.type === "WA_EMBEDDED_SIGNUP" && payload.data) sessionInfo = payload.data;
+        }catch(e){ /* mensagem de outra origem/formato - ignora */ }
+      }
+      window.addEventListener("message", onMessage);
+
+      window.FB.login(function(response){
+        window.removeEventListener("message", onMessage);
+        const code = response && response.authResponse && response.authResponse.code;
+        if(!code || !sessionInfo || !sessionInfo.phone_number_id || !sessionInfo.waba_id){
+          if(response && response.authResponse) alert(AT("settings.whatsapp.msg.oauthIncomplete"));
+          return;
+        }
+        finishAdminWhatsappEmbeddedSignup(code, sessionInfo.phone_number_id, sessionInfo.waba_id);
+      }, {
+        config_id: config.configId,
+        response_type: "code",
+        override_default_response_type: true,
+        extras: { feature: "whatsapp_embedded_signup", sessionInfoVersion: "3" },
+      });
+    }
+
+    if(window.FB){ launch(); return; }
+    const script = document.createElement("script");
+    script.src = "https://connect.facebook.net/en_US/sdk.js";
+    script.onload = launch;
+    document.body.appendChild(script);
+  };
+
+  async function finishAdminWhatsappEmbeddedSignup(code, phoneNumberId, wabaId){
+    try{
+      const res = await fetch("/stayflow-admin/software-persona/whatsapp/embedded-signup", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ code, phone_number_id: phoneNumberId, waba_id: wabaId }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Erro de conexão.");
+        return;
+      }
+      loadAdminCommunicationCards();
+    }catch(e){
+      console.warn("Erro ao finalizar WhatsApp Embedded Signup (persona):", e);
+    }
   }
 
   async function loadImpersonationLog(){
@@ -4242,6 +4603,15 @@
 
       StayFlowI18n.applyTranslations(ADMIN_I18N, StayFlowI18n.getInitialLang());
       StayFlowI18n.wireLanguageSwitcher("langCurrentBtn", "langDropdown", ADMIN_I18N, refreshAllTranslatedContent);
+
+      // Restaura a aba que estava ativa antes do F5 - todo o dado ja
+      // foi carregado acima independente da aba (nao e lazy-load por
+      // aba), entao so falta reativar a visibilidade certa.
+      const savedTab = localStorage.getItem("stayflow_admin_tab");
+      if(savedTab && savedTab !== "overview"){
+        const savedBtn = document.querySelector(`.menu button[data-tab="${savedTab}"]`);
+        if(savedBtn) switchAdminTab(savedTab, savedBtn);
+      }
 
       document.getElementById("adminLoading").style.display = "none";
       document.getElementById("pageShell").style.display = "flex";

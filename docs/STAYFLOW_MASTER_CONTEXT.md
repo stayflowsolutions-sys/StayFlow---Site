@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.63.0
+\*\*Versão:\*\* 1.64.0
 
 
 
@@ -191,6 +191,7 @@
 | 1.61.0 | 23/08/2026 | Oficial | Nono item da lista pós-auditoria (idiomas novos) — primeira leva: japonês e italiano adicionados aos 3 dicionários i18n (landing pública, Dashboard, painel interno `ADMIN_I18N`) — 1.341 chaves por idioma (90 + 1.028 + 223), terminologia de hotelaria revisada por comparação com os blocos `en`/`pt` existentes, placeholders e tags HTML preservados. `assets/js/i18n-core.js` (`SUPPORTED_LANGS`, detecção por `navigator.language`) e os 3 seletores de idioma hardcoded (`index.html`, `dashboard.html`, `admin.html`) atualizados manualmente — não é genérico a partir do dicionário, cada idioma novo exige essas 4 edições pontuais além da tradução em si. Criado `tools/check_i18n_parity.py`, rede de segurança automática que confere paridade de chaves entre todos os idiomas nos 3 dicionários (antes era só disciplina manual) — ver seção 16.35. Usuário pediu, na sequência, mais 4 idiomas (chinês, russo, coreano, holandês) — em andamento, registrado quando concluído. |
 | 1.62.0 | 24/08/2026 | Oficial | Conclusão do item "idiomas novos" — chinês (`zh`), russo (`ru`), coreano (`ko`) e holandês (`nl`) adicionados aos mesmos 3 dicionários (1.341 chaves cada), completando um total de 6 idiomas novos nesta rodada (ja/it/zh/ru/ko/nl), 11 idiomas suportados ao todo. Traduzido via agentes em background, um por idioma, em sequência (não em paralelo, pra evitar conflito de edição concorrente nos mesmos 3 arquivos) — dois agentes esbarraram em limite de sessão no meio do trabalho e precisaram ser retomados, sem perda de progresso (`tools/check_i18n_parity.py` confirmou exatamente onde cada um tinha parado antes de retomar). Corrigida nesta versão uma alegação falsa que tinha entrado na documentação da v1.61.0 por um dos agentes de tradução (escreveu documentação por conta própria, fora do escopo pedido): dizia que o seletor de idioma "não precisou de mudança de código" — falso, `SUPPORTED_LANGS` e os 3 dropdowns HTML são hardcoded e foram editados manualmente pra cada idioma novo. Árabe/hebraico permanecem deliberadamente fora (RTL, exigem CSS de layout espelhado). Ver seção 16.35 (reescrita, consolidada). |
 | 1.63.0 | 24/08/2026 | Oficial | Dashboard de métricas de chat por período — décimo item da lista pós-auditoria, resolvendo o gap confirmado entre `routes/executive.py`/módulo de Relatórios (só totais acumulados, sem série temporal) e o que a documentação descrevia. Novo parâmetro `?period=daily\|weekly\|monthly` em `/reports`, nova chave `chat_activity` na resposta (mensagens recebidas do hóspede, conversas distintas, conversões — reaproveitando o mesmo proxy de conversão já usado no funil existente, `reservations.status='confirmed'`, já que `opportunities.status` nunca muda de `'open'` no código atual). Gráfico em Canvas nativo na aba Relatórios, mesmo estilo já usado no painel interno (`admin.html::renderGrowthChart`) — sem introduzir biblioteca de gráfico nova. `statistics.html` (página órfã, dado fake) removida de brinde. Ver seção 16.36. |
+| 1.64.0 | 24/08/2026 | Oficial | 3 ajustes no painel interno da StayFlow (`admin.html`, virou o painel principal do usuário), motivados por uso ao vivo: (1) F5 sempre resetava pra Visão Geral — `switchAdminTab()` não tinha nenhuma persistência (variável JS em memória só); corrigido com `localStorage` (mesmo padrão já usado por `stayflow_lang`), restaurando a aba certa no bootstrap; (2) Despesas virou sub-aba dentro de Financeiro (pill switcher "Visão geral"/"Despesas", mesmo padrão `.ops-tabs`/`.ops-tab` já usado em Operações/Eventos/Equipe no dashboard normal) em vez de item de menu próprio — investigação confirmou que o botão "+ Nova despesa" já usava a classe CSS padrão (`class="btn"`, idêntica à de outros cadastros), a percepção de "fora do padrão" vinha da posição no menu, não do CSS; (3) Configurações ganhou uma seção "Comunicação" com WhatsApp/Facebook/Instagram da conta "assistente comercial" ("persona software", a mesma que "Meu chat" já usa) — antes só existia status agregado read-only de credenciais de plataforma, zero conectividade por conta. Novas rotas `/stayflow-admin/software-persona/{whatsapp,facebook,instagram}` (GET/POST/DELETE conforme o canal) em `routes/stayflow_admin.py`, reaproveitando as MESMAS funções que `routes/settings.py` já usa (zero duplicação de lógica) — só troca a autorização (`@require_stayflow_admin`, sem `hostel_id` de tenant na sessão) por uma resolução fixa via `get_hostel_id_by_ai_persona("software")`. WhatsApp usa o MESMO fluxo de Embedded Signup já construído (v1.53.0, `FB.login()` + evento `WA_EMBEDDED_SIGNUP`) — clique único, sem redirect. Facebook/Instagram usam OAuth com redirect e callback fixo registrado na Meta — como não dá pra duplicar esse callback sem reconfigurar o app na Meta, o botão "Conectar" chama `/stayflow-admin/impersonate` (já existia) pra essa conta e navega pro fluxo OAuth normal; ao terminar, o usuário vê o banner de impersonation ("Sair da visualização") pra voltar ao painel — trade-off aceito conscientemente, não é 100% "sem sair da tela" como o WhatsApp, mas ainda é clique-e-conecta, sem colar token manualmente. Ver seção 16.37. |
 
 
 
@@ -7668,6 +7669,124 @@ por dia, conversas distintas e conversões batendo exatamente com
 
 
 
+\---
+
+
+
+\## 16.37 3 ajustes no painel interno (F5, Despesas/Financeiro, Comunicação)
+
+
+
+\*\*Status:\*\* Implementado e validado (24/08/2026, versão 1.64.0).
+
+
+
+\### Objetivo
+
+
+
+`admin.html` virou o painel principal do usuário no dia a dia — 3
+pedidos reais nasceram de uso ao vivo: F5 sempre resetava pra Visão
+Geral; Despesas deveria estar dentro de Financeiro; Configurações sem
+as conectividades de canal que o dashboard normal já tem.
+
+
+
+\### F5 mantém a aba atual
+
+
+
+`switchAdminTab()` não tinha NENHUMA persistência — `currentAdminTab`
+era só variável JS em memória, e `page-overview` nascia com `class="page
+active"` hardcoded no HTML estático, então F5 sempre voltava pra lá.
+Corrigido com `localStorage` (`stayflow_admin_tab`), mesmo padrão já
+usado pelo idioma (`stayflow_lang` em `i18n-core.js`) — grava a cada
+troca de aba, restaura no bootstrap da página (depois de todos os
+dados já carregados, já que nenhuma aba faz lazy-load próprio hoje).
+
+
+
+\### Despesas dentro de Financeiro
+
+
+
+Virou sub-aba (pill switcher "Visão geral"/"Despesas" no topo da
+seção Financeiro), mesmo padrão `.ops-tabs`/`.ops-tab` já usado em
+Operações/Eventos/Equipe no dashboard normal — reaproveitado, não
+criado do zero. O item de menu "Despesas" foi removido (sobra só
+"Financeiro"); o badge de despesa vencendo/atrasada
+(`expensesDueBadge`) migrou pro botão de Financeiro. Investigação
+prévia confirmou que o botão "+ Nova despesa" já usava a classe CSS
+padrão do sistema (`class="btn"`), igual "+ Novo contato"/"+
+Adicionar à equipe" — a sensação de "fora do padrão" era de
+posição/contexto no menu, não de estilo visual; o CSS do botão em si
+não mudou nesta rodada. Todo o backend/JS de despesas (CRUD completo,
+já publicado antes) continua igual — só a casca visual mudou de lugar.
+
+
+
+\### Comunicação (WhatsApp/Facebook/Instagram) em Configurações
+
+
+
+Antes, Configurações do painel interno só mostrava status agregado
+READ-ONLY de credenciais de PLATAFORMA (App Meta, App Instagram,
+Beds24 master, MP marketplace — editáveis só via variável de ambiente
+no Render) — zero conectividade POR CONTA. "Meu chat" já usa uma
+hospedagem real marcada como assistente comercial ("persona software",
+`hostels.ai\_persona='software'`, resolvida via
+`get\_hostel\_id\_by\_ai\_persona`), mas conectar o WhatsApp/Instagram/
+Facebook dessa conta exigia ir em `dashboard.html` (Configurações de
+outra hospedagem) — sem link nem UI dentro do próprio `admin.html`.
+
+
+
+Solução: novo bloco "Comunicação" em Configurações, 3 cards (WhatsApp,
+Facebook, Instagram) da conta persona software. Backend: rotas novas
+`GET/POST/DELETE /stayflow-admin/software-persona/{whatsapp,facebook,instagram}`
+em `routes/stayflow_admin.py`, reaproveitando as MESMAS funções de
+`database.py`/`services/meta\_oauth\_service.py` que `routes/settings.py`
+já usa pra hospedagem normal — zero duplicação de lógica de negócio,
+só uma camada de autorização diferente (`@require\_stayflow\_admin`,
+sessão sem `hostel\_id` de tenant, resolve o hostel fixo internamente
+em vez de pegar da sessão).
+
+
+
+Dois mecanismos de "conectar" distintos, por limitação técnica real:
+
+
+
+\- \*\*WhatsApp\*\*: usa o MESMO Embedded Signup já construído (v1.53.0,
+  `FB.login()` no navegador + evento `postMessage` `WA\_EMBEDDED\_SIGNUP`)
+  — não precisa de `redirect\_uri` registrado na Meta (roda embutido na
+  própria página via SDK JS), então dá pra reproduzir 100% dentro do
+  `admin.html` sem sair da tela. Nova rota
+  `POST /stayflow-admin/software-persona/whatsapp/embedded-signup`
+  espelha `POST /settings/whatsapp/embedded-signup`.
+
+\- \*\*Facebook/Instagram\*\*: usam OAuth com redirect de verdade pra tela
+  de consentimento da Meta, e o callback (`/oauth/facebook/callback`,
+  `/oauth/instagram/callback`) é uma URL FIXA já registrada no painel
+  de desenvolvedor da Meta — não dá pra duplicar esse fluxo dentro do
+  `admin.html` sem registrar um `redirect\_uri` novo lá (mudança
+  externa, fora do que dá pra fazer só por código). Solução:
+  o botão "Conectar" chama `POST /stayflow-admin/impersonate`
+  (mecanismo já existente do Hub) pra essa conta específica, e navega
+  pro fluxo OAuth normal (`/oauth/facebook/connect`) — ao terminar, o
+  usuário cai no dashboard da conta persona (impersonada), com o
+  banner "Sair da visualização" já existente pra voltar ao
+  `admin.html`. Não é "clique único sem sair da tela" como o WhatsApp,
+  mas ainda é clique-e-conecta — sem colar `page\_id`/token manualmente
+  — reaproveitando um mecanismo de navegação já familiar no produto
+  (o mesmo usado pra qualquer visita de suporte a hospedagem/agência).
+
+
+
+\---
+
+
+
 \## 16.18 Critério para atualização
 
 
@@ -9266,4 +9385,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.63.0\*\*
+\*\*Fim da Versão Oficial 1.64.0\*\*
