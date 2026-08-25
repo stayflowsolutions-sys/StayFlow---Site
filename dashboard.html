@@ -292,6 +292,7 @@ async function loadTeamList() {
         <div style="display:flex;gap:8px;margin-top:10px">
           <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openRoleChangeForm(${member.membership_id})">${T('team.changeRoleBtn', 'Trocar função')}</button>
           <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openMemberPermissionsForm(${member.membership_id})">${T('team.permissionsBtn', 'Permissões')}</button>
+          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openMemberActivityLog(${member.membership_id}, '${escapeHtml(member.name).replace(/'/g, "\\'")}')">${T('team.historyBtn', 'Histórico')}</button>
           ${member.active
             ? `<button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deactivateMember(${member.membership_id})">${T('team.deactivateBtn', 'Desativar')}</button>`
             : `<button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="reactivateMember(${member.membership_id})">${T('team.reactivateBtn', 'Reativar')}</button>`
@@ -353,6 +354,47 @@ function closeGenericModal(){
   document.getElementById("genericModalOverlay").classList.remove("open");
   document.getElementById("genericModal").classList.remove("open");
 }
+
+window.openMemberActivityLog = async function(membershipId, memberName){
+  openGenericModal(`${T('team.activityLog.titlePrefix', 'Histórico de')} ${memberName}`, `
+    <p style="font-size:12px;color:var(--muted);margin:0 0 12px">${T('team.activityLog.desc', 'Ponto batido e ações registradas (limpeza/manutenção de cama, chamados assumidos e resolvidos) — mais recente primeiro.')}</p>
+    <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="attendance.title">⏱️ Ponto</h4>
+    <div id="memberActivityAttendance" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:12px">${T('common.loading', 'Carregando...')}</div>
+    <h4 style="font-size:12px;font-weight:800;margin:0 0 6px">${T('team.activityLog.actionsTitle', '📋 Ações')}</h4>
+    <div id="memberActivityActions" style="display:flex;flex-direction:column;gap:6px;font-size:12px">${T('common.loading', 'Carregando...')}</div>
+  `);
+
+  try{
+    const res = await fetch(`/team/${membershipId}/activity-log`, { credentials: "same-origin" });
+    const data = await res.json();
+    if(!data.success) return;
+
+    const attendanceEl = document.getElementById("memberActivityAttendance");
+    if(attendanceEl){
+      attendanceEl.innerHTML = data.attendance.length
+        ? data.attendance.map(a => `
+            <div style="background:#0d1421;border:1px solid #ffffff14;border-radius:10px;padding:8px 10px">
+              ${a.clock_in_at} → ${a.clock_out_at || T('attendance.stillIn', 'ainda dentro')}
+            </div>
+          `).join("")
+        : `<span style="color:var(--muted)">${T('team.activityLog.attendanceEmpty', 'Nenhum ponto registrado ainda.')}</span>`;
+    }
+
+    const actionsEl = document.getElementById("memberActivityActions");
+    if(actionsEl){
+      actionsEl.innerHTML = data.activity.length
+        ? data.activity.map(a => `
+            <div style="background:#0d1421;border:1px solid #ffffff14;border-radius:10px;padding:8px 10px">
+              <strong>${escapeHtml(a.action)}</strong> — ${escapeHtml(a.entity_type)} #${a.entity_id}${a.detail ? " · " + escapeHtml(a.detail) : ""}
+              <div style="color:var(--muted);font-size:11px;margin-top:2px">${a.created_at}</div>
+            </div>
+          `).join("")
+        : `<span style="color:var(--muted)">${T('team.activityLog.actionsEmpty', 'Nenhuma ação registrada ainda.')}</span>`;
+    }
+  }catch(e){
+    console.warn("Erro ao carregar histórico do funcionário:", e);
+  }
+};
 
 async function openMemberPermissionsForm(membershipId){
   const member = teamMembersCache.find(m => m.membership_id === membershipId);
@@ -2231,6 +2273,11 @@ async function deleteRoleConfirm(roleId){
   </div>
 
   <div data-team-section="scheduling" class="grid" style="display:none">
+    <div class="card span-12">
+      <h2 data-i18n="attendance.title">⏱️ Ponto</h2>
+      <p id="attendanceStatusText" style="color:var(--muted);font-size:13px;margin:0 0 10px" data-i18n="attendance.loading">Carregando...</p>
+      <button type="button" class="btn" id="attendanceToggleBtn" onclick="toggleAttendance()" data-i18n="attendance.clockInBtn">Bater ponto de entrada</button>
+    </div>
     <div class="card span-12">
       <h2 data-i18n="scheduling.onDuty.title">🕐 Quem está de plantão agora</h2>
       <div style="overflow-x:auto">
@@ -9683,6 +9730,8 @@ const SCHEDULING_DEPARTMENTS = [
 ];
 
 async function loadScheduling(){
+  loadAttendanceStatus();
+
   const bodyEl = document.getElementById("schedulingOnDutyBody");
   if(!bodyEl) return;
   bodyEl.innerHTML = "";
@@ -9710,6 +9759,49 @@ async function loadScheduling(){
     bodyEl.appendChild(row);
   }
 }
+
+window.loadAttendanceStatus = async function(){
+  const textEl = document.getElementById("attendanceStatusText");
+  const btnEl = document.getElementById("attendanceToggleBtn");
+  if(!textEl || !btnEl) return;
+
+  try{
+    const res = await fetch("/scheduling/attendance/status", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const data = await res.json();
+
+    if(data.clocked_in){
+      const since = data.since ? data.since.split(" ")[1]?.slice(0, 5) : "";
+      textEl.textContent = T('attendance.statusIn', 'Você está dentro desde {time}.', { time: since || "-" });
+      btnEl.textContent = T('attendance.clockOutBtn', 'Bater ponto de saída');
+      btnEl.dataset.mode = "out";
+    }else{
+      textEl.textContent = T('attendance.statusOut', 'Você não bateu ponto de entrada ainda hoje.');
+      btnEl.textContent = T('attendance.clockInBtn', 'Bater ponto de entrada');
+      btnEl.dataset.mode = "in";
+    }
+  }catch(e){
+    console.warn("Erro ao carregar status de ponto:", e);
+  }
+};
+
+window.toggleAttendance = async function(){
+  const btnEl = document.getElementById("attendanceToggleBtn");
+  const mode = btnEl?.dataset.mode || "in";
+  const url = mode === "in" ? "/scheduling/attendance/clock-in" : "/scheduling/attendance/clock-out";
+
+  try{
+    const res = await fetch(url, { method: "POST", credentials: "same-origin" });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success){
+      alert(data.message || T('attendance.msg.failed', 'Não foi possível registrar o ponto.'));
+      return;
+    }
+    loadAttendanceStatus();
+  }catch(e){
+    alert(T('common.connectionError', 'Erro de conexão.'));
+  }
+};
 
 window.openNewShiftModal = function(){
   const options = SCHEDULING_DEPARTMENTS.map(dept =>
