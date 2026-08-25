@@ -6878,3 +6878,55 @@ transferência) continua manual, mesma decisão já tomada pro
 partner-ledger antigo e pro Billing; comissão em faixas por volume
 (como a Aoki) fica pra depois, só se o percentual fixo não for
 incentivo suficiente na prática.
+
+### Fix de layout mobile em "Meu chat" e "Suporte" (v1.66.0)
+
+Reportado ao vivo pelo usuário via print do celular: no `admin.html`,
+tanto "Meu chat" quanto "Suporte" usam `.chat-layout` de 2 colunas
+(lista de conversas + janela de mensagens lado a lado) - o mesmo
+layout do desktop, sem adaptação nenhuma pro celular. Resultado: no
+mobile a lista ocupava a tela toda e a conversa em si ficava
+espremida/escondida, exigindo rolar pra ver alguma coisa.
+
+O mecanismo certo pra isso já existia no projeto - só nunca tinha sido
+estendido pro painel interno. O dashboard normal do cliente
+(`dashboard.html`, aba Chats) já resolve exatamente esse problema
+desde antes: `chats-live.js::setChatMobileView()` troca um atributo
+`data-mobile-view` (`list`/`chat`/`profile`) num único `.chat-layout`,
+e regras CSS em `static/css/app.css` (dentro de
+`@media(max-width:1100px)`) escondem/mostram cada painel como tela
+cheia - só que todas essas regras eram escopadas explicitamente com
+`#chats` no seletor, então não valiam pra nenhum outro `.chat-layout`
+da aplicação.
+
+`admin.html` tem DOIS `.chat-layout` na mesma página (`#chatShell` pra
+"Meu chat", `#supportShell` pra "Suporte") - reaproveitar
+`setChatMobileView()` como está (que usa `document.querySelector` sem
+escopo) pegaria sempre o primeiro da página, quebrando o segundo.
+Resolvido com uma função irmã, `window.setAdminChatMobileView(layoutId, view)`,
+que recebe o ID explícito de qual dos dois `.chat-layout` mexer -
+mesma ideia, adaptada pra ter mais de uma instância na tela. As
+regras de CSS foram estendidas (não duplicadas) pra também cobrir
+`#chatShell`/`#supportShell` nos mesmos seletores que já existiam pra
+`#chats`. `openMyChatGuest`/`openSupportThread` chamam a troca pra
+`"chat"` quando `window.innerWidth <= 1100`; um botão "←"
+(`.chat-mobile-back`, classe que já existia e já ficava escondida
+fora do mobile por CSS, só nunca tinha sido usada aqui) chama a volta
+pra `"list"`. `switchAdminTab()` ganhou o mesmo toggle de
+`.chat-fullscreen` no `.main` que o dashboard já usa nas abas de chat,
+pra rolar só a área de mensagens em vez da página inteira.
+
+De quebra, achado no meio do caminho: o botão de voltar usava
+`data-i18n-title="common.back"`, mas essa chave nunca tinha existido
+no `ADMIN_I18N` (só existia em `i18n-dashboard-data.js`) - o
+`applyTranslations` simplesmente não define `title` quando a chave não
+existe (falha silenciosa, não quebra nada, só fica sem traduzir), mas
+seria "Voltar" fixo em qualquer idioma. Adicionada a chave nos 11
+idiomas do admin, reaproveitando as MESMAS traduções que o dashboard
+já tinha (não traduzido de novo do zero).
+
+Testado: checagem de balanceamento de chaves `{}` nos blocos
+`<script>` do arquivo inteiro antes e depois das edições (701/701,
+sem diferença por edição quebrada); `tools/check_i18n_parity.py`
+confirmando as 252 chaves em paridade nos 11 idiomas do admin após a
+chave nova.
