@@ -6803,3 +6803,78 @@ exatamente com o esperado); `tools/check_i18n_parity.py` confirmando
 paridade das 16 chaves novas de Comunicação + 1 de Financeiro nos 11
 idiomas do `ADMIN_I18N`; checagem de balanceamento de chaves `{}` no
 arquivo inteiro (HTML+JS misturado) sem erro.
+
+### Programa de parceiro/indicação com comissão recorrente (v1.65.0)
+
+Item 12 da fila, o primeiro item "novo" (não pós-auditoria) desta
+leva - inspirado no "Plan Partner" da Aoki (comissão em faixa
+25/30/35%), motivado por formalizar o que o Miguel Seda já faz na
+prática trazendo uma rede de 3 hotéis pra conhecer a StayFlow.
+
+Investigação inicial (agente Explore) confirmou que não existia nada
+disso no sistema - o único conceito de "parceiro" já presente
+(`partner_referral_ledger`/`/stayflow-admin/partner-ledger`) é sobre
+comissão de venda de item de portfólio de agência pro HÓSPEDE, não
+sobre assinatura de um hotel indicado. Mesma palavra, dois conceitos
+completamente diferentes - risco real de confundir/misturar no
+código se não prestasse atenção.
+
+Achado que mudou o desenho no meio do caminho: ao revisar o card real
+do Miguel Seda na Prospecção pra confirmar o cenário, o
+`property_name` dele é "Promotor StayFlow Brasil (MG, contatos em
+todo o país)" - ele não é dono de hotel, não tem conta StayFlow, é um
+promotor externo. Se o programa fosse modelado só como "hostel indica
+hostel" (preso a `hostels.id`), o próprio caso de uso que motivou o
+pedido não caberia sem gambiarra (criar uma conta hostel falsa só pra
+guardar o código dele). Resolvido com uma entidade nova e desacoplada,
+`referral_partners` (`linked_hostel_id` NULL pra promotor externo
+cadastrado à mão via `admin.html`, preenchido pra hostel cliente
+indicando outro - linha criada sob demanda na primeira vez que ele
+abre o card no dashboard, sem nenhum setup manual pro caso comum).
+
+Mecânica: `subscription_referral_ledger` acumula
+`SUBSCRIPTION_REFERRAL_COMMISSION_PCT = 0.20` (fixo por enquanto, não
+em faixas por volume como a Aoki - MVP simples, sinalizado como
+decisão ajustável, não definitiva) sobre cada cobrança de assinatura
+APROVADA de um hostel que foi indicado - gatilho direto dentro de
+`mercadopago_billing_webhook.py::_process_authorized_payment_notification`,
+o único ponto do sistema que já sabe "esse hostel pagou a mensalidade
+agora" (mesmo lugar que confirma `billing.status='active'`).
+Idempotente via `UNIQUE(mp_payment_id)` na tabela nova, mesma técnica
+já usada em `mp_webhook_events` - reprocessar a mesma notificação do
+Mercado Pago não duplica o acúmulo. `get_authorized_payment`
+(`mercadopago_billing_service.py`) precisou ganhar `transaction_amount`
+no retorno (antes só devolvia id da assinatura + status), único jeito
+de saber QUANTO cobrar de comissão. `hostels.referred_by_partner_id`
+é setado uma única vez em `/register` (novo campo opcional
+`referral_code`, resolvido via `get_referral_partner_by_code`) - sem
+retroatividade, hostels já existentes ficam de fora pra sempre.
+
+UI em 3 pontas: `Register.html` lê `?ref=CODE` da URL e manda junto no
+cadastro; `dashboard.html` ganha o card "Programa de indicação" dentro
+de Configurações (mesma seção de Billing) - link com botão copiar,
+lista de hotéis indicados com status, totais acumulado/pago;
+`admin.html` ganha uma 3ª pill "Indicações" dentro de Financeiro (mesmo
+padrão visual da tabela "Repasses" já existente, reaproveitado, não
+reinventado), com botão de payout manual e um formulário pra cadastrar
+parceiro externo tipo o Miguel Seda, devolvendo o código gerado pra
+repassar por fora (WhatsApp).
+
+Testado com rigor maior que o de costume, dado que envolve dinheiro:
+script isolado (banco `STAYFLOW_DATA_DIR` temporário) cobrindo
+ponta a ponta - criação de dois hostels de teste, geração lazy de
+código de indicação, lookup case-insensitive por código, vínculo de
+indicação, criação de parceiro manual, acúmulo de comissão, DUPLA
+tentativa de acúmulo com o mesmo `mp_payment_id` confirmando que a
+segunda é ignorada (idempotência), resumo agregado batendo com o
+valor esperado, stats do hostel indicador, e payout zerando o saldo
+`accrued` - script apagado depois, não é dívida deixada no repo.
+`tools/check_i18n_parity.py` confirmando as 10 chaves novas do
+dashboard (1.037→1.047) e as 11 chaves novas do admin (240→251) nos
+11 idiomas.
+
+Fora de escopo, deliberado: payout automático de verdade (PIX/
+transferência) continua manual, mesma decisão já tomada pro
+partner-ledger antigo e pro Billing; comissão em faixas por volume
+(como a Aoki) fica pra depois, só se o percentual fixo não for
+incentivo suficiente na prática.
