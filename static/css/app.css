@@ -2018,19 +2018,32 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   }
   #chats .chat-list,
   #chats .chat-window,
-  #chats .guest-profile{
+  #chats .guest-profile,
+  #chatShell .chat-list,
+  #chatShell .chat-window,
+  #supportShell .chat-list,
+  #supportShell .chat-window{
     display:none;
     height:100%;
     max-height:none;
   }
-  /* #chats. prefixado igual a regra de esconder acima - senao a
-     especificidade de "#chats .chat-list" (ID) ganha de qualquer
-     regra sem ID, mesmo vindo depois no arquivo, e a lista fica
-     escondida pra sempre (bug real: apareceu vazio em producao). */
-  #chats .chat-layout[data-mobile-view="list"] .chat-list{
+  /* #chats/#chatShell/#supportShell. prefixado igual a regra de
+     esconder acima - senao a especificidade de "#chats .chat-list"
+     (ID) ganha de qualquer regra sem ID, mesmo vindo depois no
+     arquivo, e a lista fica escondida pra sempre (bug real: apareceu
+     vazio em producao). #chatShell ("Meu chat") e #supportShell
+     ("Suporte") sao os dois .chat-layout do admin.html - mesmo padrao
+     de tela cheia (lista -> conversa, estilo WhatsApp) que os Chats
+     do dashboard normal ja tinham, só nao estava ligado aqui ainda
+     (bug reportado ao vivo: conteudo da conversa ficava escondido). */
+  #chats .chat-layout[data-mobile-view="list"] .chat-list,
+  #chatShell[data-mobile-view="list"] .chat-list,
+  #supportShell[data-mobile-view="list"] .chat-list{
     display:block;
   }
-  #chats .chat-layout[data-mobile-view="chat"] .chat-window{
+  #chats .chat-layout[data-mobile-view="chat"] .chat-window,
+  #chatShell[data-mobile-view="chat"] .chat-window,
+  #supportShell[data-mobile-view="chat"] .chat-window{
     display:flex;
   }
   #chats .chat-layout[data-mobile-view="profile"] .guest-profile{
