@@ -7211,3 +7211,105 @@ rodada de pesquisa competitiva ampla que também cobriu Chatty,
 Hubtype, respond.io, Darwin AI, Whaticket, Asksuite, HiJiffy e
 Runnr.ai - nenhum desses, além do Cloudbeds, tem vertical de
 hotelaria de verdade.
+
+### Ponto de funcionário e histórico de ação rastreável (v1.71.0)
+
+Depois da rodada de PMS, usuário mandou mais prints de anúncios pra
+pesquisar (Zapia, Cloocker, HighLevel, PXSOL, Prometheo - Whaticket/
+Chatty repetidos, ignorados). Ao discutir o que aproveitar dessa
+pesquisa, perguntei se o Cloocker (app de controle de ponto/fichaje)
+não serviria pra StayFlow - usuário confirmou que sim, e isso puxou
+um pedido antigo dele que nunca tinha sido atendido: rastreabilidade
+de ação por funcionário. Explicou com um exemplo concreto - camareira
+arruma uma cama malfeita, hóspede reclama, o dono quer ter autonomia
+de saber exatamente QUEM arrumou aquela cama e A QUE HORAS, sem
+desculpa possível.
+
+Antes de desenhar qualquer coisa, investigação (agente Explore,
+leitura completa de `staff_shifts`/`tickets`/`beds` em `database.py`)
+confirmou os dois gaps eram reais, não achismo:
+
+- **Ponto**: zero infraestrutura. "Escala" (`staff_shifts`) é 100%
+  planejamento futuro - o campo `status` nunca sai de `'scheduled'`
+  em lugar nenhum do código, não existe nenhum registro de
+  comparecimento de verdade.
+- **Rastreabilidade**: `mark_bed_cleaned(hostel_id, bed_id)` e
+  `set_bed_maintenance(hostel_id, bed_id, under_maintenance)` não
+  recebiam nenhum identificador de quem executou a ação - só mudavam
+  o status da cama. O sistema de chamados (`tickets`, compartilhado
+  por 5 blueprints - cozinha/manutenção/segurança/operações/
+  estacionamento) tinha rastreabilidade PARCIAL: sabia quem relatou e
+  quem foi DESIGNADO, mas não quem de fato EXECUTOU a resolução (podem
+  ser pessoas diferentes) nem guardava histórico de mudanças de status
+  intermediárias.
+
+Achado que definiu a arquitetura toda: `routes/scheduling.py::create_shift_route`
+já resolvia "quem é o funcionário logado agora" com um padrão pronto -
+`get_membership(get_current_user_id(), hostel_id)["membership_id"]`,
+usado quando o corpo da requisição não trazia o `membership_id`
+explícito (caso de uso "criar turno pra mim mesmo"). Em vez de inventar
+um mecanismo novo de identificar o autor de uma ação, esse MESMO padrão
+foi replicado em todo lugar novo que precisava saber "quem clicou isso".
+
+**Ponto** (`staff_attendance`): um registro por turno realmente
+trabalhado, diferente de `staff_shifts` (que é só o planejado).
+`clock_in()` bloqueia bater ponto de novo se já existir um registro
+aberto (`clock_out_at IS NULL`) daquele funcionário - evita duas
+entradas sem saída no meio. `clock_out()` fecha o registro aberto mais
+recente. Sem geolocalização nem biometria - escopo mínimo do que foi
+pedido (registro de horário, não vigilância de local).
+
+**Rastreabilidade** (`staff_activity_log`): uma tabela GENÉRICA única
+(`entity_type`, `entity_id`, `action`, `detail`) em vez de uma tabela
+de log por feature - qualquer módulo novo que precisar de auditoria no
+futuro reaproveita a mesma, sem duplicar estrutura. Função central
+`log_staff_activity()` - se `membership_id` vier `None` (caminho sem
+ator identificado), simplesmente não loga nada, sem quebrar a função
+chamadora (log sem autor não serve pro propósito de auditoria mesmo).
+Ligada em `mark_bed_cleaned`/`set_bed_maintenance` (ganharam parâmetro
+`membership_id`) e nas 3 funções de ticket - `assign_ticket`/
+`update_ticket_status`/`resolve_ticket` ganharam `actor_membership_id`
+(quem CLICOU a ação, conceito novo e diferente de
+`assigned_to_membership_id`, que é pra QUEM foi designado). `tickets`
+ganhou coluna `resolved_by_membership_id` como FATO de primeira
+classe, não só entrada de log - é o dado que resolve o caso concreto
+do usuário (quem de fato resolveu, não só quem foi designado).
+
+Maior superfície de mudança em rotas desta sessão até agora: os 5
+blueprints de chamado (`kitchen.py`, `maintenance.py`, `operations.py`,
+`parking.py`, `patrimonial_security.py`) tiveram suas rotas de
+assign/in-progress/resolve atualizadas pra resolver o
+`actor_membership_id` da sessão e repassar adiante - mesma linha de
+código (`get_membership(get_current_user_id(), hostel_id)`) replicada
+nos 5 arquivos, cada um com uma função auxiliar `_actor_membership_id`
+local (não virou helper compartilhado entre arquivos pra não criar
+acoplamento entre blueprints de módulos operacionais distintos, que
+hoje são deliberadamente independentes uns dos outros).
+
+Nova rota `GET /team/<membership_id>/activity-log` (reaproveitando a
+guarda `_membership_in_hostel` que `routes/team.py` já tinha) devolve
+ponto + ações combinados - é literalmente o "histórico de cada
+funcionário" pedido. UI: botão "Bater ponto" na aba Escala (mostra
+status atual: dentro desde HH:MM, ou botão de entrada); botão
+"Histórico" em cada card de membro da Equipe, abrindo modal com as
+duas listas.
+
+Testado com rigor: banco isolado cobrindo o ciclo completo de ponto
+(entrada bloqueando segunda entrada sem saída, saída sem entrada
+aberta falhando, histórico correto) e o fluxo completo de ticket
+(create → assign → in_progress → resolve, cada etapa gravando o autor
+certo em `staff_activity_log` E `resolved_by_membership_id` gravado
+corretamente, com o nome do resolvedor vindo via JOIN em `get_ticket`).
+Também testado via Flask test client (não só função de banco isolada)
+- login real, bater ponto pela ROTA, checar status, bater saída,
+consultar o histórico combinado pela rota real e confirmar que reflete
+exatamente os eventos esperados.
+
+Fora de escopo, deliberado: geolocalização/biometria no ponto, alertas
+automáticos de atraso/falta, edição de um registro de ponto já feito
+(esqueceu de bater saída, por exemplo), e uma tela dedicada de
+"chamados resolvidos" dentro dos 5 módulos de ticket - o dado já
+existe e já aparece no histórico do funcionário; uma tela dedicada por
+módulo fica pra depois, só se pedida de verdade (nenhum desses 5
+módulos tem hoje nem uma listagem de chamados JÁ resolvidos, só os
+abertos - construir isso seria escopo novo, não parte do pedido atual).
