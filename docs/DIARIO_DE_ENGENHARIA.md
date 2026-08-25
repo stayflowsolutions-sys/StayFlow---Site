@@ -7131,3 +7131,83 @@ mais disponível") - prova de que a reserva de grupo não criou um
 caminho alternativo mais fraco de validação, é literalmente a mesma
 trava contra corrida de sempre. Também testado: grupo vazio (lista de
 quartos vazia) rejeitado, grupo inexistente devolve `None`.
+
+### Maturidade de PMS: multi-propriedade (v1.70.0)
+
+Terceiro e último item da leva de maturidade de PMS (Cloudbeds).
+Diferente dos dois anteriores, a investigação nesse aqui (agente
+Explore, leitura completa de `routes/auth.py`/`database.py`/
+`dashboard.html`) trouxe uma virada real: o mecanismo de multi-
+propriedade praticamente JÁ EXISTIA, ponta a ponta, publicado em
+produção, e nunca tinha sido usado de verdade.
+
+O que já estava lá: `hostel_memberships` já é uma tabela N:N
+(usuário↔hostel, não 1:1); `_complete_login()` (`routes/auth.py`) já
+trata login de gente com múltiplos hostels de forma diferente de
+quem tem só um - cria uma sessão "pending" (`hostel_id=None`) e
+devolve `needs_hostel_selection: true` com a lista; `POST /select-hostel`
+já existe e já troca o `hostel_id` de uma sessão EXISTENTE (nunca cria
+sessão nova) - dá pra "trocar de conta" sem logout; e o `dashboard.html`
+já tem a UI inteira pronta: botão `.hostel-mini` na topbar
+(`toggleHostelSelector`), dropdown populado por `populateHostelSelector()`
+a partir de `session.hostels`, cada opção chamando `switchHostel(hostelId)`.
+Consultei o `stayflow.db` direto pra confirmar: zero usuário real (nem
+da própria equipe StayFlow) tinha mais de 1 `hostel_membership` ativo
+hoje - o mecanismo estava published mas dormindo.
+
+O motivo de nunca ter sido usado: o ÚNICO jeito de uma pessoa ganhar
+uma segunda `hostel_membership` era ser CONVIDADA por outro hostel via
+Equipe (`routes/team.py`) - não existia nenhum caminho pra alguém, já
+logado na própria conta, criar uma propriedade nova pra SI MESMO. Esse
+foi o gap real fechado nesta versão - não o mecanismo de troca (que
+já estava correto), só a falta de um "criar mais uma".
+
+Decisão de arquitetura: nova função `create_hostel_and_membership_for_user(user_id, ...)`
+em vez de tentar reaproveitar/fatiar `create_identity_and_hostel()`
+(a função que o `/register` já usa) - ela faz os mesmos 3 `INSERT`s
+(hostel, role Admin, `hostel_membership`), só que sem a parte de criar
+usuário (reaproveita o `user_id` da sessão já autenticada). Decisão
+consciente: `create_identity_and_hostel` já está em produção
+protegendo o fluxo de cadastro público - fatiar ela pra "compartilhar"
+metade da lógica seria risco desnecessário pra economizar ~15 linhas
+de SQL direto, que é basicamente o que a função nova tem.
+
+Nova rota `POST /account/add-hostel` seguiu o MESMO estilo de
+checagem manual de sessão que `/select-hostel` já usa (`session.get("session_id")`
++ `get_valid_session`), em vez do decorator `@require_auth` de
+`utils/tenant.py` - motivo: esse decorator já EXIGE um `hostel_id` de
+tenant resolvido na sessão (401 se não tiver), e `routes/auth.py`
+como um todo (register/login/select-hostel/logout/me) já tem seu
+próprio jeito manual de lidar com sessão, sem usar aquele decorator
+em lugar nenhum - misturar os dois estilos no mesmo arquivo criaria
+inconsistência sem ganho real.
+
+UI: em vez de uma tela nova, um botão "+ Adicionar hospedagem" foi
+colocado dentro do MESMO dropdown que já existia pra trocar de
+hospedagem (abaixo do link de Configurações) - abre um modal simples
+(só nome; tipo fica fixo em "lodging" nesta rodada, sem replicar a
+cascata completa de categoria de agência do `Register.html` só pra
+esse caso secundário) e, ao salvar, já redireciona pra `/app` com a
+propriedade nova ativa.
+
+Testado com rigor extra, incluindo o fluxo via Flask test client (não
+só função de banco isolada) - simulei o cenário real ponta a ponta:
+criar usuário com senha de verdade (`bcrypt`, não texto puro),
+logar via `POST /login`, cair no estado `needs_hostel_selection`
+(porque o teste já tinha 2 hostels de uma etapa anterior), escolher um
+via `/select-hostel`, chamar `/account/add-hostel` e confirmar que a
+resposta já vem com a sessão apontando pra hospedagem nova E a lista
+`hostels` com 3 itens, e por fim confirmar que `/select-hostel`
+continua funcionando pra voltar pro hostel original sem logout -
+prova de que a feature nova não quebrou o mecanismo de troca já
+existente. Também testado: nome vazio rejeitado tanto na função de
+banco quanto na rota (400).
+
+Com essa versão, encerra a leva de 3 itens de maturidade de PMS
+iniciada na v1.68.0 (tarifa por temporada, reserva de grupo, multi-
+propriedade) - todos os 3 nasceram da mesma pergunta do usuário
+("o que fazer pra ficar mais adulto como o Cloudbeds") depois de uma
+rodada de pesquisa competitiva ampla que também cobriu Chatty,
+Hubtype, respond.io, Darwin AI, Whaticket, Asksuite, HiJiffy e
+Runnr.ai - nenhum desses, além do Cloudbeds, tem vertical de
+hotelaria de verdade.
