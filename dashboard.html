@@ -850,6 +850,9 @@ async function deleteRoleConfirm(roleId){
       <div id="hostelSelectorDropdown" class="hostel-selector-dropdown" style="display:none;">
         <div id="hostelSelectorList"></div>
         <div class="hostel-selector-divider"></div>
+        <button type="button" class="hostel-selector-settings-link" onclick="toggleHostelSelector(); openAddHostelModal()">
+          <span data-i18n="topbar.hostelSwitch.addHostel">+ Adicionar hospedagem</span>
+        </button>
         <button type="button" class="hostel-selector-settings-link" onclick="toggleHostelSelector(); openPage('settings', document.querySelector('[data-page=settings]'))">
           <span data-i18n="topbar.hostelSwitch.settingsLink">⚙ Configurações da hospedagem</span>
         </button>
@@ -10798,6 +10801,50 @@ window.uploadGuestDocumentUI = async function(guestId){
     }catch(e){
       console.error("Erro ao trocar de hospedagem:", e);
       alert("Erro de conexao ao trocar de hospedagem.");
+    }
+  };
+
+  window.openAddHostelModal = function(){
+    openGenericModal(T('addHostel.title', '+ Adicionar hospedagem'), `
+      <p style="color:var(--muted);font-size:13px;margin:0 0 12px">${T('addHostel.desc', 'Crie uma segunda hospedagem sob a mesma conta — você poderá trocar entre elas a qualquer momento pelo seletor no topo.')}</p>
+      <div>
+        <label>${T('addHostel.nameLabel', 'Nome da hospedagem')}</label>
+        <input id="addHostelName" type="text" placeholder="${T('addHostel.namePlaceholder', 'Ex: Hotel Praia (filial)')}">
+      </div>
+      <div id="addHostelMessage" class="generic-modal-message"></div>
+      <button class="btn" type="button" style="margin-top:8px" onclick="submitAddHostel()">${T('addHostel.submitBtn', 'Criar hospedagem')}</button>
+    `);
+  };
+
+  window.submitAddHostel = async function(){
+    const msg = document.getElementById("addHostelMessage");
+    msg.textContent = "";
+    msg.className = "generic-modal-message";
+
+    const hostelName = document.getElementById("addHostelName").value.trim();
+    if(!hostelName){
+      msg.textContent = T('addHostel.msg.nameRequired', 'Digite o nome da hospedagem.');
+      msg.classList.add("error");
+      return;
+    }
+
+    try{
+      const res = await fetch("/account/add-hostel", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ hostel_name: hostelName, account_kind: "lodging" })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || T('addHostel.msg.failed', 'Não foi possível criar a hospedagem.');
+        msg.classList.add("error");
+        return;
+      }
+      window.location.href = "/app";
+    }catch(e){
+      msg.textContent = T('common.connectionError', 'Erro de conexão.');
+      msg.classList.add("error");
     }
   };
 
