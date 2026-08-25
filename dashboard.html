@@ -6464,7 +6464,87 @@ window.editCategoryUI = function(categoryId){
     </div>
     <div id="editCatMessage" class="generic-modal-message"></div>
     <button class="btn" type="button" onclick="submitEditCategory(${category.id})">${T('common.save', 'Salvar')}</button>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #ffffff12">
+      <h4 style="margin:0 0 4px;font-size:13px;font-weight:800">${T('rates.sectionTitle', '📅 Tarifas por período')}</h4>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px">${T('rates.sectionDesc', 'Defina um preço diferente pra um intervalo de datas (ex: alta temporada) — fora desses períodos, vale a diária normal acima.')}</p>
+      <div id="editCatRatesList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">${T('common.loading', 'Carregando...')}</div>
+      <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px">
+        <input id="newRateName" type="text" placeholder="${T('rates.form.namePlaceholder', 'Nome (ex: Alta temporada)')}" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:8px 10px;font-size:12px">
+        <input id="newRateStart" type="date" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:8px 10px;font-size:12px">
+        <input id="newRateEnd" type="date" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:8px 10px;font-size:12px">
+        <input id="newRatePrice" type="number" min="0" step="0.01" placeholder="${T('rates.form.pricePlaceholder', 'Preço')}" style="grid-column:span 2;background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:8px 10px;font-size:12px">
+      </div>
+      <div id="newRateMessage" class="generic-modal-message"></div>
+      <button class="btn secondary" type="button" style="margin-top:8px" onclick="addCategoryRate(${category.id})">${T('rates.form.addBtn', '+ Adicionar tarifa')}</button>
+    </div>
   `);
+  loadCategoryRates(category.id);
+};
+
+async function loadCategoryRates(categoryId){
+  const list = document.getElementById("editCatRatesList");
+  if(!list) return;
+  try{
+    const res = await fetch(`/room-categories/${categoryId}/rates`, { credentials: "same-origin" });
+    const rules = await res.json();
+    if(!list) return; // modal pode ter fechado enquanto carregava
+    if(!rules.length){
+      list.innerHTML = `<span style="color:var(--muted);font-size:12px">${T('rates.empty', 'Nenhuma tarifa especial cadastrada ainda.')}</span>`;
+      return;
+    }
+    list.innerHTML = rules.map(r => `
+      <div style="display:flex;justify-content:space-between;align-items:center;background:#0d1421;border:1px solid #ffffff14;border-radius:10px;padding:8px 10px;font-size:12px">
+        <span><strong>${escapeHtml(r.name || T('rates.unnamed', 'Sem nome'))}</strong> · ${r.start_date} → ${r.end_date} · ${currencySymbol()} ${Number(r.price_per_night).toFixed(2)}</span>
+        <span style="cursor:pointer;opacity:.7" onclick="removeCategoryRate(${categoryId}, ${r.id})" title="${T('rates.removeTitle', 'Remover tarifa')}">✕</span>
+      </div>
+    `).join("");
+  }catch(e){
+    console.warn("Erro ao carregar tarifas:", e);
+  }
+}
+
+window.addCategoryRate = async function(categoryId){
+  const msg = document.getElementById("newRateMessage");
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  const name = document.getElementById("newRateName").value.trim();
+  const start_date = document.getElementById("newRateStart").value;
+  const end_date = document.getElementById("newRateEnd").value;
+  const price_per_night = document.getElementById("newRatePrice").value;
+
+  try{
+    const res = await fetch(`/room-categories/${categoryId}/rates`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ name, start_date, end_date, price_per_night })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success){
+      msg.textContent = data.message || T('rates.form.saveFailed', 'Não foi possível salvar a tarifa.');
+      msg.classList.add("error");
+      return;
+    }
+    document.getElementById("newRateName").value = "";
+    document.getElementById("newRateStart").value = "";
+    document.getElementById("newRateEnd").value = "";
+    document.getElementById("newRatePrice").value = "";
+    loadCategoryRates(categoryId);
+  }catch(e){
+    msg.textContent = T('common.connectionError', 'Erro de conexão.');
+    msg.classList.add("error");
+  }
+};
+
+window.removeCategoryRate = async function(categoryId, ruleId){
+  try{
+    await fetch(`/rates/${ruleId}`, { method: "DELETE", credentials: "same-origin" });
+    loadCategoryRates(categoryId);
+  }catch(e){
+    console.warn("Erro ao remover tarifa:", e);
+  }
 };
 
 window.submitEditCategory = async function(categoryId){
