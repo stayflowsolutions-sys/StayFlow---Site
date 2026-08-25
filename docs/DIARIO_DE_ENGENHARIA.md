@@ -7082,3 +7082,52 @@ cálculo novo automaticamente, provando que a integração nos 3 pontos
 de criação funciona de verdade, não só a função isolada.
 `tools/check_i18n_parity.py` confirmando as 9 chaves novas nos 11
 idiomas (1.057→1.066).
+
+### Maturidade de PMS: reserva de grupo (v1.69.0)
+
+Segundo item da leva de maturidade de PMS (Cloudbeds), depois da
+tarifa por temporada. Investigação (`reservations` completo em
+`database.py`) confirmou o gap: cada reserva é 1 linha = 1 cama/
+quarto (`bed_id` singular) - zero tabela de junção ou campo de
+agrupamento existia. Reserva de grupo (ex: excursão/evento cobrindo
+vários quartos) hoje só dava pra fazer como N reservas soltas, sem
+nenhum vínculo visual entre elas.
+
+Resolvido com o mínimo necessário: `reservation_groups` é só uma
+"capa" (`guest_name` + `created_at`, nada além disso) e
+`reservations` ganhou `group_id` nullable - quando preenchida, várias
+linhas pertencem ao mesmo grupo. A parte importante da decisão foi
+NÃO reimplementar a lógica de criação de reserva: `create_group_reservation()`
+só cria a capa e depois chama `create_reservation_record()` (a mesma
+função de sempre) uma vez por quarto da lista, passando `group_id`
+a mais - isso significa que a reserva de grupo herda de graça a MESMA
+trava de cama (`reservar_cama_com_trava`), o mesmo cálculo de preço
+noite-a-noite (`calculate_reservation_amount`, da v1.68.0 - inclusive
+tarifa por temporada se aplicável) e o mesmo webhook de saída, sem
+nenhuma cópia paralela de validação que pudesse divergir com o tempo.
+
+Decisão de escopo deliberada: sem motor de desconto de grupo - cada
+quarto continua cobrando seu preço normal. "Grupo" aqui é só
+organização/vínculo visual, não uma feature de precificação; se
+descontos de grupo forem pedidos depois, é uma decisão de produto
+separada (like desconto tem impacto de margem/comissão que não deveria
+ser decidido implicitamente numa feature de agrupamento).
+
+UI: em vez de uma tela nova, um toggle "Reserva de grupo (vários
+quartos de uma vez)" foi adicionado no modal de "Nova reserva" que já
+existia (`openNewReservationModal`) - marcar o toggle troca o bloco de
+1 quarto por uma lista expansível de blocos (tipo de quarto + cama +
+valor, um por linha), com botão "+ Adicionar quarto". Ao salvar, o
+JS decide sozinho pra qual endpoint mandar (`/reservations` normal ou
+`/reservations/group`) dependendo do estado do toggle - sem duplicar
+o modal inteiro só por causa do modo grupo. Reservas com `group_id`
+ganham um selo "👥 Parte de um grupo" na listagem principal.
+
+Testado com atenção especial na trava de cama compartilhada - depois
+de criar um grupo de 2 quartos, uma tentativa de criar uma reserva
+NORMAL (fora do grupo) pra uma das mesmas camas no mesmo período foi
+propositalmente testada e falhou como esperado ("Essa cama não está
+mais disponível") - prova de que a reserva de grupo não criou um
+caminho alternativo mais fraco de validação, é literalmente a mesma
+trava contra corrida de sempre. Também testado: grupo vazio (lista de
+quartos vazia) rejeitado, grupo inexistente devolve `None`.
