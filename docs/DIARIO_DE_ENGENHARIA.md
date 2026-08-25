@@ -6930,3 +6930,95 @@ Testado: checagem de balanceamento de chaves `{}` nos blocos
 sem diferença por edição quebrada); `tools/check_i18n_parity.py`
 confirmando as 252 chaves em paridade nos 11 idiomas do admin após a
 chave nova.
+
+### Pesquisa competitiva ampla + tags/notas/origem do lead (v1.67.0)
+
+Usuário mandou, ao longo da sessão, uma sequência de prints de
+anúncios do Instagram pedindo comparação: Chatty (letschatty.com),
+Hubtype, respond.io, Darwin AI e Cloudbeds - cada um pesquisado na
+hora (WebSearch + WebFetch direto nos sites/páginas de preço, não só
+o que a busca resume) e comparado honestamente com a StayFlow, sem
+disfarçar onde o concorrente é mais forte.
+
+Achados por concorrente:
+- **Chatty**: CRM de WhatsApp genérico (fundador Axel Gualda, captação
+  de US$50 mil), sem vertical de hotelaria, mais caro que a StayFlow
+  (US$150-250/mês + US$100/mês de IA à parte + custo por mensagem da
+  Meta, contra US$89/mês tudo incluído). Diferencial real deles:
+  rastreamento de origem do lead (de qual anúncio veio a conversa).
+- **Hubtype**: fora de liga - fundada 2016 em Barcelona, 15M+
+  interações/mês, clientes tipo Decathlon/Mango/VW/EasyJet, modelo
+  enterprise sem preço público. Sem vertical de hotelaria, não é
+  ameaça direta no mercado atual da StayFlow.
+- **respond.io**: o mais robusto dos genéricos - omnichannel de
+  verdade (WhatsApp/Instagram/Facebook/TikTok/Telegram/voz/e-mail),
+  10 mil+ marcas clientes, sincroniza com Salesforce/HubSpot,
+  US$79-279+/mês por contato ativo. O próprio anúncio que o usuário
+  mandou destacava "Tag Contacts Buyer Intent using Lifecycle" como
+  feature de marca - validação de mercado extra de que tags é padrão
+  consolidado, não capricho de UX.
+- **Darwin AI**: startup argentina (sede em São Paulo), fundada 2023,
+  já captou ~US$7 milhões (US$4,5M da Base10 Partners), opera em 20+
+  países da América Latina, "funcionários de IA" com nome próprio
+  (Alba/Sofía/Bruno/Eva/Lucas). Mais capitalizado que os outros, mas
+  mesmo padrão: genérico multi-vertical, zero hotelaria.
+- **Cloudbeds**: o único concorrente de verdade pesquisado nessa
+  rodada - PMS líder de mercado pra hospedagem independente/pequena-
+  média, dezenas de milhares de propriedades em 150 países, IA própria
+  (Signals, modelo fundação treinado especificamente pra hotelaria,
+  95% de acurácia de previsão de demanda) e mensageria via WhatsApp
+  através do Whistle (empresa que compraram e integraram). Diferença
+  estrutural: Cloudbeds nasceu PMS e colou IA/WhatsApp por cima; a
+  StayFlow nasceu IA conversacional e conecta com PMS por baixo
+  (Beds24) - arquiteturas opostas pro mesmo problema. Preço: piso de
+  US$180-220/mês (mesmo pra propriedade de 15 quartos), escalando
+  US$15-25+/quarto - mais que o dobro do piso da StayFlow (US$89),
+  deixando de fora exatamente o segmento que a StayFlow ataca primeiro
+  (hostel/pousada pequena). Signals não é replicável agora - não por
+  limitação de código, mas porque exige anos de dado histórico real
+  acumulado de dezenas de milhares de propriedades pra treinar um
+  modelo preditivo com confiança; StayFlow ainda não tem essa escala
+  de base de dados.
+
+Nenhum dos 5 concorrentes tem vertical de hotelaria com reserva/PMS de
+verdade (nem Hubtype nem respond.io nem Darwin AI) - só o Cloudbeds,
+que é PMS puro com IA/mensageria colada depois. Reforça que a StayFlow
+continua sendo a única fazendo IA conversacional NATIVAMENTE
+verticalizada em hotelaria, não um detalhe de posicionamento.
+
+Do lado de produto (não GTM), confirmado por grep amplo no backend:
+zero tabela de tag, nota interna ou rastreamento UTM/anúncio existia
+antes dessa rodada. Implementado:
+
+**Tags** - `guest_tags` (`UNIQUE(guest_id, tag)`, texto livre, sem
+lista pré-definida). **Notas internas** - `guest_notes`, log
+append-only (sem edição/exclusão nesta rodada, escopo mínimo
+deliberado), autoria via `get_current_user_id()` +
+`get_user_by_id()`. **Origem do lead** - `guests.lead_referral_json`,
+gravada por `set_guest_lead_referral()` a partir do payload `referral`
+que a Meta já manda em mensagens vindas de anúncio "Click to
+WhatsApp" (`routes/whatsapp_webhook.py::receive_message()` lia o
+payload inteiro mas descartava esse campo até agora) - idempotente
+(só grava se `lead_referral_json IS NULL`), pra nunca sobrescrever a
+origem original do hóspede com o que vier em mensagens seguintes.
+`process_incoming_message()` (`routes/chat.py`) ganhou o parâmetro
+`referral=None` pra propagar isso desde o webhook até a criação do
+hóspede, sem duplicar lógica entre os pontos de entrada.
+
+UI só no painel `.guest-profile` da aba Chats (`dashboard.html` +
+`chats-live.js::loadGuestProfile()`) - 2 novas `.smart-profile-section`
+(Tags com pills removíveis + input; Notas internas com autor/data +
+textarea), e um `.smart-tag` extra na hero ("📢 Veio de anúncio")
+quando `lead_referral` existe. Deliberadamente fora de escopo: o modal
+de edição de perfil da lista de Hóspedes (`renderGuestProfileModal`) -
+os mesmos dados já saem no `GET /guests/<id>`, só falta desenhar a UI
+lá se for pedido depois.
+
+Testado com banco isolado antes do commit: tag duplicada vira no-op
+(via `INSERT OR IGNORE` + `UNIQUE`), remover tag funciona, nota vazia
+levanta `ValueError`, duas notas aparecem na ordem certa (mais
+recente primeiro) com autor correto, e o teste mais importante -
+chamar `set_guest_lead_referral` DUAS vezes com payloads diferentes
+confirma que só o primeiro é gravado (idempotência de origem).
+`tools/check_i18n_parity.py` confirmando as 10 chaves novas em
+paridade nos 11 idiomas (1.047→1.057).
