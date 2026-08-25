@@ -293,7 +293,7 @@
         <span data-i18n="chat.notConfigured.line1">Nenhum número está marcado como assistente comercial da StayFlow ainda.</span><br>
         <span data-i18n-html="chat.notConfigured.line2">Vá em <strong>Configurações → WhatsApp Business</strong> e marque "Este número responde como → Assistente comercial da StayFlow".</span>
       </div>
-      <div class="chat-layout two-col" id="chatShell" style="display:none">
+      <div class="chat-layout two-col" id="chatShell" data-mobile-view="list" style="display:none">
         <div class="card chat-list" id="chatGuestList"></div>
 
         <div class="card chat-window">
@@ -305,6 +305,7 @@
           </div>
           <div id="chatMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
             <div class="chat-window-head">
+              <button type="button" class="chat-mobile-back" onclick="setAdminChatMobileView('chatShell','list')" data-i18n-title="common.back" title="Voltar">←</button>
               <h2 id="chatActiveName">—</h2>
               <span class="status-pill cold" id="chatActivePhone">—</span>
             </div>
@@ -323,7 +324,7 @@
 
     <!-- ===== Suporte ===== -->
     <section class="page" id="page-support">
-      <div class="chat-layout two-col" id="supportShell">
+      <div class="chat-layout two-col" id="supportShell" data-mobile-view="list">
         <div class="card chat-list" id="supportThreadList"></div>
 
         <div class="card chat-window">
@@ -335,6 +336,7 @@
           </div>
           <div id="supportMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
             <div class="chat-window-head">
+              <button type="button" class="chat-mobile-back" onclick="setAdminChatMobileView('supportShell','list')" data-i18n-title="common.back" title="Voltar">←</button>
               <h2 id="supportActiveName">—</h2>
               <span class="status-pill ai" id="supportActiveKind">—</span>
             </div>
@@ -856,6 +858,7 @@
       "nav.overview": "Visão geral", "nav.chat": "Meu chat", "nav.support": "Suporte",
       "nav.properties": "Propriedades", "nav.finance": "Financeiro", "nav.ranking": "Ranking",
       "finance.tab.overview": "📊 Visão geral",
+      "common.back": "Voltar",
       "finance.tab.referral": "🤝 Indicações",
       "referral.section.title": "Comissão de indicação",
       "referral.manualPartner.btn": "+ Parceiro manual",
@@ -982,6 +985,7 @@
       "nav.overview": "Overview", "nav.chat": "My chat", "nav.support": "Support",
       "nav.properties": "Properties", "nav.finance": "Finance", "nav.ranking": "Ranking",
       "finance.tab.overview": "📊 Overview",
+      "common.back": "Back",
       "finance.tab.referral": "🤝 Referrals",
       "referral.section.title": "Referral commission",
       "referral.manualPartner.btn": "+ Manual partner",
@@ -1108,6 +1112,7 @@
       "nav.overview": "Visión general", "nav.chat": "Mi chat", "nav.support": "Soporte",
       "nav.properties": "Propiedades", "nav.finance": "Finanzas", "nav.ranking": "Ranking",
       "finance.tab.overview": "📊 Visión general",
+      "common.back": "Volver",
       "finance.tab.referral": "🤝 Referidos",
       "referral.section.title": "Comisión de referidos",
       "referral.manualPartner.btn": "+ Parceiro manual",
@@ -1234,6 +1239,7 @@
       "nav.overview": "Vue d'ensemble", "nav.chat": "Mon chat", "nav.support": "Support",
       "nav.properties": "Propriétés", "nav.finance": "Finances", "nav.ranking": "Classement",
       "finance.tab.overview": "📊 Vue d'ensemble",
+      "common.back": "Retour",
       "finance.tab.referral": "🤝 Parrainages",
       "referral.section.title": "Commission de parrainage",
       "referral.manualPartner.btn": "+ Partenaire manuel",
@@ -1360,6 +1366,7 @@
       "nav.overview": "Übersicht", "nav.chat": "Mein Chat", "nav.support": "Support",
       "nav.properties": "Unterkünfte", "nav.finance": "Finanzen", "nav.ranking": "Rangliste",
       "finance.tab.overview": "📊 Übersicht",
+      "common.back": "Zurück",
       "finance.tab.referral": "🤝 Empfehlungen",
       "referral.section.title": "Empfehlungsprovision",
       "referral.manualPartner.btn": "+ Manueller Partner",
@@ -1489,6 +1496,7 @@
       "nav.properties": "施設",
       "nav.finance": "財務",
       "finance.tab.overview": "📊 概要",
+      "common.back": "戻る",
       "finance.tab.referral": "🤝 紹介",
       "referral.section.title": "紹介報酬",
       "referral.manualPartner.btn": "+ 手動でパートナー登録",
@@ -1743,6 +1751,7 @@
       "nav.properties": "Strutture",
       "nav.finance": "Finanze",
       "finance.tab.overview": "📊 Panoramica",
+      "common.back": "Indietro",
       "finance.tab.referral": "🤝 Segnalazioni",
       "referral.section.title": "Commissione di segnalazione",
       "referral.manualPartner.btn": "+ Partner manuale",
@@ -1997,6 +2006,7 @@
       "nav.properties": "物业",
       "nav.finance": "财务",
       "finance.tab.overview": "📊 概览",
+      "common.back": "返回",
       "finance.tab.referral": "🤝 推荐",
       "referral.section.title": "推荐佣金",
       "referral.manualPartner.btn": "+ 手动添加合作伙伴",
@@ -2250,6 +2260,7 @@
       "nav.properties": "Объекты",
       "nav.finance": "Финансы",
       "finance.tab.overview": "📊 Обзор",
+      "common.back": "Назад",
       "finance.tab.referral": "🤝 Рекомендации",
       "referral.section.title": "Комиссия за рекомендации",
       "referral.manualPartner.btn": "+ Партнёр вручную",
@@ -2504,6 +2515,7 @@
       "nav.properties": "숙박시설",
       "nav.finance": "재무",
       "finance.tab.overview": "📊 개요",
+      "common.back": "뒤로",
       "finance.tab.referral": "🤝 추천",
       "referral.section.title": "추천 수수료",
       "referral.manualPartner.btn": "+ 수동 파트너 추가",
@@ -2758,6 +2770,7 @@
       "nav.properties": "Accommodaties",
       "nav.finance": "Financiën",
       "finance.tab.overview": "📊 Overzicht",
+      "common.back": "Terug",
       "finance.tab.referral": "🤝 Verwijzingen",
       "referral.section.title": "Verwijzingscommissie",
       "referral.manualPartner.btn": "+ Handmatige partner",
@@ -3080,6 +3093,12 @@
     // janela - na aba Meu chat, o botao "Assumir" da barra de envio
     // tambem fica ali, sobrepondo os dois. Sobe o flutuante so nessa aba.
     document.body.classList.toggle("admin-chat-tab-active", tab === "chat");
+    // Mobile (padrao WhatsApp): Meu chat e Suporte usam .chat-fullscreen
+    // (mesmo mecanismo do dashboard normal) pra rolar so a area de
+    // mensagens, e comecam sempre pela LISTA (nao pela conversa/tela
+    // vazia) - setChatMobileView cuida da troca lista->conversa quando
+    // uma conversa e aberta.
+    document.querySelector(".main")?.classList.toggle("chat-fullscreen", (tab === "chat" || tab === "support") && window.innerWidth <= 1100);
     document.getElementById("pageTitle").textContent = AT(`topbar.${tab}.title`);
     document.getElementById("pageSubtitle").textContent = AT(`topbar.${tab}.subtitle`);
     document.getElementById("sidebar")?.classList.remove("open");
@@ -4508,9 +4527,23 @@
     return `<div class="msg ${side}">${(m.message || "").replace(/</g, "&lt;")}<div style="font-size:10px;opacity:.7;margin-top:4px">${time}</div></div>`;
   }
 
+  // Mobile (padrao WhatsApp): Meu chat e Suporte sao 2 telas cheias
+  // separadas (lista/conversa) em vez de 2 colunas espremidas - mesmo
+  // mecanismo (atributo data-mobile-view + CSS) ja usado nos Chats do
+  // dashboard normal (chats-live.js::setChatMobileView), so que aqui
+  // recebe o ID do .chat-layout explicitamente porque o admin.html tem
+  // DOIS (#chatShell e #supportShell), diferente do dashboard que so
+  // tem um - um querySelector generico pegaria sempre o primeiro.
+  window.setAdminChatMobileView = function(layoutId, view){
+    const layout = document.getElementById(layoutId);
+    if(layout) layout.dataset.mobileView = view;
+    window.scrollTo({top: 0});
+  };
+
   window.openMyChatGuest = async function(guestId){
     const isSameGuest = myChatActiveGuestId === guestId;
     myChatActiveGuestId = guestId;
+    if(window.innerWidth <= 1100) setAdminChatMobileView("chatShell", "chat");
 
     document.querySelectorAll("#chatGuestList .chat-item").forEach(el => {
       el.classList.toggle("active", Number(el.dataset.guestId) === guestId);
@@ -4686,6 +4719,7 @@
   window.openSupportThread = async function(hostelId){
     const isSame = supportActiveHostelId === hostelId;
     supportActiveHostelId = hostelId;
+    if(window.innerWidth <= 1100) setAdminChatMobileView("supportShell", "chat");
 
     document.querySelectorAll("#supportThreadList .chat-item").forEach(el => {
       el.classList.toggle("active", Number(el.dataset.hostelId) === hostelId);
