@@ -7022,3 +7022,63 @@ chamar `set_guest_lead_referral` DUAS vezes com payloads diferentes
 confirma que só o primeiro é gravado (idempotência de origem).
 `tools/check_i18n_parity.py` confirmando as 10 chaves novas em
 paridade nos 11 idiomas (1.047→1.057).
+
+### Maturidade de PMS: tarifa por temporada (v1.68.0)
+
+Depois de comparar a StayFlow com o Cloudbeds (PMS líder de mercado,
+dezenas de milhares de propriedades, IA própria "Signals"), usuário
+perguntou o que fazer pra "ficar mais adulto" naquilo que o Cloudbeds
+faz bem - operação hoteleira clássica. Levantei 3 gaps reais
+(confirmados no código, não achismo): tarifa por temporada, reserva
+de grupo, multi-propriedade. Usuário pediu os 3; feature 1 desta
+leva é tarifa por temporada.
+
+Investigação (`database.py` completo em torno de `room_categories`/
+`reservations`) confirmou: `price_per_night` é um único REAL fixo por
+modalidade, sem qualquer conceito de calendário. Achado extra
+relevante: o cálculo `price_per_night * nights` estava DUPLICADO em
+3 lugares diferentes (`create_reservation_record` - fluxo manual/
+dashboard, `create_reservation_from_chat` - fluxo IA/WhatsApp,
+`create_reservation_from_channel` - fluxo Beds24/OTA) - qualquer
+mudança de regra de preço precisaria ser replicada nos 3 lugares à
+mão, risco real de esquecer um.
+
+Resolvido com uma função central nova, `calculate_reservation_amount()`,
+que soma o preço NOITE A NOITE (não mais uma multiplicação única) -
+pra cada noite da estadia, verifica se alguma `rate_rules` cobre
+aquela data especificamente; sem regra, usa o `price_per_night` fixo
+de sempre. As 3 funções de criação de reserva foram atualizadas pra
+chamar essa função central em vez de repetir a conta - elimina a
+triplicação em vez de criar uma quarta cópia.
+
+Decisão de arquitetura da tabela nova (`rate_rules`): ancorada em
+`room_category_id` (FK de verdade pra `room_categories.id`) em vez de
+seguir o mesmo padrão frágil de `reservations.room_type` (string,
+`LOWER(name) = LOWER(?)`) - já que é uma tabela nova, não hereda a
+fragilidade antiga só por "consistência" com um padrão que já era
+conhecido como problema. Resolução de sobreposição entre regras
+(ex: duas regras cobrindo a mesma data): a criada mais recentemente
+vence - simples e determinístico, documentado no código. Decisão
+consciente de ESCOPO: sem variação por dia da semana nesta rodada
+(só intervalo de data) - foi o que literalmente foi pedido
+("tarifa por temporada"), variação por dia da semana fica pra depois
+se pedida.
+
+UI: em vez de criar uma tela nova, a seção "Tarifas por período"
+entrou dentro do modal que já existe pra editar uma modalidade de
+quarto (`editCategoryUI` em `dashboard.html`) - lista de regras da
+categoria + formulário simples (nome, data início, data fim, preço),
+carregado via `GET /room-categories/<id>/rates` assim que o modal
+abre.
+
+Testado com rigor - banco isolado antes do commit: estadia de 3
+noites sem regra nenhuma bate com o preço base; regra cobrindo só 2
+das 3 noites soma corretamente (1 noite preço base + 2 noites preço
+de temporada); duas regras sobrepondo a MESMA noite confirmam que a
+mais recente vence; validação rejeita data de fim antes da data de
+início e categoria inexistente; e o teste mais importante -
+`create_reservation_record` chamado sem informar valor manual usa o
+cálculo novo automaticamente, provando que a integração nos 3 pontos
+de criação funciona de verdade, não só a função isolada.
+`tools/check_i18n_parity.py` confirmando as 9 chaves novas nos 11
+idiomas (1.057→1.066).
