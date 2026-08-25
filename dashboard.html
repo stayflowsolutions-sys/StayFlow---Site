@@ -1111,7 +1111,24 @@ async function deleteRoleConfirm(roleId){
           <span class="smart-tag" id="guestPhone" data-i18n="chats.phoneUnidentified">Telefone não identificado</span>
           <span class="smart-tag" id="guestIntentTag" data-i18n="chats.intentDefault">Intenção: —</span>
           <span class="smart-tag" id="guestUrgencyTag" data-i18n="chats.urgencyDefault">Urgência: —</span>
+          <span class="smart-tag" id="guestLeadSourceTag" style="display:none"></span>
         </div>
+      </div>
+
+      <div class="smart-profile-section">
+        <h3 data-i18n="chats.tagsTitle">🏷️ Etiquetas</h3>
+        <div id="guestTagsList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="guestTagInput" data-i18n-placeholder="chats.tagInputPlaceholder" placeholder="Nova etiqueta..." style="flex:1;padding:8px 10px;border-radius:10px;border:1px solid #ffffff22;background:#0d1421;color:#fff;font-size:13px" onkeydown="if(event.key==='Enter')addGuestTag()">
+          <button type="button" class="btn secondary" onclick="addGuestTag()" data-i18n="chats.tagAddBtn">+</button>
+        </div>
+      </div>
+
+      <div class="smart-profile-section">
+        <h3 data-i18n="chats.notesTitle">🗒️ Notas internas</h3>
+        <div id="guestNotesList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;font-size:13px"></div>
+        <textarea id="guestNoteInput" data-i18n-placeholder="chats.noteInputPlaceholder" placeholder="Escrever nota interna (só a equipe vê)..." style="width:100%;min-height:56px;padding:8px 10px;border-radius:10px;border:1px solid #ffffff22;background:#0d1421;color:#fff;font-size:13px;resize:vertical"></textarea>
+        <button type="button" class="btn secondary" style="margin-top:6px" onclick="addGuestNote()" data-i18n="chats.noteAddBtn">Adicionar nota</button>
       </div>
 
       <div class="smart-profile-section">
