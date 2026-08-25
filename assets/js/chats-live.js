@@ -346,6 +346,22 @@ async function loadGuestProfile(guestId) {
             guestMessageCount.textContent = messages.length || 0;
         }
 
+        // Origem do lead (so aparece se a mensagem veio de um anuncio
+        // "Click to WhatsApp" - ver set_guest_lead_referral no backend)
+        const guestLeadSourceTag = document.getElementById("guestLeadSourceTag");
+        if (guestLeadSourceTag) {
+            const referral = data.lead_referral;
+            if (referral && (referral.headline || referral.source_type)) {
+                guestLeadSourceTag.style.display = "";
+                guestLeadSourceTag.textContent = `${T('chats.leadSourceLabel', '📢 Veio de anúncio')}${referral.headline ? ": " + referral.headline : ""}`;
+            } else {
+                guestLeadSourceTag.style.display = "none";
+            }
+        }
+
+        renderGuestTags(data.tags || []);
+        renderGuestNotes(data.notes || []);
+
         if (guestNotes) {
     if (lastOpp) {
         guestNotes.textContent = lastOpp.description || T('chats.opportunityIdentifiedDesc', 'Oportunidade identificada para este hóspede.');
@@ -397,6 +413,79 @@ if (guestNextAction) {
         console.error("Erro ao carregar guest profile:", err);
     }
 }
+
+// ===== Tags e notas internas (perfil do hospede) =====
+function renderGuestTags(tags) {
+    const list = document.getElementById("guestTagsList");
+    if (!list) return;
+    list.innerHTML = tags.length
+        ? tags.map(tag => `
+            <span class="smart-tag" style="display:inline-flex;align-items:center;gap:6px">
+                ${escapeHtml(tag)}
+                <span style="cursor:pointer;opacity:.7" onclick="removeGuestTag('${escapeHtml(tag).replace(/'/g, "\\'")}')" title="${T('chats.tagRemoveTitle', 'Remover etiqueta')}">✕</span>
+            </span>
+        `).join("")
+        : `<span style="color:var(--muted);font-size:12px">${T('chats.tagsEmpty', 'Nenhuma etiqueta ainda.')}</span>`;
+}
+
+function renderGuestNotes(notes) {
+    const list = document.getElementById("guestNotesList");
+    if (!list) return;
+    list.innerHTML = notes.length
+        ? notes.map(n => `
+            <div style="background:#0d1421;border:1px solid #ffffff14;border-radius:10px;padding:8px 10px">
+                <div style="color:var(--muted);font-size:11px;margin-bottom:2px">${escapeHtml(n.author_name || "—")} · ${n.created_at}</div>
+                <div>${escapeHtml(n.note)}</div>
+            </div>
+        `).join("")
+        : `<span style="color:var(--muted);font-size:12px">${T('chats.notesEmpty', 'Nenhuma nota ainda.')}</span>`;
+}
+
+window.addGuestTag = async function () {
+    const input = document.getElementById("guestTagInput");
+    const tag = input ? input.value.trim() : "";
+    if (!tag || !stayflowCurrentGuestId) return;
+
+    try {
+        await fetch(`/guests/${stayflowCurrentGuestId}/tags`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tag }),
+        });
+        if (input) input.value = "";
+        loadGuestProfile(stayflowCurrentGuestId);
+    } catch (err) {
+        console.error("Erro ao adicionar etiqueta:", err);
+    }
+};
+
+window.removeGuestTag = async function (tag) {
+    if (!stayflowCurrentGuestId) return;
+    try {
+        await fetch(`/guests/${stayflowCurrentGuestId}/tags/${encodeURIComponent(tag)}`, { method: "DELETE" });
+        loadGuestProfile(stayflowCurrentGuestId);
+    } catch (err) {
+        console.error("Erro ao remover etiqueta:", err);
+    }
+};
+
+window.addGuestNote = async function () {
+    const input = document.getElementById("guestNoteInput");
+    const note = input ? input.value.trim() : "";
+    if (!note || !stayflowCurrentGuestId) return;
+
+    try {
+        await fetch(`/guests/${stayflowCurrentGuestId}/notes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ note }),
+        });
+        if (input) input.value = "";
+        loadGuestProfile(stayflowCurrentGuestId);
+    } catch (err) {
+        console.error("Erro ao adicionar nota:", err);
+    }
+};
 
 // Assumir/devolver: quando a equipe assume, a IA para de responder SO
 // esse hospede (mensagem/oportunidade continuam sendo salvas) - ate
