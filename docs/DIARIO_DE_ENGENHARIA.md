@@ -7313,3 +7313,105 @@ existe e já aparece no histórico do funcionário; uma tela dedicada por
 módulo fica pra depois, só se pedida de verdade (nenhum desses 5
 módulos tem hoje nem uma listagem de chamados JÁ resolvidos, só os
 abertos - construir isso seria escopo novo, não parte do pedido atual).
+
+### Integração Tokko Broker - etapa 1 de 2 (v1.72.0)
+
+Depois de mais uma rodada de pesquisa competitiva (Bitrix24, ClickUp,
+entre outros), usuário pediu explicitamente pra retomar a fila de
+features e apontou pra começar pelos itens mais antigos ainda
+pendentes: matching de imóvel por preferência do comprador e
+integração com o Tokko Broker (item 13 e 14, inspirados na Waichatt,
+concorrente vertical em imobiliária). Escopo restrito o tempo todo a
+`account_kind='agency'` + `agency_category='imobiliaria'` - nunca
+aparece pra hospedagem nem pra outras categorias de agência.
+
+Investigação (agente Explore + pesquisa da API pública real do Tokko
+Broker, developers.tokkobroker.com) confirmou terreno greenfield -
+zero menção a "tokko"/imóvel/"real estate" em código antes desta
+versão - e revelou que a arquitetura certa é mais simples do que a da
+Nuvemshop: o Tokko não usa OAuth, usa uma API KEY única por
+imobiliária, gerada em "Mi Empresa → Permisos" no painel deles e
+colada manualmente nas Configurações - sem redirect, sem state
+anti-CSRF, sem token que expira. Fluxo é só leitura (GET) - StayFlow
+puxa o catálogo sob demanda, nunca recebe webhook nesse fluxo básico.
+
+Decisão de reaproveitamento: `portfolio_items` já é genérica e já tem
+sync externo pronto (usado até agora só pela Nuvemshop) - índice único
+PARCIAL `(hostel_id, source, external_id)` (`WHERE external_id IS NOT
+NULL`) + `upsert_portfolio_item_from_external()`. Reaproveitado 100%
+sem duplicar lógica, agora também chamado com `source='tokko'`. Como a
+tabela genérica não tem campo nenhum específico de imóvel (operação,
+localização, quartos, m²), criada tabela companheira nova
+`real_estate_details` (1:1 via `portfolio_item_id`) - mantém
+`portfolio_items` limpa pra outros tipos de item (passeio, aluguel de
+bike) que não têm esses campos.
+
+**Bug real encontrado e corrigido de brinde, fora do pedido original**:
+ao escrever o teste isolado do sync do Tokko (mock da resposta da API,
+sem chamada de rede real), o insert em `upsert_portfolio_item_from_
+external()` falhava com `sqlite3.OperationalError: ON CONFLICT clause
+does not match any PRIMARY KEY or UNIQUE constraint`. Investigação (
+reprodução isolada via `python3 -c "..."` direto no `sqlite3`, versão
+3.50.4) confirmou: quando o índice único é PARCIAL (tem `WHERE`), o
+SQLite exige que a cláusula `ON CONFLICT(...)` repita EXATAMENTE o
+mesmo `WHERE` pra ser reconhecida como alvo de conflito válido - só
+declarar as colunas não basta. A função, em produção desde a
+integração Nuvemshop, tinha `ON CONFLICT(hostel_id, source,
+external_id) DO UPDATE` sem o `WHERE external_id IS NOT NULL` - ou
+seja, TODO insert por essa função (não só quando havia conflito de
+verdade) quebrava em tempo de PARSE da declaração SQL, não em tempo de
+execução condicional. Isso nunca tinha sido detectado porque nenhum
+teste isolado tinha exercitado esse caminho de código antes - a
+Nuvemshop está em produção, então ou os merchants reais nunca bateram
+esse caminho de forma a expor o erro visivelmente, ou o erro estava
+sendo engolido silenciosamente em algum ponto acima. Corrigido
+adicionando o `WHERE external_id IS NOT NULL` na cláusula `ON
+CONFLICT`, replicando o índice; suite de teste isolado do Tokko
+re-executada do zero depois da correção, confirmando sucesso.
+
+Novo `services/tokko_service.py`: `list_properties(api_key)` (GET puro
+na API real do Tokko, nunca levanta exceção - mesmo princípio
+defensivo dos outros services de integração externa) e
+`sync_tokko_properties(hostel_id, api_key)` (itera o catálogo, chama o
+upsert genérico pra base + `upsert_real_estate_details()` novo pros
+campos estruturados). Nota registrada em comentário no próprio arquivo:
+os nomes de campo usados na resposta da API (`operations`,
+`room_amount`, `total_surface` etc.) seguem a documentação pública mas
+nunca foram testados contra uma resposta real, porque nenhuma
+imobiliária conectou uma chave de verdade ainda - mesma categoria de
+pendência já registrada pra outras integrações externas (WhatsApp
+Embedded Signup, Mercado Pago produção).
+
+Novas rotas em `routes/settings.py` (mesmo arquivo da Nuvemshop):
+`GET/POST/DELETE /settings/tokko` (ler/salvar/remover a chave) e `POST
+/settings/tokko/sync` (sincronização manual sob demanda - sem cron
+nesta rodada). Nova guarda `_require_real_estate_agency(hostel_id)`,
+espelhando `_require_agency()` de `routes/portfolio.py` mais a
+checagem extra de `agency_category == 'imobiliaria'`.
+
+UI: novo card "Tokko Broker" em Configurações, com chave de API,
+status de conexão, "Sincronizar agora" e desconectar - mesmo padrão
+visual e de `fetch` já usado pelo card da Nuvemshop logo acima dele.
+Esse card é o primeiro precedente real de gating por `agency_category`
+no frontend: `applyAccountKindVisibility()`, que antes só olhava
+`account_kind`, ganhou um segundo parâmetro (`agencyCategory`) e um
+novo atributo `data-required-agency-category` no HTML - documentado
+aqui pra ser reaproveitado se surgir uma próxima categoria de agência
+com feature própria. Descoberta lateral durante a inserção de i18n:
+várias chaves de configuração de integração da Nuvemshop/Mercado Pago
+(`settings.nuvemshop.title`, `.disconnectConfirm`,
+`settings.mercadopago.title`) nunca tinham sido adicionadas ao
+dicionário - sempre mostraram o fallback em português pra qualquer
+idioma selecionado. Gap pré-existente, não catálogo desta versão,
+deliberadamente não corrigido aqui pra não misturar escopo.
+
+17 chaves i18n novas (`settings.tokko.*`) nos 11 idiomas, ancoradas em
+`settings.facebook.connectBtn` (única chave confirmada presente nas 11
+línguas antes da inserção) - `tools/check_i18n_parity.py` confirmando
+1.093→1.110 chaves.
+
+Etapa 2 (matching de imóvel por preferência do comprador, reaproveitando
+`opportunities.suggested_partner_item_id` - já calculado desde a
+v1.57.0 mas nunca renderizado em lugar nenhum do `dashboard.html`, dado
+morto até agora mesmo pro caso antigo de tour) fica pra versão
+seguinte, já com o desenho definido no plano aprovado.
