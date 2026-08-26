@@ -19,6 +19,19 @@ function opportunityUrgencyPillClass(opportunity){
   return (opportunity.urgency || "low").toLowerCase();
 }
 
+// suggested_partner_item_id cobre 2 casos bem diferentes que reaproveitam
+// o mesmo campo (decision_engine.py): hospedagem oferecendo catalogo de
+// uma agencia PARCEIRA terceira (tour), ou imobiliaria oferecendo o
+// PROPRIO catalogo pro proprio lead (matching de imovel). So o segundo
+// caso e exclusivo de account_kind=agency + agency_category=imobiliaria
+// (arquitetura garante mutuamente exclusivo - nunca os dois ao mesmo
+// tempo) - usado pra nao chamar o vendedor de "parceiro" quando o
+// vendedor e a propria conta.
+function isOwnCatalogSuggestion(){
+  const session = window.STAYFLOW_SESSION || {};
+  return session.account_kind === "agency" && session.agency_category === "imobiliaria";
+}
+
 function opportunityDateLabel(createdAt){
   if(!createdAt) return "-";
   const date = new Date(createdAt.replace(" ", "T") + (createdAt.endsWith("Z") ? "" : "Z"));
@@ -107,6 +120,7 @@ function opportunityRowHtml(opportunity){
   // hospedagem (ver routes/guest_charges.py, charge_type='partner_item').
   let partnerSuggestionHtml = "";
   if(opportunity.suggested_partner_item_id){
+    const isOwnItem = isOwnCatalogSuggestion();
     const partnerChargeArgs = JSON.stringify({
       chargeType: "partner_item",
       portfolioItemId: opportunity.suggested_partner_item_id,
@@ -116,11 +130,17 @@ function opportunityRowHtml(opportunity){
       amount: opportunity.suggested_partner_item_price_type === "fixed" ? (opportunity.suggested_partner_item_price || "") : "",
       guestLabel: opportunity.name || opportunity.phone || "",
     }).replace(/"/g, "&quot;");
+    const suggestionText = isOwnItem
+      ? T('opportunities.ownItemSuggestion', 'Sugestão: {item}', {item: escapeHtml(opportunity.suggested_partner_item_name || "")})
+      : T('opportunities.partnerSuggestion', 'Sugestão: {item} via {agency}', {item: escapeHtml(opportunity.suggested_partner_item_name || ""), agency: escapeHtml(opportunity.suggested_partner_agency_name || "")});
+    const suggestionBtnLabel = isOwnItem
+      ? T('opportunities.offerOwnItemBtn', 'Oferecer imóvel')
+      : T('opportunities.offerPartnerBtn', 'Oferecer parceiro');
     partnerSuggestionHtml = `
       <div style="margin-top:6px;font-size:11px;color:var(--blue2)">
-        💡 ${T('opportunities.partnerSuggestion', 'Sugestão: {item} via {agency}', {item: escapeHtml(opportunity.suggested_partner_item_name || ""), agency: escapeHtml(opportunity.suggested_partner_agency_name || "")})}
+        💡 ${suggestionText}
       </div>
-      <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="openGuestChargeModal(${partnerChargeArgs})">${T('opportunities.offerPartnerBtn', 'Oferecer parceiro')}</button>
+      <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="openGuestChargeModal(${partnerChargeArgs})">${suggestionBtnLabel}</button>
     `;
   }
 
@@ -194,7 +214,7 @@ function updateOpportunitiesPrioritySidebar(opportunities){
         <span class="status-pill ${urgency}">${urgency.toUpperCase()}</span>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${escapeHtml(opportunity.description || opportunity.type || "-")}</div>
-      ${opportunity.suggested_partner_item_id ? `<div style="font-size:11px;color:var(--blue2);margin-bottom:6px">💡 ${T('opportunities.partnerSuggestion', 'Sugestão: {item} via {agency}', {item: escapeHtml(opportunity.suggested_partner_item_name || ""), agency: escapeHtml(opportunity.suggested_partner_agency_name || "")})}</div>` : ""}
+      ${opportunity.suggested_partner_item_id ? `<div style="font-size:11px;color:var(--blue2);margin-bottom:6px">💡 ${isOwnCatalogSuggestion() ? T('opportunities.ownItemSuggestion', 'Sugestão: {item}', {item: escapeHtml(opportunity.suggested_partner_item_name || "")}) : T('opportunities.partnerSuggestion', 'Sugestão: {item} via {agency}', {item: escapeHtml(opportunity.suggested_partner_item_name || ""), agency: escapeHtml(opportunity.suggested_partner_agency_name || "")})}</div>` : ""}
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
         <span style="color:var(--blue2);font-weight:700">${estimatedValue > 0 ? formatMoney(estimatedValue) : "—"}</span>
         <span style="color:var(--muted)">${T('opportunities.col.score', 'Score')}: ${Number(opportunity.score || 0)}/100</span>
