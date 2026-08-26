@@ -2094,6 +2094,16 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openTokkoSettingsModal()" style="display:none">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.tokko.title">🏠 Tokko Broker</h2>
+            <p class="settings-summary-desc" id="tokkoSummaryDesc" data-i18n="settings.tokko.desc">Conecte sua conta do Tokko Broker pra sincronizar o catálogo de imóveis.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openNotificationsModal()">
         <div class="settings-summary-row">
           <div>
@@ -2966,6 +2976,121 @@ async function deleteRoleConfirm(roleId){
       loadNuvemshopSettings();
     }catch(e){
       console.warn("Erro ao desconectar Nuvemshop:", e);
+    }
+  };
+
+  window.openTokkoSettingsModal = function(){
+    openGenericModal(T('settings.tokko.title', '🏠 Tokko Broker'), `
+      <p style="margin-bottom:14px">${T('settings.tokko.modalDesc', 'Cole a chave da API do Tokko Broker (Mi Empresa → Permisos, no painel deles) pra sincronizar seu catálogo de imóveis.')}</p>
+
+      <div id="tokkoConnected" style="display:none">
+        <p style="margin:0 0 12px">
+          <span>${T('settings.tokko.statusLabel', 'Status:')}</span>
+          <strong style="color:#3ddc97">${T('settings.tokko.statusActive', 'Conectado')}</strong>
+        </p>
+        <button type="button" class="btn" onclick="syncTokko()" id="tokkoSyncBtn">${T('settings.tokko.syncBtn', 'Sincronizar agora')}</button>
+        <button type="button" class="btn red" onclick="disconnectTokko()">${T('settings.tokko.disconnectBtn', 'Desconectar')}</button>
+      </div>
+
+      <div id="tokkoNotConnected">
+        <input type="text" id="tokkoApiKeyInput" placeholder="${T('settings.tokko.apiKeyPlaceholder', 'Chave da API do Tokko Broker')}">
+        <button type="button" class="btn" onclick="saveTokkoSettings()">${T('settings.tokko.connectBtn', 'Conectar')}</button>
+      </div>
+
+      <div id="tokkoMessage" class="generic-modal-message"></div>
+    `);
+    loadTokkoSettings();
+  };
+
+  window.loadTokkoSettings = async function(){
+    try{
+      const res = await fetch("/settings/tokko", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const summaryDesc = document.getElementById("tokkoSummaryDesc");
+      if(summaryDesc){
+        summaryDesc.textContent = data.connected
+          ? T('settings.tokko.summaryConnected', '✅ Conectado')
+          : T('settings.tokko.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+      }
+
+      const connectedEl = document.getElementById("tokkoConnected");
+      const notConnectedEl = document.getElementById("tokkoNotConnected");
+      if(!connectedEl || !notConnectedEl) return;
+
+      connectedEl.style.display = data.connected ? "block" : "none";
+      notConnectedEl.style.display = data.connected ? "none" : "block";
+    }catch(e){
+      console.warn("Erro ao carregar configuração do Tokko Broker:", e);
+    }
+  };
+
+  window.saveTokkoSettings = async function(){
+    const msg = document.getElementById("tokkoMessage");
+    msg.textContent = "";
+    msg.className = "generic-modal-message";
+
+    const apiKey = document.getElementById("tokkoApiKeyInput").value.trim();
+    if(!apiKey){
+      msg.textContent = T('settings.tokko.msg.keyRequired', 'Informe a chave da API.');
+      msg.classList.add("error");
+      return;
+    }
+
+    try{
+      const res = await fetch("/settings/tokko", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ api_key: apiKey })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || T('settings.tokko.msg.saveFailed', 'Não foi possível salvar a chave.');
+        msg.classList.add("error");
+        return;
+      }
+      loadTokkoSettings();
+    }catch(e){
+      msg.textContent = T('common.connectionError', 'Erro de conexão.');
+      msg.classList.add("error");
+    }
+  };
+
+  window.disconnectTokko = async function(){
+    const confirmed = await stayflowConfirm(T('settings.tokko.disconnectConfirm', 'Desconectar o Tokko Broker? O catálogo para de sincronizar até reconectar.'));
+    if(!confirmed) return;
+
+    try{
+      await fetch("/settings/tokko", { method: "DELETE", credentials: "same-origin" });
+      loadTokkoSettings();
+    }catch(e){
+      console.warn("Erro ao desconectar Tokko Broker:", e);
+    }
+  };
+
+  window.syncTokko = async function(){
+    const msg = document.getElementById("tokkoMessage");
+    const btn = document.getElementById("tokkoSyncBtn");
+    msg.textContent = "";
+    msg.className = "generic-modal-message";
+    if(btn){ btn.disabled = true; btn.textContent = T('settings.tokko.syncing', 'Sincronizando...'); }
+
+    try{
+      const res = await fetch("/settings/tokko/sync", { method: "POST", credentials: "same-origin" });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || T('settings.tokko.msg.syncFailed', 'Não foi possível sincronizar.');
+        msg.classList.add("error");
+      }else{
+        msg.textContent = T('settings.tokko.msg.syncSuccess', '{count} imóveis sincronizados.', { count: data.synced_count });
+      }
+    }catch(e){
+      msg.textContent = T('common.connectionError', 'Erro de conexão.');
+      msg.classList.add("error");
+    }finally{
+      if(btn){ btn.disabled = false; btn.textContent = T('settings.tokko.syncBtn', 'Sincronizar agora'); }
     }
   };
 
@@ -11008,10 +11133,18 @@ window.uploadGuestDocumentUI = async function(guestId){
   // isso aqui cobre qualquer OUTRO elemento (card do Dashboard, secao
   // de Configuracoes) marcado com data-required-account-kind="lodging"
   // ou "agency", sem precisar logica nova em JS a cada card futuro.
-  function applyAccountKindVisibility(accountKind){
+  function applyAccountKindVisibility(accountKind, agencyCategory){
     document.querySelectorAll("[data-required-account-kind]").forEach(el => {
       if(el.closest(".menu")) return;
-      el.style.display = (el.dataset.requiredAccountKind === (accountKind || "lodging")) ? "" : "none";
+      const kindMatches = el.dataset.requiredAccountKind === (accountKind || "lodging");
+      // data-required-agency-category e mais especifico que account-kind
+      // ("agency" sozinho nao basta, precisa ser a categoria certa,
+      // ex: so imobiliaria ve o card do Tokko Broker) - primeiro gate
+      // desse tipo no sistema, os outros cards de agencia (Nuvemshop
+      // etc) nao tem esse atributo e continuam so com o gate antigo.
+      const categoryRequired = el.dataset.requiredAgencyCategory;
+      const categoryMatches = !categoryRequired || categoryRequired === agencyCategory;
+      el.style.display = (kindMatches && categoryMatches) ? "" : "none";
     });
   }
 
@@ -11058,7 +11191,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 
     try{ populateHostelSelector(session); }catch(e){ console.error("Erro ao popular seletor de hospedagem:", e); }
     try{ applyPermissionVisibility(session.permissions || []); }catch(e){ console.error("Erro ao aplicar visibilidade por permissao:", e); }
-    try{ applyAccountKindVisibility(session.account_kind); }catch(e){ console.error("Erro ao aplicar visibilidade por tipo de conta:", e); }
+    try{ applyAccountKindVisibility(session.account_kind, session.agency_category); }catch(e){ console.error("Erro ao aplicar visibilidade por tipo de conta:", e); }
     try{ hideNavItemsWithoutPermission(session.permissions || [], session.account_kind); }catch(e){ console.error("Erro ao esconder itens de menu sem permissao:", e); }
     try{
       // Agencia parceira chama guest de "PAX" (turismo/locacao) ou
