@@ -7415,3 +7415,93 @@ Etapa 2 (matching de imóvel por preferência do comprador, reaproveitando
 v1.57.0 mas nunca renderizado em lugar nenhum do `dashboard.html`, dado
 morto até agora mesmo pro caso antigo de tour) fica pra versão
 seguinte, já com o desenho definido no plano aprovado.
+
+### Matching de imóvel por preferência do comprador - etapa 2 de 2 (v1.73.0)
+
+Fechamento dos itens 13/14 da fila, iniciados na v1.72.0 com a
+integração Tokko Broker. Novo branch em `services/decision_engine.py`:
+quando `account_kind == "agency"` e `agency_category == "imobiliaria"`,
+os candidatos de matching vêm de `get_own_active_portfolio_items()` (o
+PRÓPRIO catálogo da imobiliária, já criado na v1.72.0) - caso inverso
+do matching de tour que já existia desde a v1.57.0 (hospedagem
+oferecendo catálogo de uma agência PARCEIRA terceira pro próprio
+hóspede). O prompt novo (`own_items_block`) inclui preço, localização,
+quartos e tipo de operação (venda/aluguel) na lista de candidatos - o
+bloco de tour deliberadamente omite preço, mas pra imóvel esses dados
+são o cerne do match. Reaproveitado 100% o mesmo campo
+`suggested_partner_item_id` e a MESMA validação anti-alucinação (o id
+que a IA sugere só é aceito se estiver de verdade no set de candidatos
+que foi mandado no prompt) - dispara quando `intent == "booking"`, a
+classificação mais próxima que a IA já tem pra "esse lead quer fechar
+negócio nisso", já que o motor de intents é genérico entre verticais
+(booking/tour/upsell/human_help/follow_up/general).
+
+**Achado que corrigiu uma premissa errada do plano original**: antes de
+escrever qualquer UI nova, fui conferir onde ficava a renderização de
+`suggested_partner_item_id` no Opportunity Center - o plano (escrito na
+sessão anterior, antes da compactação) afirmava que esse campo "nunca
+era renderizado em lugar nenhum do `dashboard.html`", calculado desde a
+v1.57.0 mas invisível. Investigação nova mostrou que isso é falso: a
+renderização SEMPRE existiu, só que em `assets/js/stayflow-live.js`
+(`opportunityRowHtml()` pra tabela, `updateOpportunitiesPrioritySidebar()`
+pra caixa "Mais importantes") - um arquivo carregado normalmente pelo
+`dashboard.html` (`<script src="assets/js/stayflow-live.js">`), mas que
+a investigação de planejamento anterior não tinha aberto (só vasculhou
+`dashboard.html` de verdade). Antes de construir de novo uma feature
+que já existia, confirmei via `git log` que o commit original
+(`bf3cbce`) já trazia a renderização completa desde a v1.57.0. Lição
+registrada: uma alegação herdada de um plano anterior é uma hipótese
+congelada no tempo, não um fato verificado - vale re-conferir contra o
+código atual antes de agir em cima dela, mesmo quando o plano já foi
+aprovado.
+
+Com a renderização confirmada como já pronta, o trabalho de UI ficou
+restrito a ajustar a COPY pro caso novo: a mesma função genérica
+mostrava sempre "Sugestão: {item} via {agency}" com botão "Oferecer
+parceiro" - correto pro caso de tour (o vendedor É um parceiro
+terceiro de verdade), mas sem sentido pro caso de imóvel (o vendedor é
+a PRÓPRIA imobiliária, "via Imobiliaria X" ficaria redundante/confuso
+chamando a própria conta de parceiro dela mesma). Nova função
+`isOwnCatalogSuggestion()` (verifica `window.STAYFLOW_SESSION.account_kind
+=== "agency" && agency_category === "imobiliaria"` - suficiente porque
+a arquitetura já garante que os dois casos são mutuamente exclusivos)
+ramifica a copy: vira "Sugestão: {item}" + botão "Oferecer imóvel" só
+pro caso de catálogo próprio.
+
+**Segundo bug real encontrado e corrigido, só percebido ao testar o
+fluxo de cobrança ponta a ponta pro caso novo**: `routes/guest_charges.py`,
+na criação de uma cobrança `charge_type='partner_item'`, sempre setava
+`referring_hostel_id = hostel_id` (a hospedagem/agência que chamou a
+rota) incondicionalmente - correto quando o vendedor real é uma agência
+DIFERENTE (caso de tour, onde isso vira uma linha em
+`partner_referral_ledger` registrando o que a StayFlow deve pra
+hospedagem que indicou a venda). Mas no caso novo de imobiliária
+oferecendo o PRÓPRIO catálogo, vendedor (`item["hostel_id"]`) e chamador
+(`hostel_id` da sessão) são a MESMA conta - gravar `referring_hostel_id`
+nesse caso criaria uma "comissão de indicação" da imobiliária pra ela
+mesma, poluindo o razão de repasses com lançamentos sem sentido
+econômico (e potencialmente pagáveis via `mark_partner_referral_paid_out`,
+"pagando" a conta pra ela mesma). Corrigido: `referring_hostel_id` só é
+setado quando `seller_hostel_id != hostel_id` de verdade. Testado em
+banco isolado confirmando os dois comportamentos lado a lado (cobrança
+self-catalog não grava `referring_hostel_id`/comissão; cobrança de
+parceiro terceiro genuíno continua gravando exatamente como antes,
+sem regressão).
+
+De brinde, ao inserir as chaves i18n novas, descoberto que 2 chaves já
+usadas no código desde a v1.57.0 (`opportunities.partnerSuggestion`,
+`opportunities.offerPartnerBtn`) nunca tinham entrado em nenhum dos 11
+dicionários - sempre mostraram só o fallback em português via `T(key,
+fallback)`, independente do idioma selecionado pelo usuário. Corrigido
+junto com as 2 chaves novas (`opportunities.ownItemSuggestion`,
+`opportunities.offerOwnItemBtn`) - `tools/check_i18n_parity.py`
+confirmando 1.110→1.114 chaves.
+
+Testado em banco isolado (banco isolado + mock de `analyze_with_ai`,
+sem chamar a API de verdade): sugestão válida (id dentro do set de
+candidatos enviado) aceita e salva; id "alucinado" pela IA (fora do
+set) rejeitado, salva `null`; conta `lodging` nunca aciona o branch de
+imóvel mesmo que a IA "sugira" um id válido de outro contexto; intent
+diferente de `booking` (ex: `upsell`) não aciona o matching de imóvel
+mesmo com candidatos disponíveis. Encerra a leva Tokko Broker + matching
+de imóvel iniciada na v1.72.0.
