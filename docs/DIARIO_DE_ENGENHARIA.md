@@ -7583,3 +7583,82 @@ idiomas - `tools/check_i18n_parity.py` confirmando 1.114→1.120. Erro
 próprio corrigido antes de publicar: a primeira tradução em espanhol
 saiu com a palavra errada ("chamados", português, em vez de
 "solicitudes") - pego na revisão manual antes do commit.
+
+### Diária de fim de semana (sexta/sábado) por modalidade (v1.75.0)
+
+Segundo item da leva pós-fila-zerada, na mesma ordem de prioridade
+definida na v1.74.0. Estende a tarifa por temporada (`rate_rules`,
+v1.68.0) - que já resolve "preço diferente num intervalo de DATAS"
+(ex: alta temporada de verão) mas não tinha nenhuma noção de dia da
+semana. Caso de uso real e bem comum em hotelaria: cobrar mais nas
+noites de sexta/sábado (pico de demanda de lazer) o ano inteiro, sem
+precisar cadastrar uma regra de temporada pra cada final de semana.
+
+Investigação (agente Explore) confirmou o ponto de inserção ideal:
+`calculate_reservation_amount(hostel_id, room_type_name, checkin_date, checkout_date)`
+já soma o preço NOITE A NOITE com um `while` que anda dia a dia como
+objeto `date` (`current`) ANTES de virar string pra comparar contra
+`rate_rules` - `current.weekday()` já estava ali disponível de graça,
+sem precisar reestruturar nada. Confirmado também, via grep de
+`weekday|dia_semana|strftime|%w` em `database.py`/`routes/rooms.py`,
+que não existia ABSOLUTAMENTE NENHUM conceito de dia da semana em
+lugar nenhum do motor de preço até agora - terreno greenfield de
+verdade dentro de uma função já madura.
+
+Decisão de arquitetura: nova coluna `room_categories.weekend_price_per_night`
+(REAL, nullable), não uma tabela nova - mesma filosofia opt-in que
+`price_per_night` já usa (`NULL` = recurso desligado, comportamento
+idêntico a antes da coluna existir). "Fim de semana" definido como
+sexta+sábado, fixo nesta rodada (convenção padrão de lazer/hotelaria) -
+não configurável, mesmo espírito minimalista de "ponto de partida
+simples" já usado em outras decisões do produto (comissão de indicação
+fixa em 20%, regra de temporada sem variação por dia quando foi criada
+na v1.68.0).
+
+Regra de precedência por noite, do mais específico pro mais genérico:
+1) `rate_rule` de temporada que cobre a data (inalterado - uma regra
+tipo "Réveillon" cadastrada como temporada continua podendo sobrepor
+um sábado específico) → 2) diária de sexta/sábado, se configurada e a
+noite cair nesses dois dias → 3) diária normal (`price_per_night`),
+fallback de sempre. Implementado calculando o preço-base da noite
+(`weekend_price_per_night` ou `price_per_night`, conforme o dia) ANTES
+do loop existente de `rate_rules`, que continua rodando por cima
+exatamente como já rodava - o loop de temporada nunca precisou saber
+que dia da semana é, só continua podendo sobrescrever o que quer que
+tenha sido calculado antes dele.
+
+Zero mudança nos 3 pontos de chamada de `calculate_reservation_amount`
+(`create_reservation_record`/`create_reservation_from_chat`/
+`create_reservation_from_channel`) - a data de check-in/check-out já
+chegava neles do jeito de sempre, o dia da semana é derivado
+internamente na função, não precisa de parâmetro novo em lugar nenhum.
+
+UI: campo novo "Diária de sexta/sábado (opcional)" no modal de edição
+de modalidade (`editCategoryUI`), logo abaixo do campo de diária
+normal - MESMA rota `PATCH /room-categories/<id>` já existente, sem
+rota nova (é um atributo da categoria, diferente de `rate_rules` que é
+uma lista separada com suas próprias rotas). `list_room_categories` e
+`update_room_category` estendidas pra incluir a coluna nova, replicando
+com cuidado o MESMO padrão de coerção que `price_per_night` já usava:
+campo vazio/ausente no PATCH vira `NULL` (desliga o recurso), não
+"mantém o valor anterior" - achado importante ao escrever o teste
+isolado: minha primeira tentativa de teste chamou `update_room_category`
+passando só `weekend_price_per_night`, sem repassar `price_per_night`,
+e isso zerou a diária normal da categoria (mesmo comportamento que o
+código já tinha pra `price_per_night` antes desta mudança) - não é um
+bug introduzido agora, é o padrão pré-existente da função, e o
+frontend real (`submitEditCategory`) já sempre reenvia TODOS os campos
+juntos a cada salvamento, então nunca dispara esse caso na prática;
+só precisei corrigir o teste pra refletir isso.
+
+Testado em banco isolado: categoria sem `weekend_price_per_night`
+configurado se comporta EXATAMENTE como antes desta versão
+(retrocompatibilidade); uma estadia terça→domingo soma corretamente
+noite a noite (3 noites normais + 2 de fim de semana, sexta E sábado
+contam); uma `rate_rule` de temporada cadastrada sobre o mesmo sábado
+vence a diária de fim de semana (precedência respeitada); domingo
+explicitamente NÃO entra na regra (só sexta/sábado); desligar o campo
+(vazio) volta a `NULL`. Testado também via Flask test client: `PATCH
+/room-categories/<id>` grava o valor e `list_room_categories` lê de
+volta certinho. 1 chave i18n nova nos 11 idiomas (`tools/check_i18n_parity.py`
+confirmando 1.120→1.121).
