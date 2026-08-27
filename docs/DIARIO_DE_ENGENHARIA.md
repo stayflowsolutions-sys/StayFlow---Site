@@ -7505,3 +7505,81 @@ imóvel mesmo que a IA "sugira" um id válido de outro contexto; intent
 diferente de `booking` (ex: `upsell`) não aciona o matching de imóvel
 mesmo com candidatos disponíveis. Encerra a leva Tokko Broker + matching
 de imóvel iniciada na v1.72.0.
+
+### Tela de chamados resolvidos nos 5 módulos operacionais (v1.74.0)
+
+Com a fila numerada zerada (itens 1-19 todos shippados), usuário
+perguntou "que nos falta?" - resposta organizada em 4 grupos (gaps de
+produto não atacados, decisões deliberadamente adiadas, bloqueadores
+externos, pendências de negócio/GTM). Na sequência, pediu pra atacar
+em ordem de prioridade. Ordem definida por mim, do menor risco/maior
+valor pro maior esforço - primeiro item: a tela de "chamados
+resolvidos" nos 5 módulos operacionais (Cozinha/Manutenção/Segurança
+patrimonial/Estacionamento/Tarefas), porque o dado já existia desde a
+v1.71.0 (`resolved_by_membership_id`/`resolved_at`) e na época ficou
+registrado como "fora de escopo deliberado, fica pra se for pedida" -
+ninguém tinha pedido até agora.
+
+Investigação (agente Explore) confirmou a arquitetura: `tickets` é UMA
+tabela genérica compartilhada pelos 5 módulos, distinguida por `type`
+(`kitchen_order`/`maintenance`/`security_incident`/`valet_request`/
+`task`). Já existia `get_open_tickets(hostel_id, ticket_type=None)`
+(status IN open/assigned/in_progress) mas nenhuma função equivalente
+pra resolvidos. `get_ticket(hostel_id, ticket_id)` já fazia o JOIN
+certo pra trazer `resolved_by_name` (LEFT JOIN `hostel_memberships` →
+`users`) - reaproveitado exatamente esse JOIN na função nova. Os 5
+blueprints são deliberadamente independentes uns dos outros desde a
+v1.71.0 (cada um duplica seu próprio `_actor_membership_id` "pra não
+criar acoplamento entre módulos operacionais distintos") - mas essa é
+uma convenção de BACKEND; no FRONTEND já existem helpers genéricos
+compartilhados entre os 5 módulos (`urgencyPillClass`,
+`ticketStatusLabel`), então uma função JS genérica pros 5 é consistente
+com o padrão existente - só o backend ficou com uma rota fina por
+blueprint, sem função/serviço compartilhado entre eles.
+
+Nova `get_resolved_tickets(hostel_id, ticket_type=None, limit=20,
+offset=0)` em `database.py`, paginada como `get_opportunities_list`
+(retorna `{items, total}`) - decisão consciente de NÃO copiar o padrão
+sem paginação de `/team/<id>/activity-log` (histórico pessoal de um
+funcionário, naturalmente limitado): chamados resolvidos acumulam sem
+limite ao longo da vida inteira da hospedagem, pedem paginação de
+verdade. 5 rotas novas (`GET .../resolved`, uma por blueprint), cada
+uma thin, reaproveitando os mesmos decorators (`require_permission`/
+`require_plan_feature`) e o mesmo parsing de `limit`/`offset` com
+clamp que `routes/opportunities.py` já usava.
+
+UI: pill switcher "Abertos"/"Resolvidos" em cada um dos 5 painéis,
+reaproveitando o componente visual `.ops-tabs`/`.ops-tab` que já existe
+pra alternar entre os próprios módulos (Tarefas/Cozinha/Manutenção/
+Segurança/Estacionamento) - não foi criado CSS novo. Cada painel de
+histórico tem 4 colunas fixas (local, descrição, resolvido por,
+resolvido em) iguais pros 5 módulos, sem coluna de ação (é consulta,
+não tem o que fazer com um chamado já resolvido) + botão "Mostrar
+mais" no mesmo padrão do Opportunity Center. Em vez de 5 pares de
+funções JS quase idênticas, uma função genérica só
+(`switchTicketView(moduleKey, view)` + `loadResolvedTickets(moduleKey)`),
+configurada por um dict `TICKET_MODULE_CONFIG` com o endpoint e os ids
+de DOM de cada módulo - reaproveita `escapeHtml` (já existe desde o
+começo do dashboard) e `opportunityDateLabel` (já existe em
+`stayflow-live.js`) pra formatação, sem duplicar helper nenhum.
+
+Testado em banco isolado: 2 hospedagens (uma delas só pra provar
+isolamento de tenant), chamados dos 5 tipos criados e resolvidos
+(menos um de manutenção, deixado aberto de propósito) - confirmado que
+`get_resolved_tickets` só traz os resolvidos, nunca o aberto;
+`resolved_by_name` populado certo via JOIN; filtro por `ticket_type`
+funcionando; paginação com `limit`/`offset` sem sobreposição entre
+páginas; e isolamento de tenant nos dois sentidos (hostel B nunca vê
+chamado do hostel A e vice-versa). Also testado via Flask test client
+- login real, as 5 rotas novas respondendo 200 com sessão de conta
+"comp" (billing cortesia, libera `hostel_has_plan_feature` sem precisar
+reconstruir a configuração real de planos/add-ons só pro teste) e o
+formato `{items, total}` batendo com o total esperado em cada uma.
+
+6 chaves i18n novas (`tickets.tabOpen`, `tickets.tabResolved`,
+`tickets.resolvedByLabel`, `tickets.resolvedAtLabel`,
+`tickets.resolvedEmptyTitle`, `tickets.resolvedEmptyDesc`) nos 11
+idiomas - `tools/check_i18n_parity.py` confirmando 1.114→1.120. Erro
+próprio corrigido antes de publicar: a primeira tradução em espanhol
+saiu com a palavra errada ("chamados", português, em vez de
+"solicitudes") - pego na revisão manual antes do commit.
