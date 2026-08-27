@@ -6857,6 +6857,10 @@ window.editCategoryUI = function(categoryId){
       <input id="editCatPrice" type="number" min="0" step="0.01" value="${category.price_per_night || ""}">
     </div>
     <div>
+      <label>${T('roommap.category.weekendPriceLabel', 'Diária de sexta/sábado (opcional)')} (${currencySymbol()})</label>
+      <input id="editCatWeekendPrice" type="number" min="0" step="0.01" value="${category.weekend_price_per_night || ""}">
+    </div>
+    <div>
       <label>${T('roommap.category.descLabel', 'Descrição')}</label>
       <input id="editCatDescription" type="text" value="${escapeHtml(category.description || "")}">
     </div>
@@ -6959,6 +6963,7 @@ window.submitEditCategory = async function(categoryId){
         name: document.getElementById("editCatName").value.trim(),
         capacity: document.getElementById("editCatCapacity").value,
         price_per_night: document.getElementById("editCatPrice").value,
+        weekend_price_per_night: document.getElementById("editCatWeekendPrice").value,
         description: document.getElementById("editCatDescription").value.trim()
       })
     });
