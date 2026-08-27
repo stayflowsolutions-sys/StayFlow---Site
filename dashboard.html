@@ -1381,25 +1381,51 @@ async function deleteRoleConfirm(roleId){
         <h2 style="margin:0" data-i18n="operations.tasks.title">🧹 Tarefas operacionais</h2>
         <button type="button" class="btn primary" onclick="openNewTaskModal()" data-i18n="operations.tasks.newBtn">➕ Novo chamado</button>
       </div>
-      <div class="sf-empty" id="opsTasksEmpty">
-        <div>
-          <strong data-i18n="operations.tasks.emptyTitle">Nenhuma tarefa cadastrada.</strong>
-          <span data-i18n="operations.tasks.emptyDesc">Quando integrações de limpeza, manutenção ou tarefas forem configuradas, a fila operacional aparecerá aqui.</span>
-        </div>
+      <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="tasks">
+        <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('tasks','open')" data-i18n="tickets.tabOpen">Abertos</button>
+        <button type="button" class="ops-tab" data-ticket-view="resolved" onclick="switchTicketView('tasks','resolved')" data-i18n="tickets.tabResolved">Resolvidos</button>
       </div>
-      <table class="table" id="opsTasksTable" style="display:none">
-        <thead>
-          <tr>
-            <th data-i18n="operations.tasks.col.task">Tarefa</th>
-            <th data-i18n="operations.tasks.col.owner">Responsável</th>
-            <th data-i18n="guests.col.status">Status</th>
-            <th data-i18n="common.action">Ação</th>
-          </tr>
-        </thead>
-        <tbody id="opsTasksBody">
-          <!-- preenchido por live -->
-        </tbody>
-      </table>
+      <div id="tasksOpenView">
+        <div class="sf-empty" id="opsTasksEmpty">
+          <div>
+            <strong data-i18n="operations.tasks.emptyTitle">Nenhuma tarefa cadastrada.</strong>
+            <span data-i18n="operations.tasks.emptyDesc">Quando integrações de limpeza, manutenção ou tarefas forem configuradas, a fila operacional aparecerá aqui.</span>
+          </div>
+        </div>
+        <table class="table" id="opsTasksTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-i18n="operations.tasks.col.task">Tarefa</th>
+              <th data-i18n="operations.tasks.col.owner">Responsável</th>
+              <th data-i18n="guests.col.status">Status</th>
+              <th data-i18n="common.action">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="opsTasksBody">
+            <!-- preenchido por live -->
+          </tbody>
+        </table>
+      </div>
+      <div id="tasksResolvedView" style="display:none">
+        <div class="sf-empty" id="tasksResolvedEmpty">
+          <div>
+            <strong data-i18n="tickets.resolvedEmptyTitle">Nenhum chamado resolvido ainda.</strong>
+            <span data-i18n="tickets.resolvedEmptyDesc">Quando um chamado for concluído, ele aparece aqui com quem resolveu e quando.</span>
+          </div>
+        </div>
+        <table class="table" id="tasksResolvedTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-i18n="common.location">Local</th>
+              <th data-i18n="common.description">Descrição</th>
+              <th data-i18n="tickets.resolvedByLabel">Resolvido por</th>
+              <th data-i18n="tickets.resolvedAtLabel">Resolvido em</th>
+            </tr>
+          </thead>
+          <tbody id="tasksResolvedBody"><!-- preenchido por live --></tbody>
+        </table>
+        <button type="button" class="btn secondary" id="tasksResolvedLoadMoreBtn" style="display:none;margin-top:10px" onclick="loadMoreResolvedTickets('tasks')" data-i18n="opportunities.loadMoreBtn">Mostrar mais</button>
+      </div>
     </div>
   </div>
 
@@ -1418,23 +1444,49 @@ async function deleteRoleConfirm(roleId){
         <h2 style="margin:0" data-i18n="kitchen.orders.title">🍽️ Pedidos em aberto</h2>
         <button type="button" class="btn primary" onclick="openNewKitchenOrderModal()" data-i18n="kitchen.orders.newBtn">➕ Novo pedido</button>
       </div>
-      <div class="sf-empty" id="kitchenOrdersEmpty">
-        <div>
-          <strong data-i18n="kitchen.orders.emptyTitle">Nenhum pedido em aberto.</strong>
-          <span data-i18n="kitchen.orders.emptyDesc">Pedidos feitos pelo hóspede via chat, ou lançados manualmente, aparecem aqui.</span>
-        </div>
+      <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="kitchen">
+        <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('kitchen','open')" data-i18n="tickets.tabOpen">Abertos</button>
+        <button type="button" class="ops-tab" data-ticket-view="resolved" onclick="switchTicketView('kitchen','resolved')" data-i18n="tickets.tabResolved">Resolvidos</button>
       </div>
-      <table class="table" id="kitchenOrdersTable" style="display:none">
-        <thead>
-          <tr>
-            <th data-i18n="kitchen.orders.col.location">Local</th>
-            <th data-i18n="kitchen.orders.col.items">Itens</th>
-            <th data-i18n="kitchen.orders.col.status">Status</th>
-            <th data-i18n="common.action">Ação</th>
-          </tr>
-        </thead>
-        <tbody id="kitchenOrdersBody"><!-- preenchido por live --></tbody>
-      </table>
+      <div id="kitchenOpenView">
+        <div class="sf-empty" id="kitchenOrdersEmpty">
+          <div>
+            <strong data-i18n="kitchen.orders.emptyTitle">Nenhum pedido em aberto.</strong>
+            <span data-i18n="kitchen.orders.emptyDesc">Pedidos feitos pelo hóspede via chat, ou lançados manualmente, aparecem aqui.</span>
+          </div>
+        </div>
+        <table class="table" id="kitchenOrdersTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-i18n="kitchen.orders.col.location">Local</th>
+              <th data-i18n="kitchen.orders.col.items">Itens</th>
+              <th data-i18n="kitchen.orders.col.status">Status</th>
+              <th data-i18n="common.action">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="kitchenOrdersBody"><!-- preenchido por live --></tbody>
+        </table>
+      </div>
+      <div id="kitchenResolvedView" style="display:none">
+        <div class="sf-empty" id="kitchenResolvedEmpty">
+          <div>
+            <strong data-i18n="tickets.resolvedEmptyTitle">Nenhum chamado resolvido ainda.</strong>
+            <span data-i18n="tickets.resolvedEmptyDesc">Quando um chamado for concluído, ele aparece aqui com quem resolveu e quando.</span>
+          </div>
+        </div>
+        <table class="table" id="kitchenResolvedTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-i18n="kitchen.orders.col.location">Local</th>
+              <th data-i18n="common.description">Descrição</th>
+              <th data-i18n="tickets.resolvedByLabel">Resolvido por</th>
+              <th data-i18n="tickets.resolvedAtLabel">Resolvido em</th>
+            </tr>
+          </thead>
+          <tbody id="kitchenResolvedBody"><!-- preenchido por live --></tbody>
+        </table>
+        <button type="button" class="btn secondary" id="kitchenResolvedLoadMoreBtn" style="display:none;margin-top:10px" onclick="loadMoreResolvedTickets('kitchen')" data-i18n="opportunities.loadMoreBtn">Mostrar mais</button>
+      </div>
     </div>
   </div>
 
@@ -1444,24 +1496,50 @@ async function deleteRoleConfirm(roleId){
         <h2 style="margin:0" data-i18n="maintenance.tickets.title">🔧 Chamados em aberto</h2>
         <button type="button" class="btn primary" onclick="openNewMaintenanceTicketModal()" data-i18n="maintenance.tickets.newBtn">➕ Novo chamado</button>
       </div>
-      <div class="sf-empty" id="maintenanceEmpty">
-        <div>
-          <strong data-i18n="maintenance.tickets.emptyTitle">Nenhum chamado em aberto.</strong>
-          <span data-i18n="maintenance.tickets.emptyDesc">Problemas relatados pelo hóspede via chat, ou lançados manualmente, aparecem aqui.</span>
-        </div>
+      <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="maintenance">
+        <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('maintenance','open')" data-i18n="tickets.tabOpen">Abertos</button>
+        <button type="button" class="ops-tab" data-ticket-view="resolved" onclick="switchTicketView('maintenance','resolved')" data-i18n="tickets.tabResolved">Resolvidos</button>
       </div>
-      <table class="table" id="maintenanceTable" style="display:none">
-        <thead>
-          <tr>
-            <th data-i18n="common.location">Local</th>
-            <th data-i18n="common.description">Descrição</th>
-            <th data-i18n="common.urgency">Urgência</th>
-            <th data-i18n="guests.col.status">Status</th>
-            <th data-i18n="common.action">Ação</th>
-          </tr>
-        </thead>
-        <tbody id="maintenanceBody"><!-- preenchido por live --></tbody>
-      </table>
+      <div id="maintenanceOpenView">
+        <div class="sf-empty" id="maintenanceEmpty">
+          <div>
+            <strong data-i18n="maintenance.tickets.emptyTitle">Nenhum chamado em aberto.</strong>
+            <span data-i18n="maintenance.tickets.emptyDesc">Problemas relatados pelo hóspede via chat, ou lançados manualmente, aparecem aqui.</span>
+          </div>
+        </div>
+        <table class="table" id="maintenanceTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-i18n="common.location">Local</th>
+              <th data-i18n="common.description">Descrição</th>
+              <th data-i18n="common.urgency">Urgência</th>
+              <th data-i18n="guests.col.status">Status</th>
+              <th data-i18n="common.action">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="maintenanceBody"><!-- preenchido por live --></tbody>
+        </table>
+      </div>
+      <div id="maintenanceResolvedView" style="display:none">
+        <div class="sf-empty" id="maintenanceResolvedEmpty">
+          <div>
+            <strong data-i18n="tickets.resolvedEmptyTitle">Nenhum chamado resolvido ainda.</strong>
+            <span data-i18n="tickets.resolvedEmptyDesc">Quando um chamado for concluído, ele aparece aqui com quem resolveu e quando.</span>
+          </div>
+        </div>
+        <table class="table" id="maintenanceResolvedTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-i18n="common.location">Local</th>
+              <th data-i18n="common.description">Descrição</th>
+              <th data-i18n="tickets.resolvedByLabel">Resolvido por</th>
+              <th data-i18n="tickets.resolvedAtLabel">Resolvido em</th>
+            </tr>
+          </thead>
+          <tbody id="maintenanceResolvedBody"><!-- preenchido por live --></tbody>
+        </table>
+        <button type="button" class="btn secondary" id="maintenanceResolvedLoadMoreBtn" style="display:none;margin-top:10px" onclick="loadMoreResolvedTickets('maintenance')" data-i18n="opportunities.loadMoreBtn">Mostrar mais</button>
+      </div>
     </div>
     <div class="card" id="maintenanceRecurringCard" style="display:none">
       <h2 data-i18n="maintenance.recurring.title">⚠️ Padrão recorrente</h2>
@@ -1475,24 +1553,50 @@ async function deleteRoleConfirm(roleId){
         <h2 style="margin:0" data-i18n="patrimonialSecurity.incidents.title">🛡️ Incidentes em aberto</h2>
         <button type="button" class="btn primary" onclick="openNewSecurityIncidentModal()" data-i18n="patrimonialSecurity.incidents.newBtn">➕ Novo chamado</button>
       </div>
-      <div class="sf-empty" id="patrimonialSecurityEmpty">
-        <div>
-          <strong data-i18n="patrimonialSecurity.incidents.emptyTitle">Nenhum incidente em aberto.</strong>
-          <span data-i18n="patrimonialSecurity.incidents.emptyDesc">Ocorrências relatadas pelo hóspede via chat, ou registradas pela equipe, aparecem aqui.</span>
-        </div>
+      <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="patrimonialSecurity">
+        <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('patrimonialSecurity','open')" data-i18n="tickets.tabOpen">Abertos</button>
+        <button type="button" class="ops-tab" data-ticket-view="resolved" onclick="switchTicketView('patrimonialSecurity','resolved')" data-i18n="tickets.tabResolved">Resolvidos</button>
       </div>
-      <table class="table" id="patrimonialSecurityTable" style="display:none">
-        <thead>
-          <tr>
-            <th data-i18n="common.location">Local</th>
-            <th data-i18n="common.description">Descrição</th>
-            <th data-i18n="common.urgency">Urgência</th>
-            <th data-i18n="guests.col.status">Status</th>
-            <th data-i18n="common.action">Ação</th>
-          </tr>
-        </thead>
-        <tbody id="patrimonialSecurityBody"><!-- preenchido por live --></tbody>
-      </table>
+      <div id="patrimonialSecurityOpenView">
+        <div class="sf-empty" id="patrimonialSecurityEmpty">
+          <div>
+            <strong data-i18n="patrimonialSecurity.incidents.emptyTitle">Nenhum incidente em aberto.</strong>
+            <span data-i18n="patrimonialSecurity.incidents.emptyDesc">Ocorrências relatadas pelo hóspede via chat, ou registradas pela equipe, aparecem aqui.</span>
+          </div>
+        </div>
+        <table class="table" id="patrimonialSecurityTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-i18n="common.location">Local</th>
+              <th data-i18n="common.description">Descrição</th>
+              <th data-i18n="common.urgency">Urgência</th>
+              <th data-i18n="guests.col.status">Status</th>
+              <th data-i18n="common.action">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="patrimonialSecurityBody"><!-- preenchido por live --></tbody>
+        </table>
+      </div>
+      <div id="patrimonialSecurityResolvedView" style="display:none">
+        <div class="sf-empty" id="patrimonialSecurityResolvedEmpty">
+          <div>
+            <strong data-i18n="tickets.resolvedEmptyTitle">Nenhum chamado resolvido ainda.</strong>
+            <span data-i18n="tickets.resolvedEmptyDesc">Quando um chamado for concluído, ele aparece aqui com quem resolveu e quando.</span>
+          </div>
+        </div>
+        <table class="table" id="patrimonialSecurityResolvedTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-i18n="common.location">Local</th>
+              <th data-i18n="common.description">Descrição</th>
+              <th data-i18n="tickets.resolvedByLabel">Resolvido por</th>
+              <th data-i18n="tickets.resolvedAtLabel">Resolvido em</th>
+            </tr>
+          </thead>
+          <tbody id="patrimonialSecurityResolvedBody"><!-- preenchido por live --></tbody>
+        </table>
+        <button type="button" class="btn secondary" id="patrimonialSecurityResolvedLoadMoreBtn" style="display:none;margin-top:10px" onclick="loadMoreResolvedTickets('patrimonialSecurity')" data-i18n="opportunities.loadMoreBtn">Mostrar mais</button>
+      </div>
     </div>
     <div class="card settings-summary-card" onclick="openCameraSettingsModal()">
       <div class="settings-summary-row">
@@ -1535,22 +1639,48 @@ async function deleteRoleConfirm(roleId){
         <h2 style="margin:0" data-i18n="parking.valet.title">🔑 Solicitações de manobrista</h2>
         <button type="button" class="btn primary" onclick="openNewValetRequestModal()" data-i18n="parking.valet.newBtn">➕ Novo chamado de manobrista</button>
       </div>
-      <div class="sf-empty" id="parkingValetEmpty">
-        <div>
-          <strong data-i18n="parking.valet.emptyTitle">Nenhuma solicitação pendente.</strong>
-          <span data-i18n="parking.valet.emptyDesc">Pedidos de "traga meu carro" pelo chat, ou registrados manualmente, aparecem aqui.</span>
-        </div>
+      <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="parking">
+        <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('parking','open')" data-i18n="tickets.tabOpen">Abertos</button>
+        <button type="button" class="ops-tab" data-ticket-view="resolved" onclick="switchTicketView('parking','resolved')" data-i18n="tickets.tabResolved">Resolvidos</button>
       </div>
-      <table class="table" id="parkingValetTable" style="display:none">
-        <thead>
-          <tr>
-            <th data-i18n="common.description">Descrição</th>
-            <th data-i18n="guests.col.status">Status</th>
-            <th data-i18n="common.action">Ação</th>
-          </tr>
-        </thead>
-        <tbody id="parkingValetBody"><!-- preenchido por live --></tbody>
-      </table>
+      <div id="parkingOpenView">
+        <div class="sf-empty" id="parkingValetEmpty">
+          <div>
+            <strong data-i18n="parking.valet.emptyTitle">Nenhuma solicitação pendente.</strong>
+            <span data-i18n="parking.valet.emptyDesc">Pedidos de "traga meu carro" pelo chat, ou registrados manualmente, aparecem aqui.</span>
+          </div>
+        </div>
+        <table class="table" id="parkingValetTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-i18n="common.description">Descrição</th>
+              <th data-i18n="guests.col.status">Status</th>
+              <th data-i18n="common.action">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="parkingValetBody"><!-- preenchido por live --></tbody>
+        </table>
+      </div>
+      <div id="parkingResolvedView" style="display:none">
+        <div class="sf-empty" id="parkingResolvedEmpty">
+          <div>
+            <strong data-i18n="tickets.resolvedEmptyTitle">Nenhum chamado resolvido ainda.</strong>
+            <span data-i18n="tickets.resolvedEmptyDesc">Quando um chamado for concluído, ele aparece aqui com quem resolveu e quando.</span>
+          </div>
+        </div>
+        <table class="table" id="parkingResolvedTable" style="display:none">
+          <thead>
+            <tr>
+              <th data-i18n="common.location">Local</th>
+              <th data-i18n="common.description">Descrição</th>
+              <th data-i18n="tickets.resolvedByLabel">Resolvido por</th>
+              <th data-i18n="tickets.resolvedAtLabel">Resolvido em</th>
+            </tr>
+          </thead>
+          <tbody id="parkingResolvedBody"><!-- preenchido por live --></tbody>
+        </table>
+        <button type="button" class="btn secondary" id="parkingResolvedLoadMoreBtn" style="display:none;margin-top:10px" onclick="loadMoreResolvedTickets('parking')" data-i18n="opportunities.loadMoreBtn">Mostrar mais</button>
+      </div>
     </div>
   </div>
 </section>
@@ -8985,6 +9115,97 @@ function ticketStatusLabel(status){
   };
   return map[status] || status || "-";
 }
+
+// ----- Chamados resolvidos (historico) - generico pros 5 modulos
+// operacionais (Cozinha/Manutencao/Seguranca patrimonial/Estacionamento/
+// Tarefas). Todos usam a MESMA forma de resposta (get_resolved_tickets,
+// database.py) e as MESMAS 4 colunas (local/descricao/resolvido por/
+// resolvido em) - uma funcao so em vez de 5 quase identicas, seguindo
+// o mesmo espirito de urgencyPillClass/ticketStatusLabel acima (helpers
+// compartilhados entre modulos no FRONTEND - diferente do backend, onde
+// os 5 blueprints sao propositalmente independentes uns dos outros).
+const TICKET_MODULE_CONFIG = {
+  kitchen: { endpoint: "/kitchen/orders/resolved", openViewId: "kitchenOpenView", resolvedViewId: "kitchenResolvedView", emptyId: "kitchenResolvedEmpty", tableId: "kitchenResolvedTable", bodyId: "kitchenResolvedBody", loadMoreId: "kitchenResolvedLoadMoreBtn" },
+  maintenance: { endpoint: "/maintenance/tickets/resolved", openViewId: "maintenanceOpenView", resolvedViewId: "maintenanceResolvedView", emptyId: "maintenanceResolvedEmpty", tableId: "maintenanceResolvedTable", bodyId: "maintenanceResolvedBody", loadMoreId: "maintenanceResolvedLoadMoreBtn" },
+  patrimonialSecurity: { endpoint: "/patrimonial-security/incidents/resolved", openViewId: "patrimonialSecurityOpenView", resolvedViewId: "patrimonialSecurityResolvedView", emptyId: "patrimonialSecurityResolvedEmpty", tableId: "patrimonialSecurityResolvedTable", bodyId: "patrimonialSecurityResolvedBody", loadMoreId: "patrimonialSecurityResolvedLoadMoreBtn" },
+  parking: { endpoint: "/parking/valet-requests/resolved", openViewId: "parkingOpenView", resolvedViewId: "parkingResolvedView", emptyId: "parkingResolvedEmpty", tableId: "parkingResolvedTable", bodyId: "parkingResolvedBody", loadMoreId: "parkingResolvedLoadMoreBtn" },
+  tasks: { endpoint: "/operations/tasks/resolved", openViewId: "tasksOpenView", resolvedViewId: "tasksResolvedView", emptyId: "tasksResolvedEmpty", tableId: "tasksResolvedTable", bodyId: "tasksResolvedBody", loadMoreId: "tasksResolvedLoadMoreBtn" },
+};
+
+const ticketViewState = {};
+
+window.switchTicketView = function(moduleKey, view){
+  const cfg = TICKET_MODULE_CONFIG[moduleKey];
+  if(!cfg) return;
+
+  const openEl = document.getElementById(cfg.openViewId);
+  const resolvedEl = document.getElementById(cfg.resolvedViewId);
+  if(openEl) openEl.style.display = view === "open" ? "" : "none";
+  if(resolvedEl) resolvedEl.style.display = view === "resolved" ? "" : "none";
+
+  document.querySelectorAll(`[data-ticket-view-tabs="${moduleKey}"] .ops-tab`).forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.ticketView === view);
+  });
+
+  const state = ticketViewState[moduleKey];
+  if(view === "resolved" && !(state && state.loaded)){
+    loadResolvedTickets(moduleKey);
+  }
+};
+
+function resolvedTicketRowHtml(item){
+  const resolvedBy = item.resolved_by_name ? escapeHtml(item.resolved_by_name) : "—";
+  const resolvedAt = item.resolved_at ? opportunityDateLabel(item.resolved_at) : "—";
+  return `
+    <td>${escapeHtml(item.location || "-")}</td>
+    <td>${escapeHtml(item.description || "-")}</td>
+    <td>${resolvedBy}</td>
+    <td>${resolvedAt}</td>
+  `;
+}
+
+async function loadResolvedTickets(moduleKey, append){
+  const cfg = TICKET_MODULE_CONFIG[moduleKey];
+  if(!cfg) return;
+
+  const state = ticketViewState[moduleKey] || (ticketViewState[moduleKey] = { offset: 0, total: 0, loaded: false });
+  if(!append) state.offset = 0;
+
+  const emptyEl = document.getElementById(cfg.emptyId);
+  const tableEl = document.getElementById(cfg.tableId);
+  const bodyEl = document.getElementById(cfg.bodyId);
+  const loadMoreBtn = document.getElementById(cfg.loadMoreId);
+
+  try{
+    const res = await fetch(`${cfg.endpoint}?limit=20&offset=${state.offset}`, { credentials: "same-origin" });
+    if(!res.ok) return;
+    const data = await res.json();
+
+    state.total = data.total || 0;
+    state.loaded = true;
+
+    if(!append && bodyEl) bodyEl.innerHTML = "";
+    (data.items || []).forEach(item => {
+      const row = document.createElement("tr");
+      row.innerHTML = resolvedTicketRowHtml(item);
+      if(bodyEl) bodyEl.appendChild(row);
+    });
+
+    const hasAny = bodyEl && bodyEl.children.length > 0;
+    if(emptyEl) emptyEl.style.display = hasAny ? "none" : "flex";
+    if(tableEl) tableEl.style.display = hasAny ? "table" : "none";
+    if(loadMoreBtn) loadMoreBtn.style.display = (state.offset + (data.items || []).length) < state.total ? "inline-flex" : "none";
+  }catch(e){
+    console.warn(`Erro ao carregar chamados resolvidos (${moduleKey}):`, e);
+  }
+}
+
+window.loadMoreResolvedTickets = function(moduleKey){
+  const state = ticketViewState[moduleKey];
+  if(!state) return;
+  state.offset += 20;
+  loadResolvedTickets(moduleKey, true);
+};
 
 // ----- Cozinha -----
 
