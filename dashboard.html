@@ -6163,6 +6163,10 @@ window.openNewReservationModal = async function(){
     <div id="nrGroupRoomBlock" style="display:none">
       <div id="nrGroupRoomsList" style="display:flex;flex-direction:column;gap:8px"></div>
       <button class="btn secondary" type="button" style="margin-top:8px" onclick="addGroupRoomBlock()">${T('reservations.group.addRoomBtn', '+ Adicionar quarto')}</button>
+      <div style="margin-top:12px;max-width:260px">
+        <label>${T('reservations.group.discountLabel', 'Desconto do grupo (%) — opcional')}</label>
+        <input id="nrGroupDiscountPct" type="number" min="0" max="100" step="0.1" placeholder="${T('reservations.group.discountPlaceholder', 'Ex: 10')}">
+      </div>
     </div>
 
     <div id="newReservationMessage" class="generic-modal-message"></div>
@@ -6280,6 +6284,7 @@ window.submitNewReservationModal = async function(){
       email: document.getElementById("nrEmail").value.trim(),
       nationality: document.getElementById("nrNationality").value.trim(),
       bookings,
+      discount_pct: document.getElementById("nrGroupDiscountPct").value || null,
     };
   }else{
     payload = {
@@ -6317,6 +6322,23 @@ window.submitNewReservationModal = async function(){
       msg.textContent = data.message || T('reservations.msg.createFailed', 'Não foi possível criar a reserva.');
       msg.classList.add("error");
       return;
+    }
+
+    if(isGroup && data.group_id){
+      try{
+        const groupRes = await fetch(`/reservations/group/${data.group_id}`, { credentials: "same-origin" });
+        if(groupRes.ok){
+          const groupData = await groupRes.json();
+          const total = formatMoney(groupData.group_total || 0);
+          const discountPct = groupData.group && groupData.group.discount_pct;
+          const summary = discountPct
+            ? T('reservations.group.msg.createdWithDiscount', 'Reserva de grupo criada! Total (com {pct}% de desconto): {total}', { pct: discountPct, total })
+            : T('reservations.group.msg.created', 'Reserva de grupo criada! Total: {total}', { total });
+          alert(summary);
+        }
+      }catch(e){
+        console.warn("Erro ao buscar resumo do grupo:", e);
+      }
     }
 
     closeGenericModal();
