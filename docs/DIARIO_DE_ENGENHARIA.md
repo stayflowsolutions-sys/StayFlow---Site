@@ -7662,3 +7662,77 @@ explicitamente NÃO entra na regra (só sexta/sábado); desligar o campo
 /room-categories/<id>` grava o valor e `list_room_categories` lê de
 volta certinho. 1 chave i18n nova nos 11 idiomas (`tools/check_i18n_parity.py`
 confirmando 1.120→1.121).
+
+### Desconto automático em reserva de grupo (v1.76.0)
+
+Terceiro item da leva pós-fila-zerada, mesma ordem de prioridade. A
+reserva de grupo (v1.69.0) nasceu com uma decisão explícita registrada
+no próprio código: "Sem motor de desconto - cada quarto mantém seu
+preço normal". Era um gap conhecido desde a criação, fica pra "depois,
+se o percentual fixo não bastar como incentivo" - ficou sem incentivo
+nenhum até agora. Caso de uso real: excursão/evento fechando vários
+quartos de uma vez normalmente justifica um desconto pro grupo todo, e
+a única forma de simular isso hoje era a equipe digitar manualmente um
+valor menor em cada quarto, um por um, sem nenhum registro de que
+aquilo era um desconto de verdade (nem quanto).
+
+Investigação (agente Explore) mapeou o gancho certo:
+`create_group_reservation` já chama `create_reservation_record` uma
+vez por quarto, e essa função já aceita um `amount` pronto que, quando
+informado, pula o próprio `calculate_reservation_amount` - o mesmo
+mecanismo que já existia pra permitir digitar um valor manual serve
+perfeitamente pra aplicar um desconto por cima do valor (calculado OU
+manual) antes de repassar adiante. Confirmado também que
+`reservations.amount` sempre foi o valor FINAL cobrado em qualquer
+cenário do sistema - nunca existiu um conceito de "preço de tabela vs.
+preço cobrado" separado em lugar nenhum das reservas - então gravar o
+valor já descontado ali é consistente com a convenção existente, não
+introduz uma ideia nova. E confirmado via grep (`discount|desconto|
+coupon|cupom` em `database.py`/`routes/`) que o único resultado eram
+os comentários documentando a AUSÊNCIA do recurso - terreno greenfield
+de verdade.
+
+Decisão de arquitetura: desconto PERCENTUAL, digitado pelo staff na
+hora de criar o grupo (não uma regra automática por tamanho de grupo,
+tipo "3+ quartos ganham 5% sozinho") - mesmo espírito minimalista já
+usado noutras decisões do produto (comissão de indicação fixa em 20%,
+tarifa por temporada sem variação por dia quando foi criada). Nova
+coluna `reservation_groups.discount_pct` (nullable) guarda só o
+REGISTRO de qual desconto foi usado, pra auditoria/exibição - não
+participa de cálculo nenhum na leitura, porque o valor já sai
+descontado e gravado em cada `reservations.amount`. `create_group_reservation`
+valida o percentual (0 a 100, senão `ValueError`) e aplica sobre CADA
+quarto: primeiro resolve o valor do jeito que já resolvia (manual OU
+`calculate_reservation_amount`), depois multiplica por
+`(1 - discount_pct / 100)` - o desconto vale igual pros dois casos,
+sem tratamento especial pra quando o valor veio digitado à mão.
+
+Achado que virou trabalho extra necessário, não escopo por conta
+própria: a investigação revelou que NADA no sistema soma os quartos de
+um grupo em lugar nenhum hoje - nem `get_reservation_group` (devolve a
+lista crua), nem o modal de criação (nunca mostra total nenhum antes
+de enviar), nem a listagem de reservas (cada linha mostra só o valor
+daquele quarto, o badge "👥 Parte de um grupo" é puramente visual, sem
+nenhum total agregado em lugar nenhum). Sem fechar esse gap mínimo, o
+desconto teria o mesmo destino do `suggested_partner_item_id` da
+v1.57.0: calculado certinho por baixo dos panos, mas invisível pra
+quem realmente usa o produto - lição da v1.73.0 reaplicada aqui de
+propósito. Fechado com o menor esforço possível: `get_reservation_group`
+ganhou um `group_total` computado (soma em Python dos valores já
+retornados, sem SQL novo) e o modal de Nova Reserva passou a buscar
+esse resumo logo depois de criar um grupo com sucesso, mostrando o
+total (com o desconto já aplicado) numa confirmação simples antes de
+fechar - em vez de só fechar e atualizar a tela sem feedback nenhum,
+como acontecia até agora.
+
+Testado em banco isolado: grupo sem `discount_pct` continua idêntico a
+antes desta versão (retrocompatibilidade); grupo com desconto sobre
+valor calculado automaticamente (200 → 180 por quarto com 10%); grupo
+com desconto sobre valor digitado manualmente (500 → 400 com 20%,
+provando que o desconto não faz distinção entre as duas origens);
+percentual inválido (negativo, acima de 100, não numérico) sempre
+levanta `ValueError`. Testado também via Flask test client: `POST
+/reservations/group` com desconto seguido de `GET /reservations/group/<id>`
+confirmando que o `group_total` bate com a conta esperada. 4 chaves
+i18n novas nos 11 idiomas (`tools/check_i18n_parity.py` confirmando
+1.121→1.125).
