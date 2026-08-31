@@ -4208,6 +4208,10 @@ async function deleteRoleConfirm(roleId){
           <span>${T('settings.communication.pushTypeReservation', 'Nova reserva pendente de confirmação')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="reservation" id="pushTypeReservation">
         </label>
+        <label data-required-permission="reservations" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+          <span>${T('settings.communication.pushTypeLateArrival', 'Chegada de hoje sem check-in até 18h')}</span>
+          <input type="checkbox" data-setting="push_notification_types" value="late_arrival" id="pushTypeLateArrival">
+        </label>
         <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeGuestNeedsAttention', 'Hóspede com problema, dúvida ou frustração')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="guest_needs_attention" id="pushTypeGuestNeedsAttention">
@@ -4298,11 +4302,12 @@ async function deleteRoleConfirm(roleId){
       const bellInput = document.getElementById("alertChannelsCheckbox");
       if(bellInput) bellInput.checked = Array.isArray(data.alert_channels) && data.alert_channels.includes("dashboard");
 
-      const defaultPushTypes = ["opportunity", "reservation", "guest_needs_attention", "assumed_conversation", "kitchen_order", "maintenance_ticket", "security_incident", "valet_request", "new_event", "nuvemshop_order"];
+      const defaultPushTypes = ["opportunity", "reservation", "late_arrival", "guest_needs_attention", "assumed_conversation", "kitchen_order", "maintenance_ticket", "security_incident", "valet_request", "new_event", "nuvemshop_order"];
       const pushTypes = Array.isArray(data.push_notification_types) ? data.push_notification_types : defaultPushTypes;
       const pushTypeCheckboxIds = {
         opportunity: "pushTypeOpportunity",
         reservation: "pushTypeReservation",
+        late_arrival: "pushTypeLateArrival",
         guest_needs_attention: "pushTypeGuestNeedsAttention",
         assumed_conversation: "pushTypeAssumedConversation",
         new_event: "pushTypeNewEvent",
