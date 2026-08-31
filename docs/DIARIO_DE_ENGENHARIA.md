@@ -7736,3 +7736,105 @@ levanta `ValueError`. Testado também via Flask test client: `POST
 confirmando que o `group_total` bate com a conta esperada. 4 chaves
 i18n novas nos 11 idiomas (`tools/check_i18n_parity.py` confirmando
 1.121→1.125).
+
+### Alertas automáticos de atraso/no-show (v1.77.0)
+
+Quarto item da leva pós-fila-zerada. Hoje, quando um hóspede não
+aparece no dia da chegada, ninguém é avisado - a equipe só descobre se
+alguém lembrar de olhar o Mapa de Quartos ou a lista de Reservas.
+
+Investigação (agente Explore) trouxe 3 achados que mudaram
+completamente a expectativa de escopo do que ia ser construído:
+
+1. **`no_show` já era um status válido de `reservations`, com UI/i18n
+   completos** - dropdown de status, pill vermelho, até um KPI
+   (`kpiNoShow`) já contando quantos. A equipe já consegue marcar
+   manualmente hoje. Isso mudou o objetivo real: não era "criar o
+   conceito de no-show", era "avisar proativamente que uma reserva
+   está atrasada", deixando a decisão de marcar (ou não) com quem
+   trabalha no balcão - eles podem saber de algo que o sistema não sabe
+   (hóspede ligou avisando que ia atrasar, por exemplo).
+2. **A condição de detecção já existia e já era usada** - o bloco
+   "arrival" de `GET /operations` (`routes/operations.py`) já filtra
+   exatamente `checkin_date = hoje AND status != 'cancelled' AND
+   checked_in_at IS NULL` pra mostrar um alerta na tela. Só que é
+   PASSIVO: só aparece se alguém abrir a página naquele momento. Não
+   tem hora de chegada esperada guardada em lugar nenhum, só a data.
+3. **A StayFlow já tem um scheduler funcionando em produção** - achado
+   mais importante pra moldar a arquitetura. Não existe nada de
+   APScheduler, cron, ou um serviço de worker separado no Render (sem
+   `render.yaml`, deploy é um único Web Service via `Procfile`, 3
+   workers do gunicorn). Mas `app.py` já registra DOIS laços em
+   background há tempo - `threading.Thread` simples com `while True` +
+   `time.sleep`, um pros alarmes de compromisso da Prospecção (a cada
+   60s) e outro pra expirar trial de billing vencido (a cada hora).
+   Como os 3 workers do gunicorn rodam esse código em paralelo (cada
+   worker é um processo Python separado, cada um importa `app.py` e
+   registra as próprias threads), a deduplicação é resolvida no banco:
+   uma tabela de "quem já disparou isso" com `INSERT OR IGNORE` +
+   checar `cursor.rowcount` - só quem ganha a inserção manda a
+   notificação de verdade, os outros desistem sem precisar de lock
+   nenhum. Esse padrão já testado e rodando em produção foi clonado
+   diretamente, sem inventar nada novo.
+
+Decisão de arquitetura mais importante: **só alerta, nunca marca
+`no_show` sozinho** - mesmo espírito conservador já usado no Billing
+("bloqueio de acesso por inadimplência... só bookkeeping, status muda
+mas nenhuma rota trava"). Automação que muda dado do hóspede sem
+supervisão humana é um risco desnecessário aqui - o pior cenário de só
+alertar é a equipe ignorar uma notificação; o pior cenário de
+auto-marcar seria um hóspede chegando tarde à noite já rotulado
+"no-show" por engano.
+
+Horário de corte fixo em 18h (fuso `America/Argentina/Mendoza`, mesmo
+fuso único hardcoded que `services/lead_alarm_service.py` já usa - sem
+conceito de fuso por hospedagem em lugar nenhum do sistema hoje) - não
+configurável por hospedagem nesta rodada, mesmo espírito minimalista
+já repetido em outras decisões do produto (tarifa de fim de semana
+fixa em sexta/sábado, comissão de indicação fixa em 20%). Novo
+`services/no_show_alert_service.py::check_late_arrivals(now=None)` -
+só roda a query de verdade quando a hora local for >= 18h; busca
+reservas pendentes de TODAS as hospedagens de uma vez (mesmo espírito
+de `get_due_lead_alarms`, que também não itera hostel por hostel);
+pra cada uma, tenta reivindicar via `claim_late_arrival_alert`
+(nova tabela `late_arrival_alerts_fired`, UNIQUE em `reservation_id`)
+e só manda o push se ganhar a corrida. O parâmetro `now` é injetável
+de propósito - sem isso, testar a borda exata do horário de corte
+dependeria do relógio real da máquina rodando o teste, uma fragilidade
+desnecessária.
+
+Novo laço `_late_arrival_alert_loop()` registrado em `app.py`, mesmo
+padrão dos outros dois, mas com intervalo de 15 minutos (900s) - mais
+espaçado que os 60s dos alarmes de compromisso de propósito, porque
+esse alerta não precisa de precisão de minuto, é um lembrete de "hoje
+ainda não chegou", não um horário exato disparando na hora certa.
+
+Novo tipo de notificação push `late_arrival`, default LIGADO (mesmo
+grupo de `reservation`/`opportunity` - não é ruidoso tipo
+`chat_message`, que dispara por mensagem). Registrar um tipo de
+notificação novo direito exige tocar em 5 lugares pra manter
+consistência com os que já existem: lista default do backend
+(`_DEFAULT_PUSH_NOTIFICATION_TYPES`), checkbox nova em Configurações →
+Notificações, o array `defaultPushTypes` e o mapa
+`pushTypeCheckboxIds` no JS, e a chave i18n do rótulo do checkbox nos
+11 idiomas - nenhum atalho tomado, os 5 lugares foram atualizados.
+
+Testado em banco isolado com `now` injetado (sem depender do relógio
+real): antes das 18h, a função não dispara nada e nem tenta reivindicar
+nenhuma reserva (confirma que o horário de corte é respeitado antes de
+qualquer efeito colateral); depois das 18h, dispara exatamente pras
+reservas realmente pendentes, uma por hospedagem, testado com 2
+hospedagens diferentes recebendo cada uma seu próprio push; reserva já
+com `checked_in_at` preenchido ou `status` `cancelled`/`no_show` nunca
+entra na lista, confirmado nos dois casos; rodar a função de novo
+depois de já ter disparado não manda push nenhum de novo (dedup via
+claim funcionando). `python -c "import app"` confirmando que o novo
+laço em background não quebra o startup. 1 chave i18n nova nos 11
+idiomas (`tools/check_i18n_parity.py` confirmando 1.125→1.126).
+
+Fora de escopo deliberado: marcar `no_show` automaticamente (decisão
+continua manual, de propósito), horário de corte configurável por
+hospedagem, mais de um alerta por reserva ao longo do dia, e alerta de
+check-out atrasado (hóspede que não saiu na data esperada) - "no-show"
+é especificamente sobre não ter chegado, checkout atrasado é um
+problema diferente, fica pra outra rodada se pedido.
