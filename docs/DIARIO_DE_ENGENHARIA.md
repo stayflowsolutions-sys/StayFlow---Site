@@ -8571,3 +8571,23 @@ as duas hospedagens aparecem juntas em `get_user_hostels()`; papel
 "Promotor" aplicado certo na hospedagem nova (`promoter` presente,
 `chats` ausente); hospedagem ORIGINAL do dono continua com `Admin`
 completo, não afetada pela criação da conta de promotor.
+
+### Opção Agência (incluindo imobiliária) no "+ Adicionar hospedagem" (v1.90.0)
+
+Pedido direto: usuário quis criar uma conta de imobiliária pro próprio
+login pra ver o dashboard de agência de verdade — surgiu uma
+oportunidade real de colocar a StayFlow numa imobiliária. Achado que
+simplificou a implementação: `POST /account/add-hostel` já aceitava
+`account_kind='agency'` com `agency_category` desde sempre (só o
+modal do frontend nunca ofereceu essa opção, tinha só "Hospedagem" -
+e depois "Promotor", v1.89.0) - zero mudança de backend necessária,
+só UI. Modal ganhou 3ª opção "Agência / loja / prestador de serviço"
+com o mesmo seletor de categoria (turismo, aluguel de carro/bike/
+equipamentos, imobiliária, automotivo, comércio, outro) que o
+`Register.html` já usa - label do campo nome muda pra "Nome do
+negócio" nesse caso. 3 chaves i18n novas (1.150→1.153). Testado em
+banco isolado: hospedagem-agência com `agency_category='imobiliaria'`
+criada sob o mesmo `user_id`, aparece junto no multi-conta, mantém
+`Admin` completo (diferente do promotor - dono de agência opera o
+próprio negócio, não devia ter papel estreito), permissão `portfolio`
+presente (exclusiva de agência).
