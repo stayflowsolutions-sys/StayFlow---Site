@@ -8687,3 +8687,106 @@ fluxo principal por causa de um passo secundário). Sem causa raiz
 confirmada ainda - se acontecer de novo, os logs do Render vão ter o
 erro específico pra investigar; enquanto isso, o usuário não fica mais
 travado por um problema num passo que é só enriquecimento.
+
+### Menu do promotor: só o que faz sentido + Portfólio de vendas (v1.94.0)
+
+Pedido direto e detalhado do usuário, depois de conseguir enfim entrar
+numa conta de promotor de verdade (v1.91.0-v1.93.0): o menu lateral
+completo (Reservas, Financeiro, Hóspedes, Equipe etc.) aparecia
+inteiro, sem filtro nenhum específico pra essa conta - porque a
+v1.86.0 tinha optado por uma página `PromoterDashboard.html`
+standalone, separada do `dashboard.html`, exatamente pra evitar esse
+risco (mas cada correção de navegação desde então - v1.89.0/v1.92.0 -
+foi reforçando o caminho de volta pro `dashboard.html` completo:
+`admin.html::goToProperty()` sempre mandou pra `/app`, nunca pra
+página separada). O usuário pediu, com clareza: manter Chat (com
+integrações de WhatsApp/Facebook/Instagram configuráveis) e
+Configurações, tirar Equipe/Hóspedes/qualquer coisa de outro ramo, e
+acrescentar um "portfólio de vendas" com slides de apresentação por
+setor - decisão de arquitetura: em vez de continuar lutando contra o
+`dashboard.html` com uma página separada, virou a hora de fazer o
+`dashboard.html` reconhecer `account_kind='promoter'` de verdade, do
+jeito que já reconhece `lodging`/`agency`.
+
+Achado que simplificou a filtragem do menu: `PROMOTER_PERMISSIONS`
+(v1.86.0) já era propositalmente estreita (`promoter`, `security`,
+`team`) - e `hideNavItemsWithoutPermission()` (mecanismo já existente)
+usa `data-required-permission || data-page` como chave implícita pra
+item de menu SEM permissão explícita no HTML (Dashboard, Chats,
+Opportunities, Hóspedes, Finance, Reports, Configurações não têm
+`data-required-permission` nenhum, então a própria página vira a
+"permissão" testada). Isso significa que Opportunities/Hóspedes/
+Finance/Reports JÁ ficavam escondidos automaticamente, de graça, só
+por `PROMOTER_PERMISSIONS` não incluir essas chaves - o único trabalho
+real foi ACRESCENTAR `dashboard`/`chats`/`settings` à lista (liberando
+essas 3 telas) e um mecanismo NOVO pro caso oposto: "Equipe" precisa
+que `PROMOTER_PERMISSIONS` mantenha `team` (senão
+`check_team_permission_safety` bloquearia a própria criação do papel
+numa hospedagem com 1 membro só), mas o usuário não quer o item
+visível - nova `data-hide-for-account-kind` (inverso de
+`data-required-account-kind` já existente), aplicada numa passada
+final (`applyHideForAccountKind()`) sobre QUALQUER elemento marcado,
+dentro ou fora do `.menu` (cobre o botão "Equipe" tanto no menu lateral
+quanto no dropdown do usuário).
+
+**Home da página "Dashboard" virou condicional**: o grid de KPIs
+normal (ocupação, reservas, receita...) não faz sentido nenhum pra
+quem não opera hospedagem - em vez de outra página/nav item, o mesmo
+`id="dashboard"` ganhou um segundo grid interno
+(`#promoterHomeGrid`, escondido por padrão), com o conteúdo que já
+existia em `PromoterDashboard.html` (link de indicação copiável +
+compartilhável via `navigator.share()`, faixa de comissão, hospedagens
+indicadas) portado pro estilo visual do `dashboard.html`. Nova
+`applyPromoterHome(session)` alterna qual grid mostra, chamada junto
+do resto da hidratação de sessão só quando `account_kind==='promoter'`.
+
+**Nova página "Portfólio de Vendas"** (`#salesportfolio`, nav item
+novo gated por `data-required-permission="promoter"` - só quem tem
+essa permissão vê, ou seja, só promotor): conteúdo fixo (sem API,
+material de apresentação não é dado dinâmico), 3 setores em abas
+(Hospedagens/Agências/Locadoras) com slides navegáveis
+(Anterior/Próximo) cobrindo problema → solução → recursos → planos +
+teste grátis, escritos com o que a StayFlow de fato oferece hoje em
+cada vertical (mapa de quartos/tarifa por temporada/multi-canal pra
+hospedagem; catálogo com matching por IA pra agência; disponibilidade
+em tempo real + indicação cruzada com hospedagens parceiras pra
+locadora).
+
+**Ask StayFlow também passou a reconhecer o promotor**: `SYSTEM_PROMPT`
+existente é 100% escrito assumindo um funcionário/gestor de hospedagem
+(regras de pedido a fornecedor, cozinha, manutenção...) - nada disso
+faz sentido pra essa conta. Nova `PROMOTER_SYSTEM_PROMPT`, usada só
+quando `get_hostel(hostel_id)["account_kind"] == "promoter"`, focada em
+(1) explicar o próprio programa de indicação e (2) ajudar a preparar
+apresentação/pitch - com o status real (faixa, indicações ativas,
+hospedagens indicadas) injetado direto no prompt via nova
+`_build_promoter_context()` (mais simples que criar function-calling
+novo só pra isso). As ferramentas normais (`TOOLS_CATALOG`) já ficam
+vazias sozinhas pra essa conta, sem nenhuma mudança - `allowed_tools`
+é filtrado por permissão, e nenhuma tool bate com
+`PROMOTER_PERMISSIONS`.
+
+Redirecionamento simplificado: com o `dashboard.html` completo virando
+a experiência de verdade do promotor, os 3 pontos que mandavam pra
+`PromoterDashboard.html` (login direto, seletor multi-conta, criação
+via `/account/add-hostel`) voltaram a mandar todo mundo pro `/app`
+igual qualquer conta - `PromoterDashboard.html`/`PromoterSignup.html`
+continuam existindo (a segunda ainda é o cadastro dedicado, só nome/
+e-mail/senha) mas a primeira fica órfã, sem nada mais linkando pra
+ela (não removida, só não é mais o destino padrão).
+
+1 chave i18n nova (`nav.salesPortfolio`) nos 11 idiomas do
+`i18n-dashboard-data.js` (1.153→1.154). Testado em banco isolado:
+permissões do promotor corretas (`dashboard`/`chats`/`settings`
+presentes, `reservations`/`guests`/`opportunities`/`finance` ausentes,
+`team` presente internamente mas escondido só no menu);
+`GET /settings` e `GET /chats` agora acessíveis (antes bloqueados);
+`_build_promoter_context()` e `PROMOTER_SYSTEM_PROMPT.format()`
+montam sem erro com dado real do banco.
+
+Fora de escopo deliberado: comportamento da IA de atendimento
+automático (`ai_service.py`/`decision_engine.py`) quando um PROSPECT
+manda mensagem pro WhatsApp que o promotor eventualmente conectar -
+continua usando o mesmo fallback genérico de sempre, sem tratamento
+especial pra `account_kind='promoter'`; ajuste fica pra quando/se isso
+virar demanda real (hoje nenhum promotor conectou WhatsApp ainda).
