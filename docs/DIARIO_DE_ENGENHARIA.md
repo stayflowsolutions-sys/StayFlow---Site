@@ -8162,3 +8162,87 @@ devolve os 4 campos certos.
 
 **Próximo**: pilar 2 (entidade revendedor + vínculo com hospedagem-
 cliente), depois preço/margem, depois domínio.
+
+### Tier white-label pra revenda — pilar 2 de 4: entidade revendedor (v1.83.0)
+
+Nova tabela `resellers`, molde quase idêntico de `referral_partners`
+(nome, `reseller_code` único gerado igual `_generate_referral_code`,
+`created_at`) mas DELIBERADAMENTE separada — um parceiro de indicação
+ganha uma % da mensalidade padrão de quem indicou; um revendedor
+gerencia N hospedagens-cliente com preço e marca PRÓPRIOS (pilares 3 e
+4 ainda por vir). `owner_user_id` nullable: fica `NULL` quando o admin
+cria o revendedor manualmente (caminho principal desta versão, mesmo
+padrão de `create_manual_referral_partner`), preenchido quando alguém
+reivindica o código depois de já ter conta StayFlow. 4 colunas de
+marca (`brand_logo_url`/`brand_display_name`/`brand_primary_color`/
+`brand_favicon_url`) na própria tabela `resellers` — servem só de
+PADRÃO herdado pela hospedagem-cliente na criação (snapshot, não
+vínculo vivo: mudar a marca do revendedor depois não move hospedagem
+já criada, mesmo princípio de `commission_pct` gravado por linha no
+ledger de indicação, nunca uma referência a constante global que muda
+o passado). Nova coluna `hostels.reseller_id` (nullable) — tudo mais
+do tier (preço, texto do checkout MP, pilares seguintes) vai ser
+resolvido a partir dela.
+
+Dois caminhos de onboarding de hospedagem-cliente, ambos reaproveitando
+rotas que já existiam:
+
+1. **`POST /register?reseller=CODE`** (mirror exato do `?ref=CODE` já
+   usado pra indicação) — o DONO do cliente se registrando sozinho,
+   trazido por um revendedor. Importante: esse dono continua ganhando
+   `Admin` COMPLETO na própria hospedagem, igual sempre foi
+   (`create_identity_and_hostel` sem alteração nenhuma) — `reseller_id`
+   aqui é só atribuição/marca, nunca reduz o acesso de quem está se
+   registrando na PRÓPRIA conta. Achado corrigido durante o próprio
+   desenvolvimento: a primeira versão desse trecho chamava por engano
+   a mesma função de "papel estreito" usada no caminho 2 abaixo, o que
+   teria travado o dono recém-registrado fora dos próprios chats/
+   reservas — corrigido antes de testar, com um teste isolado dedicado
+   confirmando `Admin` completo nesse caminho especificamente.
+2. **`POST /account/add-hostel` logado como o PRÓPRIO revendedor**
+   (reaproveita a rota de multi-propriedade da v1.70.0 sem alteração
+   na função core) — quando quem está criando a hospedagem nova tem um
+   `reseller_code` próprio (`get_reseller_by_owner_user_id`), a
+   hospedagem vira gerenciada por ele (`set_hostel_reseller`, com a
+   marca padrão herdada via `COALESCE` — só preenche campo ainda
+   vazio) e a membership dele nessa hospedagem nova é REBAIXADA de
+   `Admin` pra um papel novo, "Revendedor"
+   (`billing,settings,branding,team` — sem `chats`/`reservations`/
+   `operations`, ele não opera o dia a dia do cliente). Achado técnico
+   que mudou o desenho: `update_membership_role` já tinha uma trava de
+   segurança (`check_team_permission_safety`) que bloqueia qualquer
+   mudança que deixasse um hostel SEM ninguém com permissão `team` —
+   como a hospedagem acabou de nascer, o revendedor era a ÚNICA
+   membership, então um papel sem `team` teria bloqueado a própria
+   criação. Corrigido incluindo `team` no papel estreito de propósito
+   (ele PRECISA poder convidar o dono/equipe real do cliente pra
+   dentro do hostel depois).
+
+Fluxo normal de multi-propriedade PESSOAL (v1.70.0, dono comum abrindo
+uma segunda hospedagem pra si mesmo) não foi tocado — continua dando
+`Admin` completo, só é afetado quando quem chama `/account/add-hostel`
+tem de fato um `reseller_code` vinculado.
+
+Admin (`admin.html`, Financeiro): nova aba "🏷️ Revendedores" —
+criar (nome/e-mail/telefone), listar com contagem de hospedagens-
+cliente (`list_resellers`, `LEFT JOIN` pra revendedor recém-criado sem
+cliente ainda aparecer com 0, mesmo cuidado do resumo de indicação),
+e vincular manualmente a um usuário já registrado por e-mail
+(`claim_reseller_ownership` — só preenche se `owner_user_id` ainda for
+`NULL`, nunca reatribui, evitando sequestro de conta por replay do
+mesmo código por outra pessoa). Painel completo de margem/repasse fica
+pro pilar 3. 17 chaves i18n novas no `ADMIN_I18N` (259→276).
+
+Testado em banco isolado e via Flask test client, ponta a ponta:
+criação de revendedor; registro de cliente via `?reseller=CODE`
+confirmando `Admin` completo (não papel estreito); registro sem código
+nunca seta `reseller_id` sozinho; `claim_reseller_ownership` vincula e
+depois REJEITA reatribuição pra outra pessoa; `/account/add-hostel`
+como revendedor confirma `reseller_id` setado, marca herdada
+corretamente, papel "Revendedor" com as 4 permissões certas e SEM
+`chats`/`reservations`/`operations`; fluxo normal de multi-propriedade
+pessoal (usuário sem `reseller_code`) continua dando `Admin` completo,
+não afetado; `list_resellers()` conta as 2 hospedagens-cliente certas.
+
+**Próximo**: pilar 3 (preço próprio do revendedor + ledger de margem),
+depois pilar 4 (resolução por domínio).
