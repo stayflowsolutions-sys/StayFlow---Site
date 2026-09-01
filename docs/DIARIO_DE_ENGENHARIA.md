@@ -7976,3 +7976,62 @@ erro; rota manual do admin (`/stayflow-admin/referral-partners`)
 continua funcionando igual, com e sem os campos novos; parceiro
 recém-cadastrado aparece no resumo com total 0 e o contato certo. 5
 chaves i18n novas no `ADMIN_I18N` (254→259).
+
+### Dashboard agregado cross-propriedade (v1.80.0)
+
+Próximo item da fila reordenada (métrica pública do Opportunity Center
+foi deliberadamente empurrada pro final a pedido do usuário, ver
+decisão registrada na memória de roadmap). Multi-propriedade (v1.70.0)
+já deixava alguém com 2+ `hostel_memberships` TROCAR de hospedagem
+ativa, mas não existia visão somada. Achado importante levantado antes
+de começar: até a última verificação registrada (diário v1.70.0),
+nenhum usuário real tinha 2+ memberships ativos - a decisão de
+construir mesmo assim, pelo caminho mais barato possível, foi
+deliberadamente registrada no plano como investimento pra quando
+alguém precisar, não como resposta a demanda comprovada.
+
+Investigação (agente Explore) confirmou que dava pra construir sem
+nenhuma SQL nova cross-tenant: `get_user_hostels(user_id)` já lista
+todos os `hostel_id` que a pessoa acessa, e `get_dashboard_stats`
+já é uma função pura escopada a UM hostel_id - bastou chamar em loop
+(uma vez por hospedagem) e somar os campos numéricos em Python, sem
+misturar `hostel_id` em nenhuma query (isolamento de tenant mantido
+por construção). Achado técnico que moldou a arquitetura: a sessão
+(`sessions.hostel_id`) é sempre uma coluna ÚNICA, nunca uma lista -
+todo `@require_permission`/`@require_auth` do projeto resolve
+exatamente UM tenant por requisição. Uma rota agregada não podia
+reaproveitar esse decorator - usou o mesmo padrão de checagem manual
+de sessão já usado em `/select-hostel` (`session.get("session_id")` →
+`get_valid_session` → 401 se inválido → resolve `user_id` →
+`get_user_hostels`).
+
+Nova rota `GET /dashboard/aggregated` (`routes/dashboard.py`, ao lado
+da rota `/dashboard` original, intocada): soma `guests`, `messages`,
+`leads`, `opportunities`, `beds_occupied`, `beds_total`,
+`reservations` e `revenue` de cada hospedagem do usuário. Cuidado
+específico testado: `occupancy_pct` agregado é RECALCULADO a partir da
+soma de camas ocupadas/total, nunca como média das porcentagens
+individuais (uma hospedagem grande e uma pequena com ocupações bem
+diferentes dariam conta errada com média simples).
+
+Frontend: opção "🗂️ Todas as propriedades" no topo do seletor de
+hospedagem existente (`#hostelSelectorList`), só aparece quando a
+sessão tem 2+ hospedagens - pra quem tem só uma, a tela não muda nada.
+Ao clicar, abre um modal (reaproveitando `openGenericModal`, mesmo
+padrão já usado em várias telas) que busca `/dashboard/aggregated` e
+mostra os KPIs somados (ocupação, reservas, receita, mensagens,
+oportunidades) mais a lista de hospedagens incluídas na soma. Decisão
+deliberada de escopo: fora de escopo relatório detalhado agregado,
+ações a partir da visão agregada, resumo executivo por IA agregado
+(texto de uma hospedagem só, não dá pra somar) e paginação de muitas
+propriedades - só os KPIs numéricos do dashboard home nesta rodada.
+
+Testado em banco isolado (2 hospedagens de um mesmo usuário com dados
+bem diferentes - 10/4 camas e 5/3 camas, receita 100 e 250 - soma bate
+exatamente 350, occupancy 47% calculado da soma 7/15 e não da média
+40%/60%=50%); confirmado isolamento (hospedagem de outro usuário,
+com números bem maiores, nunca entra na soma); usuário com 1 hospedagem
+só também funciona na rota (retorna soma de 1, gate de visibilidade é
+só na UI); requisição sem sessão válida devolve 401. 4 chaves i18n
+novas (`allProperties.*`) nos 11 idiomas do `i18n-dashboard-data.js`
+(1126→1130).
