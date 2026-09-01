@@ -2185,6 +2185,35 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card" data-settings-section="empresa" data-required-permission="branding">
+        <h2 data-i18n="settings.branding.title">🎨 Marca (White-label)</h2>
+        <p data-i18n="settings.branding.desc" style="margin-bottom:14px">Personalize logo, nome exibido e cor do painel — pra revendedores ou hospedagens com marca própria.</p>
+
+        <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+          <div class="span-12">
+            <input type="text" id="brandLogoUrlInput" data-i18n-placeholder="settings.branding.logoUrlPlaceholder" placeholder="URL do logo (opcional - cole o link de uma imagem já hospedada)">
+          </div>
+          <div class="span-6">
+            <input type="text" id="brandDisplayNameInput" data-i18n-placeholder="settings.branding.displayNamePlaceholder" placeholder="Nome exibido no painel (opcional)">
+          </div>
+          <div class="span-3">
+            <input type="color" id="brandPrimaryColorInput" style="height:44px;padding:4px">
+          </div>
+          <div class="span-3">
+            <button class="btn secondary" type="button" onclick="document.getElementById('brandPrimaryColorInput').value='#0b84ff'" data-i18n="settings.branding.resetColorBtn">Cor padrão</button>
+          </div>
+          <div class="span-12">
+            <input type="text" id="brandFaviconUrlInput" data-i18n-placeholder="settings.branding.faviconUrlPlaceholder" placeholder="URL do favicon (opcional)">
+          </div>
+        </div>
+
+        <div id="brandingSettingsMessage" class="generic-modal-message" style="margin-top:10px"></div>
+
+        <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+          <button class="btn" type="button" onclick="saveBrandingSettings()" data-i18n="settings.saveChangesBtn">Salvar alterações</button>
+        </div>
+      </div>
+
       <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openWhatsappSettingsModal()">
         <div class="settings-summary-row">
           <div>
@@ -11114,6 +11143,67 @@ window.uploadGuestDocumentUI = async function(guestId){
 </script>
 
 <script>
+  // Marca propria (white-label, item 27) - so sobrescreve o que vier
+  // preenchido; hospedagem sem marca configurada mantem o visual
+  // padrao da StayFlow (nenhum campo aqui e obrigatorio). Sem motor de
+  // tema completo - so 1 cor (--blue) e sobrescrita via custom
+  // property, nao um sistema de tons derivados.
+  function applyBranding(session){
+    if(session.brand_logo_url){
+      document.querySelectorAll(".brand-logo").forEach(img => { img.src = session.brand_logo_url; });
+    }
+    if(session.brand_display_name){
+      document.title = session.brand_display_name;
+    }
+    if(session.brand_primary_color){
+      document.documentElement.style.setProperty("--blue", session.brand_primary_color);
+    }
+    if(session.brand_favicon_url){
+      const link = document.querySelector("link[rel~='icon']");
+      if(link) link.href = session.brand_favicon_url;
+    }
+
+    const logoInput = document.getElementById("brandLogoUrlInput");
+    const nameInput = document.getElementById("brandDisplayNameInput");
+    const colorInput = document.getElementById("brandPrimaryColorInput");
+    const faviconInput = document.getElementById("brandFaviconUrlInput");
+    if(logoInput) logoInput.value = session.brand_logo_url || "";
+    if(nameInput) nameInput.value = session.brand_display_name || "";
+    if(colorInput) colorInput.value = session.brand_primary_color || "#0b84ff";
+    if(faviconInput) faviconInput.value = session.brand_favicon_url || "";
+  }
+
+  window.saveBrandingSettings = async function(){
+    const msg = document.getElementById("brandingSettingsMessage");
+    if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+    const payload = {
+      brand_logo_url: document.getElementById("brandLogoUrlInput")?.value.trim() || "",
+      brand_display_name: document.getElementById("brandDisplayNameInput")?.value.trim() || "",
+      brand_primary_color: document.getElementById("brandPrimaryColorInput")?.value || "",
+      brand_favicon_url: document.getElementById("brandFaviconUrlInput")?.value.trim() || "",
+    };
+
+    try{
+      const res = await fetch("/settings/branding", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        if(msg){ msg.textContent = data.message || T('settings.branding.msg.failed', 'Não foi possível salvar a marca.'); msg.classList.add("error"); }
+        return;
+      }
+      Object.assign(window.STAYFLOW_SESSION, payload);
+      applyBranding(window.STAYFLOW_SESSION);
+      if(msg){ msg.textContent = T('settings.branding.msg.saved', 'Marca salva com sucesso.'); msg.classList.add("success"); }
+    }catch(e){
+      if(msg){ msg.textContent = T('common.connectionError', 'Erro de conexão.'); msg.classList.add("error"); }
+    }
+  };
+
   // Verifica a sessão de servidor de verdade (não confia só no localStorage).
   // localStorage aqui vira só um cache pra UI carregar mais rápido —
   // a fonte de verdade é sempre o /me, validado pelo backend.
@@ -11137,6 +11227,7 @@ window.uploadGuestDocumentUI = async function(guestId){
       window.STAYFLOW_SESSION = data;
       window.STAYFLOW_USER = data.user;
       localStorage.setItem("stayflow_user", JSON.stringify(data.user));
+      applyBranding(data);
 
       // Carrega o estado do tour de introducao ANTES de disparar
       // session-ready - hydrateUserUI (que roda no inicio do handler
