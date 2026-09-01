@@ -180,6 +180,30 @@
         <div id="propertySelectorDropdown" class="hostel-selector-dropdown" style="display:none">
           <input type="text" id="propertySelectorSearch" placeholder="Buscar propriedade..." data-i18n-placeholder="propertySelector.searchPlaceholder" oninput="renderPropertySelector()">
           <div id="propertySelectorList"></div>
+          <div class="hostel-selector-divider"></div>
+          <button type="button" class="hostel-selector-settings-link" onclick="openAddPropertyForm(event)">
+            <span data-i18n="propertySelector.addBtn">+ Adicionar propriedade de teste</span>
+          </button>
+          <div id="addPropertyForm" style="display:none;padding:10px 14px 14px">
+            <select id="addPropertyKind" style="width:100%;margin-bottom:8px">
+              <option value="lodging" data-i18n="addHostel.kindLodging">Hospedagem</option>
+              <option value="agency" data-i18n="addHostel.kindAgency">Agência / loja / prestador de serviço</option>
+              <option value="promoter" data-i18n="addHostel.kindPromoter">Promotor / Indicador (sem hospedagem própria)</option>
+            </select>
+            <select id="addPropertyAgencyCategory" style="width:100%;margin-bottom:8px;display:none">
+              <option value="turismo">Turismo</option>
+              <option value="aluguel_carro">Aluguel de carro</option>
+              <option value="aluguel_bike">Aluguel de bike</option>
+              <option value="aluguel_equipamentos">Aluguel de equipamentos</option>
+              <option value="imobiliaria">Imobiliária</option>
+              <option value="automotivo">Automotivo</option>
+              <option value="comercio">Comércio</option>
+              <option value="servico_generico">Outro tipo de negócio</option>
+            </select>
+            <input type="text" id="addPropertyName" placeholder="Nome" data-i18n-placeholder="propertySelector.namePlaceholder" style="width:100%;margin-bottom:8px">
+            <div id="addPropertyMessage" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+            <button type="button" class="btn" style="width:100%" onclick="submitAddProperty()" data-i18n="addHostel.submitBtn">Criar hospedagem</button>
+          </div>
         </div>
       </div>
 
@@ -1029,6 +1053,12 @@
       "ask.inputPlaceholder": "Pergunte algo sobre a StayFlow...", "chats.sendBtn": "Enviar",
       "propertySelector.name": "Propriedades", "propertySelector.meta": "Ir para o dashboard de...",
       "propertySelector.title": "Ir para o dashboard de uma propriedade", "propertySelector.searchPlaceholder": "Buscar propriedade...",
+      "propertySelector.addBtn": "+ Adicionar propriedade de teste",
+      "propertySelector.namePlaceholder": "Nome",
+      "addHostel.kindLodging": "Hospedagem",
+      "addHostel.kindAgency": "Agência / loja / prestador de serviço",
+      "addHostel.kindPromoter": "Promotor / Indicador (sem hospedagem própria)",
+      "addHostel.submitBtn": "Criar hospedagem",
       "propertySelector.empty": "Nenhuma conta de teste marcada ainda.<br>Marca uma no perfil dela (aba Propriedades → abrir a conta → \"Marcar como minha conta de teste\").",
       "propertySelector.noMatch": "Nenhuma propriedade encontrada.",
       "notif.title": "🔔 Notificações", "notif.empty": "Nenhuma novidade.", "notif.button.title": "Notificações",
@@ -1190,6 +1220,12 @@
       "ask.inputPlaceholder": "Ask something about StayFlow...", "chats.sendBtn": "Send",
       "propertySelector.name": "Properties", "propertySelector.meta": "Go to the dashboard of...",
       "propertySelector.title": "Go to a property's dashboard", "propertySelector.searchPlaceholder": "Search property...",
+      "propertySelector.addBtn": "+ Add test property",
+      "propertySelector.namePlaceholder": "Name",
+      "addHostel.kindLodging": "Property",
+      "addHostel.kindAgency": "Agency / store / service provider",
+      "addHostel.kindPromoter": "Promoter / Referrer (no property of your own)",
+      "addHostel.submitBtn": "Create property",
       "propertySelector.empty": "No test account marked yet.<br>Mark one on its profile (Properties tab → open the account → \"Mark as my test account\").",
       "propertySelector.noMatch": "No property found.",
       "notif.title": "🔔 Notifications", "notif.empty": "Nothing new.", "notif.button.title": "Notifications",
@@ -1351,6 +1387,12 @@
       "ask.inputPlaceholder": "Preguntá algo sobre StayFlow...", "chats.sendBtn": "Enviar",
       "propertySelector.name": "Propiedades", "propertySelector.meta": "Ir al dashboard de...",
       "propertySelector.title": "Ir al dashboard de una propiedad", "propertySelector.searchPlaceholder": "Buscar propiedad...",
+      "propertySelector.addBtn": "+ Agregar propiedad de prueba",
+      "propertySelector.namePlaceholder": "Nombre",
+      "addHostel.kindLodging": "Hospedaje",
+      "addHostel.kindAgency": "Agencia / tienda / prestador de servicio",
+      "addHostel.kindPromoter": "Promotor / Referente (sin hospedaje propio)",
+      "addHostel.submitBtn": "Crear hospedaje",
       "propertySelector.empty": "Todavía no marcaste ninguna cuenta de prueba.<br>Marcala en su perfil (pestaña Propiedades → abrir la cuenta → \"Marcar como mi cuenta de prueba\").",
       "propertySelector.noMatch": "No se encontró ninguna propiedad.",
       "notif.title": "🔔 Notificaciones", "notif.empty": "Nada nuevo.", "notif.button.title": "Notificaciones",
@@ -1512,6 +1554,12 @@
       "ask.inputPlaceholder": "Posez une question sur StayFlow...", "chats.sendBtn": "Envoyer",
       "propertySelector.name": "Propriétés", "propertySelector.meta": "Aller au tableau de bord de...",
       "propertySelector.title": "Aller au tableau de bord d'une propriété", "propertySelector.searchPlaceholder": "Rechercher une propriété...",
+      "propertySelector.addBtn": "+ Ajouter une propriété de test",
+      "propertySelector.namePlaceholder": "Nom",
+      "addHostel.kindLodging": "Hébergement",
+      "addHostel.kindAgency": "Agence / boutique / prestataire de services",
+      "addHostel.kindPromoter": "Promoteur / Apporteur d'affaires (sans hébergement propre)",
+      "addHostel.submitBtn": "Créer l'hébergement",
       "propertySelector.empty": "Aucun compte de test marqué pour l'instant.<br>Marquez-en un sur son profil (onglet Propriétés → ouvrir le compte → \"Marquer comme mon compte de test\").",
       "propertySelector.noMatch": "Aucune propriété trouvée.",
       "notif.title": "🔔 Notifications", "notif.empty": "Rien de nouveau.", "notif.button.title": "Notifications",
@@ -1673,6 +1721,12 @@
       "ask.inputPlaceholder": "Fragen Sie etwas zu StayFlow...", "chats.sendBtn": "Senden",
       "propertySelector.name": "Unterkünfte", "propertySelector.meta": "Zum Dashboard von...",
       "propertySelector.title": "Zum Dashboard einer Unterkunft gehen", "propertySelector.searchPlaceholder": "Unterkunft suchen...",
+      "propertySelector.addBtn": "+ Testobjekt hinzufügen",
+      "propertySelector.namePlaceholder": "Name",
+      "addHostel.kindLodging": "Unterkunft",
+      "addHostel.kindAgency": "Agentur / Geschäft / Dienstleister",
+      "addHostel.kindPromoter": "Promotor / Vermittler (ohne eigene Unterkunft)",
+      "addHostel.submitBtn": "Unterkunft erstellen",
       "propertySelector.empty": "Noch kein Testkonto markiert.<br>Markieren Sie eines im Profil (Reiter Unterkünfte → Konto öffnen → \"Als mein Testkonto markieren\").",
       "propertySelector.noMatch": "Keine Unterkunft gefunden.",
       "notif.title": "🔔 Benachrichtigungen", "notif.empty": "Nichts Neues.", "notif.button.title": "Benachrichtigungen",
@@ -1885,6 +1939,12 @@
       "propertySelector.meta": "移動先のダッシュボード...",
       "propertySelector.title": "施設のダッシュボードに移動",
       "propertySelector.searchPlaceholder": "施設を検索...",
+      "propertySelector.addBtn": "+ テスト用施設を追加",
+      "propertySelector.namePlaceholder": "名前",
+      "addHostel.kindLodging": "宿泊施設",
+      "addHostel.kindAgency": "代理店/店舗/サービス提供者",
+      "addHostel.kindPromoter": "プロモーター/紹介者（自分の施設なし）",
+      "addHostel.submitBtn": "施設を作成",
       "propertySelector.empty": "まだテストアカウントが設定されていません。<br>プロフィール画面で設定してください（施設タブ → アカウントを開く → 「自分のテストアカウントとして設定」）。",
       "propertySelector.noMatch": "施設が見つかりません。",
       "notif.title": "🔔 通知",
@@ -2174,6 +2234,12 @@
       "propertySelector.meta": "Vai alla dashboard di...",
       "propertySelector.title": "Vai alla dashboard di una struttura",
       "propertySelector.searchPlaceholder": "Cerca struttura...",
+      "propertySelector.addBtn": "+ Aggiungi struttura di prova",
+      "propertySelector.namePlaceholder": "Nome",
+      "addHostel.kindLodging": "Struttura",
+      "addHostel.kindAgency": "Agenzia / negozio / fornitore di servizi",
+      "addHostel.kindPromoter": "Promotore / Segnalatore (senza struttura propria)",
+      "addHostel.submitBtn": "Crea struttura",
       "propertySelector.empty": "Nessun account di test ancora contrassegnato.<br>Contrassegnane uno nel suo profilo (scheda Strutture → apri l'account → \"Contrassegna come mio account di test\").",
       "propertySelector.noMatch": "Nessuna struttura trovata.",
       "notif.title": "🔔 Notifiche",
@@ -2463,6 +2529,12 @@
       "propertySelector.meta": "前往以下物业的仪表盘…",
       "propertySelector.title": "前往某个物业的仪表盘",
       "propertySelector.searchPlaceholder": "搜索物业…",
+      "propertySelector.addBtn": "+ 添加测试物业",
+      "propertySelector.namePlaceholder": "名称",
+      "addHostel.kindLodging": "住宿",
+      "addHostel.kindAgency": "代理/商店/服务提供商",
+      "addHostel.kindPromoter": "推广人/引荐人（无自有住宿）",
+      "addHostel.submitBtn": "创建住宿",
       "propertySelector.empty": "尚未标记任何测试账户。<br>请在物业档案中标记一个（“物业”标签页 → 打开该账户 → “标记为我的测试账户”）。",
       "propertySelector.noMatch": "未找到相关物业。",
       "notif.title": "🔔 通知",
@@ -2751,6 +2823,12 @@
       "propertySelector.meta": "Перейти к панели управления...",
       "propertySelector.title": "Перейти к панели управления объекта",
       "propertySelector.searchPlaceholder": "Поиск объекта...",
+      "propertySelector.addBtn": "+ Добавить тестовый объект",
+      "propertySelector.namePlaceholder": "Название",
+      "addHostel.kindLodging": "Объект размещения",
+      "addHostel.kindAgency": "Агентство / магазин / поставщик услуг",
+      "addHostel.kindPromoter": "Промоутер / Реферер (без собственного объекта)",
+      "addHostel.submitBtn": "Создать объект",
       "propertySelector.empty": "Пока не отмечен ни один тестовый аккаунт.<br>Отметьте его в профиле (вкладка «Объекты» → откройте аккаунт → «Отметить как мой тестовый аккаунт»).",
       "propertySelector.noMatch": "Объект не найден.",
       "notif.title": "🔔 Уведомления",
@@ -3040,6 +3118,12 @@
       "propertySelector.meta": "다음 대시보드로 이동...",
       "propertySelector.title": "숙박시설 대시보드로 이동",
       "propertySelector.searchPlaceholder": "숙박시설 검색...",
+      "propertySelector.addBtn": "+ 테스트 숙소 추가",
+      "propertySelector.namePlaceholder": "이름",
+      "addHostel.kindLodging": "숙박시설",
+      "addHostel.kindAgency": "대행사/매장/서비스 제공업체",
+      "addHostel.kindPromoter": "프로모터 / 추천인 (자체 숙소 없음)",
+      "addHostel.submitBtn": "숙소 생성",
       "propertySelector.empty": "테스트 계정으로 표시된 것이 아직 없습니다.<br>프로필에서 하나를 표시하세요 (숙박시설 탭 → 계정 열기 → \"내 테스트 계정으로 표시\").",
       "propertySelector.noMatch": "숙박시설을 찾을 수 없습니다.",
       "notif.title": "🔔 알림",
@@ -3329,6 +3413,12 @@
       "propertySelector.meta": "Ga naar het dashboard van...",
       "propertySelector.title": "Ga naar het dashboard van een accommodatie",
       "propertySelector.searchPlaceholder": "Accommodatie zoeken...",
+      "propertySelector.addBtn": "+ Testaccommodatie toevoegen",
+      "propertySelector.namePlaceholder": "Naam",
+      "addHostel.kindLodging": "Accommodatie",
+      "addHostel.kindAgency": "Bureau / winkel / dienstverlener",
+      "addHostel.kindPromoter": "Promotor / Verwijzer (zonder eigen accommodatie)",
+      "addHostel.submitBtn": "Accommodatie aanmaken",
       "propertySelector.empty": "Nog geen testaccount gemarkeerd.<br>Markeer er een in het profiel (tab Accommodaties → account openen → \"Markeren als mijn testaccount\").",
       "propertySelector.noMatch": "Geen accommodatie gevonden.",
       "notif.title": "🔔 Meldingen",
@@ -3749,6 +3839,66 @@
     }catch(e){
       console.warn("Erro ao entrar na propriedade:", e);
       alert("Erro de conexão.");
+    }
+  };
+
+  window.openAddPropertyForm = function(event){
+    event.stopPropagation();
+    const form = document.getElementById("addPropertyForm");
+    form.style.display = form.style.display === "none" ? "block" : "none";
+    document.getElementById("addPropertyName").value = "";
+    document.getElementById("addPropertyMessage").textContent = "";
+  };
+
+  document.getElementById("addPropertyKind")?.addEventListener("change", (event) => {
+    document.getElementById("addPropertyAgencyCategory").style.display = event.target.value === "agency" ? "block" : "none";
+  });
+
+  window.submitAddProperty = async function(){
+    const msg = document.getElementById("addPropertyMessage");
+    msg.textContent = "";
+    msg.style.color = "var(--muted)";
+
+    const hostelName = document.getElementById("addPropertyName").value.trim();
+    const accountKind = document.getElementById("addPropertyKind").value;
+    const agencyCategory = document.getElementById("addPropertyAgencyCategory").value;
+    if(!hostelName){
+      msg.textContent = "Digite um nome.";
+      msg.style.color = "#ff5d76";
+      return;
+    }
+
+    try{
+      const res = await fetch("/account/add-hostel", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostel_name: hostelName,
+          account_kind: accountKind,
+          agency_category: accountKind === "agency" ? agencyCategory : null,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || "Não foi possível criar.";
+        msg.style.color = "#ff5d76";
+        return;
+      }
+      // A conta nova ja nasce marcada is_own_test_account=true (v1.91.0,
+      // criador e admin StayFlow) - so recarregar a visao geral pra ela
+      // aparecer na lista na hora. /account/add-hostel troca a sessao
+      // pra apontar pra hospedagem nova por baixo dos panos (mesmo
+      // comportamento de sempre, v1.70.0) - sem efeito aqui porque
+      // nenhuma rota do admin.html depende do hostel_id da sessao.
+      await loadOverview();
+      renderPropertySelector();
+      document.getElementById("addPropertyName").value = "";
+      msg.style.color = "#26e0a0";
+      msg.textContent = "Criado! Já aparece na lista acima.";
+    }catch(e){
+      msg.textContent = "Erro de conexão.";
+      msg.style.color = "#ff5d76";
     }
   };
 
