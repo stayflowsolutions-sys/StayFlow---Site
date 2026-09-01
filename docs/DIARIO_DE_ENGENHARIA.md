@@ -8662,3 +8662,28 @@ a página. 6 chaves i18n novas no `ADMIN_I18N` (286→292, 2 do seletor +
 também porque `admin.html` tem seu PRÓPRIO dicionário `ADMIN_I18N`,
 independente - achado corrigido antes de publicar: as `<option data-i18n="addHostel.kindLodging">`
 etc. só funcionariam se a chave existisse no dicionário certo).
+
+### Blindagem do `/account/add-hostel` contra 500 em passos pós-criação (v1.93.0)
+
+Usuário tentou criar a conta de promotor pelo fluxo novo (v1.92.0) e
+recebeu "Não foi possível criar." - mensagem genérica do frontend
+(fallback quando `res.json()` falha, ou seja, a resposta não veio
+como JSON válido - sinal de erro 500 não tratado, não um 400 normal
+com mensagem). Tentei reproduzir em banco isolado com um cenário bem
+próximo do real (admin com 5 hospedagens de teste já existentes,
+criando uma 6ª como promotor) e não consegui replicar o erro - mas
+encontrei e corrigi um problema real de qualquer forma, independente
+da causa exata: os 3 passos que rodam DEPOIS da hospedagem já criada
+com sucesso (aplicar papel de revendedor, aplicar papel de promotor,
+marcar como conta de teste do admin) não tinham nenhuma proteção -
+qualquer exceção inesperada em qualquer um deles derrubava a
+requisição INTEIRA com 500, mesmo com a hospedagem/membership já
+gravada no banco com sucesso.
+
+Corrigido envolvendo os 3 em `try/except` (loga o erro real via
+`print`, devolve sucesso do mesmo jeito) - mesmo espírito já usado em
+outras partes do projeto pra notificação push (nunca deve quebrar o
+fluxo principal por causa de um passo secundário). Sem causa raiz
+confirmada ainda - se acontecer de novo, os logs do Render vão ter o
+erro específico pra investigar; enquanto isso, o usuário não fica mais
+travado por um problema num passo que é só enriquecimento.
