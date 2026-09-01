@@ -591,6 +591,17 @@
         <div class="sf-empty" id="referralPayoutEmpty" style="display:none">
           <div><strong data-i18n="referral.empty">Nenhuma comissão de indicação pendente.</strong></div>
         </div>
+
+        <div id="referralPartnerDetails" class="card" style="display:none;margin-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <h3 id="referralPartnerDetailsTitle" style="margin:0;font-size:14px" data-i18n="referral.details.title">Detalhes do parceiro</h3>
+            <button type="button" class="btn secondary" style="padding:4px 12px;font-size:12px" onclick="closeReferralPartnerDetails()" data-i18n="expenses.form.cancel">Cancelar</button>
+          </div>
+          <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.hostelsTitle">🏨 Hospedagens indicadas</h4>
+          <div id="referralPartnerDetailsHostels" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:12px"></div>
+          <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.historyTitle">📋 Histórico de lançamentos</h4>
+          <div id="referralPartnerDetailsHistory" style="display:flex;flex-direction:column;gap:6px;font-size:12px"></div>
+        </div>
       </div>
 
       <div id="financeTabResellers" style="display:none">
@@ -953,6 +964,14 @@
       "resellers.linkPrompt": "E-mail do usuário StayFlow pra vincular:",
       "resellers.table.charges": "Cobranças",
       "resellers.table.margin": "Margem devida",
+      "referral.details.title": "Detalhes do parceiro",
+      "referral.details.viewBtn": "Ver detalhes",
+      "referral.details.hostelsTitle": "🏨 Hospedagens indicadas",
+      "referral.details.historyTitle": "📋 Histórico de lançamentos",
+      "referral.details.hostelsEmpty": "Nenhuma hospedagem indicada ainda.",
+      "referral.details.historyEmpty": "Nenhum lançamento ainda.",
+      "referral.details.statusPaid": "Pago",
+      "referral.details.statusAccrued": "A receber",
       "referral.manualPartner.nameRequired": "Nome é obrigatório.",
       "referral.manualPartner.createdMsg": "Parceiro criado! Código de indicação",
       "config.section.communication": "Comunicação (canais do assistente comercial)",
@@ -1106,6 +1125,14 @@
       "resellers.linkPrompt": "StayFlow user email to link:",
       "resellers.table.charges": "Charges",
       "resellers.table.margin": "Margin owed",
+      "referral.details.title": "Partner details",
+      "referral.details.viewBtn": "View details",
+      "referral.details.hostelsTitle": "🏨 Referred hostels",
+      "referral.details.historyTitle": "📋 Ledger history",
+      "referral.details.hostelsEmpty": "No hostel referred yet.",
+      "referral.details.historyEmpty": "No entries yet.",
+      "referral.details.statusPaid": "Paid",
+      "referral.details.statusAccrued": "Pending",
       "referral.manualPartner.nameRequired": "Name is required.",
       "referral.manualPartner.createdMsg": "Partner created! Referral code",
       "config.section.communication": "Communication (commercial assistant channels)",
@@ -1259,6 +1286,14 @@
       "resellers.linkPrompt": "Correo del usuario StayFlow para vincular:",
       "resellers.table.charges": "Cobros",
       "resellers.table.margin": "Margen adeudado",
+      "referral.details.title": "Detalles del socio",
+      "referral.details.viewBtn": "Ver detalles",
+      "referral.details.hostelsTitle": "🏨 Hospedajes indicados",
+      "referral.details.historyTitle": "📋 Historial de movimientos",
+      "referral.details.hostelsEmpty": "Ningún hospedaje indicado todavía.",
+      "referral.details.historyEmpty": "Ningún movimiento todavía.",
+      "referral.details.statusPaid": "Pagado",
+      "referral.details.statusAccrued": "Pendiente",
       "referral.manualPartner.nameRequired": "El nombre es obligatorio.",
       "referral.manualPartner.createdMsg": "¡Parceiro creado! Código de referido",
       "config.section.communication": "Comunicación (canales del asistente comercial)",
@@ -1412,6 +1447,14 @@
       "resellers.linkPrompt": "E-mail de l'utilisateur StayFlow à lier :",
       "resellers.table.charges": "Facturations",
       "resellers.table.margin": "Marge due",
+      "referral.details.title": "Détails du partenaire",
+      "referral.details.viewBtn": "Voir les détails",
+      "referral.details.hostelsTitle": "🏨 Hébergements parrainés",
+      "referral.details.historyTitle": "📋 Historique des mouvements",
+      "referral.details.hostelsEmpty": "Aucun hébergement parrainé pour le moment.",
+      "referral.details.historyEmpty": "Aucun mouvement pour le moment.",
+      "referral.details.statusPaid": "Payé",
+      "referral.details.statusAccrued": "En attente",
       "referral.manualPartner.nameRequired": "Le nom est obligatoire.",
       "referral.manualPartner.createdMsg": "Partenaire créé ! Code de parrainage",
       "config.section.communication": "Communication (canaux de l'assistant commercial)",
@@ -1565,6 +1608,14 @@
       "resellers.linkPrompt": "E-Mail des zu verknüpfenden StayFlow-Nutzers:",
       "resellers.table.charges": "Belastungen",
       "resellers.table.margin": "Fällige Marge",
+      "referral.details.title": "Partnerdetails",
+      "referral.details.viewBtn": "Details ansehen",
+      "referral.details.hostelsTitle": "🏨 Empfohlene Unterkünfte",
+      "referral.details.historyTitle": "📋 Buchungsverlauf",
+      "referral.details.hostelsEmpty": "Noch keine Unterkunft empfohlen.",
+      "referral.details.historyEmpty": "Noch keine Buchungen.",
+      "referral.details.statusPaid": "Bezahlt",
+      "referral.details.statusAccrued": "Ausstehend",
       "referral.manualPartner.nameRequired": "Name ist erforderlich.",
       "referral.manualPartner.createdMsg": "Partner erstellt! Empfehlungscode",
       "config.section.communication": "Kommunikation (Kanäle des Vertriebsassistenten)",
@@ -1721,6 +1772,14 @@
       "resellers.linkPrompt": "紐付けるStayFlowユーザーのメールアドレス：",
       "resellers.table.charges": "請求件数",
       "resellers.table.margin": "未払いマージン",
+      "referral.details.title": "パートナー詳細",
+      "referral.details.viewBtn": "詳細を見る",
+      "referral.details.hostelsTitle": "🏨 紹介した宿泊施設",
+      "referral.details.historyTitle": "📋 明細履歴",
+      "referral.details.hostelsEmpty": "まだ紹介した施設はありません。",
+      "referral.details.historyEmpty": "まだ明細はありません。",
+      "referral.details.statusPaid": "支払済み",
+      "referral.details.statusAccrued": "未払い",
       "referral.manualPartner.nameRequired": "名前は必須です。",
       "referral.manualPartner.createdMsg": "パートナーを作成しました！紹介コード",
       "config.section.communication": "コミュニケーション（営業アシスタントのチャネル）",
@@ -2002,6 +2061,14 @@
       "resellers.linkPrompt": "E-mail dell'utente StayFlow da collegare:",
       "resellers.table.charges": "Addebiti",
       "resellers.table.margin": "Margine dovuto",
+      "referral.details.title": "Dettagli del partner",
+      "referral.details.viewBtn": "Vedi dettagli",
+      "referral.details.hostelsTitle": "🏨 Strutture segnalate",
+      "referral.details.historyTitle": "📋 Storico movimenti",
+      "referral.details.hostelsEmpty": "Nessuna struttura segnalata ancora.",
+      "referral.details.historyEmpty": "Nessun movimento ancora.",
+      "referral.details.statusPaid": "Pagato",
+      "referral.details.statusAccrued": "In attesa",
       "referral.manualPartner.nameRequired": "Il nome è obbligatorio.",
       "referral.manualPartner.createdMsg": "Partner creato! Codice di segnalazione",
       "config.section.communication": "Comunicazione (canali dell'assistente commerciale)",
@@ -2283,6 +2350,14 @@
       "resellers.linkPrompt": "要关联的StayFlow用户邮箱：",
       "resellers.table.charges": "扣款次数",
       "resellers.table.margin": "应付差价",
+      "referral.details.title": "合作伙伴详情",
+      "referral.details.viewBtn": "查看详情",
+      "referral.details.hostelsTitle": "🏨 已推荐住宿",
+      "referral.details.historyTitle": "📋 结算历史",
+      "referral.details.hostelsEmpty": "尚未推荐任何住宿。",
+      "referral.details.historyEmpty": "尚无记录。",
+      "referral.details.statusPaid": "已支付",
+      "referral.details.statusAccrued": "待支付",
       "referral.manualPartner.nameRequired": "姓名为必填项。",
       "referral.manualPartner.createdMsg": "合作伙伴已创建！推荐码",
       "config.section.communication": "沟通渠道（商务助理频道）",
@@ -2563,6 +2638,14 @@
       "resellers.linkPrompt": "Email пользователя StayFlow для привязки:",
       "resellers.table.charges": "Списания",
       "resellers.table.margin": "Причитающаяся маржа",
+      "referral.details.title": "Детали партнёра",
+      "referral.details.viewBtn": "Посмотреть детали",
+      "referral.details.hostelsTitle": "🏨 Рекомендованные объекты",
+      "referral.details.historyTitle": "📋 История начислений",
+      "referral.details.hostelsEmpty": "Пока нет рекомендованных объектов.",
+      "referral.details.historyEmpty": "Пока нет записей.",
+      "referral.details.statusPaid": "Выплачено",
+      "referral.details.statusAccrued": "Ожидает",
       "referral.manualPartner.nameRequired": "Имя обязательно.",
       "referral.manualPartner.createdMsg": "Партнёр создан! Код рекомендации",
       "config.section.communication": "Коммуникация (каналы коммерческого ассистента)",
@@ -2844,6 +2927,14 @@
       "resellers.linkPrompt": "연결할 StayFlow 사용자 이메일:",
       "resellers.table.charges": "청구 건수",
       "resellers.table.margin": "미지급 마진",
+      "referral.details.title": "파트너 상세정보",
+      "referral.details.viewBtn": "상세보기",
+      "referral.details.hostelsTitle": "🏨 추천한 숙소",
+      "referral.details.historyTitle": "📋 정산 내역",
+      "referral.details.hostelsEmpty": "아직 추천한 숙소가 없습니다.",
+      "referral.details.historyEmpty": "아직 내역이 없습니다.",
+      "referral.details.statusPaid": "지급됨",
+      "referral.details.statusAccrued": "대기 중",
       "referral.manualPartner.nameRequired": "이름은 필수입니다.",
       "referral.manualPartner.createdMsg": "파트너가 생성되었습니다! 추천 코드",
       "config.section.communication": "커뮤니케이션 (영업 어시스턴트 채널)",
@@ -3125,6 +3216,14 @@
       "resellers.linkPrompt": "E-mail van de te koppelen StayFlow-gebruiker:",
       "resellers.table.charges": "Afschrijvingen",
       "resellers.table.margin": "Verschuldigde marge",
+      "referral.details.title": "Partnerdetails",
+      "referral.details.viewBtn": "Details bekijken",
+      "referral.details.hostelsTitle": "🏨 Doorverwezen accommodaties",
+      "referral.details.historyTitle": "📋 Overzicht",
+      "referral.details.hostelsEmpty": "Nog geen accommodatie doorverwezen.",
+      "referral.details.historyEmpty": "Nog geen items.",
+      "referral.details.statusPaid": "Betaald",
+      "referral.details.statusAccrued": "In afwachting",
       "referral.manualPartner.nameRequired": "Naam is verplicht.",
       "referral.manualPartner.createdMsg": "Partner aangemaakt! Verwijzingscode",
       "config.section.communication": "Communicatie (kanalen van de commerciële assistent)",
@@ -4304,7 +4403,10 @@
           <td>${Math.round((b.current_tier_pct ?? 0) * 100)}%</td>
           <td>${b.payment_count}</td>
           <td>${formatMoney(b.total_owed, b.currency)}</td>
-          <td><button type="button" class="payout-btn" onclick="markSubscriptionReferralPayout(${b.referring_partner_id}, this)">${AT("payouts.markPaid")}</button></td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" class="btn secondary" style="padding:4px 10px;font-size:12px" onclick="openReferralPartnerDetails(${b.referring_partner_id}, '${(b.partner_name || "").replace(/'/g, "\\'")}')">${AT("referral.details.viewBtn")}</button>
+            <button type="button" class="payout-btn" onclick="markSubscriptionReferralPayout(${b.referring_partner_id}, this)">${AT("payouts.markPaid")}</button>
+          </td>
         </tr>`;
       }).join("");
     }catch(e){
@@ -4346,6 +4448,44 @@
       btn.disabled = false;
       btn.textContent = AT("payouts.markPaid");
     }
+  };
+
+  window.openReferralPartnerDetails = async function(partnerId, partnerName){
+    const panel = document.getElementById("referralPartnerDetails");
+    document.getElementById("referralPartnerDetailsTitle").textContent = `${AT("referral.details.title")} — ${partnerName || "—"}`;
+    document.getElementById("referralPartnerDetailsHostels").innerHTML = AT("loading");
+    document.getElementById("referralPartnerDetailsHistory").innerHTML = AT("loading");
+    panel.style.display = "block";
+    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    try{
+      const res = await fetch(`/stayflow-admin/referral-partners/${partnerId}/details`, { credentials: "same-origin" });
+      const data = await res.json();
+      if(!data.success) return;
+
+      const hostelsEl = document.getElementById("referralPartnerDetailsHostels");
+      hostelsEl.innerHTML = data.referred_hostels.length
+        ? data.referred_hostels.map(h => `
+            <div style="background:#0d1421;border:1px solid #ffffff14;border-radius:10px;padding:8px 10px;display:flex;justify-content:space-between">
+              <span>${h.name}</span><span style="color:var(--muted)">${h.billing_status || "—"}</span>
+            </div>`).join("")
+        : `<span style="color:var(--muted)">${AT("referral.details.hostelsEmpty")}</span>`;
+
+      const historyEl = document.getElementById("referralPartnerDetailsHistory");
+      historyEl.innerHTML = data.history.length
+        ? data.history.map(h => `
+            <div style="background:#0d1421;border:1px solid #ffffff14;border-radius:10px;padding:8px 10px">
+              ${(h.created_at || "").split(" ")[0]} — ${h.hostel_name} — ${formatMoney(h.amount_owed, h.currency)} (${Math.round(h.commission_pct * 100)}%)
+              <span style="color:${h.status === "paid_out" ? "#26e0a0" : "#ffbd4a"}">${h.status === "paid_out" ? AT("referral.details.statusPaid") : AT("referral.details.statusAccrued")}</span>
+            </div>`).join("")
+        : `<span style="color:var(--muted)">${AT("referral.details.historyEmpty")}</span>`;
+    }catch(e){
+      console.warn("Erro ao carregar detalhes do parceiro:", e);
+    }
+  };
+
+  window.closeReferralPartnerDetails = function(){
+    document.getElementById("referralPartnerDetails").style.display = "none";
   };
 
   window.openCreateReferralPartnerForm = function(){

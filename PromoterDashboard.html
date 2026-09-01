@@ -47,8 +47,23 @@ td{padding:10px;border-bottom:1px solid #16233a}
     <div class='codeRow'>
       <input id='referralLink' readonly>
       <button type='button' onclick='copyLink()'>Copiar</button>
+      <button type='button' id='shareBtn' style='display:none;background:#233652' onclick='shareLink()'>Compartilhar</button>
     </div>
     <p id='copyMsg'></p>
+  </div>
+
+  <div class='card'>
+    <h2>📢 Materiais pra divulgar</h2>
+    <p class='desc'>Textos prontos pra você mandar direto — já com o seu link de indicação incluído.</p>
+    <label style='display:block;font-size:12px;color:#9aa8bb;margin-bottom:6px'>Mensagem de WhatsApp</label>
+    <textarea id='materialWhatsapp' readonly style='width:100%;min-height:110px;padding:12px;background:#0d1421;border:1px solid #233652;border-radius:13px;color:#fff;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:8px'></textarea>
+    <button type='button' style='width:auto;padding:10px 16px;font-size:13px;margin-bottom:18px' onclick="copyMaterial('materialWhatsapp','copyWhatsappMsg')">Copiar mensagem</button>
+    <p id='copyWhatsappMsg' style='font-size:12px;color:#26e0a0;min-height:16px;margin-bottom:10px'></p>
+
+    <label style='display:block;font-size:12px;color:#9aa8bb;margin-bottom:6px'>Legenda pra post/story</label>
+    <textarea id='materialCaption' readonly style='width:100%;min-height:90px;padding:12px;background:#0d1421;border:1px solid #233652;border-radius:13px;color:#fff;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:8px'></textarea>
+    <button type='button' style='width:auto;padding:10px 16px;font-size:13px' onclick="copyMaterial('materialCaption','copyCaptionMsg')">Copiar legenda</button>
+    <p id='copyCaptionMsg' style='font-size:12px;color:#26e0a0;min-height:16px'></p>
   </div>
 
   <div class='card'>
@@ -84,6 +99,17 @@ td{padding:10px;border-bottom:1px solid #16233a}
     </div>
     <p class='empty' id='historyEmpty'>Nenhum lançamento ainda.</p>
   </div>
+
+  <div class='card'>
+    <h2>📬 Contato de recebimento</h2>
+    <p class='desc'>E-mail e telefone que a StayFlow usa pra te avisar e combinar o repasse da comissão.</p>
+    <label style='display:block;font-size:12px;color:#9aa8bb;margin-bottom:4px'>E-mail</label>
+    <input id='contactEmailInput' type='email' placeholder='seu@email.com' style='width:100%;padding:14px;margin:0 0 14px;background:#0d1421;border:1px solid #233652;border-radius:13px;color:#fff;font-size:14px'>
+    <label style='display:block;font-size:12px;color:#9aa8bb;margin-bottom:4px'>Telefone/WhatsApp</label>
+    <input id='contactPhoneInput' placeholder='+54 9 11 1234-5678' style='width:100%;padding:14px;margin:0 0 14px;background:#0d1421;border:1px solid #233652;border-radius:13px;color:#fff;font-size:14px'>
+    <button type='button' style='width:auto;padding:12px 20px;font-size:13px' onclick='saveContact()'>Salvar contato</button>
+    <p id='contactMsg' style='font-size:12px;color:#26e0a0;margin-top:8px;min-height:16px'></p>
+  </div>
 </div>
 
 <script>
@@ -110,7 +136,17 @@ async function loadDashboard(){
     const data = await res.json();
     if(!data.success) return;
 
-    document.getElementById('referralLink').value = `${location.origin}/Register.html?ref=${data.referral_code}`;
+    const referralLink = `${location.origin}/Register.html?ref=${data.referral_code}`;
+    document.getElementById('referralLink').value = referralLink;
+    if(navigator.share) document.getElementById('shareBtn').style.display = '';
+
+    const whatsappText = `Oi! Trabalho com a StayFlow, um sistema de gestão com IA pra hotéis, pousadas e hostels (WhatsApp automático, reservas, financeiro, tudo num painel só). Vale a pena dar uma olhada — tem teste grátis: ${referralLink}`;
+    const captionText = `A StayFlow automatiza o atendimento e a gestão da sua hospedagem com IA — do primeiro contato no WhatsApp até o check-out. Teste grátis: ${referralLink}`;
+    document.getElementById('materialWhatsapp').value = whatsappText;
+    document.getElementById('materialCaption').value = captionText;
+
+    document.getElementById('contactEmailInput').value = data.contact_email || '';
+    document.getElementById('contactPhoneInput').value = data.contact_phone || '';
 
     document.getElementById('statTier').textContent = `${Math.round(data.current_tier_pct * 100)}%`;
     document.getElementById('statActiveCount').textContent = data.active_referral_count;
@@ -170,6 +206,50 @@ function copyLink(){
     document.getElementById('copyMsg').textContent = 'Link copiado!';
     setTimeout(() => { document.getElementById('copyMsg').textContent = ''; }, 2000);
   }).catch(() => {});
+}
+
+function shareLink(){
+  const link = document.getElementById('referralLink').value;
+  navigator.share({ title: 'StayFlow', text: 'Conheça a StayFlow, sistema de gestão com IA pra hospedagens:', url: link }).catch(() => {});
+}
+
+function copyMaterial(textareaId, msgId){
+  const el = document.getElementById(textareaId);
+  el.select();
+  el.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(el.value).then(() => {
+    const msg = document.getElementById(msgId);
+    msg.textContent = 'Copiado!';
+    setTimeout(() => { msg.textContent = ''; }, 2000);
+  }).catch(() => {});
+}
+
+async function saveContact(){
+  const msg = document.getElementById('contactMsg');
+  msg.textContent = '';
+  try{
+    const res = await fetch('/promoter/contact', {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        contact_email: document.getElementById('contactEmailInput').value.trim(),
+        contact_phone: document.getElementById('contactPhoneInput').value.trim(),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success){
+      msg.style.color = '#ff5d76';
+      msg.textContent = data.message || 'Não foi possível salvar.';
+      return;
+    }
+    msg.style.color = '#26e0a0';
+    msg.textContent = 'Contato salvo!';
+    setTimeout(() => { msg.textContent = ''; }, 2500);
+  }catch(e){
+    msg.style.color = '#ff5d76';
+    msg.textContent = 'Erro de conexão.';
+  }
 }
 
 async function doLogout(){
