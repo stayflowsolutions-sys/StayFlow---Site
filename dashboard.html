@@ -234,6 +234,130 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// Portfolio de vendas (item 27b) - so pro promotor (nav gated por
+// permissao "promoter"). Conteudo fixo, sem API nenhuma - e so
+// material de apresentacao, nao dado dinamico. Uma "apresentacao" por
+// setor, navegada com Anterior/Proximo, cada slide so titulo+corpo.
+const PORTFOLIO_SLIDES = {
+  lodging: [
+    { title: "🏨 Hospedagens — O problema", body: "Hotéis, pousadas e hostels perdem reserva todo dia por demora no WhatsApp, atendimento manual fora do horário, e nenhuma visão clara de ocupação e receita em tempo real." },
+    { title: "A solução StayFlow", body: "Uma IA atende automaticamente no WhatsApp, Instagram e Facebook — 24 horas por dia, sem perder um lead — enquanto reservas, quartos e financeiro ficam organizados num painel só." },
+    { title: "Recursos principais", body: "• Mapa de quartos visual, com limpeza e manutenção rastreadas\n• Tarifa por temporada e diária diferenciada de fim de semana\n• Reserva de grupo com desconto automático\n• Integração com Booking, Airbnb e Hostelworld — sem risco de overbooking entre canais\n• Cobrança automática recorrente via Mercado Pago" },
+    { title: "Opportunity Center", body: "A IA detecta sozinha quando um hóspede quer um upgrade, um passeio, uma diária extra ou late checkout, e sugere a venda certa na hora certa — sem a equipe precisar ficar de olho manualmente." },
+    { title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito. Cadastro leva menos de 2 minutos." },
+  ],
+  agency: [
+    { title: "🧭 Agências (turismo) — O problema", body: "Leads chegam pelo WhatsApp e Instagram o dia inteiro, mas se perdem no meio de conversas manuais — sem controle de disponibilidade nem histórico organizado de quem já foi atendido." },
+    { title: "A solução StayFlow", body: "Um catálogo de passeios e serviços com IA que entende o que o cliente quer e sugere o produto certo na conversa, com cobrança direta pelo próprio chat." },
+    { title: "Recursos principais", body: "• Portfólio de itens/serviços com fotos, preço e disponibilidade\n• Matching automático por IA — sugere o passeio certo pro perfil de cada lead\n• Cobrança via Mercado Pago direto na conversa\n• Conexão com hospedagens parceiras, que podem indicar seus passeios pros próprios hóspedes" },
+    { title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito." },
+  ],
+  rental: [
+    { title: "🚗 Locadoras — O problema", body: "Disponibilidade de carro, bike ou equipamento é difícil de acompanhar em planilha, e cada reserva vira uma ida e volta manual no WhatsApp — com risco real de alugar o mesmo item duas vezes." },
+    { title: "A solução StayFlow", body: "Catálogo com disponibilidade em tempo real, atendimento automático por IA, e conexão direta com hospedagens parceiras que já indicam locação pros próprios hóspedes — trazendo cliente sem custo de aquisição." },
+    { title: "Recursos principais", body: "• Catálogo de veículos/equipamentos com disponibilidade sempre atualizada\n• Atendimento automático 24h por WhatsApp/Instagram/Facebook\n• Cobrança direta via Mercado Pago\n• Indicação automática vinda de hospedagens parceiras da rede StayFlow" },
+    { title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito." },
+  ],
+};
+
+let portfolioCurrentSector = "lodging";
+let portfolioCurrentSlide = 0;
+
+function renderPortfolioSlide(){
+  const slides = PORTFOLIO_SLIDES[portfolioCurrentSector];
+  const slide = slides[portfolioCurrentSlide];
+  const content = document.getElementById("portfolioSlideContent");
+  if(!content || !slide) return;
+  content.innerHTML = `
+    <h2 style="font-size:22px;margin-bottom:16px">${slide.title}</h2>
+    <p style="font-size:15px;line-height:1.8;white-space:pre-line;color:var(--text)">${slide.body}</p>
+  `;
+  const counter = document.getElementById("portfolioSlideCounter");
+  if(counter) counter.textContent = `${portfolioCurrentSlide + 1} / ${slides.length}`;
+}
+
+window.switchPortfolioSector = function(sector){
+  portfolioCurrentSector = sector;
+  portfolioCurrentSlide = 0;
+  document.querySelectorAll("#salesportfolio .ops-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.portfolioSector === sector);
+  });
+  renderPortfolioSlide();
+};
+
+window.portfolioPrevSlide = function(){
+  if(portfolioCurrentSlide > 0){ portfolioCurrentSlide--; renderPortfolioSlide(); }
+};
+
+window.portfolioNextSlide = function(){
+  const slides = PORTFOLIO_SLIDES[portfolioCurrentSector];
+  if(portfolioCurrentSlide < slides.length - 1){ portfolioCurrentSlide++; renderPortfolioSlide(); }
+};
+
+renderPortfolioSlide();
+
+// Home do promotor (item 27b) - troca o conteudo da pagina "Dashboard"
+// pra quem tem account_kind='promoter' (nenhum KPI do grid normal faz
+// sentido: ocupacao, reservas, hospedes nao existem nessa conta).
+// Chamado uma vez, junto do resto da hidratacao de sessao.
+window.applyPromoterHome = function(session){
+  const normal = document.getElementById("dashboardNormalContent");
+  const promoterGrid = document.getElementById("promoterHomeGrid");
+  if(normal) normal.style.display = "none";
+  if(promoterGrid) promoterGrid.style.display = "";
+  loadPromoterHomeData();
+};
+
+async function loadPromoterHomeData(){
+  try{
+    const res = await fetch("/promoter/dashboard", { credentials: "same-origin" });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data.success) return;
+
+    const link = `${location.origin}/Register.html?ref=${data.referral_code}`;
+    const linkInput = document.getElementById("promoterHomeLink");
+    if(linkInput) linkInput.value = link;
+    if(navigator.share) document.getElementById("promoterHomeShareBtn").style.display = "";
+
+    document.getElementById("promoterHomeTier").textContent = `${Math.round(data.current_tier_pct * 100)}%`;
+    document.getElementById("promoterHomeActiveCount").textContent = data.active_referral_count;
+    document.getElementById("promoterHomeAccrued").textContent = formatMoney(data.total_accrued);
+    document.getElementById("promoterHomePaidOut").textContent = formatMoney(data.total_paid_out);
+
+    const list = document.getElementById("promoterHomeHostelsList");
+    const empty = document.getElementById("promoterHomeHostelsEmpty");
+    if(data.referred_hostels.length){
+      empty.style.display = "none";
+      list.innerHTML = data.referred_hostels.map(h => `
+        <div style="background:#0d1421;border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between">
+          <span>${h.name}</span><span style="color:var(--muted)">${h.billing_status || "—"}</span>
+        </div>`).join("");
+    }else{
+      list.innerHTML = "";
+      empty.style.display = "";
+    }
+  }catch(e){
+    console.warn("Erro ao carregar home do promotor:", e);
+  }
+}
+
+window.copyPromoterHomeLink = function(){
+  const input = document.getElementById("promoterHomeLink");
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(() => {
+    const msg = document.getElementById("promoterHomeCopyMsg");
+    msg.textContent = "Link copiado!";
+    setTimeout(() => { msg.textContent = ""; }, 2000);
+  }).catch(() => {});
+};
+
+window.sharePromoterHomeLink = function(){
+  const link = document.getElementById("promoterHomeLink").value;
+  navigator.share({ title: "StayFlow", text: "Conheça a StayFlow, sistema de gestão com IA pra hospedagens:", url: link }).catch(() => {});
+};
+
 // Equipe deixou de ser painel lateral (era um "ask-panel" que abria por
 // cima da tela) e virou pagina completa com abas, mesmo padrao usado em
 // Operacoes - Escala mora aqui dentro tambem agora (aba propria, com
@@ -842,8 +966,11 @@ async function deleteRoleConfirm(roleId){
     <button data-page="operations" data-required-account-kind="lodging" onclick="openPage('operations',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span><span data-i18n="nav.operations">Operações</span>
     </button>
-    <button data-page="team" data-required-permission="team,scheduling" onclick="openPage('team',this)">
+    <button data-page="team" data-required-permission="team,scheduling" data-hide-for-account-kind="promoter" onclick="openPage('team',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span><span data-i18n="nav.team">Equipe</span>
+    </button>
+    <button data-page="salesportfolio" data-required-permission="promoter" onclick="openPage('salesportfolio',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></span><span data-i18n="nav.salesPortfolio">Portfólio de Vendas</span>
     </button>
     <button data-page="finance" onclick="openPage('finance',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></span><span data-i18n="nav.finance">Financeiro</span>
@@ -943,7 +1070,7 @@ async function deleteRoleConfirm(roleId){
           <div class="user-role">—</div>
         </div>
         <div class="hostel-selector-divider"></div>
-        <button type="button" id="userMenuEquipeItem" data-required-permission="team,scheduling" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openPage('team', document.querySelector('[data-page=team]'))">
+        <button type="button" id="userMenuEquipeItem" data-required-permission="team,scheduling" data-hide-for-account-kind="promoter" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openPage('team', document.querySelector('[data-page=team]'))">
           <span data-i18n="topbar.userMenu.team">👥 Equipe</span>
         </button>
         <button type="button" id="userMenuStayflowAdminItem" class="hostel-selector-settings-link" style="display:none;" onclick="window.location.href='/admin.html'">
@@ -959,7 +1086,7 @@ async function deleteRoleConfirm(roleId){
 
 <!-- DASHBOARD -->
 <section id="dashboard" class="page active">
-  <div class="grid dashboard-grid">
+  <div class="grid dashboard-grid" id="dashboardNormalContent">
 
     <!-- KPIs principais -->
     <div class="card kpi" data-required-account-kind="lodging" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))">
@@ -1100,6 +1227,42 @@ async function deleteRoleConfirm(roleId){
       </div>
     </div>
 
+  </div>
+
+  <!-- Home do promotor (item 27b) - substitui o grid normal acima, que
+       nao tem nenhum KPI relevante pra quem nao opera hospedagem/
+       agencia (ocupacao, reservas, hospedes... nada disso existe pra
+       essa conta). Toggle em applyPromoterHome(). -->
+  <div class="grid" id="promoterHomeGrid" style="display:none">
+    <div class="card span-12">
+      <h2>🔗 Seu link de indicação</h2>
+      <p style="color:var(--muted);font-size:13px;margin:6px 0 14px">Compartilhe com qualquer hospedagem — quando alguém se cadastrar por ele e virar cliente pagante, a comissão cai automaticamente pra você, todo mês.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input id="promoterHomeLink" readonly style="flex:1;min-width:220px">
+        <button class="btn secondary" type="button" onclick="copyPromoterHomeLink()">Copiar</button>
+        <button class="btn secondary" type="button" id="promoterHomeShareBtn" style="display:none" onclick="sharePromoterHomeLink()">Compartilhar</button>
+      </div>
+      <p id="promoterHomeCopyMsg" style="font-size:12px;color:var(--green,#26e0a0);margin-top:6px;min-height:16px"></p>
+    </div>
+
+    <div class="card kpi">
+      <div><div class="label">Faixa atual</div><div class="value" id="promoterHomeTier">—</div></div>
+    </div>
+    <div class="card kpi">
+      <div><div class="label">Indicações ativas</div><div class="value" id="promoterHomeActiveCount">—</div></div>
+    </div>
+    <div class="card kpi">
+      <div><div class="label">A receber</div><div class="value" id="promoterHomeAccrued">—</div></div>
+    </div>
+    <div class="card kpi">
+      <div><div class="label">Já recebido</div><div class="value" id="promoterHomePaidOut">—</div></div>
+    </div>
+
+    <div class="card span-12">
+      <h2>🏨 Hospedagens indicadas</h2>
+      <div id="promoterHomeHostelsList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
+      <p class="sf-empty-inline" id="promoterHomeHostelsEmpty" style="color:var(--muted);font-size:13px;display:none">Nenhuma hospedagem indicada ainda.</p>
+    </div>
   </div>
 </section>
 
@@ -2358,7 +2521,7 @@ async function deleteRoleConfirm(roleId){
         <div id="billingSummaryContent"><p style="color:var(--muted)" data-i18n="common.loading">Carregando...</p></div>
       </div>
 
-      <div class="card settings-summary-card" data-settings-section="billing" onclick="openReferralSettingsModal()">
+      <div class="card settings-summary-card" data-settings-section="billing" data-hide-for-account-kind="promoter" onclick="openReferralSettingsModal()">
         <div class="settings-summary-row">
           <div>
             <h2 data-i18n="settings.referral.title">🤝 Programa de indicação</h2>
@@ -2378,7 +2541,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card settings-summary-card" data-settings-section="integracoes" onclick="openOutboundWebhookSettingsModal()">
+      <div class="card settings-summary-card" data-settings-section="integracoes" data-hide-for-account-kind="promoter" onclick="openOutboundWebhookSettingsModal()">
         <div class="settings-summary-row">
           <div>
             <h2 data-i18n="settings.outboundWebhook.title">📡 Webhook de saída</h2>
@@ -2388,7 +2551,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card settings-summary-card" data-settings-section="integracoes" onclick="openMercadoPagoSettingsModal()">
+      <div class="card settings-summary-card" data-settings-section="integracoes" data-hide-for-account-kind="promoter" onclick="openMercadoPagoSettingsModal()">
         <div class="settings-summary-row">
           <div>
             <h2 data-i18n="settings.mercadopago.title">💳 Mercado Pago</h2>
@@ -2414,6 +2577,27 @@ async function deleteRoleConfirm(roleId){
         <input type="text" id="supportInput" placeholder="Escrever mensagem..." onkeydown="if(event.key==='Enter')sendSupportMessage()">
         <button class="btn" type="button" onclick="sendSupportMessage()">Enviar</button>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- PORTFOLIO DE VENDAS (item 27b - so pro promotor) -->
+<section id="salesportfolio" class="page">
+  <div class="card" style="margin-bottom:16px">
+    <h2>📊 Portfólio de vendas</h2>
+    <p style="color:var(--muted);font-size:13px;margin-top:6px">Apresentação pronta pra mostrar numa call ou reunião — escolha o setor certo pro seu prospect e navegue pelos slides.</p>
+  </div>
+  <div class="ops-tabs">
+    <button type="button" class="ops-tab active" data-portfolio-sector="lodging" onclick="switchPortfolioSector('lodging')">🏨 Hospedagens</button>
+    <button type="button" class="ops-tab" data-portfolio-sector="agency" onclick="switchPortfolioSector('agency')">🧭 Agências</button>
+    <button type="button" class="ops-tab" data-portfolio-sector="rental" onclick="switchPortfolioSector('rental')">🚗 Locadoras</button>
+  </div>
+  <div class="card" style="min-height:420px;display:flex;flex-direction:column">
+    <div id="portfolioSlideContent" style="flex:1"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
+      <button type="button" class="btn secondary" onclick="portfolioPrevSlide()">‹ Anterior</button>
+      <span id="portfolioSlideCounter" style="color:var(--muted);font-size:13px"></span>
+      <button type="button" class="btn" onclick="portfolioNextSlide()">Próximo ›</button>
     </div>
   </div>
 </section>
@@ -11567,7 +11751,7 @@ window.uploadGuestDocumentUI = async function(guestId){
         msg.classList.add("error");
         return;
       }
-      window.location.href = data.account_kind === "promoter" ? "/PromoterDashboard.html" : "/app";
+      window.location.href = "/app";
     }catch(e){
       msg.textContent = T('common.connectionError', 'Erro de conexão.');
       msg.classList.add("error");
@@ -11594,16 +11778,23 @@ window.uploadGuestDocumentUI = async function(guestId){
   }
 
   function hideNavItemsWithoutPermission(permissions, accountKind){
-    // accountKind ("lodging"/"agency") e um segundo eixo, independente
-    // de permissao - uma agencia-admin tem a permissao "events" mas
-    // nunca deveria ver o item "Eventos" pensado pra hospedagem. Um
-    // item so fica visivel se passar nos dois checks.
+    // accountKind ("lodging"/"agency"/"promoter") e um segundo eixo,
+    // independente de permissao - uma agencia-admin tem a permissao
+    // "events" mas nunca deveria ver o item "Eventos" pensado pra
+    // hospedagem. Um item so fica visivel se passar nos dois checks.
+    // data-hide-for-account-kind e o inverso de data-required-account-kind:
+    // esconde SO pra esse(s) tipo(s), mantendo visivel pros outros sem
+    // precisar listar todos - usado quando a permissao sozinha nao
+    // basta pra decidir (ex: "team", que o promotor precisa TER mas
+    // nunca deveria VER no menu, ver PROMOTER_PERMISSIONS).
     document.querySelectorAll(".menu button").forEach(btn => {
       const key = btn.dataset.requiredPermission || btn.dataset.page;
       const permissionOk = hasAnyPermission(key, permissions);
       const requiredKind = btn.dataset.requiredAccountKind;
       const kindOk = !requiredKind || requiredKind === (accountKind || "lodging");
-      btn.style.display = (permissionOk && kindOk) ? "" : "none";
+      const hideForKinds = btn.dataset.hideForAccountKind ? btn.dataset.hideForAccountKind.split(",").map(s => s.trim()) : [];
+      const hiddenByKind = hideForKinds.includes(accountKind || "lodging");
+      btn.style.display = (permissionOk && kindOk && !hiddenByKind) ? "" : "none";
     });
   }
 
@@ -11657,6 +11848,24 @@ window.uploadGuestDocumentUI = async function(guestId){
     });
   }
 
+  // Inverso do de cima: esconde SO pra esse(s) tipo(s) de conta,
+  // mantendo visivel pros outros - roda sobre TODO elemento marcado
+  // (dentro ou fora do .menu), diferente de applyAccountKindVisibility
+  // (que pula .menu de proposito) e de hideNavItemsWithoutPermission
+  // (que so cobre .menu button). Usado quando a permissao sozinha nao
+  // basta pra decidir visibilidade (ex: "team" - o promotor PRECISA
+  // ter essa permissao pra check_team_permission_safety nao bloquear a
+  // criacao do papel, mas nunca deveria VER Equipe no menu nem no
+  // dropdown do usuario).
+  function applyHideForAccountKind(accountKind){
+    document.querySelectorAll("[data-hide-for-account-kind]").forEach(el => {
+      const hiddenKinds = el.dataset.hideForAccountKind.split(",").map(s => s.trim());
+      if(hiddenKinds.includes(accountKind || "lodging")){
+        el.style.display = "none";
+      }
+    });
+  }
+
   function hydrateUserUI(u){
     if(!u) return;
 
@@ -11702,6 +11911,8 @@ window.uploadGuestDocumentUI = async function(guestId){
     try{ applyPermissionVisibility(session.permissions || []); }catch(e){ console.error("Erro ao aplicar visibilidade por permissao:", e); }
     try{ applyAccountKindVisibility(session.account_kind, session.agency_category); }catch(e){ console.error("Erro ao aplicar visibilidade por tipo de conta:", e); }
     try{ hideNavItemsWithoutPermission(session.permissions || [], session.account_kind); }catch(e){ console.error("Erro ao esconder itens de menu sem permissao:", e); }
+    try{ applyHideForAccountKind(session.account_kind); }catch(e){ console.error("Erro ao esconder itens especificos de tipo de conta:", e); }
+    try{ if(session.account_kind === "promoter") applyPromoterHome(session); }catch(e){ console.error("Erro ao montar home do promotor:", e); }
     try{
       // Agencia parceira chama guest de "PAX" (turismo/locacao) ou
       // "Clientes" (demais categorias) - hospedagem continua "Hospedes".

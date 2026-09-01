@@ -123,16 +123,11 @@
       // painel dele (admin.html) - pedido explicito: nao passar por
       // nenhuma tela intermediaria antes do local principal de trabalho.
       // De la, ele troca de propriedade pelo seletor no topo do painel.
-      // Promotor (item 27b) nunca opera hospedagem/agencia - cai numa
-      // pagina dedicada em vez do dashboard.html normal (que tem
-      // reservas/chats/etc irrelevantes pra essa conta).
-      if(data.is_stayflow_admin){
-        window.location.href = "admin.html";
-      }else if(data.account_kind === "promoter"){
-        window.location.href = "PromoterDashboard.html";
-      }else{
-        window.location.href = "/app";
-      }
+      // Promotor (item 27b) usa o MESMO dashboard.html de qualquer
+      // conta - o menu lateral so mostra o que faz sentido pra ele
+      // (Dashboard com a home de indicacao, Chats, Configuracoes,
+      // Portfolio de vendas), filtrado por permissao/account_kind.
+      window.location.href = data.is_stayflow_admin ? "admin.html" : "/app";
     }
 
     let pendingTwoFactorToken = null;
@@ -256,10 +251,7 @@
             // conta (StayFlow/Turismo/Locadora) carem todos no mesmo
             // lugar do botao "Meu painel" - bug real, corrigido.
             localStorage.setItem("stayflow_user", JSON.stringify(selectData.user));
-            // Promotor (item 27b) nunca opera hospedagem/agencia - vai
-            // pra pagina dedicada, mesma logica de finishLogin() (que
-            // nao serve aqui, ver comentario acima).
-            window.location.href = selectData.account_kind === "promoter" ? "PromoterDashboard.html" : "/app";
+            window.location.href = "/app";
           }catch(err){
             console.error(err);
             selectorMsg.textContent = "Erro ao tentar entrar. Tente novamente.";
