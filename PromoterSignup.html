@@ -20,6 +20,7 @@ a{color:#8fb4ff;text-decoration:none}
   <div><strong>30%</strong> — 6 ou mais hospedagens ativas</div>
 </div>
 <label>Seu nome</label><input id='admin_name' placeholder='Digite seu nome'>
+<label>Telefone</label><input id='phone' placeholder='Digite seu telefone com DDD/código do país'>
 <label>E-mail</label><input id='email' placeholder='Digite seu e-mail'>
 <label>Senha</label><input id='password' type='password' placeholder='Crie uma senha'>
 <button onclick='reg()'>Criar conta de promotor</button><p id='m' style='font-size:13px;color:#ff5d76;margin-top:10px'></p><br>
@@ -30,15 +31,17 @@ async function reg(){
   const m = document.getElementById('m');
   m.textContent = '';
   const admin_name = document.getElementById('admin_name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
 
   if(!admin_name){ m.textContent = 'Digite seu nome.'; return; }
+  if(!phone){ m.textContent = 'Digite seu telefone.'; return; }
   if(!email){ m.textContent = 'Digite seu e-mail.'; return; }
   if(!password || password.length < 8){ m.textContent = 'A senha precisa ter pelo menos 8 caracteres.'; return; }
 
   const p = {
-    hostel_name: admin_name, admin_name, email, password,
+    hostel_name: admin_name, admin_name, phone, email, password,
     account_kind: 'promoter',
   };
   const r = await fetch('/register', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) });

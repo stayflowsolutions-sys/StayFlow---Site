@@ -586,11 +586,27 @@ function renderPromoterPerformanceChart(history){
 // (nao faz fetch novo): total a receber/recebido (ja tinha), relatorio
 // mensal (agrupamento client-side do history por mes) e o extrato
 // completo linha a linha, com qual hospedagem gerou qual comissao.
+const PAYOUT_METHOD_LABELS = {
+  mercadopago: "Mercado Pago",
+  pix: "PIX",
+  bank: "Transferência bancária",
+};
+
 function renderPromoterWallet(data){
   const accruedEl = document.getElementById("walletAccrued");
   const paidOutEl = document.getElementById("walletPaidOut");
   if(accruedEl) accruedEl.textContent = formatMoney(data.total_accrued);
   if(paidOutEl) paidOutEl.textContent = formatMoney(data.total_paid_out);
+
+  // Guardado pra abrir o modal ja preenchido, sem precisar de fetch
+  // novo - loadPromoterHomeData() ja trouxe esse dado junto do resto.
+  window._promoterPayoutInfo = { payout_method: data.payout_method, payout_details: data.payout_details };
+  const payoutDescEl = document.getElementById("walletPayoutSummaryDesc");
+  if(payoutDescEl){
+    payoutDescEl.textContent = data.payout_method
+      ? `${PAYOUT_METHOD_LABELS[data.payout_method] || data.payout_method}${data.payout_details ? " — " + data.payout_details : ""}`
+      : T('wallet.payoutSummaryDescEmpty', 'Nenhum dado de recebimento cadastrado ainda.');
+  }
 
   const history = data.history || [];
 
@@ -1232,10 +1248,10 @@ async function deleteRoleConfirm(roleId){
     <button data-page="dashboard" class="active" onclick="openPage('dashboard',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span data-i18n="nav.dashboard">Dashboard</span>
     </button>
-    <button data-page="referrals" data-required-permission="promoter" onclick="openPage('referrals',this)">
+    <button data-page="referrals" data-required-permission="promoter" data-required-account-kind="promoter" onclick="openPage('referrals',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M9 15 15 9"/><path d="M10 6l1-1a4 4 0 0 1 6 6l-1 1"/><path d="M14 18l-1 1a4 4 0 0 1-6-6l1-1"/></svg></span><span data-i18n="nav.referrals">Indicações</span>
     </button>
-    <button data-page="wallet" data-required-permission="promoter" onclick="openPage('wallet',this)">
+    <button data-page="wallet" data-required-permission="promoter" data-required-account-kind="promoter" onclick="openPage('wallet',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16" cy="14.5" r="1.4"/></svg></span><span data-i18n="nav.wallet">Carteira</span>
     </button>
     <button data-page="chats" onclick="openPage('chats',this)">
@@ -1265,7 +1281,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="team" data-required-permission="team,scheduling" data-hide-for-account-kind="promoter" onclick="openPage('team',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span><span data-i18n="nav.team">Equipe</span>
     </button>
-    <button data-page="salesportfolio" data-required-permission="promoter" onclick="openPage('salesportfolio',this)">
+    <button data-page="salesportfolio" data-required-permission="promoter" data-required-account-kind="promoter" onclick="openPage('salesportfolio',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></span><span data-i18n="nav.salesPortfolio">Portfólio de Vendas</span>
     </button>
     <button data-page="finance" data-hide-for-account-kind="promoter" onclick="openPage('finance',this)">
@@ -1612,6 +1628,16 @@ async function deleteRoleConfirm(roleId){
     </div>
   </div>
 
+  <div class="card settings-summary-card span-12" style="margin-top:16px" onclick="openPayoutInfoModal()">
+    <div class="settings-summary-row">
+      <div>
+        <h2 data-i18n="wallet.payoutTitle">💳 Como você quer receber</h2>
+        <p class="settings-summary-desc" id="walletPayoutSummaryDesc" data-i18n="wallet.payoutSummaryDescEmpty">Nenhum dado de recebimento cadastrado ainda.</p>
+      </div>
+      <span class="settings-summary-chevron">›</span>
+    </div>
+  </div>
+
   <div class="card span-12" style="margin-top:16px">
     <h2 data-i18n="wallet.monthlyTitle">📅 Relatório mensal</h2>
     <p style="color:var(--muted);font-size:13px;margin:6px 0 14px" data-i18n="wallet.monthlyDesc">Comissão gerada por mês (soma de todos os lançamentos, pagos ou não).</p>
@@ -1620,7 +1646,7 @@ async function deleteRoleConfirm(roleId){
   </div>
 
   <div class="card span-12" style="margin-top:16px">
-    <h2 data-i18n="wallet.historyTitle">🧾 Extrato — quem pagou o quê</h2>
+    <h2 data-i18n="wallet.historyTitle">🧾 Extrato</h2>
     <div style="overflow-x:auto">
       <table class="table">
         <thead>
@@ -3052,9 +3078,9 @@ async function deleteRoleConfirm(roleId){
     <button class="ask-suggestion" data-hide-for-account-kind="promoter" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]')); closeAskStayFlow()" data-i18n="ask.suggestion1">Quais oportunidades existem hoje?</button>
     <button class="ask-suggestion" data-hide-for-account-kind="promoter" onclick="openPage('chats', document.querySelector('[data-page=chats]')); closeAskStayFlow()" data-i18n="ask.suggestion2">Quem precisa de resposta humana?</button>
     <button class="ask-suggestion" data-hide-for-account-kind="promoter" onclick="openPage('revenue', document.querySelector('[data-page=revenue]')); closeAskStayFlow()" data-i18n="ask.suggestion3">Onde posso aumentar receita?</button>
-    <button class="ask-suggestion" data-required-permission="promoter" onclick="openPage('referrals', document.querySelector('[data-page=referrals]')); closeAskStayFlow()" data-i18n="ask.promoterSuggestion1">Como funciona minha comissão?</button>
-    <button class="ask-suggestion" data-required-permission="promoter" onclick="openPage('salesportfolio', document.querySelector('[data-page=salesportfolio]')); closeAskStayFlow()" data-i18n="ask.promoterSuggestion2">Como eu apresento a StayFlow pra uma imobiliária?</button>
-    <button class="ask-suggestion" data-required-permission="promoter" onclick="askQuickQuestion(this.textContent)" data-i18n="ask.promoterSuggestion3">Quais setores a StayFlow atende?</button>
+    <button class="ask-suggestion" data-required-permission="promoter" data-required-account-kind="promoter" onclick="openPage('referrals', document.querySelector('[data-page=referrals]')); closeAskStayFlow()" data-i18n="ask.promoterSuggestion1">Como funciona minha comissão?</button>
+    <button class="ask-suggestion" data-required-permission="promoter" data-required-account-kind="promoter" onclick="openPage('salesportfolio', document.querySelector('[data-page=salesportfolio]')); closeAskStayFlow()" data-i18n="ask.promoterSuggestion2">Como eu apresento a StayFlow pra uma imobiliária?</button>
+    <button class="ask-suggestion" data-required-permission="promoter" data-required-account-kind="promoter" onclick="askQuickQuestion(this.textContent)" data-i18n="ask.promoterSuggestion3">Quais setores a StayFlow atende?</button>
   </div>
 
   <div id="askFilePreview" style="display:none;align-items:center;gap:8px;padding:8px 14px;font-size:12.5px;color:var(--muted)">
@@ -3074,7 +3100,8 @@ async function deleteRoleConfirm(roleId){
 </button>
 
 <button class="ask-floating" onclick="openAskStayFlow()" aria-label="Pergunte à StayFlow" data-i18n-title="ask.title" title="Pergunte à StayFlow">
-  <img src="assets/images/logo2.png" alt="StayFlow">
+  <span class="brand-logo-mask" data-hide-for-account-kind="promoter" role="img" aria-label="StayFlow"></span>
+  <img src="assets/images/logo2.png" alt="StayFlow" data-required-account-kind="promoter" style="display:none">
 </button>
 
 <div id="genericModalOverlay" class="generic-modal-overlay" onclick="closeGenericModal()"></div>
@@ -5852,6 +5879,66 @@ async function deleteRoleConfirm(roleId){
         <button class="btn" type="button" onclick="submitChangePassword()">${T('settings.security.changePasswordBtn', 'Trocar senha')}</button>
       </div>
     `);
+  };
+
+  // ===== Carteira: dados de recebimento do promotor =====
+  // Reaproveita o mesmo padrao "card resumo -> clique -> openGenericModal"
+  // ja usado em Trocar Senha/WhatsApp/etc. Sem processador de payout
+  // automatico nenhum - so um campo estruturado (metodo + detalhes)
+  // pro admin saber pra onde mandar o repasse manual (ver
+  // PUT /promoter/payout-info, routes/promoter.py).
+  window.openPayoutInfoModal = function(){
+    const info = window._promoterPayoutInfo || {};
+    const method = info.payout_method || "";
+    const details = info.payout_details || "";
+    openGenericModal(T('wallet.payoutTitle', '💳 Como você quer receber'), `
+      <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('wallet.payoutModalDesc', 'O repasse continua manual - esse dado é só pra quem for te pagar saber pra onde mandar.')}</p>
+      <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+        <div class="span-12">
+          <select id="payoutMethodSelect">
+            <option value="">${T('wallet.payoutMethodPlaceholder', 'Escolha o método')}</option>
+            <option value="mercadopago" ${method === "mercadopago" ? "selected" : ""}>Mercado Pago</option>
+            <option value="pix" ${method === "pix" ? "selected" : ""}>PIX</option>
+            <option value="bank" ${method === "bank" ? "selected" : ""}>${T('wallet.payoutMethodBank', 'Transferência bancária')}</option>
+          </select>
+        </div>
+        <div class="span-12">
+          <textarea id="payoutDetailsInput" rows="3" maxlength="300" placeholder="${T('wallet.payoutDetailsPlaceholder', 'Alias/CVU do Mercado Pago, chave PIX, ou dados bancários completos')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical">${escapeHtml(details)}</textarea>
+        </div>
+      </div>
+      <div id="payoutInfoMessage" class="generic-modal-message" style="margin-top:4px"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="submitPayoutInfo()">${T('settings.saveChangesBtn', 'Salvar alterações')}</button>
+      </div>
+    `);
+  };
+
+  window.submitPayoutInfo = async function(){
+    const method = document.getElementById("payoutMethodSelect").value;
+    const details = document.getElementById("payoutDetailsInput").value.trim();
+    const msg = document.getElementById("payoutInfoMessage");
+    msg.textContent = "";
+    msg.className = "generic-modal-message";
+    try{
+      const res = await fetch("/promoter/payout-info", {
+        method: "PUT", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ payout_method: method, payout_details: details }),
+      });
+      const data = await res.json();
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || T('common.connectionError', 'Erro de conexão.');
+        msg.classList.add("error");
+        return;
+      }
+      msg.textContent = T('wallet.payoutSavedMsg', 'Dados de recebimento salvos.');
+      msg.classList.add("success");
+      if(typeof loadPromoterHomeData === "function") loadPromoterHomeData();
+    }catch(e){
+      console.error("Erro ao salvar dados de recebimento:", e);
+      msg.textContent = T('common.connectionError', 'Erro de conexão.');
+      msg.classList.add("error");
+    }
   };
 
   window.submitChangePassword = async function(){
@@ -12356,6 +12443,17 @@ window.uploadGuestDocumentUI = async function(guestId){
         if(askWelcomeEl) askWelcomeEl.textContent = "Oi! Posso te ajudar a entender seu programa de indicação (comissão, faixas, hospedagens indicadas) e te dar uma mão pra preparar uma boa apresentação da StayFlow. O que você quer saber?";
       }
     }catch(e){ console.error("Erro ao ajustar texto do Ask StayFlow pro promotor:", e); }
+    try{
+      // Botao flutuante do Ask StayFlow: circulo azul com logo mascarada
+      // (padrao de sempre, todas as contas) vira so a logo grande
+      // flutuando (mesmo tratamento do index.html) SO pra promotor -
+      // pedido explicito do usuario (2026-09-01: "o botao era pra mudar
+      // so no promotor, no resto era pra ficar igual estava"). O
+      // data-account-kind no proprio botao e o que a regra de CSS
+      // usa pra trocar o container inteiro (nao so o icone interno).
+      const askFloatingBtn = document.querySelector(".ask-floating");
+      if(askFloatingBtn) askFloatingBtn.dataset.accountKind = session.account_kind || "lodging";
+    }catch(e){ console.error("Erro ao ajustar variante do botao Ask StayFlow:", e); }
     try{
       // Agencia parceira chama guest de "PAX" (turismo/locacao) ou
       // "Clientes" (demais categorias) - hospedagem continua "Hospedes".

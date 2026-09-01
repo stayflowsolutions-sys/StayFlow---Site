@@ -1533,6 +1533,11 @@ body::before{
 }
 
 /* ===== Ask StayFlow ===== */
+/* Padrao de sempre (todas as contas exceto promotor): circulo azul
+   solido com a logo mascarada (silhueta), var(--floating-btn-size).
+   NUNCA mudar isso sem escopar por account_kind de novo - achado real
+   2026-09-01: uma correcao pedida so pro promotor tinha vazado pra
+   TODAS as contas por engano, revertido aqui. */
 .ask-floating{
   position:fixed;
   right:24px;
@@ -1540,28 +1545,54 @@ body::before{
   width:var(--floating-btn-size);
   height:var(--floating-btn-size);
   border:0;
-  background:transparent;
+  background:linear-gradient(180deg,#0f8bff,#056ee7);
+  border-radius:var(--radius);
   padding:0;
   display:flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
+  box-shadow:0 16px 34px #0b84ff40;
   transition:.22s;
   z-index:30;
 }
-/* Volta pro mesmo tratamento do logo na landing (index.html): imagem
-   direta, cores oficiais do gradiente das ondas visiveis, sem circulo
-   solido atras - so um drop-shadow leve pra manter a sensacao de
-   flutuar sobre o conteudo. Antes disso era uma mascara solida (silhueta
-   escura numa bolha azul), perdendo o gradiente de verdade do logo. */
-.ask-floating img{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  filter:drop-shadow(0 10px 22px #0b84ff4a);
+.ask-floating .brand-logo-mask{
+  display:inline-block;
+  width:58px;
+  height:58px;
+  background-color:#06101b;
+  -webkit-mask-image:url('../../assets/images/logo2.png');
+  mask-image:url('../../assets/images/logo2.png');
+  -webkit-mask-size:auto 170%;
+  mask-size:auto 170%;
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+  -webkit-mask-position:center 35%;
+  mask-position:center 35%;
 }
 .ask-floating:hover{
-  transform:translateY(-4px) scale(1.06);
+  transform:translateY(-4px) scale(1.04);
+}
+/* SO promotor (pedido explicito do usuario): mesmo tratamento visual
+   do index.html - sem circulo, so a logo grande (160px) flutuando.
+   Gateado por [data-account-kind="promoter"] no proprio botao
+   (setado via JS na hidratacao de sessao, dashboard.html), nunca por
+   CSS solto sem esse escopo. */
+.ask-floating[data-account-kind="promoter"]{
+  width:auto;
+  height:auto;
+  background:transparent;
+  box-shadow:none;
+  display:block;
+}
+.ask-floating[data-account-kind="promoter"] img{
+  width:160px;
+  height:auto;
+  display:block;
+  filter:drop-shadow(0 10px 22px #0b84ff4a);
+}
+.ask-floating[data-account-kind="promoter"]:hover{
+  transform:translateY(-4px);
 }
 /* Na aba Chats a barra de envio (botao "Assumir") tambem fica no canto
    inferior direito - sobe os flutuantes pra nao tampar esse botao. */

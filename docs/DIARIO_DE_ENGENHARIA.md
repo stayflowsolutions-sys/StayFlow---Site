@@ -9164,3 +9164,123 @@ dedicada, separada do trabalho do promotor.
 
 Nenhuma mudança de backend/banco nesta versão - tudo
 `dashboard.html` + `i18n-dashboard-data.js`.
+
+### Vazamento entre contas, payout do promotor e dados do cliente (v1.98.0)
+
+Usuário testou ao vivo de novo, dessa vez numa hospedagem comum
+("Swing", `account_kind='lodging'`, plano Starter em trial) visitada
+via impersonation, e achou um bug real: "Indicações", "Carteira" e
+"Portfólio de Vendas" apareciam no menu dela, coisa que só devia
+existir pra conta de promotor. Antes de corrigir, valia entender por
+que - resposta era a MESMA causa raiz já documentada duas vezes nesta
+sessão (v1.95.0 pro card de Marca/Billing, v1.96.0 pros checkboxes de
+notificação): esses 3 itens de nav (mais as 3 sugestões correspondentes
+do Ask StayFlow) eram gated só por `data-required-permission="promoter"`,
+e `build_session_payload()` concede `permissions=ALL_PERMISSIONS` de
+propósito durante impersonation - então qualquer hospedagem visitada
+pelo admin "ganha" a permissão `promoter` de graça, mesmo sendo lodging.
+Corrigido acrescentando `data-required-account-kind="promoter"` nos 6
+elementos - `account_kind`, diferente de permissão, é sempre o valor
+real da hospedagem visitada, nunca inflado.
+
+Dado que essa é a TERCEIRA vez que o mesmo padrão de bug aparece nesta
+sessão (Marca/Billing → checkboxes de notificação → agora nav items
+inteiros vazando pra hospedagem errada), virou memória de feedback
+permanente (`feedback_permission_vs_accountkind_isolation.md`,
+salva fora do repositório, no sistema de memória entre sessões) em vez
+de só mais uma correção pontual - a regra fica registrada pra qualquer
+sessão futura: nunca gatear UI exclusiva de `account_kind` só por
+permissão, sempre parear com `data-required-account-kind`/
+`data-hide-for-account-kind`, exatamente porque impersonation quebra
+esse gate sozinho.
+
+**Correção de escopo em cima de correção** - episódio educativo à
+parte: o usuário tinha pedido que o botão flutuante do Ask StayFlow
+voltasse a ter "o mesmo tamanho e posição do index" (sem círculo, logo
+grande de 160px). Implementei isso como mudança GLOBAL em `app.css`
+(`.ask-floating`), já que a frase não mencionava escopo nenhum. Só
+depois, testando numa hospedagem normal, o usuário esclareceu que a
+intenção real era só pro promotor - o resto das contas devia continuar
+com o círculo azul de sempre. Isso é diferente dos vazamentos reais
+acima (aqueles eram bug não-intencional; esse foi eu interpretando
+escopo errado numa instrução ambígua) mas o resultado prático pro
+usuário foi o mesmo tipo de sintoma ("mudou onde não devia"), e ele
+próprio conectou os dois como parte do mesmo problema de isolamento -
+por isso a correção entrou junto nesta versão. Solução: revertido o
+`.ask-floating` de base pro circulo original (`<span
+class="brand-logo-mask">` com mask-image, `var(--floating-btn-size)`,
+gradiente azul), e a variante nova isolada atrás de
+`[data-account-kind="promoter"]` no PRÓPRIO botão (atributo setado via
+JS na mesma função de hidratação que já troca outros textos só pro
+promotor) - o span ganhou `data-hide-for-account-kind="promoter"`, o
+`<img>` ganhou `data-required-account-kind="promoter"` com
+`style="display:none"` de segurança antes da hidratação rodar. Duas
+lições double-checked na mesma correção: reaproveitar o MESMO mecanismo
+genérico de sempre (não inventar uma solução ad-hoc), e o CSS troca o
+container inteiro via atributo no próprio elemento, não só o conteúdo
+interno - importante porque a versão do promotor muda `width`/`height`/
+`background` do botão inteiro, não só o ícone.
+
+**Dados de recebimento do promotor** - pedido direto: "pode colocar
+uma conectividade de conta também pro promotor receber pagamentos".
+Decisão de escopo consciente: NÃO construir OAuth/API de pagamento de
+verdade (Mercado Pago Connect ou similar) - o programa de indicação
+inteiro já funciona com repasse 100% MANUAL desde a v1.65.0
+(`subscription_referral_ledger.status`, marcado `paid_out` a mão pelo
+admin), então automatizar o RECEBIMENTO sem automatizar o PAGAMENTO
+seria meia solução arriscada (superfície de integração financeira nova
+pra um fluxo que continua manual do outro lado). Em vez disso: 2
+colunas novas em `referral_partners` (`payout_method` - só rótulo
+`mercadopago`/`pix`/`bank`, nunca validado contra processador nenhum -
+e `payout_details`, texto livre), nova `PUT /promoter/payout-info`
+(mesmo molde de `PUT /promoter/contact`, já existente desde a v1.87.0),
+card "💳 Como você quer receber" na aba Carteira (mesmo padrão
+"card-resumo → clique → modal" de sempre) e o mesmo dado surfaced pro
+admin no painel "Ver detalhes" de `admin.html` (`_referral_partner_dashboard_payload()`
+já compartilhado entre o painel do próprio promotor e o do admin,
+zero rota nova pro lado do admin - só os 2 campos passaram a vir
+junto no payload que já existia).
+
+**Dados completos do cliente** - achado ao vivo revisando o
+`admin-hostel.html` de "Swing": só mostrava o e-mail da HOSPEDAGEM
+(`hostels.email`, que às vezes nem é o e-mail de quem se cadastrou, é
+só copiado do e-mail de login no `/register`), nunca o nome de
+verdade da pessoa, telefone ou endereço - "eu deveria conseguir ver os
+dados do cliente [...] tem que ter tudo isso do cliente registrado
+também pra que eu tenha a informação completa". Investigação encontrou
+duas coisas boas antes de escrever qualquer código novo: (1) o nome
+real da pessoa JÁ era capturado desde sempre (`admin_name` no
+`/register`, salvo em `users.name`) - só nunca tinha sido
+surfaced pro admin, um gap de exibição, não de coleta; (2) endereço
+também já existia como campo opcional em Configurações > Empresa
+(`settings.address`, usado pra confirmação de reserva por WhatsApp) -
+adicionar uma coluna `hostels.address` duplicada teria sido o
+caminho errado (dado duplicado, duas fontes de verdade pra mesma
+informação); revertido antes de commitar depois de perceber isso.
+Nova `get_hostel_owner_and_address()` busca o nome/e-mail de quem tem
+o `hostel_membership` mais antigo daquela hospedagem (o Admin original
+criado por `create_identity_and_hostel`) + o endereço de `settings`,
+num JOIN só. O único dado genuinamente NUNCA coletado era telefone -
+a coluna `hostels.phone` já existia no schema desde sempre (usada em
+`get_hostel()`/`hostel_profile()`), mas nada em nenhum fluxo de
+registro escrevia nela. Adicionado como campo obrigatório em AMBOS os
+2 pontos de entrada públicos de `/register` (`Register.html` e
+`PromoterSignup.html` - confirmado que são os únicos 2 arquivos que
+chamam essa rota, `/account/add-hostel` usa uma função de banco
+diferente e não precisou de mudança). `create_identity_and_hostel()`
+ganhou o parâmetro `phone` opcional (só usado pelo `/register`,
+`/account/add-hostel` continua sem telefone de propósito - é uma ação
+de quem já está logado, não um cadastro novo de pessoa desconhecida).
+
+Testado em banco isolado com Flask test client de ponta a ponta:
+registro sem telefone rejeitado com 400; registro com telefone grava
+`hostels.phone` corretamente; `get_hostel_owner_and_address()` devolve
+nome/e-mail reais da pessoa que se cadastrou; fluxo completo de
+promotor (registro → login → `PUT /promoter/payout-info` → `GET
+/promoter/dashboard` confirmando os 2 campos novos no payload); método
+de payout inválido rejeitado com 400. Também: balanceamento de chaves/
+parênteses/colchetes do `dashboard.html` e `admin.html` conferido após
+cada rodada de edição, `tools/check_i18n_parity.py` confirmando as
+mesmas chaves em todos os 11 idiomas (3 chaves novas no `ADMIN_I18N`
+pro rótulo de payout no "Ver detalhes", 7 chaves novas no dicionário
+do dashboard pro card de Carteira).
