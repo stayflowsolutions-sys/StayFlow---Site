@@ -8514,3 +8514,60 @@ quebrar; rota de cancelamento não quebra mesmo sem Mercado Pago
 configurado de verdade (403/502 esperado, nunca 500); admin autenticado
 via allowlist consegue ver detalhes de um parceiro específico pelo id,
 e um id inexistente devolve 404 corretamente.
+
+### Link "Vire promotor" no rodapé da landing (v1.88.0)
+
+Achado ao vivo: o usuário tentou criar uma conta de promotor pra testar
+e percebeu que não havia NENHUM jeito de chegar em `PromoterSignup.html`
+(v1.87.0) nem em `ReferralPartner.html` (v1.79.0) a partir do site
+público — as duas páginas só existiam via link direto que o Caio
+compartilhava manualmente, nunca linkadas de lugar nenhum. Corrigido
+com um link discreto no rodapé do `index.html` ("Vire promotor e ganhe
+comissão recorrente" → `PromoterSignup.html`), ao lado dos ícones de
+Instagram/Facebook já existentes. 1 chave i18n nova
+(`footer.becomePromoter`) nos 11 idiomas do `i18n-landing-data.js`
+(90→91).
+
+### Conta de promotor sob login existente + correção do multi-conta (v1.89.0)
+
+Achado ao vivo, testando o próprio fluxo criado na v1.86.0-v1.88.0: o
+usuário tentou virar promotor com o e-mail da PRÓPRIA conta StayFlow
+(pra testar) e caiu no erro genérico "e-mail já cadastrado" - dead end
+sem saída. Ele apontou o design certo: `users.email` é único de
+propósito (uma identidade, uma senha), então a resposta certa nunca é
+pedir senha nova pra esse e-mail - é reaproveitar o mecanismo de
+multi-propriedade que já existe (v1.70.0, usado pra revendedor desde a
+v1.83.0): a conta de promotor vira mais um `hostel_membership` sob o
+MESMO `user_id`, aparecendo no seletor multi-conta de sempre.
+
+`POST /account/add-hostel` (antes só aceitava `lodging`/`agency`)
+ganhou `account_kind='promoter'` - aplica `_downgrade_to_promoter_role()`
+exatamente como o registro direto (v1.86.0), sem duplicar lógica.
+`POST /register` passou a devolver `already_registered: true` no erro
+de e-mail duplicado, pro frontend guiar pra esse caminho em vez de só
+travar - `Register.html`/`PromoterSignup.html` mostram "Faça login e
+use + Adicionar hospedagem" em vez do erro genérico.
+
+Bug real encontrado e corrigido no processo: o clique num item do
+seletor multi-conta em `Login.html` sempre mandava pra `/app`
+incondicionalmente (decisão deliberada da v1.70.0/v1.86.0, documentada
+no próprio código, pra não colidir com o botão "Meu painel" do admin
+StayFlow) - MAS isso significava que escolher uma conta de promotor
+ali também caía errado no dashboard de hospedagem normal, em vez de
+`PromoterDashboard.html`. Corrigido checando `selectData.account_kind`
+nesse clique específico.
+
+UI: modal "+ Adicionar hospedagem" (`dashboard.html`) ganhou um
+seletor de tipo de conta (Hospedagem/Promotor) - label do campo nome
+muda dinamicamente ("Seu nome ou nome da sua marca") igual o
+`Register.html` já fazia. Redirecionamento pós-criação também passou a
+checar o tipo (`/PromoterDashboard.html` vs `/app`). 4 chaves i18n
+novas nos 11 idiomas do `i18n-dashboard-data.js` (1.146→1.150).
+
+Testado em banco isolado e via Flask test client, ponta a ponta: e-mail
+duplicado devolve `already_registered=true`; dono logado cria
+hospedagem-promotor via `/account/add-hostel` sob o MESMO `user_id`;
+as duas hospedagens aparecem juntas em `get_user_hostels()`; papel
+"Promotor" aplicado certo na hospedagem nova (`promoter` presente,
+`chats` ausente); hospedagem ORIGINAL do dono continua com `Admin`
+completo, não afetada pela criação da conta de promotor.
