@@ -7838,3 +7838,141 @@ hospedagem, mais de um alerta por reserva ao longo do dia, e alerta de
 check-out atrasado (hóspede que não saiu na data esperada) - "no-show"
 é especificamente sobre não ter chegado, checkout atrasado é um
 problema diferente, fica pra outra rodada se pedido.
+
+### Comissão em faixas pro programa de indicação (v1.78.0)
+
+Quinto item da leva pós-fila-zerada. Antes de programar qualquer
+coisa, o usuário fez uma pergunta de negócio ("você acha que 20 é um
+bom número?"), o que puxou uma conversa maior: expliquei que 20%
+recorrente é generoso pro padrão de programas de afiliado SaaS
+(15-30% é a faixa normal), mas que sendo FIXO não recompensa quem traz
+mais volume, diferente do modelo em faixas da Aoki que inspirou o
+programa originalmente. Sugeri uma estrutura de 3 faixas
+(1-2/3-5/6+ indicações ativas = 20/25/30%), recalculada pra frente
+(nunca retroativa) - o usuário perguntou detalhes de como a comissão
+já funciona hoje (só sobre mensalidade, nunca sobre comissão de
+passeio; recorrente vitalício, sem prazo) antes de aprovar.
+
+No meio do planejamento, o usuário pediu uma conta hipotética de custo
+vs. receita por hotel (quanto custa de IA/Mercado Pago vs. quanto
+sobra de margem) - respondida à parte, sem mexer em código, deixando
+claro que os números de IA/API eram estimativa, não confirmados nos
+extratos reais dele.
+
+Investigação (agente Explore) confirmou que a arquitetura já favorecia
+a mudança sem migração nenhuma: `subscription_referral_ledger.commission_pct`
+sempre foi gravado POR LINHA (não uma referência a uma constante
+global) - cada lançamento já era auto-descritivo, só precisava mudar o
+que se CALCULA na hora do lançamento. O ponto exato já resolvia
+`referring_partner_id` antes de montar a comissão
+(`_process_authorized_payment_notification`, `mercadopago_billing_webhook.py`) -
+só trocar a constante fixa por uma função ali. `billing.status == 'active'`
+já era o único status que significa "pagando de verdade agora" -
+exatamente o status que o próprio webhook acabou de setar pro hostel
+que pagou, então contar "quantos hostels esse parceiro tem ativos
+agora" inclui coerentemente quem acabou de pagar.
+
+Nova `SUBSCRIPTION_REFERRAL_COMMISSION_TIERS` (lista ordenada de
+limiar/percentual) + `resolve_subscription_referral_commission_pct()`
++ `count_active_referrals_for_partner()` (mesmo JOIN de
+`get_hostel_referral_stats`, só filtrado e contado em vez de listado)
+em `database.py`. `get_subscription_referral_summary()` ganhou
+`active_referral_count`/`current_tier_pct` por parceiro (calculado em
+Python, poucas dezenas de parceiros no máximo) - sem isso ninguém
+conseguiria explicar por que um lançamento saiu numa % e outro noutra.
+Painel "Indicações" (`admin.html`, Financeiro) ganhou 2 colunas novas
+mostrando isso.
+
+Testado em banco isolado: fronteiras exatas das 3 faixas (0-2→20%,
+3-5→25%, 6+→30%). Testado também ponta a ponta pelo webhook de
+verdade, com `mercadopago_billing_service.get_authorized_payment`
+mockado (mesmo padrão já usado pro Tokko, sem chamada de rede real):
+2 pagamentos em sequência pro mesmo parceiro - primeiro com o parceiro
+tendo poucas indicações ativas (20%), depois sobe pra 6 indicações
+ativas antes do segundo pagamento (30%) - confirmando que o SEGUNDO
+lançamento reflete a faixa nova, mas o PRIMEIRO continua intocado em
+20% no razão, provando que a mudança de faixa nunca é retroativa.
+2 chaves i18n novas no `ADMIN_I18N` (252→254).
+
+### Auto-cadastro público de parceiro de indicação externo (v1.79.0)
+
+Surgiu direto da criação de um post de Instagram sobre o programa de
+indicação (o próprio usuário pediu pra fazer o post, discutimos vários
+ângulos possíveis - decidiu pela "chamada pra virar indicador" em vez
+de mostrar feature de produto). No meio da criação do post, o usuário
+perguntou como um indicador de fato se conecta à StayFlow hoje -
+expliquei que existem dois caminhos: quem já é cliente tem link pronto
+no próprio dashboard, mas quem NÃO é cliente (o público real do post)
+depende do Caio cadastrar manualmente pelo `admin.html` toda vez. Ele
+percebeu na hora que isso não escalava se o post desse volume, e pediu
+pra construir o auto-cadastro ali mesmo, antes de eu continuar
+publicando a v1.78.0 (que ficou pendente até aqui).
+
+Durante essa mesma janela, aconteceram 3 coisas fora do código que
+vale registrar: (1) o usuário lembrou de um hotel (Amérian Chacras de
+Coria) que tinha respondido um DM antigo do Instagram pedindo um
+e-mail, e que ele tinha esquecido de responder E de mandar - enviei o
+e-mail na hora (via Gmail) com a apresentação da StayFlow e oferta de
+piloto, e dei a ele o texto de resposta pro Instagram (não tenho
+acesso a mandar mensagem lá, só e-mail); (2) o usuário pediu pra
+pesquisar 8 hotéis novos pra contatar E cruzar com quem já está na
+Prospecção - tentamos usar o cookie de sessão dele (via F12) pra eu
+consultar a produção diretamente, mas o cookie não autenticou (bem
+provável erro de transcrição de um caractere na captura de tela,
+tipo "l" minúsculo virando "I" maiúsculo) - não insisti tentando
+variações, porque isso seria essencialmente adivinhar credencial de
+produção; ficou pendente pra quando ele voltar; (3) o post de
+Instagram em si (carrossel de 4 slides + legenda, em espanhol, salvo
+na Downloads) foi entregue nesse meio tempo, reaproveitando o mesmo
+gerador de imagem (Pillow) e paleta de marca já usados nos posts
+anteriores.
+
+Investigação (agente Explore) confirmou os pontos de reaproveitamento:
+`create_manual_referral_partner()` já era 100% desacoplada de sessão/
+hostel (`linked_hostel_id` sempre `NULL` nesse caminho) - função certa
+pra chamar direto de uma rota pública nova, sem duplicar lógica. O
+padrão de "rota pública" já existia e era simples: `POST /register`
+não tem NENHUM decorator de autenticação, só validação manual dos
+campos + a `UNIQUE` do banco como rede de segurança - confirmado via
+grep que não existe rate-limit nem captcha em lugar nenhum do projeto
+inteiro (sem Flask-Limiter, sem lib de captcha). `Register.html` é uma
+página standalone completa (sem sistema de template no frontend) -
+virou o molde visual exato da página nova. `send_push_to_admin()` já
+existia como o ÚNICO mecanismo de "avisar o Caio" no sistema (usado
+até agora só pelos alarmes de compromisso da Prospecção) - reaproveitado
+direto pra notificar quando um parceiro novo se cadastra sozinho.
+
+Nova página `ReferralPartner.html`: nome + e-mail/WhatsApp (pelo menos
+um dos dois), campo honeypot escondido via CSS (`website` - só bot
+preenche), ao submeter com sucesso mostra o link de indicação pronto
+com botão de copiar. Nova rota pública `POST /referral-partner-signup`
+(`routes/auth.py`), sem decorator, honeypot checado no backend também
+(defesa em profundidade - nunca confiar só no CSS do frontend). Novas
+colunas `contact_email`/`contact_phone` em `referral_partners` (antes
+só existia `contact_note` livre) - o formulário manual do admin
+(`admin.html`) ganhou os mesmos campos, pra gravar dado no mesmo
+formato pelos dois caminhos (manual e público). Novo box "Link de
+auto-cadastro" copiável no painel, pra ele conseguir compartilhar a
+URL da página nova facilmente (ex: no bio do Instagram).
+
+Achado corrigido de brinde, e necessário pra essa feature fazer
+sentido de verdade: `get_subscription_referral_summary()` fazia um
+`JOIN` comum (não `LEFT JOIN`) contra o razão de comissões - um
+parceiro recém-cadastrado, sem NENHUMA indicação paga ainda, ficava
+completamente invisível na tabela do admin. Sem essa correção, o Caio
+nunca saberia que alguém tinha se cadastrado sozinho até a primeira
+comissão cair, o que podia demorar meses ou nunca acontecer -
+corrigido pra `LEFT JOIN`, com total/contagem em 0 até a primeira
+comissão de verdade.
+
+Testado em banco isolado e via Flask test client: cadastro com nome +
+e-mail dá certo, devolve `referral_code` de 8 caracteres, e confirma
+que `send_push_to_admin` foi chamado; nome vazio E "sem e-mail nem
+telefone" são rejeitados (400 nos dois casos); honeypot preenchido
+bloqueia a criação do parceiro no banco (confirmado por query direta,
+não só pelo código de status); falha simulada no push (exception
+forçada) NUNCA impede a resposta de sucesso pro usuário - só loga o
+erro; rota manual do admin (`/stayflow-admin/referral-partners`)
+continua funcionando igual, com e sem os campos novos; parceiro
+recém-cadastrado aparece no resumo com total 0 e o contato certo. 5
+chaves i18n novas no `ADMIN_I18N` (254→259).
