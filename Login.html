@@ -91,6 +91,28 @@
   </div>
 
   <script>
+    // Marca propria por dominio (tier white-label, item 27, pilar 4) -
+    // resolucao acontece no backend (app.py::resolve_hostel_by_domain,
+    // a partir do Host da requisicao) - aqui so aplica o que veio,
+    // nunca quebra a pagina se nao houver nada (visual padrao StayFlow).
+    (async function applyPublicBranding(){
+      try{
+        const res = await fetch("/public/hostel-branding", { credentials: "same-origin" });
+        const data = await res.json();
+        const b = data.branding;
+        if(!b) return;
+        if(b.brand_logo_url) document.querySelectorAll(".logo img").forEach(img => { img.src = b.brand_logo_url; });
+        if(b.brand_display_name) document.title = document.title.replace("StayFlow", b.brand_display_name);
+        if(b.brand_primary_color) document.documentElement.style.setProperty("--blue", b.brand_primary_color);
+        if(b.brand_favicon_url){
+          const link = document.querySelector("link[rel~='icon']");
+          if(link) link.href = b.brand_favicon_url;
+        }
+      }catch(e){
+        console.warn("Erro ao carregar marca pública:", e);
+      }
+    })();
+
     const form = document.getElementById("loginForm");
     const msg  = document.getElementById("loginMessage");
 
