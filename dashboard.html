@@ -238,25 +238,87 @@ document.addEventListener("keydown", (e) => {
 // permissao "promoter"). Conteudo fixo, sem API nenhuma - e so
 // material de apresentacao, nao dado dinamico. Uma "apresentacao" por
 // setor, navegada com Anterior/Proximo, cada slide so titulo+corpo.
+// Guia de vendas do promotor (item 27b) - virou algo mais parecido com
+// material de ESTUDO (pra ele entender o produto de verdade, nao so
+// decorar frase de venda) do que so um deck raso: cada slide tem um
+// "kind" (problema/solucao/recursos/como-apresentar/planos), um icone
+// proprio (SVG inline, sem imagem externa - nenhum asset de foto real
+// disponivel pros 4 setores) e termina com um botao que manda a
+// pergunta direto pro Ask StayFlow, incluindo o proprio conteudo do
+// slide como contexto (o backend generico ja sabe explicar a StayFlow
+// pra promotor, ver PROMPT_SYSTEM_PROMPT/_build_promoter_context em
+// ask_agent_service.py - nao precisou mudar nada no backend).
+const PORTFOLIO_ICON_COLOR = {
+  problem: "#ff5d76",
+  solution: "#0b84ff",
+  features: "#23d2ff",
+  pitch: "#ffbd4a",
+  plans: "#26e0a0",
+};
+const PORTFOLIO_ICON_PATHS = {
+  problem: '<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17v.01"/>',
+  solution: '<path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .8 1.6V16h5.4v-.5c0-.6.3-1.2.8-1.6A6 6 0 0 0 12 3z"/>',
+  features: '<path d="M5 12.5 10 17 19 7"/>',
+  pitch: '<path d="M3 11v2a2 2 0 0 0 2 2h1l4 4V5L6 9H5a2 2 0 0 0-2 2z"/><path d="M16 8a4 4 0 0 1 0 8"/><path d="M19 5a8 8 0 0 1 0 14"/>',
+  plans: '<path d="M12 2 3 7l9 5 9-5-9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/>',
+};
+function portfolioSlideIconHtml(kind){
+  const color = PORTFOLIO_ICON_COLOR[kind] || PORTFOLIO_ICON_COLOR.solution;
+  const path = PORTFOLIO_ICON_PATHS[kind] || PORTFOLIO_ICON_PATHS.solution;
+  return `<div style="flex:0 0 auto;width:56px;height:56px;border-radius:16px;background:${color}1c;display:flex;align-items:center;justify-content:center">
+    <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${path}</svg>
+  </div>`;
+}
+
 const PORTFOLIO_SLIDES = {
   lodging: [
-    { title: "🏨 Hospedagens — O problema", body: "Hotéis, pousadas e hostels perdem reserva todo dia por demora no WhatsApp, atendimento manual fora do horário, e nenhuma visão clara de ocupação e receita em tempo real." },
-    { title: "A solução StayFlow", body: "Uma IA atende automaticamente no WhatsApp, Instagram e Facebook — 24 horas por dia, sem perder um lead — enquanto reservas, quartos e financeiro ficam organizados num painel só." },
-    { title: "Recursos principais", body: "• Mapa de quartos visual, com limpeza e manutenção rastreadas\n• Tarifa por temporada e diária diferenciada de fim de semana\n• Reserva de grupo com desconto automático\n• Integração com Booking, Airbnb e Hostelworld — sem risco de overbooking entre canais\n• Cobrança automática recorrente via Mercado Pago" },
-    { title: "Opportunity Center", body: "A IA detecta sozinha quando um hóspede quer um upgrade, um passeio, uma diária extra ou late checkout, e sugere a venda certa na hora certa — sem a equipe precisar ficar de olho manualmente." },
-    { title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito. Cadastro leva menos de 2 minutos." },
+    { kind: "problem", title: "🏨 Hospedagens — o problema", body: "Hotéis, pousadas e hostels perdem reserva todo dia por três motivos que se repetem em qualquer conversa com o dono: demora pra responder o WhatsApp (principalmente à noite e fim de semana), atendimento manual que não escala quando o volume de mensagens sobe, e nenhuma visão clara de ocupação, reservas e financeiro num lugar só — cada coisa numa planilha ou caderno diferente." },
+    { kind: "solution", title: "Como a StayFlow resolve", body: "Uma IA treinada pra hospedagem atende automaticamente no WhatsApp, Instagram e Facebook, 24 horas por dia, sem perder um lead — segue o tom que o dono configurar, mas nunca inventa preço nem fecha uma reserva sozinha fora da política definida. Enquanto isso, reservas, mapa de quartos e financeiro ficam organizados num painel único, acessível do celular ou computador." },
+    { kind: "features", title: "Recursos principais", body: "O que mais chama atenção de quem já opera uma hospedagem:", bullets: [
+      "Mapa de quartos visual — ocupado, livre ou aguardando limpeza, em tempo real",
+      "Tarifa por temporada e diária diferenciada de fim de semana, sem precisar mudar preço manualmente",
+      "Reserva de grupo com desconto automático",
+      "Integração com Booking.com, Airbnb e Hostelworld — disponibilidade sincronizada, sem risco de overbooking entre canais",
+      "Cobrança recorrente automática via Mercado Pago",
+    ]},
+    { kind: "pitch", title: "Como apresentar isso", body: "Comece pela dor, não pelo produto: pergunte quantas mensagens o WhatsApp da hospedagem recebe por dia e quanto tempo demora pra responder de madrugada ou num domingo. Deixe a pessoa sentir o tamanho do problema antes de mostrar a solução. Depois, mostre o Opportunity Center como \"dinheiro que hoje fica na mesa\" — cada upsell que a IA detecta sozinha (passeio, upgrade, diária extra, late checkout) é receita que a equipe normalmente nem percebe que existe. Pra reduzir a objeção de preço, sempre feche com o teste grátis de 30 dias sem cartão de crédito — a pessoa testa com a operação real dela antes de decidir." },
+    { kind: "plans", title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito. Cadastro leva menos de 2 minutos, direto pelo link de indicação." },
   ],
   agency: [
-    { title: "🧭 Agências (turismo) — O problema", body: "Leads chegam pelo WhatsApp e Instagram o dia inteiro, mas se perdem no meio de conversas manuais — sem controle de disponibilidade nem histórico organizado de quem já foi atendido." },
-    { title: "A solução StayFlow", body: "Um catálogo de passeios e serviços com IA que entende o que o cliente quer e sugere o produto certo na conversa, com cobrança direta pelo próprio chat." },
-    { title: "Recursos principais", body: "• Portfólio de itens/serviços com fotos, preço e disponibilidade\n• Matching automático por IA — sugere o passeio certo pro perfil de cada lead\n• Cobrança via Mercado Pago direto na conversa\n• Conexão com hospedagens parceiras, que podem indicar seus passeios pros próprios hóspedes" },
-    { title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito." },
+    { kind: "problem", title: "🧭 Agências de turismo — o problema", body: "Leads chegam pelo WhatsApp e Instagram o dia inteiro, mas se perdem no meio de conversas manuais — sem controle de disponibilidade dos passeios/serviços, sem histórico organizado de quem já foi atendido, e sem forma fácil de saber qual produto oferecer pra cada perfil de cliente." },
+    { kind: "solution", title: "Como a StayFlow resolve", body: "Um catálogo de passeios e serviços com preço, fotos e disponibilidade, mais uma IA que entende o que o cliente está pedindo dentro da própria conversa e sugere o produto certo — com cobrança direta pelo chat, sem precisar sair pra outro app." },
+    { kind: "features", title: "Recursos principais", body: "O que mais diferencia esse setor:", bullets: [
+      "Portfólio de itens/serviços com fotos, preço e disponibilidade sempre atualizada",
+      "Matching automático por IA — sugere o passeio certo pro perfil de cada lead, sem a equipe precisar adivinhar",
+      "Cobrança via Mercado Pago direto na conversa, sem link externo",
+      "Conexão com hospedagens parceiras da rede StayFlow, que podem indicar os passeios da agência pros próprios hóspedes",
+    ]},
+    { kind: "pitch", title: "Como apresentar isso", body: "Pergunte quantos leads chegam por dia e quantos realmente viram venda — a maioria das agências nunca mediu isso, e o número costuma surpreender (pra pior). Destaque a rede de hospedagens parceiras como um canal de vendas que já vem embutido, sem custo de aquisição: toda hospedagem StayFlow que não vende passeio pode indicar o da agência direto pro próprio hóspede." },
+    { kind: "plans", title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito." },
   ],
   rental: [
-    { title: "🚗 Locadoras — O problema", body: "Disponibilidade de carro, bike ou equipamento é difícil de acompanhar em planilha, e cada reserva vira uma ida e volta manual no WhatsApp — com risco real de alugar o mesmo item duas vezes." },
-    { title: "A solução StayFlow", body: "Catálogo com disponibilidade em tempo real, atendimento automático por IA, e conexão direta com hospedagens parceiras que já indicam locação pros próprios hóspedes — trazendo cliente sem custo de aquisição." },
-    { title: "Recursos principais", body: "• Catálogo de veículos/equipamentos com disponibilidade sempre atualizada\n• Atendimento automático 24h por WhatsApp/Instagram/Facebook\n• Cobrança direta via Mercado Pago\n• Indicação automática vinda de hospedagens parceiras da rede StayFlow" },
-    { title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito." },
+    { kind: "problem", title: "🚗 Locadoras — o problema", body: "Disponibilidade de carro, bike ou equipamento é difícil de acompanhar numa planilha, e cada reserva vira uma ida e volta manual no WhatsApp — com risco real de alugar o mesmo item duas vezes pro mesmo período, o pior tipo de erro nesse negócio." },
+    { kind: "solution", title: "Como a StayFlow resolve", body: "Catálogo com disponibilidade em tempo real (elimina o risco de dupla reserva), atendimento automático por IA 24h, e conexão direta com hospedagens parceiras da rede StayFlow que já indicam locação pros próprios hóspedes — trazendo cliente sem custo de aquisição." },
+    { kind: "features", title: "Recursos principais", body: "O que mais chama atenção de quem já opera uma locadora:", bullets: [
+      "Catálogo de veículos/equipamentos com disponibilidade sempre atualizada",
+      "Atendimento automático 24h por WhatsApp, Instagram e Facebook",
+      "Cobrança direta via Mercado Pago",
+      "Indicação automática vinda de hospedagens parceiras da rede StayFlow",
+    ]},
+    { kind: "pitch", title: "Como apresentar isso", body: "O ponto mais forte pra esse setor é o risco de overbooking manual — pergunte se já aconteceu de alugar o mesmo item duas vezes, quase sempre já aconteceu, e é o argumento mais forte que existe. Depois, destaque a rede de parceiros como diferencial que nenhum concorrente genérico de locação oferece." },
+    { kind: "plans", title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito." },
+  ],
+  realestate: [
+    { kind: "problem", title: "🏠 Imobiliárias — o problema", body: "Leads de aluguel e venda chegam por vários canais ao mesmo tempo (WhatsApp, Instagram, site), e o corretor perde tempo cruzando manualmente o que cada cliente pede (bairro, quantos quartos, faixa de preço, aluguel ou venda) com o estoque de imóveis disponível — e fora do expediente comercial, a maioria fica simplesmente sem resposta até o dia seguinte." },
+    { kind: "solution", title: "Como a StayFlow resolve", body: "O catálogo de imóveis sincroniza automaticamente com o Tokko Broker (sistema que a maioria das imobiliárias já usa), e a IA cruza o que o cliente pede na conversa — bairro, número de quartos, faixa de preço, aluguel ou venda — com o estoque real, sugerindo o imóvel certo direto no WhatsApp, Instagram ou Facebook, 24 horas por dia." },
+    { kind: "features", title: "Recursos principais", body: "O que mais diferencia esse setor:", bullets: [
+      "Sincronização automática de catálogo com o Tokko Broker (quartos, banheiros, m², localização, tipo de operação)",
+      "Atendimento automático 24h por WhatsApp, Instagram e Facebook — inclusive fora do expediente comercial",
+      "Matching por IA entre o que o cliente pede e o estoque de imóveis disponível",
+      "Painel único com todos os leads e o histórico completo de cada conversa",
+    ]},
+    { kind: "pitch", title: "Como apresentar isso", body: "Pergunte quantos leads a imobiliária recebe fora do horário comercial (à noite, fim de semana) e quantos desses ficam sem resposta até o corretor voltar — esse é o ponto de dor mais direto do setor. Mostre que o catálogo sincroniza sozinho a partir do Tokko Broker, sem trabalho manual de cadastrar o mesmo imóvel duas vezes." },
+    { kind: "plans", title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito." },
   ],
 };
 
@@ -268,13 +330,41 @@ function renderPortfolioSlide(){
   const slide = slides[portfolioCurrentSlide];
   const content = document.getElementById("portfolioSlideContent");
   if(!content || !slide) return;
+  const bulletsHtml = slide.bullets && slide.bullets.length
+    ? `<ul style="margin-top:14px;padding-left:20px;display:flex;flex-direction:column;gap:9px">${slide.bullets.map(b => `<li style="font-size:14.5px;line-height:1.6;color:var(--text)">${b}</li>`).join("")}</ul>`
+    : "";
   content.innerHTML = `
-    <h2 style="font-size:22px;margin-bottom:16px">${slide.title}</h2>
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:16px">
+      ${portfolioSlideIconHtml(slide.kind)}
+      <h2 style="font-size:21px;line-height:1.3">${slide.title}</h2>
+    </div>
     <p style="font-size:15px;line-height:1.8;white-space:pre-line;color:var(--text)">${slide.body}</p>
+    ${bulletsHtml}
+    <button type="button" class="btn secondary" style="margin-top:22px" onclick="askAboutPortfolioSlide()">${T('salesPortfolio.askAboutBtn', '🤖 Perguntar ao Ask StayFlow sobre isso')}</button>
   `;
   const counter = document.getElementById("portfolioSlideCounter");
   if(counter) counter.textContent = `${portfolioCurrentSlide + 1} / ${slides.length}`;
 }
+
+// Manda a pergunta com o proprio conteudo do slide embutido como
+// contexto (mais simples e confiavel que ensinar o backend a saber
+// "em qual slide a pessoa estava" - o texto do slide JA e o dado que a
+// IA precisa pra responder direito).
+window.askAboutPortfolioSlide = function(){
+  const slides = PORTFOLIO_SLIDES[portfolioCurrentSector];
+  const slide = slides[portfolioCurrentSlide];
+  if(!slide) return;
+  openAskStayFlow();
+  const cleanTitle = slide.title.replace(/^\S+\s/, "");
+  const context = slide.bullets && slide.bullets.length
+    ? `${slide.body} ${slide.bullets.join("; ")}`
+    : slide.body;
+  const question = `Sobre "${cleanTitle}": ${context} — pode me explicar melhor e me dar uma dica de como eu apresento isso numa conversa de verdade?`;
+  const input = document.querySelector("#askPanel .ask-input input[type='text'], #askPanel .ask-input input:not([type])");
+  const sendBtn = document.querySelector("#askPanel .ask-input button.btn");
+  if(input) input.value = question;
+  if(sendBtn) askStayFlowSend(sendBtn);
+};
 
 window.switchPortfolioSector = function(sector){
   portfolioCurrentSector = sector;
@@ -338,10 +428,10 @@ async function loadPromoterHomeData(){
     const hintEl = document.getElementById("referralsNextTierHint");
     const barEl = document.getElementById("referralsTierBar");
     if(data.next_tier){
-      if(hintEl) hintEl.textContent = `Faltam ${data.next_tier.remaining} indicação(ões) ativa(s) pra chegar a ${Math.round(data.next_tier.pct * 100)}%`;
+      if(hintEl) hintEl.textContent = T('referrals.nextTierHint', 'Faltam {remaining} indicação(ões) ativa(s) pra chegar a {pct}%', { remaining: data.next_tier.remaining, pct: Math.round(data.next_tier.pct * 100) });
       if(barEl) barEl.style.width = `${Math.min(100, (data.active_referral_count / data.next_tier.threshold) * 100)}%`;
     }else{
-      if(hintEl) hintEl.textContent = "Faixa máxima atingida 🎉";
+      if(hintEl) hintEl.textContent = T('referrals.maxTierReached', 'Faixa máxima atingida 🎉');
       if(barEl) barEl.style.width = "100%";
     }
 
@@ -361,8 +451,166 @@ async function loadPromoterHomeData(){
       list.innerHTML = "";
       empty.style.display = "";
     }
+
+    window._promoterHistoryData = data.history || [];
+    renderPromoterPerformanceChart(window._promoterHistoryData);
+    renderPromoterWallet(data);
   }catch(e){
     console.warn("Erro ao carregar home do promotor:", e);
+  }
+}
+
+window.addEventListener("resize", () => {
+  if(window._promoterHistoryData) renderPromoterPerformanceChart(window._promoterHistoryData);
+});
+
+function promoterLedgerStatusPillClass(status){
+  return status === "paid_out" ? "ok" : "warm";
+}
+
+const PROMOTER_MONTH_NAMES_PT = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+
+function promoterMonthLabel(monthKey){
+  const [y, m] = monthKey.split("-");
+  return `${PROMOTER_MONTH_NAMES_PT[Number(m) - 1]}/${y.slice(2)}`;
+}
+
+function promoterMonthLabelLong(monthKey){
+  const names = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const [y, m] = monthKey.split("-");
+  return `${names[Number(m) - 1]} de ${y}`;
+}
+
+function bucketPromoterHistoryByMonth(history){
+  const buckets = {};
+  history.forEach(h => {
+    if(!h.created_at) return;
+    const month = h.created_at.slice(0, 7);
+    buckets[month] = (buckets[month] || 0) + Number(h.amount_owed || 0);
+  });
+  return Object.keys(buckets).sort().map(month => ({ month, total: buckets[month] }));
+}
+
+// Grafico de barras nativo em Canvas (mesmo espirito do
+// renderChatActivityChart de Relatorios - sem biblioteca externa) pro
+// "desempenho" do promotor: comissao gerada por mes, ultimos 6 meses
+// com lancamento. Usa o mesmo "history" que /promoter/dashboard ja
+// devolvia sem uso nenhum no frontend ate agora.
+function renderPromoterPerformanceChart(history){
+  const canvas = document.getElementById("promoterPerformanceCanvas");
+  const empty = document.getElementById("promoterPerformanceEmpty");
+  if(!canvas) return;
+
+  const buckets = bucketPromoterHistoryByMonth(history).slice(-6);
+  if(!buckets.length){
+    canvas.style.display = "none";
+    if(empty) empty.style.display = "flex";
+    return;
+  }
+  canvas.style.display = "";
+  if(empty) empty.style.display = "none";
+
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || canvas.parentElement.clientWidth;
+  const cssH = 220;
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const padL = 46, padR = 12, padT = 14, padB = 24;
+  const plotW = cssW - padL - padR;
+  const plotH = cssH - padT - padB;
+  const maxValue = Math.max(...buckets.map(b => b.total), 1);
+  const symbol = typeof currencySymbol === "function" ? currencySymbol() : "";
+
+  ctx.strokeStyle = "#ffffff0e";
+  ctx.lineWidth = 1;
+  ctx.fillStyle = "#65758b";
+  ctx.font = "10.5px Inter, sans-serif";
+  for(let i = 0; i <= 3; i++){
+    const y = padT + plotH - (plotH * i / 3);
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(padL + plotW, y);
+    ctx.stroke();
+    ctx.fillText(`${symbol} ${Math.round(maxValue * i / 3)}`, 2, y + 3);
+  }
+
+  const slot = plotW / buckets.length;
+  const barW = Math.min(56, slot - 14);
+  buckets.forEach((b, i) => {
+    const x = padL + slot * i + (slot - barW) / 2;
+    const barH = plotH * (b.total / maxValue);
+    const y = padT + plotH - barH;
+    const grad = ctx.createLinearGradient(0, y, 0, padT + plotH);
+    grad.addColorStop(0, "#23d2ff");
+    grad.addColorStop(1, "#0b84ff");
+    ctx.fillStyle = grad;
+    if(ctx.roundRect){
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, Math.max(barH, 2), 6);
+      ctx.fill();
+    }else{
+      ctx.fillRect(x, y, barW, Math.max(barH, 2));
+    }
+
+    ctx.fillStyle = "#65758b";
+    ctx.font = "10px Inter, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(promoterMonthLabel(b.month), x + barW / 2, cssH - 6);
+  });
+  ctx.textAlign = "left";
+}
+
+// Aba "Carteira" - reaproveita o mesmo payload de /promoter/dashboard
+// (nao faz fetch novo): total a receber/recebido (ja tinha), relatorio
+// mensal (agrupamento client-side do history por mes) e o extrato
+// completo linha a linha, com qual hospedagem gerou qual comissao.
+function renderPromoterWallet(data){
+  const accruedEl = document.getElementById("walletAccrued");
+  const paidOutEl = document.getElementById("walletPaidOut");
+  if(accruedEl) accruedEl.textContent = formatMoney(data.total_accrued);
+  if(paidOutEl) paidOutEl.textContent = formatMoney(data.total_paid_out);
+
+  const history = data.history || [];
+
+  const monthlyList = document.getElementById("walletMonthlyList");
+  const monthlyEmpty = document.getElementById("walletMonthlyEmpty");
+  const buckets = bucketPromoterHistoryByMonth(history).reverse();
+  if(monthlyList){
+    if(buckets.length){
+      if(monthlyEmpty) monthlyEmpty.style.display = "none";
+      monthlyList.innerHTML = buckets.map(b => `
+        <div style="background:#0d1421;border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:600;text-transform:capitalize">${escapeHtml(promoterMonthLabelLong(b.month))}</span>
+          <span style="font-weight:700;color:var(--blue2,#23d2ff)">${formatMoney(b.total)}</span>
+        </div>`).join("");
+    }else{
+      monthlyList.innerHTML = "";
+      if(monthlyEmpty) monthlyEmpty.style.display = "";
+    }
+  }
+
+  const historyBody = document.getElementById("walletHistoryBody");
+  const historyEmpty = document.getElementById("walletHistoryEmpty");
+  if(historyBody){
+    if(history.length){
+      if(historyEmpty) historyEmpty.style.display = "none";
+      historyBody.innerHTML = history.map(h => `
+        <tr>
+          <td>${escapeHtml(h.hostel_name || "—")}</td>
+          <td>${formatMoney(h.amount_owed)}</td>
+          <td>${Math.round((h.commission_pct || 0) * 100)}%</td>
+          <td><span class="status-pill ${promoterLedgerStatusPillClass(h.status)}">${h.status === "paid_out" ? T('wallet.statusPaid', 'PAGO') : T('wallet.statusAccrued', 'A RECEBER')}</span></td>
+          <td>${h.created_at ? h.created_at.slice(0, 10) : "—"}</td>
+          <td>${h.paid_out_at ? h.paid_out_at.slice(0, 10) : "—"}</td>
+        </tr>`).join("");
+    }else{
+      historyBody.innerHTML = "";
+      if(historyEmpty) historyEmpty.style.display = "";
+    }
   }
 }
 
@@ -372,7 +620,7 @@ window.copyPromoterHomeLink = function(){
   input.setSelectionRange(0, 99999);
   navigator.clipboard.writeText(input.value).then(() => {
     const msg = document.getElementById("promoterHomeCopyMsg");
-    msg.textContent = "Link copiado!";
+    msg.textContent = T('referrals.linkCopiedMsg', 'Link copiado!');
     setTimeout(() => { msg.textContent = ""; }, 2000);
   }).catch(() => {});
 };
@@ -969,6 +1217,9 @@ async function deleteRoleConfirm(roleId){
     <button data-page="referrals" data-required-permission="promoter" onclick="openPage('referrals',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M9 15 15 9"/><path d="M10 6l1-1a4 4 0 0 1 6 6l-1 1"/><path d="M14 18l-1 1a4 4 0 0 1-6-6l1-1"/></svg></span><span data-i18n="nav.referrals">Indicações</span>
     </button>
+    <button data-page="wallet" data-required-permission="promoter" onclick="openPage('wallet',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16" cy="14.5" r="1.4"/></svg></span><span data-i18n="nav.wallet">Carteira</span>
+    </button>
     <button data-page="chats" onclick="openPage('chats',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="nav.chats">Chats</span>
     </button>
@@ -1266,22 +1517,28 @@ async function deleteRoleConfirm(roleId){
        dentro do Dashboard, ver pedido do usuario 2026-09-01.-->
   <div class="grid" id="promoterHomeGrid" style="display:none">
     <div class="card kpi">
-      <div><div class="label">Faixa atual</div><div class="value" id="promoterHomeTier">—</div></div>
+      <div><div class="label" data-i18n="promoterHome.tierLabel">Faixa atual</div><div class="value" id="promoterHomeTier">—</div></div>
     </div>
     <div class="card kpi">
-      <div><div class="label">Indicações ativas</div><div class="value" id="promoterHomeActiveCount">—</div></div>
+      <div><div class="label" data-i18n="promoterHome.activeCountLabel">Indicações ativas</div><div class="value" id="promoterHomeActiveCount">—</div></div>
     </div>
     <div class="card kpi">
-      <div><div class="label">A receber</div><div class="value" id="promoterHomeAccrued">—</div></div>
+      <div><div class="label" data-i18n="promoterHome.accruedLabel">A receber</div><div class="value" id="promoterHomeAccrued">—</div></div>
     </div>
     <div class="card kpi">
-      <div><div class="label">Já recebido</div><div class="value" id="promoterHomePaidOut">—</div></div>
+      <div><div class="label" data-i18n="promoterHome.paidOutLabel">Já recebido</div><div class="value" id="promoterHomePaidOut">—</div></div>
     </div>
 
-    <div class="card span-12" style="display:flex;gap:12px;flex-wrap:wrap">
-      <button class="btn" type="button" onclick="openPage('referrals', document.querySelector('[data-page=referrals]'))">🔗 Ver meu link e indicações</button>
-      <button class="btn secondary" type="button" onclick="openPage('chats', document.querySelector('[data-page=chats]'))">💬 Ir pros Chats</button>
-      <button class="btn secondary" type="button" onclick="openPage('salesportfolio', document.querySelector('[data-page=salesportfolio]'))">📊 Portfólio de Vendas</button>
+    <div class="card span-12">
+      <h2 data-i18n="promoterHome.performanceTitle">📈 Seu desempenho</h2>
+      <p style="color:var(--muted);font-size:13px;margin:6px 0 14px" data-i18n="promoterHome.performanceDesc">Comissão gerada por mês, últimos 6 meses.</p>
+      <canvas id="promoterPerformanceCanvas" style="width:100%;height:220px;display:none"></canvas>
+      <div class="sf-empty" id="promoterPerformanceEmpty">
+        <div>
+          <strong data-i18n="promoterHome.performanceEmptyTitle">Nenhuma comissão gerada ainda.</strong>
+          <span data-i18n="promoterHome.performanceEmptyDesc">Assim que uma hospedagem indicada por você virar cliente pagante, o desempenho mês a mês aparece aqui.</span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1292,19 +1549,19 @@ async function deleteRoleConfirm(roleId){
      propria com visual mais trabalhado a pedido do usuario. -->
 <section id="referrals" class="page">
   <div class="card span-12" style="background:linear-gradient(135deg,#0b84ff1c,#23d2ff0c);border:1px solid #0b84ff30">
-    <h2>🔗 Seu link de indicação</h2>
-    <p style="color:var(--muted);font-size:13px;margin:6px 0 16px">Compartilhe com qualquer hospedagem — quando alguém se cadastrar por ele e virar cliente pagante, a comissão cai automaticamente pra você, todo mês.</p>
+    <h2 data-i18n="referrals.linkTitle">🔗 Seu link de indicação</h2>
+    <p style="color:var(--muted);font-size:13px;margin:6px 0 16px" data-i18n="referrals.linkDesc">Compartilhe com qualquer hospedagem — quando alguém se cadastrar por ele e virar cliente pagante, a comissão cai automaticamente pra você, todo mês.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px 16px">
       <span style="font-size:16px;line-height:1">🔗</span>
       <input id="promoterHomeLink" readonly style="flex:1;min-width:220px;background:transparent;border:none;font-family:ui-monospace,'SF Mono',Consolas,monospace;font-size:13px;color:#f7fbff;outline:none">
-      <button class="btn secondary" type="button" onclick="copyPromoterHomeLink()">📋 Copiar</button>
-      <button class="btn" type="button" id="promoterHomeShareBtn" style="display:none" onclick="sharePromoterHomeLink()">📤 Compartilhar</button>
+      <button class="btn secondary" type="button" onclick="copyPromoterHomeLink()"><span data-i18n="referrals.copyBtn">📋 Copiar</span></button>
+      <button class="btn" type="button" id="promoterHomeShareBtn" style="display:none" onclick="sharePromoterHomeLink()"><span data-i18n="referrals.shareBtn">📤 Compartilhar</span></button>
     </div>
     <p id="promoterHomeCopyMsg" style="font-size:12px;color:var(--green,#26e0a0);margin-top:8px;min-height:16px"></p>
   </div>
 
   <div class="card span-12" style="margin-top:16px">
-    <h2 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px">📈 Sua faixa de comissão</h2>
+    <h2 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px" data-i18n="referrals.tierTitle">📈 Sua faixa de comissão</h2>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:8px">
       <span style="font-size:34px;font-weight:800" id="referralsTierPct">—</span>
       <span style="font-size:12px;color:var(--muted)" id="referralsNextTierHint"></span>
@@ -1315,9 +1572,53 @@ async function deleteRoleConfirm(roleId){
   </div>
 
   <div class="card span-12" style="margin-top:16px">
-    <h2>🏨 Hospedagens indicadas</h2>
+    <h2 data-i18n="referrals.hostelsTitle">🏨 Hospedagens indicadas</h2>
     <div id="referralsHostelsList" style="margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
-    <p class="sf-empty-inline" id="referralsHostelsEmpty" style="color:var(--muted);font-size:13px;display:none">Nenhuma hospedagem indicada ainda.</p>
+    <p class="sf-empty-inline" id="referralsHostelsEmpty" style="color:var(--muted);font-size:13px;display:none" data-i18n="referrals.hostelsEmpty">Nenhuma hospedagem indicada ainda.</p>
+  </div>
+</section>
+
+<!-- CARTEIRA (item 27b - so pro promotor) - quanto tem a receber, quanto
+     ja foi pago, e o extrato completo (qual hospedagem gerou qual
+     comissao, quando, status), agrupado por mes. Usa o mesmo "history"
+     que /promoter/dashboard ja devolvia (ultimos 50 lancamentos do
+     subscription_referral_ledger) e que o frontend nunca tinha
+     consumido ate agora. -->
+<section id="wallet" class="page">
+  <div class="grid">
+    <div class="card kpi span-6">
+      <div><div class="label" data-i18n="promoterHome.accruedLabel">A receber</div><div class="value" id="walletAccrued">—</div></div>
+    </div>
+    <div class="card kpi span-6">
+      <div><div class="label" data-i18n="promoterHome.paidOutLabel">Já recebido</div><div class="value" id="walletPaidOut">—</div></div>
+    </div>
+  </div>
+
+  <div class="card span-12" style="margin-top:16px">
+    <h2 data-i18n="wallet.monthlyTitle">📅 Relatório mensal</h2>
+    <p style="color:var(--muted);font-size:13px;margin:6px 0 14px" data-i18n="wallet.monthlyDesc">Comissão gerada por mês (soma de todos os lançamentos, pagos ou não).</p>
+    <div id="walletMonthlyList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <p class="sf-empty-inline" id="walletMonthlyEmpty" style="color:var(--muted);font-size:13px;display:none" data-i18n="wallet.monthlyEmpty">Nenhum lançamento ainda.</p>
+  </div>
+
+  <div class="card span-12" style="margin-top:16px">
+    <h2 data-i18n="wallet.historyTitle">🧾 Extrato — quem pagou o quê</h2>
+    <div style="overflow-x:auto">
+      <table class="table">
+        <thead>
+          <tr>
+            <th data-i18n="wallet.col.hostel">Hospedagem</th>
+            <th data-i18n="wallet.col.amount">Valor</th>
+            <th data-i18n="wallet.col.commission">Comissão</th>
+            <th data-i18n="wallet.col.status">Status</th>
+            <th data-i18n="wallet.col.generatedAt">Gerado em</th>
+            <th data-i18n="wallet.col.paidAt">Pago em</th>
+          </tr>
+        </thead>
+        <tbody id="walletHistoryBody"></tbody>
+      </table>
+    </div>
+    <p class="sf-empty-inline" id="walletHistoryEmpty" style="color:var(--muted);font-size:13px;display:none;margin-top:10px" data-i18n="wallet.monthlyEmpty">Nenhum lançamento ainda.</p>
   </div>
 </section>
 
@@ -2403,7 +2704,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card" data-settings-section="empresa" data-required-permission="branding">
+      <div class="card" data-settings-section="empresa" data-required-permission="branding" data-hide-for-account-kind="promoter">
         <h2 data-i18n="settings.branding.title">🎨 Marca (White-label)</h2>
         <p data-i18n="settings.branding.desc" style="margin-bottom:14px">Personalize logo, nome exibido e cor do painel — pra revendedores ou hospedagens com marca própria.</p>
 
@@ -2536,27 +2837,20 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="seguranca" onclick="openChangePasswordModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.security.changePasswordTitle">🔒 Trocar senha</h2>
+            <p class="settings-summary-desc" data-i18n="settings.security.changePasswordSummaryDesc">Atualize a senha da sua conta.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <div class="card" data-settings-section="seguranca">
         <h2 data-i18n="settings.security.title">Segurança</h2>
 
-        <h3 data-i18n="settings.security.changePasswordTitle" style="margin:0 0 10px;font-size:14px;font-weight:800">Trocar senha</h3>
-        <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
-          <div class="span-12">
-            <input type="password" id="currentPasswordInput" data-i18n-placeholder="settings.security.currentPasswordPlaceholder" placeholder="Senha atual" autocomplete="current-password">
-          </div>
-          <div class="span-6">
-            <input type="password" id="newPasswordInput" data-i18n-placeholder="settings.security.newPasswordPlaceholder" placeholder="Nova senha (mínimo 8 caracteres)" autocomplete="new-password">
-          </div>
-          <div class="span-6">
-            <input type="password" id="confirmPasswordInput" data-i18n-placeholder="settings.security.confirmPasswordPlaceholder" placeholder="Confirmar nova senha" autocomplete="new-password">
-          </div>
-        </div>
-        <div id="changePasswordMessage" class="generic-modal-message" style="margin-top:4px"></div>
-        <div style="display:flex;justify-content:flex-end;margin-top:10px">
-          <button class="btn" type="button" onclick="submitChangePassword()" data-i18n="settings.security.changePasswordBtn">Trocar senha</button>
-        </div>
-
-        <h3 data-i18n="settings.security.activeSessionsTitle" style="margin:24px 0 10px;font-size:14px;font-weight:800">Sessões ativas</h3>
+        <h3 data-i18n="settings.security.activeSessionsTitle" style="margin:0 0 10px;font-size:14px;font-weight:800">Sessões ativas</h3>
         <p data-i18n="settings.security.activeSessionsDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Dispositivos/navegadores com sessão válida hoje. Revogar uma sessão bloqueia o próximo acesso dela imediatamente.</p>
         <div id="activeSessionsList" style="display:grid;gap:8px"></div>
 
@@ -2571,7 +2865,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card" data-required-permission="billing" data-settings-section="billing">
+      <div class="card" data-required-permission="billing" data-settings-section="billing" data-hide-for-account-kind="promoter">
         <h2 data-i18n="settings.billing.title">Billing</h2>
         <div id="billingSummaryContent"><p style="color:var(--muted)" data-i18n="common.loading">Carregando...</p></div>
       </div>
@@ -2639,13 +2933,14 @@ async function deleteRoleConfirm(roleId){
 <!-- PORTFOLIO DE VENDAS (item 27b - so pro promotor) -->
 <section id="salesportfolio" class="page">
   <div class="card" style="margin-bottom:16px">
-    <h2>📊 Portfólio de vendas</h2>
-    <p style="color:var(--muted);font-size:13px;margin-top:6px">Apresentação pronta pra mostrar numa call ou reunião — escolha o setor certo pro seu prospect e navegue pelos slides.</p>
+    <h2 data-i18n="salesPortfolio.headerTitle">📊 Portfólio de vendas</h2>
+    <p style="color:var(--muted);font-size:13px;margin-top:6px" data-i18n="salesPortfolio.headerDesc">Um guia por setor pra você estudar a StayFlow com calma — e também apresentar numa call ou reunião quando estiver pronto. Escolha o setor certo pro seu prospect e navegue pelos slides; se tiver dúvida em qualquer um, pergunte direto ao Ask StayFlow.</p>
   </div>
   <div class="ops-tabs">
-    <button type="button" class="ops-tab active" data-portfolio-sector="lodging" onclick="switchPortfolioSector('lodging')">🏨 Hospedagens</button>
-    <button type="button" class="ops-tab" data-portfolio-sector="agency" onclick="switchPortfolioSector('agency')">🧭 Agências</button>
-    <button type="button" class="ops-tab" data-portfolio-sector="rental" onclick="switchPortfolioSector('rental')">🚗 Locadoras</button>
+    <button type="button" class="ops-tab active" data-portfolio-sector="lodging" onclick="switchPortfolioSector('lodging')"><span data-i18n="salesPortfolio.tab.lodging">🏨 Hospedagens</span></button>
+    <button type="button" class="ops-tab" data-portfolio-sector="agency" onclick="switchPortfolioSector('agency')"><span data-i18n="salesPortfolio.tab.agency">🧭 Agências</span></button>
+    <button type="button" class="ops-tab" data-portfolio-sector="rental" onclick="switchPortfolioSector('rental')"><span data-i18n="salesPortfolio.tab.rental">🚗 Locadoras</span></button>
+    <button type="button" class="ops-tab" data-portfolio-sector="realestate" onclick="switchPortfolioSector('realestate')"><span data-i18n="salesPortfolio.tab.realestate">🏠 Imobiliárias</span></button>
   </div>
   <div class="card" style="min-height:420px;display:flex;flex-direction:column">
     <div id="portfolioSlideContent" style="flex:1"></div>
@@ -2727,18 +3022,21 @@ async function deleteRoleConfirm(roleId){
   <div class="ask-head">
     <div>
       <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span><span data-i18n="ask.title">Pergunte à StayFlow</span></h2>
-      <p data-i18n="ask.subtitle">IA interna da sua hospedagem</p>
+      <p id="askSubtitle" data-i18n="ask.subtitle">IA interna da sua hospedagem</p>
     </div>
     <button class="close-btn" onclick="closeAskStayFlow()">×</button>
   </div>
 
   <div class="ask-body">
-    <div class="ask-message bot" data-i18n="ask.welcomeMsg">
+    <div class="ask-message bot" id="askWelcomeMsg" data-i18n="ask.welcomeMsg">
       Oi! Assim que seu StayFlow estiver conectado a dados reais, posso analisar reservas, conversas, receita, limpeza e oportunidades. O que você quer resolver agora?
     </div>
-    <button class="ask-suggestion" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]')); closeAskStayFlow()" data-i18n="ask.suggestion1">Quais oportunidades existem hoje?</button>
-    <button class="ask-suggestion" onclick="openPage('chats', document.querySelector('[data-page=chats]')); closeAskStayFlow()" data-i18n="ask.suggestion2">Quem precisa de resposta humana?</button>
-    <button class="ask-suggestion" onclick="openPage('revenue', document.querySelector('[data-page=revenue]')); closeAskStayFlow()" data-i18n="ask.suggestion3">Onde posso aumentar receita?</button>
+    <button class="ask-suggestion" data-hide-for-account-kind="promoter" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]')); closeAskStayFlow()" data-i18n="ask.suggestion1">Quais oportunidades existem hoje?</button>
+    <button class="ask-suggestion" data-hide-for-account-kind="promoter" onclick="openPage('chats', document.querySelector('[data-page=chats]')); closeAskStayFlow()" data-i18n="ask.suggestion2">Quem precisa de resposta humana?</button>
+    <button class="ask-suggestion" data-hide-for-account-kind="promoter" onclick="openPage('revenue', document.querySelector('[data-page=revenue]')); closeAskStayFlow()" data-i18n="ask.suggestion3">Onde posso aumentar receita?</button>
+    <button class="ask-suggestion" data-required-permission="promoter" onclick="openPage('referrals', document.querySelector('[data-page=referrals]')); closeAskStayFlow()" data-i18n="ask.promoterSuggestion1">Como funciona minha comissão?</button>
+    <button class="ask-suggestion" data-required-permission="promoter" onclick="openPage('salesportfolio', document.querySelector('[data-page=salesportfolio]')); closeAskStayFlow()" data-i18n="ask.promoterSuggestion2">Como eu apresento a StayFlow pra uma imobiliária?</button>
+    <button class="ask-suggestion" data-required-permission="promoter" onclick="askQuickQuestion(this.textContent)" data-i18n="ask.promoterSuggestion3">Quais setores a StayFlow atende?</button>
   </div>
 
   <div id="askFilePreview" style="display:none;align-items:center;gap:8px;padding:8px 14px;font-size:12.5px;color:var(--muted)">
@@ -2753,12 +3051,12 @@ async function deleteRoleConfirm(roleId){
   </div>
 </aside>
 
-<button class="reserva-floating" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" data-i18n-title="reservations.newReservation.title2" title="Nova reserva">
+<button class="reserva-floating" data-hide-for-account-kind="promoter" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" data-i18n-title="reservations.newReservation.title2" title="Nova reserva">
   <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#06101b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
 </button>
 
 <button class="ask-floating" onclick="openAskStayFlow()" aria-label="Pergunte à StayFlow" data-i18n-title="ask.title" title="Pergunte à StayFlow">
-  <span class="brand-logo-mask" role="img" aria-label="StayFlow"></span>
+  <img src="assets/images/logo2.png" alt="StayFlow">
 </button>
 
 <div id="genericModalOverlay" class="generic-modal-overlay" onclick="closeGenericModal()"></div>
@@ -2791,6 +3089,7 @@ async function deleteRoleConfirm(roleId){
   const PAGE_LABELS = {
     dashboard:    ["nav.dashboard",     "topbar.subtitle.dashboard"],
     referrals:    ["nav.referrals",     "topbar.subtitle.referrals"],
+    wallet:       ["nav.wallet",        "topbar.subtitle.wallet"],
     chats:        ["nav.chats",         "topbar.subtitle.chats"],
     opportunities:["nav.opportunities", "topbar.subtitle.opportunities"],
     reservations: ["nav.reservations",  "topbar.subtitle.reservations"],
@@ -2927,6 +3226,14 @@ async function deleteRoleConfirm(roleId){
   window.closeAskStayFlow = function(){
     $("#askOverlay")?.classList.remove("open");
     $("#askPanel")?.classList.remove("open");
+  };
+
+  window.askQuickQuestion = function(text){
+    openAskStayFlow();
+    const input = document.querySelector("#askPanel .ask-input input[type='text'], #askPanel .ask-input input:not([type])");
+    const sendBtn = document.querySelector("#askPanel .ask-input button.btn");
+    if(input) input.value = text.trim();
+    if(sendBtn) askStayFlowSend(sendBtn);
   };
 
   async function loadAskHistory(){
@@ -4474,15 +4781,15 @@ async function deleteRoleConfirm(roleId){
 
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff12">
         <div style="font-size:13px;font-weight:700;margin-bottom:8px">${T('settings.communication.pushTypesTitle', 'O que deve notificar')}</div>
-        <label data-required-permission="opportunities" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="opportunities" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeOpportunity', 'Nova oportunidade de alta prioridade')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="opportunity" id="pushTypeOpportunity">
         </label>
-        <label data-required-permission="reservations" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="reservations" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeReservation', 'Nova reserva pendente de confirmação')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="reservation" id="pushTypeReservation">
         </label>
-        <label data-required-permission="reservations" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="reservations" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeLateArrival', 'Chegada de hoje sem check-in até 18h')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="late_arrival" id="pushTypeLateArrival">
         </label>
@@ -4494,27 +4801,27 @@ async function deleteRoleConfirm(roleId){
           <span>${T('settings.communication.pushTypeAssumedConversation', 'Mensagem nova numa conversa assumida')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="assumed_conversation" id="pushTypeAssumedConversation">
         </label>
-        <label data-required-permission="kitchen" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="kitchen" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeKitchenOrder', 'Novo pedido na cozinha')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="kitchen_order" id="pushTypeKitchenOrder">
         </label>
-        <label data-required-permission="maintenance" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="maintenance" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeMaintenanceTicket', 'Novo chamado de manutenção')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="maintenance_ticket" id="pushTypeMaintenanceTicket">
         </label>
-        <label data-required-permission="patrimonial_security" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="patrimonial_security" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeSecurityIncident', 'Nova ocorrência de segurança')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="security_incident" id="pushTypeSecurityIncident">
         </label>
-        <label data-required-permission="parking" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="parking" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeValetRequest', 'Novo chamado de manobrista')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="valet_request" id="pushTypeValetRequest">
         </label>
-        <label data-required-permission="events" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="events" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeNewEvent', 'Novo evento cadastrado')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="new_event" id="pushTypeNewEvent">
         </label>
-        <label data-required-permission="portfolio" data-required-account-kind="agency" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="portfolio" data-required-account-kind="agency" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
           <span>${T('settings.communication.pushTypeNuvemshopOrder', 'Novo pedido na loja (Nuvemshop)')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="nuvemshop_order" id="pushTypeNuvemshopOrder">
         </label>
@@ -4558,6 +4865,17 @@ async function deleteRoleConfirm(roleId){
     try{
       if(typeof applyPermissionVisibility === "function"){
         applyPermissionVisibility((window.STAYFLOW_SESSION && window.STAYFLOW_SESSION.permissions) || []);
+      }
+      // applyPermissionVisibility sozinha nao basta: numa sessao "em
+      // visita" (admin StayFlow dentro do painel de outra conta), a
+      // permissao vem sempre completa (ALL_PERMISSIONS) de proposito,
+      // entao um checkbox gated so por permissao reaparece mesmo pra
+      // quem nao devia ver (ex: cozinha/manutencao no modal de um
+      // promotor visitado pelo admin) - mesmo caso ja resolvido em
+      // outros lugares com data-hide-for-account-kind, que filtra pelo
+      // account_kind real (sempre correto, mesmo em visita).
+      if(typeof applyHideForAccountKind === "function"){
+        applyHideForAccountKind((window.STAYFLOW_SESSION && window.STAYFLOW_SESSION.account_kind) || "lodging");
       }
     }catch(e){
       console.warn("Erro ao aplicar visibilidade por permissao no modal de notificações:", e);
@@ -5493,6 +5811,31 @@ async function deleteRoleConfirm(roleId){
   };
 
   // ===== Segurança: troca de senha, sessões ativas, log de login =====
+  // "Trocar senha" virou modal (mesmo padrao "card resumo -> clique ->
+  // openGenericModal" ja usado em WhatsApp/Facebook/Instagram/etc) em
+  // vez de formulario fixo direto na tela - pedido do usuario, os
+  // mesmos ids de input continuam existindo (so injetados dentro do
+  // modal agora), entao submitChangePassword() nao precisou mudar nada.
+  window.openChangePasswordModal = function(){
+    openGenericModal(T('settings.security.changePasswordTitle', '🔒 Trocar senha'), `
+      <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+        <div class="span-12">
+          <input type="password" id="currentPasswordInput" placeholder="${T('settings.security.currentPasswordPlaceholder', 'Senha atual')}" autocomplete="current-password">
+        </div>
+        <div class="span-6">
+          <input type="password" id="newPasswordInput" placeholder="${T('settings.security.newPasswordPlaceholder', 'Nova senha (mínimo 8 caracteres)')}" autocomplete="new-password">
+        </div>
+        <div class="span-6">
+          <input type="password" id="confirmPasswordInput" placeholder="${T('settings.security.confirmPasswordPlaceholder', 'Confirmar nova senha')}" autocomplete="new-password">
+        </div>
+      </div>
+      <div id="changePasswordMessage" class="generic-modal-message" style="margin-top:4px"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="submitChangePassword()">${T('settings.security.changePasswordBtn', 'Trocar senha')}</button>
+      </div>
+    `);
+  };
+
   window.submitChangePassword = async function(){
     const currentInput = document.getElementById("currentPasswordInput");
     const newInput = document.getElementById("newPasswordInput");
@@ -11983,6 +12326,19 @@ window.uploadGuestDocumentUI = async function(guestId){
       }
     }catch(e){ console.error("Erro ao ajustar aba padrao de Configuracoes do promotor:", e); }
     try{
+      // Painel do Ask StayFlow tem subtitulo/mensagem de boas-vindas
+      // fixos falando de "sua hospedagem" - as 3 sugestoes de atalho
+      // ja ficam escondidas via data-hide-for-account-kind (tem as
+      // proprias 3 pro promotor logo ao lado, ver HTML), mas esses 2
+      // textos livres precisam de troca via JS mesmo.
+      if(session.account_kind === "promoter"){
+        const askSubtitleEl = document.getElementById("askSubtitle");
+        if(askSubtitleEl) askSubtitleEl.textContent = "IA de apoio pro seu programa de indicação";
+        const askWelcomeEl = document.getElementById("askWelcomeMsg");
+        if(askWelcomeEl) askWelcomeEl.textContent = "Oi! Posso te ajudar a entender seu programa de indicação (comissão, faixas, hospedagens indicadas) e te dar uma mão pra preparar uma boa apresentação da StayFlow. O que você quer saber?";
+      }
+    }catch(e){ console.error("Erro ao ajustar texto do Ask StayFlow pro promotor:", e); }
+    try{
       // Agencia parceira chama guest de "PAX" (turismo/locacao) ou
       // "Clientes" (demais categorias) - hospedagem continua "Hospedes".
       if(session.account_kind === "agency"){
@@ -12120,6 +12476,20 @@ window.uploadGuestDocumentUI = async function(guestId){
     settings: { title: "Configurações", text: "Dados da hospedagem, integrações, segurança e mais." },
   };
 
+  // Conta promotor (account_kind='promoter') nao opera hospedagem/
+  // agencia nenhuma - as dicas genericas acima nao fazem sentido pra
+  // ela (a maioria nem aparece, ja que as paginas correspondentes
+  // ficam escondidas no menu). Overrides so pras paginas que ela
+  // realmente ve: "settings" troca de texto, o resto e exclusivo dela
+  // (nunca existiu em FEATURE_COACH_MARKS).
+  const FEATURE_COACH_MARKS_PROMOTER = {
+    referrals: { title: "Indicações", text: "Seu link de indicação, sua faixa de comissão e as hospedagens que você já indicou - tudo nessa aba." },
+    wallet: { title: "Carteira", text: "Quanto você já ganhou e quanto ainda tem a receber, mês a mês, com o extrato completo de cada comissão." },
+    chats: { title: "Chats", text: "Converse com quem tiver interesse na StayFlow. Pra usar seu próprio WhatsApp/Facebook/Instagram aqui, conecte em Configurações > Comunicação." },
+    salesportfolio: { title: "Portfólio de Vendas", text: "Um guia completo pra estudar e apresentar a StayFlow em cada setor - hospedagens, agências, locadoras e imobiliárias." },
+    settings: { title: "Configurações", text: "Conecte seus canais de conversa (WhatsApp/Facebook/Instagram) e cuide da segurança da sua conta." },
+  };
+
   const onboardingState = { dismissed: false, seen: new Set() };
 
   function isOnboardingActive(){
@@ -12145,8 +12515,8 @@ window.uploadGuestDocumentUI = async function(guestId){
     }catch(e){ console.warn("Falha ao desligar onboarding:", e); }
   }
 
-  function showFeatureCoachMark(featureKey){
-    const info = FEATURE_COACH_MARKS[featureKey];
+  function showFeatureCoachMark(featureKey, infoOverride){
+    const info = infoOverride || FEATURE_COACH_MARKS[featureKey];
     if(!info) return;
     document.getElementById("onboardingCoachMark")?.remove();
 
@@ -12176,12 +12546,41 @@ window.uploadGuestDocumentUI = async function(guestId){
     if(!isOnboardingActive()) return;
     if(pageId === "dashboard") return;
     if(onboardingState.seen.has(pageId)) return;
-    if(!FEATURE_COACH_MARKS[pageId]) return;
-    showFeatureCoachMark(pageId);
+    const isPromoter = (window.STAYFLOW_SESSION || {}).account_kind === "promoter";
+    const info = (isPromoter && FEATURE_COACH_MARKS_PROMOTER[pageId]) || FEATURE_COACH_MARKS[pageId];
+    if(!info) return;
+    showFeatureCoachMark(pageId, info);
   };
 
   function dashboardIntroSlides(){
-    const isAgency = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
+    const accountKind = (window.STAYFLOW_SESSION || {}).account_kind;
+    const isAgency = accountKind === "agency";
+
+    // Promotor (item 27b) nao opera hospedagem/agencia nenhuma - o
+    // Dashboard dele nem tem ocupacao/reservas/Opportunity Center (ver
+    // applyPromoterHome), entao usa um tour totalmente a parte em vez
+    // de tentar encaixar nas variacoes de hospedagem/agencia acima.
+    if(accountKind === "promoter"){
+      return [
+        {
+          title: "👋 Bem-vindo(a) à StayFlow",
+          body: "Esse é o seu Dashboard - o resumo da sua conta de promotor. Vamos mostrar rapidinho o que tem em cada bloco.",
+        },
+        {
+          title: "Seus números",
+          body: "Os 4 cards no topo mostram sua faixa de comissão atual, quantas indicações estão ativas, quanto você tem a receber e quanto já recebeu.",
+        },
+        {
+          title: "Seu desempenho",
+          body: "O gráfico logo abaixo mostra a comissão gerada mês a mês - assim que suas indicações virarem clientes pagantes, o histórico aparece aqui.",
+        },
+        {
+          title: "Agora explore o menu",
+          body: "No menu à esquerda: seu link de indicação (Indicações), o extrato completo do que você já ganhou (Carteira) e um guia de vendas pronto pra usar (Portfólio de Vendas). Na primeira vez que você abrir cada um, aparece uma dica rápida explicando o que é.",
+        },
+      ];
+    }
+
     const opportunityLabel = isAgency ? "quem te procurou" : "hóspedes com potencial de venda (passeio, upgrade, aluguel)";
     return [
       {

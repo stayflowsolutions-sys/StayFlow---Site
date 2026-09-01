@@ -8900,3 +8900,178 @@ Fora de escopo: não foi criada nenhuma lógica nova pra `account_kind`
 em `PAGE_LABELS`/`switchSettingsSection()` além do necessário pro
 promotor - outras contas (`lodging`/`agency`) continuam exatamente
 como estavam, sem nenhum comportamento alterado.
+
+### Lapidação final do painel do promotor (v1.96.0)
+
+Usuário testou a v1.95.0 ao vivo (via "visitar painel" do admin) e
+mandou uma lista de 9 observações numa tacada só, sem esperar eu
+implementar uma de cada vez - a mesma disciplina de agrupar pedidos já
+estabelecida nesta sessão. Antes de tocar em qualquer HTML, valia
+entender por que um problema específico estava acontecendo: o card
+"Marca (White-label)" (gated só por `data-required-permission="branding"`)
+aparecia pro admin em visita mesmo o promotor não tendo essa permissão.
+Investigação confirmou a MESMA causa raiz já documentada na v1.95.0 -
+`build_session_payload()` concede `permissions=ALL_PERMISSIONS` de
+propósito durante impersonation, então qualquer elemento gated só por
+permissão (sem `data-hide-for-account-kind` de reforço) vaza durante
+visita do admin. Corrigido acrescentando o atributo faltante no card de
+Marca e no card principal de Billing (dois que tinham escapado da
+blindagem da v1.95.0), e generalizado: o modal de Notificações
+(`openNotificationsModal()`) tinha o mesmo problema por um motivo
+diferente - seu conteúdo é injetado via `openGenericModal()` DEPOIS da
+hidratação inicial da página, então `applyPermissionVisibility()`
+(chamada manualmente logo após a injeção, desde antes desta sessão)
+nunca era acompanhada de `applyHideForAccountKind()` - corrigido
+chamando as duas juntas. Esse padrão (permissão sozinha não é
+suficiente pra decidir visibilidade quando existe impersonation) fica
+registrado aqui porque é bem provável que apareça de novo em qualquer
+card/modal futuro gated só por `data-required-permission`.
+
+**Dashboard**: os 3 botões de atalho (Ver link/Chats/Portfólio,
+adicionados na v1.95.0) saíram - usuário achou redundante ter atalho
+pra abas que já estão logo ali no menu. Entrou um gráfico "Seu
+desempenho" em Canvas nativo, reaproveitando o MESMO padrão de
+`renderChatActivityChart()` de Relatórios (linha/área em gradiente,
+sem biblioteca externa, já que nenhuma página do dashboard carrega
+chart lib) - só que em barras, uma por mês, com a comissão total
+gerada. O dado já existia: `history` (últimos 50 lançamentos do
+`subscription_referral_ledger`) já vinha dentro do payload de
+`/promoter/dashboard` desde a v1.86.0, mas o frontend nunca tinha
+usado esse campo pra nada. Bucketing por mês feito 100% client-side
+(`bucketPromoterHistoryByMonth()`), zero SQL novo.
+
+**Nova aba "Carteira"** (pedido que chegou separado, no meio da
+implementação: "também criar uma aba 'carteira' ou 'financeiro'"): usa
+o MESMO payload do gráfico (zero fetch novo) pra mostrar a receber/já
+recebido, um relatório mensal (mesmo bucketing por mês, reaproveitado)
+e o extrato linha a linha - qual hospedagem gerou qual comissão, a
+%, o status (`accrued`/`paid_out`) e as duas datas. `renderPromoterWallet()`
+e `renderPromoterPerformanceChart()` rodam juntas dentro de
+`loadPromoterHomeData()`, que já era chamada uma vez só na hidratação
+da home do promotor - as duas abas (Dashboard e Carteira) ficam
+sempre atualizadas ao mesmo tempo, sem re-fetch ao trocar de página.
+
+**Botão flutuante "+"** (`.reserva-floating`, "Nova reserva") ganhou
+`data-hide-for-account-kind="promoter"` - óbvio em retrospecto (conta
+sem hospedagem não tem reserva pra criar), mas só apareceu porque
+nunca tinha um usuário promotor testando ao vivo antes.
+
+**Ask StayFlow** voltou ao tratamento visual do `index.html`: o botão
+flutuante usava uma máscara CSS (`-webkit-mask-image` aplicando
+`background-color:#06101b` sólido por cima do logo, dentro de um
+círculo com gradiente azul) - o efeito real era uma silhueta escura
+numa bolha azul, perdendo o gradiente de verdade das ondas do logo.
+Trocado por `<img src="logo2.png">` direto, sem fundo, só um
+`drop-shadow` leve pra manter a sensação de flutuar - exatamente como
+a landing page já fazia. O reposicionamento na aba Chats
+(`body.chats-page-active .ask-floating{bottom:...}`, pra não tampar o
+botão "Assumir" da barra de envio) já existia de uma versão anterior e
+não precisou de nenhuma mudança - só troquei o conteúdo interno do
+botão, as regras de posição continuam batendo no mesmo seletor CSS.
+Boas-vindas e as 3 sugestões-atalho do painel (`Quais oportunidades
+existem hoje?`/`Quem precisa de resposta humana?`/`Onde posso aumentar
+receita?`) também eram 100% hospedagem - ganharam
+`data-hide-for-account-kind="promoter"` e 3 sugestões próprias
+(`data-required-permission="promoter"`) ao lado; texto de boas-vindas
+trocado via JS (`#askSubtitle`/`#askWelcomeMsg`, novos ids só pra isso)
+na mesma função de hidratação que já troca a aba padrão de
+Configurações pro promotor.
+
+**Configurações > Segurança**: "Trocar senha" era um formulário fixo
+direto na tela (3 campos + botão sempre visíveis) - virou o mesmo
+padrão "card-resumo → clique → modal" já usado em WhatsApp/Facebook/
+Instagram/Nuvemshop/etc (`openChangePasswordModal()` chamando
+`openGenericModal()`). Como os 3 `<input>` mantiveram os MESMOS ids
+(`currentPasswordInput`/`newPasswordInput`/`confirmPasswordInput`),
+`submitChangePassword()` (que já lia por `getElementById`) não
+precisou de nenhuma alteração - só migraram de morada, o comportamento
+é idêntico.
+
+**Onboarding**: dois mecanismos de "primeiro acesso" ainda falavam
+100% linguagem de hospedagem pro promotor - o tour inicial de 5 slides
+do Dashboard (`dashboardIntroSlides()`, que já tinha uma ramificação
+pra `isAgency` mas nada pra promotor, caindo no texto padrão de
+"ocupação, reservas") e as dicas rápidas por página
+(`FEATURE_COACH_MARKS`, ex: a de "settings" dizia "Dados da
+hospedagem, integrações, segurança e mais"). Resolvido com uma
+ramificação própria em cada um: `dashboardIntroSlides()` ganhou um
+`if(accountKind === "promoter")` retornando 4 slides falando dos KPIs/
+gráfico/menu de verdade dessa conta; novo `FEATURE_COACH_MARKS_PROMOTER`
+com overrides pra "settings" e dicas exclusivas pras páginas que só
+essa conta vê (`referrals`/`wallet`/`chats`/`salesportfolio`, nenhuma
+dessas existia no dicionário genérico antes). `stayflowMaybeShowFeatureIntro()`
+e `showFeatureCoachMark()` ganharam um segundo parâmetro opcional
+(`infoOverride`) pra aceitar o dicionário certo sem duplicar a lógica
+de exibição/dispensa (que continua uma só, compartilhada).
+
+**Portfólio de Vendas reconstruído** - de longe a parte mais trabalhosa
+desta versão. Pedido do usuário foi explícito: não é só um deck de
+venda, é "uma carta de estudo" também, precisa ter "imagens, explicação
+de como funciona" e o promotor tem que poder perguntar pro Ask
+StayFlow se tiver dúvida. Decisões tomadas:
+- **4º setor novo, "Imobiliárias"** (antes só Hospedagens/Agências/
+  Locadoras) - conteúdo escrito do zero cobrindo o problema real desse
+  setor (leads que chegam fora do expediente, corretor cruzando
+  manualmente pedido × estoque), como a StayFlow resolve (sincronização
+  com Tokko Broker + matching por IA, mesma integração documentada nas
+  auditorias anteriores da imobiliária, ainda pendente de outros
+  ajustes fora do escopo desta versão) e recursos principais.
+- **Slide novo em TODOS os 4 setores: "Como apresentar isso"** - antes
+  o deck só tinha problema/solução/recursos/planos, puro material de
+  marketing. Esse slide novo é a parte de "estudo" de verdade: uma
+  dica concreta de que pergunta abrir a conversa, qual objeção mais
+  comum e como quebrar, específica de cada setor - transforma o
+  material de "o que é o produto" pra "como eu vendo isso na prática".
+- **Ícone por slide** (SVG inline, cor variando por tipo: vermelho pra
+  problema, azul pra solução, ciano pra recursos, amarelo pra "como
+  apresentar", verde pra planos) - a pedido explícito de ter "imagens"
+  no material; sem nenhum asset de foto real disponível pros 4 setores,
+  ícone vetorial foi a escolha mais honesta (nada de hotlink de imagem
+  genérica de banco de imagens).
+- **Botão "Perguntar ao Ask StayFlow sobre isso" em cada slide**
+  (`askAboutPortfolioSlide()`): abre o painel e manda uma pergunta já
+  montada com o título + corpo + bullets do slide atual embutidos como
+  contexto direto na mensagem. Decisão consciente de NÃO ensinar o
+  backend a rastrear "em qual slide a pessoa estava" (função nova,
+  campo de sessão novo, mais uma camada de estado pra manter
+  sincronizada) - embutir o próprio conteúdo do slide na pergunta é
+  mais simples e não menos confiável: a IA recebe o fato concreto que
+  precisa pra responder, e `PROMOTER_SYSTEM_PROMPT` (v1.94.0) já era
+  genérico o bastante sobre "o que é a StayFlow" pra completar bem a
+  resposta sem nenhuma mudança de backend.
+
+**i18n** - motivado por duas mensagens separadas do usuário no meio da
+sessão ("a introdução de explicação... estão pra hotéis, tem que
+ajeitar pra promotor" e, ainda mais direto, "percebi também que não
+traduz direito, traduz os menus mas o conteúdo continua em português
+sempre"). Auditoria rápida (script comparando todo `data-i18n="..."`
+usado no HTML contra as chaves existentes no dicionário pt) confirmou:
+quase tudo que eu tinha construído nesta rodada E na v1.95.0 (Carteira,
+Indicações, gráfico do Dashboard, sugestões do Ask StayFlow, cabeçalho/
+abas do Portfólio de Vendas) tinha sido escrito como texto Português
+puro direto no HTML/JS, sem passar pelo sistema de tradução - exatamente
+a reclamação do usuário, e o motivo real por trás dela (não é que a
+tradução "falhe", é que esse conteúdo específico nunca tinha `data-i18n`
+nem `T()` nenhum). Corrigido convertendo todo o texto ESTRUTURAL (
+rótulos de KPI, cabeçalhos de card, texto de botão, cabeçalho de coluna
+de tabela, mensagens de estado vazio, mensagens de JS como "Link
+copiado!") pra `data-i18n`/`T()`, com 43 chaves novas inseridas nos 11
+idiomas via o mesmo script Python descartável de sempre (âncora num
+texto vizinho, indentação copiada, `tools/check_i18n_parity.py` rodado
+com sucesso antes de apagar o script). Decisão de escopo explícita, não
+silenciosa: o corpo/bullets de cada um dos ~20 slides do Portfólio de
+Vendas e os parágrafos do tour inicial do Dashboard continuam só em
+português - mesmo precedente já aceito na v1.94.0 ("sem chaves i18n
+novas, mesma convenção de texto fixo do `ReferralPartner.html`"),
+traduzir prosa extensa de vendas pra 11 idiomas com qualidade de
+verdade é uma ordem de grandeza de esforço diferente de rótulo curto
+de interface, e sinalizei isso direto pro usuário em vez de fingir que
+cobri 100%.
+
+Nenhuma mudança de backend/banco nesta versão - tudo dashboard.html +
+i18n-dashboard-data.js + app.css. Testado com balanceamento de chaves/
+parênteses/colchetes do `dashboard.html` conferido a cada edição
+(inclusive checando que o delta pré-existente de 1 tag `<section>`/
+`<div>` já documentado na v1.95.0 continuou exatamente igual) e
+`tools/check_i18n_parity.py` confirmando as mesmas 1199 chaves nos 11
+idiomas.
