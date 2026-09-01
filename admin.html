@@ -377,6 +377,7 @@
         <button type="button" class="ops-tab active" data-finance-tab="overview" onclick="switchFinanceTab('overview')" data-i18n="finance.tab.overview">📊 Visão geral</button>
         <button type="button" class="ops-tab" data-finance-tab="expenses" onclick="switchFinanceTab('expenses')" data-i18n="nav.expenses">Despesas</button>
         <button type="button" class="ops-tab" data-finance-tab="referral" onclick="switchFinanceTab('referral')" data-i18n="finance.tab.referral">🤝 Indicações</button>
+        <button type="button" class="ops-tab" data-finance-tab="resellers" onclick="switchFinanceTab('resellers')" data-i18n="finance.tab.resellers">🏷️ Revendedores</button>
       </div>
 
       <div id="financeTabOverview">
@@ -589,6 +590,48 @@
         </div>
         <div class="sf-empty" id="referralPayoutEmpty" style="display:none">
           <div><strong data-i18n="referral.empty">Nenhuma comissão de indicação pendente.</strong></div>
+        </div>
+      </div>
+
+      <div id="financeTabResellers" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+          <div class="section-title" style="margin:0" data-i18n="resellers.section.title">Revendedores (tier white-label)</div>
+          <button type="button" class="btn" onclick="openCreateResellerForm()" data-i18n="resellers.createBtn">+ Criar revendedor</button>
+        </div>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="resellers.subtitle">Cada revendedor gerencia N hospedagens-cliente com marca e preço próprios. Depois de criar, repasse o código pra ele se registrar e usar "Adicionar hospedagem" pra criar clientes já vinculados.</p>
+
+        <div id="resellerForm" class="card" style="display:none;margin-bottom:16px">
+          <div class="grid">
+            <div class="span-6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="resellers.form.name">Nome</label>
+              <input type="text" id="resellerName" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+            </div>
+            <div class="span-6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="resellers.form.email">E-mail (opcional)</label>
+              <input type="email" id="resellerEmail" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+            </div>
+            <div class="span-6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="resellers.form.phone">Telefone/WhatsApp (opcional)</label>
+              <input type="text" id="resellerPhone" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+            </div>
+          </div>
+          <div id="resellerFormMessage" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+            <button type="button" class="btn secondary" onclick="closeCreateResellerForm()" data-i18n="expenses.form.cancel">Cancelar</button>
+            <button type="button" class="btn" onclick="submitCreateReseller()" data-i18n="expenses.form.save">Salvar</button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="table">
+            <thead>
+              <tr><th data-i18n="resellers.table.name">Revendedor</th><th data-i18n="resellers.table.code">Código</th><th data-i18n="resellers.table.clients">Clientes</th><th data-i18n="resellers.table.owner">Vinculado a</th><th></th></tr>
+            </thead>
+            <tbody id="resellerTableBody"></tbody>
+          </table>
+        </div>
+        <div class="sf-empty" id="resellerEmpty" style="display:none">
+          <div><strong data-i18n="resellers.empty">Nenhum revendedor cadastrado ainda.</strong></div>
         </div>
       </div>
     </section>
@@ -891,6 +934,23 @@
       "referral.table.activeCount": "Indicações ativas",
       "referral.table.currentTier": "Comissão atual",
       "referral.empty": "Nenhuma comissão de indicação pendente.",
+      "finance.tab.resellers": "🏷️ Revendedores",
+      "resellers.section.title": "Revendedores (tier white-label)",
+      "resellers.createBtn": "+ Criar revendedor",
+      "resellers.subtitle": "Cada revendedor gerencia N hospedagens-cliente com marca e preço próprios. Depois de criar, repasse o código pra ele se registrar e usar \"Adicionar hospedagem\" pra criar clientes já vinculados.",
+      "resellers.form.name": "Nome",
+      "resellers.form.email": "E-mail (opcional)",
+      "resellers.form.phone": "Telefone/WhatsApp (opcional)",
+      "resellers.form.nameRequired": "Nome é obrigatório.",
+      "resellers.table.name": "Revendedor",
+      "resellers.table.code": "Código",
+      "resellers.table.clients": "Clientes",
+      "resellers.table.owner": "Vinculado a",
+      "resellers.table.linked": "Vinculado",
+      "resellers.table.linkBtn": "Vincular",
+      "resellers.empty": "Nenhum revendedor cadastrado ainda.",
+      "resellers.createdMsg": "Revendedor criado! Código",
+      "resellers.linkPrompt": "E-mail do usuário StayFlow pra vincular:",
       "referral.manualPartner.nameRequired": "Nome é obrigatório.",
       "referral.manualPartner.createdMsg": "Parceiro criado! Código de indicação",
       "config.section.communication": "Comunicação (canais do assistente comercial)",
@@ -1025,6 +1085,23 @@
       "referral.table.activeCount": "Active referrals",
       "referral.table.currentTier": "Current commission",
       "referral.empty": "No referral commission pending.",
+      "finance.tab.resellers": "🏷️ Resellers",
+      "resellers.section.title": "Resellers (white-label tier)",
+      "resellers.createBtn": "+ Create reseller",
+      "resellers.subtitle": "Each reseller manages N client hostels with their own brand and price. After creating, share the code so they can register and use \"Add hostel\" to create already-linked clients.",
+      "resellers.form.name": "Name",
+      "resellers.form.email": "Email (optional)",
+      "resellers.form.phone": "Phone/WhatsApp (optional)",
+      "resellers.form.nameRequired": "Name is required.",
+      "resellers.table.name": "Reseller",
+      "resellers.table.code": "Code",
+      "resellers.table.clients": "Clients",
+      "resellers.table.owner": "Linked to",
+      "resellers.table.linked": "Linked",
+      "resellers.table.linkBtn": "Link",
+      "resellers.empty": "No resellers registered yet.",
+      "resellers.createdMsg": "Reseller created! Code",
+      "resellers.linkPrompt": "StayFlow user email to link:",
       "referral.manualPartner.nameRequired": "Name is required.",
       "referral.manualPartner.createdMsg": "Partner created! Referral code",
       "config.section.communication": "Communication (commercial assistant channels)",
@@ -1159,6 +1236,23 @@
       "referral.table.activeCount": "Indicaciones activas",
       "referral.table.currentTier": "Comisión actual",
       "referral.empty": "Ninguna comisión de referidos pendiente.",
+      "finance.tab.resellers": "🏷️ Revendedores",
+      "resellers.section.title": "Revendedores (nivel white-label)",
+      "resellers.createBtn": "+ Crear revendedor",
+      "resellers.subtitle": "Cada revendedor gestiona N hospedajes-cliente con marca y precio propios. Después de crear, comparte el código para que se registre y use \"Agregar hospedaje\" para crear clientes ya vinculados.",
+      "resellers.form.name": "Nombre",
+      "resellers.form.email": "Correo (opcional)",
+      "resellers.form.phone": "Teléfono/WhatsApp (opcional)",
+      "resellers.form.nameRequired": "El nombre es obligatorio.",
+      "resellers.table.name": "Revendedor",
+      "resellers.table.code": "Código",
+      "resellers.table.clients": "Clientes",
+      "resellers.table.owner": "Vinculado a",
+      "resellers.table.linked": "Vinculado",
+      "resellers.table.linkBtn": "Vincular",
+      "resellers.empty": "Ningún revendedor registrado todavía.",
+      "resellers.createdMsg": "¡Revendedor creado! Código",
+      "resellers.linkPrompt": "Correo del usuario StayFlow para vincular:",
       "referral.manualPartner.nameRequired": "El nombre es obligatorio.",
       "referral.manualPartner.createdMsg": "¡Parceiro creado! Código de referido",
       "config.section.communication": "Comunicación (canales del asistente comercial)",
@@ -1293,6 +1387,23 @@
       "referral.table.activeCount": "Recommandations actives",
       "referral.table.currentTier": "Commission actuelle",
       "referral.empty": "Aucune commission de parrainage en attente.",
+      "finance.tab.resellers": "🏷️ Revendeurs",
+      "resellers.section.title": "Revendeurs (niveau white-label)",
+      "resellers.createBtn": "+ Créer un revendeur",
+      "resellers.subtitle": "Chaque revendeur gère N hébergements clients avec sa propre marque et son propre prix. Après création, partagez le code pour qu'il s'inscrive et utilise \"Ajouter un hébergement\" pour créer des clients déjà liés.",
+      "resellers.form.name": "Nom",
+      "resellers.form.email": "E-mail (facultatif)",
+      "resellers.form.phone": "Téléphone/WhatsApp (facultatif)",
+      "resellers.form.nameRequired": "Le nom est obligatoire.",
+      "resellers.table.name": "Revendeur",
+      "resellers.table.code": "Code",
+      "resellers.table.clients": "Clients",
+      "resellers.table.owner": "Lié à",
+      "resellers.table.linked": "Lié",
+      "resellers.table.linkBtn": "Lier",
+      "resellers.empty": "Aucun revendeur enregistré pour le moment.",
+      "resellers.createdMsg": "Revendeur créé ! Code",
+      "resellers.linkPrompt": "E-mail de l'utilisateur StayFlow à lier :",
       "referral.manualPartner.nameRequired": "Le nom est obligatoire.",
       "referral.manualPartner.createdMsg": "Partenaire créé ! Code de parrainage",
       "config.section.communication": "Communication (canaux de l'assistant commercial)",
@@ -1427,6 +1538,23 @@
       "referral.table.activeCount": "Aktive Empfehlungen",
       "referral.table.currentTier": "Aktuelle Provision",
       "referral.empty": "Keine ausstehende Empfehlungsprovision.",
+      "finance.tab.resellers": "🏷️ Wiederverkäufer",
+      "resellers.section.title": "Wiederverkäufer (White-Label-Stufe)",
+      "resellers.createBtn": "+ Wiederverkäufer erstellen",
+      "resellers.subtitle": "Jeder Wiederverkäufer verwaltet N Kunden-Unterkünfte mit eigener Marke und eigenem Preis. Teilen Sie nach der Erstellung den Code, damit sich die Person registrieren und über \"Unterkunft hinzufügen\" bereits verknüpfte Kunden anlegen kann.",
+      "resellers.form.name": "Name",
+      "resellers.form.email": "E-Mail (optional)",
+      "resellers.form.phone": "Telefon/WhatsApp (optional)",
+      "resellers.form.nameRequired": "Name ist erforderlich.",
+      "resellers.table.name": "Wiederverkäufer",
+      "resellers.table.code": "Code",
+      "resellers.table.clients": "Kunden",
+      "resellers.table.owner": "Verknüpft mit",
+      "resellers.table.linked": "Verknüpft",
+      "resellers.table.linkBtn": "Verknüpfen",
+      "resellers.empty": "Noch keine Wiederverkäufer registriert.",
+      "resellers.createdMsg": "Wiederverkäufer erstellt! Code",
+      "resellers.linkPrompt": "E-Mail des zu verknüpfenden StayFlow-Nutzers:",
       "referral.manualPartner.nameRequired": "Name ist erforderlich.",
       "referral.manualPartner.createdMsg": "Partner erstellt! Empfehlungscode",
       "config.section.communication": "Kommunikation (Kanäle des Vertriebsassistenten)",
@@ -1564,6 +1692,23 @@
       "referral.table.activeCount": "有効な紹介数",
       "referral.table.currentTier": "現在の手数料率",
       "referral.empty": "保留中の紹介報酬はありません。",
+      "finance.tab.resellers": "🏷️ 販売代理店",
+      "resellers.section.title": "販売代理店（ホワイトラベル・ティア）",
+      "resellers.createBtn": "+ 代理店を作成",
+      "resellers.subtitle": "各代理店は独自のブランドと価格でN件のクライアント施設を管理します。作成後、コードを共有してもらい、\"施設を追加\"を使って既に紐づいたクライアントを作成してもらいましょう。",
+      "resellers.form.name": "名前",
+      "resellers.form.email": "メール（任意）",
+      "resellers.form.phone": "電話/WhatsApp（任意）",
+      "resellers.form.nameRequired": "名前は必須です。",
+      "resellers.table.name": "代理店",
+      "resellers.table.code": "コード",
+      "resellers.table.clients": "クライアント数",
+      "resellers.table.owner": "紐付け先",
+      "resellers.table.linked": "紐付け済み",
+      "resellers.table.linkBtn": "紐付ける",
+      "resellers.empty": "登録済みの代理店はまだありません。",
+      "resellers.createdMsg": "代理店を作成しました！コード",
+      "resellers.linkPrompt": "紐付けるStayFlowユーザーのメールアドレス：",
       "referral.manualPartner.nameRequired": "名前は必須です。",
       "referral.manualPartner.createdMsg": "パートナーを作成しました！紹介コード",
       "config.section.communication": "コミュニケーション（営業アシスタントのチャネル）",
@@ -1826,6 +1971,23 @@
       "referral.table.activeCount": "Segnalazioni attive",
       "referral.table.currentTier": "Commissione attuale",
       "referral.empty": "Nessuna commissione di segnalazione in sospeso.",
+      "finance.tab.resellers": "🏷️ Rivenditori",
+      "resellers.section.title": "Rivenditori (livello white-label)",
+      "resellers.createBtn": "+ Crea rivenditore",
+      "resellers.subtitle": "Ogni rivenditore gestisce N strutture clienti con marchio e prezzo propri. Dopo la creazione, condividi il codice per permettergli di registrarsi e usare \"Aggiungi struttura\" per creare clienti già collegati.",
+      "resellers.form.name": "Nome",
+      "resellers.form.email": "E-mail (opzionale)",
+      "resellers.form.phone": "Telefono/WhatsApp (opzionale)",
+      "resellers.form.nameRequired": "Il nome è obbligatorio.",
+      "resellers.table.name": "Rivenditore",
+      "resellers.table.code": "Codice",
+      "resellers.table.clients": "Clienti",
+      "resellers.table.owner": "Collegato a",
+      "resellers.table.linked": "Collegato",
+      "resellers.table.linkBtn": "Collega",
+      "resellers.empty": "Nessun rivenditore ancora registrato.",
+      "resellers.createdMsg": "Rivenditore creato! Codice",
+      "resellers.linkPrompt": "E-mail dell'utente StayFlow da collegare:",
       "referral.manualPartner.nameRequired": "Il nome è obbligatorio.",
       "referral.manualPartner.createdMsg": "Partner creato! Codice di segnalazione",
       "config.section.communication": "Comunicazione (canali dell'assistente commerciale)",
@@ -2088,6 +2250,23 @@
       "referral.table.activeCount": "有效推荐数",
       "referral.table.currentTier": "当前佣金比例",
       "referral.empty": "没有待结算的推荐佣金。",
+      "finance.tab.resellers": "🏷️ 经销商",
+      "resellers.section.title": "经销商（白标层级）",
+      "resellers.createBtn": "+ 创建经销商",
+      "resellers.subtitle": "每个经销商可管理多个拥有自己品牌和价格的客户住宿。创建后，把代码分享给对方，让其注册并使用\"添加住宿\"来创建已关联的客户。",
+      "resellers.form.name": "姓名",
+      "resellers.form.email": "邮箱（可选）",
+      "resellers.form.phone": "电话/WhatsApp（可选）",
+      "resellers.form.nameRequired": "姓名为必填项。",
+      "resellers.table.name": "经销商",
+      "resellers.table.code": "代码",
+      "resellers.table.clients": "客户数",
+      "resellers.table.owner": "关联至",
+      "resellers.table.linked": "已关联",
+      "resellers.table.linkBtn": "关联",
+      "resellers.empty": "尚未注册任何经销商。",
+      "resellers.createdMsg": "经销商已创建！代码",
+      "resellers.linkPrompt": "要关联的StayFlow用户邮箱：",
       "referral.manualPartner.nameRequired": "姓名为必填项。",
       "referral.manualPartner.createdMsg": "合作伙伴已创建！推荐码",
       "config.section.communication": "沟通渠道（商务助理频道）",
@@ -2349,6 +2528,23 @@
       "referral.table.activeCount": "Активные рефералы",
       "referral.table.currentTier": "Текущая комиссия",
       "referral.empty": "Нет ожидающих выплат по рекомендациям.",
+      "finance.tab.resellers": "🏷️ Реселлеры",
+      "resellers.section.title": "Реселлеры (White-label уровень)",
+      "resellers.createBtn": "+ Создать реселлера",
+      "resellers.subtitle": "Каждый реселлер управляет N клиентскими объектами с собственным брендом и ценой. После создания передайте код, чтобы он зарегистрировался и использовал «Добавить объект» для создания уже привязанных клиентов.",
+      "resellers.form.name": "Имя",
+      "resellers.form.email": "Эл. почта (необязательно)",
+      "resellers.form.phone": "Телефон/WhatsApp (необязательно)",
+      "resellers.form.nameRequired": "Имя обязательно.",
+      "resellers.table.name": "Реселлер",
+      "resellers.table.code": "Код",
+      "resellers.table.clients": "Клиенты",
+      "resellers.table.owner": "Привязан к",
+      "resellers.table.linked": "Привязан",
+      "resellers.table.linkBtn": "Привязать",
+      "resellers.empty": "Пока нет зарегистрированных реселлеров.",
+      "resellers.createdMsg": "Реселлер создан! Код",
+      "resellers.linkPrompt": "Email пользователя StayFlow для привязки:",
       "referral.manualPartner.nameRequired": "Имя обязательно.",
       "referral.manualPartner.createdMsg": "Партнёр создан! Код рекомендации",
       "config.section.communication": "Коммуникация (каналы коммерческого ассистента)",
@@ -2611,6 +2807,23 @@
       "referral.table.activeCount": "활성 추천 수",
       "referral.table.currentTier": "현재 수수료율",
       "referral.empty": "대기 중인 추천 수수료가 없습니다.",
+      "finance.tab.resellers": "🏷️ 리셀러",
+      "resellers.section.title": "리셀러 (화이트라벨 등급)",
+      "resellers.createBtn": "+ 리셀러 생성",
+      "resellers.subtitle": "각 리셀러는 자체 브랜드와 가격으로 여러 고객 숙소를 관리합니다. 생성 후 코드를 전달하면 리셀러가 가입하고 \"숙소 추가\"를 사용해 이미 연결된 고객을 만들 수 있습니다.",
+      "resellers.form.name": "이름",
+      "resellers.form.email": "이메일 (선택)",
+      "resellers.form.phone": "전화/WhatsApp (선택)",
+      "resellers.form.nameRequired": "이름은 필수입니다.",
+      "resellers.table.name": "리셀러",
+      "resellers.table.code": "코드",
+      "resellers.table.clients": "고객 수",
+      "resellers.table.owner": "연결 대상",
+      "resellers.table.linked": "연결됨",
+      "resellers.table.linkBtn": "연결",
+      "resellers.empty": "등록된 리셀러가 아직 없습니다.",
+      "resellers.createdMsg": "리셀러가 생성되었습니다! 코드",
+      "resellers.linkPrompt": "연결할 StayFlow 사용자 이메일:",
       "referral.manualPartner.nameRequired": "이름은 필수입니다.",
       "referral.manualPartner.createdMsg": "파트너가 생성되었습니다! 추천 코드",
       "config.section.communication": "커뮤니케이션 (영업 어시스턴트 채널)",
@@ -2873,6 +3086,23 @@
       "referral.table.activeCount": "Actieve verwijzingen",
       "referral.table.currentTier": "Huidige commissie",
       "referral.empty": "Geen openstaande verwijzingscommissie.",
+      "finance.tab.resellers": "🏷️ Resellers",
+      "resellers.section.title": "Resellers (white-label niveau)",
+      "resellers.createBtn": "+ Reseller aanmaken",
+      "resellers.subtitle": "Elke reseller beheert N klantaccommodaties met een eigen merk en prijs. Deel na het aanmaken de code zodat diegene zich kan registreren en \"Accommodatie toevoegen\" kan gebruiken om al gekoppelde klanten aan te maken.",
+      "resellers.form.name": "Naam",
+      "resellers.form.email": "E-mail (optioneel)",
+      "resellers.form.phone": "Telefoon/WhatsApp (optioneel)",
+      "resellers.form.nameRequired": "Naam is verplicht.",
+      "resellers.table.name": "Reseller",
+      "resellers.table.code": "Code",
+      "resellers.table.clients": "Klanten",
+      "resellers.table.owner": "Gekoppeld aan",
+      "resellers.table.linked": "Gekoppeld",
+      "resellers.table.linkBtn": "Koppelen",
+      "resellers.empty": "Nog geen resellers geregistreerd.",
+      "resellers.createdMsg": "Reseller aangemaakt! Code",
+      "resellers.linkPrompt": "E-mail van de te koppelen StayFlow-gebruiker:",
       "referral.manualPartner.nameRequired": "Naam is verplicht.",
       "referral.manualPartner.createdMsg": "Partner aangemaakt! Verwijzingscode",
       "config.section.communication": "Communicatie (kanalen van de commerciële assistent)",
@@ -3207,6 +3437,8 @@
     document.getElementById("financeTabOverview").style.display = sub === "overview" ? "" : "none";
     document.getElementById("financeTabExpenses").style.display = sub === "expenses" ? "" : "none";
     document.getElementById("financeTabReferral").style.display = sub === "referral" ? "" : "none";
+    document.getElementById("financeTabResellers").style.display = sub === "resellers" ? "" : "none";
+    if(sub === "resellers") loadResellers();
   };
 
   // Re-renderiza tudo que foi montado via JS (nao pega pelo data-i18n
@@ -4135,6 +4367,97 @@
     }catch(e){
       console.warn("Erro ao criar parceiro de indicação:", e);
       msg.textContent = "Erro de conexão.";
+    }
+  };
+
+  // ===== Revendedores (tier white-label) =====
+  async function loadResellers(){
+    try{
+      const res = await fetch("/stayflow-admin/resellers", { credentials: "same-origin" });
+      const data = await res.json();
+      if(!data.success) return;
+
+      const tbody = document.getElementById("resellerTableBody");
+      const empty = document.getElementById("resellerEmpty");
+      if(!data.resellers.length){
+        tbody.innerHTML = "";
+        empty.style.display = "";
+        return;
+      }
+      empty.style.display = "none";
+      tbody.innerHTML = data.resellers.map(r => `
+        <tr>
+          <td>${r.name}${r.contact_email ? `<div style="color:var(--muted);font-size:11px">${r.contact_email}</div>` : ""}</td>
+          <td>${r.reseller_code}</td>
+          <td>${r.client_hostel_count}</td>
+          <td>${r.owner_user_id ? AT("resellers.table.linked") : `<button type="button" class="btn secondary" style="padding:4px 10px;font-size:12px" onclick="claimResellerOwner(${r.id})">${AT("resellers.table.linkBtn")}</button>`}</td>
+          <td></td>
+        </tr>`).join("");
+    }catch(e){
+      console.warn("Erro ao carregar revendedores:", e);
+    }
+  }
+
+  window.openCreateResellerForm = function(){
+    document.getElementById("resellerName").value = "";
+    document.getElementById("resellerEmail").value = "";
+    document.getElementById("resellerPhone").value = "";
+    document.getElementById("resellerFormMessage").textContent = "";
+    document.getElementById("resellerForm").style.display = "block";
+  };
+
+  window.closeCreateResellerForm = function(){
+    document.getElementById("resellerForm").style.display = "none";
+  };
+
+  window.submitCreateReseller = async function(){
+    const name = document.getElementById("resellerName").value.trim();
+    const email = document.getElementById("resellerEmail").value.trim();
+    const phone = document.getElementById("resellerPhone").value.trim();
+    const msg = document.getElementById("resellerFormMessage");
+    if(!name){
+      msg.textContent = AT("resellers.form.nameRequired");
+      return;
+    }
+    try{
+      const res = await fetch("/stayflow-admin/resellers", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, contact_email: email || null, contact_phone: phone || null }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        msg.textContent = data.message || "Erro";
+        return;
+      }
+      closeCreateResellerForm();
+      alert(`${AT("resellers.createdMsg")}: ${data.reseller.reseller_code}`);
+      loadResellers();
+    }catch(e){
+      console.warn("Erro ao criar revendedor:", e);
+      msg.textContent = "Erro de conexão.";
+    }
+  };
+
+  window.claimResellerOwner = async function(resellerId){
+    const email = prompt(AT("resellers.linkPrompt"));
+    if(!email) return;
+    try{
+      const res = await fetch(`/stayflow-admin/resellers/${resellerId}/claim-owner`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || "Erro");
+        return;
+      }
+      loadResellers();
+    }catch(e){
+      console.warn("Erro ao vincular revendedor:", e);
     }
   };
 

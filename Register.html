@@ -48,6 +48,7 @@ Plano selecionado: <strong id='planBadgeName'></strong> — <span id='planBadgeP
 const PLAN_LABELS={starter:['Starter','US$ 89/mês'],business:['Business','US$ 349/mês'],enterprise:['Enterprise','US$ 699/mês']};
 const selectedPlan=new URLSearchParams(location.search).get('plan');
 const referralCode=new URLSearchParams(location.search).get('ref');
+const resellerCode=new URLSearchParams(location.search).get('reseller');
 if(selectedPlan && PLAN_LABELS[selectedPlan]){
   planBadgeName.textContent=PLAN_LABELS[selectedPlan][0];
   planBadgePrice.textContent=PLAN_LABELS[selectedPlan][1]+' (30 dias grátis pra testar)';
@@ -106,6 +107,7 @@ const p={
   agency_subcategory:agencySubcategoryValue,
   plan_name:(selectedPlan && PLAN_LABELS[selectedPlan])?selectedPlan:null,
   referral_code:referralCode||null,
+  reseller_code:resellerCode||null,
 };
 const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
 const d=await r.json();
