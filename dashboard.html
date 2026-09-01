@@ -4624,9 +4624,48 @@ async function deleteRoleConfirm(roleId){
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid #ffffff12">
           ${_billingSubscriptionActionsHtml(data)}
         </div>
+        ${data.is_reseller_managed ? _billingResellerPriceHtml(data) : ""}
       `;
     }catch(e){
       console.warn("Erro ao carregar resumo de Billing:", e);
+    }
+  };
+
+  function _billingResellerPriceHtml(data){
+    return `
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid #ffffff12">
+        <p style="font-size:13px;font-weight:800;margin:0 0 6px">${T('settings.billing.resellerPrice.title', '🏷️ Preço próprio (revendedor)')}</p>
+        <p style="color:var(--muted);font-size:12px;margin:0 0 8px">${T('settings.billing.resellerPrice.desc', 'Deixe em branco pra usar o preço de tabela. Só o revendedor responsável por esta hospedagem pode alterar.')}</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="number" id="resellerCustomPriceInput" min="1" step="0.01" placeholder="ARS" value="${data.custom_price_ars ?? ""}" style="max-width:160px">
+          <button class="btn secondary" type="button" onclick="saveResellerCustomPrice()">${T('settings.billing.resellerPrice.saveBtn', 'Salvar preço')}</button>
+        </div>
+        <div id="resellerCustomPriceMessage" class="generic-modal-message" style="margin-top:8px"></div>
+      </div>
+    `;
+  }
+
+  window.saveResellerCustomPrice = async function(){
+    const input = document.getElementById("resellerCustomPriceInput");
+    const msg = document.getElementById("resellerCustomPriceMessage");
+    const value = input.value.trim();
+    if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+    try{
+      const res = await fetch("/billing/reseller-price", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ custom_price_ars: value ? Number(value) : null }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        if(msg){ msg.textContent = data.message || T('settings.billing.resellerPrice.failed', 'Não foi possível salvar o preço.'); msg.classList.add("error"); }
+        return;
+      }
+      if(msg){ msg.textContent = T('settings.billing.resellerPrice.saved', 'Preço salvo.'); msg.classList.add("success"); }
+    }catch(e){
+      if(msg){ msg.textContent = T('common.connectionError', 'Erro de conexão.'); msg.classList.add("error"); }
     }
   };
 
