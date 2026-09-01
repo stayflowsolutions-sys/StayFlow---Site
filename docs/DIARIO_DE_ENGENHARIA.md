@@ -8246,3 +8246,58 @@ não afetado; `list_resellers()` conta as 2 hospedagens-cliente certas.
 
 **Próximo**: pilar 3 (preço próprio do revendedor + ledger de margem),
 depois pilar 4 (resolução por domínio).
+
+### Tier white-label pra revenda — pilar 3 de 4: preço próprio + margem (v1.84.0)
+
+Nova coluna `billing.custom_price_ars` (nullable) — quando setada,
+substitui `PLAN_PRICES_ARS[plan_name]` na hora de `POST /billing/subscribe`.
+Dinheiro continua caindo 100% na conta MP da própria StayFlow (nenhum
+processador novo, nenhuma conta MP de revendedor) — a margem (o que o
+cliente pagou menos o preço de tabela) vira registro contábil num
+ledger novo, `reseller_margin_ledger`, clonado quase 1:1 do já
+existente `subscription_referral_ledger` (accrued/paid_out, repasse
+manual, idempotente por `mp_payment_id`) — deliberadamente NÃO
+reaproveitado, são conceitos diferentes (indicação paga % sobre preço
+PADRÃO; revendedor tem preço PRÓPRIO, a margem pode até ser negativa
+se ele cobrar menos que o preço de tabela, testado explicitamente).
+`create_preapproval` (`mercadopago_billing_service.py`) ganhou
+`reason_override` — hospedagem white-label não mostra mais "StayFlow -
+Plano X" no checkout/extrato do Mercado Pago do cliente final.
+
+**Achado de segurança real, encontrado e corrigido durante a própria
+implementação, antes de qualquer teste**: o plano aprovado dizia só
+"gated `@require_permission('billing')`" pra rota de preço
+customizado — mas o DONO de verdade de uma hospedagem-cliente
+(caminho `/register?reseller=CODE`, v1.83.0) também tem `billing` via
+`Admin` completo na própria conta. Sem checagem a mais, o próprio
+cliente final poderia ter setado o preço da PRÓPRIA assinatura pra
+qualquer valor (ex: R$1) — um jeito trivial de fraudar a cobrança.
+Corrigido antes de escrever qualquer teste: `PUT /billing/reseller-price`
+agora exige, além da permissão, que quem está logado seja o DONO do
+`reseller_id` daquela hospedagem específica
+(`get_reseller_by_owner_user_id(user) == hostel["reseller_id"]`) — nem
+o cliente final, nem um revendedor de OUTRO cliente conseguem mexer.
+Os dois cenários (cliente tentando, revendedor errado tentando) viraram
+teste isolado dedicado antes de considerar a feature pronta.
+
+UI: novo bloco "🏷️ Preço próprio (revendedor)" dentro do card de
+Billing em Configurações — só aparece quando `GET /billing` devolve
+`is_reseller_managed=true`; campo vazio = volta pro preço de tabela.
+Painel "Revendedores" (`admin.html`) ganhou 2 colunas (cobranças,
+margem devida) + botão "Marcar como pago", mesmo padrão visual já
+usado no quadro de indicação. 5 chaves i18n novas em
+`i18n-dashboard-data.js` (1.139→1.144) + 2 no `ADMIN_I18N` (276→278).
+
+Testado em banco isolado e via Flask test client, ponta a ponta: dono
+real do cliente bloqueado de setar o próprio preço; hospedagem sem
+revendedor bloqueada; revendedor de OUTRO cliente bloqueado
+(isolamento entre revendedores); revendedor DONO consegue setar
+normalmente; valor inválido (≤0) rejeitado; margem calculada certa via
+simulação de webhook com `mock.patch` no `get_authorized_payment`
+(inclusive o caso de margem NEGATIVA, preço customizado abaixo do de
+tabela); replay da mesma notificação não duplica (idempotência);
+hospedagem independente nunca gera linha no ledger de margem; payout
+marca como pago sem duplicar.
+
+**Próximo**: pilar 4 (resolução por domínio) — encerra o tier
+white-label.
