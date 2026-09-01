@@ -51,6 +51,7 @@
       <div>
         <h1 id="hostelTitle">—</h1>
         <p id="hostelSub">Carregando...</p>
+        <p id="hostelOwnerLine" style="color:var(--muted);font-size:13px;margin-top:4px"></p>
       </div>
       <div style="display:flex;align-items:center;gap:14px">
         <button type="button" id="testAccountBtn" onclick="toggleTestAccount()" style="background:transparent;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-weight:700;padding:10px 16px;font-size:13px;cursor:pointer">☆ Marcar como minha conta de teste</button>
@@ -280,6 +281,17 @@
         document.getElementById("hostelTitle").innerHTML = `${d.hostel_name} <span class="status-pill ${pillClass}">${statusLabel.toUpperCase()}</span>`;
         const kindTag = d.account_kind === "agency" ? ` · ✈️ Agência (${d.agency_category_label || d.agency_category || "—"})` : "";
         document.getElementById("hostelSub").textContent = `${planLabel(d.plan_name)}${trialText}${kindTag} · ${d.hostel_email || "sem e-mail"}${d.hostel_phone ? " · " + d.hostel_phone : ""}`;
+
+        // Dados de quem se cadastrou de verdade (nao so o e-mail da
+        // hospedagem) - achado ao vivo 2026-09-01: essa tela nunca
+        // mostrava nome/telefone/endereco do cliente, so o e-mail.
+        const ownerParts = [
+          `👤 ${d.owner_name || "nome não informado"}`,
+          d.owner_email ? `✉️ ${d.owner_email}` : null,
+          d.hostel_phone ? `📞 ${d.hostel_phone}` : "📞 telefone não informado",
+          d.hostel_address ? `📍 ${d.hostel_address}` : "📍 endereço não informado",
+        ].filter(Boolean);
+        document.getElementById("hostelOwnerLine").textContent = ownerParts.join("  ·  ");
 
         document.getElementById(d.account_kind === "agency" ? "navAgencias" : "navHospedagens").classList.add("active");
 

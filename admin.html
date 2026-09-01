@@ -621,6 +621,8 @@
             <h3 id="referralPartnerDetailsTitle" style="margin:0;font-size:14px" data-i18n="referral.details.title">Detalhes do parceiro</h3>
             <button type="button" class="btn secondary" style="padding:4px 12px;font-size:12px" onclick="closeReferralPartnerDetails()" data-i18n="expenses.form.cancel">Cancelar</button>
           </div>
+          <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.payoutTitle">💳 Dados de recebimento</h4>
+          <div id="referralPartnerDetailsPayout" style="margin-bottom:14px;font-size:12px;color:var(--muted)"></div>
           <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.hostelsTitle">🏨 Hospedagens indicadas</h4>
           <div id="referralPartnerDetailsHostels" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:12px"></div>
           <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.historyTitle">📋 Histórico de lançamentos</h4>
@@ -991,6 +993,9 @@
       "referral.details.title": "Detalhes do parceiro",
       "referral.details.viewBtn": "Ver detalhes",
       "referral.details.hostelsTitle": "🏨 Hospedagens indicadas",
+      "referral.details.payoutTitle": "💳 Dados de recebimento",
+      "referral.details.payoutBank": "Transferência bancária",
+      "referral.details.payoutEmpty": "Nenhum dado de recebimento cadastrado ainda.",
       "referral.details.historyTitle": "📋 Histórico de lançamentos",
       "referral.details.hostelsEmpty": "Nenhuma hospedagem indicada ainda.",
       "referral.details.historyEmpty": "Nenhum lançamento ainda.",
@@ -1158,6 +1163,9 @@
       "referral.details.title": "Partner details",
       "referral.details.viewBtn": "View details",
       "referral.details.hostelsTitle": "🏨 Referred hostels",
+      "referral.details.payoutTitle": "💳 Payout details",
+      "referral.details.payoutBank": "Bank transfer",
+      "referral.details.payoutEmpty": "No payout details registered yet.",
       "referral.details.historyTitle": "📋 Ledger history",
       "referral.details.hostelsEmpty": "No hostel referred yet.",
       "referral.details.historyEmpty": "No entries yet.",
@@ -1325,6 +1333,9 @@
       "referral.details.title": "Detalles del socio",
       "referral.details.viewBtn": "Ver detalles",
       "referral.details.hostelsTitle": "🏨 Hospedajes indicados",
+      "referral.details.payoutTitle": "💳 Datos de cobro",
+      "referral.details.payoutBank": "Transferencia bancaria",
+      "referral.details.payoutEmpty": "Todavía no hay datos de cobro registrados.",
       "referral.details.historyTitle": "📋 Historial de movimientos",
       "referral.details.hostelsEmpty": "Ningún hospedaje indicado todavía.",
       "referral.details.historyEmpty": "Ningún movimiento todavía.",
@@ -1492,6 +1503,9 @@
       "referral.details.title": "Détails du partenaire",
       "referral.details.viewBtn": "Voir les détails",
       "referral.details.hostelsTitle": "🏨 Hébergements parrainés",
+      "referral.details.payoutTitle": "💳 Coordonnées de paiement",
+      "referral.details.payoutBank": "Virement bancaire",
+      "referral.details.payoutEmpty": "Aucune coordonnée de paiement enregistrée pour le moment.",
       "referral.details.historyTitle": "📋 Historique des mouvements",
       "referral.details.hostelsEmpty": "Aucun hébergement parrainé pour le moment.",
       "referral.details.historyEmpty": "Aucun mouvement pour le moment.",
@@ -1659,6 +1673,9 @@
       "referral.details.title": "Partnerdetails",
       "referral.details.viewBtn": "Details ansehen",
       "referral.details.hostelsTitle": "🏨 Empfohlene Unterkünfte",
+      "referral.details.payoutTitle": "💳 Auszahlungsdaten",
+      "referral.details.payoutBank": "Banküberweisung",
+      "referral.details.payoutEmpty": "Noch keine Auszahlungsdaten hinterlegt.",
       "referral.details.historyTitle": "📋 Buchungsverlauf",
       "referral.details.hostelsEmpty": "Noch keine Unterkunft empfohlen.",
       "referral.details.historyEmpty": "Noch keine Buchungen.",
@@ -1829,6 +1846,9 @@
       "referral.details.title": "パートナー詳細",
       "referral.details.viewBtn": "詳細を見る",
       "referral.details.hostelsTitle": "🏨 紹介した宿泊施設",
+      "referral.details.payoutTitle": "💳 受取情報",
+      "referral.details.payoutBank": "銀行振込",
+      "referral.details.payoutEmpty": "まだ受取情報が登録されていません。",
       "referral.details.historyTitle": "📋 明細履歴",
       "referral.details.hostelsEmpty": "まだ紹介した施設はありません。",
       "referral.details.historyEmpty": "まだ明細はありません。",
@@ -2124,6 +2144,9 @@
       "referral.details.title": "Dettagli del partner",
       "referral.details.viewBtn": "Vedi dettagli",
       "referral.details.hostelsTitle": "🏨 Strutture segnalate",
+      "referral.details.payoutTitle": "💳 Dati di pagamento",
+      "referral.details.payoutBank": "Bonifico bancario",
+      "referral.details.payoutEmpty": "Nessun dato di pagamento registrato ancora.",
       "referral.details.historyTitle": "📋 Storico movimenti",
       "referral.details.hostelsEmpty": "Nessuna struttura segnalata ancora.",
       "referral.details.historyEmpty": "Nessun movimento ancora.",
@@ -2419,6 +2442,9 @@
       "referral.details.title": "合作伙伴详情",
       "referral.details.viewBtn": "查看详情",
       "referral.details.hostelsTitle": "🏨 已推荐住宿",
+      "referral.details.payoutTitle": "💳 收款信息",
+      "referral.details.payoutBank": "银行转账",
+      "referral.details.payoutEmpty": "尚未登记收款信息。",
       "referral.details.historyTitle": "📋 结算历史",
       "referral.details.hostelsEmpty": "尚未推荐任何住宿。",
       "referral.details.historyEmpty": "尚无记录。",
@@ -2713,6 +2739,9 @@
       "referral.details.title": "Детали партнёра",
       "referral.details.viewBtn": "Посмотреть детали",
       "referral.details.hostelsTitle": "🏨 Рекомендованные объекты",
+      "referral.details.payoutTitle": "💳 Реквизиты для выплат",
+      "referral.details.payoutBank": "Банковский перевод",
+      "referral.details.payoutEmpty": "Реквизиты для выплат пока не указаны.",
       "referral.details.historyTitle": "📋 История начислений",
       "referral.details.hostelsEmpty": "Пока нет рекомендованных объектов.",
       "referral.details.historyEmpty": "Пока нет записей.",
@@ -3008,6 +3037,9 @@
       "referral.details.title": "파트너 상세정보",
       "referral.details.viewBtn": "상세보기",
       "referral.details.hostelsTitle": "🏨 추천한 숙소",
+      "referral.details.payoutTitle": "💳 수령 정보",
+      "referral.details.payoutBank": "은행 송금",
+      "referral.details.payoutEmpty": "아직 등록된 수령 정보가 없습니다.",
       "referral.details.historyTitle": "📋 정산 내역",
       "referral.details.hostelsEmpty": "아직 추천한 숙소가 없습니다.",
       "referral.details.historyEmpty": "아직 내역이 없습니다.",
@@ -3303,6 +3335,9 @@
       "referral.details.title": "Partnerdetails",
       "referral.details.viewBtn": "Details bekijken",
       "referral.details.hostelsTitle": "🏨 Doorverwezen accommodaties",
+      "referral.details.payoutTitle": "💳 Uitbetalingsgegevens",
+      "referral.details.payoutBank": "Bankoverschrijving",
+      "referral.details.payoutEmpty": "Nog geen uitbetalingsgegevens geregistreerd.",
       "referral.details.historyTitle": "📋 Overzicht",
       "referral.details.hostelsEmpty": "Nog geen accommodatie doorverwezen.",
       "referral.details.historyEmpty": "Nog geen items.",
@@ -4612,6 +4647,12 @@
       const res = await fetch(`/stayflow-admin/referral-partners/${partnerId}/details`, { credentials: "same-origin" });
       const data = await res.json();
       if(!data.success) return;
+
+      const payoutLabels = { mercadopago: "Mercado Pago", pix: "PIX", bank: AT("referral.details.payoutBank") };
+      const payoutEl = document.getElementById("referralPartnerDetailsPayout");
+      payoutEl.textContent = data.payout_method
+        ? `${payoutLabels[data.payout_method] || data.payout_method}${data.payout_details ? " — " + data.payout_details : ""}`
+        : AT("referral.details.payoutEmpty");
 
       const hostelsEl = document.getElementById("referralPartnerDetailsHostels");
       hostelsEl.innerHTML = data.referred_hostels.length
