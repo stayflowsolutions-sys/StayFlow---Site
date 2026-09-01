@@ -2205,6 +2205,10 @@ async function deleteRoleConfirm(roleId){
           <div class="span-12">
             <input type="text" id="brandFaviconUrlInput" data-i18n-placeholder="settings.branding.faviconUrlPlaceholder" placeholder="URL do favicon (opcional)">
           </div>
+          <div class="span-12">
+            <input type="text" id="brandCustomDomainInput" data-i18n-placeholder="settings.branding.customDomainPlaceholder" placeholder="Domínio próprio (opcional, ex: painel.suamarca.com)">
+            <p style="color:var(--muted);font-size:11px;margin:4px 0 0" data-i18n="settings.branding.customDomainHint">O código já reconhece o domínio assim que apontado — configurar o DNS e cadastrar o domínio no servidor continua sendo manual, fale com a StayFlow.</p>
+          </div>
         </div>
 
         <div id="brandingSettingsMessage" class="generic-modal-message" style="margin-top:10px"></div>
@@ -11206,10 +11210,12 @@ window.uploadGuestDocumentUI = async function(guestId){
     const nameInput = document.getElementById("brandDisplayNameInput");
     const colorInput = document.getElementById("brandPrimaryColorInput");
     const faviconInput = document.getElementById("brandFaviconUrlInput");
+    const domainInput = document.getElementById("brandCustomDomainInput");
     if(logoInput) logoInput.value = session.brand_logo_url || "";
     if(nameInput) nameInput.value = session.brand_display_name || "";
     if(colorInput) colorInput.value = session.brand_primary_color || "#0b84ff";
     if(faviconInput) faviconInput.value = session.brand_favicon_url || "";
+    if(domainInput) domainInput.value = session.custom_domain || "";
   }
 
   window.saveBrandingSettings = async function(){
@@ -11221,6 +11227,7 @@ window.uploadGuestDocumentUI = async function(guestId){
       brand_display_name: document.getElementById("brandDisplayNameInput")?.value.trim() || "",
       brand_primary_color: document.getElementById("brandPrimaryColorInput")?.value || "",
       brand_favicon_url: document.getElementById("brandFaviconUrlInput")?.value.trim() || "",
+      custom_domain: document.getElementById("brandCustomDomainInput")?.value.trim() || "",
     };
 
     try{

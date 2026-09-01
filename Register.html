@@ -49,6 +49,29 @@ const PLAN_LABELS={starter:['Starter','US$ 89/mês'],business:['Business','US$ 3
 const selectedPlan=new URLSearchParams(location.search).get('plan');
 const referralCode=new URLSearchParams(location.search).get('ref');
 const resellerCode=new URLSearchParams(location.search).get('reseller');
+
+// Marca propria (tier white-label, item 27, pilar 4) - resolve por
+// ?reseller=CODE (marca PADRAO do revendedor, ainda sem hospedagem-
+// cliente criada) OU por dominio (mesmo backend de Login.html) - nunca
+// quebra a pagina se nao houver nada.
+(async function applyPublicBranding(){
+  try{
+    const url = resellerCode ? `/public/hostel-branding?reseller=${encodeURIComponent(resellerCode)}` : "/public/hostel-branding";
+    const res = await fetch(url, { credentials: "same-origin" });
+    const data = await res.json();
+    const b = data.branding;
+    if(!b) return;
+    if(b.brand_logo_url) document.querySelectorAll(".brand img").forEach(img => { img.src = b.brand_logo_url; });
+    if(b.brand_display_name) document.title = document.title.replace("StayFlow", b.brand_display_name);
+    if(b.brand_primary_color) document.documentElement.style.setProperty("--blue", b.brand_primary_color);
+    if(b.brand_favicon_url){
+      const link = document.querySelector("link[rel~='icon']");
+      if(link) link.href = b.brand_favicon_url;
+    }
+  }catch(e){
+    console.warn("Erro ao carregar marca pública:", e);
+  }
+})();
 if(selectedPlan && PLAN_LABELS[selectedPlan]){
   planBadgeName.textContent=PLAN_LABELS[selectedPlan][0];
   planBadgePrice.textContent=PLAN_LABELS[selectedPlan][1]+' (30 dias grátis pra testar)';
