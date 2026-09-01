@@ -8035,3 +8035,66 @@ só também funciona na rota (retorna soma de 1, gate de visibilidade é
 só na UI); requisição sem sessão válida devolve 401. 4 chaves i18n
 novas (`allProperties.*`) nos 11 idiomas do `i18n-dashboard-data.js`
 (1126→1130).
+
+### Geolocalização no ponto de funcionário (v1.81.0)
+
+Próximo item da fila (26). O ponto de funcionário (`staff_attendance`,
+v1.71.0) tinha registrado geolocalização/biometria como "fora de
+escopo, deliberado" no mesmo pacote, com a razão explícita: "registro
+de horário, não vigilância de local". Investigação (agente Explore)
+antes de decidir o desenho confirmou dois achados: (1) `hostels` não
+tem NENHUMA coordenada nem endereço hoje (só nome/email/telefone +
+colunas de integração) - geofencing de verdade (bloquear ponto fora
+de um raio) exigiria um campo novo configurado pelo admin, que não
+existe; (2) `navigator.geolocation` e WebAuthn/biometria não são
+usados em NENHUM lugar do projeto - ambos seriam integração
+greenfield.
+
+Decisão: construir geolocalização (CAPTURA, não bloqueio) e deixar
+biometria de fora desta rodada. Razão técnica concreta pra adiar
+biometria: a única forma real num navegador é WebAuthn, que amarra a
+credencial biométrica a UM dispositivo + UMA conta de sistema
+operacional - o uso típico de ponto em hospedagem é um
+tablet/computador COMPARTILHADO na recepção, não o celular pessoal de
+cada funcionário, cenário em que WebAuthn não encaixa bem sem
+infraestrutura de credencial nenhuma hoje. Fica registrado pra reabrir
+se aparecer pedido concreto com o modelo de dispositivo claro.
+
+6 colunas novas em `staff_attendance` (nullable, `add_column_if_not_exists`,
+mesma convenção do resto do arquivo): `clock_in_lat`/`clock_in_lng`/
+`clock_in_accuracy_m` e as 3 equivalentes de `clock_out`. `clock_in()`/
+`clock_out()` (`database.py`) ganharam `lat`/`lng`/`accuracy_m`
+opcionais, validados por `_clean_geo_coords()` (fora de faixa vira
+`NULL` silenciosamente, nunca levanta erro) - o ponto NUNCA falha por
+causa da geo, só enriquece o registro quando disponível.
+`routes/scheduling.py::clock_in_route`/`clock_out_route` passam a ler
+`request.get_json(silent=True)` (antes a rota nunca lia corpo nenhum),
+mantendo compatibilidade total com quem nega a permissão do navegador
+(POST sem corpo continua funcionando idêntico a antes).
+
+Frontend: `toggleAttendance()` tenta `navigator.geolocation.getCurrentPosition()`
+com timeout de 5s antes do POST - sucesso inclui `{lat, lng, accuracy}`
+no corpo, falha/negação/timeout/API ausente segue sem corpo, sem
+nenhuma mudança visível pra quem nega a permissão. Histórico de ponto
+no modal de atividade do funcionário (`openMemberActivityLog`) ganhou
+link "📍 Ver local" abrindo `google.com/maps?q=LAT,LNG` em nova aba
+quando a coordenada existe - zero dependência de mapa nova. 1 chave
+i18n nova (`attendance.viewLocation`) nos 11 idiomas (1.130→1.131).
+
+Testado em banco isolado: ciclo entrada→saída com coordenadas
+diferentes em cada ponta grava certo; sem coordenadas grava `NULL`
+(retrocompatibilidade); lat/lng fora de faixa (ex: lat=999) e valor
+não-numérico são ignorados sem quebrar o ponto; e via Flask test
+client, `POST /scheduling/attendance/clock-in` com corpo JSON de geo
+grava as coordenadas certas, e a mesma rota SEM corpo (como o
+frontend sempre chamou até aqui) continua funcionando idêntico.
+Verificação end-to-end no navegador real (clicar permitir/negar o
+prompt de localização) não foi possível automatizar neste ambiente -
+recomendado um teste manual rápido pós-deploy.
+
+**Fora de escopo desta rodada**: geofencing/bloqueio de ponto fora de
+um raio (exige campo novo de coordenada do hostel, que não existe),
+biometria/WebAuthn (razão detalhada acima), geocodificação reversa
+(lat/lng → endereço legível - sem integração de mapa no projeto),
+edição de um registro de ponto já feito (continua fora, mesma decisão
+da v1.71.0).
