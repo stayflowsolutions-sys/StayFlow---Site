@@ -101,6 +101,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "Ready to turn guest conversations into revenue?",
     "final.text": "Book a demo and see how StayFlow can help your property answer faster, sell more and operate with less chaos.",
     "footer.brand": "StayFlow — AI Digital Manager for Hospitality",
+    "footer.becomePromoter": "Become a promoter and earn recurring commission",
     "footer.rights": "© 2026 StayFlow. All rights reserved."
   },
 
@@ -202,6 +203,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "Pronto para transformar conversas em receita?",
     "final.text": "Agende uma demo e veja como a StayFlow pode ajudar sua hospedagem a responder mais rápido, vender mais e operar com menos caos.",
     "footer.brand": "StayFlow — Gerente Digital com IA para Hotelaria",
+    "footer.becomePromoter": "Vire promotor e ganhe comissão recorrente",
     "footer.rights": "© 2026 StayFlow. Todos os direitos reservados."
   },
 
@@ -303,6 +305,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "¿Listo para transformar conversaciones en ingresos?",
     "final.text": "Agenda una demo y mira cómo StayFlow puede ayudar a tu alojamiento a responder más rápido, vender más y operar con menos caos.",
     "footer.brand": "StayFlow — Gerente Digital con IA para Hotelería",
+    "footer.becomePromoter": "Conviértete en promotor y gana comisión recurrente",
     "footer.rights": "© 2026 StayFlow. Todos los derechos reservados."
   },
 
@@ -404,6 +407,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "Prêt à transformer les conversations clients en revenus ?",
     "final.text": "Réservez une démo et découvrez comment StayFlow peut aider votre établissement à répondre plus vite, vendre plus et opérer avec moins de chaos.",
     "footer.brand": "StayFlow — Gestionnaire Digital IA pour l'Hôtellerie",
+    "footer.becomePromoter": "Devenez promoteur et gagnez une commission récurrente",
     "footer.rights": "© 2026 StayFlow. Tous droits réservés."
   },
 
@@ -505,6 +509,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "Bereit, Gästegespräche in Umsatz zu verwandeln?",
     "final.text": "Buchen Sie eine Demo und sehen Sie, wie StayFlow Ihrer Unterkunft helfen kann, schneller zu antworten, mehr zu verkaufen und mit weniger Chaos zu arbeiten.",
     "footer.brand": "StayFlow — KI Digital Manager für die Hotellerie",
+    "footer.becomePromoter": "Werden Sie Promotor und verdienen Sie wiederkehrende Provision",
     "footer.rights": "© 2026 StayFlow. Alle Rechte vorbehalten."
   },
 
@@ -606,6 +611,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "ゲストとの会話を収益に変える準備はできていますか？",
     "final.text": "デモを予約して、StayFlowが貴施設のより速い対応、より多くの販売、より少ない混乱での運営をどのように支援できるかご覧ください。",
     "footer.brand": "StayFlow — ホスピタリティ向けAIデジタルマネージャー",
+    "footer.becomePromoter": "プロモーターになって継続報酬を獲得",
     "footer.rights": "© 2026 StayFlow. 無断複写・転載を禁じます。"
   },
 
@@ -707,6 +713,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "Pronto a trasformare le conversazioni con gli ospiti in ricavi?",
     "final.text": "Prenota una demo e scopri come StayFlow può aiutare la tua struttura a rispondere più velocemente, vendere di più e operare con meno caos.",
     "footer.brand": "StayFlow — Manager Digitale IA per l'Ospitalità",
+    "footer.becomePromoter": "Diventa promotore e guadagna commissioni ricorrenti",
     "footer.rights": "© 2026 StayFlow. Tutti i diritti riservati."
   },
 
@@ -808,6 +815,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "准备好将客人对话转化为收入了吗？",
     "final.text": "预约演示，了解StayFlow如何帮助您的物业更快回复、提升销量并减少运营混乱。",
     "footer.brand": "StayFlow — 酒店业AI数字化管理者",
+    "footer.becomePromoter": "成为推广人，赚取持续佣金",
     "footer.rights": "© 2026 StayFlow. 保留所有权利。"
   },
 
@@ -909,6 +917,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "Готовы превратить переписки с гостями в доход?",
     "final.text": "Запишитесь на демонстрацию и узнайте, как StayFlow может помочь вашему объекту размещения отвечать быстрее, продавать больше и работать с меньшим хаосом.",
     "footer.brand": "StayFlow — цифровой менеджер с ИИ для гостиничного бизнеса",
+    "footer.becomePromoter": "Станьте промоутером и получайте регулярную комиссию",
     "footer.rights": "© 2026 StayFlow. Все права защищены."
   },
 
@@ -1010,6 +1019,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "게스트와의 대화를 매출로 전환할 준비가 되셨나요?",
     "final.text": "데모를 예약하고 StayFlow가 당신의 숙박시설이 더 빠르게 응답하고, 더 많이 판매하고, 더 적은 혼란 속에서 운영하도록 어떻게 돕는지 확인하세요.",
     "footer.brand": "StayFlow — 호스피탈리티를 위한 AI 디지털 매니저",
+    "footer.becomePromoter": "프로모터가 되어 반복 수수료를 받으세요",
     "footer.rights": "© 2026 StayFlow. 모든 권리 보유."
   },
 
@@ -1111,6 +1121,7 @@ const STAYFLOW_LANDING_I18N = {
     "final.title": "Klaar om gastgesprekken om te zetten in omzet?",
     "final.text": "Plan een demo en ontdek hoe StayFlow uw accommodatie kan helpen sneller te reageren, meer te verkopen en met minder chaos te werken.",
     "footer.brand": "StayFlow — AI Digitale Manager voor Gastvrijheid",
+    "footer.becomePromoter": "Word promotor en verdien terugkerende commissie",
     "footer.rights": "© 2026 StayFlow. Alle rechten voorbehouden."
   }
 };
