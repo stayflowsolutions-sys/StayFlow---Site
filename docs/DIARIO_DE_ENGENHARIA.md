@@ -9075,3 +9075,92 @@ parênteses/colchetes do `dashboard.html` conferido a cada edição
 `<div>` já documentado na v1.95.0 continuou exatamente igual) e
 `tools/check_i18n_parity.py` confirmando as mesmas 1199 chaves nos 11
 idiomas.
+
+### Tradução completa do Portfólio de Vendas e do onboarding (v1.97.0)
+
+A v1.96.0 tinha feito uma escolha deliberada de escopo, documentada
+explicitamente: traduzir todo o texto ESTRUTURAL (rótulos, botões,
+cabeçalhos) mas deixar o conteúdo longo do Portfólio de Vendas e os
+parágrafos do tour inicial só em português, pelo mesmo precedente já
+usado na v1.94.0. O usuário rejeitou essa escolha sem meio-termo:
+"quero que esteja tudo traduzido, tem que funcionar direito isso". Não
+é uma reclamação pra negociar escopo de novo - é uma instrução direta.
+Então esta versão existe pra reverter completamente aquela decisão e
+traduzir de verdade tudo que tinha ficado de fora.
+
+O volume aqui é bem maior que qualquer rodada anterior de i18n desta
+sessão: 20 slides do Portfólio de Vendas (4 setores × 5 slides, cada
+um com título + corpo + às vezes 4-5 bullets) e as 3 variantes do tour
+inicial do Dashboard (padrão/hospedagem, agência, promotor), mais as
+14 dicas de primeiro-acesso genéricas e as 5 do promotor. Pra manter
+isso gerenciável, o trabalho foi dividido em 5 scripts Python
+descartáveis sequenciais (um por setor do Portfólio + um pro
+onboarding inteiro), cada um rodado e verificado (`check_i18n_parity.py`)
+antes do próximo, em vez de um script gigante único mais arriscado de
+revisar. Ao todo, 104 chaves novas em 11 idiomas - a maior inserção de
+i18n numa versão só desde o início da disciplina de i18n nesta sessão.
+
+Decisão de arquitetura que valeu a pena documentar: em vez de
+acrescentar um campo `key` extra em cada um dos 20 objetos de slide
+(seria só mais um lugar pra errar/esquecer de manter sincronizado), a
+chave é montada na hora a partir do que JÁ existe -
+`"salesPortfolio." + portfolioCurrentSector + "." + slide.kind` - já
+que setor + tipo de slide (problem/solution/features/pitch/plans) já
+formam um caminho único por definição (cada setor tem exatamente um
+slide de cada kind). Isso ficou centralizado numa função só,
+`portfolioSlideText(slide)`, que devolve `{title, body, bullets}` já
+resolvidos via `T()` com o fallback em português original - tanto
+`renderPortfolioSlide()` (o que aparece na tela) quanto
+`askAboutPortfolioSlide()` (o que é mandado pro Ask StayFlow) chamam
+essa mesma função, então a pergunta enviada pra IA agora usa o texto
+JÁ traduzido pro idioma ativo, não mais o fallback em português fixo -
+inclusive o próprio template da pergunta ("Sobre \"{title}\": {context}
+- pode me explicar melhor...") virou uma chave traduzida
+(`salesPortfolio.askQuestionTemplate`) com placeholders.
+
+Pro onboarding, cada slide de `dashboardIntroSlides()` ganhou
+`titleKey`/`bodyKey` ao lado do `title`/`body` (fallback) já existente
+- mesma convenção `T(chave, fallback)` usada em todo o resto do
+arquivo. Um detalhe que economizou uma chave inteira: o slide
+"Opportunity Center" (mesmo nome em hospedagem e agência) reaproveita
+a chave `nav.opportunities` que já existe e já está traduzida nos 11
+idiomas pro menu lateral - zero motivo pra duplicar essa tradução só
+porque o texto aparece em outro lugar da tela. A mesma lógica se
+aplicou a `FEATURE_COACH_MARKS`/`FEATURE_COACH_MARKS_PROMOTER`: o
+título de cada dica (ex.: "Chats", "Financeiro", "Configurações") já é
+literalmente o mesmo texto do item de menu correspondente, então
+reaproveitou `nav.chats`, `nav.finance`, `nav.settings` etc direto -
+só o texto explicativo de cada dica precisou de chave nova
+(`onboarding.coach.<página>.text`). Isso quase cortou pela metade o
+número de chaves que esse bloco exigiria se cada dica tivesse ganho
+título E texto novos. Único cuidado necessário: "chats" e "settings"
+existem tanto na versão genérica quanto na do promotor com textos
+DIFERENTES - resolvido com um namespace separado
+(`onboarding.coach.promoter.chats.text` vs `onboarding.coach.chats.text`)
+pra essas duas chaves especificamente, evitando colisão.
+
+Verificação final em 3 camadas: `tools/check_i18n_parity.py` (as
+mesmas 1303 chaves nos 11 idiomas, contra as 1199 antes desta
+versão); balanceamento de chaves/parênteses/colchetes do
+`dashboard.html` depois de cada uma das 5 rodadas de edição; e um
+script de auditoria feito especificamente pra esta versão, que extrai
+TODO argumento de `T(...)` usado no arquivo inteiro (não só o que eu
+mexi) e compara contra o dicionário em português - confirmando que
+nenhuma chave nova desta versão OU da v1.96.0 ficou sem tradução.
+
+Esse último script revelou um achado que não é meu de resolver agora,
+mas que precisa ficar registrado e comunicado: sobraram cerca de 70
+chaves de `T(...)` usadas no `dashboard.html` que não existem no
+dicionário - todas de módulos que esta sessão nunca tocou (modais de
+"novo pedido" de Cozinha/Manutenção/Estacionamento/Segurança
+Patrimonial, cadastro de item do Portfólio de agência, conexão de
+Mercado Pago/Nuvemshop/WhatsApp). São textos que já rodavam há muito
+tempo com o fallback em português sempre ativo (a chave nunca existiu
+em idioma nenhum, nem no próprio português) - um gap de i18n real e
+pré-existente do sistema, não um efeito colateral de nada feito no
+painel do promotor. Sinalizado ao usuário explicitamente em vez de
+deixar escondido; fica como candidato claro pra uma rodada de i18n
+dedicada, separada do trabalho do promotor.
+
+Nenhuma mudança de backend/banco nesta versão - tudo
+`dashboard.html` + `i18n-dashboard-data.js`.
