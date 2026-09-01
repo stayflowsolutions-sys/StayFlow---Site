@@ -8790,3 +8790,113 @@ manda mensagem pro WhatsApp que o promotor eventualmente conectar -
 continua usando o mesmo fallback genérico de sempre, sem tratamento
 especial pra `account_kind='promoter'`; ajuste fica pra quando/se isso
 virar demanda real (hoje nenhum promotor conectou WhatsApp ainda).
+
+### Promotor para de ser tratado como hospedagem em 6 pontos + aba Indicações (v1.95.0)
+
+Sequência direta da v1.94.0. O usuário testou o painel do promotor ao
+vivo (usando "visitar painel" do `admin.html`, que loga como o próprio
+StayFlow Admin dentro da conta de outra pessoa) e trouxe 6 observações
+concretas: o link de indicação dentro do Dashboard estava "muito
+feio"/"analógico" e merecia virar aba própria chamada "Indicações";
+Opportunity Center, Hóspedes, Relatórios e Financeiro continuavam
+tratando a conta como se fosse uma hospedagem operando de verdade; e
+pediu uma revisão completa de Configurações, deixando só o que faz
+sentido pro promotor.
+
+Antes de mexer em qualquer HTML, valia entender por que essas telas
+ainda apareciam pro admin em visita, já que `PROMOTER_PERMISSIONS`
+(desde a v1.86.0) é estreita e não inclui `opportunities`/`guests`/
+`finance`/`reports`. A resposta estava em `build_session_payload()`
+(`routes/auth.py`): sempre que a sessão é "em visita"
+(`impersonating_from_hostel_id` setado, fluxo de `/impersonate` em
+`routes/stayflow_admin.py`), o código concede `permissions =
+ALL_PERMISSIONS` de propósito - um admin em visita precisa poder ver
+e mexer em qualquer tela pra dar suporte de verdade, não só nas que a
+conta visitada teria liberado sozinha. Isso é correto e não devia
+mudar. O problema é que vários botões de nav (`opportunities`,
+`guests`, `finance`, `reports`) nunca tinham ganhado um
+`data-required-account-kind` ou `data-hide-for-account-kind` - só
+dependiam da permissão pra decidir visibilidade
+(`hideNavItemsWithoutPermission()`). Então numa sessão normal de
+promotor eles já ficavam escondidos (permissão insuficiente), mas
+numa visita de admin reapareciam todos, porque a permissão de visita é
+sempre completa. `account_kind`, ao contrário da permissão, **é**
+sempre o valor real da hospedagem visitada, mesmo em modo visita (o
+payload monta `"account_kind": hostel["account_kind"]` incondicional-
+mente) - então a correção certa era gatear por `account_kind`, não
+mexer na regra de permissão de impersonation.
+
+Solução: os 4 botões (Opportunity Center/Hóspedes/Financeiro/
+Relatórios) ganharam `data-hide-for-account-kind="promoter"`, o mesmo
+atributo/mecanismo já criado na v1.94.0 pra esconder "Equipe" do menu
+do promotor sem tirar a permissão `team` (ainda necessária pro
+`check_team_permission_safety` não travar). Efeito colateral bom:
+esconder por `account_kind` em vez de só por permissão também deixa a
+UI coerente durante uma visita de admin, sem precisar de nenhuma
+lógica nova - o mesmo atributo resolve os dois casos.
+
+Configurações recebeu a revisão completa pedida: as abas Geral,
+Empresa, IA, Integrações e Billing (mais o atalho separado pra
+"Equipe" que existe dentro do próprio menu de Configurações, distinto
+do botão do menu lateral) ganharam o mesmo `data-hide-for-account-
+kind="promoter"`. Cada uma foi conferida individualmente antes de
+esconder: Geral/Empresa têm razão social, CUIT, endereço, fuso
+horário, moeda, check-in/check-out - tudo dado de operação de
+hospedagem; IA é configuração do atendimento automático a hóspede;
+Integrações (Beds24, webhook de saída, Mercado Pago) e o card
+principal de Billing já estavam com os cards internos individualmente
+escondidos desde versões anteriores (`data-required-account-kind`/
+`data-hide-for-account-kind`/`data-required-permission="billing"`,
+que o promotor não tem) - a aba em si só ficava visível vazia, o que é
+pior que escondida. Comunicação e Segurança continuam abertas de
+propósito: Comunicação é onde vive WhatsApp/Facebook/Instagram/
+notificações/respostas rápidas, que o próprio pedido original do
+promotor (v1.94.0) já cobria como necessário; Segurança (senha,
+sessões, 2FA) vale pra qualquer conta, promotor incluso. Como "Geral"
+(a aba padrão de fábrica ao abrir Configurações) ficou escondida pra
+essa conta, a função `switchSettingsSection()` - até então privada
+dentro da IIFE de Configurações - foi exposta em `window` e passou a
+ser chamada com `"comunicacao"` como aba inicial, condicionalmente,
+dentro do mesmo bloco de hidratação de sessão que já roda
+`applyHideForAccountKind()`.
+
+O link de indicação, que vivia dentro do Dashboard como uma caixa
+simples de `<input readonly>` + botão "Copiar" ao lado de 4 cards de
+KPI, virou página própria: nova aba "Indicações" (`#referrals`, nav
+gated por `data-required-permission="promoter"`, mesma regra da já
+existente "Portfólio de Vendas"). O link ganhou um cartão com fundo em
+gradiente sutil (azul StayFlow) e caixa em monoespaçado imitando um
+campo de código; a faixa de comissão ganhou uma barra de progresso
+visual até a próxima faixa, com o texto "Faltam N indicação(ões)
+ativa(s) pra chegar a X%" calculado a partir do `next_tier` que
+`_referral_partner_dashboard_payload()` já devolvia sem uso nenhum no
+frontend até agora (zero SQL novo); a lista de hospedagens indicadas
+ganhou `status-pill` colorido (verde pra `active`, azul pra
+`trialing`, vermelho pra `canceled`/`past_due`) reaproveitando as
+mesmas classes CSS já usadas no Opportunity Center, em vez do texto
+cinza simples de antes. O Dashboard do promotor ficou reduzido aos 4
+KPIs (faixa atual, indicações ativas, a receber, já recebido) + 3
+botões de atalho (Indicações/Chats/Portfólio de Vendas) - menos
+redundante com a nova aba, sem duplicar a lista de hospedagens em dois
+lugares com o mesmo id de elemento.
+
+2 chaves i18n novas (`nav.referrals`, `topbar.subtitle.referrals`) nos
+11 idiomas do `i18n-dashboard-data.js` (1.154→1.156), inseridas com o
+mesmo script Python descartável de sempre (âncora num texto vizinho já
+existente, indentação copiada, apagado depois de rodar
+`tools/check_i18n_parity.py` com sucesso). Testado sem precisar de
+banco isolado nem Flask test client - mudança 100% de frontend (HTML/
+JS/i18n), nenhuma rota nem tabela nova: balanceamento de chaves/
+parênteses/colchetes do `dashboard.html` conferido a cada edição;
+contagem de `<section>`/`<div>` comparada contra o HEAD anterior à
+sessão, confirmando que o delta de 1 tag já existente (não introduzido
+agora, provavelmente uma correspondência falsa de regex dentro de uma
+string/comentário JS em algum lugar do arquivo de 11 mil+ linhas)
+permaneceu exatamente igual antes e depois; `openPage()`/`updateTopbar()`
+conferidos como genéricos (sem lista fixa de ids de página), então a
+aba nova não precisou de nenhum código extra pra funcionar.
+
+Fora de escopo: não foi criada nenhuma lógica nova pra `account_kind`
+em `PAGE_LABELS`/`switchSettingsSection()` além do necessário pro
+promotor - outras contas (`lodging`/`agency`) continuam exatamente
+como estavam, sem nenhum comportamento alterado.
