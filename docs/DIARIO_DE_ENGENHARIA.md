@@ -8356,3 +8356,88 @@ v1.85.0 (domínio) - cada uma testada, publicada e documentada de forma
 independente, seguindo a decisão de escopo aprovada no início ("pode
 construir tudo", com as 5 fronteiras explícitas que definiram o que
 "tudo" significou nesta implementação).
+
+### Painel do promotor + account_kind='promoter' no cadastro (v1.86.0)
+
+Item ad-hoc (27b), não estava na fila. Surgiu ao vivo: o usuário
+mandou um print de uma pessoa (Caio Cruz) perguntando no Instagram
+como funciona indicar a StayFlow, e essa pessoa se auto-cadastrou via
+`ReferralPartner.html` (v1.79.0) durante a própria conversa - primeiro
+promotor externo real do produto. Isso expôs um gap real: o programa
+de indicação (v1.65.0-v1.79.0) sempre teve dois tipos de indicador -
+hostel cliente indicando outro (vê tudo no próprio dashboard) e
+promotor externo sem conta StayFlow (recebe `referral_code` mas
+NENHUM login pra acompanhar os próprios hotéis indicados/comissões -
+esse dado só existia no `admin.html` do Caio). Pedido do usuário:
+"Promotor" virar uma opção de verdade na hora de criar conta (junto
+com hospedagem/agência) e ganhar um painel próprio.
+
+Investigação rápida (grep direcionado, sem precisar de agente Explore
+- contexto já dominado da sessão) confirmou 2 pontos-chave antes de
+desenhar: (1) `account_kind` é validado como lista fechada só em 2
+lugares (`routes/auth.py::register()` e `add_hostel_to_account()`),
+resto do código (`create_identity_and_hostel`, `get_hostel`, etc.)
+já trata como TEXT livre, sem enum no banco - adicionar `'promoter'`
+é seguro; (2) `get_hostel_referral_stats()` (v1.65.0) já devolve
+EXATAMENTE o dado necessário (código, hospedagens indicadas, totais) -
+zero SQL novo pro core da feature, só extensão.
+
+**Decisão de arquitetura**: em vez de tentar encaixar "Promotor" dentro
+do `dashboard.html` gigante (11 mil+ linhas, dezenas de itens de nav
+gated por `data-required-account-kind`, alto risco de esquecer um gate
+e vazar UI de reserva/chat pra quem não deveria ver), nova página
+standalone **`PromoterDashboard.html`** - mesmo espírito de
+`ReferralPartner.html`/`Login.html`/`Register.html`, completamente
+isolada do SPA principal. `Login.html::finishLogin()` redireciona pra
+ela quando `account_kind === 'promoter'`, em vez de `/app`.
+
+Conta promotor é, por baixo dos panos, uma linha em `hostels` como
+qualquer outra (reaproveitando 100% sessão/login/multi-tenant) mas com
+papel estreito: `create_identity_and_hostel` sempre cria "Admin" com
+permissão total (padrão pra qualquer conta nova) - nova
+`_downgrade_to_promoter_role()` (mesmo molde de
+`_downgrade_to_reseller_role`, v1.83.0) troca isso por um papel
+"Promotor" logo após o registro, só com `promoter`+`security`+`team`
+(nova permission key `promoter`; `team` incluso de propósito - sem
+ele, `check_team_permission_safety` bloquearia a própria criação do
+papel, já que a hospedagem recém-criada só tem essa pessoa como
+membro). `permissions_for_account_kind('promoter')` retorna só essas
+3, pro catálogo de cargos ficar consistente se algum dia convidarem
+alguém.
+
+Nova `get_promoter_dashboard_data(hostel_id)` (`database.py`) chama
+`get_hostel_referral_stats()` sem alteração e acrescenta o que só faz
+sentido pra quem tem isso como conta inteira: faixa/comissão atual
+(`count_active_referrals_for_partner`/`resolve_subscription_referral_commission_pct`,
+já existentes desde a v1.78.0), próxima faixa a alcançar (nova
+`_next_referral_tier`), e histórico individual dos últimos 50
+lançamentos (`subscription_referral_ledger` com nome da hospedagem via
+JOIN) - não só o total agregado, dando mais transparência pro
+promotor do que o card que já existe dentro do dashboard de uma
+hospedagem cliente comum. Nova rota `GET /promoter/dashboard`
+(`routes/promoter.py`, blueprint novo) gated `@require_permission("promoter")`.
+
+UI (`PromoterDashboard.html`): link de indicação copiável, 4 cards de
+estatística (faixa atual, indicações ativas, a receber, já recebido),
+aviso de progresso pra próxima faixa, tabela de hospedagens indicadas
+(nome + status de billing) e tabela de histórico de comissões (data,
+hospedagem, valor, %, status). `Register.html` ganhou
+`<option value='promoter'>` no seletor de tipo de estabelecimento -
+label/placeholder do campo "nome" mudam pra "Seu nome ou nome da sua
+marca" quando selecionado, mesma UX já usada pra diferenciar
+hospedagem/agência.
+
+Testado em banco isolado e via Flask test client, ponta a ponta:
+registro com `account_kind='promoter'` cria papel "Promotor" com as 3
+permissões certas, excluindo `chats`/`reservations`/`billing`;
+promotor bloqueado de `GET /dashboard` normal (403); painel vazio (sem
+indicação ainda) devolve formato correto (`current_tier_pct=0.20`,
+faixa mínima); simulação completa de uma indicação de verdade (hotel
+se registra com o código do promotor, pagamento aprovado simulado)
+confirma que a hospedagem indicada e a comissão aparecem certas no
+painel, incluindo o histórico individual.
+
+Sem chaves i18n novas - `PromoterDashboard.html` segue o mesmo padrão
+já usado em `ReferralPartner.html` (texto fixo em português, sem
+sistema de tradução, mesma convenção das páginas públicas/standalone
+específicas de um tipo de conta).
