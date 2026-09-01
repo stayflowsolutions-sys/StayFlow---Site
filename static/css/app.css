@@ -215,6 +215,12 @@ body::before{
   font-size:11px;
   color:#8aa5c7;
 }
+.hostel-selector-option.hostel-selector-all{
+  border-bottom:1px solid #ffffff14;
+  border-radius:12px 12px 0 0;
+  margin-bottom:4px;
+  padding-bottom:12px;
+}
 .hostel-selector-divider{
   height:1px;
   background:#ffffff12;

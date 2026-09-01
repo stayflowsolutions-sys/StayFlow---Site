@@ -11218,6 +11218,21 @@ window.uploadGuestDocumentUI = async function(guestId){
     list.innerHTML = "";
     const hostels = session.hostels || [];
 
+    if(hostels.length >= 2){
+      const allBtn = document.createElement("button");
+      allBtn.type = "button";
+      allBtn.className = "hostel-selector-option hostel-selector-all";
+      allBtn.innerHTML = `
+        <span class="option-name">🗂️ ${T('allProperties.selectorOption', 'Todas as propriedades')}</span>
+      `;
+      allBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleHostelSelector();
+        openAggregatedDashboardModal(hostels.length);
+      });
+      list.appendChild(allBtn);
+    }
+
     hostels.forEach(h => {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -11271,6 +11286,50 @@ window.uploadGuestDocumentUI = async function(guestId){
     }catch(e){
       console.error("Erro ao trocar de hospedagem:", e);
       alert("Erro de conexao ao trocar de hospedagem.");
+    }
+  };
+
+  window.openAggregatedDashboardModal = async function(hostelCount){
+    const descText = T('allProperties.desc', 'Soma de {count} hospedagens vinculadas à sua conta.').replace("{count}", hostelCount);
+    openGenericModal(T('allProperties.modalTitle', 'Visão agregada'), `
+      <p style="color:var(--muted);font-size:13px;margin:0 0 12px">${descText}</p>
+      <div id="aggregatedDashboardBody">${T('common.loading', 'Carregando...')}</div>
+    `);
+
+    try{
+      const res = await fetch("/dashboard/aggregated", { credentials: "same-origin" });
+      const data = await res.json();
+      const body = document.getElementById("aggregatedDashboardBody");
+      if(!body) return;
+      if(!res.ok || !data.success){
+        body.textContent = data.message || "Erro ao carregar dados agregados.";
+        return;
+      }
+
+      const s = data.stats;
+      const rows = [
+        [T('home.kpi.occupancyLabel', 'Ocupação'), `${s.occupancy_pct}%`],
+        [T('reservations.table.titlePlain', 'Reservas'), s.reservations],
+        [T('home.kpi.revenueLabel', 'Receita'), formatMoney(s.revenue)],
+        [T('home.kpi.messagesLabel', 'Mensagens'), s.messages],
+        [T('home.kpi.opportunitiesLabel', 'Oportunidades'), s.opportunities],
+      ];
+
+      body.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${rows.map(([label, value]) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--panel-2, rgba(255,255,255,.03));border-radius:10px">
+              <span style="color:var(--muted);font-size:13px">${label}</span>
+              <span style="font-weight:800">${value}</span>
+            </div>
+          `).join("")}
+        </div>
+        <p style="color:var(--muted);font-size:12px;margin:14px 0 0">${T('allProperties.includingLabel', 'Incluindo:')} ${data.hostel_names.join(", ")}</p>
+      `;
+    }catch(e){
+      console.error("Erro ao carregar dashboard agregado:", e);
+      const body = document.getElementById("aggregatedDashboardBody");
+      if(body) body.textContent = "Erro de conexão ao carregar dados agregados.";
     }
   };
 
