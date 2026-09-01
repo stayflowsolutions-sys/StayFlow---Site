@@ -1,0 +1,92 @@
+<!DOCTYPE html><html lang='pt-BR' translate='no'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><meta name='google' content='notranslate'><title>StayFlow | Programa de Indicação</title><link rel='manifest' href='/manifest.json'><meta name='theme-color' content='#03070d'><link rel='icon' href='/assets/images/icon-192.png'><link rel='apple-touch-icon' href='/assets/images/apple-touch-icon.png'><meta name='apple-mobile-web-app-capable' content='yes'><meta name='apple-mobile-web-app-title' content='StayFlow'><script>if("serviceWorker" in navigator){window.addEventListener("load", () => {navigator.serviceWorker.register("/sw.js").catch(e => console.warn("Erro ao registrar service worker:", e));});}</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#06101b;color:#fff;overflow:auto}
+body:before{content:'';position:fixed;inset:0;opacity:.22;background:url('https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg') center/cover no-repeat}
+.card{position:relative;z-index:1;width:500px;background:rgba(8,12,20,.9);padding:42px;border-radius:28px;border:1px solid #233652;margin:24px 0}
+.brand{text-align:center;margin-bottom:22px}.brand img{width:128px}
+label{display:block;font-size:13px;color:#9aa8bb;margin-bottom:4px}
+input{width:100%;padding:15px;margin:0 0 16px;background:#0d1421;border:1px solid #233652;border-radius:15px;color:#fff;font-size:15px}
+button{width:100%;padding:16px;background:#2f7dff;border:none;border-radius:16px;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+a{color:#8fb4ff;text-decoration:none}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.tiers{background:#0d1421;border:1px solid #233652;border-radius:15px;padding:16px 18px;margin-bottom:20px;font-size:13px;color:#9aa8bb;line-height:1.7}
+.tiers strong{color:#fff}
+#successBox{display:none}
+#successBox .codeRow{display:flex;gap:8px}
+#successBox input{flex:1;margin:0}
+#successBox button.copyBtn{width:auto;padding:15px 20px;white-space:nowrap}
+</style></head><body><div class='card'>
+<div class='brand' style='display:flex;justify-content:center;align-items:center;gap:0px'><img src='assets/images/logo2.png' style='width:128px;margin-right:-28px'><h1 style='font-size:34px;margin:0'>STAY<span style='color:#2f7dff'>FLOW</span></h1></div>
+
+<div id='formBox'>
+  <h2>Vire parceiro de indicação</h2><br>
+  <p style='font-size:14px;color:#9aa8bb;margin-bottom:18px;line-height:1.6'>Indique hotéis, hostels e hospedagens pra StayFlow e ganhe uma comissão recorrente sobre a mensalidade deles, todo mês, enquanto continuarem sendo clientes.</p>
+  <div class='tiers'>
+    <div><strong>20%</strong> — 1 a 2 hospedagens ativas</div>
+    <div><strong>25%</strong> — 3 a 5 hospedagens ativas</div>
+    <div><strong>30%</strong> — 6 ou mais hospedagens ativas</div>
+  </div>
+  <label>Seu nome</label><input id='name' placeholder='Digite seu nome'>
+  <label>E-mail</label><input id='email' type='email' placeholder='Digite seu e-mail'>
+  <label>WhatsApp</label><input id='phone' placeholder='Digite seu WhatsApp (opcional se preencheu e-mail)'>
+  <input class='hp' id='website' tabindex='-1' autocomplete='off'>
+  <button onclick='submitSignup()'>Quero ser parceiro</button>
+  <p id='m' style='font-size:13px;color:#ff5d76;margin-top:10px'></p>
+</div>
+
+<div id='successBox'>
+  <h2>Cadastro feito! 🎉</h2><br>
+  <p style='font-size:14px;color:#9aa8bb;margin-bottom:16px;line-height:1.6'>Esse é o seu link de indicação — compartilhe com qualquer hospedagem. Toda vez que alguém se cadastrar por ele e virar cliente, você começa a ganhar comissão automaticamente.</p>
+  <label>Seu link de indicação</label>
+  <div class='codeRow'>
+    <input id='referralLink' readonly>
+    <button type='button' class='copyBtn' onclick='copyLink()'>Copiar</button>
+  </div>
+  <p id='copyMsg' style='font-size:13px;color:#26e0a0;margin-top:10px'></p>
+</div>
+
+</div>
+<script>
+async function submitSignup(){
+  const msg = document.getElementById('m');
+  msg.textContent = '';
+
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const website = document.getElementById('website').value.trim();
+
+  if(!name){ msg.textContent = 'Digite seu nome.'; return; }
+  if(!email && !phone){ msg.textContent = 'Informe pelo menos um e-mail ou WhatsApp.'; return; }
+
+  try{
+    const res = await fetch('/referral-partner-signup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, email, phone, website }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      msg.textContent = data.message || 'Não foi possível concluir o cadastro.';
+      return;
+    }
+
+    document.getElementById('formBox').style.display = 'none';
+    document.getElementById('successBox').style.display = 'block';
+    document.getElementById('referralLink').value = `${location.origin}/Register.html?ref=${data.referral_code}`;
+  }catch(e){
+    msg.textContent = 'Erro de conexão. Tente novamente.';
+  }
+}
+
+function copyLink(){
+  const input = document.getElementById('referralLink');
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(() => {
+    document.getElementById('copyMsg').textContent = 'Link copiado!';
+  }).catch(() => {
+    document.getElementById('copyMsg').textContent = '';
+  });
+}
+</script></body></html>

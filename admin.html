@@ -545,11 +545,27 @@
         </div>
         <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="referral.subtitle">Comissão recorrente devida a cada parceiro (hotel cliente ou promotor externo) por hotéis indicados que estão pagando assinatura — mesmo modelo de repasse manual do quadro acima.</p>
 
+        <div class="card" style="margin-bottom:16px;padding:14px 18px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px" data-i18n="referral.signupLink.label">Link de auto-cadastro (compartilhe com quem quiser virar parceiro sem conta StayFlow):</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="referralSignupLinkInput" readonly style="flex:1;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+            <button type="button" class="btn secondary" onclick="copyReferralSignupLink(this)" data-i18n="referral.signupLink.copyBtn">Copiar</button>
+          </div>
+        </div>
+
         <div id="referralPartnerForm" class="card" style="display:none;margin-bottom:16px">
           <div class="grid">
             <div class="span-6">
               <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="referral.manualPartner.name">Nome</label>
               <input type="text" id="referralPartnerName" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+            </div>
+            <div class="span-6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="referral.manualPartner.email">E-mail (opcional)</label>
+              <input type="email" id="referralPartnerEmail" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
+            </div>
+            <div class="span-6">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="referral.manualPartner.phone">Telefone/WhatsApp (opcional)</label>
+              <input type="text" id="referralPartnerPhone" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:13px;color:white;padding:10px 14px;font-size:13px">
             </div>
             <div class="span-6">
               <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="referral.manualPartner.note">Nota de contato (opcional)</label>
@@ -865,6 +881,11 @@
       "referral.subtitle": "Comissão recorrente devida a cada parceiro (hotel cliente ou promotor externo) por hotéis indicados que estão pagando assinatura — mesmo modelo de repasse manual do quadro acima.",
       "referral.manualPartner.name": "Nome",
       "referral.manualPartner.note": "Nota de contato (opcional)",
+      "referral.manualPartner.email": "E-mail (opcional)",
+      "referral.manualPartner.phone": "Telefone/WhatsApp (opcional)",
+      "referral.signupLink.label": "Link de auto-cadastro (compartilhe com quem quiser virar parceiro sem conta StayFlow):",
+      "referral.signupLink.copyBtn": "Copiar",
+      "referral.signupLink.copied": "Copiado!",
       "referral.table.partner": "Parceiro",
       "referral.table.code": "Código",
       "referral.table.activeCount": "Indicações ativas",
@@ -994,6 +1015,11 @@
       "referral.subtitle": "Recurring commission owed to each partner (client hotel or external promoter) for referred hotels currently paying a subscription — same manual payout model as the panel above.",
       "referral.manualPartner.name": "Name",
       "referral.manualPartner.note": "Contact note (optional)",
+      "referral.manualPartner.email": "Email (optional)",
+      "referral.manualPartner.phone": "Phone/WhatsApp (optional)",
+      "referral.signupLink.label": "Self-signup link (share with anyone who wants to become a partner without a StayFlow account):",
+      "referral.signupLink.copyBtn": "Copy",
+      "referral.signupLink.copied": "Copied!",
       "referral.table.partner": "Partner",
       "referral.table.code": "Code",
       "referral.table.activeCount": "Active referrals",
@@ -1123,6 +1149,11 @@
       "referral.subtitle": "Comisión recurrente adeudada a cada parceiro (hotel cliente o promotor externo) por hoteles referidos que están pagando una suscripción — mismo modelo de repase manual del cuadro de arriba.",
       "referral.manualPartner.name": "Nombre",
       "referral.manualPartner.note": "Nota de contacto (opcional)",
+      "referral.manualPartner.email": "Correo electrónico (opcional)",
+      "referral.manualPartner.phone": "Teléfono/WhatsApp (opcional)",
+      "referral.signupLink.label": "Link de autorregistro (compartilo con quien quiera ser socio sin tener cuenta StayFlow):",
+      "referral.signupLink.copyBtn": "Copiar",
+      "referral.signupLink.copied": "¡Copiado!",
       "referral.table.partner": "Parceiro",
       "referral.table.code": "Código",
       "referral.table.activeCount": "Indicaciones activas",
@@ -1252,6 +1283,11 @@
       "referral.subtitle": "Commission récurrente due à chaque partenaire (hôtel client ou promoteur externe) pour les hôtels parrainés qui paient actuellement un abonnement — même modèle de versement manuel que le tableau ci-dessus.",
       "referral.manualPartner.name": "Nom",
       "referral.manualPartner.note": "Note de contact (facultatif)",
+      "referral.manualPartner.email": "E-mail (facultatif)",
+      "referral.manualPartner.phone": "Téléphone/WhatsApp (facultatif)",
+      "referral.signupLink.label": "Lien d'inscription automatique (à partager avec toute personne souhaitant devenir partenaire sans compte StayFlow) :",
+      "referral.signupLink.copyBtn": "Copier",
+      "referral.signupLink.copied": "Copié !",
       "referral.table.partner": "Partenaire",
       "referral.table.code": "Code",
       "referral.table.activeCount": "Recommandations actives",
@@ -1381,6 +1417,11 @@
       "referral.subtitle": "Wiederkehrende Provision, die jedem Partner (Kundenhotel oder externer Promoter) für empfohlene Hotels geschuldet wird, die derzeit ein Abo bezahlen — gleiches manuelles Auszahlungsmodell wie im Feld oben.",
       "referral.manualPartner.name": "Name",
       "referral.manualPartner.note": "Kontaktnotiz (optional)",
+      "referral.manualPartner.email": "E-Mail (optional)",
+      "referral.manualPartner.phone": "Telefon/WhatsApp (optional)",
+      "referral.signupLink.label": "Selbstregistrierungslink (teilen Sie ihn mit allen, die ohne StayFlow-Konto Partner werden möchten):",
+      "referral.signupLink.copyBtn": "Kopieren",
+      "referral.signupLink.copied": "Kopiert!",
       "referral.table.partner": "Partner",
       "referral.table.code": "Code",
       "referral.table.activeCount": "Aktive Empfehlungen",
@@ -1513,6 +1554,11 @@
       "referral.subtitle": "現在サブスクリプションを支払っている紹介先ホテルについて、各パートナー（顧客ホテルまたは外部プロモーター）に支払うべき継続報酬 — 上の表と同じ手動精算モデルです。",
       "referral.manualPartner.name": "名前",
       "referral.manualPartner.note": "連絡先メモ（任意）",
+      "referral.manualPartner.email": "メールアドレス（任意）",
+      "referral.manualPartner.phone": "電話番号・WhatsApp（任意）",
+      "referral.signupLink.label": "セルフ登録リンク（StayFlowアカウントを持たずにパートナーになりたい人と共有してください）：",
+      "referral.signupLink.copyBtn": "コピー",
+      "referral.signupLink.copied": "コピーしました！",
       "referral.table.partner": "パートナー",
       "referral.table.code": "コード",
       "referral.table.activeCount": "有効な紹介数",
@@ -1770,6 +1816,11 @@
       "referral.subtitle": "Commissione ricorrente dovuta a ogni partner (hotel cliente o promotore esterno) per gli hotel segnalati che stanno pagando un abbonamento — stesso modello di rimborso manuale del riquadro sopra.",
       "referral.manualPartner.name": "Nome",
       "referral.manualPartner.note": "Nota di contatto (facoltativa)",
+      "referral.manualPartner.email": "E-mail (facoltativo)",
+      "referral.manualPartner.phone": "Telefono/WhatsApp (facoltativo)",
+      "referral.signupLink.label": "Link di auto-registrazione (condividilo con chi vuole diventare partner senza un account StayFlow):",
+      "referral.signupLink.copyBtn": "Copia",
+      "referral.signupLink.copied": "Copiato!",
       "referral.table.partner": "Partner",
       "referral.table.code": "Codice",
       "referral.table.activeCount": "Segnalazioni attive",
@@ -2027,6 +2078,11 @@
       "referral.subtitle": "因推荐的酒店正在支付订阅费用，而欠每位合作伙伴（客户酒店或外部推广人）的持续佣金 — 与上方表格相同的手动结算模式。",
       "referral.manualPartner.name": "姓名",
       "referral.manualPartner.note": "联系备注（可选）",
+      "referral.manualPartner.email": "电子邮件（可选）",
+      "referral.manualPartner.phone": "电话/WhatsApp（可选）",
+      "referral.signupLink.label": "自助注册链接（分享给想成为合作伙伴但没有 StayFlow 账户的人）：",
+      "referral.signupLink.copyBtn": "复制",
+      "referral.signupLink.copied": "已复制！",
       "referral.table.partner": "合作伙伴",
       "referral.table.code": "推荐码",
       "referral.table.activeCount": "有效推荐数",
@@ -2283,6 +2339,11 @@
       "referral.subtitle": "Регулярная комиссия, причитающаяся каждому партнёру (отелю-клиенту или внешнему промоутеру) за рекомендованные отели, которые сейчас оплачивают подписку — та же модель ручной выплаты, что и в таблице выше.",
       "referral.manualPartner.name": "Имя",
       "referral.manualPartner.note": "Заметка о контакте (необязательно)",
+      "referral.manualPartner.email": "Эл. почта (необязательно)",
+      "referral.manualPartner.phone": "Телефон/WhatsApp (необязательно)",
+      "referral.signupLink.label": "Ссылка для самостоятельной регистрации (поделитесь с теми, кто хочет стать партнёром без аккаунта StayFlow):",
+      "referral.signupLink.copyBtn": "Копировать",
+      "referral.signupLink.copied": "Скопировано!",
       "referral.table.partner": "Партнёр",
       "referral.table.code": "Код",
       "referral.table.activeCount": "Активные рефералы",
@@ -2540,6 +2601,11 @@
       "referral.subtitle": "현재 구독료를 결제 중인 추천 호텔에 대해 각 파트너(고객 호텔 또는 외부 프로모터)에게 지급해야 할 지속 수수료 — 위 표와 동일한 수동 정산 방식입니다.",
       "referral.manualPartner.name": "이름",
       "referral.manualPartner.note": "연락처 메모 (선택 사항)",
+      "referral.manualPartner.email": "이메일 (선택 사항)",
+      "referral.manualPartner.phone": "전화번호/WhatsApp (선택 사항)",
+      "referral.signupLink.label": "셀프 등록 링크 (StayFlow 계정 없이 파트너가 되고 싶은 사람과 공유하세요):",
+      "referral.signupLink.copyBtn": "복사",
+      "referral.signupLink.copied": "복사됨!",
       "referral.table.partner": "파트너",
       "referral.table.code": "코드",
       "referral.table.activeCount": "활성 추천 수",
@@ -2797,6 +2863,11 @@
       "referral.subtitle": "Terugkerende commissie verschuldigd aan elke partner (klanthotel of externe promotor) voor doorverwezen hotels die momenteel een abonnement betalen — zelfde handmatige uitbetalingsmodel als het paneel hierboven.",
       "referral.manualPartner.name": "Naam",
       "referral.manualPartner.note": "Contactnotitie (optioneel)",
+      "referral.manualPartner.email": "E-mail (optioneel)",
+      "referral.manualPartner.phone": "Telefoon/WhatsApp (optioneel)",
+      "referral.signupLink.label": "Zelfregistratielink (deel deze met iedereen die partner wil worden zonder StayFlow-account):",
+      "referral.signupLink.copyBtn": "Kopiëren",
+      "referral.signupLink.copied": "Gekopieerd!",
       "referral.table.partner": "Partner",
       "referral.table.code": "Code",
       "referral.table.activeCount": "Actieve verwijzingen",
@@ -3951,6 +4022,9 @@
 
   // ===== Programa de indicacao (comissao de assinatura) =====
   async function loadSubscriptionReferralLedger(){
+    const linkInput = document.getElementById("referralSignupLinkInput");
+    if(linkInput && !linkInput.value) linkInput.value = `${location.origin}/ReferralPartner.html`;
+
     try{
       const res = await fetch("/stayflow-admin/subscription-referral-ledger", { credentials: "same-origin" });
       if(!res.ok) return;
@@ -3965,20 +4039,35 @@
         return;
       }
       empty.style.display = "none";
-      tbody.innerHTML = data.balances.map(b => `
+      tbody.innerHTML = data.balances.map(b => {
+        const contactParts = [b.contact_email, b.contact_phone].filter(Boolean);
+        const contactLine = contactParts.length ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${contactParts.join(" · ")}</div>` : "";
+        return `
         <tr>
-          <td>${b.partner_name || "—"}</td>
+          <td>${b.partner_name || "—"}${contactLine}</td>
           <td>${b.referral_code || "—"}</td>
           <td>${b.active_referral_count ?? 0}</td>
           <td>${Math.round((b.current_tier_pct ?? 0) * 100)}%</td>
           <td>${b.payment_count}</td>
           <td>${formatMoney(b.total_owed, b.currency)}</td>
           <td><button type="button" class="payout-btn" onclick="markSubscriptionReferralPayout(${b.referring_partner_id}, this)">${AT("payouts.markPaid")}</button></td>
-        </tr>`).join("");
+        </tr>`;
+      }).join("");
     }catch(e){
       console.warn("Erro ao carregar comissão de indicação:", e);
     }
   }
+
+  window.copyReferralSignupLink = function(btn){
+    const input = document.getElementById("referralSignupLinkInput");
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(() => {
+      const original = btn.textContent;
+      btn.textContent = AT("referral.signupLink.copied");
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    }).catch(() => {});
+  };
 
   window.markSubscriptionReferralPayout = async function(referringPartnerId, btn){
     btn.disabled = true;
@@ -4007,6 +4096,8 @@
 
   window.openCreateReferralPartnerForm = function(){
     document.getElementById("referralPartnerName").value = "";
+    document.getElementById("referralPartnerEmail").value = "";
+    document.getElementById("referralPartnerPhone").value = "";
     document.getElementById("referralPartnerContactNote").value = "";
     document.getElementById("referralPartnerFormMessage").textContent = "";
     document.getElementById("referralPartnerForm").style.display = "block";
@@ -4018,6 +4109,8 @@
 
   window.submitCreateReferralPartner = async function(){
     const name = document.getElementById("referralPartnerName").value.trim();
+    const email = document.getElementById("referralPartnerEmail").value.trim();
+    const phone = document.getElementById("referralPartnerPhone").value.trim();
     const contactNote = document.getElementById("referralPartnerContactNote").value.trim();
     const msg = document.getElementById("referralPartnerFormMessage");
     if(!name){
@@ -4029,7 +4122,7 @@
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, contact_note: contactNote || null }),
+        body: JSON.stringify({ name, contact_email: email || null, contact_phone: phone || null, contact_note: contactNote || null }),
       });
       const data = await res.json();
       if(!data.success){
