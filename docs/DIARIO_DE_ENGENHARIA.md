@@ -8632,3 +8632,33 @@ avatar do usuário no topo do `admin.html` mostra um "?" fixo até o
 nome (`userMenuTrigger.textContent = initial`, já existia antes desta
 sessão) - fica pra confirmar com o usuário se persiste depois da
 página carregar de verdade antes de investigar mais.
+
+### "+ Adicionar propriedade de teste" dentro do próprio admin.html (v1.92.0)
+
+Fecha o loop da v1.91.0. Mesmo com a criação já marcando
+`is_own_test_account=true` automaticamente, o usuário ainda não
+conseguia criar a conta de promotor - print mostrando de novo o
+seletor "Propriedades" do `admin.html`, sem nenhum botão de criar.
+Achado: o próprio "+ Adicionar hospedagem" (v1.89.0/v1.90.0) só existe
+dentro do `dashboard.html`, e o dono da StayFlow NUNCA passa por lá no
+fluxo normal (login manda ele direto pro `admin.html`, achado já
+registrado na v1.91.0) - o botão certo existia, só estava num lugar
+que ele nunca visita organicamente.
+
+Corrigido adicionando o mesmo fluxo DIRETO dentro do seletor
+"Propriedades" que ele já usa: botão "+ Adicionar propriedade de
+teste" abre um formulário inline (mesmo padrão visual já usado pelos
+formulários de parceiro/revendedor neste arquivo — sem modal genérico,
+`admin.html` nunca teve um) com tipo de conta (Hospedagem/Agência/
+Promotor), categoria de agência quando aplicável, e nome - chama a
+MESMA `POST /account/add-hostel` de sempre, sem rota nova nenhuma.
+Como a v1.91.0 já garante `is_own_test_account=true` pra qualquer
+criação feita pelo e-mail admin, só foi preciso recarregar
+`loadOverview()` + `renderPropertySelector()` depois do sucesso pra
+ela aparecer na lista na hora, sem precisar sair da tela nem recarregar
+a página. 6 chaves i18n novas no `ADMIN_I18N` (286→292, 2 do seletor +
+4 reaproveitando os mesmos nomes de chave já usados no
+`i18n-dashboard-data.js` pra tipo de conta/botão, adicionadas aqui
+também porque `admin.html` tem seu PRÓPRIO dicionário `ADMIN_I18N`,
+independente - achado corrigido antes de publicar: as `<option data-i18n="addHostel.kindLodging">`
+etc. só funcionariam se a chave existisse no dicionário certo).
