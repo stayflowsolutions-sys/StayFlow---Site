@@ -325,20 +325,36 @@ const PORTFOLIO_SLIDES = {
 let portfolioCurrentSector = "lodging";
 let portfolioCurrentSlide = 0;
 
+// Texto de cada slide vem de PORTFOLIO_SLIDES (fallback em portugues)
+// mas SEMPRE passa por T() com a chave "salesPortfolio.<setor>.<kind>.*"
+// antes de renderizar - assim o conteudo de verdade (nao so o menu)
+// aparece traduzido quando existir chave pro idioma escolhido. A chave
+// e montada na hora (setor+kind ja sao unicos por slide, sem precisar
+// de mais um campo no objeto).
+function portfolioSlideText(slide){
+  const baseKey = "salesPortfolio." + portfolioCurrentSector + "." + slide.kind;
+  return {
+    title: T(baseKey + ".title", slide.title),
+    body: T(baseKey + ".body", slide.body),
+    bullets: slide.bullets ? slide.bullets.map((b, i) => T(baseKey + ".bullet" + (i + 1), b)) : null,
+  };
+}
+
 function renderPortfolioSlide(){
   const slides = PORTFOLIO_SLIDES[portfolioCurrentSector];
   const slide = slides[portfolioCurrentSlide];
   const content = document.getElementById("portfolioSlideContent");
   if(!content || !slide) return;
-  const bulletsHtml = slide.bullets && slide.bullets.length
-    ? `<ul style="margin-top:14px;padding-left:20px;display:flex;flex-direction:column;gap:9px">${slide.bullets.map(b => `<li style="font-size:14.5px;line-height:1.6;color:var(--text)">${b}</li>`).join("")}</ul>`
+  const text = portfolioSlideText(slide);
+  const bulletsHtml = text.bullets && text.bullets.length
+    ? `<ul style="margin-top:14px;padding-left:20px;display:flex;flex-direction:column;gap:9px">${text.bullets.map(b => `<li style="font-size:14.5px;line-height:1.6;color:var(--text)">${b}</li>`).join("")}</ul>`
     : "";
   content.innerHTML = `
     <div style="display:flex;gap:16px;align-items:center;margin-bottom:16px">
       ${portfolioSlideIconHtml(slide.kind)}
-      <h2 style="font-size:21px;line-height:1.3">${slide.title}</h2>
+      <h2 style="font-size:21px;line-height:1.3">${text.title}</h2>
     </div>
-    <p style="font-size:15px;line-height:1.8;white-space:pre-line;color:var(--text)">${slide.body}</p>
+    <p style="font-size:15px;line-height:1.8;white-space:pre-line;color:var(--text)">${text.body}</p>
     ${bulletsHtml}
     <button type="button" class="btn secondary" style="margin-top:22px" onclick="askAboutPortfolioSlide()">${T('salesPortfolio.askAboutBtn', '🤖 Perguntar ao Ask StayFlow sobre isso')}</button>
   `;
@@ -349,17 +365,19 @@ function renderPortfolioSlide(){
 // Manda a pergunta com o proprio conteudo do slide embutido como
 // contexto (mais simples e confiavel que ensinar o backend a saber
 // "em qual slide a pessoa estava" - o texto do slide JA e o dado que a
-// IA precisa pra responder direito).
+// IA precisa pra responder direito) - usa o mesmo texto TRADUZIDO que
+// apareceu na tela, nao o fallback em portugues.
 window.askAboutPortfolioSlide = function(){
   const slides = PORTFOLIO_SLIDES[portfolioCurrentSector];
   const slide = slides[portfolioCurrentSlide];
   if(!slide) return;
+  const text = portfolioSlideText(slide);
   openAskStayFlow();
-  const cleanTitle = slide.title.replace(/^\S+\s/, "");
-  const context = slide.bullets && slide.bullets.length
-    ? `${slide.body} ${slide.bullets.join("; ")}`
-    : slide.body;
-  const question = `Sobre "${cleanTitle}": ${context} — pode me explicar melhor e me dar uma dica de como eu apresento isso numa conversa de verdade?`;
+  const cleanTitle = text.title.replace(/^\S+\s/, "");
+  const context = text.bullets && text.bullets.length
+    ? `${text.body} ${text.bullets.join("; ")}`
+    : text.body;
+  const question = T('salesPortfolio.askQuestionTemplate', 'Sobre "{title}": {context} — pode me explicar melhor e me dar uma dica de como eu apresento isso numa conversa de verdade?', { title: cleanTitle, context: context });
   const input = document.querySelector("#askPanel .ask-input input[type='text'], #askPanel .ask-input input:not([type])");
   const sendBtn = document.querySelector("#askPanel .ask-input button.btn");
   if(input) input.value = question;
@@ -12458,22 +12476,26 @@ window.uploadGuestDocumentUI = async function(guestId){
   // inicial + cada pagina do menu) so aparece uma vez, mesmo com o tour
   // ainda ativo, via user_feature_intros no backend.
 
+  // titleKey aproveita a MESMA chave ja usada no menu lateral
+  // (nav.chats, nav.reports etc) - zero duplicacao de traducao pro
+  // titulo, so o "text" (explicacao) precisou de chave nova
+  // (onboarding.coach.<pagina>.text), ver i18n-dashboard-data.js.
   const FEATURE_COACH_MARKS = {
-    chats: { title: "Chats", text: "As conversas com hóspedes ficam aqui. A IA responde sozinha 24h - você só entra quando quiser assumir manualmente." },
-    reservations: { title: "Reservas", text: "Todas as reservas, com check-in/check-out e criação manual quando precisar." },
-    roommap: { title: "Mapa de Quartos", text: "Visão de cada quarto/cama: ocupado, livre ou aguardando limpeza." },
-    opportunities: { title: "Opportunity Center", text: "Quando um hóspede pergunta por algo vendável (passeio, aluguel), a IA detecta e sugere aqui - até indicando um parceiro, se você não vende isso." },
-    partners: { title: "Parceiros", text: "Portfólio de agências parceiras que você pode oferecer aos seus hóspedes." },
-    portfolio: { title: "Portfólio", text: "O que você vende (passeios, aluguéis) - é isso que aparece pras hospedagens parceiras oferecerem." },
-    guests: { title: "Hóspedes", text: "Cadastro de hóspedes, com histórico e documentos." },
-    operations: { title: "Operações", text: "Limpeza, manutenção e outras tarefas do dia a dia da equipe." },
-    team: { title: "Equipe", text: "Quem tem acesso ao sistema e o que cada pessoa pode ver/fazer." },
-    finance: { title: "Financeiro", text: "Cobranças, câmbio e o que os hóspedes já pagaram." },
-    inventory: { title: "Estoque", text: "Controle de itens usados na operação (enxoval, produtos de limpeza etc.)." },
-    revenue: { title: "Receitas", text: "Receita ao longo do tempo." },
-    events: { title: "Eventos", text: "Espaços e eventos que você organiza ou aluga." },
-    reports: { title: "Relatórios", text: "Números consolidados da operação." },
-    settings: { title: "Configurações", text: "Dados da hospedagem, integrações, segurança e mais." },
+    chats: { titleKey: "nav.chats", title: "Chats", textKey: "onboarding.coach.chats.text", text: "As conversas com hóspedes ficam aqui. A IA responde sozinha 24h - você só entra quando quiser assumir manualmente." },
+    reservations: { titleKey: "nav.reservations", title: "Reservas", textKey: "onboarding.coach.reservations.text", text: "Todas as reservas, com check-in/check-out e criação manual quando precisar." },
+    roommap: { titleKey: "nav.roommap", title: "Mapa de Quartos", textKey: "onboarding.coach.roommap.text", text: "Visão de cada quarto/cama: ocupado, livre ou aguardando limpeza." },
+    opportunities: { titleKey: "nav.opportunities", title: "Opportunity Center", textKey: "onboarding.coach.opportunities.text", text: "Quando um hóspede pergunta por algo vendável (passeio, aluguel), a IA detecta e sugere aqui - até indicando um parceiro, se você não vende isso." },
+    partners: { titleKey: "nav.partners", title: "Parceiros", textKey: "onboarding.coach.partners.text", text: "Portfólio de agências parceiras que você pode oferecer aos seus hóspedes." },
+    portfolio: { titleKey: "nav.portfolio", title: "Portfólio", textKey: "onboarding.coach.portfolio.text", text: "O que você vende (passeios, aluguéis) - é isso que aparece pras hospedagens parceiras oferecerem." },
+    guests: { titleKey: "nav.guests", title: "Hóspedes", textKey: "onboarding.coach.guests.text", text: "Cadastro de hóspedes, com histórico e documentos." },
+    operations: { titleKey: "nav.operations", title: "Operações", textKey: "onboarding.coach.operations.text", text: "Limpeza, manutenção e outras tarefas do dia a dia da equipe." },
+    team: { titleKey: "nav.team", title: "Equipe", textKey: "onboarding.coach.team.text", text: "Quem tem acesso ao sistema e o que cada pessoa pode ver/fazer." },
+    finance: { titleKey: "nav.finance", title: "Financeiro", textKey: "onboarding.coach.finance.text", text: "Cobranças, câmbio e o que os hóspedes já pagaram." },
+    inventory: { titleKey: "nav.inventory", title: "Estoque", textKey: "onboarding.coach.inventory.text", text: "Controle de itens usados na operação (enxoval, produtos de limpeza etc.)." },
+    revenue: { titleKey: "nav.revenue", title: "Receitas", textKey: "onboarding.coach.revenue.text", text: "Receita ao longo do tempo." },
+    events: { titleKey: "nav.events", title: "Eventos", textKey: "onboarding.coach.events.text", text: "Espaços e eventos que você organiza ou aluga." },
+    reports: { titleKey: "nav.reports", title: "Relatórios", textKey: "onboarding.coach.reports.text", text: "Números consolidados da operação." },
+    settings: { titleKey: "nav.settings", title: "Configurações", textKey: "onboarding.coach.settings.text", text: "Dados da hospedagem, integrações, segurança e mais." },
   };
 
   // Conta promotor (account_kind='promoter') nao opera hospedagem/
@@ -12481,13 +12503,15 @@ window.uploadGuestDocumentUI = async function(guestId){
   // ela (a maioria nem aparece, ja que as paginas correspondentes
   // ficam escondidas no menu). Overrides so pras paginas que ela
   // realmente ve: "settings" troca de texto, o resto e exclusivo dela
-  // (nunca existiu em FEATURE_COACH_MARKS).
+  // (nunca existiu em FEATURE_COACH_MARKS). textKey tem namespace
+  // proprio (onboarding.coach.promoter.*) pra "chats"/"settings" nao
+  // colidir com a traducao da versao generica acima.
   const FEATURE_COACH_MARKS_PROMOTER = {
-    referrals: { title: "Indicações", text: "Seu link de indicação, sua faixa de comissão e as hospedagens que você já indicou - tudo nessa aba." },
-    wallet: { title: "Carteira", text: "Quanto você já ganhou e quanto ainda tem a receber, mês a mês, com o extrato completo de cada comissão." },
-    chats: { title: "Chats", text: "Converse com quem tiver interesse na StayFlow. Pra usar seu próprio WhatsApp/Facebook/Instagram aqui, conecte em Configurações > Comunicação." },
-    salesportfolio: { title: "Portfólio de Vendas", text: "Um guia completo pra estudar e apresentar a StayFlow em cada setor - hospedagens, agências, locadoras e imobiliárias." },
-    settings: { title: "Configurações", text: "Conecte seus canais de conversa (WhatsApp/Facebook/Instagram) e cuide da segurança da sua conta." },
+    referrals: { titleKey: "nav.referrals", title: "Indicações", textKey: "onboarding.coach.promoter.referrals.text", text: "Seu link de indicação, sua faixa de comissão e as hospedagens que você já indicou - tudo nessa aba." },
+    wallet: { titleKey: "nav.wallet", title: "Carteira", textKey: "onboarding.coach.promoter.wallet.text", text: "Quanto você já ganhou e quanto ainda tem a receber, mês a mês, com o extrato completo de cada comissão." },
+    chats: { titleKey: "nav.chats", title: "Chats", textKey: "onboarding.coach.promoter.chats.text", text: "Converse com quem tiver interesse na StayFlow. Pra usar seu próprio WhatsApp/Facebook/Instagram aqui, conecte em Configurações > Comunicação." },
+    salesportfolio: { titleKey: "nav.salesPortfolio", title: "Portfólio de Vendas", textKey: "onboarding.coach.promoter.salesportfolio.text", text: "Um guia completo pra estudar e apresentar a StayFlow em cada setor - hospedagens, agências, locadoras e imobiliárias." },
+    settings: { titleKey: "nav.settings", title: "Configurações", textKey: "onboarding.coach.promoter.settings.text", text: "Conecte seus canais de conversa (WhatsApp/Facebook/Instagram) e cuide da segurança da sua conta." },
   };
 
   const onboardingState = { dismissed: false, seen: new Set() };
@@ -12520,17 +12544,19 @@ window.uploadGuestDocumentUI = async function(guestId){
     if(!info) return;
     document.getElementById("onboardingCoachMark")?.remove();
 
+    const title = T(info.titleKey, info.title);
+    const text = T(info.textKey, info.text);
     const el = document.createElement("div");
     el.id = "onboardingCoachMark";
     el.style.cssText = "position:fixed;right:24px;bottom:100px;max-width:320px;background:var(--panel2,#0a1726);border:1px solid var(--blue,#0b84ff);border-radius:16px;padding:16px 18px;z-index:2000;box-shadow:0 18px 42px rgba(0,0,0,.45)";
     el.innerHTML = `
-      <div style="font-weight:800;font-size:14px;margin-bottom:6px">${info.title}</div>
-      <div style="font-size:13px;color:var(--muted,#9aa8bb);line-height:1.45;margin-bottom:14px">${info.text}</div>
+      <div style="font-weight:800;font-size:14px;margin-bottom:6px">${title}</div>
+      <div style="font-size:13px;color:var(--muted,#9aa8bb);line-height:1.45;margin-bottom:14px">${text}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted,#9aa8bb);cursor:pointer">
-          <input type="checkbox" id="onboardingCoachDismissCheck">Não mostrar mais dicas
+          <input type="checkbox" id="onboardingCoachDismissCheck">${T('onboarding.coach.dismissLabel', 'Não mostrar mais dicas')}
         </label>
-        <button type="button" class="btn" id="onboardingCoachOkBtn" style="padding:7px 16px;font-size:12.5px;min-height:unset">Entendi</button>
+        <button type="button" class="btn" id="onboardingCoachOkBtn" style="padding:7px 16px;font-size:12.5px;min-height:unset">${T('onboarding.coach.okBtn', 'Entendi')}</button>
       </div>
     `;
     document.body.appendChild(el);
@@ -12560,50 +12586,57 @@ window.uploadGuestDocumentUI = async function(guestId){
     // Dashboard dele nem tem ocupacao/reservas/Opportunity Center (ver
     // applyPromoterHome), entao usa um tour totalmente a parte em vez
     // de tentar encaixar nas variacoes de hospedagem/agencia acima.
+    // titleKey/bodyKey resolvidos via T() em showDashboardIntroModal -
+    // title/body aqui sao so o fallback em portugues, mesma convencao
+    // usada no resto do arquivo (T(key, fallback)).
     if(accountKind === "promoter"){
       return [
         {
-          title: "👋 Bem-vindo(a) à StayFlow",
-          body: "Esse é o seu Dashboard - o resumo da sua conta de promotor. Vamos mostrar rapidinho o que tem em cada bloco.",
+          titleKey: "onboarding.tour.promoter.welcome.title", title: "👋 Bem-vindo(a) à StayFlow",
+          bodyKey: "onboarding.tour.promoter.welcome.body", body: "Esse é o seu Dashboard - o resumo da sua conta de promotor. Vamos mostrar rapidinho o que tem em cada bloco.",
         },
         {
-          title: "Seus números",
-          body: "Os 4 cards no topo mostram sua faixa de comissão atual, quantas indicações estão ativas, quanto você tem a receber e quanto já recebeu.",
+          titleKey: "onboarding.tour.promoter.numbers.title", title: "Seus números",
+          bodyKey: "onboarding.tour.promoter.numbers.body", body: "Os 4 cards no topo mostram sua faixa de comissão atual, quantas indicações estão ativas, quanto você tem a receber e quanto já recebeu.",
         },
         {
-          title: "Seu desempenho",
-          body: "O gráfico logo abaixo mostra a comissão gerada mês a mês - assim que suas indicações virarem clientes pagantes, o histórico aparece aqui.",
+          titleKey: "onboarding.tour.promoter.performance.title", title: "Seu desempenho",
+          bodyKey: "onboarding.tour.promoter.performance.body", body: "O gráfico logo abaixo mostra a comissão gerada mês a mês - assim que suas indicações virarem clientes pagantes, o histórico aparece aqui.",
         },
         {
-          title: "Agora explore o menu",
-          body: "No menu à esquerda: seu link de indicação (Indicações), o extrato completo do que você já ganhou (Carteira) e um guia de vendas pronto pra usar (Portfólio de Vendas). Na primeira vez que você abrir cada um, aparece uma dica rápida explicando o que é.",
+          titleKey: "onboarding.tour.promoter.exploreMenu.title", title: "Agora explore o menu",
+          bodyKey: "onboarding.tour.promoter.exploreMenu.body", body: "No menu à esquerda: seu link de indicação (Indicações), o extrato completo do que você já ganhou (Carteira) e um guia de vendas pronto pra usar (Portfólio de Vendas). Na primeira vez que você abrir cada um, aparece uma dica rápida explicando o que é.",
         },
       ];
     }
 
-    const opportunityLabel = isAgency ? "quem te procurou" : "hóspedes com potencial de venda (passeio, upgrade, aluguel)";
+    const opportunityBodyKey = isAgency ? "onboarding.tour.agency.opportunity.body" : "onboarding.tour.lodging.opportunity.body";
+    const opportunityFallback = isAgency
+      ? "Mostra quem te procurou, detectado automaticamente pelas conversas - pra você não deixar dinheiro na mesa."
+      : "Mostra hóspedes com potencial de venda (passeio, upgrade, aluguel), detectado automaticamente pelas conversas - pra você não deixar dinheiro na mesa.";
     return [
       {
-        title: "👋 Bem-vindo(a) à StayFlow",
-        body: "Esse é o seu Dashboard - a visão geral de tudo que está acontecendo agora. Vamos mostrar rapidinho o que tem em cada bloco.",
+        titleKey: "onboarding.tour.default.welcome.title", title: "👋 Bem-vindo(a) à StayFlow",
+        bodyKey: "onboarding.tour.default.welcome.body", body: "Esse é o seu Dashboard - a visão geral de tudo que está acontecendo agora. Vamos mostrar rapidinho o que tem em cada bloco.",
       },
       {
-        title: "Números no topo",
+        titleKey: "onboarding.tour.default.kpi.title", title: "Números no topo",
+        bodyKey: isAgency ? "onboarding.tour.agency.kpi.body" : "onboarding.tour.lodging.kpi.body",
         body: isAgency
           ? "Os cards no topo mostram um resumo rápido da sua operação hoje."
           : "Os cards no topo mostram ocupação, reservas e outros números-chave do dia.",
       },
       {
-        title: "Resumo executivo",
-        body: "Um resumo escrito pela IA, olhando os dados reais da sua operação - pra você entender o momento sem precisar caçar número por número.",
+        titleKey: "onboarding.tour.default.summary.title", title: "Resumo executivo",
+        bodyKey: "onboarding.tour.default.summary.body", body: "Um resumo escrito pela IA, olhando os dados reais da sua operação - pra você entender o momento sem precisar caçar número por número.",
       },
       {
-        title: "Opportunity Center",
-        body: `Mostra ${opportunityLabel}, detectado automaticamente pelas conversas - pra você não deixar dinheiro na mesa.`,
+        titleKey: "nav.opportunities", title: "Opportunity Center",
+        bodyKey: opportunityBodyKey, body: opportunityFallback,
       },
       {
-        title: "Agora explore o menu",
-        body: "No menu à esquerda tem cada área da operação. Na primeira vez que você abrir cada uma, aparece uma dica rápida explicando o que é.",
+        titleKey: "onboarding.tour.default.exploreMenu.title", title: "Agora explore o menu",
+        bodyKey: "onboarding.tour.default.exploreMenu.body", body: "No menu à esquerda tem cada área da operação. Na primeira vez que você abrir cada uma, aparece uma dica rápida explicando o que é.",
       },
     ];
   }
@@ -12620,17 +12653,17 @@ window.uploadGuestDocumentUI = async function(guestId){
 
       document.getElementById("genericModalBody").innerHTML = `
         <div style="min-height:140px">
-          <h3 style="margin-bottom:10px">${s.title}</h3>
-          <p style="color:var(--muted,#9aa8bb);font-size:14px;line-height:1.55">${s.body}</p>
+          <h3 style="margin-bottom:10px">${T(s.titleKey, s.title)}</h3>
+          <p style="color:var(--muted,#9aa8bb);font-size:14px;line-height:1.55">${T(s.bodyKey, s.body)}</p>
         </div>
         <div style="display:flex;justify-content:center;gap:6px;margin:18px 0">${dots}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted,#9aa8bb);cursor:pointer">
-            <input type="checkbox" id="onboardingIntroDismissCheck" ${wantsDismiss ? "checked" : ""}>Não mostrar novamente
+            <input type="checkbox" id="onboardingIntroDismissCheck" ${wantsDismiss ? "checked" : ""}>${T('onboarding.tour.dismissLabel', 'Não mostrar novamente')}
           </label>
           <div style="display:flex;gap:8px">
-            ${current > 0 ? `<button class="btn secondary" type="button" id="onboardingIntroPrevBtn">Voltar</button>` : ""}
-            <button class="btn" type="button" id="onboardingIntroNextBtn">${isLast ? "Explorar o menu" : "Próximo"}</button>
+            ${current > 0 ? `<button class="btn secondary" type="button" id="onboardingIntroPrevBtn">${T('onboarding.tour.backBtn', 'Voltar')}</button>` : ""}
+            <button class="btn" type="button" id="onboardingIntroNextBtn">${isLast ? T('onboarding.tour.finishBtn', 'Explorar o menu') : T('onboarding.tour.nextBtn', 'Próximo')}</button>
           </div>
         </div>
       `;
@@ -12649,7 +12682,7 @@ window.uploadGuestDocumentUI = async function(guestId){
       closeGenericModal();
     }
 
-    openGenericModal("Introdução", "", true);
+    openGenericModal(T('onboarding.tour.modalTitle', 'Introdução'), "", true);
     render();
   }
 
