@@ -8441,3 +8441,76 @@ Sem chaves i18n novas - `PromoterDashboard.html` segue o mesmo padrão
 já usado em `ReferralPartner.html` (texto fixo em português, sem
 sistema de tradução, mesma convenção das páginas públicas/standalone
 específicas de um tipo de conta).
+
+### Melhorias no painel do promotor + aba de detalhes no admin (v1.87.0)
+
+Sequência direta da v1.86.0 - usuário pediu 6 melhorias de uma vez
+pro painel recém-criado, mais uma aba nova no `admin.html` (visão do
+próprio Caio sobre como cada promotor está indo: hospedagens
+indicadas, quem pagar, quem já foi pago, quanto, quando). Todas as
+peças reaproveitam infraestrutura já existente, sem tabela nova
+nenhuma.
+
+**Notificação push em 3 momentos** (best-effort, `try/except` que
+nunca quebra o fluxo principal se o push falhar - mesmo padrão já
+usado em `send_push_to_admin` no auto-cadastro de indicação, v1.79.0):
+(1) nova indicação — no `POST /register` com `referral_code` válido,
+se quem indicou tem `linked_hostel_id` preenchido (conta StayFlow de
+verdade, não promotor externo sem login); (2) `past_due` — no webhook
+de pagamento reprovado (`mercadopago_billing_webhook.py`); (3)
+`canceled` — em `POST /billing/cancel`. Nova
+`notify_referring_promoter_of_status_change(hostel_id, new_status)`
+centraliza (2) e (3). Decisão deliberada: SEM `notification_type` nas
+chamadas de push (ignora o filtro de preferência que `send_push_to_hostel`
+normalmente aplica) - promotor não tem UI de notificação configurável
+hoje (`PromoterDashboard.html` é enxuta de propósito), e isso é a
+informação central do relacionamento dele com a StayFlow, não um
+aviso operacional silenciável.
+
+**Materiais pra divulgar**: card novo com 2 textos prontos (mensagem
+de WhatsApp + legenda pra post), montados em JS já com o link de
+indicação embutido, cada um com botão de copiar próprio. **Botão
+compartilhar**: `navigator.share()` nativo, só aparece quando o
+navegador suporta (celular, principalmente) - `copyLink()` continua
+sendo o caminho garantido em qualquer navegador.
+
+**Editar contato próprio**: nova `PUT /promoter/contact` grava
+`referral_partners.contact_email`/`contact_phone` da linha vinculada
+à PRÓPRIA hospedagem (`linked_hostel_id`, nunca um id arbitrário vindo
+do cliente) - antes só dava pra atualizar pedindo pro Caio mexer no
+admin.html.
+
+**`PromoterSignup.html`** (nova página standalone): cadastro dedicado
+só pra promotor - nome, e-mail, senha, sem os campos de hospedagem que
+não fazem sentido pra essa conta (o seletor completo em `Register.html`
+continua existindo, essa é só uma porta de entrada mais direta,
+pensada pra compartilhar num link do Instagram/WhatsApp). Chama
+`POST /register` com `account_kind: 'promoter'` fixo.
+
+**Aba "Ver detalhes" no admin** (`admin.html`, quadro Indicações):
+antes o admin só via totais agregados por parceiro (contagem de
+cobranças, valor total devido). Achado que evitou duplicar lógica:
+`get_promoter_dashboard_data(hostel_id)` (v1.86.0) já calculava
+exatamente o dado que faltava (hospedagens indicadas + histórico
+individual) — refatorado em uma função-núcleo compartilhada,
+`_referral_partner_dashboard_payload(partner)`, chamada tanto por
+`get_promoter_dashboard_data(hostel_id)` (resolve o parceiro a partir
+da própria sessão) quanto pela nova `get_referral_partner_dashboard_data(partner_id)`
+(admin vê QUALQUER parceiro, com ou sem conta StayFlow, resolvendo
+direto pelo id). Nova rota `GET /stayflow-admin/referral-partners/<id>/details`.
+Painel de detalhes inline (mesmo padrão visual já usado no histórico
+de atividade do funcionário, Equipe) mostra as hospedagens indicadas
+com status de billing e os últimos lançamentos com data/valor/%/status.
+8 chaves i18n novas no `ADMIN_I18N` (278→286).
+
+Testado em banco isolado e via Flask test client, ponta a ponta: editar
+contato próprio funciona e aparece de volta no painel; registro com
+`referral_code` + notificação (push não configurado no ambiente de
+teste) não quebra; `notify_referring_promoter_of_status_change` não
+quebra em nenhum cenário (com parceiro vinculado, sem parceiro, com
+parceiro sem `linked_hostel_id`, status irrelevante); webhook de
+pagamento reprovado seta `past_due` e dispara a notificação sem
+quebrar; rota de cancelamento não quebra mesmo sem Mercado Pago
+configurado de verdade (403/502 esperado, nunca 500); admin autenticado
+via allowlist consegue ver detalhes de um parceiro específico pelo id,
+e um id inexistente devolve 404 corretamente.
