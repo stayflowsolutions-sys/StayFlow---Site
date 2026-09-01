@@ -8098,3 +8098,67 @@ biometria/WebAuthn (razão detalhada acima), geocodificação reversa
 (lat/lng → endereço legível - sem integração de mapa no projeto),
 edição de um registro de ponto já feito (continua fora, mesma decisão
 da v1.71.0).
+
+### Tier white-label pra revenda — pilar 1 de 4: marca própria (v1.82.0)
+
+Item 27 da fila, sinalizado desde a criação como "maior esforço".
+Antes de planejar, perguntei o escopo direto pro usuário porque
+"revenda" podia significar coisas bem diferentes em tamanho —
+investigação (2 agentes Explore) tinha confirmado que branding é 100%
+hardcoded hoje ("StayFlow" fixo em nome/logo/cor/favicon em 7+
+páginas), billing é rígido (1 hospedagem → 1 preço fixo → 1 pagamento
+direto na conta MP da StayFlow), não existe conceito de "uma conta
+gerencia N hospedagens de clientes" além do multi-propriedade pessoal
+(v1.70.0), e domínio próprio não existe de jeito nenhum. Nenhum piloto
+real pediu isso ainda. O usuário respondeu **"pode construir tudo"** —
+os 3 pilares completos (marca + preço próprio do revendedor + domínio
+próprio), mais a entidade revendedor em si.
+
+Dado o tamanho, um agente Plan detalhou a arquitetura completa
+reaproveitando ao máximo padrões já existentes (`referral_partners`/
+`subscription_referral_ledger` como molde pro futuro ledger de margem,
+`/account/add-hostel` como molde pra criar hospedagem-cliente,
+`?ref=CODE` como molde pro futuro `?reseller=CODE`), e a decisão foi
+construir em **4 versões independentes**, cada uma testável/publicável
+sozinha, em vez de um único commit gigante: marca (esta versão),
+depois entidade revendedor, depois preço/margem, depois domínio.
+
+Esta primeira parte é a base visual, e funciona sozinha mesmo sem
+nenhum revendedor existir ainda (qualquer hospedagem já pode usar a
+própria marca, se quiser). 4 colunas novas em `hostels`
+(`brand_logo_url`, `brand_display_name`, `brand_primary_color`,
+`brand_favicon_url`, todas nullable — `NULL` em tudo mantém o visual
+padrão da StayFlow, comportamento idêntico a antes) — deliberadamente
+NÃO reaproveitando `settings.logo_url` (campo morto desde sempre,
+nunca foi renderizado em lugar nenhum) porque marca é propriedade da
+hospedagem, não uma configuração operacional como o resto de
+`settings`. Nova permission key `branding` em `utils/permissions.py`,
+separada de `settings` de propósito: `settings` mistura fiscal/
+timezone/alertas, que um futuro revendedor gerenciando só a marca de
+um cliente não deveria poder tocar (e vice-versa). `get_hostel()`
+estendido pra devolver os 4 campos nôvos, `build_session_payload()`
+(`routes/auth.py`) repassa pro payload de `/me` — mesmo ponto único já
+usado por `account_kind`/`agency_category`.
+
+Nova rota `PUT /settings/branding` (gated `@require_permission("branding")`,
+não `"settings"`), com validação simples de formato hex pra cor
+(`#rrggbb`) — rejeição nunca apaga o que já estava salvo. Frontend:
+nova função `applyBranding(session)` no `dashboard.html`, chamada logo
+após `window.STAYFLOW_SESSION` ser montado (mesmo ponto de hidratação
+único já usado pela moeda) — troca `src` das 3 ocorrências de
+`.brand-logo` (sidebar + 2 cabeçalhos de IA), `document.title`, a
+custom property `--blue` via `style.setProperty` (só 1 cor sobrescrita,
+sem motor de tema completo/derivação de tons), e o `<link rel="icon">`.
+Nova seção "Marca" dentro de Configurações → Empresa, com
+`data-required-permission="branding"` (mesmo padrão já usado pelo card
+de Billing) — visível só pra quem tem essa permissão, independente de
+ter `settings`. 8 chaves i18n novas nos 11 idiomas (1.131→1.139).
+
+Testado em banco isolado e via Flask test client: sessão sem marca
+configurada devolve tudo `None` sem quebrar nada; salvar e reler bate;
+cor fora do formato hex é rejeitada sem apagar a marca anterior; campos
+vazios voltam pro padrão (`NULL`); `get_hostel()` isolado também
+devolve os 4 campos certos.
+
+**Próximo**: pilar 2 (entidade revendedor + vínculo com hospedagem-
+cliente), depois preço/margem, depois domínio.
