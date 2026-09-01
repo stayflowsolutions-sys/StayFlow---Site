@@ -136,7 +136,14 @@ const p={
 };
 const r=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
 const d=await r.json();
-if(!r.ok||!d.success){m.textContent=d.message||'Erro';return;}
+if(!r.ok||!d.success){
+  if(d.already_registered){
+    m.innerHTML='Esse e-mail já tem uma conta StayFlow. <a href="Login.html">Faça login</a> e use "+ Adicionar hospedagem" no seletor do topo pra criar essa conta adicional sob o mesmo login.';
+  }else{
+    m.textContent=d.message||'Erro';
+  }
+  return;
+}
 location.href='Login.html';
 }
 </script></body></html>
