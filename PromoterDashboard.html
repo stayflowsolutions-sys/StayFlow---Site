@@ -1,0 +1,180 @@
+<!DOCTYPE html><html lang='pt-BR' translate='no'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><meta name='google' content='notranslate'><title>StayFlow | Painel do Promotor</title><link rel='manifest' href='/manifest.json'><meta name='theme-color' content='#03070d'><link rel='icon' href='/assets/images/icon-192.png'><link rel='apple-touch-icon' href='/assets/images/apple-touch-icon.png'><meta name='apple-mobile-web-app-capable' content='yes'><meta name='apple-mobile-web-app-title' content='StayFlow'><script>if("serviceWorker" in navigator){window.addEventListener("load", () => {navigator.serviceWorker.register("/sw.js").catch(e => console.warn("Erro ao registrar service worker:", e));});}</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;min-height:100vh;background:#06101b;color:#fff}
+body:before{content:'';position:fixed;inset:0;opacity:.14;background:url('https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg') center/cover no-repeat;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:32px 20px 60px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.brand{display:flex;align-items:center;gap:0}
+.brand img{width:64px;margin-right:-14px}
+.brand h1{font-size:20px}
+.brand h1 span{color:#2f7dff}
+#logoutBtn{background:transparent;border:1px solid #233652;color:#9aa8bb;padding:8px 16px;border-radius:12px;cursor:pointer;font-size:13px}
+.card{background:rgba(8,12,20,.9);border:1px solid #233652;border-radius:22px;padding:24px 26px;margin-bottom:20px}
+.card h2{font-size:16px;margin-bottom:6px}
+.card p.desc{font-size:13px;color:#9aa8bb;line-height:1.6;margin-bottom:14px}
+.codeRow{display:flex;gap:8px}
+.codeRow input{flex:1;padding:14px;background:#0d1421;border:1px solid #233652;border-radius:13px;color:#fff;font-size:14px}
+.codeRow button{padding:14px 20px;background:#2f7dff;border:none;border-radius:13px;color:#fff;font-weight:700;cursor:pointer;white-space:nowrap}
+#copyMsg{font-size:12px;color:#26e0a0;margin-top:8px;min-height:16px}
+.statsGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.statBox{background:#0d1421;border:1px solid #233652;border-radius:15px;padding:16px 18px}
+.statBox .label{font-size:11px;color:#9aa8bb;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.statBox .value{font-size:22px;font-weight:800}
+.tierNote{font-size:12px;color:#9aa8bb;margin-top:14px;background:#0d1421;border:1px solid #233652;border-radius:13px;padding:12px 16px}
+.tierNote strong{color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:#9aa8bb;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;border-bottom:1px solid #233652}
+td{padding:10px;border-bottom:1px solid #16233a}
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.pill.active{background:#0f3d2e;color:#26e0a0}
+.pill.trialing{background:#2a2410;color:#ffbd4a}
+.pill.past_due,.pill.canceled{background:#3d1420;color:#ff5d76}
+.pill.accrued{background:#2a2410;color:#ffbd4a}
+.pill.paid_out{background:#0f3d2e;color:#26e0a0}
+.empty{color:#65758b;font-size:13px;padding:14px 0}
+.tableWrap{overflow-x:auto}
+</style></head><body>
+<div class='wrap'>
+  <div class='topbar'>
+    <div class='brand'><img src='assets/images/logo2.png'><h1>Stay<span>Flow</span></h1></div>
+    <button id='logoutBtn' onclick='doLogout()'>Sair</button>
+  </div>
+
+  <div class='card'>
+    <h2>🔗 Seu link de indicação</h2>
+    <p class='desc'>Compartilhe com qualquer hospedagem — quando alguém se cadastrar por ele e virar cliente pagante, a comissão cai automaticamente pra você, todo mês.</p>
+    <div class='codeRow'>
+      <input id='referralLink' readonly>
+      <button type='button' onclick='copyLink()'>Copiar</button>
+    </div>
+    <p id='copyMsg'></p>
+  </div>
+
+  <div class='card'>
+    <h2>💰 Sua comissão</h2>
+    <div class='statsGrid'>
+      <div class='statBox'><div class='label'>Faixa atual</div><div class='value' id='statTier'>—</div></div>
+      <div class='statBox'><div class='label'>Indicações ativas</div><div class='value' id='statActiveCount'>—</div></div>
+      <div class='statBox'><div class='label'>A receber</div><div class='value' id='statAccrued'>—</div></div>
+      <div class='statBox'><div class='label'>Já recebido</div><div class='value' id='statPaidOut'>—</div></div>
+    </div>
+    <div class='tierNote' id='tierProgressNote'></div>
+  </div>
+
+  <div class='card'>
+    <h2>🏨 Hospedagens indicadas</h2>
+    <p class='desc'>Todas as hospedagens que já se cadastraram com o seu link.</p>
+    <div class='tableWrap'>
+      <table id='hostelsTable' style='display:none'>
+        <thead><tr><th>Hospedagem</th><th>Status</th></tr></thead>
+        <tbody id='hostelsTableBody'></tbody>
+      </table>
+    </div>
+    <p class='empty' id='hostelsEmpty'>Nenhuma hospedagem indicada ainda.</p>
+  </div>
+
+  <div class='card'>
+    <h2>📋 Histórico de comissões</h2>
+    <div class='tableWrap'>
+      <table id='historyTable' style='display:none'>
+        <thead><tr><th>Data</th><th>Hospedagem</th><th>Valor</th><th>%</th><th>Status</th></tr></thead>
+        <tbody id='historyTableBody'></tbody>
+      </table>
+    </div>
+    <p class='empty' id='historyEmpty'>Nenhum lançamento ainda.</p>
+  </div>
+</div>
+
+<script>
+const STATUS_LABELS = { trialing: 'Em teste', active: 'Ativo', past_due: 'Pagamento pendente', canceled: 'Cancelado', comp: 'Cortesia' };
+const LEDGER_STATUS_LABELS = { accrued: 'A receber', paid_out: 'Pago' };
+
+(async function(){
+  try{
+    const res = await fetch('/me', { credentials: 'same-origin' });
+    if(!res.ok){ window.location.href = '/Login.html'; return; }
+    const session = await res.json();
+    if(!session.success || !session.user){ window.location.href = '/Login.html'; return; }
+    if(session.account_kind !== 'promoter'){ window.location.href = '/app'; return; }
+    loadDashboard();
+  }catch(e){
+    window.location.href = '/Login.html';
+  }
+})();
+
+async function loadDashboard(){
+  try{
+    const res = await fetch('/promoter/dashboard', { credentials: 'same-origin' });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data.success) return;
+
+    document.getElementById('referralLink').value = `${location.origin}/Register.html?ref=${data.referral_code}`;
+
+    document.getElementById('statTier').textContent = `${Math.round(data.current_tier_pct * 100)}%`;
+    document.getElementById('statActiveCount').textContent = data.active_referral_count;
+    document.getElementById('statAccrued').textContent = formatMoney(data.total_accrued);
+    document.getElementById('statPaidOut').textContent = formatMoney(data.total_paid_out);
+
+    const tierNote = document.getElementById('tierProgressNote');
+    if(data.next_tier){
+      tierNote.innerHTML = `Faltam <strong>${data.next_tier.remaining}</strong> indicação(ões) ativa(s) pra você subir pra <strong>${Math.round(data.next_tier.pct * 100)}%</strong>.`;
+    }else{
+      tierNote.innerHTML = `Você está na faixa máxima de comissão. 🎉`;
+    }
+
+    const hostelsTable = document.getElementById('hostelsTable');
+    const hostelsBody = document.getElementById('hostelsTableBody');
+    const hostelsEmpty = document.getElementById('hostelsEmpty');
+    if(data.referred_hostels.length){
+      hostelsTable.style.display = '';
+      hostelsEmpty.style.display = 'none';
+      hostelsBody.innerHTML = data.referred_hostels.map(h => `
+        <tr>
+          <td>${h.name}</td>
+          <td><span class="pill ${h.billing_status || ''}">${STATUS_LABELS[h.billing_status] || h.billing_status || '—'}</span></td>
+        </tr>`).join('');
+    }
+
+    const historyTable = document.getElementById('historyTable');
+    const historyBody = document.getElementById('historyTableBody');
+    const historyEmpty = document.getElementById('historyEmpty');
+    if(data.history.length){
+      historyTable.style.display = '';
+      historyEmpty.style.display = 'none';
+      historyBody.innerHTML = data.history.map(h => `
+        <tr>
+          <td>${(h.created_at || '').split(' ')[0]}</td>
+          <td>${h.hostel_name}</td>
+          <td>${formatMoney(h.amount_owed, h.currency)}</td>
+          <td>${Math.round(h.commission_pct * 100)}%</td>
+          <td><span class="pill ${h.status}">${LEDGER_STATUS_LABELS[h.status] || h.status}</span></td>
+        </tr>`).join('');
+    }
+  }catch(e){
+    console.warn('Erro ao carregar painel do promotor:', e);
+  }
+}
+
+function formatMoney(value, currency){
+  const n = Number(value || 0);
+  return `${currency || 'ARS'} ${n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+}
+
+function copyLink(){
+  const input = document.getElementById('referralLink');
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(() => {
+    document.getElementById('copyMsg').textContent = 'Link copiado!';
+    setTimeout(() => { document.getElementById('copyMsg').textContent = ''; }, 2000);
+  }).catch(() => {});
+}
+
+async function doLogout(){
+  try{ await fetch('/logout', { method: 'POST', credentials: 'same-origin' }); }catch(e){}
+  window.location.href = '/Login.html';
+}
+</script>
+</body></html>

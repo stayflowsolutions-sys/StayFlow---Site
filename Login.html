@@ -123,7 +123,16 @@
       // painel dele (admin.html) - pedido explicito: nao passar por
       // nenhuma tela intermediaria antes do local principal de trabalho.
       // De la, ele troca de propriedade pelo seletor no topo do painel.
-      window.location.href = data.is_stayflow_admin ? "admin.html" : "/app";
+      // Promotor (item 27b) nunca opera hospedagem/agencia - cai numa
+      // pagina dedicada em vez do dashboard.html normal (que tem
+      // reservas/chats/etc irrelevantes pra essa conta).
+      if(data.is_stayflow_admin){
+        window.location.href = "admin.html";
+      }else if(data.account_kind === "promoter"){
+        window.location.href = "PromoterDashboard.html";
+      }else{
+        window.location.href = "/app";
+      }
     }
 
     let pendingTwoFactorToken = null;
