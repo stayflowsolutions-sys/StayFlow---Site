@@ -8301,3 +8301,58 @@ marca como pago sem duplicar.
 
 **Próximo**: pilar 4 (resolução por domínio) — encerra o tier
 white-label.
+
+### Tier white-label pra revenda — pilar 4 de 4: domínio próprio (v1.85.0)
+
+Último pilar, encerra o item 27. Nova coluna `hostels.custom_domain`
+(nullable, índice único parcial — mesmo padrão já usado em
+`portfolio_items.external_id`). Novo `@app.before_request` em `app.py`
+(`resolve_hostel_by_domain`) resolve `request.host` → hospedagem,
+guardando em `g.domain_hostel_id` — pula a consulta pros domínios que
+a própria StayFlow já conhece de antemão (`stayflowsolutions.com` e
+variações, `*.onrender.com`), único jeito de não rodar 1 query a mais
+em TODA requisição do produto normal. **Nunca substitui a resolução de
+tenant por sessão em rota protegida nenhuma** — só alimenta a marca
+das páginas públicas de entrada.
+
+Nova rota pública (sem autenticação, mesmo espírito minimalista de
+`/register` — sem rate-limit/captcha, já confirmado que não existe em
+lugar nenhum do projeto) `GET /public/hostel-branding`
+(`routes/public_branding.py`, blueprint novo), com dois caminhos de
+resolução: `?reseller=CODE` explícito (link de registro do revendedor,
+devolve a marca PADRÃO dele, já que ainda não existe hospedagem-
+cliente nesse momento) ou por domínio (`g.domain_hostel_id`, devolve a
+marca da própria hospedagem). Sem nenhum dos dois casando, devolve
+`branding: null` — página cai no visual padrão da StayFlow, nunca
+quebra. `Login.html`/`Register.html` chamam essa rota no carregamento
+e aplicam o mesmo conjunto de trocas já usado no `dashboard.html`
+desde a v1.82.0 (logo, `document.title`, `--blue` via custom property,
+favicon) — sem motor de template novo, só JS lendo a resposta antes de
+mostrar o formulário. Seção "Marca" em Configurações ganhou o campo de
+domínio próprio, salvo pela mesma `PUT /settings/branding` já
+existente (`save_hostel_branding` agora também grava/valida
+`custom_domain`, levantando erro amigável se já estiver em uso por
+outra hospedagem).
+
+**Deixado explícito, como o próprio plano já previa**: o código
+resolve certo QUALQUER domínio já apontado pro app, mas configurar o
+DNS de cada revendedor/cliente e cadastrar o domínio no painel do
+Render continuam sendo passos manuais - fora do alcance do código,
+cabe ao Caio orientar quando um revendedor de verdade pedir isso.
+
+Testado em banco isolado e via Flask test client: domínio conhecido
+resolve pra hospedagem certa; domínio desconhecido não resolve (nunca
+quebra); domínio duplicado entre 2 hospedagens é rejeitado
+(`ValueError` amigável); rota pública via header `Host` devolve a
+marca certa; `Host` desconhecido devolve `branding: null`; resolução
+por `?reseller=CODE` funciona independente de domínio; domínio
+conhecido da própria StayFlow nunca tenta resolver (sempre
+`branding: null` ali, comportamento esperado - a marca da StayFlow já
+é a padrão da página).
+
+**Encerra o tier white-label pra revenda (item 27) em 4 versões**:
+v1.82.0 (marca), v1.83.0 (entidade revendedor), v1.84.0 (preço/margem),
+v1.85.0 (domínio) - cada uma testada, publicada e documentada de forma
+independente, seguindo a decisão de escopo aprovada no início ("pode
+construir tudo", com as 5 fronteiras explícitas que definiram o que
+"tudo" significou nesta implementação).
