@@ -308,6 +308,13 @@ window.applyPromoterHome = function(session){
   loadPromoterHomeData();
 };
 
+function referralHostelStatusPillClass(status){
+  if(status === "active") return "ok";
+  if(status === "trialing") return "ai";
+  if(status === "canceled" || status === "past_due") return "hot";
+  return "cold";
+}
+
 async function loadPromoterHomeData(){
   try{
     const res = await fetch("/promoter/dashboard", { credentials: "same-origin" });
@@ -320,19 +327,36 @@ async function loadPromoterHomeData(){
     if(linkInput) linkInput.value = link;
     if(navigator.share) document.getElementById("promoterHomeShareBtn").style.display = "";
 
-    document.getElementById("promoterHomeTier").textContent = `${Math.round(data.current_tier_pct * 100)}%`;
+    const tierPct = Math.round(data.current_tier_pct * 100);
+    document.getElementById("promoterHomeTier").textContent = `${tierPct}%`;
     document.getElementById("promoterHomeActiveCount").textContent = data.active_referral_count;
     document.getElementById("promoterHomeAccrued").textContent = formatMoney(data.total_accrued);
     document.getElementById("promoterHomePaidOut").textContent = formatMoney(data.total_paid_out);
 
-    const list = document.getElementById("promoterHomeHostelsList");
-    const empty = document.getElementById("promoterHomeHostelsEmpty");
+    const tierPctEl = document.getElementById("referralsTierPct");
+    if(tierPctEl) tierPctEl.textContent = `${tierPct}%`;
+    const hintEl = document.getElementById("referralsNextTierHint");
+    const barEl = document.getElementById("referralsTierBar");
+    if(data.next_tier){
+      if(hintEl) hintEl.textContent = `Faltam ${data.next_tier.remaining} indicação(ões) ativa(s) pra chegar a ${Math.round(data.next_tier.pct * 100)}%`;
+      if(barEl) barEl.style.width = `${Math.min(100, (data.active_referral_count / data.next_tier.threshold) * 100)}%`;
+    }else{
+      if(hintEl) hintEl.textContent = "Faixa máxima atingida 🎉";
+      if(barEl) barEl.style.width = "100%";
+    }
+
+    const list = document.getElementById("referralsHostelsList");
+    const empty = document.getElementById("referralsHostelsEmpty");
     if(data.referred_hostels.length){
       empty.style.display = "none";
-      list.innerHTML = data.referred_hostels.map(h => `
-        <div style="background:#0d1421;border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between">
-          <span>${h.name}</span><span style="color:var(--muted)">${h.billing_status || "—"}</span>
-        </div>`).join("");
+      list.innerHTML = data.referred_hostels.map(h => {
+        const status = h.billing_status || "—";
+        return `
+        <div style="background:#0d1421;border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:600">${escapeHtml(h.name)}</span>
+          <span class="status-pill ${referralHostelStatusPillClass(status)}">${escapeHtml(status).toUpperCase()}</span>
+        </div>`;
+      }).join("");
     }else{
       list.innerHTML = "";
       empty.style.display = "";
@@ -942,6 +966,9 @@ async function deleteRoleConfirm(roleId){
     <button data-page="dashboard" class="active" onclick="openPage('dashboard',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></span><span data-i18n="nav.dashboard">Dashboard</span>
     </button>
+    <button data-page="referrals" data-required-permission="promoter" onclick="openPage('referrals',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M9 15 15 9"/><path d="M10 6l1-1a4 4 0 0 1 6 6l-1 1"/><path d="M14 18l-1 1a4 4 0 0 1-6-6l1-1"/></svg></span><span data-i18n="nav.referrals">Indicações</span>
+    </button>
     <button data-page="chats" onclick="openPage('chats',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="nav.chats">Chats</span>
     </button>
@@ -951,7 +978,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="roommap" data-required-permission="operations" data-required-account-kind="lodging" onclick="openPage('roommap',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="6" rx="1.5"/><rect x="13" y="13" width="8" height="6" rx="1.5"/></svg></span><span data-i18n="nav.roommap">Mapa de Quartos</span>
     </button>
-    <button data-page="opportunities" onclick="openPage('opportunities',this)">
+    <button data-page="opportunities" data-hide-for-account-kind="promoter" onclick="openPage('opportunities',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3s4 4 4 8a4 4 0 0 1-8 0c0-4 4-8 4-8z"/><path d="M7 14a5 5 0 0 0 10 0"/></svg></span><span data-i18n="nav.opportunities">Opportunity Center</span>
     </button>
     <button data-page="partners" data-required-permission="partners" data-required-account-kind="lodging" onclick="openPage('partners',this)">
@@ -960,7 +987,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="portfolio" data-required-permission="portfolio" data-required-account-kind="agency" onclick="openPage('portfolio',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span><span data-i18n="nav.portfolio">Meu Portfólio</span>
     </button>
-    <button data-page="guests" onclick="openPage('guests',this)">
+    <button data-page="guests" data-hide-for-account-kind="promoter" onclick="openPage('guests',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4"/><circle cx="12" cy="9" r="3"/><path d="M20 19c0-1.7-1-3.1-2.5-3.7"/><path d="M17 7.2a2.5 2.5 0 0 1 0 3.6"/></svg></span><span data-i18n="nav.guests" id="navGuestsLabel">Hóspedes</span>
     </button>
     <button data-page="operations" data-required-account-kind="lodging" onclick="openPage('operations',this)">
@@ -972,7 +999,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="salesportfolio" data-required-permission="promoter" onclick="openPage('salesportfolio',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></span><span data-i18n="nav.salesPortfolio">Portfólio de Vendas</span>
     </button>
-    <button data-page="finance" onclick="openPage('finance',this)">
+    <button data-page="finance" data-hide-for-account-kind="promoter" onclick="openPage('finance',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></span><span data-i18n="nav.finance">Financeiro</span>
     </button>
     <button data-page="inventory" data-required-account-kind="lodging" onclick="openPage('inventory',this)">
@@ -984,7 +1011,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="events" data-required-permission="events" data-required-account-kind="lodging" onclick="openPage('events',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/></svg></span><span data-i18n="nav.events">Eventos</span>
     </button>
-    <button data-page="reports" onclick="openPage('reports',this)">
+    <button data-page="reports" data-hide-for-account-kind="promoter" onclick="openPage('reports',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M9 19v-7"/><path d="M13 19V8"/><path d="M17 19v-4"/></svg></span><span data-i18n="nav.reports">Relatórios</span>
     </button>
     <button data-page="settings" onclick="openPage('settings',this)">
@@ -1232,19 +1259,12 @@ async function deleteRoleConfirm(roleId){
   <!-- Home do promotor (item 27b) - substitui o grid normal acima, que
        nao tem nenhum KPI relevante pra quem nao opera hospedagem/
        agencia (ocupacao, reservas, hospedes... nada disso existe pra
-       essa conta). Toggle em applyPromoterHome(). -->
+       essa conta). Toggle em applyPromoterHome(). So um resumo rapido
+       (KPIs + atalhos) - o link de indicacao de verdade, com a faixa de
+       comissao e a lista de hospedagens, mora na aba "Indicacoes"
+       (#referrals) desde que deixou de fazer sentido enterrado aqui
+       dentro do Dashboard, ver pedido do usuario 2026-09-01.-->
   <div class="grid" id="promoterHomeGrid" style="display:none">
-    <div class="card span-12">
-      <h2>🔗 Seu link de indicação</h2>
-      <p style="color:var(--muted);font-size:13px;margin:6px 0 14px">Compartilhe com qualquer hospedagem — quando alguém se cadastrar por ele e virar cliente pagante, a comissão cai automaticamente pra você, todo mês.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <input id="promoterHomeLink" readonly style="flex:1;min-width:220px">
-        <button class="btn secondary" type="button" onclick="copyPromoterHomeLink()">Copiar</button>
-        <button class="btn secondary" type="button" id="promoterHomeShareBtn" style="display:none" onclick="sharePromoterHomeLink()">Compartilhar</button>
-      </div>
-      <p id="promoterHomeCopyMsg" style="font-size:12px;color:var(--green,#26e0a0);margin-top:6px;min-height:16px"></p>
-    </div>
-
     <div class="card kpi">
       <div><div class="label">Faixa atual</div><div class="value" id="promoterHomeTier">—</div></div>
     </div>
@@ -1258,11 +1278,46 @@ async function deleteRoleConfirm(roleId){
       <div><div class="label">Já recebido</div><div class="value" id="promoterHomePaidOut">—</div></div>
     </div>
 
-    <div class="card span-12">
-      <h2>🏨 Hospedagens indicadas</h2>
-      <div id="promoterHomeHostelsList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
-      <p class="sf-empty-inline" id="promoterHomeHostelsEmpty" style="color:var(--muted);font-size:13px;display:none">Nenhuma hospedagem indicada ainda.</p>
+    <div class="card span-12" style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn" type="button" onclick="openPage('referrals', document.querySelector('[data-page=referrals]'))">🔗 Ver meu link e indicações</button>
+      <button class="btn secondary" type="button" onclick="openPage('chats', document.querySelector('[data-page=chats]'))">💬 Ir pros Chats</button>
+      <button class="btn secondary" type="button" onclick="openPage('salesportfolio', document.querySelector('[data-page=salesportfolio]'))">📊 Portfólio de Vendas</button>
     </div>
+  </div>
+</section>
+
+<!-- INDICAÇÕES (item 27b - so pro promotor) - link de indicacao, faixa
+     de comissao e lista de hospedagens indicadas. Antes vivia dentro do
+     Dashboard como uma caixinha de input+botao "analogica"; virou aba
+     propria com visual mais trabalhado a pedido do usuario. -->
+<section id="referrals" class="page">
+  <div class="card span-12" style="background:linear-gradient(135deg,#0b84ff1c,#23d2ff0c);border:1px solid #0b84ff30">
+    <h2>🔗 Seu link de indicação</h2>
+    <p style="color:var(--muted);font-size:13px;margin:6px 0 16px">Compartilhe com qualquer hospedagem — quando alguém se cadastrar por ele e virar cliente pagante, a comissão cai automaticamente pra você, todo mês.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px 16px">
+      <span style="font-size:16px;line-height:1">🔗</span>
+      <input id="promoterHomeLink" readonly style="flex:1;min-width:220px;background:transparent;border:none;font-family:ui-monospace,'SF Mono',Consolas,monospace;font-size:13px;color:#f7fbff;outline:none">
+      <button class="btn secondary" type="button" onclick="copyPromoterHomeLink()">📋 Copiar</button>
+      <button class="btn" type="button" id="promoterHomeShareBtn" style="display:none" onclick="sharePromoterHomeLink()">📤 Compartilhar</button>
+    </div>
+    <p id="promoterHomeCopyMsg" style="font-size:12px;color:var(--green,#26e0a0);margin-top:8px;min-height:16px"></p>
+  </div>
+
+  <div class="card span-12" style="margin-top:16px">
+    <h2 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px">📈 Sua faixa de comissão</h2>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <span style="font-size:34px;font-weight:800" id="referralsTierPct">—</span>
+      <span style="font-size:12px;color:var(--muted)" id="referralsNextTierHint"></span>
+    </div>
+    <div style="height:8px;border-radius:999px;background:#ffffff10;overflow:hidden">
+      <div id="referralsTierBar" style="height:100%;width:0%;background:linear-gradient(90deg,#0b84ff,#23d2ff);border-radius:999px;transition:width .5s"></div>
+    </div>
+  </div>
+
+  <div class="card span-12" style="margin-top:16px">
+    <h2>🏨 Hospedagens indicadas</h2>
+    <div id="referralsHostelsList" style="margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
+    <p class="sf-empty-inline" id="referralsHostelsEmpty" style="color:var(--muted);font-size:13px;display:none">Nenhuma hospedagem indicada ainda.</p>
   </div>
 </section>
 
@@ -2250,14 +2305,14 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div class="settings-menu" style="margin-top:16px;display:grid;gap:8px">
-        <button class="btn secondary active" data-settings-target="geral" data-i18n="settings.menu.general">Geral</button>
-        <button class="btn secondary" data-settings-target="empresa" data-i18n="settings.menu.company">Empresa</button>
-        <button class="btn secondary" data-settings-target="ia" data-i18n="settings.menu.ai">IA</button>
+        <button class="btn secondary active" data-settings-target="geral" data-hide-for-account-kind="promoter" data-i18n="settings.menu.general">Geral</button>
+        <button class="btn secondary" data-settings-target="empresa" data-hide-for-account-kind="promoter" data-i18n="settings.menu.company">Empresa</button>
+        <button class="btn secondary" data-settings-target="ia" data-hide-for-account-kind="promoter" data-i18n="settings.menu.ai">IA</button>
         <button class="btn secondary" data-settings-target="comunicacao" data-i18n="settings.menu.communication">Comunicação</button>
-        <button class="btn secondary" data-settings-target="integracoes" data-i18n="settings.menu.integrations">Integrações</button>
-        <button class="btn secondary" onclick="openPage('team', document.querySelector('[data-page=team]'))" data-i18n="nav.team">Equipe</button>
+        <button class="btn secondary" data-settings-target="integracoes" data-hide-for-account-kind="promoter" data-i18n="settings.menu.integrations">Integrações</button>
+        <button class="btn secondary" data-hide-for-account-kind="promoter" onclick="openPage('team', document.querySelector('[data-page=team]'))" data-i18n="nav.team">Equipe</button>
         <button class="btn secondary" data-settings-target="seguranca" data-i18n="settings.menu.security">Segurança</button>
-        <button class="btn secondary" data-settings-target="billing">Billing</button>
+        <button class="btn secondary" data-settings-target="billing" data-hide-for-account-kind="promoter">Billing</button>
       </div>
     </div>
 
@@ -2735,6 +2790,7 @@ async function deleteRoleConfirm(roleId){
 
   const PAGE_LABELS = {
     dashboard:    ["nav.dashboard",     "topbar.subtitle.dashboard"],
+    referrals:    ["nav.referrals",     "topbar.subtitle.referrals"],
     chats:        ["nav.chats",         "topbar.subtitle.chats"],
     opportunities:["nav.opportunities", "topbar.subtitle.opportunities"],
     reservations: ["nav.reservations",  "topbar.subtitle.reservations"],
@@ -5857,6 +5913,7 @@ async function deleteRoleConfirm(roleId){
     // topo (mesmo padrao ja usado em openPage()).
     window.scrollTo({top:0, behavior:"smooth"});
   }
+  window.switchSettingsSection = switchSettingsSection;
 
   window.settingsBackToMenu = function(){
     const settingsGrid = document.querySelector("#settings > .grid");
@@ -11913,6 +11970,18 @@ window.uploadGuestDocumentUI = async function(guestId){
     try{ hideNavItemsWithoutPermission(session.permissions || [], session.account_kind); }catch(e){ console.error("Erro ao esconder itens de menu sem permissao:", e); }
     try{ applyHideForAccountKind(session.account_kind); }catch(e){ console.error("Erro ao esconder itens especificos de tipo de conta:", e); }
     try{ if(session.account_kind === "promoter") applyPromoterHome(session); }catch(e){ console.error("Erro ao montar home do promotor:", e); }
+    try{
+      // Promotor nao tem "Geral" (padrao de fabrica de Configuracoes) -
+      // esse botao fica escondido (data-hide-for-account-kind), entao
+      // sem isso a tela abria em branco na primeira vez que a pessoa
+      // entrava em Configuracoes. "Comunicacao" e a primeira aba que
+      // sobra visivel pra essa conta (WhatsApp/Facebook/Instagram/
+      // notificacoes/respostas rapidas - unica coisa que faz sentido
+      // configurar sem operar hospedagem/agencia nenhuma).
+      if(session.account_kind === "promoter" && typeof switchSettingsSection === "function"){
+        switchSettingsSection("comunicacao");
+      }
+    }catch(e){ console.error("Erro ao ajustar aba padrao de Configuracoes do promotor:", e); }
     try{
       // Agencia parceira chama guest de "PAX" (turismo/locacao) ou
       // "Clientes" (demais categorias) - hospedagem continua "Hospedes".
