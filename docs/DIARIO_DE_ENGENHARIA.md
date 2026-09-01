@@ -8591,3 +8591,44 @@ criada sob o mesmo `user_id`, aparece junto no multi-conta, mantém
 `Admin` completo (diferente do promotor - dono de agência opera o
 próprio negócio, não devia ter papel estreito), permissão `portfolio`
 presente (exclusiva de agência).
+
+### Hospedagem/promotor/agência criada pelo admin StayFlow já nasce como conta de teste (v1.91.0)
+
+Achado ao vivo, imediatamente depois da v1.90.0: o usuário criou a
+imobiliária de teste (v1.90.0) e depois pediu pra criar uma de
+promotor também, mas não conseguiu achar nenhuma das duas em lugar
+nenhum - mandou print do seletor "Propriedades" de dentro do próprio
+`admin.html`, mostrando só 4 contas antigas (Estamparia Exemplo,
+StayFlow, StayFlow Locadora, StayFlow Turismo). Investigação
+confirmou a causa raiz: o e-mail do próprio dono da StayFlow está na
+allowlist admin, então `/login` SEMPRE manda ele direto pro
+`admin.html` (`finishLogin()`, decisão documentada desde antes desta
+sessão) - ele nunca passa pelo seletor multi-conta comum de
+`dashboard.html` (o que a v1.89.0/v1.90.0 estenderam). O `admin.html`
+tem seu PRÓPRIO seletor rápido, "Propriedades" (`togglePropertySelector`),
+mas esse só lista hospedagens com `is_own_test_account=1` - flag
+setada manualmente pelo próprio admin, aba Propriedades → abrir a
+conta → "Marcar como minha conta de teste". As contas novas (imobiliária,
+promotor) nasceram como `hostel_membership` de verdade sob o `user_id`
+dele, só que sem essa flag - ficaram "invisíveis" no fluxo de
+navegação que ele realmente usa no dia a dia.
+
+Corrigido em `POST /account/add-hostel`: quando quem está criando a
+hospedagem/promotor/agência é um e-mail da própria allowlist StayFlow
+(`is_stayflow_admin_email`), a hospedagem nova já nasce com
+`is_own_test_account=True` automaticamente - aparece na hora no mesmo
+seletor "Propriedades" que ele já usa, sem precisar marcar à mão.
+Decisão deliberada de escopo: só afeta contas criadas pelo PRÓPRIO
+e-mail StayFlow - qualquer cliente real usando "+ Adicionar hospedagem"
+continua com o comportamento de sempre, nunca marcado como conta de
+teste. Testado em banco isolado: hospedagem/promotor criados pelo
+admin nascem marcados; segunda hospedagem criada por um cliente comum
+(não-admin) continua sem a flag, confirmando o isolamento.
+
+Também sinalizado nessa troca (ainda sem confirmação se é bug
+persistente ou só um instante de carregamento capturado no print): o
+avatar do usuário no topo do `admin.html` mostra um "?" fixo até o
+`fetch("/me")` da inicialização terminar e substituir pela inicial do
+nome (`userMenuTrigger.textContent = initial`, já existia antes desta
+sessão) - fica pra confirmar com o usuário se persiste depois da
+página carregar de verdade antes de investigar mais.
