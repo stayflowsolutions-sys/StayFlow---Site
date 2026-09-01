@@ -375,6 +375,7 @@ window.openMemberActivityLog = async function(membershipId, memberName){
         ? data.attendance.map(a => `
             <div style="background:#0d1421;border:1px solid #ffffff14;border-radius:10px;padding:8px 10px">
               ${a.clock_in_at} → ${a.clock_out_at || T('attendance.stillIn', 'ainda dentro')}
+              ${a.clock_in_lat != null ? ` · <a href="https://www.google.com/maps?q=${a.clock_in_lat},${a.clock_in_lng}" target="_blank" rel="noopener" style="color:var(--accent,#0b84ff)">${T('attendance.viewLocation', '📍 Ver local')}</a>` : ""}
             </div>
           `).join("")
         : `<span style="color:var(--muted)">${T('team.activityLog.attendanceEmpty', 'Nenhum ponto registrado ainda.')}</span>`;
@@ -10163,13 +10164,38 @@ window.loadAttendanceStatus = async function(){
   }
 };
 
+function getAttendanceGeoSafe(){
+  // Best-effort - nunca atrasa/bloqueia o ponto por causa da geo.
+  // Sem suporte do navegador, permissao negada ou timeout curto (5s):
+  // resolve null, e o ponto bate igual, sem coordenadas (mesmo
+  // comportamento de sempre pra quem nega a permissao).
+  return new Promise((resolve) => {
+    if(!navigator.geolocation){ resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+      }),
+      () => resolve(null),
+      { timeout: 5000, maximumAge: 0 }
+    );
+  });
+}
+
 window.toggleAttendance = async function(){
   const btnEl = document.getElementById("attendanceToggleBtn");
   const mode = btnEl?.dataset.mode || "in";
   const url = mode === "in" ? "/scheduling/attendance/clock-in" : "/scheduling/attendance/clock-out";
 
   try{
-    const res = await fetch(url, { method: "POST", credentials: "same-origin" });
+    const geo = await getAttendanceGeoSafe();
+    const res = await fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: geo ? {"Content-Type": "application/json"} : undefined,
+      body: geo ? JSON.stringify(geo) : undefined,
+    });
     const data = await res.json().catch(() => ({}));
     if(!res.ok || !data.success){
       alert(data.message || T('attendance.msg.failed', 'Não foi possível registrar o ponto.'));
