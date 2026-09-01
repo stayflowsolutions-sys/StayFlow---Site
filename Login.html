@@ -256,7 +256,10 @@
             // conta (StayFlow/Turismo/Locadora) carem todos no mesmo
             // lugar do botao "Meu painel" - bug real, corrigido.
             localStorage.setItem("stayflow_user", JSON.stringify(selectData.user));
-            window.location.href = "/app";
+            // Promotor (item 27b) nunca opera hospedagem/agencia - vai
+            // pra pagina dedicada, mesma logica de finishLogin() (que
+            // nao serve aqui, ver comentario acima).
+            window.location.href = selectData.account_kind === "promoter" ? "PromoterDashboard.html" : "/app";
           }catch(err){
             console.error(err);
             selectorMsg.textContent = "Erro ao tentar entrar. Tente novamente.";

@@ -43,7 +43,14 @@ async function reg(){
   };
   const r = await fetch('/register', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) });
   const d = await r.json();
-  if(!r.ok || !d.success){ m.textContent = d.message || 'Erro'; return; }
+  if(!r.ok || !d.success){
+    if(d.already_registered){
+      m.innerHTML = 'Esse e-mail já tem uma conta StayFlow. <a href="Login.html">Faça login</a> e use "+ Adicionar hospedagem" no seletor do topo, escolhendo "Promotor" — assim você acessa as duas contas com o mesmo login.';
+    }else{
+      m.textContent = d.message || 'Erro';
+    }
+    return;
+  }
   location.href = 'Login.html';
 }
 </script></body></html>

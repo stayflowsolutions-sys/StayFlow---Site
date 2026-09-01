@@ -11500,12 +11500,25 @@ window.uploadGuestDocumentUI = async function(guestId){
     openGenericModal(T('addHostel.title', '+ Adicionar hospedagem'), `
       <p style="color:var(--muted);font-size:13px;margin:0 0 12px">${T('addHostel.desc', 'Crie uma segunda hospedagem sob a mesma conta — você poderá trocar entre elas a qualquer momento pelo seletor no topo.')}</p>
       <div>
-        <label>${T('addHostel.nameLabel', 'Nome da hospedagem')}</label>
+        <label>${T('addHostel.kindLabel', 'Tipo de conta')}</label>
+        <select id="addHostelKind">
+          <option value="lodging">${T('addHostel.kindLodging', 'Hospedagem')}</option>
+          <option value="promoter">${T('addHostel.kindPromoter', 'Promotor / Indicador (sem hospedagem própria)')}</option>
+        </select>
+      </div>
+      <div>
+        <label id="addHostelNameLabel">${T('addHostel.nameLabel', 'Nome da hospedagem')}</label>
         <input id="addHostelName" type="text" placeholder="${T('addHostel.namePlaceholder', 'Ex: Hotel Praia (filial)')}">
       </div>
       <div id="addHostelMessage" class="generic-modal-message"></div>
       <button class="btn" type="button" style="margin-top:8px" onclick="submitAddHostel()">${T('addHostel.submitBtn', 'Criar hospedagem')}</button>
     `);
+    document.getElementById("addHostelKind").addEventListener("change", (event) => {
+      const isPromoter = event.target.value === "promoter";
+      document.getElementById("addHostelNameLabel").textContent = isPromoter
+        ? T('addHostel.namePromoterLabel', 'Seu nome ou nome da sua marca')
+        : T('addHostel.nameLabel', 'Nome da hospedagem');
+    });
   };
 
   window.submitAddHostel = async function(){
@@ -11514,6 +11527,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     msg.className = "generic-modal-message";
 
     const hostelName = document.getElementById("addHostelName").value.trim();
+    const accountKind = document.getElementById("addHostelKind")?.value || "lodging";
     if(!hostelName){
       msg.textContent = T('addHostel.msg.nameRequired', 'Digite o nome da hospedagem.');
       msg.classList.add("error");
@@ -11525,7 +11539,7 @@ window.uploadGuestDocumentUI = async function(guestId){
         method: "POST",
         credentials: "same-origin",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ hostel_name: hostelName, account_kind: "lodging" })
+        body: JSON.stringify({ hostel_name: hostelName, account_kind: accountKind })
       });
       const data = await res.json().catch(() => ({}));
       if(!res.ok || !data.success){
@@ -11533,7 +11547,7 @@ window.uploadGuestDocumentUI = async function(guestId){
         msg.classList.add("error");
         return;
       }
-      window.location.href = "/app";
+      window.location.href = data.account_kind === "promoter" ? "/PromoterDashboard.html" : "/app";
     }catch(e){
       msg.textContent = T('common.connectionError', 'Erro de conexão.');
       msg.classList.add("error");
