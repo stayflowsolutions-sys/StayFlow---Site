@@ -1540,34 +1540,28 @@ body::before{
   width:var(--floating-btn-size);
   height:var(--floating-btn-size);
   border:0;
-  background:linear-gradient(180deg,#0f8bff,#056ee7);
-  color:white;
-  border-radius:var(--radius);
+  background:transparent;
   padding:0;
   display:flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
-  box-shadow:0 16px 34px #0b84ff40;
   transition:.22s;
   z-index:30;
 }
-.ask-floating .brand-logo-mask{
-  display:inline-block;
-  width:58px;
-  height:58px;
-  background-color:#06101b;
-  -webkit-mask-image:url('../../assets/images/logo2.png');
-  mask-image:url('../../assets/images/logo2.png');
-  -webkit-mask-size:auto 170%;
-  mask-size:auto 170%;
-  -webkit-mask-repeat:no-repeat;
-  mask-repeat:no-repeat;
-  -webkit-mask-position:center 35%;
-  mask-position:center 35%;
+/* Volta pro mesmo tratamento do logo na landing (index.html): imagem
+   direta, cores oficiais do gradiente das ondas visiveis, sem circulo
+   solido atras - so um drop-shadow leve pra manter a sensacao de
+   flutuar sobre o conteudo. Antes disso era uma mascara solida (silhueta
+   escura numa bolha azul), perdendo o gradiente de verdade do logo. */
+.ask-floating img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  filter:drop-shadow(0 10px 22px #0b84ff4a);
 }
 .ask-floating:hover{
-  transform:translateY(-4px) scale(1.04);
+  transform:translateY(-4px) scale(1.06);
 }
 /* Na aba Chats a barra de envio (botao "Assumir") tambem fica no canto
    inferior direito - sobe os flutuantes pra nao tampar esse botao. */
