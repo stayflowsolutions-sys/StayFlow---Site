@@ -18,6 +18,7 @@ Plano selecionado: <strong id='planBadgeName'></strong> — <span id='planBadgeP
 <select id='account_kind' onchange='toggleAgencyCategory()'>
 <option value='lodging'>Hospedagem</option>
 <option value='agency'>Loja, prestador de serviço ou agência</option>
+<option value='promoter'>Promotor / Indicador (sem hospedagem própria)</option>
 </select>
 <div id='agencyCategoryWrap' style='display:none'>
 <label>Tipo de negócio</label>
@@ -83,9 +84,10 @@ const AGENCY_SUBCATEGORY_PRESETS={
 };
 function toggleAgencyCategory(){
 const isAgency = account_kind.value === 'agency';
+const isPromoter = account_kind.value === 'promoter';
 agencyCategoryWrap.style.display = isAgency ? 'block' : 'none';
-hostelNameLabel.textContent = isAgency ? 'Nome do negócio' : 'Nome da hospedagem';
-hostel_name.placeholder = isAgency ? 'Digite o nome do seu negócio' : 'Digite o nome da hospedagem';
+hostelNameLabel.textContent = isAgency ? 'Nome do negócio' : (isPromoter ? 'Seu nome ou nome da sua marca' : 'Nome da hospedagem');
+hostel_name.placeholder = isAgency ? 'Digite o nome do seu negócio' : (isPromoter ? 'Como você quer ser identificado' : 'Digite o nome da hospedagem');
 toggleAgencySubcategory();
 }
 function toggleAgencySubcategory(){
