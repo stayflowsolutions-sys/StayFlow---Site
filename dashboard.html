@@ -11496,6 +11496,13 @@ window.uploadGuestDocumentUI = async function(guestId){
     }
   };
 
+  const ADD_HOSTEL_AGENCY_CATEGORIES = [
+    ["turismo", "Turismo"], ["aluguel_carro", "Aluguel de carro"], ["aluguel_bike", "Aluguel de bike"],
+    ["aluguel_equipamentos", "Aluguel de equipamentos"], ["imobiliaria", "Imobiliária"],
+    ["automotivo", "Automotivo (estética, película, mecânica...)"], ["comercio", "Comércio (loja, estamparia...)"],
+    ["servico_generico", "Outro tipo de negócio"],
+  ];
+
   window.openAddHostelModal = function(){
     openGenericModal(T('addHostel.title', '+ Adicionar hospedagem'), `
       <p style="color:var(--muted);font-size:13px;margin:0 0 12px">${T('addHostel.desc', 'Crie uma segunda hospedagem sob a mesma conta — você poderá trocar entre elas a qualquer momento pelo seletor no topo.')}</p>
@@ -11503,7 +11510,14 @@ window.uploadGuestDocumentUI = async function(guestId){
         <label>${T('addHostel.kindLabel', 'Tipo de conta')}</label>
         <select id="addHostelKind">
           <option value="lodging">${T('addHostel.kindLodging', 'Hospedagem')}</option>
+          <option value="agency">${T('addHostel.kindAgency', 'Agência / loja / prestador de serviço')}</option>
           <option value="promoter">${T('addHostel.kindPromoter', 'Promotor / Indicador (sem hospedagem própria)')}</option>
+        </select>
+      </div>
+      <div id="addHostelAgencyCategoryWrap" style="display:none">
+        <label>${T('addHostel.agencyCategoryLabel', 'Tipo de negócio')}</label>
+        <select id="addHostelAgencyCategory">
+          ${ADD_HOSTEL_AGENCY_CATEGORIES.map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}
         </select>
       </div>
       <div>
@@ -11514,10 +11528,11 @@ window.uploadGuestDocumentUI = async function(guestId){
       <button class="btn" type="button" style="margin-top:8px" onclick="submitAddHostel()">${T('addHostel.submitBtn', 'Criar hospedagem')}</button>
     `);
     document.getElementById("addHostelKind").addEventListener("change", (event) => {
-      const isPromoter = event.target.value === "promoter";
-      document.getElementById("addHostelNameLabel").textContent = isPromoter
+      const kind = event.target.value;
+      document.getElementById("addHostelAgencyCategoryWrap").style.display = kind === "agency" ? "block" : "none";
+      document.getElementById("addHostelNameLabel").textContent = kind === "promoter"
         ? T('addHostel.namePromoterLabel', 'Seu nome ou nome da sua marca')
-        : T('addHostel.nameLabel', 'Nome da hospedagem');
+        : (kind === "agency" ? T('addHostel.nameAgencyLabel', 'Nome do negócio') : T('addHostel.nameLabel', 'Nome da hospedagem'));
     });
   };
 
@@ -11528,6 +11543,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 
     const hostelName = document.getElementById("addHostelName").value.trim();
     const accountKind = document.getElementById("addHostelKind")?.value || "lodging";
+    const agencyCategory = document.getElementById("addHostelAgencyCategory")?.value || null;
     if(!hostelName){
       msg.textContent = T('addHostel.msg.nameRequired', 'Digite o nome da hospedagem.');
       msg.classList.add("error");
@@ -11539,7 +11555,11 @@ window.uploadGuestDocumentUI = async function(guestId){
         method: "POST",
         credentials: "same-origin",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ hostel_name: hostelName, account_kind: accountKind })
+        body: JSON.stringify({
+          hostel_name: hostelName,
+          account_kind: accountKind,
+          agency_category: accountKind === "agency" ? agencyCategory : null,
+        })
       });
       const data = await res.json().catch(() => ({}));
       if(!res.ok || !data.success){
