@@ -1466,13 +1466,13 @@ async function deleteRoleConfirm(roleId){
       <div class="brief-header">
         <div>
           <h2><span class="inline-logo"><img src="assets/images/logo2.png" alt="StayFlow" class="brand-logo"></span><span data-i18n="home.brief.title">Resumo Executivo da IA</span></h2>
-          <p data-i18n="home.brief.defaultText">A StayFlow vai gerar este resumo automaticamente assim que existirem conversas, reservas e tarefas reais na sua hospedagem.</p>
+          <p id="homeBriefDefaultText" data-i18n="home.brief.defaultText">A StayFlow vai gerar este resumo automaticamente assim que existirem conversas, reservas e tarefas reais na sua hospedagem.</p>
         </div>
         <button class="btn" onclick="openPage('opportunities', document.querySelector('[data-page=opportunities]'))" data-i18n="home.brief.viewOpportunitiesBtn">Ver oportunidades</button>
       </div>
 
       <div class="brief-metrics">
-        <div><strong id="metricAlmostClosed">—</strong><span data-i18n="home.brief.almostClosed">Reservas quase fechadas</span></div>
+        <div><strong id="metricAlmostClosed">—</strong><span id="homeBriefAlmostClosedLabel" data-i18n="home.brief.almostClosed">Reservas quase fechadas</span></div>
         <div><strong id="metricProbableRevenue">—</strong><span data-i18n="home.brief.probableRevenue">Receita provável</span></div>
         <div><strong id="metricHumanReplies">—</strong><span data-i18n="home.brief.humanRepliesPending">Respostas humanas pendentes</span></div>
         <div><strong id="metricRisk">—</strong><span data-i18n="home.brief.operationalRisk">Risco operacional</span></div>
@@ -1489,7 +1489,7 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <!-- Operação -->
-    <div class="card span-4">
+    <div class="card span-4" data-required-account-kind="lodging">
       <h2 data-i18n="home.operation.title">Operação</h2>
       <div class="ops-health">
         <div class="health-ring">
@@ -1511,7 +1511,7 @@ async function deleteRoleConfirm(roleId){
       <div id="todayTimelineEmpty" class="sf-empty">
         <div>
           <strong data-i18n="home.timeline.emptyTitle">Nenhuma atividade registrado.</strong>
-          <span data-i18n="home.timeline.emptyDesc">Entradas, saídas, tarefas de limpeza, mensagens críticas e eventos diários aparecerão aqui quando a operação estiver ligada ao StayFlow.</span>
+          <span id="homeTimelineEmptyDesc" data-i18n="home.timeline.emptyDesc">Entradas, saídas, tarefas de limpeza, mensagens críticas e eventos diários aparecerão aqui quando a operação estiver ligada ao StayFlow.</span>
         </div>
       </div>
     </div>
@@ -1534,7 +1534,7 @@ async function deleteRoleConfirm(roleId){
       <div id="liveActivityEmpty" class="sf-empty">
         <div>
           <strong data-i18n="home.priorityActions.emptyTitle">Nenhuma ação recomendada no momento.</strong>
-          <span data-i18n="home.priorityActions.emptyDesc">Quando a IA detectar reservas em risco, hóspedes aguardando resposta ou oportunidades de upsell, elas serão listadas aqui.</span>
+          <span id="homePriorityActionsEmptyDesc" data-i18n="home.priorityActions.emptyDesc">Quando a IA detectar reservas em risco, hóspedes aguardando resposta ou oportunidades de upsell, elas serão listadas aqui.</span>
         </div>
       </div>
     </div>
@@ -1809,7 +1809,7 @@ async function deleteRoleConfirm(roleId){
       <div id="opportunitiesEmpty" class="sf-empty">
         <div>
           <strong data-i18n="opportunities.emptyTitle">Nenhuma oportunidade ativa.</strong>
-          <span data-i18n="opportunities.emptyDesc">Quando a IA identificar hóspedes com alta chance de reserva, risco de cancelamento ou possibilidade de upsell, eles aparecerão aqui com prioridade, valor e próxima ação sugerida.</span>
+          <span id="opportunitiesEmptyDesc" data-i18n="opportunities.emptyDesc">Quando a IA identificar hóspedes com alta chance de reserva, risco de cancelamento ou possibilidade de upsell, eles aparecerão aqui com prioridade, valor e próxima ação sugerida.</span>
         </div>
       </div>
       <div style="display:flex;justify-content:center;margin-top:16px">
@@ -3095,7 +3095,7 @@ async function deleteRoleConfirm(roleId){
   </div>
 </aside>
 
-<button class="reserva-floating" data-hide-for-account-kind="promoter" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" data-i18n-title="reservations.newReservation.title2" title="Nova reserva">
+<button class="reserva-floating" data-required-account-kind="lodging" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" data-i18n-title="reservations.newReservation.title2" title="Nova reserva">
   <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#06101b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
 </button>
 
@@ -5365,11 +5365,18 @@ async function deleteRoleConfirm(roleId){
           </select>
         </div>`;
 
+    // Mesmo rotulo ja usado na criacao da conta (addHostel.nameAgencyLabel)
+    // - o resumo deste card (loadGeneralSettingsSummary) ja tratava isso
+    // certo, so o formulario de edicao continuava com "Nome da hospedagem"
+    // hardcoded pra agencia/imobiliaria, apesar de isAgency ja calculado
+    // logo acima.
+    const nameLabel = isAgency ? T('addHostel.nameAgencyLabel', 'Nome do negócio') : T('settings.general.hostelNamePlaceholder', 'Nome da hospedagem');
+
     openGenericModal(T('settings.general.title', 'Geral'), `
       <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
         <div style="grid-column:span 6">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.general.hostelNamePlaceholder', 'Nome da hospedagem')}</label>
-          <input type="text" data-setting="hostel_name" id="generalSettingsName" autocomplete="off" placeholder="${T('settings.general.hostelNamePlaceholder', 'Nome da hospedagem')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${nameLabel}</label>
+          <input type="text" data-setting="hostel_name" id="generalSettingsName" autocomplete="off" placeholder="${nameLabel}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
         ${hostelTypeField}
       </div>
@@ -9325,6 +9332,44 @@ function agencyGuestNoun(session){
   return PAX_STYLE_CATEGORIES.has(category) ? "PAX" : "Clientes";
 }
 
+// Espelha AGENCY_CATEGORY_BUSINESS_CONTEXT_PT (database.py) - descricao
+// curta de negocio por agency_category, usada so em texto de UI (Ask
+// StayFlow); o backend tem a propria copia porque alimenta prompt de
+// IA, contexto diferente.
+const AGENCY_BUSINESS_LABELS = {
+  turismo: "uma agência de turismo",
+  aluguel_carro: "uma locadora de carros",
+  aluguel_bike: "uma locadora de bikes",
+  aluguel_equipamentos: "uma locadora de equipamentos",
+  imobiliaria: "uma imobiliária",
+  automotivo: "uma oficina/estética automotiva",
+  comercio: "uma loja/comércio",
+};
+
+// Painel do Ask StayFlow tem subtitulo/mensagem de boas-vindas com
+// data-i18n fixo (dashboard.html, ids askSubtitle/askWelcomeMsg) -
+// applyTranslations() SEMPRE reescreve esse texto por cima na troca de
+// idioma, entao esta funcao precisa ser chamada nos 2 pontos de
+// hidratacao (inicial + apos "stayflow:language-changed"), mesmo
+// padrao ja estabelecido por applyAgencyGuestNounLabels. Achado ao
+// vivo: a versao anterior (so promotor) tinha esse mesmo bug latente -
+// corrigido de quebra ao estender pra agencia.
+function applyAskStayFlowAccountKindText(session){
+  const askSubtitleEl = document.getElementById("askSubtitle");
+  const askWelcomeEl = document.getElementById("askWelcomeMsg");
+  if(!askSubtitleEl && !askWelcomeEl) return;
+
+  if((session || {}).account_kind === "promoter"){
+    if(askSubtitleEl) askSubtitleEl.textContent = T('ask.subtitlePromoter', 'IA de apoio pro seu programa de indicação');
+    if(askWelcomeEl) askWelcomeEl.textContent = T('ask.welcomeMsgPromoter', 'Oi! Posso te ajudar a entender seu programa de indicação (comissão, faixas, hospedagens indicadas) e te dar uma mão pra preparar uma boa apresentação da StayFlow. O que você quer saber?');
+  } else if((session || {}).account_kind === "agency"){
+    const bizLabel = AGENCY_BUSINESS_LABELS[session.agency_category] || "sua agência";
+    const noun = agencyGuestNoun(session).toLowerCase();
+    if(askSubtitleEl) askSubtitleEl.textContent = T('ask.subtitleAgency', 'IA interna de {business}', { business: bizLabel });
+    if(askWelcomeEl) askWelcomeEl.textContent = T('ask.welcomeMsgAgency', 'Oi! Posso te ajudar com números, {noun}, conversas, catálogo e oportunidades. O que você quer saber?', { noun });
+  }
+}
+
 // Centraliza toda troca de "Hospede" -> PAX/Clientes numa funcao so -
 // chamada tanto na hidratacao inicial quanto depois de troca de idioma
 // (applyTranslations() reescreve o data-i18n original por cima, entao
@@ -9345,6 +9390,27 @@ function applyAgencyGuestNounLabels(session){
   if(opportunitiesGuestColLabel) opportunitiesGuestColLabel.textContent = noun;
   if(guestsEmptyTitle) guestsEmptyTitle.textContent = T('guests.emptyTitleAgency', 'Nenhum {noun} registrado.', { noun });
   if(guestsEmptyDesc) guestsEmptyDesc.textContent = T('guests.emptyDescAgency', 'Quando reservas e conversas estiverem conectadas, a base de {noun} será construída aqui com contato, histórico e valor gerado.', { noun });
+}
+
+// Home do Dashboard e Opportunity Center tinham 4 textos fixos falando
+// de "reserva"/"hóspede" soltos, visiveis pra QUALQUER agencia (nao so
+// imobiliaria) - achado ao vivo junto com o Ask StayFlow/resumo
+// executivo. Mesmo padrao de reaplicacao nos 2 pontos de hidratacao
+// (applyTranslations reescreve o data-i18n por cima na troca de
+// idioma).
+function applyAgencyHomeCopy(session){
+  if((session || {}).account_kind !== "agency") return;
+  const noun = agencyGuestNoun(session);
+  const briefDefaultText = document.getElementById("homeBriefDefaultText");
+  const briefAlmostClosedLabel = document.getElementById("homeBriefAlmostClosedLabel");
+  const timelineEmptyDesc = document.getElementById("homeTimelineEmptyDesc");
+  const priorityActionsEmptyDesc = document.getElementById("homePriorityActionsEmptyDesc");
+  const opportunitiesEmptyDesc = document.getElementById("opportunitiesEmptyDesc");
+  if(briefDefaultText) briefDefaultText.textContent = T('home.brief.defaultTextAgency', 'A StayFlow vai gerar este resumo automaticamente assim que existirem conversas e oportunidades reais no seu negócio.');
+  if(briefAlmostClosedLabel) briefAlmostClosedLabel.textContent = T('home.brief.almostClosedAgency', 'Negociações quase fechadas');
+  if(timelineEmptyDesc) timelineEmptyDesc.textContent = T('home.timeline.emptyDescAgency', 'Mensagens, oportunidades e eventos do dia aparecerão aqui quando a operação estiver ligada ao StayFlow.');
+  if(priorityActionsEmptyDesc) priorityActionsEmptyDesc.textContent = T('home.priorityActions.emptyDescAgency', 'Quando a IA detectar oportunidades em risco, {noun} aguardando resposta ou chances de venda, elas serão listadas aqui.', { noun: noun.toLowerCase() });
+  if(opportunitiesEmptyDesc) opportunitiesEmptyDesc.textContent = T('opportunities.emptyDescAgency', 'Quando a IA identificar {noun} com alta chance de negociação, risco de perda ou possibilidade de venda extra, eles aparecerão aqui com prioridade, valor e próxima ação sugerida.', { noun: noun.toLowerCase() });
 }
 
 // "Meu Portfolio" nasceu pensado em passeio/aluguel de terceiro que uma
@@ -12662,18 +12728,8 @@ window.uploadGuestDocumentUI = async function(guestId){
       }
     }catch(e){ console.error("Erro ao ajustar aba padrao de Configuracoes do promotor:", e); }
     try{
-      // Painel do Ask StayFlow tem subtitulo/mensagem de boas-vindas
-      // fixos falando de "sua hospedagem" - as 3 sugestoes de atalho
-      // ja ficam escondidas via data-hide-for-account-kind (tem as
-      // proprias 3 pro promotor logo ao lado, ver HTML), mas esses 2
-      // textos livres precisam de troca via JS mesmo.
-      if(session.account_kind === "promoter"){
-        const askSubtitleEl = document.getElementById("askSubtitle");
-        if(askSubtitleEl) askSubtitleEl.textContent = "IA de apoio pro seu programa de indicação";
-        const askWelcomeEl = document.getElementById("askWelcomeMsg");
-        if(askWelcomeEl) askWelcomeEl.textContent = "Oi! Posso te ajudar a entender seu programa de indicação (comissão, faixas, hospedagens indicadas) e te dar uma mão pra preparar uma boa apresentação da StayFlow. O que você quer saber?";
-      }
-    }catch(e){ console.error("Erro ao ajustar texto do Ask StayFlow pro promotor:", e); }
+      applyAskStayFlowAccountKindText(session);
+    }catch(e){ console.error("Erro ao ajustar texto do Ask StayFlow por tipo de conta:", e); }
     try{
       // Botao flutuante do Ask StayFlow: circulo azul com logo mascarada
       // (padrao de sempre, todas as contas) vira so a logo grande
@@ -12693,6 +12749,9 @@ window.uploadGuestDocumentUI = async function(guestId){
     try{
       applyImobiliariaPortfolioCopy(session);
     }catch(e){ console.error("Erro ao ajustar copy do Portfolio pra imobiliaria:", e); }
+    try{
+      applyAgencyHomeCopy(session);
+    }catch(e){ console.error("Erro ao ajustar copy da home/Opportunity Center pra agencia:", e); }
     try{
       // Banner obrigatorio sempre que a sessao esta "em visita" (admin
       // StayFlow dentro do dashboard de outra conta) - impossivel
@@ -12840,6 +12899,22 @@ window.uploadGuestDocumentUI = async function(guestId){
     settings: { titleKey: "nav.settings", title: "Configurações", textKey: "onboarding.coach.promoter.settings.text", text: "Conecte seus canais de conversa (WhatsApp/Facebook/Instagram) e cuide da segurança da sua conta." },
   };
 
+  // Conta agency com agency_category='imobiliaria' via textos GENERICOS
+  // de agencia (que ja falam de "hospedes"/"passeio"/"aluguel"/
+  // "hospedagens parceiras") sem nenhuma diferenciacao - achado ao vivo
+  // pelo usuario junto com o Ask StayFlow/resumo executivo. Overrides
+  // so pras 5 paginas que uma imobiliaria realmente ve (as outras -
+  // reservas, mapa de quartos, operacoes, equipe, financeiro, estoque,
+  // receitas, eventos, parceiros - ja ficam fora do menu dela). Mesmo
+  // padrao/namespace de FEATURE_COACH_MARKS_PROMOTER.
+  const FEATURE_COACH_MARKS_IMOBILIARIA = {
+    chats: { titleKey: "nav.chats", title: "Chats", textKey: "onboarding.coach.imobiliaria.chats.text", text: "As conversas com clientes ficam aqui. A IA responde sozinha 24h - você só entra quando quiser assumir manualmente." },
+    opportunities: { titleKey: "nav.opportunities", title: "Opportunity Center", textKey: "onboarding.coach.imobiliaria.opportunities.text", text: "Quando um cliente demonstra interesse num imóvel, a IA detecta e sugere aqui - já indicando o imóvel certo do seu próprio catálogo." },
+    portfolio: { titleKey: "nav.portfolio", title: "Portfólio", textKey: "onboarding.coach.imobiliaria.portfolio.text", text: "Seus imóveis disponíveis pra locação ou venda - é esse catálogo que a IA usa pra sugerir o imóvel certo em cada conversa." },
+    guests: { titleKey: "nav.guests", title: "Clientes", textKey: "onboarding.coach.imobiliaria.guests.text", text: "Cadastro de clientes/leads, com histórico de conversas." },
+    settings: { titleKey: "nav.settings", title: "Configurações", textKey: "onboarding.coach.imobiliaria.settings.text", text: "Dados da imobiliária, integração com o Tokko Broker, segurança e mais." },
+  };
+
   const onboardingState = { dismissed: false, seen: new Set() };
 
   function isOnboardingActive(){
@@ -12898,8 +12973,12 @@ window.uploadGuestDocumentUI = async function(guestId){
     if(!isOnboardingActive()) return;
     if(pageId === "dashboard") return;
     if(onboardingState.seen.has(pageId)) return;
-    const isPromoter = (window.STAYFLOW_SESSION || {}).account_kind === "promoter";
-    const info = (isPromoter && FEATURE_COACH_MARKS_PROMOTER[pageId]) || FEATURE_COACH_MARKS[pageId];
+    const session = window.STAYFLOW_SESSION || {};
+    const isPromoter = session.account_kind === "promoter";
+    const isImobiliaria = session.account_kind === "agency" && session.agency_category === "imobiliaria";
+    const info = (isPromoter && FEATURE_COACH_MARKS_PROMOTER[pageId])
+      || (isImobiliaria && FEATURE_COACH_MARKS_IMOBILIARIA[pageId])
+      || FEATURE_COACH_MARKS[pageId];
     if(!info) return;
     showFeatureCoachMark(pageId, info);
   };
@@ -13100,6 +13179,12 @@ window.uploadGuestDocumentUI = async function(guestId){
     try{
       applyImobiliariaPortfolioCopy(window.STAYFLOW_SESSION);
     }catch(e){ console.error("Erro ao reaplicar copy do Portfolio pra imobiliaria:", e); }
+    try{
+      applyAskStayFlowAccountKindText(window.STAYFLOW_SESSION);
+    }catch(e){ console.error("Erro ao reaplicar texto do Ask StayFlow por tipo de conta:", e); }
+    try{
+      applyAgencyHomeCopy(window.STAYFLOW_SESSION);
+    }catch(e){ console.error("Erro ao reaplicar copy da home/Opportunity Center pra agencia:", e); }
   });
 
   const originalOpenPage = window.openPage;

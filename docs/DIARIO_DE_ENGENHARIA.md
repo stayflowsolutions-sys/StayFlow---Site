@@ -9524,3 +9524,83 @@ mockado atualiza só os 5 campos que ele realmente manda, preservando
 os 5 que só o cadastro manual conhece; guard-rail testado nos 4
 cenários de violação (operação, quartos mínimos, preço máximo, e a
 combinação sem filtro nenhum) mais 2 de não-violação.
+
+### Agência tratada como hospedagem em toda a "camada de instrução" (v1.102.0)
+
+Usuário testou o painel logado como imobiliária e notou algo que ia
+além do Portfólio (já corrigido nas duas versões anteriores): "as
+instruções de quando acessa pela primeira vez... também tá tratando
+ainda como hospedagem" - citando especificamente Ask StayFlow, resumo
+e Opportunity Center, e pedindo pra verificar TUDO que fizesse
+sentido. Antes de sair corrigindo, mandei um agente de exploração
+dedicado auditar o produto inteiro em busca de todo lugar que ainda
+falava de "hóspede"/"reserva"/"check-in" pra uma conta agência - achado
+central do relatório: existiam 3 mecanismos já maduros de diferenciação
+por tipo de conta (`data-required-account-kind`, `agencyGuestNoun()`,
+`applyImobiliariaPortfolioCopy()`), mas praticamente nenhum deles tinha
+sido estendido pra além do Portfólio. Pra praticamente todo o resto do
+produto, "agência de turismo" e "imobiliária" continuavam sendo
+tratadas como a mesma coisa, e ambas continuavam meio hospedagem.
+
+O achado mais sério não estava nem na lista original do usuário: o
+prompt de sistema do Ask StayFlow (`SYSTEM_PROMPT` em
+`ask_agent_service.py`) é escrito do início ao fim assumindo que quem
+está do outro lado da conversa é "um funcionário/gestor do hostel" -
+e esse MESMO prompt, sem nenhuma variação, era usado pra qualquer
+`account_kind='agency'`. Ou seja: o assistente que fala diretamente
+com o DONO do negócio (diferente da IA que atende o hóspede/lead no
+WhatsApp, essa sim já bem tratada por categoria desde antes) se
+apresentava pra quem administra uma imobiliária como se ela fosse uma
+pousada. Enquanto corrigia isso, achei um segundo problema mais sutil,
+nunca reportado: o dono/Admin de qualquer conta nova recebe permissão
+TOTAL por padrão (mesmo critério de sempre, review de segurança já fez
+essa checagem antes) - então o catálogo de ferramentas do Ask StayFlow
+oferecia "criar reserva", "abrir chamado de manutenção",
+"cadastrar pedido de cozinha" pra quem administra uma imobiliária,
+mesmo essas telas já estando corretamente escondidas do menu lateral.
+O prompt sozinho não bastava; era preciso também filtrar
+`allowed_tools` contra `LODGING_ONLY_PERMISSIONS` quando a conta é
+agência, senão a ferramenta continuava existindo por baixo de um
+prompt bonito.
+
+Padrão que se repetiu nos outros 6 achados: cada um era um mecanismo
+que JÁ sabia diferenciar `account_kind='promoter'` (o painel do
+promotor recebeu bastante atenção nas versões anteriores desta sessão)
+mas nunca tinha sido estendido pra `account_kind='agency'` - os
+textos fixos do próprio Ask StayFlow (subtítulo/boas-vindas, só
+trocavam pra promotor), os coach marks de primeiro acesso por página
+(só tinham variante pro promotor), e um card inteiro da home do
+Dashboard ("Operação", sobre check-in/check-out) que só ficava
+escondido pra hospedagem via um raciocínio já feito - só nunca
+replicado pra agência. Reaproveitei o padrão de nomenclatura já
+validado (PAX pra turismo/locação, Clientes pro resto) criando uma
+versão em Python dele (`agency_guest_noun()` em `database.py`, espelho
+exato de `agencyGuestNoun()` do frontend) - útil o bastante que também
+corrigiu de quebra um bug pré-existente sem relação direta com o
+pedido: `/permissions/catalog` (catálogo de cargos em Equipe) trocava
+"Hóspedes" por "PAX" pra QUALQUER agência, inclusive imobiliária, que
+deveria ver "Clientes".
+
+O Opportunity Center escondia um problema pequeno mas visível: o
+campo `intent` da oportunidade (booking/tour/upsell/human_help/
+follow_up/general, do `decision_engine.py`) tinha um mapa de tradução
+em NENHUM lugar do frontend - vazava cru em inglês na tela ("Intenção:
+booking") sempre que a `description` gerada pela IA não estava
+disponível. Resolvido com `intentLabel()` nova em `chats-live.js`, que
+também precisou de uma ramificação própria: "booking" significa
+"reserva de quarto" pra hospedagem mas "fechar negócio" pra agência -
+mesmo enum, dois sentidos bem diferentes, não dava pra usar o mesmo
+rótulo pros dois casos.
+
+Testado por completo em banco SQLite isolado com Flask test client,
+com a chamada real à OpenAI mockada em todos os pontos (sem custo nem
+dependência de rede): `agency_guest_noun()` e
+`AGENCY_CATEGORY_BUSINESS_CONTEXT_PT` corretos pra cada categoria;
+`/permissions/catalog` devolve "Clientes" pra imobiliária e "PAX" pra
+turismo; `/executive-summary` manda o `business_label` certo dentro do
+prompt (capturado via mock da chamada) e cai no fallback certo por
+`account_kind` quando a chamada falha; Ask StayFlow - prompt de
+sistema mockado confirma "imobiliária"/"AGÊNCIA" no texto, e a lista
+de tools realmente enviada pra API exclui `create_reservation`/
+`create_kitchen_order` pra agência, com o teste espelho confirmando
+que hospedagem continua com o catálogo completo (sem regressão).
