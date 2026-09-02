@@ -9384,14 +9384,41 @@ window.loadPortfolio = async function(){
 // agencia) nao ganha nenhuma linha extra.
 function portfolioRealEstateSummaryHtml(item){
   const parts = [];
+  if(item.reference_code) parts.push(escapeHtml(item.reference_code));
   if(item.operation_type === "rent") parts.push(T('portfolio.realEstate.operationRent', 'Aluguel'));
   else if(item.operation_type === "sale") parts.push(T('portfolio.realEstate.operationSale', 'Venda'));
   if(item.rooms != null) parts.push(T('portfolio.realEstate.roomsSummary', '{n} quartos', { n: item.rooms }));
   if(item.bathrooms != null) parts.push(T('portfolio.realEstate.bathroomsSummary', '{n} banheiros', { n: item.bathrooms }));
   if(item.surface_m2 != null) parts.push(`${item.surface_m2}m²`);
+  if(item.useful_area_m2 != null) parts.push(T('portfolio.realEstate.usefulAreaSummary', '{n}m² úteis', { n: item.useful_area_m2 }));
   if(item.location) parts.push(escapeHtml(item.location));
   if(!parts.length) return "";
-  return `<div style="font-size:12px;color:var(--muted);margin-top:6px">🏠 ${parts.join(" · ")}</div>`;
+
+  // Custos recorrentes + contagem de comodidades numa segunda linha,
+  // separada da linha estrutural acima (operacao/quartos/area) - card
+  // ficava poluido demais numa linha so com tudo junto.
+  const costParts = [];
+  if(item.condo_fee != null) costParts.push(T('portfolio.realEstate.condoFeeSummary', 'Cond. {value}', { value: formatMoney(item.condo_fee) }));
+  if(item.iptu_fee != null) costParts.push(T('portfolio.realEstate.iptuFeeSummary', 'IPTU {value}', { value: formatMoney(item.iptu_fee) }));
+  if(item.amenities && item.amenities.length) costParts.push(T('portfolio.realEstate.amenitiesSummary', '{n} comodidades', { n: item.amenities.length }));
+
+  return `
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">🏠 ${parts.join(" · ")}</div>
+    ${costParts.length ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${costParts.join(" · ")}</div>` : ""}
+  `;
+}
+
+// Aluguel e venda leem o mesmo "price"/"price_type" de sempre, mas a
+// LEITURA e bem diferente pro cliente - "R$ 2.500" solto parece o
+// preco de venda de um imovel popular, nao o aluguel mensal. So
+// acrescenta o sufixo pra operation_type='rent' (venda continua so o
+// valor, como sempre foi).
+function formatRealEstatePrice(item){
+  const base = item.price_type === "fixed" ? formatMoney(item.price || 0) : T('portfolio.priceVariable', 'A combinar');
+  if(item.price_type === "fixed" && item.operation_type === "rent"){
+    return base + T('portfolio.realEstate.perMonthSuffix', '/mês');
+  }
+  return base;
 }
 
 function renderPortfolioList(){
@@ -9416,9 +9443,7 @@ function renderPortfolioList(){
     card.style.cursor = "pointer";
     card.onclick = () => openPortfolioItemModal(item.id);
 
-    const priceLabel = item.price_type === "fixed"
-      ? formatMoney(item.price || 0)
-      : T('portfolio.priceVariable', 'A combinar');
+    const priceLabel = formatRealEstatePrice(item);
 
     card.innerHTML = `
       <div style="font-weight:700;margin-bottom:4px">${escapeHtml(item.name)}</div>
@@ -9431,7 +9456,19 @@ function renderPortfolioList(){
   });
 }
 
-// Campos de imovel (operacao/quartos/banheiros/m2/localizacao) so fazem
+// Comodidades fechadas (v1.101.0) - espelha REAL_ESTATE_AMENITIES em
+// routes/portfolio.py, que filtra contra essa mesma lista na gravacao
+// (nunca persiste chave inventada). Texto livre nao daria pra IA
+// comparar de forma confiavel no matching.
+const REAL_ESTATE_AMENITY_KEYS = ["garagem", "mobiliado", "aceita_pet", "piscina", "elevador", "churrasqueira", "ar_condicionado", "area_servico"];
+const REAL_ESTATE_AMENITY_FALLBACKS = {
+  garagem: "Garagem", mobiliado: "Mobiliado", aceita_pet: "Aceita pet",
+  piscina: "Piscina", elevador: "Elevador", churrasqueira: "Churrasqueira",
+  ar_condicionado: "Ar-condicionado", area_servico: "Área de serviço",
+};
+
+// Campos de imovel (operacao/localizacao/quartos/banheiros/area total/
+// area util/codigo de referencia/condominio/IPTU/comodidades) so fazem
 // sentido pra agency_category='imobiliaria' - pro resto das agencias
 // (turismo, aluguel de carro/bike/equipamento etc.) o item e mesmo so
 // nome/preco/foto/descricao. Renderizado condicionalmente aqui em vez
@@ -9439,6 +9476,7 @@ function renderPortfolioList(){
 function portfolioRealEstateFieldsHtml(item){
   const session = window.STAYFLOW_SESSION || {};
   if(session.account_kind !== "agency" || session.agency_category !== "imobiliaria") return "";
+  const amenities = (item && item.amenities) || [];
   return `
     <div style="grid-column:span 12;border-top:1px solid var(--line);padding-top:14px;margin-top:2px">
       <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em">${T('portfolio.realEstate.sectionTitle', '🏠 Dados do imóvel')}</div>
@@ -9452,20 +9490,47 @@ function portfolioRealEstateFieldsHtml(item){
       </select>
     </div>
     <div style="grid-column:span 6">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.referenceCodeLabel', 'Código de referência')}</label>
+      <input type="text" id="portfolioItemReferenceCode" value="${item && item.reference_code ? escapeHtml(item.reference_code) : ""}" autocomplete="off" placeholder="${T('portfolio.realEstate.referenceCodePlaceholder', 'ex: REF 1234')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+    <div style="grid-column:span 12">
       <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.locationLabel', 'Localização')}</label>
       <input type="text" id="portfolioItemLocation" value="${item && item.location ? escapeHtml(item.location) : ""}" autocomplete="off" placeholder="${T('portfolio.realEstate.locationPlaceholder', 'Bairro, cidade')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
     </div>
-    <div style="grid-column:span 4">
+    <div style="grid-column:span 3">
       <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.roomsLabel', 'Quartos')}</label>
       <input type="number" min="0" step="1" id="portfolioItemRooms" value="${item && item.rooms != null ? item.rooms : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
     </div>
-    <div style="grid-column:span 4">
+    <div style="grid-column:span 3">
       <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.bathroomsLabel', 'Banheiros')}</label>
       <input type="number" min="0" step="1" id="portfolioItemBathrooms" value="${item && item.bathrooms != null ? item.bathrooms : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
     </div>
-    <div style="grid-column:span 4">
-      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.surfaceLabel', 'Área (m²)')}</label>
+    <div style="grid-column:span 3">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.surfaceLabel', 'Área total (m²)')}</label>
       <input type="number" min="0" step="0.1" id="portfolioItemSurface" value="${item && item.surface_m2 != null ? item.surface_m2 : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+    <div style="grid-column:span 3">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.usefulAreaLabel', 'Área útil (m²)')}</label>
+      <input type="number" min="0" step="0.1" id="portfolioItemUsefulArea" value="${item && item.useful_area_m2 != null ? item.useful_area_m2 : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+    <div style="grid-column:span 6">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.condoFeeLabel', 'Condomínio (mensal)')}</label>
+      <input type="number" min="0" step="0.01" id="portfolioItemCondoFee" value="${item && item.condo_fee != null ? item.condo_fee : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+    <div style="grid-column:span 6">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.iptuFeeLabel', 'IPTU (mensal)')}</label>
+      <input type="number" min="0" step="0.01" id="portfolioItemIptuFee" value="${item && item.iptu_fee != null ? item.iptu_fee : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+    <div style="grid-column:span 12">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:8px">${T('portfolio.realEstate.amenitiesLabel', 'Comodidades')}</label>
+      <div style="display:flex;flex-wrap:wrap;gap:12px">
+        ${REAL_ESTATE_AMENITY_KEYS.map(key => `
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer">
+            <input type="checkbox" class="portfolioAmenityCheckbox" value="${key}" ${amenities.includes(key) ? "checked" : ""}>
+            ${T('portfolio.realEstate.amenity.' + key, REAL_ESTATE_AMENITY_FALLBACKS[key])}
+          </label>
+        `).join("")}
+      </div>
     </div>
   `;
 }
@@ -9498,11 +9563,10 @@ window.openPortfolioItemModal = function(itemId){
         <input type="number" min="0" step="0.01" id="portfolioItemPrice" value="${item && item.price ? item.price : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
       </div>
       <div style="grid-column:span 12">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.photoLabel', 'Foto (opcional)')}</label>
-        <div style="display:flex;align-items:center;gap:12px">
-          ${item && item.photo_url ? `<img id="portfolioItemPhotoPreview" src="${escapeHtml(item.photo_url)}" style="width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line)">` : `<img id="portfolioItemPhotoPreview" style="width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:none">`}
-          <input type="file" id="portfolioItemPhotoFile" accept="image/jpeg,image/png,image/webp" onchange="previewPortfolioItemPhoto(this)" style="flex:1;color:var(--muted);font-size:12px">
-        </div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.photoLabel', 'Fotos (opcional)')}</label>
+        <div id="portfolioItemGallery" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
+        <input type="file" id="portfolioItemPhotoFiles" accept="image/jpeg,image/png,image/webp" multiple onchange="previewPortfolioItemPhotos(this)" style="width:100%;color:var(--muted);font-size:12px">
+        <div id="portfolioItemPhotoPending" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
       </div>
       <div style="grid-column:span 12">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.description', 'Descrição')}</label>
@@ -9516,13 +9580,53 @@ window.openPortfolioItemModal = function(itemId){
     </div>
     <div id="portfolioItemMessage" class="generic-modal-message"></div>
   `);
+  if(item) loadPortfolioItemGallery(item.id);
 };
 
-window.previewPortfolioItemPhoto = function(input){
-  const preview = document.getElementById("portfolioItemPhotoPreview");
-  if(!preview || !input.files || !input.files[0]) return;
-  preview.src = URL.createObjectURL(input.files[0]);
-  preview.style.display = "block";
+// Galeria de verdade (v1.101.0) - portfolio_photos ja aceitava N fotos
+// por item desde sempre (token e a PK, nao item_id), so nunca existia
+// consulta nem UI que devolvesse/mostrasse todas de uma vez.
+window.loadPortfolioItemGallery = async function(itemId){
+  const gallery = document.getElementById("portfolioItemGallery");
+  if(!gallery || !itemId) return;
+  try{
+    const res = await fetch(`/portfolio/items/${itemId}/photos`, { credentials: "same-origin" });
+    const data = await res.json();
+    if(!res.ok || !data.success) return;
+    gallery.innerHTML = data.photos.map(p => `
+      <div style="position:relative">
+        <img src="${escapeHtml(p.url)}" style="width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line)">
+        <button type="button" onclick="deletePortfolioItemGalleryPhoto(${itemId}, '${p.token}')" aria-label="${T('portfolio.realEstate.removePhoto', 'Remover foto')}" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:11px;line-height:1;cursor:pointer">×</button>
+      </div>
+    `).join("");
+  }catch(e){
+    console.warn("Erro ao carregar galeria do item:", e);
+  }
+};
+
+window.deletePortfolioItemGalleryPhoto = async function(itemId, token){
+  try{
+    await fetch(`/portfolio/items/${itemId}/photos/${token}`, { method: "DELETE", credentials: "same-origin" });
+    loadPortfolioItemGallery(itemId);
+    loadPortfolio();
+  }catch(e){
+    console.warn("Erro ao remover foto do item:", e);
+  }
+};
+
+// So preview visual das fotos ainda NAO enviadas (selecionadas agora,
+// upload real so acontece no submit) - separado da galeria acima, que
+// mostra as fotos JA salvas.
+window.previewPortfolioItemPhotos = function(input){
+  const pending = document.getElementById("portfolioItemPhotoPending");
+  if(!pending) return;
+  pending.innerHTML = "";
+  Array.from(input.files || []).forEach(file => {
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    img.style.cssText = "width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line)";
+    pending.appendChild(img);
+  });
 };
 
 window.submitPortfolioItem = async function(itemId){
@@ -9550,10 +9654,15 @@ window.submitPortfolioItem = async function(itemId){
   const operationTypeEl = document.getElementById("portfolioItemOperationType");
   if(operationTypeEl){
     payload.operation_type = operationTypeEl.value || null;
+    payload.reference_code = document.getElementById("portfolioItemReferenceCode")?.value.trim() || null;
     payload.location = document.getElementById("portfolioItemLocation")?.value.trim() || null;
     payload.rooms = document.getElementById("portfolioItemRooms")?.value || null;
     payload.bathrooms = document.getElementById("portfolioItemBathrooms")?.value || null;
     payload.surface_m2 = document.getElementById("portfolioItemSurface")?.value || null;
+    payload.useful_area_m2 = document.getElementById("portfolioItemUsefulArea")?.value || null;
+    payload.condo_fee = document.getElementById("portfolioItemCondoFee")?.value || null;
+    payload.iptu_fee = document.getElementById("portfolioItemIptuFee")?.value || null;
+    payload.amenities = Array.from(document.querySelectorAll(".portfolioAmenityCheckbox:checked")).map(el => el.value);
   }
 
   try{
@@ -9569,21 +9678,25 @@ window.submitPortfolioItem = async function(itemId){
     }
 
     // Upload de foto e um passo separado (multipart, nao JSON) - so
-    // roda se a pessoa escolheu um arquivo novo; precisa do id do item,
-    // que so existe depois do POST acima quando e um item novo.
-    const photoFile = document.getElementById("portfolioItemPhotoFile")?.files?.[0];
-    if(photoFile){
+    // roda se a pessoa escolheu arquivo(s) novo(s); precisa do id do
+    // item, que so existe depois do POST acima quando e um item novo.
+    // Galeria (v1.101.0): input aceita varios arquivos, envia um de
+    // cada vez sequencialmente (endpoint so aceita 1 foto por request).
+    const photoFiles = document.getElementById("portfolioItemPhotoFiles")?.files;
+    if(photoFiles && photoFiles.length){
       const savedItemId = itemId || data.item.id;
-      const formData = new FormData();
-      formData.append("photo", photoFile);
-      const photoRes = await fetch(`/portfolio/items/${savedItemId}/photo`, {
-        method: "POST", credentials: "same-origin", body: formData
-      });
-      const photoData = await photoRes.json();
-      if(!photoRes.ok || !photoData.success){
-        if(msg){ msg.textContent = photoData.message || T('portfolio.photoUploadError', 'Item salvo, mas a foto não pôde ser enviada.'); msg.classList.add("error"); }
-        loadPortfolio();
-        return;
+      for(const file of photoFiles){
+        const formData = new FormData();
+        formData.append("photo", file);
+        const photoRes = await fetch(`/portfolio/items/${savedItemId}/photo`, {
+          method: "POST", credentials: "same-origin", body: formData
+        });
+        const photoData = await photoRes.json();
+        if(!photoRes.ok || !photoData.success){
+          if(msg){ msg.textContent = photoData.message || T('portfolio.photoUploadError', 'Item salvo, mas uma das fotos não pôde ser enviada.'); msg.classList.add("error"); }
+          loadPortfolio();
+          return;
+        }
       }
     }
 
@@ -12403,7 +12516,16 @@ window.uploadGuestDocumentUI = async function(guestId){
     // nunca deveria VER no menu, ver PROMOTER_PERMISSIONS).
     document.querySelectorAll(".menu button").forEach(btn => {
       const key = btn.dataset.requiredPermission || btn.dataset.page;
-      const permissionOk = hasAnyPermission(key, permissions);
+      // "Suporte" (falar direto com a equipe StayFlow - feedback, reclamacao,
+      // pedido de ajuda) nunca deveria ser uma area gated por permissao de
+      // dado, mas cai no mesmo fallback "sem data-required-permission usa
+      // data-page como chave" - e "support" nunca existiu em ALL_PERMISSIONS
+      // (utils/permissions.py), entao hasAnyPermission("support", permissions)
+      // sempre dava false. Bug universal: o botao ficava escondido pra
+      // QUALQUER conta/cargo, nao so promotor/agencia - corrigido excluindo
+      // essa pagina do check de permissao (continua sujeita a account-kind,
+      // caso um dia precise, mas hoje nenhuma tem data-hide-for-account-kind).
+      const permissionOk = btn.dataset.page === "support" ? true : hasAnyPermission(key, permissions);
       const requiredKind = btn.dataset.requiredAccountKind;
       const kindOk = !requiredKind || requiredKind === (accountKind || "lodging");
       const hideForKinds = btn.dataset.hideForAccountKind ? btn.dataset.hideForAccountKind.split(",").map(s => s.trim()) : [];

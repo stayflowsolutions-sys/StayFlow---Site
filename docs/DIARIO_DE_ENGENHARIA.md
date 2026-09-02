@@ -9416,3 +9416,111 @@ leitura nem criar linha vazia; `sync_tokko_properties()` com
 enviado e que os campos de imóvel do Tokko chegam certos no portfolio
 depois do sync. 20 chaves i18n novas em 11 idiomas (1.303→1.335) mais
 3 no `ADMIN_I18N` (292→295, painel de payout do parceiro de indicação).
+
+### Refinamento profundo da imobiliária + bug universal do Suporte (v1.101.0)
+
+Usuário pediu sugestões pra "deixar mais completo" o produto do lado
+imobiliária, já com a apresentação da Julia de Luna se aproximando.
+Listei 7 pontos (galeria de fotos, preço formatado por operação,
+código de referência, filtros estruturados no matching, sync
+automático do Tokko, amenidades/condomínio/IPTU, área útil vs. total)
+e o usuário aprovou fazer todos de uma vez: "pode fazer todas essas
+atualizações na imobiliária".
+
+No meio do levantamento técnico, uma mensagem à parte mudou a
+prioridade: "uma coisa que senti falta em todos os menus foi a aba de
+suporte... entra na lista". Investigando antes de tocar em qualquer
+coisa da imobiliária, achei um bug bem mais sério do que uma lacuna de
+UI: a aba "Suporte" nunca aparecia pra NINGUÉM, em NENHUM tipo de
+conta - não era um problema específico de promotor ou agência.
+`hideNavItemsWithoutPermission()` usa `data-page` como chave de
+permissão implícita quando o botão não tem `data-required-permission`
+explícito (mesmo mecanismo documentado nas sessões anteriores sobre o
+menu do promotor) - e `"support"` nunca foi cadastrado em
+`ALL_PERMISSIONS` (`utils/permissions.py`). Resultado:
+`hasAnyPermission("support", permissions)` sempre devolvia `false`,
+pra qualquer permissão que a conta tivesse, desde que essa lógica de
+menu existe. O backend do Suporte (`support_bp`, `list_support_threads()`,
+`loadSupportThread()`) sempre esteve funcional - só a porta de entrada
+no menu é que nunca funcionou. Corrigido excluindo `"support"` do
+check de permissão dentro de `hideNavItemsWithoutPermission()`: o
+canal de contato direto com a equipe StayFlow não é uma área de dado
+sensível por permissão, então não faz sentido estar sujeito ao mesmo
+gate de "dashboard"/"finance"/etc.
+
+Dos 7 itens da imobiliária, o mais revelador tecnicamente foi o de
+sync automático do Tokko. O escopo original pedido era "webhook do
+Tokko" - mas o próprio arquivo já carregava uma nota honesta desde a
+v1.72.0 dizendo que os nomes de campo da API nunca foram testados
+contra uma resposta real, porque nenhuma imobiliária tinha conectado
+uma chave de verdade ainda. Escrever um receptor de webhook
+especulativo, sem contrato verificado, corria o risco real de nunca
+bater com o payload de verdade quando o primeiro cliente conectasse -
+e ficaria pior que não ter nada, porque pareceria funcionar até o dia
+em que alguém dependesse dele. Troquei por resync automático
+periódico (a cada 6h, `_tokko_resync_loop` em `app.py`, no mesmo
+padrão dos outros 3 laços em background que já existem desde a v1.59.0/
+v1.60.0-era) - reaproveita o caminho de sync que já é testado e
+funcional, resolve o mesmo problema prático (catálogo desatualizado
+entre cliques manuais em "Sincronizar agora"), e não inventa contrato
+nenhum. Decisão comunicada ao usuário como uma troca deliberada de
+escopo, não escondida.
+
+Implementar os campos novos (`reference_code`, `useful_area_m2`,
+`condo_fee`, `iptu_fee`, `amenities`) expôs um bug real que eu mesmo
+quase reintroduzi: `upsert_real_estate_details()` sempre sobrescrevia
+TODOS os campos recebidos, inclusive com `None` quando um campo
+simplesmente não vinha na chamada. Isso já era um risco arquitetural
+desde a v1.72.0 (só não dava problema porque o formulário manual
+sempre mandava os 5 campos originais juntos), mas com os 5 campos
+novos ficou concreto: um resync automático do Tokko (que só conhece
+os 5 originais, nunca amenidades/código/condomínio) apagaria qualquer
+enriquecimento manual a cada rodada de 6h. Resolvido tornando a função
+um upsert parcial de verdade - todos os 10 campos usam um sentinela
+`_UNSET` como valor default, e só entram na query quando o chamador
+realmente passa o argumento. Achei isso rodando o teste isolado que
+simula exatamente esse cenário (enriquecer manualmente um item vindo
+do Tokko, depois rodar o resync de novo) - sem esse teste específico,
+o bug só apareceria em produção depois de uma imobiliária real usar os
+dois fluxos juntos.
+
+Um segundo achado saiu do mesmo teste: o mapeamento do Tokko guardava
+o rótulo de operação exatamente como a API devolve ("Venta"/"Alquiler"
+em espanhol, dependendo do idioma pedido) sem normalizar pro enum fixo
+(`rent`/`sale`) que o resto do sistema usa - o formulário manual, a
+formatação de preço nova ("/mês" só aparece quando `operation_type ===
+'rent'`) e o guard-rail de matching novo dependiam todos desse valor
+bater exatamente. Um imóvel sincronizado do Tokko ficaria com o preço
+formatado errado e imune ao guard-rail, silenciosamente, sem erro
+nenhum aparecer em lugar algum. Corrigido com `_normalize_operation_type()`,
+tolerante a variantes em espanhol e português (a mesma dupla de idiomas
+que a integração realmente atende hoje), preservando o texto original
+quando não reconhece nenhuma variante - nunca descarta o dado, só não
+consegue mapear pro enum quando isso acontece.
+
+O guard-rail de matching em si (`decision_engine.py`) foi desenhado
+como uma segunda camada por cima da sugestão semântica que já existia,
+não uma substituição dela: a mesma chamada de IA que escolhe qual
+imóvel sugerir agora também extrai `property_filters` - só as
+exigências que o cliente disse EXPLICITAMENTE na conversa (operação,
+quartos mínimos, teto de preço), nunca inferidas. Uma função pura nova,
+`_property_violates_filters()`, invalida a sugestão (`suggested_partner_item_id
+= None`) se o imóvel escolhido pela IA violar algum desses filtros
+explícitos - existe justamente pro caso em que o modelo "quase acerta"
+por similaridade textual (ex: sugere um imóvel de 2 quartos quando o
+cliente pediu literalmente "pelo menos 3"). Testável isoladamente sem
+nenhuma chamada real de IA, já que é só lógica de comparação sobre um
+dicionário.
+
+Testado por completo em banco SQLite isolado com Flask test client:
+os 10 campos novos gravam e retornam certo numa criação completa
+(amenidade inválida enviada de propósito é filtrada); PATCH parcial
+(só descrição, ou só um campo novo isolado) não apaga nada dos dois
+grupos de campos, nos dois sentidos; item sem nenhum dado de imóvel
+continua limpo; galeria de fotos - 1ª foto vira capa automaticamente,
+2ª não sobrescreve, excluir a capa promove a próxima foto restante,
+excluir a última limpa a capa pra `None`; resync automático do Tokko
+mockado atualiza só os 5 campos que ele realmente manda, preservando
+os 5 que só o cadastro manual conhece; guard-rail testado nos 4
+cenários de violação (operação, quartos mínimos, preço máximo, e a
+combinação sem filtro nenhum) mais 2 de não-violação.
