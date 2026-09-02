@@ -1841,35 +1841,48 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-8">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <h2 data-i18n="opportunities.title">🔥 Opportunity Center</h2>
-        <button type="button" class="btn secondary" onclick="openGuestChargeModal({})" data-i18n="guestCharge.newStandaloneBtn">+ Nova cobrança</button>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="table">
-          <thead>
-            <tr>
-              <th data-i18n="common.date">Data</th>
-              <th data-i18n="opportunities.col.guest" id="opportunitiesGuestColLabel">Hóspede</th>
-              <th data-i18n="opportunities.col.urgency">Urgência</th>
-              <th data-i18n="opportunities.col.reason">Motivo</th>
-              <th data-i18n="opportunities.col.score">Score</th>
-              <th data-i18n="opportunities.col.revenue">Receita</th>
-              <th data-i18n="opportunities.col.nextAction">Próxima ação</th>
-              <th data-i18n="opportunities.col.action">Ação</th>
-            </tr>
-          </thead>
-          <tbody id="opportunitiesTableBody">
-            <!-- Linhas reais serão inseridas por stayflow-live.js -->
-          </tbody>
-        </table>
-      </div>
-      <div id="opportunitiesEmpty" class="sf-empty">
-        <div>
-          <strong data-i18n="opportunities.emptyTitle">Nenhuma oportunidade ativa.</strong>
-          <span id="opportunitiesEmptyDesc" data-i18n="opportunities.emptyDesc">Quando a IA identificar hóspedes com alta chance de reserva, risco de cancelamento ou possibilidade de upsell, eles aparecerão aqui com prioridade, valor e próxima ação sugerida.</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;gap:6px">
+            <button type="button" class="btn secondary opportunities-view-btn active" data-view="list" onclick="setOpportunitiesView('list')" data-i18n="opportunities.view.list">Lista</button>
+            <button type="button" class="btn secondary opportunities-view-btn" data-view="kanban" onclick="setOpportunitiesView('kanban')" data-i18n="opportunities.view.kanban">Pipeline</button>
+          </div>
+          <button type="button" class="btn secondary" onclick="openGuestChargeModal({})" data-i18n="guestCharge.newStandaloneBtn">+ Nova cobrança</button>
         </div>
       </div>
-      <div style="display:flex;justify-content:center;margin-top:16px">
-        <button id="opportunitiesLoadMoreBtn" class="btn secondary" type="button" onclick="loadMoreOpportunities()" style="display:none" data-i18n="opportunities.loadMoreBtn">Mostrar mais</button>
+
+      <div id="opportunitiesListView">
+        <div style="overflow-x:auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th data-i18n="common.date">Data</th>
+                <th data-i18n="opportunities.col.guest" id="opportunitiesGuestColLabel">Hóspede</th>
+                <th data-i18n="opportunities.col.urgency">Urgência</th>
+                <th data-i18n="opportunities.col.reason">Motivo</th>
+                <th data-i18n="opportunities.col.score">Score</th>
+                <th data-i18n="opportunities.col.revenue">Receita</th>
+                <th data-i18n="opportunities.col.nextAction">Próxima ação</th>
+                <th data-i18n="opportunities.col.action">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="opportunitiesTableBody">
+              <!-- Linhas reais serão inseridas por stayflow-live.js -->
+            </tbody>
+          </table>
+        </div>
+        <div id="opportunitiesEmpty" class="sf-empty">
+          <div>
+            <strong data-i18n="opportunities.emptyTitle">Nenhuma oportunidade ativa.</strong>
+            <span id="opportunitiesEmptyDesc" data-i18n="opportunities.emptyDesc">Quando a IA identificar hóspedes com alta chance de reserva, risco de cancelamento ou possibilidade de upsell, eles aparecerão aqui com prioridade, valor e próxima ação sugerida.</span>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;margin-top:16px">
+          <button id="opportunitiesLoadMoreBtn" class="btn secondary" type="button" onclick="loadMoreOpportunities()" style="display:none" data-i18n="opportunities.loadMoreBtn">Mostrar mais</button>
+        </div>
+      </div>
+
+      <div id="opportunitiesKanbanView" style="display:none">
+        <div id="opportunitiesKanbanBoard" style="display:grid;grid-template-columns:repeat(5,minmax(200px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px"></div>
       </div>
     </div>
 
@@ -13509,7 +13522,7 @@ window.uploadGuestDocumentUI = async function(guestId){
   const PAGE_LOADERS = {
     dashboard: ["loadDashboardStats", "loadExecutiveSummary"],
     chats: ["loadChats"],
-    opportunities: ["loadOpportunities"],
+    opportunities: ["loadOpportunities", "reloadOpportunitiesKanbanIfActive"],
     reservations: ["loadReservations"],
     roommap: ["loadRoomMap"],
     operations: ["loadOperations", "loadKitchen", "loadMaintenance", "loadPatrimonialSecurity", "loadParking"],

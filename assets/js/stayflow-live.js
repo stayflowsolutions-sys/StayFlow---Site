@@ -287,6 +287,123 @@ async function loadOpportunities() {
 }
 
 // ---------------------------------------------------------------
+// Opportunity Center em pipeline (kanban) - toggle "Lista | Pipeline"
+// ao lado do titulo. Reaproveita 100% o mesmo /opportunities (so pede
+// limit maior, o teto ja existente de 100 por chamada) - stage e um
+// campo NOVO e independente de status (que nunca sai de 'open' em
+// lugar nenhum do backend, achado documentado desde a v1.63.0),
+// movido so por botao/select, nunca drag-and-drop.
+// ---------------------------------------------------------------
+
+const OPPORTUNITY_STAGE_ORDER = ["new", "contacted", "negotiating", "won", "lost"];
+let opportunitiesCurrentView = "list";
+
+function opportunityStageLabel(stage){
+  const fallback = {
+    new: "Novo", contacted: "Contatado", negotiating: "Negociando", won: "Ganho", lost: "Perdido"
+  };
+  const key = OPPORTUNITY_STAGE_ORDER.includes(stage) ? stage : "new";
+  return T(`opportunities.stage.${key}`, fallback[key]);
+}
+
+window.setOpportunitiesView = function(view){
+  opportunitiesCurrentView = view;
+  document.querySelectorAll(".opportunities-view-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-view") === view);
+  });
+
+  const listView = document.getElementById("opportunitiesListView");
+  const kanbanView = document.getElementById("opportunitiesKanbanView");
+  if(listView) listView.style.display = view === "list" ? "block" : "none";
+  if(kanbanView) kanbanView.style.display = view === "kanban" ? "block" : "none";
+
+  if(view === "kanban") loadOpportunitiesKanban();
+};
+
+function kanbanCardHtml(opportunity){
+  const urgency = opportunityUrgencyPillClass(opportunity);
+  const estimatedValue = Number(opportunity.estimated_value || 0);
+  const guestLabel = escapeHtml(opportunity.name || opportunity.phone || "-");
+  const stage = OPPORTUNITY_STAGE_ORDER.includes(opportunity.stage) ? opportunity.stage : "new";
+  const options = OPPORTUNITY_STAGE_ORDER
+    .map(s => `<option value="${s}" ${s === stage ? "selected" : ""}>${opportunityStageLabel(s)}</option>`)
+    .join("");
+
+  return `
+    <div class="kanban-card" data-opportunity-id="${opportunity.id}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+        <strong style="font-size:12px">${guestLabel}</strong>
+        <span class="status-pill ${urgency}" style="font-size:10px;padding:3px 7px">${urgency.toUpperCase()}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">${escapeHtml(opportunity.description || opportunity.type || "-")}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
+        <span style="color:var(--blue2);font-weight:700">${estimatedValue > 0 ? formatMoney(estimatedValue) : "—"}</span>
+        <span style="color:var(--muted)">${Number(opportunity.score || 0)}/100</span>
+      </div>
+      <select onchange="updateOpportunityStage(${opportunity.id}, this.value)">${options}</select>
+    </div>
+  `;
+}
+
+function renderOpportunitiesKanban(items){
+  const board = document.getElementById("opportunitiesKanbanBoard");
+  if(!board) return;
+
+  const grouped = {};
+  OPPORTUNITY_STAGE_ORDER.forEach(s => { grouped[s] = []; });
+  items.forEach(o => {
+    const stage = OPPORTUNITY_STAGE_ORDER.includes(o.stage) ? o.stage : "new";
+    grouped[stage].push(o);
+  });
+
+  board.innerHTML = OPPORTUNITY_STAGE_ORDER.map(stage => {
+    const cardsHtml = grouped[stage].map(kanbanCardHtml).join("");
+    return `
+      <div class="kanban-column">
+        <div class="kanban-column-header">
+          <span>${opportunityStageLabel(stage)}</span>
+          <span>${grouped[stage].length}</span>
+        </div>
+        ${cardsHtml || `<div style="font-size:11px;color:var(--muted);text-align:center;padding:10px 0">—</div>`}
+      </div>
+    `;
+  }).join("");
+}
+
+async function loadOpportunitiesKanban(){
+  try{
+    const lang = window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt";
+    const res = await fetch(`/opportunities?lang=${lang}&limit=100&offset=0&sort=recent`, { credentials: "same-origin" });
+    if(!res.ok) return;
+    const data = await res.json();
+    renderOpportunitiesKanban(data.items || []);
+  }catch(e){
+    console.error("Erro ao carregar pipeline de oportunidades:", e);
+  }
+}
+
+function reloadOpportunitiesKanbanIfActive(){
+  if(opportunitiesCurrentView === "kanban") loadOpportunitiesKanban();
+}
+
+window.updateOpportunityStage = async function(opportunityId, stage){
+  try{
+    const res = await fetch(`/opportunities/${opportunityId}/stage`, {
+      method: "PATCH", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ stage }),
+    });
+    if(!res.ok){
+      console.error("Erro ao mover oportunidade de etapa");
+    }
+  }catch(e){
+    console.error("Erro ao mover oportunidade de etapa:", e);
+  }finally{
+    loadOpportunitiesKanban();
+  }
+};
+
+// ---------------------------------------------------------------
 // Oferecer imovel proprio (imobiliaria) - achado em auditoria: antes
 // disso, o botao "Oferecer imovel" reaproveitava openGuestChargeModal()
 // (link de pagamento Mercado Pago, pensado pra passeio/aluguel de

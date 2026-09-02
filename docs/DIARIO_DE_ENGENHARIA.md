@@ -9879,3 +9879,90 @@ desta edição), confirmada via `git show HEAD` como já existente ANTES
 de qualquer edição desta versão, não introduzida agora - a edição
 desta versão adicionou exatamente 3 `<div>` e 3 `</div>` (balanceado
 em si mesma). Sem mudança de schema, sem rota nova.
+
+### Opportunity Center em pipeline visual - kanban (v1.107.0)
+
+Segundo item da fila competitiva (WeSpeak), mesma classificação do
+item anterior: barato, reaproveita dado que já existe
+(`opportunities`), alto retorno de percepção de produto maduro.
+
+Antes de escrever qualquer linha, revisitei o achado já registrado
+desde a v1.63.0: `opportunities.status` nunca sai de `'open'` em
+NENHUM ponto do código - as duas únicas gravações (`database.py` e
+`decision_engine.py`) fixam esse valor no INSERT, e não existe um
+único `UPDATE opportunities SET status` em lugar nenhum. Isso decidiu
+a arquitetura: em vez de finalmente dar uso a `status` (risco de
+quebrar algum consumidor que talvez dependa dele continuar sempre
+`'open'` - não fui atrás de confirmar que ninguém depende, decisão
+conservadora de propósito), nasce uma coluna nova e paralela -
+`stage` - dona exclusiva do pipeline visual, sem tocar em nada que já
+existia.
+
+**Schema**: `opportunities.stage TEXT DEFAULT 'new'`, adicionada via
+`add_column_if_not_exists` (mesmo padrão de sempre - SQLite aplica o
+default também às linhas já existentes, confirmado em teste isolado).
+5 etapas fixas como constante única (`OPPORTUNITY_STAGES` em
+`database.py`), pra rota de validação e schema nunca divergirem.
+
+**Endpoint**: `PATCH /opportunities/<id>/stage`. Ponto que mereceu
+atenção extra: a query de UPDATE embute o `hostel_id` dentro da
+própria cláusula WHERE (`... AND guest_id IN (SELECT id FROM guests
+WHERE hostel_id = ?)`), nunca confiando só no id da oportunidade vindo
+do corpo da requisição - mesmo espírito do self-service do
+multi-corretor (v1.105.0), aplicado agora a um recurso diferente.
+Testado explicitamente o cenário de ataque óbvio: hostel B tentando
+mover uma oportunidade que pertence ao hostel A - a query não erra
+nem retorna sucesso, só não afeta nenhuma linha (`rowcount == 0`), e a
+rota devolve 404 sem distinguir "não existe" de "não é seu" (mesma
+prática de não vazar diferença entre os dois casos).
+
+**Frontend**: toggle "Lista | Pipeline" ao lado do título do
+Opportunity Center. A view Lista (tabela paginada, sidebar "Mais
+importantes") ficou 100% intocada - só passou a viver dentro de um
+`<div id="opportunitiesListView">` pra poder ser escondida quando o
+Pipeline está ativo. A view Pipeline busca até 100 oportunidades (o
+teto que a rota já impunha antes, não é limite novo) e agrupa no
+cliente em 5 colunas por `stage` - decisão consciente de não paginar
+o kanban nesta rodada (StayFlow ainda em fase de poucos pilotos
+ativos, 100 dá folga real hoje; se um hostel individual passar disso
+um dia, primeira coisa a rever). Cada card tem um `<select>` de
+transição de etapa - decisão deliberada de NÃO fazer drag-and-drop,
+que exigiria uma lib externa (nenhuma página do dashboard carrega
+lib de UI hoje) ou uma implementação HTML5 DnD própria arriscada de
+testar sem navegador de verdade numa sessão sem supervisão. Mudar o
+select dispara o PATCH e recarrega o board inteiro (simples, aceitável
+pro volume de dado esperado). Pra não deixar o board "congelado" se a
+pessoa sair da página e voltar, `PAGE_LOADERS.opportunities` ganhou
+uma segunda função (`reloadOpportunitiesKanbanIfActive`) que só recarrega
+o board se a view Pipeline ainda estava ativa - a view Lista de novo
+não precisou de nada, já recarregava sozinha.
+
+Decisão deliberada de escopo: as métricas do sidebar
+(`probable_revenue`/`almost_closed`) e a view Lista continuam
+ignorando `stage` completamente - o pipeline é uma LENTE adicional
+sobre o mesmo dado, não um filtro/contagem nova em lugar nenhum do
+resto do produto. Uma oportunidade marcada "Perdido" no kanban
+continua contando normalmente pra receita provável do sidebar -
+sinalizado aqui de propósito, não é bug, é o comportamento esperado
+até que exista um pedido real de excluir etapas terminais dos
+agregados.
+
+7 chaves i18n novas (`opportunities.view.*`, `opportunities.stage.*`)
+em 11 idiomas (1.421→1.428).
+
+Testado em 3 camadas: (1) banco SQLite isolado - etapa default `'new'`
+numa linha nova, transição de etapa persiste, tentativa cross-tenant
+não altera nada, id inexistente retorna `False` sem lançar exceção;
+(2) rota via Flask test client com uma sessão REAL (`create_session` +
+`client.session_transaction()`, não chamada direta de função, mesmo
+cuidado do teste do multi-corretor) cobrindo transição válida (200),
+valor de etapa inválido (400) e oportunidade inexistente (404); (3)
+smoke test de regressão batendo em `/dashboard`, `/opportunities`,
+`/reports` e `/executive-summary` depois das mudanças desta versão E
+da anterior juntas, confirmando 200 em todos (inclusive o
+`/executive-summary` com chave da OpenAI falsa, provando que o
+fallback já existente continua absorvendo o erro sem propagar 500).
+Balanceamento de chaves/parênteses/colchetes conferido nos 3 arquivos
+tocados - achado no caminho: `static/css/app.css` já tinha uma
+divergência pré-existente de `(`/`)` (237/236) confirmada via `git
+show HEAD` como anterior a esta sessão inteira, não introduzida agora.
