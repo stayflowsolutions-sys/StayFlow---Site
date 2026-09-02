@@ -2687,8 +2687,8 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="geral" onclick="openImportDataModal()">
         <div class="settings-summary-row">
           <div>
-            <h2>Importar dados</h2>
-            <p class="settings-summary-desc">Já tem quartos e hóspedes numa planilha? Importe tudo de uma vez.</p>
+            <h2 data-i18n="settings.importData.title">Importar dados</h2>
+            <p class="settings-summary-desc" id="importDataSummaryDesc" data-i18n="settings.importData.desc">Já tem quartos e hóspedes numa planilha? Importe tudo de uma vez.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
         </div>
@@ -5589,7 +5589,14 @@ async function deleteRoleConfirm(roleId){
 
     const btnEl = document.getElementById(`import${importIdPrefix(kind)}Btn`);
     const previewEl = document.getElementById(`import${importIdPrefix(kind)}Preview`);
-    const IMPORT_IDLE_LABELS = { rooms: "Importar quartos", guests: "Importar hóspedes", reservations: "Importar reservas", team: "Convidar equipe", portfolio: "Importar portfólio" };
+    const session = window.STAYFLOW_SESSION || {};
+    const isAgencySession = session.account_kind === "agency";
+    const guestNoun = isAgencySession ? agencyGuestNoun(session) : "Hóspedes";
+    const guestNounLower = guestNoun === "PAX" ? "PAX" : guestNoun.toLowerCase();
+    // Singular pra compor "N <singular>(s) importado(s)" - agencyGuestNoun()
+    // ja devolve plural ("Clientes"), "PAX" nao pluraliza com "(s)".
+    const guestNounSingular = isAgencySession ? (guestNoun === "PAX" ? "PAX" : "cliente") : "hóspede";
+    const IMPORT_IDLE_LABELS = { rooms: "Importar quartos", guests: `Importar ${guestNounLower}`, reservations: "Importar reservas", team: "Convidar equipe", portfolio: "Importar portfólio" };
     const IMPORT_ENDPOINTS = { portfolio: "/portfolio/items/import" };
     const idleLabel = IMPORT_IDLE_LABELS[kind];
 
@@ -5633,7 +5640,7 @@ async function deleteRoleConfirm(roleId){
       } else {
         const IMPORT_COUNT_LABELS = {
           rooms: `${data.created} quarto(s) criado(s)`,
-          guests: `${data.processed} hóspede(s) importado(s)`,
+          guests: guestNounSingular === "PAX" ? `${data.processed} PAX importado(s)` : `${data.processed} ${guestNounSingular}(s) importado(s)`,
           reservations: `${data.created} reserva(s) criada(s)`,
           portfolio: `${data.created} item(ns) de portfólio criado(s)`,
         };
@@ -5654,7 +5661,9 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openImportDataModal = function(){
-    const isAgency = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
+    const session = window.STAYFLOW_SESSION || {};
+    const isAgency = session.account_kind === "agency";
+    const guestNoun = isAgency ? agencyGuestNoun(session) : "Hóspedes";
     window._importRowsCache = { rooms: null, guests: null, reservations: null, team: null, portfolio: null };
 
     const roomsSection = isAgency ? "" : `
@@ -5717,14 +5726,14 @@ async function deleteRoleConfirm(roleId){
       <div style="display:flex;flex-direction:column;gap:18px">
         ${roomsSection}
         <div>
-          <h3 style="margin-bottom:6px">Hóspedes</h3>
-          <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, telefone, email, endereço, nacionalidade, tipo/número de documento, data de nascimento</strong> (telefone é obrigatório, só números com DDI+DDD).</p>
+          <h3 style="margin-bottom:6px">${guestNoun}</h3>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Colunas esperadas: <strong>nome, telefone, email, endereço, nacionalidade, tipo/número de documento, data de nascimento</strong> (telefone é obrigatório, só números com DDI+DDD${isAgency ? " - os campos de documento/nacionalidade podem ficar em branco" : ""}).</p>
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
             <a href="#" onclick="downloadImportTemplate('guests');return false;" style="font-size:13px">Baixar modelo CSV</a>
             <input type="file" id="importGuestsFile" accept=".csv" onchange="handleImportFile('guests', this)">
           </div>
           <div id="importGuestsPreview"></div>
-          <button class="btn" type="button" id="importGuestsBtn" disabled onclick="submitImportRows('guests')" style="margin-top:10px">Importar hóspedes</button>
+          <button class="btn" type="button" id="importGuestsBtn" disabled onclick="submitImportRows('guests')" style="margin-top:10px">Importar ${guestNoun === "PAX" ? "PAX" : guestNoun.toLowerCase()}</button>
         </div>
         ${reservationsSection}
         ${portfolioSection}
@@ -9411,6 +9420,14 @@ function applyAgencyHomeCopy(session){
   if(timelineEmptyDesc) timelineEmptyDesc.textContent = T('home.timeline.emptyDescAgency', 'Mensagens, oportunidades e eventos do dia aparecerão aqui quando a operação estiver ligada ao StayFlow.');
   if(priorityActionsEmptyDesc) priorityActionsEmptyDesc.textContent = T('home.priorityActions.emptyDescAgency', 'Quando a IA detectar oportunidades em risco, {noun} aguardando resposta ou chances de venda, elas serão listadas aqui.', { noun: noun.toLowerCase() });
   if(opportunitiesEmptyDesc) opportunitiesEmptyDesc.textContent = T('opportunities.emptyDescAgency', 'Quando a IA identificar {noun} com alta chance de negociação, risco de perda ou possibilidade de venda extra, eles aparecerão aqui com prioridade, valor e próxima ação sugerida.', { noun: noun.toLowerCase() });
+
+  // Card "Importar dados" (Configuracoes > Geral) - "quartos e hospedes"
+  // nao existe pra agencia; o modal atras desse card ja esconde Quartos/
+  // Reservas e mostra Portfolio corretamente pra agencia (openImportDataModal,
+  // isAgency ja calculado ali), so esse card-resumo continuava com o
+  // texto fixo de hospedagem.
+  const importDataDesc = document.getElementById("importDataSummaryDesc");
+  if(importDataDesc) importDataDesc.textContent = T('settings.importData.descAgency', 'Já tem {noun} e catálogo numa planilha? Importe tudo de uma vez.', { noun: noun.toLowerCase() });
 }
 
 // "Meu Portfolio" nasceu pensado em passeio/aluguel de terceiro que uma
@@ -12907,6 +12924,23 @@ window.uploadGuestDocumentUI = async function(guestId){
   // reservas, mapa de quartos, operacoes, equipe, financeiro, estoque,
   // receitas, eventos, parceiros - ja ficam fora do menu dela). Mesmo
   // padrao/namespace de FEATURE_COACH_MARKS_PROMOTER.
+  // Demais categorias de agencia (turismo, aluguel de carro/bike/
+  // equipamentos, automotivo, comercio) - diferente da imobiliaria, o
+  // CONTEUDO das dicas genericas ja bate (Portfolio realmente e "o que
+  // voce vende pras hospedagens parceiras oferecerem", Opportunity
+  // realmente detecta "passeio, aluguel") - so a palavra "hospede(s)"/
+  // "hospedagem" precisa virar PAX/Clientes/"agência". {noun}/
+  // {noun_singular} sao resolvidos em showFeatureCoachMark() com
+  // agencyGuestNoun(), entao um dict so cobre turismo E automotivo/
+  // comercio ao mesmo tempo, cada um com o substantivo certo.
+  const FEATURE_COACH_MARKS_AGENCY = {
+    chats: { titleKey: "nav.chats", title: "Chats", textKey: "onboarding.coach.agency.chats.text", text: "As conversas com {noun} ficam aqui. A IA responde sozinha 24h - você só entra quando quiser assumir manualmente." },
+    opportunities: { titleKey: "nav.opportunities", title: "Opportunity Center", textKey: "onboarding.coach.agency.opportunities.text", text: "Quando um {nounSingular} pergunta por algo vendável, a IA detecta e sugere aqui - até indicando um parceiro, se você não vende isso." },
+    guests: { titleKey: "nav.guests", title: "Clientes", textKey: "onboarding.coach.agency.guests.text", text: "Cadastro de {noun}, com histórico e documentos." },
+    finance: { titleKey: "nav.finance", title: "Financeiro", textKey: "onboarding.coach.agency.finance.text", text: "Cobranças, câmbio e o que os {noun} já pagaram." },
+    settings: { titleKey: "nav.settings", title: "Configurações", textKey: "onboarding.coach.agency.settings.text", text: "Dados da agência, integrações, segurança e mais." },
+  };
+
   const FEATURE_COACH_MARKS_IMOBILIARIA = {
     chats: { titleKey: "nav.chats", title: "Chats", textKey: "onboarding.coach.imobiliaria.chats.text", text: "As conversas com clientes ficam aqui. A IA responde sozinha 24h - você só entra quando quiser assumir manualmente." },
     opportunities: { titleKey: "nav.opportunities", title: "Opportunity Center", textKey: "onboarding.coach.imobiliaria.opportunities.text", text: "Quando um cliente demonstra interesse num imóvel, a IA detecta e sugere aqui - já indicando o imóvel certo do seu próprio catálogo." },
@@ -12945,8 +12979,14 @@ window.uploadGuestDocumentUI = async function(guestId){
     if(!info) return;
     document.getElementById("onboardingCoachMark")?.remove();
 
+    // {noun}/{nounSingular} so existem nas dicas de agencia
+    // (FEATURE_COACH_MARKS_AGENCY/_IMOBILIARIA) - resolvidos aqui em vez
+    // de duplicar a logica de PAX/Clientes em cada texto.
+    const session = window.STAYFLOW_SESSION || {};
+    const noun = agencyGuestNoun(session);
+    const placeholders = { noun: noun.toLowerCase(), nounSingular: noun === "PAX" ? "PAX" : "cliente" };
     const title = T(info.titleKey, info.title);
-    const text = T(info.textKey, info.text);
+    const text = T(info.textKey, info.text, placeholders);
     const el = document.createElement("div");
     el.id = "onboardingCoachMark";
     el.style.cssText = "position:fixed;right:24px;bottom:100px;max-width:320px;background:var(--panel2,#0a1726);border:1px solid var(--blue,#0b84ff);border-radius:16px;padding:16px 18px;z-index:2000;box-shadow:0 18px 42px rgba(0,0,0,.45)";
@@ -12975,9 +13015,11 @@ window.uploadGuestDocumentUI = async function(guestId){
     if(onboardingState.seen.has(pageId)) return;
     const session = window.STAYFLOW_SESSION || {};
     const isPromoter = session.account_kind === "promoter";
-    const isImobiliaria = session.account_kind === "agency" && session.agency_category === "imobiliaria";
+    const isAgency = session.account_kind === "agency";
+    const isImobiliaria = isAgency && session.agency_category === "imobiliaria";
     const info = (isPromoter && FEATURE_COACH_MARKS_PROMOTER[pageId])
       || (isImobiliaria && FEATURE_COACH_MARKS_IMOBILIARIA[pageId])
+      || (isAgency && FEATURE_COACH_MARKS_AGENCY[pageId])
       || FEATURE_COACH_MARKS[pageId];
     if(!info) return;
     showFeatureCoachMark(pageId, info);

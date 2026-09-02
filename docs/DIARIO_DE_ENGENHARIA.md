@@ -9604,3 +9604,55 @@ sistema mockado confirma "imobiliária"/"AGÊNCIA" no texto, e a lista
 de tools realmente enviada pra API exclui `create_reservation`/
 `create_kitchen_order` pra agência, com o teste espelho confirmando
 que hospedagem continua com o catálogo completo (sem regressão).
+
+### Fechamento dos 2 achados que sobraram da auditoria de agência (v1.103.0)
+
+Ao final da v1.102.0 relatei ao usuário 2 coisas que tinha notado mas
+deixado de fora de propósito (não tinham sido pedidas): o card
+"Importar dados" ainda falava de "quartos e hóspedes" pra qualquer
+conta, e os coach marks de primeiro acesso só tinham ganho variante
+pra imobiliária, deixando turismo/aluguel/automotivo/comércio com o
+texto genérico de hospedagem. Usuário pediu pra resolver os dois.
+
+Investigar o "Importar dados" antes de mexer valeu a pena: o modal por
+trás do card já estava bem mais maduro do que eu esperava -
+`openImportDataModal()` já tinha um `isAgency` calculado e usado pra
+esconder Quartos/Reservas e mostrar Portfólio só pra agência. Ou seja,
+a arquitetura de dados já reconhecia agência corretamente; só a
+CAMADA DE TEXTO (o card-resumo fora do modal, e o título/rótulos da
+seção "Hóspedes" dentro dele) nunca tinha sido atualizada com o mesmo
+cuidado. Padrão que já apareceu antes nesta sessão (Configurações >
+Geral, v1.102.0: `isAgency` calculado mas não usado no label do nome)
+- a lógica estrutural evolui, mas um texto vizinho fica pra trás.
+Resolvido reaproveitando `agencyGuestNoun()` nos 3 pontos (card-resumo,
+título da seção, texto do botão) e cuidando de mais um detalhe fino:
+"PAX" não pluraliza com "(s)" do jeito que "cliente(s)" pluraliza -
+precisou de uma forma singular separada (`guestNounSingular`) só pra
+compor a contagem final ("N cliente(s) importado(s)" vs "N PAX
+importado(s)", nunca "N PAX(s)").
+
+Os coach marks das demais categorias de agência escondiam uma
+economia real: diferente da imobiliária (onde o CONTEÚDO da dica
+generica estava errado - "hospedagens parceiras oferecerem" não faz
+sentido pro próprio estoque de imóveis), pra turismo/aluguel/
+automotivo/comércio o conteúdo já batia (Portfólio realmente é pra
+"hospedagens parceiras oferecerem" nessas categorias, Opportunity
+Center realmente detecta "passeio, aluguel"). Só a palavra "hóspede"/
+"hospedagem" precisava trocar por PAX/Clientes/"agência". Em vez de
+duplicar os 5 textos por categoria (o que exigiria um dict pra cada
+uma das 6 categorias restantes), usei placeholders `{noun}`/
+`{nounSingular}` resolvidos em tempo de exibição dentro de
+`showFeatureCoachMark()` via `agencyGuestNoun()` - um `FEATURE_COACH_MARKS_AGENCY`
+único cobre turismo (PAX) e automotivo/comércio (Clientes) ao mesmo
+tempo, sem duplicar texto nenhum. A função `T()` já suportava
+substituição de placeholder tanto no valor traduzido quanto no
+fallback (usado quando a chave ainda não existe no dicionário), então
+não precisou de nenhuma mudança na função em si.
+
+Sem alteração de backend nesta versão - só frontend. Testado via
+balanceamento de chaves/parênteses/colchetes e `tools/check_i18n_parity.py`
+(8 chaves novas, 11 idiomas); revisão manual da ordem de precedência
+do coach mark (promotor → imobiliária → agência genérica → hospedagem)
+e da interpolação de placeholder, já que não há motor de teste headless
+de JS disponível neste ambiente - mesmo critério já usado pras demais
+mudanças puramente de frontend desta sessão.
