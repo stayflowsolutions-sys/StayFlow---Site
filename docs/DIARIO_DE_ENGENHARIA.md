@@ -9966,3 +9966,121 @@ Balanceamento de chaves/parênteses/colchetes conferido nos 3 arquivos
 tocados - achado no caminho: `static/css/app.css` já tinha uma
 divergência pré-existente de `(`/`)` (237/236) confirmada via `git
 show HEAD` como anterior a esta sessão inteira, não introduzida agora.
+
+### Venda cruzada contextual pra hospedagem (v1.108.0)
+
+Terceiro e último item da fila competitiva desta madrugada, inspirado
+na Hoteligy: a IA de chat deles faz venda cruzada CONTEXTUAL (sabe se
+o hóspede está numa suíte ou standard, chegando ou saindo, e só
+oferece o que faz sentido) com atalhos pra spa/restaurante/
+late-checkout.
+
+Antes de escrever qualquer linha, revisitei o achado já registrado na
+investigação que fiz antes de decidir a ordem da fila: `portfolio_items`
+(a tabela por trás do "Meu Portfólio" que só agência tinha) é 100%
+genérica por `hostel_id` - zero lógica de agência embutida na camada
+de dado. A restrição "só agência" existia inteira na CAMADA DE ACESSO,
+em 4 pontos separados, não no dado em si. Isso decidiu a abordagem:
+em vez de construir um catálogo novo do zero pra lodging, é mais
+barato e mais consistente simplesmente abrir os 4 portões que já
+existiam.
+
+**Os 4 portões, um por um:**
+
+1. `_require_agency()` em `routes/portfolio.py` - guarda em cada uma
+   das 7 rotas do Portfolio. Virou uma checagem bem mais fraca (só
+   "o hostel existe"), já que `@require_permission("portfolio")` logo
+   acima já garante sessão válida com a permissão certa - o nome da
+   função ficou desatualizado de propósito (renomear ia mexer nas 7
+   chamadas pra um ganho cosmético só), mas o comentário explica a
+   mudança real.
+
+2. `AGENCY_ONLY_PERMISSIONS` em `utils/permissions.py` - continha só
+   `"portfolio"`, virou conjunto vazio. Efeito: `permissions_for_account_kind("lodging")`
+   agora inclui "portfolio" no catálogo de cargos (Equipe > Novo
+   cargo) - o DONO de uma hospedagem já tinha essa permissão de
+   graça (Admin sempre ganha `ALL_PERMISSIONS_STR`, achado antigo já
+   registrado), mas um FUNCIONÁRIO só consegue ser autorizado a mexer
+   no Portfolio se a permissão existir no catálogo pra escolher - sem
+   esse ajuste, o dono conseguiria usar mas nunca delegar.
+
+3. Nav do dashboard - `data-required-account-kind="agency"` removido
+   do botão "Portfólio", que volta a ser gated só por
+   `data-required-permission="portfolio"` (mesmo padrão de Chats,
+   Hóspedes, Financeiro - a maioria dos itens de menu não tem eixo de
+   account_kind nenhum, só permissão).
+
+4. `GET_OFFERINGS_TOOL` em `services/ai_service.py` - a function-calling
+   tool que deixa a IA consultar o catálogo real antes de citar preço/
+   item. Só entrava no branch `elif is_agency`. Somada também ao
+   branch de lodging (`elif hostel_id and guest_id`) - testado que um
+   catálogo VAZIO (hostel sem nenhum item cadastrado ainda) não quebra
+   nada, o prompt já instrui a IA a simplesmente não mencionar esse
+   catálogo quando `get_offerings` volta `[]`.
+
+**Prompt**: adicionada uma seção "EXTRA SERVICES" ao `SYSTEM_PROMPT`
+de lodging, logo depois do parágrafo de `get_addons` (toalha/cobertor
+- mecanismo mais simples e SEPARADO que já existia). A restrição
+copiada de propósito do tom já usado no prompt de agência: nunca
+oferecer do nada, só quando contextualmente natural (hóspede pergunta
+o que tem disponível, menciona relaxar/comer/estender a estadia, ou
+um add-on genuinamente relevante surge ao fechar uma reserva - ex:
+chegada tarde da noite só menciona late checkout se estiver
+realmente listado, nunca assumir que existe). Sempre valida contra
+`get_offerings` antes de citar preço ou disponibilidade.
+
+**Copy do frontend**: achado ao revisar a página antes de mexer -
+o subtítulo e os textos de vazio do Portfolio falavam do modelo de
+COMISSÃO entre agência parceira e hospedagem terceira ("hospedagens
+podem ativar... você ganha o valor cheio menos a comissão combinada"),
+que não faz sentido nenhum quando é a PRÓPRIA hospedagem cadastrando
+um serviço pra vender pro PRÓPRIO hóspede - não existe comissão, não
+existe "hospedagem terceira ativando". Nova `applyLodgingPortfolioCopy()`,
+espelhando o padrão já existente de `applyImobiliariaPortfolioCopy()`
+(mesmo mecanismo: função dedicada, chamada nos 2 pontos de hidratação
+- login inicial e troca de idioma -, sobrescrevendo o texto genérico
+do HTML por `textContent` quando o `account_kind` bate). Rótulo do
+menu e título da página também trocam pra "Serviços extras" - termo
+mais claro que "Portfólio" pra quem nunca usou esse conceito.
+
+Escopo deliberadamente deixado de fora, sinalizado e não esquecido:
+o modal "Importar dados" (Configurações > Geral) continua só
+oferecendo importação em lote (CSV) de Portfolio pra agência - uma
+hospedagem cadastrando spa/restaurante/late-checkout tende a ter
+poucos itens (não uma planilha inteira como um catálogo de produtos
+de agência de turismo), então "+ Novo item" manual já resolve bem;
+CSV pra lodging fica pra construir se algum piloto pedir de verdade.
+
+5 chaves i18n novas (`nav.portfolioLodging`, `portfolio.titleLodging`,
+`portfolio.subtitleLodging`, `portfolio.emptyTitleLodging`,
+`portfolio.emptyDescLodging`) em 11 idiomas (1.428→1.433).
+
+Testado em 4 frentes: (1) `permissions_for_account_kind` - "portfolio"
+presente tanto pra "lodging" quanto pra "agency"; (2) rotas
+`POST`/`GET /portfolio/items` via Flask test client com sessão real de
+um hostel `lodging` de verdade (criava 403 antes desta versão, agora
+200, item persistido e devolvido corretamente); (3) `GET /permissions/catalog`
+de um hostel lodging confirmando "portfolio" na lista disponível pro
+catálogo de cargos; (4) `ask_ai()` chamado com `account_kind="lodging"`
+e o cliente OpenAI inteiro trocado por um mock que só captura o
+argumento `tools` (sem gastar chamada real nem depender de rede) -
+confirmado `get_offerings` presente na lista de ferramentas passadas
+pro modelo, E confirmado AUSENTE quando `ai_persona="software"`
+(prova de que o lead-capture-only da vitrine não foi afetado). Smoke
+test final rodando `/dashboard`, `/portfolio/items`, `/opportunities`,
+`/reports` em sequência contra o mesmo hostel lodging, todos 200.
+Balanceamento de chaves/parênteses/tags no `dashboard.html` conferido -
+zero `<div>`/`<section>` novos nesta versão (só atributos `id` novos e
+funções JS), divergência pré-existente permaneceu idêntica.
+
+Com isso fecha a fila de melhorias competitivas que o usuário pediu
+pra atacar nesta madrugada ("Vai vendo, quero estar mais completo do
+que todos esses produtos") - os 3 itens classificados como "barato,
+alto retorno" (BI/Relatórios v1.106.0, kanban do Opportunity Center
+v1.107.0, venda cruzada pra lodging v1.108.0) shippados em sequência,
+cada um totalmente testado/documentado/publicado antes do próximo
+começar, sem parar no meio de nenhum - regra antiga de trabalho desta
+sessão. Os itens mais caros/ambíguos (revenue management avançado,
+agente de voz, "Modo Dueño" no WhatsApp do dono, mais integrações de
+PMS) ficam de fora de propósito, já registrados na fila pra quando o
+usuário quiser retomar.
