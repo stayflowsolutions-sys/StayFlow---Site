@@ -3,6 +3,34 @@
 
 let stayflowCurrentGuestId = null;
 
+// "type"/"intent" da oportunidade (decision_engine.py: booking/tour/
+// upsell/human_help/follow_up/general) vazava cru em ingles na tela
+// ("Intenção: booking") - achado ao vivo junto com Ask StayFlow/resumo
+// executivo. "booking" muda de sentido por account_kind (hospedagem =
+// reserva de quarto; agencia = fechar negócio/venda) - resto do enum e
+// generico o bastante pra nao precisar de variante.
+function intentLabel(type, session){
+  const isAgency = (session || {}).account_kind === "agency";
+  const map = {
+    booking: isAgency ? T('chats.intent.bookingAgency', 'Negociação') : T('chats.intent.booking', 'Reserva'),
+    tour: T('chats.intent.tour', 'Passeio/Aluguel'),
+    upsell: T('chats.intent.upsell', 'Upsell'),
+    human_help: T('chats.intent.humanHelp', 'Precisa de humano'),
+    follow_up: T('chats.intent.followUp', 'Acompanhamento'),
+    general: T('chats.intent.general', 'Geral'),
+  };
+  return map[type] || type || "-";
+}
+
+// Fallback de nome quando o hospede/lead nao tem nome nem telefone -
+// "Hóspede" nao faz sentido pra agencia/imobiliaria (agencyGuestNoun()
+// e global, definida em dashboard.html; "PAX" e usado sempre sem
+// traducao em todo o resto do produto, mesmo criterio aqui).
+function guestFallbackName(session){
+  if((session || {}).account_kind !== "agency") return T('chats.guestFallback', 'Hóspede');
+  return agencyGuestNoun(session) === "PAX" ? "PAX" : T('chats.guestFallbackAgency', 'Cliente');
+}
+
 // Chats no mobile: lista, conversa e perfil do hospede sao 3 telas
 // cheias separadas (padrao WhatsApp), nao 3 paineis empilhados na
 // mesma tela - troca de tela e so essa variavel de estado no HTML,
@@ -267,7 +295,7 @@ async function loadGuestProfile(guestId) {
         const chatTitle = document.getElementById("chatTitle");
         if (chatTitle) {
             const flag = stayflowCountryFlag(guest.phone);
-            const titleText = `${T('chats.defaultTitle', 'Conversa')} · ${flag ? flag + " " : ""}${guest.name || guest.phone || T('chats.guestFallback', 'Hóspede')}`;
+            const titleText = `${T('chats.defaultTitle', 'Conversa')} · ${flag ? flag + " " : ""}${guest.name || guest.phone || guestFallbackName(window.STAYFLOW_SESSION)}`;
             chatTitle.innerHTML = `${escapeHtml(titleText)} ${channelBadgeHtml(guest.channel)}`;
         }
 
@@ -317,7 +345,7 @@ async function loadGuestProfile(guestId) {
         const guestNextAction = document.getElementById("guestNextAction");
         const guestAIHistory = document.getElementById("guestAIHistory");
 
-        if (guestName) guestName.textContent = guest.name || guest.phone || T('chats.guestFallback', 'Hóspede');
+        if (guestName) guestName.textContent = guest.name || guest.phone || guestFallbackName(window.STAYFLOW_SESSION);
         if (guestSubtitle) guestSubtitle.textContent = T('chats.profileSubtitle', 'Perfil consolidado a partir das mensagens reais.');
 
         if (guestPhone) guestPhone.textContent = guest.phone || "-";
@@ -326,7 +354,7 @@ async function loadGuestProfile(guestId) {
         const lastOpp = opportunities[0] || null;
 
         if (guestIntentTag) {
-            guestIntentTag.textContent = `${T('chats.intentLabel', 'Intenção')}: ${lastOpp ? lastOpp.type : "-"}`;
+            guestIntentTag.textContent = `${T('chats.intentLabel', 'Intenção')}: ${lastOpp ? intentLabel(lastOpp.type, window.STAYFLOW_SESSION) : "-"}`;
         }
         if (guestUrgencyTag) {
             guestUrgencyTag.textContent = `${T('chats.urgencyLabel', 'Urgência')}: ${lastOpp ? lastOpp.urgency : T('chats.urgencyLow', 'baixa')}`;
@@ -363,10 +391,15 @@ async function loadGuestProfile(guestId) {
         renderGuestNotes(data.notes || []);
 
         if (guestNotes) {
+    const isAgency = (window.STAYFLOW_SESSION || {}).account_kind === "agency";
     if (lastOpp) {
-        guestNotes.textContent = lastOpp.description || T('chats.opportunityIdentifiedDesc', 'Oportunidade identificada para este hóspede.');
+        guestNotes.textContent = lastOpp.description || (isAgency
+            ? T('chats.opportunityIdentifiedDescAgency', 'Oportunidade identificada para este cliente.')
+            : T('chats.opportunityIdentifiedDesc', 'Oportunidade identificada para este hóspede.'));
     } else {
-        guestNotes.textContent = T('chats.noOpportunityYet', 'Nenhuma oportunidade registrada para este hóspede ainda.');
+        guestNotes.textContent = isAgency
+            ? T('chats.noOpportunityYetAgency', 'Nenhuma oportunidade registrada para este cliente ainda.')
+            : T('chats.noOpportunityYet', 'Nenhuma oportunidade registrada para este hóspede ainda.');
     }
 }
 
