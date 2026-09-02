@@ -190,10 +190,20 @@ async function loadChats() {
                 ? lastMessage.slice(0, 90) + "..."
                 : lastMessage;
 
-            const intent = chat.intent || "-";
+            const intent = intentLabel(chat.intent, window.STAYFLOW_SESSION);
             const urgency = (chat.urgency || "low").toLowerCase();
             const score = chat.score ?? 0;
             const flag = stayflowCountryFlag(chat.phone);
+
+            // Multi-corretor (v1.105.0): so faz sentido mostrar "quem
+            // esta atendendo" numa conta com mais de um corretor
+            // possivel - por enquanto so imobiliaria (owner_name vem
+            // null pra qualquer conta que nunca teve numero de
+            // corretor conectado, entao o resto do produto nem chega a
+            // montar essa tag).
+            const brokerTagHtml = chat.owner_name
+                ? `<div class="chat-broker-tag" style="font-size:11px;color:var(--accent,#0b84ff);margin-top:2px">👤 ${escapeHtml(chat.owner_name)}</div>`
+                : "";
 
             item.innerHTML = `
                 <div class="chat-name">
@@ -202,6 +212,7 @@ async function loadChats() {
                         ${escapeHtml(intent)} · ${score}/100
                     </span>
                 </div>
+                ${brokerTagHtml}
                 <div class="chat-preview">${escapeHtml(preview) || T('chats.noRecentMessages', 'Sem mensagens recentes.')}</div>
             `;
 
@@ -337,6 +348,15 @@ async function loadGuestProfile(guestId) {
         const guestPhone = document.getElementById("guestPhone");
         const guestIntentTag = document.getElementById("guestIntentTag");
         const guestUrgencyTag = document.getElementById("guestUrgencyTag");
+        const guestBrokerTag = document.getElementById("guestBrokerTag");
+        if (guestBrokerTag) {
+            if (guest.owner_name) {
+                guestBrokerTag.style.display = "";
+                guestBrokerTag.textContent = `${T('chats.brokerLabel', 'Atendido por')}: ${guest.owner_name}`;
+            } else {
+                guestBrokerTag.style.display = "none";
+            }
+        }
         const guestPayment = document.getElementById("guestPayment");
         const guestValue = document.getElementById("guestValue");
         const guestStatus = document.getElementById("guestStatus");
