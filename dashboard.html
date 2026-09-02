@@ -1324,8 +1324,8 @@ async function deleteRoleConfirm(roleId){
     <button data-page="partners" data-required-permission="partners" data-required-account-kind="lodging" onclick="openPage('partners',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5c1.7.4 3 2 3 3.9s-1.3 3.5-3 3.9"/><path d="M22 20c0-2.8-2-5.2-4.7-5.8"/></svg></span><span data-i18n="nav.partners">Parceiros</span>
     </button>
-    <button data-page="portfolio" data-required-permission="portfolio" data-required-account-kind="agency" onclick="openPage('portfolio',this)">
-      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span><span data-i18n="nav.portfolio">Meu Portfólio</span>
+    <button data-page="portfolio" data-required-permission="portfolio" onclick="openPage('portfolio',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span><span data-i18n="nav.portfolio" id="navPortfolioLabel">Meu Portfólio</span>
     </button>
     <button data-page="guests" data-hide-for-account-kind="promoter" onclick="openPage('guests',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4"/><circle cx="12" cy="9" r="3"/><path d="M20 19c0-1.7-1-3.1-2.5-3.7"/><path d="M17 7.2a2.5 2.5 0 0 1 0 3.6"/></svg></span><span data-i18n="nav.guests" id="navGuestsLabel">Hóspedes</span>
@@ -2584,12 +2584,12 @@ async function deleteRoleConfirm(roleId){
   </div>
 </section>
 
-<!-- MEU PORTFOLIO (agencia parceira) -->
+<!-- MEU PORTFOLIO (agencia parceira + lodging desde a v1.108.0, venda cruzada) -->
 <section id="portfolio" class="page">
   <div class="grid">
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="portfolio.title">Meu Portfólio</h2>
+        <h2 style="margin:0" data-i18n="portfolio.title" id="portfolioSectionTitle">Meu Portfólio</h2>
         <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="portfolio.addBtn">➕ Novo item</button>
       </div>
       <p style="color:var(--muted);font-size:13px;margin:0 0 14px" data-i18n="portfolio.subtitle" id="portfolioSubtitle">Itens que hospedagens podem ativar pra oferecer aos próprios hóspedes - você ganha o valor cheio menos a comissão combinada.</p>
@@ -9767,6 +9767,29 @@ function applyImobiliariaPortfolioCopy(session){
   if(emptyDescEl) emptyDescEl.textContent = T('portfolio.emptyDescImobiliaria', 'Cadastre os imóveis disponíveis pra locação ou venda — a IA usa esse catálogo pra sugerir o imóvel certo pra cada lead automaticamente.');
 }
 
+// Portfolio liberado pra lodging na v1.108.0 (venda cruzada contextual -
+// spa/restaurante/late checkout/passeios). O texto base do HTML fala de
+// "hospedagens ativando item de agência parceira" (modelo de comissão
+// entre contas), que nao faz sentido nenhum quando quem cadastra e a
+// PROPRIA hospedagem vendendo pro proprio hospede - mesmo padrao de
+// applyImobiliariaPortfolioCopy, so que pro eixo lodging em vez de
+// agencia. Rotulo do menu tambem troca ("Meu Portfólio" -> "Serviços
+// extras"), mais claro pra quem nunca ouviu o termo "portfólio" nesse
+// contexto.
+function applyLodgingPortfolioCopy(session){
+  if((session || {}).account_kind !== "lodging") return;
+  const navLabelEl = document.getElementById("navPortfolioLabel");
+  const sectionTitleEl = document.getElementById("portfolioSectionTitle");
+  const subtitleEl = document.getElementById("portfolioSubtitle");
+  const emptyTitleEl = document.getElementById("portfolioEmptyTitle");
+  const emptyDescEl = document.getElementById("portfolioEmptyDesc");
+  if(navLabelEl) navLabelEl.textContent = T('nav.portfolioLodging', 'Serviços extras');
+  if(sectionTitleEl) sectionTitleEl.textContent = T('portfolio.titleLodging', 'Serviços extras');
+  if(subtitleEl) subtitleEl.textContent = T('portfolio.subtitleLodging', 'Spa, restaurante, late checkout, passeios ou qualquer outro serviço extra que você ofereça — a IA consulta esse catálogo pra sugerir o item certo durante a conversa com o hóspede.');
+  if(emptyTitleEl) emptyTitleEl.textContent = T('portfolio.emptyTitleLodging', 'Nenhum serviço extra cadastrado ainda.');
+  if(emptyDescEl) emptyDescEl.textContent = T('portfolio.emptyDescLodging', 'Cadastre spa, restaurante, late checkout, passeios ou qualquer outro serviço extra — a IA usa esse catálogo pra oferecer o que fizer sentido durante a conversa com o hóspede.');
+}
+
 let portfolioItemsCache = [];
 
 window.loadPortfolio = async function(){
@@ -13087,6 +13110,9 @@ window.uploadGuestDocumentUI = async function(guestId){
       applyImobiliariaPortfolioCopy(session);
     }catch(e){ console.error("Erro ao ajustar copy do Portfolio pra imobiliaria:", e); }
     try{
+      applyLodgingPortfolioCopy(session);
+    }catch(e){ console.error("Erro ao ajustar copy do Portfolio pra lodging:", e); }
+    try{
       applyAgencyHomeCopy(session);
     }catch(e){ console.error("Erro ao ajustar copy da home/Opportunity Center pra agencia:", e); }
     try{
@@ -13566,6 +13592,9 @@ window.uploadGuestDocumentUI = async function(guestId){
     try{
       applyImobiliariaPortfolioCopy(window.STAYFLOW_SESSION);
     }catch(e){ console.error("Erro ao reaplicar copy do Portfolio pra imobiliaria:", e); }
+    try{
+      applyLodgingPortfolioCopy(window.STAYFLOW_SESSION);
+    }catch(e){ console.error("Erro ao reaplicar copy do Portfolio pra lodging:", e); }
     try{
       applyAskStayFlowAccountKindText(window.STAYFLOW_SESSION);
     }catch(e){ console.error("Erro ao reaplicar texto do Ask StayFlow por tipo de conta:", e); }
