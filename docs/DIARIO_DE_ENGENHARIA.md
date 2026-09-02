@@ -9656,3 +9656,55 @@ do coach mark (promotor → imobiliária → agência genérica → hospedagem)
 e da interpolação de placeholder, já que não há motor de teste headless
 de JS disponível neste ambiente - mesmo critério já usado pras demais
 mudanças puramente de frontend desta sessão.
+
+### Coach mark centralizado + tour afiado pra imobiliária (v1.104.0)
+
+Usuário reportou algo sutil e concreto: "em algumas sessões" a dica de
+primeiro acesso (o coach mark por página) passava despercebida - "não
+se vê". Investigando o CSS, a causa era estrutural, não um bug de
+renderização: `showFeatureCoachMark()` sempre desenhou um `<div>`
+flutuante próprio, fixo no canto inferior direito
+(`right:24px;bottom:100px`), com só 320px de largura máxima - um
+elemento pequeno, fora do centro de atenção da tela, sem fundo
+escurecido chamando atenção pra ele. Diferente do tour de boas-vindas
+de 5 slides (`showDashboardIntroModal`), que sempre usou o modal
+genérico centralizado (`#genericModal`) do resto do produto - grande,
+no meio da tela, com overlay escuro atrás. Dois sistemas de onboarding
+bem parecidos na intenção (explicar uma funcionalidade na primeira
+vez que a pessoa vê), construídos com abordagens de UI completamente
+diferentes, um "correndo" numa caixinha e outro num modal de verdade.
+
+Resolvido reaproveitando o mesmo `#genericModal`/`openGenericModal()`
+pro coach mark também - literalmente o mesmo padrão que já funciona
+bem pro tour, só que pra um texto só em vez de vários slides. Pedido
+explícito do usuário: isso vale pra **qualquer tipo de negócio**, não
+é um ajuste de categoria - a caixinha de canto sumiu de vez, pra
+hospedagem, agência e promotor igual. Um detalhe que precisou de
+atenção: `dismissOnboardingForever()` tinha uma linha específica
+(`document.getElementById("onboardingCoachMark")?.remove()`) pra
+limpar o elemento antigo do DOM - como esse elemento não existe mais,
+virou `closeGenericModal()`, coerente com o resto do fluxo.
+
+O segundo pedido - deixar o conteúdo do tour "afiado" pra imobiliária -
+era um item que eu mesmo tinha sinalizado como pendência opcional na
+resposta anterior ("não errado, só não é o mais afiado possível").
+`dashboardIntroSlides()` já tinha um branch pra agência genérica desde
+sessões anteriores, mas nunca tinha ganhado a mesma especialização por
+`agency_category` que `FEATURE_COACH_MARKS_IMOBILIARIA` (v1.102.0) já
+tinha. Adicionado o mesmo padrão aqui: 4 dos 5 slides ganharam texto
+próprio pra imobiliária (boas-vindas, números do topo, Opportunity
+Center, explorar menu) - o quinto ("Resumo executivo") já era neutro o
+bastante, só precisou trocar "operação" por "negócio". O slide do
+Opportunity Center foi o que mais valeu a pena reescrever: em vez do
+texto genérico de agência ("mostra quem te procurou"), agora descreve
+explicitamente que a IA já sugere o imóvel certo do catálogo - reflete
+de verdade o matching estruturado construído na v1.101.0, que antes
+dessa versão nem existia pra ser descrito.
+
+Sem mudança de backend. Testado via balanceamento de chaves/parênteses/
+colchetes, `tools/check_i18n_parity.py` (7 chaves novas, 11 idiomas) e
+revisão manual de todo o fluxo (troca do `<div>` solto por
+`openGenericModal`/`closeGenericModal`, incluindo o ponto em
+`dismissOnboardingForever()` que referenciava o elemento antigo por
+id) - mesmo critério de sempre pra mudanças puramente de frontend
+neste ambiente, sem motor de teste headless de JS disponível.
