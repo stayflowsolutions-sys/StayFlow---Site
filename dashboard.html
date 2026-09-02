@@ -737,6 +737,61 @@ async function loadTeamList() {
   }
 }
 
+// Multi-corretor (v1.105.0): auditoria do dono - status de conexao
+// WhatsApp de CADA membro da equipe, numa modal so (em vez de abrir o
+// "Historico" de cada um separadamente). Nunca mostra access_token,
+// so o que interessa pra visao gerencial (numero conectado, telefone
+// de contato, apresentacao que o corretor escreveu).
+window.openTeamWhatsappAuditModal = async function(){
+  openGenericModal(T('team.whatsappAudit.title', '📱 WhatsApp da equipe'), `
+    <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('team.whatsappAudit.desc', 'Cada corretor conecta o próprio WhatsApp em Configurações → Comunicação. Aqui você acompanha quem já conectou.')}</p>
+    <div id="teamWhatsappAuditList">${T('common.loading', 'Carregando...')}</div>
+  `, true);
+
+  try{
+    const res = await fetch("/team/whatsapp-overview", { credentials: "same-origin" });
+    const data = await res.json();
+    const listEl = document.getElementById("teamWhatsappAuditList");
+    if(!listEl) return;
+
+    if(!data.success || !data.connections || !data.connections.length){
+      listEl.innerHTML = `<p style="color:var(--muted)">${T('team.whatsappAudit.empty', 'Nenhum membro na equipe ainda.')}</p>`;
+      return;
+    }
+
+    listEl.innerHTML = `
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="team.whatsappAudit.col.member">Corretor</th>
+              <th data-i18n="team.whatsappAudit.col.status">Status</th>
+              <th data-i18n="team.whatsappAudit.col.contact">Telefone</th>
+              <th data-i18n="team.whatsappAudit.col.persona">Apresentação</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.connections.map(c => `
+              <tr>
+                <td>${escapeHtml(c.member_name)}<div style="font-size:11px;color:var(--muted)">${escapeHtml(c.member_email)}</div></td>
+                <td>${c.phone_number_id
+                  ? `<span class="status-pill ok">${T('team.whatsappAudit.connected', 'Conectado')}</span>`
+                  : `<span class="status-pill cold">${T('team.whatsappAudit.notConnected', 'Não conectado')}</span>`}</td>
+                <td>${escapeHtml(c.contact_phone || "-")}</td>
+                <td style="max-width:280px">${escapeHtml(c.broker_persona || "-")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }catch(e){
+    console.warn("Erro ao carregar auditoria de WhatsApp da equipe:", e);
+    const listEl = document.getElementById("teamWhatsappAuditList");
+    if(listEl) listEl.innerHTML = `<p style="color:var(--red)">${T('common.error.generic', 'Erro de conexão.')}</p>`;
+  }
+};
+
 async function loadRolesList() {
   const container = document.getElementById("rolesListContainer");
   container.innerHTML = `<p style='color:var(--muted)'>${T('common.loading', 'Carregando...')}</p>`;
@@ -1720,6 +1775,7 @@ async function deleteRoleConfirm(roleId){
           <span class="smart-tag" id="guestPhone" data-i18n="chats.phoneUnidentified">Telefone não identificado</span>
           <span class="smart-tag" id="guestIntentTag" data-i18n="chats.intentDefault">Intenção: —</span>
           <span class="smart-tag" id="guestUrgencyTag" data-i18n="chats.urgencyDefault">Urgência: —</span>
+          <span class="smart-tag" id="guestBrokerTag" style="display:none"></span>
           <span class="smart-tag" id="guestLeadSourceTag" style="display:none"></span>
         </div>
       </div>
@@ -2831,6 +2887,20 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <!-- Multi-corretor (v1.105.0): cada corretor conecta o PROPRIO
+           WhatsApp, alem do numero principal da agencia (card acima) -
+           por enquanto so pra imobiliaria, mesmo escopo pedido pelo
+           usuario ("por agora focamos na imobiliaria"). -->
+      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openMyWhatsappModal()" style="display:none">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.myWhatsapp.title">📱 Meu WhatsApp (corretor)</h2>
+            <p class="settings-summary-desc" id="myWhatsappSummaryDesc" data-i18n="settings.myWhatsapp.desc">Conecte seu próprio número pra atender seus leads com sua própria IA.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openNotificationsModal()">
         <div class="settings-summary-row">
           <div>
@@ -3008,7 +3078,10 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0" data-i18n="team.tab.members">Equipe</h2>
-        <button class="btn primary" type="button" onclick="openInviteForm()" data-i18n="team.inviteBtn">+ Convidar</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn secondary" type="button" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openTeamWhatsappAuditModal()" data-i18n="team.whatsappAuditBtn" style="display:none">📱 WhatsApp da equipe</button>
+          <button class="btn primary" type="button" onclick="openInviteForm()" data-i18n="team.inviteBtn">+ Convidar</button>
+        </div>
       </div>
       <div id="teamListContainer"></div>
     </div>
@@ -4002,6 +4075,173 @@ async function deleteRoleConfirm(roleId){
     }catch(e){
       console.warn("Erro ao finalizar WhatsApp Embedded Signup:", e);
       alert(T('common.error.generic', 'Erro de conexão.'));
+    }
+  };
+
+  // ===== Multi-corretor: "Meu WhatsApp" (self-service, v1.105.0) =====
+  // Espelha openWhatsappSettingsModal/connectWhatsappEmbedded acima,
+  // so que aponta pras rotas /team/my-whatsapp* (a conexao do PROPRIO
+  // corretor logado, resolvida no backend pela sessao - nunca por um
+  // id mandado daqui). Duplicado em vez de generalizar a funcao
+  // existente de proposito - evita qualquer risco de regressao no
+  // fluxo de WhatsApp da agencia, que ja esta em producao.
+  window.openMyWhatsappModal = function(){
+    openGenericModal(T('settings.myWhatsapp.title', '📱 Meu WhatsApp (corretor)'), `
+      <p style="margin-bottom:14px">${T('settings.myWhatsapp.modalDesc', 'Conecte seu próprio número de WhatsApp Business — a IA responde seus leads usando sua própria persona, e eles ficam vinculados a você mesmo aparecendo no painel geral da imobiliária.')}</p>
+
+      <div id="myWhatsappConnected" style="display:none">
+        <p style="margin:0 0 12px">
+          <span>${T('settings.myWhatsapp.statusLabel', 'Status:')}</span>
+          <strong style="color:#3ddc97">${T('settings.myWhatsapp.statusActive', 'Conectado')}</strong>
+        </p>
+        <button type="button" class="btn red" onclick="disconnectMyWhatsapp()">${T('settings.myWhatsapp.disconnectBtn', 'Desconectar')}</button>
+      </div>
+
+      <div id="myWhatsappNotConnected">
+        <button type="button" class="btn" id="myWhatsappOauthBtn" onclick="connectMyWhatsappEmbedded()">${T('settings.myWhatsapp.connectBtn', 'Conectar meu WhatsApp')}</button>
+      </div>
+
+      <div style="margin-top:16px">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.myWhatsapp.personaLabel', 'Como você quer se apresentar')}</label>
+        <textarea id="myWhatsappPersona" rows="3" placeholder="${T('settings.myWhatsapp.personaPlaceholder', 'ex: Sou o João, corretor especialista em apartamentos na zona sul.')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical"></textarea>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.myWhatsapp.personaHint', 'A IA usa esse texto pra se apresentar em seu nome quando responder pelo seu número.')}</div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
+          <button class="btn" type="button" onclick="saveMyWhatsappPersona()">${T('settings.myWhatsapp.personaSaveBtn', 'Salvar apresentação')}</button>
+        </div>
+      </div>
+
+      <div id="myWhatsappMessage" class="generic-modal-message"></div>
+    `);
+    loadMyWhatsappSettings();
+  };
+
+  window.loadMyWhatsappSettings = async function(){
+    try{
+      const res = await fetch("/team/my-whatsapp", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const connectedEl = document.getElementById("myWhatsappConnected");
+      const notConnectedEl = document.getElementById("myWhatsappNotConnected");
+      if(connectedEl) connectedEl.style.display = data.connected ? "block" : "none";
+      if(notConnectedEl) notConnectedEl.style.display = data.connected ? "none" : "block";
+
+      const personaInput = document.getElementById("myWhatsappPersona");
+      if(personaInput) personaInput.value = data.broker_persona || "";
+
+      const summaryDesc = document.getElementById("myWhatsappSummaryDesc");
+      if(summaryDesc){
+        let text = data.connected
+          ? T('settings.myWhatsapp.summaryConnected', '✅ Conectado')
+          : T('settings.myWhatsapp.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+        if(data.connected && data.contact_phone) text += ` (${data.contact_phone})`;
+        summaryDesc.textContent = text;
+      }
+
+      window.STAYFLOW_MY_WHATSAPP_OAUTH = data.oauth_available ? { appId: data.app_id, configId: data.config_id } : null;
+    }catch(e){
+      console.warn("Erro ao carregar config do Meu WhatsApp:", e);
+    }
+  };
+
+  window.connectMyWhatsappEmbedded = function(){
+    const config = window.STAYFLOW_MY_WHATSAPP_OAUTH;
+    if(!config){
+      alert(T('settings.whatsapp.msg.oauthUnavailable', 'Conexão automática ainda não está disponível.'));
+      return;
+    }
+
+    function launch(){
+      window.FB.init({ appId: config.appId, xfbml: false, version: "v20.0" });
+
+      let sessionInfo = null;
+      function onMessage(event){
+        if(typeof event.origin !== "string" || !event.origin.endsWith("facebook.com")) return;
+        try{
+          const payload = JSON.parse(event.data);
+          if(payload.type === "WA_EMBEDDED_SIGNUP" && payload.data){
+            sessionInfo = payload.data;
+          }
+        }catch(e){ /* mensagem de outra origem/formato - ignora */ }
+      }
+      window.addEventListener("message", onMessage);
+
+      window.FB.login(function(response){
+        window.removeEventListener("message", onMessage);
+        const code = response && response.authResponse && response.authResponse.code;
+        if(!code || !sessionInfo || !sessionInfo.phone_number_id || !sessionInfo.waba_id){
+          if(response && response.authResponse) alert(T('settings.whatsapp.msg.oauthIncomplete', 'Conexão incompleta — tenta de novo.'));
+          return;
+        }
+        finishMyWhatsappEmbeddedSignup(code, sessionInfo.phone_number_id, sessionInfo.waba_id);
+      }, {
+        config_id: config.configId,
+        response_type: "code",
+        override_default_response_type: true,
+        extras: { feature: "whatsapp_embedded_signup", sessionInfoVersion: "3" },
+      });
+    }
+
+    if(window.FB){ launch(); return; }
+    const script = document.createElement("script");
+    script.src = "https://connect.facebook.net/en_US/sdk.js";
+    script.onload = launch;
+    document.body.appendChild(script);
+  };
+
+  window.finishMyWhatsappEmbeddedSignup = async function(code, phoneNumberId, wabaId){
+    try{
+      const res = await fetch("/team/my-whatsapp/embedded-signup", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ code, phone_number_id: phoneNumberId, waba_id: wabaId }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+      loadMyWhatsappSettings();
+    }catch(e){
+      console.warn("Erro ao finalizar conexão do Meu WhatsApp:", e);
+      alert(T('common.error.generic', 'Erro de conexão.'));
+    }
+  };
+
+  window.disconnectMyWhatsapp = async function(){
+    const confirmed = await stayflowConfirm(T('settings.myWhatsapp.disconnectConfirm', 'Desconectar seu WhatsApp? Você para de receber mensagens novas por esse número até reconectar.'));
+    if(!confirmed) return;
+    try{
+      await fetch("/team/my-whatsapp", { method: "DELETE", credentials: "same-origin" });
+      loadMyWhatsappSettings();
+    }catch(e){
+      console.warn("Erro ao desconectar Meu WhatsApp:", e);
+    }
+  };
+
+  window.saveMyWhatsappPersona = async function(){
+    const msg = document.getElementById("myWhatsappMessage");
+    if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+    const persona = document.getElementById("myWhatsappPersona")?.value.trim() || "";
+    try{
+      const res = await fetch("/team/my-whatsapp/persona", {
+        method: "PUT", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ broker_persona: persona }),
+      });
+      const data = await res.json();
+      if(msg){
+        if(data.success){
+          msg.textContent = T('settings.myWhatsapp.personaSaved', 'Apresentação salva.');
+          msg.classList.add("success");
+        } else {
+          msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.');
+          msg.classList.add("error");
+        }
+      }
+    }catch(e){
+      console.warn("Erro ao salvar apresentação do corretor:", e);
+      if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
     }
   };
 

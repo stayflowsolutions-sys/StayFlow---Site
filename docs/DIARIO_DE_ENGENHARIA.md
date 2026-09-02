@@ -9708,3 +9708,117 @@ revisão manual de todo o fluxo (troca do `<div>` solto por
 `dismissOnboardingForever()` que referenciava o elemento antigo por
 id) - mesmo critério de sempre pra mudanças puramente de frontend
 neste ambiente, sem motor de teste headless de JS disponível.
+
+### Multi-corretor: WhatsApp próprio por funcionário (v1.105.0)
+
+Usuário trouxe uma ideia de conta própria: será que dava pra cada
+corretor de uma imobiliária conectar o PRÓPRIO WhatsApp à IA, em vez
+de só existir o número único da imobiliária inteira? A pergunta veio
+puxando um raciocínio real de mercado - imobiliária grande tem vários
+corretores, cada um com carteira e estilo próprios, e hoje eles usam o
+WhatsApp pessoal sem nenhuma automação. Antes de prometer qualquer
+coisa, mandei um agente de exploração mapear o pipeline inteiro de
+WhatsApp/IA da StayFlow - achado central: era 100% por-hostel, sem
+nenhum grão mais fino em lugar nenhum. `hostels.whatsapp_phone_number_id`
+era coluna solta (não tabela), o webhook resolvia só hostel_id, `ask_ai()`
+não tinha noção nenhuma de "quem" dentro do hostel estava atendendo, e
+a identidade do hóspede (`guests`, chave `hostel_id+phone`) colapsaria
+duas conversas vindas de números diferentes do mesmo hóspede se eu não
+tomasse cuidado.
+
+Antes de construir, precisei entender se a ideia era tecnicamente
+viável de verdade - o usuário perguntou se dava pra manter o WhatsApp
+pessoal do corretor funcionando junto com a API (não perder o app do
+celular). Pesquisei a documentação oficial da Meta e achei o mecanismo
+certo: **WhatsApp Coexistence**, parte do Embedded Signup, permite
+conectar um número que já está no WhatsApp Business app (o app
+gratuito, comum entre corretores autônomos) sem desconectar o app do
+celular - mensagens espelhadas nos dois lados. Achado crítico no
+caminho: a Meta está descontinuando as versões antigas do Embedded
+Signup (v2/v3) em 15/10/2026, e coexistência é justamente um dos
+recursos que precisa de migração manual pra v4 antes do prazo - ou
+seja, construir coexistência agora só faz sentido nascendo direto na
+config nova. Dado o prazo apertado (~6 semanas) e a impossibilidade de
+testar contra a infraestrutura real da Meta neste ambiente, decidi
+não arriscar construir esse pedaço específico às cegas numa sessão sem
+supervisão - o corretor conecta um número (pode ser dedicado ou, se
+aceitar migrar da forma clássica, o próprio) usando o MESMO Embedded
+Signup que já funciona em produção pra agência inteira, sem
+especulação sobre um fluxo que eu não consigo validar de ponta a
+ponta sozinho.
+
+O desenho ficou deliberadamente aditivo: nada do que já existe pra
+hospedagem/agência mudou. Nova tabela `membership_whatsapp_connections`
+(1 número por corretor, mesmo espírito de simplicidade do "1 número
+por hostel" que já existia) e uma coluna nova em `guests`
+(`owner_membership_id`) marcando quem é o "dono" do lead - setada só
+na primeira mensagem recebida por um número de corretor, nunca trocada
+depois automaticamente. O roteamento do webhook tenta primeiro o
+caminho de sempre (número principal da agência) e só cai pro caminho
+novo (número de corretor) se o primeiro não encontrar nada - os dois
+nunca colidem, então zero risco pra quem nunca vai usar essa feature.
+
+A parte mais delicada foi garantir que a CONVERSA ficasse coerente do
+lado do hóspede: se ele recebe mensagem de um número, a resposta
+também precisa sair DESSE MESMO número, mesmo que uma mensagem
+específica tenha chegado por outro canal (ex: alguém testando o
+número principal manualmente). Resolvido lendo sempre o
+`owner_membership_id` do hóspede (não o `membership_id` da mensagem
+específica que acabou de chegar) na hora de decidir tanto a persona da
+IA quanto o número de envio - e caindo pro número principal
+automaticamente se o corretor desconectar o próprio WhatsApp depois
+de já ter virado dono de algum lead, pra nunca travar o envio.
+
+Descoberto rodando o teste isolado (não bug de código, erro meu de
+suposição sobre o formato de resposta): `/guests/<id>` aninha o
+resultado sob a chave `"guest"` (diferente de `/guests`, que devolve
+lista solta) - "corrigi" errado da primeira vez assumindo estrutura
+plana, o teste falhou com KeyError exatamente como devia, e a segunda
+correção (voltar pra `profile["guest"]["owner_membership_id"]`) bateu
+com o schema real da rota.
+
+Achado de brinde corrigido no caminho: o enum cru de `intent`
+(`booking`/`tour`/etc, resolvido pela v1.102.0 só no PAINEL individual
+do hóspede via `intentLabel()`) continuava vazando sem tradução na
+LISTA de conversas em si (`chats-live.js::loadChats`) - ninguém tinha
+notado porque a `description` gerada pela IA quase sempre está
+disponível ali, mascarando o problema; ficou visível revisando a
+função de perto pra adicionar a tag de corretor no mesmo lugar.
+Corrigido junto, mesma função reaproveitada nos dois pontos agora.
+
+Escopo desta versão, por decisão deliberada e sinalizada: só
+imobiliária (mesmo padrão "imobiliária primeiro" desta sessão inteira -
+usuário confirmou explicitamente "por agora focamos na imobiliária"),
+e só o pipeline principal de auto-resposta - mensagens manuais/
+proativas (Ask StayFlow avisando hóspede, cobrança, pedido a
+fornecedor) continuam saindo pelo número principal mesmo quando o
+hóspede tem um corretor dono, não pelo dele. Ampliar isso, e ampliar
+pra outras categorias de agência, fica anotado como próximo passo -
+o schema já foi desenhado genérico o bastante (por membership, não
+por categoria) pra não exigir retrabalho quando chegar a hora.
+
+Testado por completo em banco SQLite isolado com Flask test client,
+IA e troca de código da Meta mockadas (sem custo/rede real): fluxo
+self-service completo (conectar, ver status, editar apresentação,
+desconectar) rodando como uma SEGUNDA sessão de login de verdade (não
+só chamada direta de função) pra provar que a resolução "minha própria
+conexão" realmente vem da sessão de quem chama; auditoria do dono
+lista corretor conectado e não conectado lado a lado; roteamento do
+webhook resolve hostel vs. membership sem ambiguidade; pipeline
+completo - persona chega na chamada da IA, resposta sai pelo número
+certo, dono do lead sobrevive a uma segunda mensagem mesmo simulando
+chegada por canal diferente; regressão explícita confirmando que
+hóspede nunca tocado por corretor nenhum continua 100% no comportamento
+antigo (número principal, sem persona nenhuma) - o teste que mais
+importava rodar antes de publicar, já que é a garantia de que ninguém
+que nunca pediu essa feature é afetado por ela.
+
+Sessão de trabalho autônomo (usuário foi dormir, deixou em "modo
+automático" pedindo pra terminar o multi-corretor e depois avançar o
+máximo possível na fila, sinalizando o que ficasse incerto). No meio
+da construção, 3 rodadas de pesquisa de concorrente (WeSpeak, Hoteligy,
+R2OS/WhatsMinder) foram intercaladas a pedido do usuário em tempo real
+- tratadas como interrupções curtas (responder e voltar direto pro
+código), com os achados consolidados na memória de projeto em vez de
+já sair implementando em cima da hora, já que a prioridade explícita
+continuava sendo terminar o multi-corretor primeiro.
