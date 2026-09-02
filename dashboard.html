@@ -12968,16 +12968,22 @@ window.uploadGuestDocumentUI = async function(guestId){
 
   async function dismissOnboardingForever(){
     onboardingState.dismissed = true;
-    document.getElementById("onboardingCoachMark")?.remove();
+    closeGenericModal();
     try{
       await fetch("/onboarding/dismiss", { method: "POST", credentials: "same-origin" });
     }catch(e){ console.warn("Falha ao desligar onboarding:", e); }
   }
 
+  // Antes era uma caixinha flutuante fixa no canto inferior direito
+  // (320px, right:24px;bottom:100px) - usuario reportou que em algumas
+  // sessoes ela passava despercebida, exatamente por ficar pequena e
+  // num canto da tela. Reaproveita o MESMO modal generico centralizado
+  // do tour de boas-vindas (#genericModal via openGenericModal) - fica
+  // grande, no meio da tela, com fundo escurecido, pra qualquer tipo de
+  // negocio (nao e um ajuste especifico de categoria).
   function showFeatureCoachMark(featureKey, infoOverride){
     const info = infoOverride || FEATURE_COACH_MARKS[featureKey];
     if(!info) return;
-    document.getElementById("onboardingCoachMark")?.remove();
 
     // {noun}/{nounSingular} so existem nas dicas de agencia
     // (FEATURE_COACH_MARKS_AGENCY/_IMOBILIARIA) - resolvidos aqui em vez
@@ -12987,25 +12993,21 @@ window.uploadGuestDocumentUI = async function(guestId){
     const placeholders = { noun: noun.toLowerCase(), nounSingular: noun === "PAX" ? "PAX" : "cliente" };
     const title = T(info.titleKey, info.title);
     const text = T(info.textKey, info.text, placeholders);
-    const el = document.createElement("div");
-    el.id = "onboardingCoachMark";
-    el.style.cssText = "position:fixed;right:24px;bottom:100px;max-width:320px;background:var(--panel2,#0a1726);border:1px solid var(--blue,#0b84ff);border-radius:16px;padding:16px 18px;z-index:2000;box-shadow:0 18px 42px rgba(0,0,0,.45)";
-    el.innerHTML = `
-      <div style="font-weight:800;font-size:14px;margin-bottom:6px">${title}</div>
-      <div style="font-size:13px;color:var(--muted,#9aa8bb);line-height:1.45;margin-bottom:14px">${text}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted,#9aa8bb);cursor:pointer">
+
+    openGenericModal(title, `
+      <p style="color:var(--muted,#9aa8bb);font-size:14px;line-height:1.55">${text}</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted,#9aa8bb);cursor:pointer">
           <input type="checkbox" id="onboardingCoachDismissCheck">${T('onboarding.coach.dismissLabel', 'Não mostrar mais dicas')}
         </label>
-        <button type="button" class="btn" id="onboardingCoachOkBtn" style="padding:7px 16px;font-size:12.5px;min-height:unset">${T('onboarding.coach.okBtn', 'Entendi')}</button>
+        <button type="button" class="btn" id="onboardingCoachOkBtn">${T('onboarding.coach.okBtn', 'Entendi')}</button>
       </div>
-    `;
-    document.body.appendChild(el);
+    `);
     document.getElementById("onboardingCoachOkBtn").addEventListener("click", () => {
       const wantsDismiss = document.getElementById("onboardingCoachDismissCheck").checked;
       markFeatureSeen(featureKey);
       if(wantsDismiss) dismissOnboardingForever();
-      el.remove();
+      closeGenericModal();
     });
   }
 
@@ -13026,8 +13028,10 @@ window.uploadGuestDocumentUI = async function(guestId){
   };
 
   function dashboardIntroSlides(){
-    const accountKind = (window.STAYFLOW_SESSION || {}).account_kind;
+    const session = window.STAYFLOW_SESSION || {};
+    const accountKind = session.account_kind;
     const isAgency = accountKind === "agency";
+    const isImobiliaria = isAgency && session.agency_category === "imobiliaria";
 
     // Promotor (item 27b) nao opera hospedagem/agencia nenhuma - o
     // Dashboard dele nem tem ocupacao/reservas/Opportunity Center (ver
@@ -13057,33 +13061,54 @@ window.uploadGuestDocumentUI = async function(guestId){
       ];
     }
 
-    const opportunityBodyKey = isAgency ? "onboarding.tour.agency.opportunity.body" : "onboarding.tour.lodging.opportunity.body";
-    const opportunityFallback = isAgency
-      ? "Mostra quem te procurou, detectado automaticamente pelas conversas - pra você não deixar dinheiro na mesa."
-      : "Mostra hóspedes com potencial de venda (passeio, upgrade, aluguel), detectado automaticamente pelas conversas - pra você não deixar dinheiro na mesa.";
+    // Imobiliaria ganha texto proprio (nao so "generico de agencia sem
+    // nada errado") - pedido direto do usuario pra deixar afiado, no
+    // mesmo espirito de FEATURE_COACH_MARKS_IMOBILIARIA. As outras
+    // categorias de agencia (turismo, aluguel de carro/bike/
+    // equipamentos, automotivo, comercio) continuam no texto generico
+    // de agencia, que ja e neutro o bastante pra elas.
+    const opportunityBodyKey = isImobiliaria
+      ? "onboarding.tour.imobiliaria.opportunity.body"
+      : (isAgency ? "onboarding.tour.agency.opportunity.body" : "onboarding.tour.lodging.opportunity.body");
+    const opportunityFallback = isImobiliaria
+      ? "Quando um cliente demonstra interesse num imóvel, a IA detecta pela conversa e já sugere o imóvel certo do seu catálogo aqui - pra você não deixar negócio na mesa."
+      : (isAgency
+        ? "Mostra quem te procurou, detectado automaticamente pelas conversas - pra você não deixar dinheiro na mesa."
+        : "Mostra hóspedes com potencial de venda (passeio, upgrade, aluguel), detectado automaticamente pelas conversas - pra você não deixar dinheiro na mesa.");
     return [
       {
-        titleKey: "onboarding.tour.default.welcome.title", title: "👋 Bem-vindo(a) à StayFlow",
-        bodyKey: "onboarding.tour.default.welcome.body", body: "Esse é o seu Dashboard - a visão geral de tudo que está acontecendo agora. Vamos mostrar rapidinho o que tem em cada bloco.",
+        titleKey: isImobiliaria ? "onboarding.tour.imobiliaria.welcome.title" : "onboarding.tour.default.welcome.title", title: "👋 Bem-vindo(a) à StayFlow",
+        bodyKey: isImobiliaria ? "onboarding.tour.imobiliaria.welcome.body" : "onboarding.tour.default.welcome.body",
+        body: isImobiliaria
+          ? "Esse é o seu Dashboard - o resumo do que está acontecendo com seus imóveis agora. Vamos mostrar rapidinho o que tem em cada bloco."
+          : "Esse é o seu Dashboard - a visão geral de tudo que está acontecendo agora. Vamos mostrar rapidinho o que tem em cada bloco.",
       },
       {
         titleKey: "onboarding.tour.default.kpi.title", title: "Números no topo",
-        bodyKey: isAgency ? "onboarding.tour.agency.kpi.body" : "onboarding.tour.lodging.kpi.body",
-        body: isAgency
-          ? "Os cards no topo mostram um resumo rápido da sua operação hoje."
-          : "Os cards no topo mostram ocupação, reservas e outros números-chave do dia.",
+        bodyKey: isImobiliaria ? "onboarding.tour.imobiliaria.kpi.body" : (isAgency ? "onboarding.tour.agency.kpi.body" : "onboarding.tour.lodging.kpi.body"),
+        body: isImobiliaria
+          ? "Os cards no topo mostram um resumo rápido do seu negócio imobiliário hoje - mensagens, oportunidades e receita."
+          : (isAgency
+            ? "Os cards no topo mostram um resumo rápido da sua operação hoje."
+            : "Os cards no topo mostram ocupação, reservas e outros números-chave do dia."),
       },
       {
         titleKey: "onboarding.tour.default.summary.title", title: "Resumo executivo",
-        bodyKey: "onboarding.tour.default.summary.body", body: "Um resumo escrito pela IA, olhando os dados reais da sua operação - pra você entender o momento sem precisar caçar número por número.",
+        bodyKey: isImobiliaria ? "onboarding.tour.imobiliaria.summary.body" : "onboarding.tour.default.summary.body",
+        body: isImobiliaria
+          ? "Um resumo escrito pela IA, olhando os dados reais do seu negócio - pra você entender o momento sem precisar caçar número por número."
+          : "Um resumo escrito pela IA, olhando os dados reais da sua operação - pra você entender o momento sem precisar caçar número por número.",
       },
       {
         titleKey: "nav.opportunities", title: "Opportunity Center",
         bodyKey: opportunityBodyKey, body: opportunityFallback,
       },
       {
-        titleKey: "onboarding.tour.default.exploreMenu.title", title: "Agora explore o menu",
-        bodyKey: "onboarding.tour.default.exploreMenu.body", body: "No menu à esquerda tem cada área da operação. Na primeira vez que você abrir cada uma, aparece uma dica rápida explicando o que é.",
+        titleKey: isImobiliaria ? "onboarding.tour.imobiliaria.exploreMenu.title" : "onboarding.tour.default.exploreMenu.title", title: "Agora explore o menu",
+        bodyKey: isImobiliaria ? "onboarding.tour.imobiliaria.exploreMenu.body" : "onboarding.tour.default.exploreMenu.body",
+        body: isImobiliaria
+          ? "No menu à esquerda tem cada área do seu negócio - Portfólio de imóveis, Clientes, Financeiro e mais. Na primeira vez que você abrir cada uma, aparece uma dica rápida explicando o que é."
+          : "No menu à esquerda tem cada área da operação. Na primeira vez que você abrir cada uma, aparece uma dica rápida explicando o que é.",
       },
     ];
   }
