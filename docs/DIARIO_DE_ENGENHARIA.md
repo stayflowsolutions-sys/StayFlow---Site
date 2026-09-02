@@ -10149,3 +10149,76 @@ já usa, consistente). Confirmado também, com o cliente OpenAI inteiro
 trocado por um mock (mesma técnica das versões anteriores), que
 `cancel_reservation` aparece na lista de ferramentas passada pro
 modelo numa conversa de lodging.
+
+### Desconto automático por estadia longa (v1.110.0)
+
+Item "f" da pesquisa do WhatsMinder/R2OS - desconto pra estadias
+longas, cotado automaticamente durante a conversa.
+
+A parte "fácil" foi rápida: duas colunas novas em `room_categories`
+(`long_stay_min_nights`/`long_stay_discount_pct`), exatamente o mesmo
+molde de `weekend_price_per_night` (nullable, opt-in, sem tabela
+nova), e um passo a mais em `calculate_reservation_amount()` depois do
+loop noite-a-noite - se o total de noites bate o mínimo, desconta um
+percentual sobre o TOTAL (não é mais uma tarifa por noite diferente,
+é desconto de volume, por isso não entra dentro do loop).
+
+A parte que importava de verdade apareceu ao investigar ONDE esse
+desconto precisava aparecer pra ter efeito real. `calculate_reservation_amount`
+já era usada pra calcular o valor de VERDADE no momento de criar a
+reserva (`create_reservation_from_chat`) - então tecnicamente o
+desconto de estadia longa já funcionaria "por baixo dos panos". Mas
+ao ler o `SYSTEM_PROMPT` de lodging inteiro de novo, achei que a IA
+NUNCA usava essa função pra cotar preço NA CONVERSA - a instrução de
+sempre foi "pegue price_per_night do get_room_options e multiplique
+pelas noites, na mão". Isso significa que fim de semana/temporada
+(que já existiam desde a v1.75.0/rate_rules) TAMBÉM sofriam desse
+mesmo problema - a IA podia anunciar um valor errado pro hóspede
+ANTES de reservar, mesmo já existindo desconto configurado, porque o
+cálculo certo só rodava depois, silenciosamente, no create_reservation.
+Achado de bug pré-existente que eu não tinha ido atrás de procurar -
+apareceu só porque desconto de estadia longa é mais um caso exatamente
+do mesmo buraco.
+
+Decisão: em vez de ensinar a IA a fazer uma conta de 3 camadas
+(temporada > fim de semana > normal > desconto de volume) - que é
+exatamente o tipo de aritmética que o próprio prompt já evita fazer
+o modelo fazer sozinho (por isso `calculate_nights` existe pra não
+deixar a IA subtrair datas de cabeça) - criei uma tool nova,
+`get_stay_total`, que chama `calculate_reservation_amount` direto e
+devolve o total já certo. Reescrevi o parágrafo de PRICING do prompt
+pra instruir a IA a sempre chamar essa tool em vez de multiplicar na
+mão, mesmo pra pedido "simples" (porque nunca dá pra saber de
+antemão se aquela modalidade tem fim de semana/temporada/estadia
+longa configurado sem checar). Isso fecha os 3 tipos de desconto de
+uma vez só, não só o novo.
+
+Frontend: os 2 campos novos foram no MESMO modal que já edita a
+tarifa de fim de semana (Reservas > Modalidades > editar) - não fazia
+sentido nenhum um modal separado pra mais uma variação de preço.
+
+**Achado no caminho, não é bug de produção**: ao escrever o primeiro
+teste, chamei `update_room_category()` passando só os 2 campos novos
+(sem `price_per_night`) e o preço da modalidade sumiu (virou `NULL`).
+Investiguei e confirmei que é o MESMO comportamento que
+`weekend_price_per_night` já tinha desde sempre - a função sempre
+espera receber o formulário inteiro, um campo omitido vira `NULL`,
+não "mantém o que já tinha". Não é bug introduzido agora (nem vou
+mexer nisso, é uma convenção pré-existente e o frontend real sempre
+manda o formulário inteiro), só corrigi o MEU teste pra imitar como o
+frontend de verdade chama (todos os campos juntos) e documentei o
+comportamento aqui pra não confundir quem for integrar por fora do
+modal no futuro.
+
+Testado em 3 frentes: (1) `calculate_reservation_amount` isolado -
+total correto abaixo do limiar de noites (sem desconto), exatamente
+no limiar, e acima dele; (2) simulação completa do loop de
+tool-calling - cliente OpenAI inteiro trocado por um mock com 2
+respostas programadas em sequência (uma pedindo `get_stay_total`,
+outra já com o texto final), confirmando que o valor com desconto
+(630 pra 7 noites com 10% off sobre 700) chega certo na resposta final
+que a IA de fato daria pro hóspede - não só que a função calcula
+certo isoladamente; (3) rota `PATCH /room-categories/<id>` +
+`GET /room-categories` via Flask test client com sessão real,
+confirmando que os 2 campos novos persistem e voltam certos pro
+frontend.
