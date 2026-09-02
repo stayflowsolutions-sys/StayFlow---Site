@@ -10084,3 +10084,68 @@ sessão. Os itens mais caros/ambíguos (revenue management avançado,
 agente de voz, "Modo Dueño" no WhatsApp do dono, mais integrações de
 PMS) ficam de fora de propósito, já registrados na fila pra quando o
 usuário quiser retomar.
+
+Na conversa seguinte, já com o usuário acordado, ele confirmou pra eu
+seguir direto com os itens (f)/(g)/(h) da pesquisa do WhatsMinder/R2OS
+("Pode seguir, o modo dono a gente faz o plano certinho amanhã, pode
+fazer o F,g,h, depois o agente de voz") - Modo Dueño explicitamente
+adiado pra planejar direito (precisa de uma decisão de produto sobre
+como reconhecer que uma mensagem de WhatsApp é do DONO e não de um
+hóspede, que eu tinha sinalizado como bloqueante).
+
+### Cancelamento de reserva direto pela conversa (v1.109.0)
+
+Item "h" da pesquisa do WhatsMinder/R2OS - o hóspede consegue cancelar
+a própria reserva sem precisar ligar pra recepção.
+
+Antes de escrever qualquer linha, investiguei o que já existia:
+nenhum mecanismo de cancelamento via chat, mas `attempt_extend_reservation`
+(já usada por `extend_reservation`) já resolvia "a reserva ativa do
+hóspede" de um jeito seguro - por `hostel_id`+`guest_id`, nunca por um
+id que a IA teria que inventar ou adivinhar. Copiei exatamente esse
+padrão pra `attempt_cancel_reservation`.
+
+Decisão que mereceu mais cuidado: o que fazer quando o hóspede JÁ FEZ
+CHECK-IN e pede pra cancelar? Cancelar sozinho nesse caso é arriscado -
+pode envolver reembolso parcial, negociação, ou simplesmente ser um
+hóspede insatisfeito no meio da estadia que merece atenção humana, não
+uma automação. Segui o mesmo critério conservador que
+`attempt_extend_reservation` já usava quando não conseguia calcular a
+diária com segurança: em vez de decidir sozinha, a IA cria uma
+oportunidade sinalizada pra equipe revisar manualmente, e explica isso
+pro hóspede em vez de fingir que já resolveu.
+
+Reaproveitei `update_reservation_status_record()` sem tocar nela -
+é a MESMA função que o cancelamento manual via dashboard já usa, então
+sync com Beds24, disparo de webhook e notificação automática pro
+hóspede continuam funcionando de graça, sem duplicar lógica nenhuma.
+
+Pequeno ajuste de código no caminho: `_create_extension_opportunity()`
+tinha o `type` da oportunidade hardcoded como `'extension'` direto no
+SQL - virou um parâmetro (`opportunity_type`, default `'extension'`
+pra não quebrar quem já chamava sem passar nada) pra eu poder gravar
+`'cancellation'` sem duplicar a função inteira só por causa de uma
+string.
+
+**Bug próprio encontrado e corrigido antes de publicar**: no primeiro
+teste, a oportunidade de cancelamento-com-check-in apareceu gravada
+como `type='extension'` em vez de `'cancellation'` - eu tinha
+adicionado o parâmetro na função mas esquecido de efetivamente passar
+`opportunity_type="cancellation"` na chamada dentro de
+`attempt_cancel_reservation`. Corrigido e reconfirmado com um teste
+isolado batendo só nesse ponto antes de seguir.
+
+Sem UI nova nenhuma - o cancelamento aparece na tabela de Reservas de
+sempre (mudou só o `status`), e o caso "precisa de revisão" aparece no
+Opportunity Center de sempre. Sem chave i18n nova (é 100%
+conversacional, não existe tela pra traduzir).
+
+Testado em SQLite isolado, 3 cenários: hóspede sem check-in cancela
+automaticamente (status confirmado `cancelled` no banco depois);
+hóspede já com check-in NÃO é cancelado (status continua `confirmed`),
+oportunidade criada com o tipo certo; hóspede sem nenhuma reserva ativa
+levanta `ValueError` (a mesma exceção que `attempt_extend_reservation`
+já usa, consistente). Confirmado também, com o cliente OpenAI inteiro
+trocado por um mock (mesma técnica das versões anteriores), que
+`cancel_reservation` aparece na lista de ferramentas passada pro
+modelo numa conversa de lodging.
