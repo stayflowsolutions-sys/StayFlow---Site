@@ -2651,6 +2651,10 @@ async function deleteRoleConfirm(roleId){
           <!-- preenchido por live -->
         </tbody>
       </table>
+      <div id="reportsAvgTicket" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);justify-content:space-between;align-items:center">
+        <span style="color:var(--muted);font-size:13px" data-i18n="reports.avgTicketLabel">🎟️ Ticket médio (reservas confirmadas)</span>
+        <strong id="reportsAvgTicketValue">—</strong>
+      </div>
     </div>
 
     <div class="card span-12">
@@ -2685,7 +2689,11 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
       <div id="reportsDailyContent" style="display:none">
-        <!-- preenchido por live -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span class="status-pill cold" id="reportsDailyRisk">—</span>
+          <p id="reportsDailySummaryText" style="margin:0;flex:1"></p>
+        </div>
+        <div id="reportsDailyActions" style="display:grid;gap:8px"></div>
       </div>
     </div>
   </div>
@@ -8529,6 +8537,18 @@ async function loadReports(){
       }
     }
 
+    // Ticket medio (reservas confirmadas)
+    const avgTicketRow = document.getElementById("reportsAvgTicket");
+    const avgTicketValue = document.getElementById("reportsAvgTicketValue");
+    if(avgTicketRow && avgTicketValue){
+      if(data.average_ticket){
+        avgTicketRow.style.display = "flex";
+        avgTicketValue.textContent = formatMoney(data.average_ticket);
+      }else{
+        avgTicketRow.style.display = "none";
+      }
+    }
+
     // Atividade de chat por periodo
     const chatEmpty = document.getElementById("reportsChatActivityEmpty");
     const chatLegend = document.getElementById("reportsChatActivityLegend");
@@ -8549,6 +8569,53 @@ async function loadReports(){
 
   }catch(e){
     console.warn("Erro ao carregar /reports:", e);
+  }
+
+  loadReportsDailySummary();
+}
+
+// Reaproveita o mesmo endpoint /executive-summary ja usado no topo do
+// Dashboard (loadExecutiveSummary) - card "Relatorio diario IA" nos
+// Relatorios ficava morto no HTML (nunca preenchido), agora consome o
+// mesmo resumo com elementos proprios (nao reaproveita os ids do
+// Dashboard, ja que as duas paginas podem ficar montadas ao mesmo tempo).
+async function loadReportsDailySummary(){
+  const empty = document.getElementById("reportsDailyEmpty");
+  const content = document.getElementById("reportsDailyContent");
+  const riskEl = document.getElementById("reportsDailyRisk");
+  const textEl = document.getElementById("reportsDailySummaryText");
+  const actionsEl = document.getElementById("reportsDailyActions");
+
+  try{
+    const lang = window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt";
+    const res = await fetch(`/executive-summary?lang=${lang}`, { credentials: "same-origin" });
+    if(!res.ok) return;
+
+    const summary = await res.json();
+    if(!summary || !summary.main_summary) return;
+
+    if(empty) empty.style.display = "none";
+    if(content) content.style.display = "block";
+
+    if(textEl) textEl.textContent = summary.main_summary;
+
+    if(riskEl){
+      const risk = summary.risk_level || "medium";
+      riskEl.className = "status-pill " + (risk === "low" ? "ok" : risk === "high" ? "hot" : "warm");
+      riskEl.textContent = risk.toUpperCase();
+    }
+
+    if(actionsEl){
+      actionsEl.innerHTML = "";
+      (summary.priority_actions || []).forEach(action => {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;gap:8px;align-items:flex-start;font-size:13px";
+        row.innerHTML = `<span>🎯</span><span>${action}</span>`;
+        actionsEl.appendChild(row);
+      });
+    }
+  }catch(e){
+    console.warn("Erro ao carregar resumo diario dos Relatorios:", e);
   }
 }
 

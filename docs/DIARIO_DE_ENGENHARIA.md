@@ -9822,3 +9822,60 @@ R2OS/WhatsMinder) foram intercaladas a pedido do usuário em tempo real
 código), com os achados consolidados na memória de projeto em vez de
 já sair implementando em cima da hora, já que a prioridade explícita
 continuava sendo terminar o multi-corretor primeiro.
+
+### BI mais rico nos Relatórios (v1.106.0)
+
+Primeiro item da fila de melhorias inspiradas em concorrência
+(pesquisa da WeSpeak, madrugada de 02/09/2026): "BI mais rico nos
+Relatórios" foi classificado como prioridade ALTA por ser barato
+(reaproveita dado que `get_reports_summary`/`get_finance_summary` já
+expõem) e de retorno alto (percepção de produto mais maduro sem
+esforço de backend novo).
+
+Duas peças pequenas e independentes:
+
+**Ticket médio.** `get_reports_summary()` ganhou uma query simples -
+`AVG(amount)` sobre `reservations` filtrando `status='confirmed' AND
+amount > 0` - exposta como `average_ticket` no JSON de `/reports`.
+Cuidado deliberado: `COALESCE(..., 0)` pra hostel sem nenhuma reserva
+confirmada retornar `0` limpo, não `NULL`/exceção (testado
+explicitamente esse caso). Renderizado como uma linha de estatística
+dentro do card "Conversão por etapa" já existente (não abriu card
+novo), condicionada a só aparecer quando há valor - mesmo critério
+condicional que o resto da página de Relatórios já usa pros blocos
+vazios.
+
+**Card "Relatório diário IA" deixa de ser órfão.** Ao investigar a
+página de Relatórios antes de decidir o escopo (passo que essa
+sessão já vinha seguindo antes de cada item novo da fila), achei um
+card no HTML - `id="reportsDailyContent"`/`id="reportsDailyEmpty"` -
+que existia desde uma versão anterior mas nunca tinha sido preenchido
+por `loadReports()`. Em vez de inventar uma fonte de dado nova, a
+correção óbvia era notar que a StayFlow JÁ TEM um endpoint de resumo
+executivo por IA (`/executive-summary`, usado pelo topo do Dashboard
+via `loadExecutiveSummary()`) que cobre exatamente essa necessidade -
+resumo em texto + nível de risco + ações prioritárias, já considerando
+o tipo de negócio (lodging vs. agência por categoria). Nova
+`loadReportsDailySummary()` consome o MESMO endpoint com elementos de
+DOM próprios (não reaproveita os ids do Dashboard, já que Dashboard e
+Relatórios podem ficar montados ao mesmo tempo no SPA de página única)
+- zero rota nova, zero query nova pra essa parte, só uma segunda
+chamada do mesmo resumo já existente. Badge de nível de risco
+reaproveita as classes `.status-pill` (`ok`/`warm`/`hot`) já usadas em
+outros lugares do dashboard, sem CSS novo.
+
+1 chave i18n nova (`reports.avgTicketLabel`) em 11 idiomas
+(1.420→1.421). Testado: `get_reports_summary` isolado em SQLite
+temporário (ticket médio correto com mistura de reservas
+confirmed/pending, e `0` limpo sem erro pra hostel vazio), confirmado
+que `routes/reports.py` só repassa o dict inteiro via `jsonify` (logo
+nenhuma mudança de rota foi necessária pro campo novo aparecer),
+paridade de chaves via `tools/check_i18n_parity.py` (1421 chaves,
+paridade OK nos 11 idiomas), balanceamento de chaves/parênteses/
+colchetes/tags conferido - achado no caminho: o `dashboard.html` já
+tinha uma pequena divergência pré-existente de contagem de
+`<section>` (21 aberturas/20 fechamentos) e `<div>` (985/984 antes
+desta edição), confirmada via `git show HEAD` como já existente ANTES
+de qualquer edição desta versão, não introduzida agora - a edição
+desta versão adicionou exatamente 3 `<div>` e 3 `</div>` (balanceado
+em si mesma). Sem mudança de schema, sem rota nova.
