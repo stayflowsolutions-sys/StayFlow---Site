@@ -7926,6 +7926,16 @@ window.editCategoryUI = function(categoryId){
       <label>${T('roommap.category.weekendPriceLabel', 'Diária de sexta/sábado (opcional)')} (${currencySymbol()})</label>
       <input id="editCatWeekendPrice" type="number" min="0" step="0.01" value="${category.weekend_price_per_night || ""}">
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <label>${T('roommap.category.longStayMinNightsLabel', 'Desconto a partir de (noites)')}</label>
+        <input id="editCatLongStayMinNights" type="number" min="1" step="1" value="${category.long_stay_min_nights || ""}">
+      </div>
+      <div>
+        <label>${T('roommap.category.longStayDiscountLabel', 'Desconto de estadia longa (%)')}</label>
+        <input id="editCatLongStayDiscountPct" type="number" min="0" max="100" step="1" value="${category.long_stay_discount_pct || ""}">
+      </div>
+    </div>
     <div>
       <label>${T('roommap.category.descLabel', 'Descrição')}</label>
       <input id="editCatDescription" type="text" value="${escapeHtml(category.description || "")}">
@@ -8030,6 +8040,8 @@ window.submitEditCategory = async function(categoryId){
         capacity: document.getElementById("editCatCapacity").value,
         price_per_night: document.getElementById("editCatPrice").value,
         weekend_price_per_night: document.getElementById("editCatWeekendPrice").value,
+        long_stay_min_nights: document.getElementById("editCatLongStayMinNights").value,
+        long_stay_discount_pct: document.getElementById("editCatLongStayDiscountPct").value,
         description: document.getElementById("editCatDescription").value.trim()
       })
     });
