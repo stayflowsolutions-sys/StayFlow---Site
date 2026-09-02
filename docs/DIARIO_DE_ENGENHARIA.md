@@ -9284,3 +9284,70 @@ cada rodada de edição, `tools/check_i18n_parity.py` confirmando as
 mesmas chaves em todos os 11 idiomas (3 chaves novas no `ADMIN_I18N`
 pro rótulo de payout no "Ver detalhes", 7 chaves novas no dicionário
 do dashboard pro card de Carteira).
+
+### Sessão de admin presa ao trocar de propriedade em visita (v1.99.0)
+
+Achado ao vivo, no meio de uma investigação de "o app tá travando" -
+usuário estava impersonando "Swing" (hospedagem normal), usou o
+seletor de propriedades do topo (que durante visita sempre lista as
+PRÓPRIAS hospedagens do admin, já que `user_id` nunca muda em
+impersonation) pra ir direto pra "Imobiliária Teste", e a partir daí
+não conseguia mais voltar pro próprio painel - o painel interno chegou
+a mostrar "Não foi possível carregar o painel".
+
+Antes de mexer em qualquer coisa, precisava confirmar se isso era
+regressão de algo feito hoje ou um bug pré-existente. Checagem
+estrutural primeiro (contagem de `<script>`/`<section>`/`<div>` no
+`dashboard.html`, comparando com a mesma contagem no commit de
+v1.94.0, ANTES de qualquer trabalho desta sessão) - os dois pequenos
+desbalanços que já apareciam (`<script>` 14/12, `<section>`/`<div>`
+com delta de 1) já existiam identicamente em v1.94.0, então não eram
+a causa. Isso descartou hipótese de HTML quebrado por uma das minhas
+edições e apontou pra procurar no fluxo de sessão/impersonation em si.
+
+Achado real, em `routes/auth.py::select_hostel()`: a rota atualiza
+`sessions.hostel_id` via `update_session_hostel()` mas nunca toca
+`sessions.impersonating_from_hostel_id` (coluna separada, gravada por
+`/stayflow-admin/impersonate` como "endereço de volta"). A resposta
+dessa chamada específica não denuncia o problema (`build_session_payload()`
+é chamado sem passar o flag, então o JSON de resposta sempre diz
+`impersonating:false`), mas o banco continua com o valor antigo -
+`GET /me` (usado em qualquer F5 ou navegação nova) LÊ esse flag do
+banco via `session_data.get("impersonating_from_hostel_id")` e reabre
+a "visita" com o destino ERRADO (o hostel de origem de ANTES de visitar
+Swing, não Swing nem Imobiliária Teste). Resultado: a pessoa fica
+girando entre contas sem nunca conseguir fechar de vez o ciclo, porque
+toda vez que ela pensa que saiu, o próximo carregamento reabre a visita
+fantasma.
+
+O raciocínio que fechou a correção: usar o seletor NORMAL de
+propriedades (que só lista as próprias hospedagens do usuário logado)
+enquanto "em visita" só pode significar uma coisa - a pessoa quer
+abandonar a visita e ir pra uma conta de verdade dela. Não existe
+cenário legítimo de querer continuar "visitando" depois de escolher
+explicitamente uma das próprias contas por esse caminho. Fix de uma
+linha: `select_hostel()` chama `set_session_impersonation(session_id, None)`
+antes de trocar o hostel - função que já existia (usada por
+`stop_impersonating()`), só nunca tinha sido chamada daqui.
+
+Confirmado que é bug pré-existente (mecanismo de impersonation é da
+v1.47.0, muito antes desta sessão) - só nunca tinha sido testado nessa
+combinação específica (impersonation ativa + troca de propriedade
+PRÓPRIA pelo seletor normal, não pelo botão "Sair da visualização").
+Reproduzido em banco isolado com Flask test client (2 hospedagens
+próprias do admin + 1 cliente real registrado num client HTTP
+separado, pra não contaminar o cookie de sessão do admin - achado
+lateral do próprio processo de teste: `/register` faz auto-login de
+quem acabou de se cadastrar, então registrar um cliente de teste no
+MESMO client HTTP do admin sobrescreve a sessão ativa) - confirmado
+que o bug reproduzia exatamente como descrito antes do fix, e que
+`/me` permanece `impersonating:false` de forma estável em trocas
+sucessivas depois.
+
+Publicado com urgência, fora do ciclo normal de "testar tudo e só
+então documentar com calma" - usuário estava ativamente travado em
+produção no momento do achado. Órientação dada a ele em paralelo à
+correção: fazer logout/login pra limpar a sessão já corrompida, já
+que o fix impede o problema de acontecer de novo mas não conserta
+retroativamente uma sessão que já ficou gravada com o flag preso no
+banco.
