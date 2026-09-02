@@ -207,6 +207,49 @@ body::before{
   border-color:#0b84ff55;
   color:#fff;
 }
+.opportunities-view-btn.active{
+  background:rgba(11,132,255,.24);
+  border-color:#0b84ff55;
+  color:#fff;
+}
+.kanban-column{
+  background:#02070d;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px;
+  min-width:200px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.kanban-column-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+  padding:0 2px 6px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:2px;
+}
+.kanban-card{
+  background:#0a121c;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.kanban-card select{
+  background:#02070d;
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:#fff;
+  font-size:11px;
+  padding:5px 6px;
+}
 .hostel-selector-option .option-name{
   font-weight:800;
   font-size:13px;
