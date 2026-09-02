@@ -10222,3 +10222,85 @@ certo isoladamente; (3) rota `PATCH /room-categories/<id>` +
 `GET /room-categories` via Flask test client com sessão real,
 confirmando que os 2 campos novos persistem e voltam certos pro
 frontend.
+
+### Cupom de desconto validado pela IA (v1.111.0)
+
+Item "g" da pesquisa do WhatsMinder/R2OS - fecha a trinca f/g/h dessa
+mesma pesquisa (a última das 3 dessa madrugada de melhorias
+"baratas").
+
+Diferente de (f) e (h), que reaproveitaram mecanismo já existente,
+esse era construção do zero - StayFlow não tinha absolutamente nada
+de cupom antes (confirmado por grep vazio antes de começar).
+
+Decisão de escopo consciente: sem `max_uses`/contador de uso por
+código nesta rodada. Um sistema de limite de uso concorrente-seguro
+(2 hóspedes usando o mesmo código no mesmo segundo, evitar
+ultrapassar o limite) é bem mais complexo do que o resto da feature,
+e ninguém pediu isso especificamente - fica pronto pra adicionar se
+um piloto pedir de verdade. O staff simplesmente desativa o código
+manualmente quando quiser parar de aceitar.
+
+Decisão de arquitetura que importava mais: ONDE o desconto do cupom
+precisava aparecer. Mesma lógica de (f) - se o desconto só fosse
+aplicado dentro de `create_reservation_from_chat` (no momento de
+reservar de fato), a IA podia prometer um valor errado na cotação
+antes de fechar. Por isso `get_stay_total` (criada na v1.110.0) ganhou
+um `coupon_code` opcional, e a MESMA função helper
+(`apply_coupon_to_amount`) roda tanto na cotação quanto na reserva de
+fato - garantindo que o número que a IA fala pro hóspede é
+exatamente o número que vai ser cobrado.
+
+Escolha deliberada de nunca confiar num resultado de `validate_coupon`
+guardado de uma chamada anterior na mesma conversa -
+`apply_coupon_to_amount` sempre revalida o código do zero antes de
+aplicar. Overhead mínimo (é uma query simples) e fecha uma janela
+real, ainda que rara: alguém desativar o cupom no meio da conversa do
+hóspede.
+
+Reservar com um cupom INVÁLIDO foi um cuidado que valeu a pena testar
+explicitamente: a reserva não pode falhar só porque o código estava
+errado - o hóspede continua conseguindo reservar no preço cheio, só
+sem o desconto, com o motivo disponível (`coupon_error`) pra IA
+explicar honestamente por que não aplicou.
+
+**Bug próprio encontrado e corrigido antes de gerar as traduções**: ao
+escrever o modal de cupons, usei a MESMA chave i18n
+(`coupons.expiresLabel`) em dois lugares diferentes - o rótulo do
+campo do formulário ("Expira em (opcional)") e o texto inline da
+listagem ("expira em [data]") - cada `T()` com um fallback diferente.
+Como a chave real vem do dicionário (não do fallback inline), um dos
+dois lugares ia mostrar o texto errado. Separei em duas chaves
+(`coupons.expiresLabel`/`coupons.expiresInline`) antes de rodar o
+script de tradução pros 11 idiomas - achado na revisão do próprio
+código antes de testar, não em teste automatizado (esse tipo de erro
+não quebra nada tecnicamente, só mostra texto estranho pro usuário).
+
+Testado em 4 camadas: (1) CRUD isolado em SQLite - normalização de
+código pra maiúsculo (case-insensitive, "verao10" bate com "VERAO10"),
+percentual >100% rejeitado, código duplicado no MESMO hostel
+rejeitado mas o MESMO código permitido em hostel DIFERENTE
+(`UNIQUE(hostel_id, code)` funcionando como esperado), cupom
+inativo/expirado/inexistente todos retornam `valid: False` com o
+motivo certo em cada caso; (2) simulação completa do loop de
+tool-calling - 3 respostas mockadas em sequência
+(`validate_coupon` → `get_stay_total` com o código → texto final),
+confirmando que o valor com desconto (400 pra 5 noites de 100 com 20%
+off) chega certo na fala que a IA de fato daria; (3)
+`create_reservation_from_chat` testado com cupom válido (valor final
+gravado já com desconto, `coupon_code` persistido na reserva) E com
+cupom inválido (valor cheio cobrado, reserva criada normalmente,
+`coupon_applied: False`); (4) as 4 rotas HTTP de `/coupons` via Flask
+test client com sessão real (criar, listar, desativar, excluir,
+rejeitar percentual fora do range). Smoke test final rodando todos os
+endpoints tocados nesta madrugada inteira juntos (`/dashboard`,
+`/portfolio/items`, `/opportunities`, `/reports`, `/room-categories`,
+`/coupons`, `/bed-map`, `/rooms`) - todos 200, sem regressão.
+
+Com essa versão fecha os itens f/g/h que o usuário pediu pra atacar
+em sequência ("pode fazer o F,g,h, depois o agente de voz"). Próximo
+passo: pesquisar/escopar o agente de voz antes de começar a construir
+- é o item que o próprio usuário já classificou como "projeto grande
+à parte", então merece uma investigação de viabilidade (telefonia,
+custo de STT/TTS, latência real-time) antes de qualquer linha de
+código, não só mergulhar direto como os itens f/g/h permitiram.

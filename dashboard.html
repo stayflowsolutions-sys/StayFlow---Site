@@ -1971,6 +1971,7 @@ async function deleteRoleConfirm(roleId){
             <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateCategoryModal()">🏷️ <span data-i18n="roommap.categories.title">Modalidades de quarto</span></button>
             <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateRoomModal()">🚪 <span data-i18n="roommap.newRoom.title">Novo quarto</span></button>
             <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateBedModal()">🛏️ <span data-i18n="roommap.newBed.title">Nova cama</span></button>
+            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCouponsModal()">🎟️ <span data-i18n="coupons.title">Cupons de desconto</span></button>
             <div class="hostel-selector-divider"></div>
             <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCleaningListModal()">🧺 <span data-i18n="roommap.cleaning.title">Lista de limpeza do dia</span></button>
             <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openLaundryReturnModal()">🔄 <span data-i18n="roommap.laundry.title">Devolver da lavanderia</span></button>
@@ -8289,6 +8290,118 @@ window.openCreateCategoryModal = function(){
     <h3 style="margin:20px 0 10px;font-size:14px;border-top:1px solid var(--line);padding-top:16px">${T('roommap.categories.listTitle', 'Modalidades cadastradas')}</h3>
     <div id="roomCategoriesList" style="font-size:13px;color:var(--muted)">${categoryPillsHtml(ROOM_CATEGORIES_CACHE)}</div>
   `, true);
+};
+
+// Cupom de desconto (item "g" da pesquisa do WhatsMinder/R2OS) - a IA
+// valida o codigo direto na conversa (validate_coupon) antes de
+// aplicar qualquer desconto, esse modal so gerencia o CADASTRO.
+function couponRowHtml(coupon){
+  const expiresLabel = coupon.expires_at ? ` · ${T('coupons.expiresInline', 'expira em')} ${coupon.expires_at}` : "";
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;opacity:${coupon.active ? "1" : ".5"}">
+      <div>
+        <strong>${escapeHtml(coupon.code)}</strong>
+        <span style="color:var(--muted)"> · ${coupon.discount_pct}% off${expiresLabel}</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button type="button" class="btn secondary" style="font-size:11px;padding:5px 10px" onclick="toggleCouponActiveUI(${coupon.id}, ${coupon.active ? 0 : 1})">${coupon.active ? T('coupons.deactivateBtn', 'Desativar') : T('coupons.activateBtn', 'Ativar')}</button>
+        <button type="button" class="btn red" style="font-size:11px;padding:5px 10px" onclick="deleteCouponUI(${coupon.id}, '${(coupon.code || "").replace(/'/g, "\\'")}')">${T('common.delete', 'Excluir')}</button>
+      </div>
+    </div>
+  `;
+}
+
+window.openCouponsModal = async function(){
+  openGenericModal(T('coupons.title', '🎟️ Cupons de desconto'), `
+    <p style="margin-bottom:14px">${T('coupons.modalDesc', 'Crie códigos que a IA valida automaticamente na conversa antes de aplicar qualquer desconto — nunca aceita um código sem checar aqui primeiro.')}</p>
+    <form onsubmit="submitNewCoupon(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+      <div style="grid-column:span 5">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('coupons.codeLabel', 'Código')}</label>
+        <input name="code" placeholder="${T('coupons.codePlaceholder', 'Ex: VERAO10')}" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;text-transform:uppercase">
+      </div>
+      <div style="grid-column:span 3">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('coupons.discountLabel', 'Desconto (%)')}</label>
+        <input type="number" min="1" max="100" step="1" name="discount_pct" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 4">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('coupons.expiresLabel', 'Expira em (opcional)')}</label>
+        <input type="date" name="expires_at" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 12;display:flex;justify-content:flex-end">
+        <button type="submit" class="btn">${T('coupons.createBtn', 'Criar cupom')}</button>
+      </div>
+    </form>
+    <div id="couponFormMessage" class="generic-modal-message"></div>
+    <h3 style="margin:20px 0 10px;font-size:14px;border-top:1px solid var(--line);padding-top:16px">${T('coupons.listTitle', 'Cupons cadastrados')}</h3>
+    <div id="couponsList">${T('common.loading', 'Carregando...')}</div>
+  `, true);
+  loadCouponsList();
+};
+
+window.loadCouponsList = async function(){
+  const listEl = document.getElementById("couponsList");
+  if(!listEl) return;
+  try{
+    const res = await fetch("/coupons", { credentials: "same-origin" });
+    const coupons = await res.json();
+    listEl.innerHTML = coupons.length
+      ? coupons.map(couponRowHtml).join("")
+      : `<p style="color:var(--muted);font-size:13px">${T('coupons.emptyDesc', 'Nenhum cupom cadastrado ainda.')}</p>`;
+  }catch(e){
+    console.warn("Erro ao carregar cupons:", e);
+  }
+};
+
+window.submitNewCoupon = async function(event){
+  event.preventDefault();
+  const form = event.target;
+  const msg = document.getElementById("couponFormMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+  try{
+    const res = await fetch("/coupons", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        code: form.code.value.trim(),
+        discount_pct: form.discount_pct.value,
+        expires_at: form.expires_at.value || null,
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      if(msg){ msg.textContent = data.message || T('coupons.createFailed', 'Não foi possível criar o cupom.'); msg.classList.add("error"); }
+      return;
+    }
+    form.reset();
+    loadCouponsList();
+  }catch(e){
+    if(msg){ msg.textContent = T('coupons.createConnError', 'Erro de conexão ao criar cupom.'); msg.classList.add("error"); }
+  }
+};
+
+window.toggleCouponActiveUI = async function(couponId, active){
+  try{
+    await fetch(`/coupons/${couponId}`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ active: !!active })
+    });
+    loadCouponsList();
+  }catch(e){
+    console.warn("Erro ao atualizar cupom:", e);
+  }
+};
+
+window.deleteCouponUI = async function(couponId, code){
+  if(!confirm(T('coupons.deleteConfirm', 'Excluir o cupom "{code}"?', { code }))) return;
+  try{
+    await fetch(`/coupons/${couponId}`, { method: "DELETE", credentials: "same-origin" });
+    loadCouponsList();
+  }catch(e){
+    console.warn("Erro ao excluir cupom:", e);
+  }
 };
 
 window.openCreateRoomModal = function(){
