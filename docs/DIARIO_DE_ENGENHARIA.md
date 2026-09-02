@@ -9351,3 +9351,68 @@ correção: fazer logout/login pra limpar a sessão já corrompida, já
 que o fix impede o problema de acontecer de novo mas não conserta
 retroativamente uma sessão que já ficou gravada com o flag preso no
 banco.
+
+### Auditoria de 7 achados no produto imobiliária (v1.100.0)
+
+Com o painel do promotor "lapidado" (v1.95.0-v1.99.0) e o nome da
+indicadora do setor imobiliário confirmado (Julia de Luna, Bauru-SP,
+pra apresentação de parceria comercial), usuário aprovou seguir direto
+pra uma lista de 7 achados de uma auditoria anterior do lado
+imobiliária do produto - nenhum deles crítico isoladamente, mas juntos
+formavam uma experiência capenga pra quem realmente vende imóvel pela
+plataforma.
+
+O mais revelador dos 7 foi o quarto: `real_estate_details` (operação,
+localização, quartos, banheiros, m²) existia desde a v1.72.0 (sync do
+Tokko Broker), mas era uma tabela alimentada só numa direção. O sync
+automático escrevia nela via `upsert_real_estate_details()`, só que
+`list_portfolio_items()` e `get_portfolio_item()` nunca faziam o JOIN
+de volta - os dados existiam no banco mas eram invisíveis pro
+frontend mesmo pra quem tinha sincronizado corretamente. E o
+formulário manual de "Novo item" nunca soube que essa tabela existia,
+então uma imobiliária cadastrando um imóvel à mão (sem usar o Tokko)
+perdia justamente os campos que mais importam pra esse tipo de
+negócio. Dois lados da mesma lacuna, corrigidos juntos: JOIN nos dois
+SELECTs de leitura, e `_save_real_estate_fields()` novo gravando o que
+o formulário manual manda - com uma decisão deliberada de só gravar
+quando pelo menos 1 dos 5 campos vier na requisição, pra não criar uma
+linha real_estate_details vazia (só NULLs) pendurada em item que não é
+imóvel nenhum (ex: um city tour cadastrado por uma agência de
+turismo).
+
+Os outros achados eram mais diretos, mas cada um carregava uma causa
+raiz do tipo "generalização que esqueceu de checar a categoria
+específica": o ícone ✈️ de agência genérica aparecendo pra imobiliária
+em 7 pontos do admin (todos alimentados pela mesma
+`get_stayflow_admin_overview()`, resolvido estendendo o SELECT uma vez
+só com `agency_category` e criando `kindIcon()` como ponto único de
+decisão do ícone certo); o Tokko Broker sempre pedindo texto em
+espanhol (`lang=es_ar` hardcoded) mesmo pra imobiliária brasileira -
+bug latente que nunca deu problema porque nenhuma imobiliária real
+tinha conectado uma API key ainda, mas que ia gerar operação/tipo em
+espanhol na cara de qualquer sync real; "Hóspede" hardcoded em 3
+lugares que deveriam dizer "Cliente" pra imobiliária (resolvido
+reaproveitando `agencyGuestNoun()`, que já existia e já sabia
+diferenciar PAX de Clientes por categoria - só faltava esses 3 pontos
+chamarem a função); e o botão "Oferecer imóvel" que abria um modal de
+"Gerar cobrança" do Mercado Pago (fluxo herdado do "Oferecer item"
+genérico) quando o que faz sentido pra imóvel é mandar uma mensagem
+pro cliente com os detalhes, não cobrar na hora - resolvido com um
+modal de mensagem editável reaproveitando `POST /guests/<id>/send-message`,
+endpoint que já existia pro chat manual e não precisou de nenhuma
+alteração.
+
+Padrão que se repetiu nos 7: nenhum exigiu rota nova, tabela nova ou
+mecanismo novo - cada um era uma generalização (ícone de agência,
+idioma da API, nome de "hóspede", ação de "oferecer item") que nunca
+tinha sido especializada pro caso da imobiliária desde que a categoria
+foi introduzida. Testado em banco SQLite isolado com Flask test client:
+criar item de imóvel manualmente grava e devolve os 5 campos; PATCH
+mandando só descrição não apaga os campos de imóvel já existentes
+(só sobrescreve quando o campo vem de novo na requisição); item comum
+(sem nenhum campo de imóvel) continua com tudo `NULL` sem quebrar
+leitura nem criar linha vazia; `sync_tokko_properties()` com
+`requests.get` mockado confirma que `lang=pt_br` é o valor realmente
+enviado e que os campos de imóvel do Tokko chegam certos no portfolio
+depois do sync. 20 chaves i18n novas em 11 idiomas (1.303→1.335) mais
+3 no `ADMIN_I18N` (292→295, painel de payout do parceiro de indicação).

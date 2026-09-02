@@ -1792,7 +1792,7 @@ async function deleteRoleConfirm(roleId){
           <thead>
             <tr>
               <th data-i18n="common.date">Data</th>
-              <th data-i18n="opportunities.col.guest">Hóspede</th>
+              <th data-i18n="opportunities.col.guest" id="opportunitiesGuestColLabel">Hóspede</th>
               <th data-i18n="opportunities.col.urgency">Urgência</th>
               <th data-i18n="opportunities.col.reason">Motivo</th>
               <th data-i18n="opportunities.col.score">Score</th>
@@ -2255,8 +2255,8 @@ async function deleteRoleConfirm(roleId){
     <h2 data-i18n="guests.title" id="guestsSectionTitle">👥 Hóspedes</h2>
     <div class="sf-empty" id="guestsEmpty">
       <div>
-        <strong data-i18n="guests.emptyTitle">Nenhum hóspede registrado.</strong>
-        <span data-i18n="guests.emptyDesc">Quando reservas e conversas estiverem conectadas, a base de hóspedes será construída aqui com contato, histórico e valor gerado.</span>
+        <strong data-i18n="guests.emptyTitle" id="guestsEmptyTitle">Nenhum hóspede registrado.</strong>
+        <span data-i18n="guests.emptyDesc" id="guestsEmptyDesc">Quando reservas e conversas estiverem conectadas, a base de hóspedes será construída aqui com contato, histórico e valor gerado.</span>
       </div>
     </div>
     <table class="table" id="guestsTable" style="display:none">
@@ -2523,11 +2523,11 @@ async function deleteRoleConfirm(roleId){
         <h2 style="margin:0" data-i18n="portfolio.title">Meu Portfólio</h2>
         <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="portfolio.addBtn">➕ Novo item</button>
       </div>
-      <p style="color:var(--muted);font-size:13px;margin:0 0 14px" data-i18n="portfolio.subtitle">Itens que hospedagens podem ativar pra oferecer aos próprios hóspedes - você ganha o valor cheio menos a comissão combinada.</p>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 14px" data-i18n="portfolio.subtitle" id="portfolioSubtitle">Itens que hospedagens podem ativar pra oferecer aos próprios hóspedes - você ganha o valor cheio menos a comissão combinada.</p>
       <div class="sf-empty" id="portfolioEmpty">
         <div>
-          <strong data-i18n="portfolio.emptyTitle">Nenhum item cadastrado.</strong>
-          <span data-i18n="portfolio.emptyDesc">Cadastre passeios, aluguéis ou serviços que hospedagens parceiras possam oferecer aos hóspedes delas.</span>
+          <strong data-i18n="portfolio.emptyTitle" id="portfolioEmptyTitle">Nenhum item cadastrado.</strong>
+          <span data-i18n="portfolio.emptyDesc" id="portfolioEmptyDesc">Cadastre passeios, aluguéis ou serviços que hospedagens parceiras possam oferecer aos hóspedes delas.</span>
         </div>
       </div>
       <div id="portfolioList" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"></div>
@@ -9325,6 +9325,45 @@ function agencyGuestNoun(session){
   return PAX_STYLE_CATEGORIES.has(category) ? "PAX" : "Clientes";
 }
 
+// Centraliza toda troca de "Hospede" -> PAX/Clientes numa funcao so -
+// chamada tanto na hidratacao inicial quanto depois de troca de idioma
+// (applyTranslations() reescreve o data-i18n original por cima, entao
+// precisa reaplicar toda vez). Achado ao vivo: so nav.guests/guests.title
+// trocavam antes - cabecalho do Opportunity Center e o vazio da pagina
+// de Hospedes continuavam "Hospede(s)" fixo mesmo em conta de agencia/
+// imobiliaria.
+function applyAgencyGuestNounLabels(session){
+  if((session || {}).account_kind !== "agency") return;
+  const noun = agencyGuestNoun(session);
+  const navGuestsLabel = document.getElementById("navGuestsLabel");
+  const guestsSectionTitle = document.getElementById("guestsSectionTitle");
+  const opportunitiesGuestColLabel = document.getElementById("opportunitiesGuestColLabel");
+  const guestsEmptyTitle = document.getElementById("guestsEmptyTitle");
+  const guestsEmptyDesc = document.getElementById("guestsEmptyDesc");
+  if(navGuestsLabel) navGuestsLabel.textContent = noun;
+  if(guestsSectionTitle) guestsSectionTitle.textContent = "👥 " + noun;
+  if(opportunitiesGuestColLabel) opportunitiesGuestColLabel.textContent = noun;
+  if(guestsEmptyTitle) guestsEmptyTitle.textContent = T('guests.emptyTitleAgency', 'Nenhum {noun} registrado.', { noun });
+  if(guestsEmptyDesc) guestsEmptyDesc.textContent = T('guests.emptyDescAgency', 'Quando reservas e conversas estiverem conectadas, a base de {noun} será construída aqui com contato, histórico e valor gerado.', { noun });
+}
+
+// "Meu Portfolio" nasceu pensado em passeio/aluguel de terceiro que uma
+// AGENCIA disponibiliza pra hospedagens parceiras venderem (comissao) -
+// pra imobiliaria o mesmo catalogo e o PROPRIO estoque de imoveis (o
+// que a IA usa pra sugerir o imovel certo em cada conversa, ver
+// decision_engine.py), nao um item de comissao cruzada. So a
+// hospedagem/subtitulo/vazio precisam trocar - titulo "Meu Portfolio" e
+// botao "Novo item" ja funcionam pros dois casos.
+function applyImobiliariaPortfolioCopy(session){
+  if((session || {}).account_kind !== "agency" || session.agency_category !== "imobiliaria") return;
+  const subtitleEl = document.getElementById("portfolioSubtitle");
+  const emptyTitleEl = document.getElementById("portfolioEmptyTitle");
+  const emptyDescEl = document.getElementById("portfolioEmptyDesc");
+  if(subtitleEl) subtitleEl.textContent = T('portfolio.subtitleImobiliaria', 'Imóveis disponíveis pra locação ou venda — o catálogo que a IA usa pra sugerir o imóvel certo em cada conversa. Sincronize automaticamente com o Tokko Broker em Configurações > Comunicação, ou cadastre manualmente aqui.');
+  if(emptyTitleEl) emptyTitleEl.textContent = T('portfolio.emptyTitleImobiliaria', 'Nenhum imóvel cadastrado ainda.');
+  if(emptyDescEl) emptyDescEl.textContent = T('portfolio.emptyDescImobiliaria', 'Cadastre os imóveis disponíveis pra locação ou venda — a IA usa esse catálogo pra sugerir o imóvel certo pra cada lead automaticamente.');
+}
+
 let portfolioItemsCache = [];
 
 window.loadPortfolio = async function(){
@@ -9337,6 +9376,23 @@ window.loadPortfolio = async function(){
     console.warn("Erro ao carregar portfólio:", e);
   }
 };
+
+// Resumo compacto dos dados de imovel no card da lista (Meu Portfolio) -
+// so aparece quando pelo menos um campo foi preenchido (sync do Tokko
+// OU cadastro manual, ver portfolioRealEstateFieldsHtml/_save_real_estate_fields
+// no backend) - card de item que nao e imovel (outras categorias de
+// agencia) nao ganha nenhuma linha extra.
+function portfolioRealEstateSummaryHtml(item){
+  const parts = [];
+  if(item.operation_type === "rent") parts.push(T('portfolio.realEstate.operationRent', 'Aluguel'));
+  else if(item.operation_type === "sale") parts.push(T('portfolio.realEstate.operationSale', 'Venda'));
+  if(item.rooms != null) parts.push(T('portfolio.realEstate.roomsSummary', '{n} quartos', { n: item.rooms }));
+  if(item.bathrooms != null) parts.push(T('portfolio.realEstate.bathroomsSummary', '{n} banheiros', { n: item.bathrooms }));
+  if(item.surface_m2 != null) parts.push(`${item.surface_m2}m²`);
+  if(item.location) parts.push(escapeHtml(item.location));
+  if(!parts.length) return "";
+  return `<div style="font-size:12px;color:var(--muted);margin-top:6px">🏠 ${parts.join(" · ")}</div>`;
+}
 
 function renderPortfolioList(){
   const emptyEl = document.getElementById("portfolioEmpty");
@@ -9368,10 +9424,50 @@ function renderPortfolioList(){
       <div style="font-weight:700;margin-bottom:4px">${escapeHtml(item.name)}</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${escapeHtml(item.category || "")}</div>
       <div style="font-size:18px;font-weight:800;color:var(--blue)">${priceLabel}</div>
+      ${portfolioRealEstateSummaryHtml(item)}
       ${!item.active ? `<div style="font-size:11px;color:var(--red);margin-top:6px">${T('portfolio.inactiveTag', 'Inativo')}</div>` : ""}
     `;
     listEl.appendChild(card);
   });
+}
+
+// Campos de imovel (operacao/quartos/banheiros/m2/localizacao) so fazem
+// sentido pra agency_category='imobiliaria' - pro resto das agencias
+// (turismo, aluguel de carro/bike/equipamento etc.) o item e mesmo so
+// nome/preco/foto/descricao. Renderizado condicionalmente aqui em vez
+// de sempre visivel e vazio pra quem nao e imobiliaria.
+function portfolioRealEstateFieldsHtml(item){
+  const session = window.STAYFLOW_SESSION || {};
+  if(session.account_kind !== "agency" || session.agency_category !== "imobiliaria") return "";
+  return `
+    <div style="grid-column:span 12;border-top:1px solid var(--line);padding-top:14px;margin-top:2px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em">${T('portfolio.realEstate.sectionTitle', '🏠 Dados do imóvel')}</div>
+    </div>
+    <div style="grid-column:span 6">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.operationLabel', 'Operação')}</label>
+      <select id="portfolioItemOperationType" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        <option value="">${T('portfolio.realEstate.operationPlaceholder', 'Selecione')}</option>
+        <option value="rent" ${item && item.operation_type === "rent" ? "selected" : ""}>${T('portfolio.realEstate.operationRent', 'Aluguel')}</option>
+        <option value="sale" ${item && item.operation_type === "sale" ? "selected" : ""}>${T('portfolio.realEstate.operationSale', 'Venda')}</option>
+      </select>
+    </div>
+    <div style="grid-column:span 6">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.locationLabel', 'Localização')}</label>
+      <input type="text" id="portfolioItemLocation" value="${item && item.location ? escapeHtml(item.location) : ""}" autocomplete="off" placeholder="${T('portfolio.realEstate.locationPlaceholder', 'Bairro, cidade')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+    <div style="grid-column:span 4">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.roomsLabel', 'Quartos')}</label>
+      <input type="number" min="0" step="1" id="portfolioItemRooms" value="${item && item.rooms != null ? item.rooms : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+    <div style="grid-column:span 4">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.bathroomsLabel', 'Banheiros')}</label>
+      <input type="number" min="0" step="1" id="portfolioItemBathrooms" value="${item && item.bathrooms != null ? item.bathrooms : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+    <div style="grid-column:span 4">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.surfaceLabel', 'Área (m²)')}</label>
+      <input type="number" min="0" step="0.1" id="portfolioItemSurface" value="${item && item.surface_m2 != null ? item.surface_m2 : ""}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+  `;
 }
 
 window.openPortfolioItemModal = function(itemId){
@@ -9412,6 +9508,7 @@ window.openPortfolioItemModal = function(itemId){
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.description', 'Descrição')}</label>
         <textarea id="portfolioItemDescription" rows="2" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical">${item && item.description ? escapeHtml(item.description) : ""}</textarea>
       </div>
+      ${portfolioRealEstateFieldsHtml(item)}
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
       ${item ? `<button class="btn red" type="button" onclick="togglePortfolioItemActive(${item.id}, ${item.active ? 0 : 1})">${item.active ? T('events.spaces.deactivateBtn', 'Desativar') : T('events.spaces.activateBtn', 'Reativar')}</button>` : "<span></span>"}
@@ -9446,6 +9543,18 @@ window.submitPortfolioItem = async function(itemId){
     price: priceType === "fixed" ? (document.getElementById("portfolioItemPrice")?.value || 0) : null,
     description: document.getElementById("portfolioItemDescription")?.value.trim() || null,
   };
+
+  // Campos de imovel so existem no DOM pra agency_category='imobiliaria'
+  // (ver portfolioRealEstateFieldsHtml) - optional chaining ja cobre o
+  // caso de nao existir, sem precisar checar account_kind aqui de novo.
+  const operationTypeEl = document.getElementById("portfolioItemOperationType");
+  if(operationTypeEl){
+    payload.operation_type = operationTypeEl.value || null;
+    payload.location = document.getElementById("portfolioItemLocation")?.value.trim() || null;
+    payload.rooms = document.getElementById("portfolioItemRooms")?.value || null;
+    payload.bathrooms = document.getElementById("portfolioItemBathrooms")?.value || null;
+    payload.surface_m2 = document.getElementById("portfolioItemSurface")?.value || null;
+  }
 
   try{
     const res = await fetch(itemId ? `/portfolio/items/${itemId}` : "/portfolio/items", {
@@ -12457,14 +12566,11 @@ window.uploadGuestDocumentUI = async function(guestId){
     try{
       // Agencia parceira chama guest de "PAX" (turismo/locacao) ou
       // "Clientes" (demais categorias) - hospedagem continua "Hospedes".
-      if(session.account_kind === "agency"){
-        const noun = agencyGuestNoun(session);
-        const navGuestsLabel = document.getElementById("navGuestsLabel");
-        const guestsSectionTitle = document.getElementById("guestsSectionTitle");
-        if(navGuestsLabel) navGuestsLabel.textContent = noun;
-        if(guestsSectionTitle) guestsSectionTitle.textContent = "👥 " + noun;
-      }
+      applyAgencyGuestNounLabels(session);
     }catch(e){ console.error("Erro ao ajustar rotulo de PAX:", e); }
+    try{
+      applyImobiliariaPortfolioCopy(session);
+    }catch(e){ console.error("Erro ao ajustar copy do Portfolio pra imobiliaria:", e); }
     try{
       // Banner obrigatorio sempre que a sessao esta "em visita" (admin
       // StayFlow dentro do dashboard de outra conta) - impossivel
@@ -12867,14 +12973,11 @@ window.uploadGuestDocumentUI = async function(guestId){
     // rotulo PAX da agencia por cima, senao troca de idioma reverte pra
     // "Hospedes"/"Guests".
     try{
-      if((window.STAYFLOW_SESSION || {}).account_kind === "agency"){
-        const noun = agencyGuestNoun(window.STAYFLOW_SESSION);
-        const navGuestsLabel = document.getElementById("navGuestsLabel");
-        const guestsSectionTitle = document.getElementById("guestsSectionTitle");
-        if(navGuestsLabel) navGuestsLabel.textContent = noun;
-        if(guestsSectionTitle) guestsSectionTitle.textContent = "👥 " + noun;
-      }
+      applyAgencyGuestNounLabels(window.STAYFLOW_SESSION);
     }catch(e){ console.error("Erro ao reaplicar rotulo de PAX:", e); }
+    try{
+      applyImobiliariaPortfolioCopy(window.STAYFLOW_SESSION);
+    }catch(e){ console.error("Erro ao reaplicar copy do Portfolio pra imobiliaria:", e); }
   });
 
   const originalOpenPage = window.openPage;
