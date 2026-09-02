@@ -3735,6 +3735,18 @@
   const STATUS_KEYS = ["trialing", "active", "past_due", "canceled", "comp"];
   function statusLabel(status){ return STATUS_KEYS.includes(status) ? AT(`status.${status}`) : (status || "—"); }
   const KIND_ICONS = { lodging: "🏨", agency: "✈️" };
+  // Imobiliaria e' account_kind='agency' com agency_category='imobiliaria'
+  // - antes disso KIND_ICONS[account_kind] sozinho mostrava aviao (generico
+  // de agencia) pra QUALQUER categoria, imobiliaria incluida. h aceita
+  // tanto o objeto de hospedagem inteiro quanto so o account_kind (ai
+  // agencyCategory vem no 2o argumento) pra nao precisar mudar toda
+  // chamada existente de uma vez.
+  function kindIcon(h, agencyCategory){
+    const accountKind = (h && typeof h === "object") ? h.account_kind : h;
+    const category = (h && typeof h === "object") ? h.agency_category : agencyCategory;
+    if(accountKind === "agency" && category === "imobiliaria") return "🏠";
+    return KIND_ICONS[accountKind] || "";
+  }
 
   let overviewData = null;
 
@@ -3743,7 +3755,7 @@
     const trial = h.trial_days_left != null ? AT("properties.trialSuffix", { days: h.trial_days_left }) : "";
     return `
       <a class="prop-row" href="admin-hostel.html?id=${h.hostel_id}">
-        <div class="ico">${KIND_ICONS[h.account_kind] || "🏢"}</div>
+        <div class="ico">${kindIcon(h) || "🏢"}</div>
         <div>
           <div class="name">${h.hostel_name || AT("properties.noName")}</div>
           <div class="meta">${h.plan_name || AT("properties.noPlan")}${trial}</div>
@@ -3774,7 +3786,7 @@
       <a class="alert-row ${r.kind}" href="admin-hostel.html?id=${r.h.hostel_id}">
         <div class="ico">${r.ico}</div>
         <div>
-          <div class="name">${KIND_ICONS[r.h.account_kind] || ""} ${r.h.hostel_name || AT("properties.noName")}</div>
+          <div class="name">${kindIcon(r.h)} ${r.h.hostel_name || AT("properties.noName")}</div>
           <div class="detail">${r.detail}</div>
         </div>
         <div class="right">${r.right}</div>
@@ -3824,7 +3836,7 @@
           <div class="rank-pos">${i + 1}</div>
           <div class="rank-bar-wrap">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-weight:700;font-size:13.5px">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || AT("properties.noName")}</span>
+              <span style="font-weight:700;font-size:13.5px">${kindIcon(h)} ${h.hostel_name || AT("properties.noName")}</span>
             </div>
             <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${pct}%"></div></div>
           </div>
@@ -3851,7 +3863,7 @@
     document.getElementById("propertySelectorList").innerHTML = filtered.length
       ? filtered.map(h => `
         <button type="button" class="hostel-selector-option" onclick="goToProperty(${h.hostel_id})">
-          <span class="option-name">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || AT("properties.noName")}</span>
+          <span class="option-name">${kindIcon(h)} ${h.hostel_name || AT("properties.noName")}</span>
           <span class="option-role">${h.plan_name || AT("properties.noPlan")} · ${statusLabel(h.status)}</span>
         </button>`).join("")
       : `<div style="padding:14px;text-align:center;color:var(--muted);font-size:12.5px">${testAccounts.length ? AT("propertySelector.noMatch") : AT("propertySelector.empty")}</div>`;
@@ -4113,7 +4125,7 @@
     document.getElementById("financeTableBody").innerHTML = rows.length
       ? rows.map(h => `
         <tr>
-          <td><a href="admin-hostel.html?id=${h.hostel_id}" style="color:#7bc2ff;text-decoration:none">${KIND_ICONS[h.account_kind] || ""} ${h.hostel_name || AT("properties.noName")}</a></td>
+          <td><a href="admin-hostel.html?id=${h.hostel_id}" style="color:#7bc2ff;text-decoration:none">${kindIcon(h)} ${h.hostel_name || AT("properties.noName")}</a></td>
           <td>${h.plan_name || AT("properties.noPlan")}</td>
           <td>${formatMoney(h.estimated_mrr, "USD")}</td>
           <td>${formatMoney(h.guest_payment_volume, h.currency)}</td>
@@ -4148,7 +4160,7 @@
       const rowsHtml = data.transactions.map(t => `
         <tr>
           <td>${parseUtc(t.created_at)?.toLocaleDateString("pt-BR") || "—"}</td>
-          <td><a href="admin-hostel.html?id=${t.hostel_id}" style="color:#7bc2ff;text-decoration:none">${KIND_ICONS[t.account_kind] || ""} ${t.hostel_name || "—"}</a></td>
+          <td><a href="admin-hostel.html?id=${t.hostel_id}" style="color:#7bc2ff;text-decoration:none">${kindIcon(t)} ${t.hostel_name || "—"}</a></td>
           <td>${(t.title || "").replace(/</g, "&lt;")}</td>
           <td>${t.charge_type || "—"}</td>
           <td>${formatMoney(t.total_amount, t.currency)}</td>
@@ -5516,7 +5528,7 @@
     return `
       <div class="chat-item sf-clickable-row ${t.hostel_id === supportActiveHostelId ? "active" : ""}" data-hostel-id="${t.hostel_id}" onclick="openSupportThread(${t.hostel_id})">
         <div class="chat-name">
-          <span>${t.unread_count > 0 ? "🔵 " : ""}${KIND_ICONS[t.account_kind] || ""} ${(t.hostel_name || AT("support.noHostelName")).replace(/</g, "&lt;")}</span>
+          <span>${t.unread_count > 0 ? "🔵 " : ""}${kindIcon(t)} ${(t.hostel_name || AT("support.noHostelName")).replace(/</g, "&lt;")}</span>
           <span class="chat-time">${timeAgo(t.last_message_at)}</span>
         </div>
         <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>

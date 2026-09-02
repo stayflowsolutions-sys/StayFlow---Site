@@ -136,11 +136,19 @@ function opportunityRowHtml(opportunity){
     const suggestionBtnLabel = isOwnItem
       ? T('opportunities.offerOwnItemBtn', 'Oferecer imóvel')
       : T('opportunities.offerPartnerBtn', 'Oferecer parceiro');
+    // Imovel proprio (imobiliaria) NAO e cobrado via link de pagamento
+    // (openGuestChargeModal, feito pra passeio/aluguel de verdade) -
+    // "oferecer" um imovel e mandar a informacao pro lead decidir, nao
+    // gerar cobranca. Sugestao de PARCEIRO (agencia terceira) continua
+    // no fluxo de cobranca normal, isso nao mudou.
+    const suggestionOnClick = isOwnItem
+      ? `openOfferPropertyModal(${partnerChargeArgs})`
+      : `openGuestChargeModal(${partnerChargeArgs})`;
     partnerSuggestionHtml = `
       <div style="margin-top:6px;font-size:11px;color:var(--blue2)">
         💡 ${suggestionText}
       </div>
-      <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="openGuestChargeModal(${partnerChargeArgs})">${suggestionBtnLabel}</button>
+      <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="${suggestionOnClick}">${suggestionBtnLabel}</button>
     `;
   }
 
@@ -279,6 +287,77 @@ async function loadOpportunities() {
 }
 
 // ---------------------------------------------------------------
+// Oferecer imovel proprio (imobiliaria) - achado em auditoria: antes
+// disso, o botao "Oferecer imovel" reaproveitava openGuestChargeModal()
+// (link de pagamento Mercado Pago, pensado pra passeio/aluguel de
+// verdade) - nao faz sentido nenhum gerar cobranca pra "oferecer" um
+// imovel, o lead ainda nem decidiu nada. Em vez disso, monta uma
+// mensagem editavel com o imovel sugerido e manda direto pro cliente
+// via /guests/<id>/send-message (mesmo endpoint que a aba Chats usa,
+// ver chats-live.js) - sem processador de pagamento nenhum envolvido.
+// ---------------------------------------------------------------
+
+function openOfferPropertyModal(opts){
+  opts = opts || {};
+  const guestId = opts.guestId || null;
+  const itemName = opts.title || "";
+  const amount = opts.amount;
+  const guestLabel = opts.guestLabel || "";
+
+  const priceText = amount ? ` (${formatMoney(Number(amount))})` : "";
+  const suggestedMessage = T('portfolio.offerProperty.suggestedMessage', 'Olá! Encontrei um imóvel que pode te interessar: {item}{price}. Posso te mandar mais detalhes?', { item: itemName, price: priceText });
+
+  openGenericModal(T('portfolio.offerProperty.modalTitle', '🏠 Oferecer imóvel'), `
+    ${guestLabel ? `<p style="margin:0 0 14px;color:var(--muted);font-size:13px">${T('portfolio.offerProperty.clientLabel', 'Cliente')}: <strong style="color:white">${escapeHtml(guestLabel)}</strong></p>` : ""}
+    <div>
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.offerProperty.messageLabel', 'Mensagem pro cliente')}</label>
+      <textarea id="offerPropertyMessage" rows="5" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical">${escapeHtml(suggestedMessage)}</textarea>
+    </div>
+    <div id="offerPropertyMessageResult" class="generic-modal-message"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" id="offerPropertySendBtn" onclick="submitOfferProperty(${guestId})">${T('portfolio.offerProperty.sendBtn', 'Enviar pro cliente')}</button>
+    </div>
+  `);
+}
+
+async function submitOfferProperty(guestId){
+  const msg = document.getElementById("offerPropertyMessageResult");
+  const btn = document.getElementById("offerPropertySendBtn");
+  const text = (document.getElementById("offerPropertyMessage")?.value || "").trim();
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  if(!text){
+    if(msg){ msg.textContent = T('portfolio.offerProperty.emptyError', 'Escreva uma mensagem antes de enviar.'); msg.classList.add("error"); }
+    return;
+  }
+  if(!guestId){
+    if(msg){ msg.textContent = T('portfolio.offerProperty.noGuestError', 'Não foi possível identificar o cliente dessa conversa.'); msg.classList.add("error"); }
+    return;
+  }
+
+  if(btn) btn.disabled = true;
+  try{
+    const res = await fetch(`/guests/${guestId}/send-message`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ message: text }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      if(msg){ msg.textContent = data.message || T('chats.sendMessageFailed', 'Não foi possível enviar a mensagem.'); msg.classList.add("error"); }
+      if(btn) btn.disabled = false;
+      return;
+    }
+    if(msg){ msg.textContent = T('portfolio.offerProperty.sentMsg', 'Mensagem enviada!'); msg.classList.add("success"); }
+    setTimeout(() => { if(typeof closeGenericModal === "function") closeGenericModal(); }, 900);
+  }catch(e){
+    console.error("Erro ao enviar oferta de imóvel:", e);
+    if(msg){ msg.textContent = T('chats.sendMessageConnError', 'Erro de conexão ao enviar a mensagem.'); msg.classList.add("error"); }
+    if(btn) btn.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------
 // Cobranca ao hospede via Mercado Pago (guest_charges) - modal
 // compartilhado por tres pontos de entrada: Opportunity Center
 // (charge_type tour/rental, com opportunity_id), Reservas
@@ -306,8 +385,16 @@ function openGuestChargeModal(opts){
       </select>
     `;
 
+  // "Hospede:" so faz sentido literal pra hospedagem - agencia parceira
+  // (incl. imobiliaria) chama de PAX ou Clientes, mesma funcao ja usada
+  // no menu/pagina de Hospedes (agencyGuestNoun, dashboard.html).
+  const session = window.STAYFLOW_SESSION || {};
+  const guestNounLabel = session.account_kind === "agency"
+    ? (typeof agencyGuestNoun === "function" ? agencyGuestNoun(session) : "Cliente")
+    : T('guestCharge.guestLabel', 'Hóspede');
+
   openGenericModal(T('guestCharge.modalTitle', '💳 Gerar cobrança'), `
-    ${guestLabel ? `<p style="margin:0 0 14px;color:var(--muted);font-size:13px">${T('guestCharge.guestLabel', 'Hóspede:')} <strong style="color:white">${escapeHtml(guestLabel)}</strong></p>` : ""}
+    ${guestLabel ? `<p style="margin:0 0 14px;color:var(--muted);font-size:13px">${guestNounLabel}: <strong style="color:white">${escapeHtml(guestLabel)}</strong></p>` : ""}
 
     <div style="display:grid;gap:var(--gap)">
       <div>
