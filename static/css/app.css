@@ -1335,32 +1335,105 @@ body::before{
   overflow-y:auto;
 }
 
+/* Lista de conversas em linhas cheias (borda a borda), padrao "inbox
+   premium" tipo WhatsApp/Telegram - substitui o antigo item em cartao
+   flutuante com borda+raio+gap proprios (v1.121.0). Compartilhado
+   entre a aba Chats do dashboard e Meu chat/Suporte do painel interno
+   (mesmas classes, ver comentario no topo de admin.html). */
+.chat-list{
+  padding-top:6px;
+  padding-bottom:6px;
+}
 .chat-item{
-  padding:10px 11px;
-  border-radius:15px;
-  border:1px solid #ffffff12;
-  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 14px;
+  border-radius:0;
+  border:none;
+  border-bottom:1px solid #ffffff0d;
+  margin-bottom:0;
   cursor:pointer;
-  transition:border-color .18s,background .18s;
+  transition:background .15s;
+}
+.chat-list .chat-item:last-child{
+  border-bottom:none;
 }
 .chat-item:hover{
-  border-color:#ffffff30;
-  background:#ffffff07;
+  background:#ffffff08;
 }
 .chat-item.active{
-  border-color:#0b84ff66;
-  background:#0b84ff16;
+  background:#0b84ff14;
+  border-left:3px solid var(--blue);
+  padding-left:11px;
+}
+.chat-avatar{
+  flex:none;
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  font-weight:800;
+  color:#ffffffea;
+  position:relative;
+}
+.chat-avatar-dot{
+  position:absolute;
+  right:-2px;
+  bottom:-2px;
+  width:13px;
+  height:13px;
+  border-radius:50%;
+  border:2px solid var(--panel);
+}
+.chat-item-body{
+  flex:1;
+  min-width:0;
 }
 .chat-name{
   display:flex;
   justify-content:space-between;
-  font-size:13px;
-  font-weight:760;
+  align-items:baseline;
+  gap:8px;
+  font-size:14px;
+  font-weight:700;
+}
+.chat-name > span:first-child{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  min-width:0;
+}
+.chat-preview-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-top:3px;
 }
 .chat-preview{
   color:var(--muted);
-  margin-top:6px;
   font-size:13px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  flex:1;
+  min-width:0;
+}
+.chat-item.unread .chat-name > span:first-child,
+.chat-item.unread .chat-preview{
+  color:var(--text);
+  font-weight:700;
+}
+.chat-unread-dot{
+  flex:none;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:var(--blue);
 }
 
 .chat-window{

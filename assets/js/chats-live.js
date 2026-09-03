@@ -170,11 +170,13 @@ async function loadChats() {
             const empty = document.createElement("div");
             empty.className = "chat-item";
             empty.innerHTML = `
-                <div class="chat-name">
-                    <span>${T('chats.emptyTitle', 'Nenhuma conversa encontrada.')}</span>
-                    <span class="status-pill ai">Live</span>
+                <div class="chat-item-body">
+                    <div class="chat-name">
+                        <span>${T('chats.emptyTitle', 'Nenhuma conversa encontrada.')}</span>
+                        <span class="status-pill ai">Live</span>
+                    </div>
+                    <div class="chat-preview">${T('chats.list.whenMessagesHint', 'Quando houver mensagens, elas aparecerão aqui.')}</div>
                 </div>
-                <div class="chat-preview">${T('chats.list.whenMessagesHint', 'Quando houver mensagens, elas aparecerão aqui.')}</div>
             `;
             list.appendChild(empty);
             return;
@@ -205,15 +207,24 @@ async function loadChats() {
                 ? `<div class="chat-broker-tag" style="font-size:11px;color:var(--accent,#0b84ff);margin-top:2px">👤 ${escapeHtml(chat.owner_name)}</div>`
                 : "";
 
+            const displayName = escapeHtml(chat.name || chat.phone || T('chats.noPhone', 'Sem telefone'));
+            const channelKey = (chat.channel || "whatsapp").toLowerCase().trim();
+            const channelLabel = typeof channelDisplayLabel === "function" ? channelDisplayLabel(channelKey) : channelKey;
+            const dotColor = (typeof CHANNEL_BADGE_COLORS !== "undefined" && CHANNEL_BADGE_COLORS[channelKey]) || "#7bc2ff";
+            const avatarHtml = chatAvatarHtml(chat.name || chat.phone, chat.phone || chat.guest_id, dotColor);
+
             item.innerHTML = `
-                <div class="chat-name">
-                    <span>${flag ? flag + " " : ""}${escapeHtml(chat.name || chat.phone || T('chats.noPhone', 'Sem telefone'))} ${channelBadgeHtml(chat.channel)}</span>
-                    <span class="status-pill ${urgency}">
-                        ${escapeHtml(intent)} · ${score}/100
-                    </span>
+                ${avatarHtml}
+                <div class="chat-item-body">
+                    <div class="chat-name">
+                        <span title="${channelLabel}">${flag ? flag + " " : ""}${displayName}</span>
+                        <span class="status-pill ${urgency}">
+                            ${escapeHtml(intent)} · ${score}/100
+                        </span>
+                    </div>
+                    ${brokerTagHtml}
+                    <div class="chat-preview">${escapeHtml(preview) || T('chats.noRecentMessages', 'Sem mensagens recentes.')}</div>
                 </div>
-                ${brokerTagHtml}
-                <div class="chat-preview">${escapeHtml(preview) || T('chats.noRecentMessages', 'Sem mensagens recentes.')}</div>
             `;
 
             item.addEventListener("click", () => {
@@ -242,11 +253,13 @@ async function loadChats() {
             list.innerHTML = `
                 <h2>${T('chats.conversationsTitle', 'Conversas')}</h2>
                 <div class="chat-item">
-                    <div class="chat-name">
-                        <span>${T('chats.loadErrorTitle', 'Erro ao carregar conversas.')}</span>
-                        <span class="status-pill ai">${T('chats.errorLabel', 'Erro')}</span>
+                    <div class="chat-item-body">
+                        <div class="chat-name">
+                            <span>${T('chats.loadErrorTitle', 'Erro ao carregar conversas.')}</span>
+                            <span class="status-pill ai">${T('chats.errorLabel', 'Erro')}</span>
+                        </div>
+                        <div class="chat-preview">${T('chats.tryAgainLater', 'Tente novamente mais tarde.')}</div>
                     </div>
-                    <div class="chat-preview">${T('chats.tryAgainLater', 'Tente novamente mais tarde.')}</div>
                 </div>
             `;
         }

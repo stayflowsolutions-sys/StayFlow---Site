@@ -10871,3 +10871,95 @@ Testado: balanceamento de chaves/parênteses/colchetes de
 `dashboard.html`, confirmado via grep que a chave i18n `nav.team`
 continua em uso nos outros 2 lugares (menu lateral, dropdown do
 ícone de usuário) - nenhuma chave órfã.
+
+### Inbox de conversas em padrão premium, tipo WhatsApp (v1.121.0)
+
+Usuário mandou um print do "Meu chat" no celular - cada conversa
+aparecia como um cartãozinho flutuante separado, com borda arredondada
+e um espaço visível entre um e outro. Pediu pra deixar num padrão de
+inbox mobile premium, "igual WhatsApp".
+
+Fui direto na causa: `.chat-item` (a classe que desenha cada linha da
+lista) tinha `border-radius:15px` + `border:1px solid` + `margin-bottom:8px`
+- ou seja, cada conversa virava seu PRÓPRIO cartão arredondado boiando
+dentro do cartão maior da lista. Cartão dentro de cartão é exatamente
+a razão do visual "pílulas separadas" do print. Essa classe é
+compartilhada entre 3 lugares - aba Chats do dashboard normal, e Meu
+chat/Suporte do painel interno (`admin.html`) - descoberta importante
+porque significa que arrumar o CSS uma vez resolve as 3 listas de
+uma vez, em vez de eu precisar redesenhar cada uma separadamente.
+
+**O que muda visualmente**: linhas agora vão borda-a-borda dentro do
+cartão externo, separadas por um fio fino de 1px (não mais cada uma
+com sua própria borda arredondada). Seleção virou fundo azul suave +
+barrinha azul de 3px na borda esquerda, em vez de contornar a linha
+inteira. Veio junto um avatar circular novo - inicial do nome com uma
+cor derivada por hash do próprio nome/telefone (mesma paleta de cores
+que a StayFlow já usa em outros lugares do produto), sem precisar de
+foto real que a StayFlow não tem, mesma lógica que Slack/Telegram usam
+pra diferenciar contato visualmente numa lista. O selo de canal
+(WhatsApp/Messenger/Instagram) que antes era um pill de texto cheio
+do lado do nome - competindo por espaço numa tela estreita - virou uma
+bolinha colorida pequena no canto do avatar, com o nome do canal
+escondido num `title` de hover pra quem usa no desktop. Conversa não
+lida (Meu chat/Suporte) agora fica em negrito/branco de verdade, com
+uma bolinha azul do lado da prévia, igual o "não lido" de qualquer
+app de mensagens - antes era só um emoji 🔵 solto na frente do nome.
+
+**Achado de bug evitado antes de testar**: a primeira versão do
+helper de avatar pegava a inicial com `label.charAt(0)`. Funciona
+liso pra nome normal, mas ia quebrar pela metade um emoji - e eu
+JUSTAMENTE ia usar um emoji como avatar no Suporte (o ícone do tipo
+de hospedagem, `kindIcon()`, tipo 🏨/🏠). A maioria dos emojis é par
+substituto UTF-16 (2 unidades de código, não 1) - `charAt(0)` sozinho
+pegaria só metade do par e renderizaria um glifo quebrado/caixinha.
+Resolvido adicionando um parâmetro `rawContent` no helper que passa o
+emoji inteiro direto, sem fatiar - só nomes de verdade passam pelo
+caminho de `charAt(0)`.
+
+Como o helper de avatar precisa ser chamado nos 3 lugares que
+desenham `.chat-item`, e `admin.html`/`dashboard.html` são arquivos
+HTML separados sem nenhum módulo JS compartilhado entre eles, duplicei
+a mesma função pequena nos dois (mesmo padrão de duplicação leve que
+já existia pras cores de canal). Já `assets/js/chats-live.js` (script
+separado, mas carregado NA MESMA página que `dashboard.html`) não
+precisou de duplicação nenhuma - reaproveitou a função direto do
+`window` global, confirmado que o script carrega bem depois do bloco
+que define a função. Nesse terceiro lugar (aba Chats principal, que já
+mostrava uma bandeirinha de país pelo DDI do telefone) mantive a
+bandeira como prefixo de TEXTO do nome, igual já era antes - não virou
+conteúdo do avatar, pra não misturar "quem é essa pessoa" (avatar) com
+"de que país ela é" (informação geográfica), que são coisas diferentes.
+
+Achado no caminho, ao revisar TODO uso de `.chat-item` no repositório
+(não só os 3 lugares que eu ia mexer de propósito): 3 blocos que eu
+não tinha visto de primeira - os 2 estados vazio/erro da aba Chats
+principal, e o resultado de busca de contato salvo (também na aba
+Chats) - tinham `.chat-name`/`.chat-preview` direto dentro de
+`.chat-item`, sem nenhum wrapper. Como `.chat-item` virou
+`display:flex` nesta versão, esses 3 blocos ficariam com nome e
+prévia lado a lado (errado) em vez de empilhados. Corrigidos
+envolvendo o conteúdo deles num `<div class="chat-item-body">` novo,
+mesmo sem precisarem de avatar.
+
+Sem chave i18n nova - o texto visível não mudou em lugar nenhum, só a
+forma (pill vira tooltip, emoji solto vira bolinha de verdade).
+
+Testado: balanceamento de chaves/parênteses/colchetes e contagem de
+crases pareada nos 4 arquivos tocados (`dashboard.html`, `admin.html`,
+`assets/js/chats-live.js`, `static/css/app.css` - a única divergência
+de parênteses encontrada em `app.css`, 250/249, já era conhecida desde
+a v1.107.0, confirmado via `git diff` que as linhas ADICIONADAS nesta
+versão somam 7 abre/7 fecha, balanceadas - não fui eu que introduzi o
+desvio antigo); grep de todo uso de `.chat-item` no repositório
+confirmando que nenhum ficou sem o wrapper novo. Sem navegador
+disponível neste ambiente pra conferir visualmente - testado por
+revisão de código/lógica, sinalizado explicitamente, não alegado como
+visto na tela de verdade.
+
+**Pendência anotada pelo usuário, pra depois**: ele não gosta dos
+emojis "feios" espalhados pelo produto (inclusive os que eu acabei de
+usar como avatar de fallback, tipo 📇 nos contatos) e quer substituir
+tudo pelo padrão visual da StayFlow - ícones no azul marinho da marca,
+não emoji solto. Não é pra fazer agora, só ficou registrado como
+próximo item quando ele voltar ao assunto.
