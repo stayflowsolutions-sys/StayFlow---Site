@@ -2817,90 +2817,23 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card" data-settings-section="empresa">
-        <h2 data-i18n="settings.company.title">Empresa</h2>
-        <p data-i18n="settings.company.desc" style="margin-bottom:14px">Dados legais, horários padrão e identidade visual da hospedagem.</p>
-
-        <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
-          <div class="span-6">
-            <input type="text" data-setting="legal_name" data-i18n-placeholder="settings.company.legalNamePlaceholder" placeholder="Razão social">
+      <div class="card settings-summary-card" data-settings-section="empresa" onclick="openCompanySettingsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.company.title">Empresa</h2>
+            <p class="settings-summary-desc" data-i18n="settings.company.desc">Dados legais, horários padrão e identidade visual da hospedagem.</p>
           </div>
-          <div class="span-6">
-            <input type="text" data-setting="tax_id" placeholder="CUIT/RUT">
-          </div>
-          <div class="span-12">
-            <input type="text" data-setting="address" data-i18n-placeholder="settings.company.addressPlaceholder" placeholder="Endereço completo">
-          </div>
-          <div class="span-6">
-            <select data-setting="timezone" id="settingsTimezoneSelect">
-              <option value="" data-i18n="settings.company.timezoneOption">Fuso horário</option>
-              <option value="America/Argentina/Buenos_Aires">America/Argentina/Buenos_Aires</option>
-              <option value="America/Santiago">America/Santiago</option>
-              <option value="America/Sao_Paulo">America/Sao_Paulo</option>
-              <option value="America/Lima">America/Lima</option>
-              <option value="America/La_Paz">America/La_Paz</option>
-              <option value="America/Bogota">America/Bogota</option>
-            </select>
-          </div>
-          <div class="span-6">
-            <select data-setting="currency" id="settingsCurrencySelect">
-              <option value="" data-i18n="settings.company.currencyOption">Moeda</option>
-              <option value="ARS">ARS - Peso argentino</option>
-              <option value="CLP">CLP - Peso chileno</option>
-              <option value="BRL">BRL - Real brasileiro</option>
-              <option value="PEN">PEN - Sol peruano</option>
-              <option value="BOB">BOB - Boliviano</option>
-              <option value="COP">COP - Peso colombiano</option>
-              <option value="USD">USD - Dólar americano</option>
-            </select>
-          </div>
-          <div class="span-6" data-required-account-kind="lodging">
-            <input type="text" data-setting="checkin" data-i18n-placeholder="settings.company.checkinPlaceholder" placeholder="Check-in padrão (ex: 14:00)">
-          </div>
-          <div class="span-6" data-required-account-kind="lodging">
-            <input type="text" data-setting="checkout" data-i18n-placeholder="settings.company.checkoutPlaceholder" placeholder="Check-out padrão (ex: 11:00)">
-          </div>
-          <div class="span-12">
-            <input type="text" data-setting="logo_url" data-i18n-placeholder="settings.company.logoUrlPlaceholder" placeholder="URL do logo (opcional - cole o link de uma imagem já hospedada)">
-          </div>
-        </div>
-
-        <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
-          <button class="btn secondary" type="button" onclick="openPage('dashboard', document.querySelector('[data-page=dashboard]'))" data-i18n="settings.cancelBtn">Cancelar</button>
-          <button class="btn" type="button" onclick="saveSettings()" data-i18n="settings.saveChangesBtn">Salvar alterações</button>
+          <span class="settings-summary-chevron">›</span>
         </div>
       </div>
 
-      <div class="card" data-settings-section="empresa" data-required-permission="branding" data-hide-for-account-kind="promoter">
-        <h2 data-i18n="settings.branding.title">🎨 Marca (White-label)</h2>
-        <p data-i18n="settings.branding.desc" style="margin-bottom:14px">Personalize logo, nome exibido e cor do painel — pra revendedores ou hospedagens com marca própria.</p>
-
-        <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
-          <div class="span-12">
-            <input type="text" id="brandLogoUrlInput" data-i18n-placeholder="settings.branding.logoUrlPlaceholder" placeholder="URL do logo (opcional - cole o link de uma imagem já hospedada)">
+      <div class="card settings-summary-card" data-settings-section="empresa" data-required-permission="branding" data-hide-for-account-kind="promoter" onclick="openBrandingModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.branding.title">🎨 Marca (White-label)</h2>
+            <p class="settings-summary-desc" data-i18n="settings.branding.desc">Personalize logo, nome exibido e cor do painel — pra revendedores ou hospedagens com marca própria.</p>
           </div>
-          <div class="span-6">
-            <input type="text" id="brandDisplayNameInput" data-i18n-placeholder="settings.branding.displayNamePlaceholder" placeholder="Nome exibido no painel (opcional)">
-          </div>
-          <div class="span-3">
-            <input type="color" id="brandPrimaryColorInput" style="height:44px;padding:4px">
-          </div>
-          <div class="span-3">
-            <button class="btn secondary" type="button" onclick="document.getElementById('brandPrimaryColorInput').value='#0b84ff'" data-i18n="settings.branding.resetColorBtn">Cor padrão</button>
-          </div>
-          <div class="span-12">
-            <input type="text" id="brandFaviconUrlInput" data-i18n-placeholder="settings.branding.faviconUrlPlaceholder" placeholder="URL do favicon (opcional)">
-          </div>
-          <div class="span-12">
-            <input type="text" id="brandCustomDomainInput" data-i18n-placeholder="settings.branding.customDomainPlaceholder" placeholder="Domínio próprio (opcional, ex: painel.suamarca.com)">
-            <p style="color:var(--muted);font-size:11px;margin:4px 0 0" data-i18n="settings.branding.customDomainHint">O código já reconhece o domínio assim que apontado — configurar o DNS e cadastrar o domínio no servidor continua sendo manual, fale com a StayFlow.</p>
-          </div>
-        </div>
-
-        <div id="brandingSettingsMessage" class="generic-modal-message" style="margin-top:10px"></div>
-
-        <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
-          <button class="btn" type="button" onclick="saveBrandingSettings()" data-i18n="settings.saveChangesBtn">Salvar alterações</button>
+          <span class="settings-summary-chevron">›</span>
         </div>
       </div>
 
@@ -2988,33 +2921,13 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card" data-settings-section="ia">
-        <h2 data-i18n="settings.ai.title">IA StayFlow</h2>
-
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;background:#0b84ff14;border:1px solid #0b84ff30;border-radius:12px;padding:10px 12px;">
-          <span style="font-weight:700"><span data-i18n="settings.ai.autoReplyLabel">IA responde automaticamente aos hóspedes</span><br><small data-i18n="settings.ai.autoReplyDesc" style="font-weight:400;color:var(--muted)">Quando desativado, a IA para de responder; as mensagens continuam sendo salvas pra atendimento manual.</small></span>
-          <input type="checkbox" data-setting="ai_enabled" checked>
-        </label>
-
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
-          <span><span data-i18n="settings.ai.simpleAutoReplyLabel">Resposta automática para dúvidas simples</span><br><small data-i18n="settings.ai.simpleAutoReplyDesc" style="font-weight:400;color:var(--muted)">Mesmo com a conversa assumida, a IA responde sozinha perguntas simples e de baixo risco. Precisa de "Geração de oportunidades" ativada.</small></span>
-          <input type="checkbox" data-setting="simple_auto_reply_enabled">
-        </label>
-
-        <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
-          <span data-i18n="settings.ai.opportunityGenLabel">Geração de oportunidades (leads e upsell)</span>
-          <input type="checkbox" data-setting="opportunity_generation" checked>
-        </label>
-
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;">
-          <div data-i18n="settings.ai.agentTitle" style="font-size:13px;font-weight:700;margin-bottom:8px">Agente de IA (persona, tom, regras específicas)</div>
-          <p data-i18n="settings.ai.agentDesc" style="font-size:12px;color:var(--muted);margin:0 0 8px">Instruções adicionais pra IA seguir nas conversas — nunca substituem as regras de segurança (nunca inventar preço, nunca fechar venda sozinha).</p>
-          <textarea data-setting="ai_custom_instructions" maxlength="2000" rows="4" data-i18n-placeholder="settings.ai.agentPlaceholder" placeholder="Ex: fale de forma descontraída, sempre ofereça desconto de 10% pra pagamento à vista, nunca prometa prazo de entrega sem confirmar com a equipe." style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical"></textarea>
-        </div>
-
-        <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
-          <button class="btn secondary" type="button" onclick="openPage('dashboard', document.querySelector('[data-page=dashboard]'))" data-i18n="settings.cancelBtn">Cancelar</button>
-          <button class="btn" type="button" onclick="saveSettings()" data-i18n="settings.saveChangesBtn">Salvar alterações</button>
+      <div class="card settings-summary-card" data-settings-section="ia" onclick="openAISettingsModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.ai.title">IA StayFlow</h2>
+            <p class="settings-summary-desc" data-i18n="settings.ai.summaryDesc">Resposta automática, geração de oportunidades e instruções personalizadas da IA.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
         </div>
       </div>
 
@@ -5788,6 +5701,148 @@ async function deleteRoleConfirm(roleId){
     }catch(e){
       if(msg){ msg.textContent = T('common.saveConnError', 'Erro de conexão ao salvar.'); msg.classList.add("error"); }
     }
+  };
+
+  // Preenche campos data-setting dentro do modal generico recem-aberto
+  // (#genericModalBody fica FORA de #settings na arvore do DOM, entao
+  // hydrateSettingsFromBackend - escopada em #settings - nunca alcanca
+  // esses campos; mesmo motivo documentado no comentario de saveSettings()).
+  async function hydrateModalSettingsFields(){
+    try{
+      const res = await fetch("/settings", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      const modalBody = document.getElementById("genericModalBody");
+      if(!modalBody) return;
+      $$("[data-setting]", modalBody).forEach(input => {
+        const key = input.dataset.setting;
+        if(key in data && data[key] !== null) setFieldValue(input, data[key]);
+      });
+    }catch(e){
+      console.warn("Erro ao carregar campos do modal de Configurações:", e);
+    }
+  }
+
+  // Empresa (razao social, CUIT/RUT, endereco, fuso, moeda, checkin/
+  // checkout padrao, logo) - virou modal a pedido do usuario: nenhum
+  // formulario deve ficar exposto direto na pagina, sempre atras de um
+  // botao (mesmo criterio ja aplicado no Modo Dono/Avaliacoes Google).
+  window.openCompanySettingsModal = function(){
+    openGenericModal(T('settings.company.title', 'Empresa'), `
+      <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+        <div class="span-6">
+          <input type="text" data-setting="legal_name" placeholder="${T('settings.company.legalNamePlaceholder', 'Razão social')}">
+        </div>
+        <div class="span-6">
+          <input type="text" data-setting="tax_id" placeholder="CUIT/RUT">
+        </div>
+        <div class="span-12">
+          <input type="text" data-setting="address" placeholder="${T('settings.company.addressPlaceholder', 'Endereço completo')}">
+        </div>
+        <div class="span-6">
+          <select data-setting="timezone" id="settingsTimezoneSelect">
+            <option value="">${T('settings.company.timezoneOption', 'Fuso horário')}</option>
+            <option value="America/Argentina/Buenos_Aires">America/Argentina/Buenos_Aires</option>
+            <option value="America/Santiago">America/Santiago</option>
+            <option value="America/Sao_Paulo">America/Sao_Paulo</option>
+            <option value="America/Lima">America/Lima</option>
+            <option value="America/La_Paz">America/La_Paz</option>
+            <option value="America/Bogota">America/Bogota</option>
+          </select>
+        </div>
+        <div class="span-6">
+          <select data-setting="currency" id="settingsCurrencySelect">
+            <option value="">${T('settings.company.currencyOption', 'Moeda')}</option>
+            <option value="ARS">ARS - Peso argentino</option>
+            <option value="CLP">CLP - Peso chileno</option>
+            <option value="BRL">BRL - Real brasileiro</option>
+            <option value="PEN">PEN - Sol peruano</option>
+            <option value="BOB">BOB - Boliviano</option>
+            <option value="COP">COP - Peso colombiano</option>
+            <option value="USD">USD - Dólar americano</option>
+          </select>
+        </div>
+        <div class="span-6" data-required-account-kind="lodging">
+          <input type="text" data-setting="checkin" placeholder="${T('settings.company.checkinPlaceholder', 'Check-in padrão (ex: 14:00)')}">
+        </div>
+        <div class="span-6" data-required-account-kind="lodging">
+          <input type="text" data-setting="checkout" placeholder="${T('settings.company.checkoutPlaceholder', 'Check-out padrão (ex: 11:00)')}">
+        </div>
+        <div class="span-12">
+          <input type="text" data-setting="logo_url" placeholder="${T('settings.company.logoUrlPlaceholder', 'URL do logo (opcional - cole o link de uma imagem já hospedada)')}">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="saveSettings()">${T('settings.saveChangesBtn', 'Salvar alterações')}</button>
+      </div>
+    `);
+    const session = window.STAYFLOW_SESSION || {};
+    try{ applyAccountKindVisibility(session.account_kind, session.agency_category); }catch(e){ console.error("Erro ao aplicar visibilidade por tipo de conta no modal de Empresa:", e); }
+    hydrateModalSettingsFields();
+  };
+
+  // Marca/White-label - mesmos campos e mesmo handler (saveBrandingSettings)
+  // de sempre, so movidos pra dentro de um modal em vez de ficarem
+  // expostos direto na pagina de Configuracoes.
+  window.openBrandingModal = function(){
+    openGenericModal(T('settings.branding.title', '🎨 Marca (White-label)'), `
+      <p style="margin-bottom:14px">${T('settings.branding.desc', 'Personalize logo, nome exibido e cor do painel — pra revendedores ou hospedagens com marca própria.')}</p>
+      <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
+        <div class="span-12">
+          <input type="text" id="brandLogoUrlInput" placeholder="${T('settings.branding.logoUrlPlaceholder', 'URL do logo (opcional - cole o link de uma imagem já hospedada)')}">
+        </div>
+        <div class="span-6">
+          <input type="text" id="brandDisplayNameInput" placeholder="${T('settings.branding.displayNamePlaceholder', 'Nome exibido no painel (opcional)')}">
+        </div>
+        <div class="span-3">
+          <input type="color" id="brandPrimaryColorInput" style="height:44px;padding:4px">
+        </div>
+        <div class="span-3">
+          <button class="btn secondary" type="button" onclick="document.getElementById('brandPrimaryColorInput').value='#0b84ff'">${T('settings.branding.resetColorBtn', 'Cor padrão')}</button>
+        </div>
+        <div class="span-12">
+          <input type="text" id="brandFaviconUrlInput" placeholder="${T('settings.branding.faviconUrlPlaceholder', 'URL do favicon (opcional)')}">
+        </div>
+        <div class="span-12">
+          <input type="text" id="brandCustomDomainInput" placeholder="${T('settings.branding.customDomainPlaceholder', 'Domínio próprio (opcional, ex: painel.suamarca.com)')}">
+          <p style="color:var(--muted);font-size:11px;margin:4px 0 0">${T('settings.branding.customDomainHint', 'O código já reconhece o domínio assim que apontado — configurar o DNS e cadastrar o domínio no servidor continua sendo manual, fale com a StayFlow.')}</p>
+        </div>
+      </div>
+      <div id="brandingSettingsMessage" class="generic-modal-message" style="margin-top:10px"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="saveBrandingSettings()">${T('settings.saveChangesBtn', 'Salvar alterações')}</button>
+      </div>
+    `);
+    applyBranding(window.STAYFLOW_SESSION || {});
+  };
+
+  // IA StayFlow (resposta automatica, geracao de oportunidades, agente
+  // com instrucoes customizadas) - mesmos 4 campos data-setting de
+  // sempre, so movidos pra dentro de um modal.
+  window.openAISettingsModal = function(){
+    openGenericModal(T('settings.ai.title', 'IA StayFlow'), `
+      <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;background:#0b84ff14;border:1px solid #0b84ff30;border-radius:12px;padding:10px 12px;">
+        <span style="font-weight:700"><span>${T('settings.ai.autoReplyLabel', 'IA responde automaticamente aos hóspedes')}</span><br><small style="font-weight:400;color:var(--muted)">${T('settings.ai.autoReplyDesc', 'Quando desativado, a IA para de responder; as mensagens continuam sendo salvas pra atendimento manual.')}</small></span>
+        <input type="checkbox" data-setting="ai_enabled" checked>
+      </label>
+      <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
+        <span><span>${T('settings.ai.simpleAutoReplyLabel', 'Resposta automática para dúvidas simples')}</span><br><small style="font-weight:400;color:var(--muted)">${T('settings.ai.simpleAutoReplyDesc', 'Mesmo com a conversa assumida, a IA responde sozinha perguntas simples e de baixo risco. Precisa de "Geração de oportunidades" ativada.')}</small></span>
+        <input type="checkbox" data-setting="simple_auto_reply_enabled">
+      </label>
+      <label style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:14px;">
+        <span>${T('settings.ai.opportunityGenLabel', 'Geração de oportunidades (leads e upsell)')}</span>
+        <input type="checkbox" data-setting="opportunity_generation" checked>
+      </label>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid #ffffff12;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">${T('settings.ai.agentTitle', 'Agente de IA (persona, tom, regras específicas)')}</div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 8px">${T('settings.ai.agentDesc', 'Instruções adicionais pra IA seguir nas conversas — nunca substituem as regras de segurança (nunca inventar preço, nunca fechar venda sozinha).')}</p>
+        <textarea data-setting="ai_custom_instructions" maxlength="2000" rows="4" placeholder="${T('settings.ai.agentPlaceholder', 'Ex: fale de forma descontraída, sempre ofereça desconto de 10% pra pagamento à vista, nunca prometa prazo de entrega sem confirmar com a equipe.')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="saveSettings()">${T('settings.saveChangesBtn', 'Salvar alterações')}</button>
+      </div>
+    `);
+    hydrateModalSettingsFields();
   };
 
   window.openGeneralSettingsModal = function(){

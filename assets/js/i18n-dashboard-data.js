@@ -1644,6 +1644,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "Cole aqui o link de avaliação da sua hospedagem no Google. Quando configurado, o hóspede recebe uma mensagem pedindo uma avaliação rápida assim que faz checkout — enquanto a experiência ainda está fresca.",
     "googleReview.linkLabel": "Link de avaliação do Google",
     "googleReview.linkPlaceholder": "Cole aqui o link de avaliação da sua hospedagem no Google",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "Resposta automática, geração de oportunidades e instruções personalizadas da IA.",
   },
   en: {
     "nav.dashboard": "Dashboard",
@@ -3262,6 +3264,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "Paste your property's Google review link here. Once set, the guest gets a message asking for a quick review as soon as they check out — while the experience is still fresh.",
     "googleReview.linkLabel": "Google review link",
     "googleReview.linkPlaceholder": "Paste your property's Google review link here",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "Auto-reply, opportunity generation, and custom AI instructions.",
   },
   es: {
     "nav.dashboard": "Dashboard",
@@ -4880,6 +4884,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "Pegá acá el enlace de reseña de tu hospedaje en Google. Una vez configurado, el huésped recibe un mensaje pidiendo una reseña rápida apenas hace el checkout, mientras la experiencia todavía está fresca.",
     "googleReview.linkLabel": "Enlace de reseña de Google",
     "googleReview.linkPlaceholder": "Pegá acá el enlace de reseña de tu hospedaje en Google",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "Respuesta automática, generación de oportunidades e instrucciones personalizadas de la IA.",
   },
   fr: {
     "nav.dashboard": "Dashboard",
@@ -6498,6 +6504,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "Collez ici le lien d'avis Google de votre établissement. Une fois configuré, le client reçoit un message lui demandant un avis rapide dès son départ, pendant que l'expérience est encore fraîche.",
     "googleReview.linkLabel": "Lien d'avis Google",
     "googleReview.linkPlaceholder": "Collez ici le lien d'avis Google de votre établissement",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "Réponse automatique, génération d'opportunités et instructions personnalisées de l'IA.",
   },
   de: {
     "nav.dashboard": "Dashboard",
@@ -8116,6 +8124,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "Fügen Sie hier den Google-Bewertungslink Ihrer Unterkunft ein. Sobald konfiguriert, erhält der Gast direkt nach dem Checkout eine Nachricht mit der Bitte um eine kurze Bewertung — solange die Erfahrung noch frisch ist.",
     "googleReview.linkLabel": "Google-Bewertungslink",
     "googleReview.linkPlaceholder": "Fügen Sie hier den Google-Bewertungslink Ihrer Unterkunft ein",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "Automatische Antwort, Chancen-Generierung und individuelle KI-Anweisungen.",
   },
 
   ja: {
@@ -9705,6 +9715,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "宿泊施設のGoogleクチコミリンクをここに貼り付けてください。設定すると、ゲストはチェックアウト直後に、体験の記憶が新しいうちに簡単なクチコミをお願いするメッセージを受け取ります。",
     "googleReview.linkLabel": "Googleクチコミのリンク",
     "googleReview.linkPlaceholder": "宿泊施設のGoogleクチコミリンクをここに貼り付けてください",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "自動返信、案件生成、AIのカスタム指示。",
   },
 
   it: {
@@ -11294,6 +11306,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "Incolla qui il link recensione Google della tua struttura. Una volta impostato, l'ospite riceve un messaggio che chiede una recensione rapida subito dopo il checkout, mentre l'esperienza è ancora fresca.",
     "googleReview.linkLabel": "Link recensione Google",
     "googleReview.linkPlaceholder": "Incolla qui il link recensione Google della tua struttura",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "Risposta automatica, generazione di opportunità e istruzioni personalizzate dell'IA.",
   },
 
   zh: {
@@ -12883,6 +12897,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "在此粘贴您住宿的 Google 评价链接。设置后，客人退房时会立即收到一条消息，请求快速评价 — 趁体验记忆犹新。",
     "googleReview.linkLabel": "Google 评价链接",
     "googleReview.linkPlaceholder": "在此粘贴您住宿的 Google 评价链接",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "自动回复、商机生成和自定义 AI 指令。",
   },
   ru: {
     "nav.dashboard": "Панель управления",
@@ -14471,6 +14487,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "Вставьте сюда ссылку для отзыва вашего объекта в Google. После настройки гость сразу после выезда получит сообщение с просьбой оставить короткий отзыв, пока впечатления ещё свежи.",
     "googleReview.linkLabel": "Ссылка для отзыва в Google",
     "googleReview.linkPlaceholder": "Вставьте сюда ссылку для отзыва вашего объекта в Google",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "Автоответ, генерация возможностей и персональные инструкции ИИ.",
   },
 
   ko: {
@@ -16060,6 +16078,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "숙소의 Google 리뷰 링크를 여기에 붙여넣으세요. 설정하면 투숙객이 체크아웃 직후, 경험이 아직 생생할 때 간단한 리뷰를 요청하는 메시지를 받습니다.",
     "googleReview.linkLabel": "Google 리뷰 링크",
     "googleReview.linkPlaceholder": "숙소의 Google 리뷰 링크를 여기에 붙여넣으세요",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "자동 응답, 기회 생성 및 맞춤 AI 지침.",
   },
 
   nl: {
@@ -17649,5 +17669,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.modalDesc": "Plak hier de Google-reviewlink van je accommodatie. Zodra dit is ingesteld, ontvangt de gast direct na het uitchecken een bericht met het verzoek om een korte review — terwijl de ervaring nog vers is.",
     "googleReview.linkLabel": "Google-reviewlink",
     "googleReview.linkPlaceholder": "Plak hier de Google-reviewlink van je accommodatie",
+    // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
+    "settings.ai.summaryDesc": "Automatisch antwoord, kansgeneratie en aangepaste AI-instructies.",
   },
 };
