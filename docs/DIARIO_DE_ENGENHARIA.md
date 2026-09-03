@@ -10464,3 +10464,39 @@ Com essa versão fecha o último item da pesquisa WhatsMinder/R2OS que
 ainda estava pendente (f/g/h já shippados, (a) e (b) continuam fora de
 propósito - sob demanda real e projeto grande à parte,
 respectivamente).
+
+### "Modo StayFlow" (v1.114.0)
+
+Assim que o Modo Dono normal saiu, o usuário pediu pra usar a mesma
+ideia pra acompanhar a StayFlow como empresa (contas/MRR/comissão),
+não uma hospedagem cliente. Investiguei antes de assumir que dava pra
+reaproveitar direto - achei que existe uma conta específica no sistema
+multi-tenant que representa a própria StayFlow (`ai_persona='software'`,
+já usada pelo painel interno via `_get_software_hostel_id()`), e que o
+`admin.html` já tem um endpoint (`/stayflow-admin/overview`) calculando
+exatamente os números que fariam sentido nesse resumo.
+
+Duas coisas tiveram que ficar diferentes do Modo Dono comum: o
+CRITÉRIO de reconhecimento (não dá pra exigir permissão "dashboard"
+NUM HOSTEL, porque a equipe da StayFlow não necessariamente tem
+`hostel_memberships` em hostel nenhum - usei o mesmo critério que já
+protege o painel interno, `is_stayflow_admin_email`) e o CONTEÚDO do
+resumo (números do negócio inteiro, não de uma conta só).
+
+Achado bom no caminho: como o self-service de cadastrar telefone
+(`/team/my-owner-mode`, v1.113.0) resolve pelo `user_id` da sessão -
+não pelo hostel_id - o usuário não precisa de acesso especial nenhum
+pra ativar isso. Só cadastra o telefone de qualquer conta sua já
+logada, e o reconhecimento no número da StayFlow funciona pelo e-mail
+dele estar na allowlist. Zero mudança de frontend precisou entrar
+nesta versão.
+
+Testado: `find_stayflow_admin_by_phone` isolado - sem telefone não
+reconhece; reconhece por sufixo quando o e-mail bate a allowlist;
+dono de hostel comum com telefone cadastrado mas que NÃO é da equipe
+StayFlow corretamente não é reconhecido (mesmo com telefone
+cadastrado - o gate é o e-mail, não só ter telefone); resumo de
+negócio com todos os campos esperados; `process_incoming_message`
+end-to-end confirmando que os dois caminhos (Modo StayFlow no número
+da própria StayFlow, Modo Dono comum em qualquer outro hostel) nunca
+se confundem - mensagem no número certo sempre bate no resumo certo.
