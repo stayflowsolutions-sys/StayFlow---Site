@@ -10591,3 +10591,81 @@ resolve o ticket sozinho; (5) tokens inválidos/malformados voltando
 mockado) confirmando que o bug do `.format()` está mesmo corrigido,
 roda até o fim sem `KeyError`. Smoke test final com 11 endpoints
 tocados nesta sessão inteira, todos 200.
+
+### Aba de Contatos (agenda) (v1.116.0)
+
+Último pedido da sessão: "aba de contatos, tipo uma agenda, pra
+sincronizar com Google ou Apple... pesquisar um contato na aba chats
+e mandar mensagem ou pedir pro StayFlow fazer isso".
+
+**Mesma disciplina da conversa sobre WhatsApp mais cedo**: antes de
+codar, pesquisei os dois lados da sincronização. Google Contacts é
+tecnicamente viável, mas ler contato é "escopo sensível" pro Google -
+exige processo de verificação formal (vídeo demonstrando o app,
+verificação de domínio, revisão que pode levar semanas), não é OAuth
+instantâneo. Apple/iCloud é pior: não existe API oficial nenhuma pra
+terceiro acessar contato do iCloud - o único caminho é CardDAV, que
+exige o usuário gerar manualmente uma senha de app nas configurações
+da própria conta Apple, e mesmo assim a integração fica parcial (a
+Apple documenta que contato importado por CardDAV nem aparece pra
+editar no app nativo). Apresentei os dois achados, usuário topou
+construir cadastro manual agora e deixar sync pra depois.
+
+**Decisão de arquitetura mais importante**: `contacts` nasce como
+tabela SEPARADA de `guests`, de propósito. Um contato é alguém que a
+equipe salvou por iniciativa própria - pode nunca ter mandado
+mensagem nenhuma. Um guest só existe depois de uma conversa real
+(WhatsApp/Messenger/Instagram) acontecer. Misturar os dois conceitos
+numa tabela só criaria ambiguidade real (contato "fantasma" sem
+histórico nenhum de conversa, ou guest artificial que nunca
+interagiu de verdade).
+
+**"Mandar mensagem" e "pedir pro StayFlow fazer isso" resolvidos com
+o MESMO mecanismo por baixo**: os dois fluxos, no fim, precisam da
+mesma coisa - um GUEST de verdade pra conversar. `start_chat_with_contact()`
+(ação manual, clique no botão) e o novo fallback dentro de
+`propose_guest_message()` (ação via IA, Ask StayFlow) fazem
+exatamente a mesma coisa: resolvem-ou-criam o guest via
+`get_or_create_guest_by_channel` (a MESMA função que qualquer
+mensagem real de WhatsApp já usa - identidade canônica, sem caminho
+duplicado) e seguem cada um pro seu fluxo normal depois disso. Achei
+particularmente satisfatório que "pedir pro StayFlow fazer isso" não
+precisou de tool nova nenhuma no Ask StayFlow - a tool
+`propose_guest_message` já existia (busca por nome, monta rascunho,
+confirma, envia), só precisou de UM fallback: quando a busca por
+GUEST não acha nada, tenta contato antes de desistir.
+
+**Achado de risco evitado ANTES de virar bug em produção**: pra
+encaixar o campo de busca acima da lista de conversas, minha primeira
+ideia foi simplesmente embrulhar `#realChatList` num `<div>` novo.
+Antes de fazer isso, fui checar a CSS de `.chat-layout` e descobri que
+é um CSS Grid de 3 colunas fixas (`280px minmax(0,1fr) 260px`)
+esperando EXATAMENTE 3 filhos diretos (`.chat-list`/`.chat-window`/
+`.guest-profile`) - embrulhar `.chat-list` quebraria essa contagem de
+filhos diretos e colapsaria a coluna. Corrigi replicando manualmente
+`height:100%`/`flex` no wrapper novo pra ele se comportar como uma
+coluna de verdade. Segundo achado, só depois de reler a CSS de mobile
+inteira: existe uma regra escondendo `.chat-list`/`.chat-window`/
+`.guest-profile` por padrão no celular, só mostrando o painel ativo
+via `data-mobile-view` no `.chat-layout` - meu wrapper novo NÃO
+estava coberto por essa regra, o que faria a busca ficar visível
+flutuando por cima da tela de conversa/perfil no mobile, mesmo com a
+lista escondida embaixo dela. Corrigido adicionando o wrapper às
+mesmas regras de esconder/mostrar, testado mentalmente contra os 3
+estados (list/chat/profile) antes de seguir - os dois achados só
+apareceram porque parei pra ler a CSS existente inteira antes de
+mexer, não por ter testado e quebrado.
+
+Testado em 5 frentes: (1) CRUD isolado - nome vazio rejeitado, busca
+com/sem acento e por telefone parcial funcionando, update/delete
+cross-tenant corretamente bloqueados (hostel B não enxerga nem edita
+contato do hostel A); (2) `start_chat_with_contact` chamado duas
+vezes seguidas devolve o MESMO `guest_id` (idempotente, não duplica
+guest a cada clique); contato sem telefone corretamente rejeitado;
+(3) `propose_guest_message` com o fallback de contato testado
+ponta a ponta - nome que só existe como contato salvo cria o guest e
+o rascunho de mensagem certinho, nome que não bate em hóspede NEM em
+contato dá erro claro; (4) as 5 rotas HTTP (`GET`/`POST`/`PATCH`/
+`DELETE /contacts`, `POST /contacts/<id>/start-chat`) via Flask test
+client com sessão real; (5) smoke test final com 14 endpoints tocados
+durante essa sessão inteira, todos 200.
