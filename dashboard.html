@@ -26,9 +26,9 @@
     });
   }
 </script>
-<link rel="stylesheet" href="static/css/tokens.css">
-<link rel="stylesheet" href="static/css/reset.css">
-<link rel="stylesheet" href="static/css/app.css">
+<link rel="stylesheet" href="static/css/tokens.css?v=1125">
+<link rel="stylesheet" href="static/css/reset.css?v=1125">
+<link rel="stylesheet" href="static/css/app.css?v=1125">
 
 </head>
 
@@ -6920,7 +6920,7 @@ async function deleteRoleConfirm(roleId){
      assets/js/stayflow-live.js (era código embutido aqui antes, movido
      pra manter uma única fonte de verdade). loadOpportunities() segue
      sendo chamado pelo evento stayflow:session-ready, mais abaixo. -->
-<script src="assets/js/stayflow-live.js"></script>
+<script src="assets/js/stayflow-live.js?v=1125"></script>
 
 <script>
 // ===== DASHBOARD: /dashboard e /executive-summary =====
@@ -13104,7 +13104,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 // ===== CHATS: /chats =====
 // loadChats() vive em assets/js/chats-live.js (versão completa: lista
 // clicável + perfil do hóspede). Havia uma definição duplicada aqui
-// que nunca rodava de verdade — o <script src="assets/js/chats-live.js">
+// que nunca rodava de verdade — o <script src="assets/js/chats-live.js?v=1125">
 // carrega depois deste bloco e sobrescreve a função global antes de
 // qualquer coisa chamá-la, então essa cópia só causava um fetch
 // duplicado em /chats a cada carregamento de página. Removida.
@@ -14118,10 +14118,10 @@ window.uploadGuestDocumentUI = async function(guestId){
 })();
 </script>
 
-<script src="assets/js/chats-live.js"></script>
+<script src="assets/js/chats-live.js?v=1125"></script>
 
-<script src="assets/js/i18n-core.js"></script>
-<script src="assets/js/i18n-dashboard-data.js"></script>
+<script src="assets/js/i18n-core.js?v=1125"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1125"></script>
 <script>
 (function(){
   "use strict";

@@ -11139,3 +11139,64 @@ confirmada via `git diff` que as 7 linhas que adicionei somam 7/7);
 grep confirmando ZERO `✅` restante nos 3 arquivos tocados.
 
 Ficam ~77 emojis/~300 ocorrências pra próximos lotes.
+
+### Bug crítico de cache - o ajuste do mobile nunca tinha chegado no celular (v1.125.0)
+
+Usuário mandou outro print do "Meu chat" no mobile, bem irritado -
+pra ele, parecia exatamente a mesma caixa flutuante de antes, mesmo
+depois de eu ter "corrigido" isso na v1.122.0. Com razão de
+desconfiar - eu já tinha dito que estava resolvido.
+
+Antes de sair mexendo de novo no CSS, parei pra investigar direito se
+o problema era a LÓGICA da regra ou outra coisa. Reli a regra
+`.main.chat-fullscreen .chat-list` com calma: especificidade de 3
+classes bate `.card.chat-list` de 2, contei manualmente a profundidade
+de chaves do bloco `@media` inteiro pra garantir que não tinha nenhum
+`}` fechando cedo demais, procurei qualquer regra com ID que pudesse
+estar competindo nas mesmas propriedades (border-radius/padding/
+background) - nada. A regra em si estava certa.
+
+Só que o print tinha uma pista importante: os avatares coloridos e a
+linha borda-a-borda (mudanças da v1.121.0, no MESMO arquivo `app.css`)
+JÁ estavam aparecendo. Se fosse "o navegador nunca buscou nada disso",
+a v1.121.0 também não apareceria. Isso me fez desconfiar de cache
+PARCIAL - o celular buscou uma versão de `app.css` em algum momento
+ENTRE a v1.121.0 e a v1.122.0, e nunca mais buscou de novo depois
+disso, ficando preso naquele instantâneo indefinidamente.
+
+Fui procurar se existia alguma proteção contra isso no projeto - e
+achei um comentário já escrito no `sw.js` (service worker) avisando
+que "servir JS/HTML desatualizado depois de um deploy já foi um
+problema real nesta mesma sessão", exatamente essa classe de bug, só
+que da vez anterior era JS/HTML, agora era CSS. Conferi as tags
+`<link>`/`<script src>` de `app.css`/`tokens.css`/`reset.css`/
+`landing.css`/`auth.css`/dos JS compartilhados nas 7 páginas que usam
+esses arquivos - NENHUMA tinha qualquer parâmetro de versão na URL, e
+o Flask serve esses arquivos (`send_from_directory`) sem nenhum
+cabeçalho de cache customizado. Ou seja: zero mecanismo de invalidação
+- uma vez que o navegador decide cachear, ele podia continuar servindo
+a mesma versão por tempo indefinido, e cada deploy novo simplesmente
+não chegava.
+
+**Fix**: script adicionou `?v=1125` em toda referência a asset
+compartilhado nas 7 páginas (`dashboard.html`, `admin.html`,
+`admin-hostel.html`, `admin-list.html`, `index.html`, `Login.html`,
+`planos.html`) - 29 referências no total. Isso força o navegador a
+tratar a URL como NOVA sempre que esse número mudar, independente de
+qualquer cabeçalho HTTP de cache. Fica registrado como convenção: esse
+número precisa subir a cada mudança relevante nesses arquivos
+compartilhados dali em diante, senão o mesmo bug volta a acontecer
+silenciosamente - e da próxima vez pode ser JS quebrado, não só CSS
+desatualizado, que é bem mais grave.
+
+Confirmei que isso não quebra o roteamento do Flask - `@app.route("/static/<path:filename>")`
+usa o `<path:filename>` do Werkzeug, que já ignora query string na
+hora de casar a rota por padrão, então `?v=1125` afeta só a CHAVE DE
+CACHE do navegador, nunca chega a interferir em qual arquivo o backend
+devolve.
+
+Testado: balanceamento de chaves/parênteses/colchetes nos 7 arquivos
+tocados. Avisei o usuário pra fazer um refresh de verdade (não só
+reabrir a aba) depois do deploy, já que o HTML em si (que agora
+referencia os assets com `?v=1125`) também precisa ser buscado de
+novo pelo menos uma vez.
