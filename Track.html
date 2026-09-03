@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang='pt-BR' translate='no'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><meta name='google' content='notranslate'><title>StayFlow | Acompanhar pedido</title><link rel='manifest' href='/manifest.json'><meta name='theme-color' content='#03070d'><link rel='icon' href='/assets/images/icon-192.png'><link rel='apple-touch-icon' href='/assets/images/apple-touch-icon.png'><meta name='apple-mobile-web-app-capable' content='yes'><meta name='apple-mobile-web-app-title' content='StayFlow'>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#06101b;color:#fff;padding:24px 0}
+.card{width:100%;max-width:440px;background:rgba(8,12,20,.9);padding:36px 30px;border-radius:28px;border:1px solid #233652;margin:0 16px}
+.brand{text-align:center;margin-bottom:22px;display:flex;justify-content:center;align-items:center;gap:0}
+.brand img{width:96px;margin-right:-20px}
+.brand h1{font-size:26px;margin:0}
+.brand h1 span{color:#2f7dff}
+.hostel-name{text-align:center;color:#9aa8bb;font-size:13px;margin-bottom:28px}
+.steps{display:flex;justify-content:space-between;margin-bottom:28px;position:relative}
+.steps:before{content:'';position:absolute;top:16px;left:16px;right:16px;height:2px;background:#233652;z-index:0}
+.step{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px;flex:1}
+.step .dot{width:32px;height:32px;border-radius:50%;background:#0d1421;border:2px solid #233652;display:flex;align-items:center;justify-content:center;font-size:14px}
+.step.done .dot{background:#26e0a0;border-color:#26e0a0;color:#04241a}
+.step.current .dot{background:#2f7dff;border-color:#2f7dff;box-shadow:0 0 0 4px rgba(47,125,255,.25)}
+.step .label{font-size:11px;color:#9aa8bb;text-align:center}
+.step.done .label,.step.current .label{color:#fff}
+.status-headline{text-align:center;font-size:17px;font-weight:700;margin-bottom:6px}
+.status-sub{text-align:center;font-size:13px;color:#9aa8bb;margin-bottom:24px}
+.items{background:#0d1421;border:1px solid #233652;border-radius:15px;padding:14px 16px;margin-bottom:8px}
+.item-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid #17233666}
+.item-row:last-child{border-bottom:none}
+.item-name{color:#fff}
+.item-qty{color:#9aa8bb;margin-left:6px}
+.item-status{font-size:11px;padding:3px 9px;border-radius:999px;background:#ffffff10;color:#d6dce8}
+.item-status.ready,.item-status.delivered{background:#26e0a020;color:#6ff0bd}
+.item-status.preparing{background:#0b84ff20;color:#7bc2ff}
+.error-box{text-align:center;color:#9aa8bb;font-size:14px;line-height:1.6}
+.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f7dff;margin-right:6px;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style></head><body>
+<div class='card'>
+  <div class='brand'><img src='assets/images/logo2.png'><h1>STAY<span>FLOW</span></h1></div>
+  <div id='content'>
+    <p class='error-box'><span class='pulse'></span>Carregando...</p>
+  </div>
+</div>
+<script>
+const KITCHEN_STAGES = ["pending", "preparing", "ready", "delivered"];
+const STAGE_LABELS = { pending: "Recebido", preparing: "Em preparo", ready: "Pronto", delivered: "Entregue" };
+const STAGE_HEADLINES = {
+  pending: "Recebemos seu pedido!",
+  preparing: "Seu pedido já está sendo preparado!",
+  partially_ready: "Parte do seu pedido já está pronta",
+  ready: "Seu pedido está pronto!",
+  delivered: "Pedido entregue — bom apetite!",
+};
+
+function getToken(){
+  return new URLSearchParams(window.location.search).get("token") || "";
+}
+
+function stepStateClass(stageIndex, currentIndex){
+  if(stageIndex < currentIndex) return "done";
+  if(stageIndex === currentIndex) return "current";
+  return "";
+}
+
+function renderKitchenOrder(data){
+  const aggregate = data.aggregate_status || "pending";
+  const currentIndex = KITCHEN_STAGES.indexOf(aggregate === "partially_ready" ? "preparing" : aggregate);
+
+  const stepsHtml = KITCHEN_STAGES.map((stage, i) => `
+    <div class="step ${stepStateClass(i, currentIndex)}">
+      <div class="dot">${i < currentIndex ? "✓" : (i + 1)}</div>
+      <div class="label">${STAGE_LABELS[stage]}</div>
+    </div>
+  `).join("");
+
+  const itemsHtml = (data.items || []).map(item => `
+    <div class="item-row">
+      <div><span class="item-name">${escapeHtml(item.name)}</span><span class="item-qty">×${item.quantity}</span></div>
+      <span class="item-status ${item.status}">${STAGE_LABELS[item.status] || item.status}</span>
+    </div>
+  `).join("");
+
+  return `
+    <div class="hostel-name">${escapeHtml(data.hostel_name || "")}</div>
+    <div class="steps">${stepsHtml}</div>
+    <div class="status-headline">${STAGE_HEADLINES[aggregate] || "Acompanhando seu pedido"}</div>
+    <div class="status-sub">Essa página atualiza sozinha — pode deixar aberta.</div>
+    <div class="items">${itemsHtml}</div>
+  `;
+}
+
+function escapeHtml(str){
+  const div = document.createElement("div");
+  div.textContent = str == null ? "" : String(str);
+  return div.innerHTML;
+}
+
+async function loadTracking(){
+  const token = getToken();
+  const contentEl = document.getElementById("content");
+  if(!token){
+    contentEl.innerHTML = `<p class="error-box">Link inválido.</p>`;
+    return;
+  }
+
+  try{
+    const res = await fetch(`/track/${encodeURIComponent(token)}`);
+    if(!res.ok){
+      contentEl.innerHTML = `<p class="error-box">Não encontramos esse pedido — o link pode ter expirado.</p>`;
+      return;
+    }
+    const data = await res.json();
+    if(data.type === "kitchen_order"){
+      contentEl.innerHTML = renderKitchenOrder(data);
+    }else{
+      contentEl.innerHTML = `<p class="error-box">${data.status === "resolved" ? "Seu chamado já foi resolvido." : "Seu chamado está em andamento."}</p>`;
+    }
+  }catch(e){
+    contentEl.innerHTML = `<p class="error-box">Erro de conexão. Tentando de novo em instantes...</p>`;
+  }
+}
+
+loadTracking();
+setInterval(loadTracking, 5000);
+</script>
+</body></html>

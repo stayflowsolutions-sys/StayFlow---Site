@@ -10500,3 +10500,94 @@ negócio com todos os campos esperados; `process_incoming_message`
 end-to-end confirmando que os dois caminhos (Modo StayFlow no número
 da própria StayFlow, Modo Dono comum em qualquer outro hostel) nunca
 se confundem - mensagem no número certo sempre bate no resumo certo.
+
+### Rastreio de pedido em tempo real, tipo iFood (v1.115.0)
+
+Pedido direto do usuário, com uma referência clara: "quando você faz
+um pedido aparece 'o restaurante recebeu seu pedido, em produção, a
+caminho' em tempo real, sabe?" - e depois, quando expliquei a
+limitação técnica do WhatsApp, ele mesmo decidiu o meio-termo: "1-
+mensagens automáticas, mas também mandamos um link quando o pedido
+for confirmado, pra que se o cliente queira ele acessa e acompanha".
+
+**A conversa sobre limite técnico valeu a pena ter antes de codar**:
+expliquei que uma notificação ÚNICA que atualiza no mesmo lugar (o
+padrão real do iFood/Rappi) só existe com push notification de app
+nativo ou PWA - o WhatsApp Business API nunca "edita" uma mensagem já
+mandada, cada uma é sempre nova e separada. Sem essa conversa eu teria
+ido atrás de tentar simular algo que a plataforma não permite. O
+usuário topou o meio-termo (mensagens em sequência + link opcional
+pra quem quiser ver visualmente), que é honesto com o que dá pra
+entregar de verdade.
+
+**Achado que mudou o ponto de partida**: fui investigar o schema de
+tickets achando que ia precisar criar as etapas do zero (pending →
+preparing → ready → delivered), igual fiz com `opportunities.stage`
+no kanban (v1.107.0). Não precisei - esse pipeline JÁ EXISTIA inteiro,
+construído numa sessão anterior a esta (`kitchen_order_items.status`
+por item, `update_kitchen_order_item_status`,
+`get_kitchen_order_aggregate_status` derivando o status agregado).
+Só faltavam duas coisas: avisar o hóspede quando muda, e uma tela
+pública pra acompanhar.
+
+**Bug real encontrado no meio da investigação, não introduzido por
+mim**: `get_kitchen_order_aggregate_status()` tinha uma lacuna -
+'preparing' nunca aparecia no resultado agregado, caía direto em
+'pending' (o `return "pending"` final pegava os dois casos). Ou seja,
+mesmo com o pipeline todo já pronto por dentro, a etapa "em preparo"
+nunca tinha ficado visível pra ninguém de fora olhando só o status
+agregado - achado só porque fui construir justamente a parte que
+DEPENDIA de enxergar essa transição. Corrigi de forma aditiva (mais
+um `if`, sem mudar as outras 4 saídas) e documentei o porquê no
+próprio docstring da função.
+
+**Decisão de design da notificação**: só avisa o hóspede em
+`preparing`/`ready`/`delivered` - nunca em `pending` (já confirmado
+na hora do pedido) nem em `partially_ready` (deliberado: com item
+staggered, isso viraria ruído - "a bebida chegou" antes da comida não
+é informação que o hóspede precisa receber como mensagem separada).
+Reaproveitei `send_message_to_guest_now()` que já existia inteiro
+(resolve canal, salva no histórico) - zero código de despacho novo.
+
+**Link de rastreio**: token gerado só quando o pedido tem hóspede de
+verdade vinculado (`reported_by_guest_id`) - pedido criado pelo staff
+pra um walk-in sem conta nunca gera link, não tem pra quem mandar. A
+tool `create_kitchen_order` da IA devolve `tracking_url` no resultado
+quando existir, e o prompt instrui a IA a compartilhar esse link ao
+confirmar o pedido.
+
+**Bug próprio, achado e corrigido antes de testar**: escrevi o texto
+do prompt com `{tracking_url}` solto dentro de uma frase de exemplo -
+esqueci que o `SYSTEM_PROMPT` inteiro passa por `.format()` no fim, e
+QUALQUER `{algo}` no texto vira uma tentativa de substituição, não só
+os placeholders de verdade. Deu `KeyError: 'tracking_url'` na primeira
+chamada de teste. Corrigido reescrevendo a instrução sem interpolação
+literal (a IA já sabe pegar o link do resultado da tool, não precisa
+de um exemplo com chave solta no meio do texto fixo).
+
+**Página pública** (`Track.html`): nenhuma rota estática nova
+precisou ser criada no Flask - o wildcard `/<page_name>.html` que já
+serve `Register.html`/`ReferralPartner.html` etc já cobre qualquer
+arquivo `.html` novo jogado na raiz do frontend. Sem autenticação (a
+entropia do token de 24 bytes urlsafe É a autorização, mesmo padrão
+já usado em `/media/chat/<token>` e `/media/portfolio/<token>`) -
+validado por regex antes mesmo de consultar o banco, pra nunca rodar
+uma query com algo que claramente não é um token gerado pelo sistema.
+Atualiza sozinha via polling simples (5 segundos) - decisão consciente
+de não usar WebSocket pra isso, o ganho de "tempo real de verdade"
+não compensa a complexidade extra numa tela que o hóspede só abre
+esporadicamente pra conferir.
+
+Testado em 6 frentes: (1) geração de token só quando há hóspede
+vinculado, nunca em pedido de walk-in sem conta; (2)
+`get_ticket_by_tracking_token` resolvendo hóspede/tipo/itens certos, e
+token inexistente devolvendo `None` limpo; (3) notificações WhatsApp
+disparando exatamente nas 3 etapas certas e ficando em silêncio nas
+outras (incluindo o caso "sem hóspede vinculado"); (4) fluxo HTTP
+completo via Flask test client com sessão real - mudar status dispara
+notificação, a página pública reflete a mudança na hora, `delivered`
+resolve o ticket sozinho; (5) tokens inválidos/malformados voltando
+404 sem tocar no banco; (6) fluxo da IA inteiro (tool-calling
+mockado) confirmando que o bug do `.format()` está mesmo corrigido,
+roda até o fim sem `KeyError`. Smoke test final com 11 endpoints
+tocados nesta sessão inteira, todos 200.
