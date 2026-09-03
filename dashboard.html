@@ -2772,6 +2772,16 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="geral" onclick="openOwnerModeModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="ownerMode.title">📊 Modo Dono</h2>
+            <p class="settings-summary-desc" id="ownerModeSummaryDesc" data-i18n="ownerMode.summaryDescOff">Receba um resumo rápido (ocupação, reservas, receita) no seu próprio WhatsApp, sem abrir o painel.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <div class="card" data-settings-section="empresa">
         <h2 data-i18n="settings.company.title">Empresa</h2>
         <p data-i18n="settings.company.desc" style="margin-bottom:14px">Dados legais, horários padrão e identidade visual da hospedagem.</p>
@@ -5606,6 +5616,75 @@ async function deleteRoleConfirm(roleId){
 
     const cleanUrl = window.location.pathname + window.location.hash;
     window.history.replaceState({}, document.title, cleanUrl);
+  };
+
+  // Modo Dono - a IA reconhece o proprio telefone de WhatsApp de quem
+  // ja atende a hospedagem (nao um segredo/palavra-chave) e responde
+  // um resumo reduzido em vez de tratar como hospede novo. Cadastro
+  // aqui e so o telefone verificado - o resto (reconhecimento no
+  // webhook, texto do resumo) e 100% backend, ver database.py
+  // find_owner_mode_user/build_owner_mode_summary.
+  window.loadOwnerModeSummary = async function(){
+    try{
+      const res = await fetch("/team/my-owner-mode", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      const summaryEl = document.getElementById("ownerModeSummaryDesc");
+      if(summaryEl){
+        summaryEl.textContent = data.phone
+          ? T('ownerMode.summaryDescOn', 'Ativado — {phone} recebe o resumo pelo WhatsApp da hospedagem.', { phone: data.phone })
+          : T('ownerMode.summaryDescOff', 'Receba um resumo rápido (ocupação, reservas, receita) no seu próprio WhatsApp, sem abrir o painel.');
+      }
+    }catch(e){
+      console.warn("Erro ao carregar resumo do Modo Dono:", e);
+    }
+  };
+
+  window.openOwnerModeModal = async function(){
+    openGenericModal(T('ownerMode.title', '📊 Modo Dono'), `
+      <p style="margin-bottom:14px">${T('ownerMode.modalDesc', 'Cadastre seu número de WhatsApp aqui. Quando você mandar QUALQUER mensagem pro número principal da hospedagem a partir desse número, em vez de tratar como um hóspede novo, você recebe de volta um resumo rápido — ocupação, reservas confirmadas, receita e oportunidades em aberto.')}</p>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('ownerMode.phoneLabel', 'Seu número de WhatsApp')}</label>
+        <input type="tel" id="ownerModePhoneInput" placeholder="${T('ownerMode.phonePlaceholder', 'Ex: 5492611234567')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div id="ownerModeMessage" class="generic-modal-message"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="submitOwnerModePhone()">${T('common.save', 'Salvar')}</button>
+      </div>
+    `);
+    try{
+      const res = await fetch("/team/my-owner-mode", { credentials: "same-origin" });
+      if(res.ok){
+        const data = await res.json();
+        const input = document.getElementById("ownerModePhoneInput");
+        if(input && data.phone) input.value = data.phone;
+      }
+    }catch(e){
+      console.warn("Erro ao carregar telefone do Modo Dono:", e);
+    }
+  };
+
+  window.submitOwnerModePhone = async function(){
+    const msg = document.getElementById("ownerModeMessage");
+    const phone = (document.getElementById("ownerModePhoneInput")?.value || "").trim();
+    if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+    try{
+      const res = await fetch("/team/my-owner-mode", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ phone })
+      });
+      if(!res.ok){
+        if(msg){ msg.textContent = T('ownerMode.saveFailed', 'Não foi possível salvar.'); msg.classList.add("error"); }
+        return;
+      }
+      loadOwnerModeSummary();
+      if(msg){ msg.textContent = T('ownerMode.saveSuccess', 'Salvo!'); msg.classList.add("success"); }
+      setTimeout(() => { if(typeof closeGenericModal === "function") closeGenericModal(); }, 900);
+    }catch(e){
+      if(msg){ msg.textContent = T('ownerMode.saveConnError', 'Erro de conexão ao salvar.'); msg.classList.add("error"); }
+    }
   };
 
   window.openGeneralSettingsModal = function(){
@@ -13686,7 +13765,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     portfolio: ["loadPortfolio"],
     partners: ["loadPartners"],
     reports: ["loadReports"],
-    settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings", "loadNuvemshopSettings", "loadBillingSummary"]
+    settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadOwnerModeSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings", "loadNuvemshopSettings", "loadBillingSummary"]
   };
 
   function reloadDynamicContent(pageId){

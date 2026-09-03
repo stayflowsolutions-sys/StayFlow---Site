@@ -10376,3 +10376,91 @@ nem colidiu com uma já existente; balanceamento de chaves/parênteses
 conferido no arquivo de tradução inteiro. Nenhuma mudança de
 `dashboard.html`/JS de comportamento nesta versão - só preenchimento
 de dicionário, risco de regressão praticamente zero.
+
+### "Modo Dono" (v1.113.0)
+
+Item "i" da pesquisa do WhatsMinder/R2OS, o único que eu tinha
+travado de propósito na madrugada anterior por precisar de uma
+decisão de design do usuário: como reconhecer que uma mensagem no
+WhatsApp é do DONO, não de um hóspede novo?
+
+Com o usuário já acordado, apresentei 3 opções e recomendei a (c) -
+reconhecer pelo número de telefone já cadastrado no perfil, em vez de
+(a) número separado (fricção real - exige outro número/app) ou (b)
+palavra-chave de ativação (risco real - se a palavra vazar, qualquer
+pessoa vê dado financeiro sensível). Usuário confirmou (c).
+
+**Achado real no caminho, não estava no plano**: adicionei
+`users.phone` como nova coluna, testei, e o telefone simplesmente
+sumia depois de salvo. Investigando, encontrei uma migração de
+reconstrução da tabela `users` (`_migrate_users_to_memberships`) que
+roda em TODO banco novo (mesmo banco recém-criado, não só banco
+antigo migrando) pra descartar duas colunas legadas (`hostel_id`/
+`role`, substituídas por `hostel_memberships` faz tempo) - e essa
+migração recria a tabela inteira com uma lista de colunas
+HARDCODED. O próprio código já tinha um comentário avisando
+exatamente sobre esse risco ("QUALQUER coluna nova adicionada em
+users precisa ser listada aqui também, senão essa reconstrução...
+descarta ela silenciosamente"), citando que isso já tinha acontecido
+antes com `onboarding_dismissed`. Path de descoberta: escrevi um
+teste isolado esperando reconhecer o dono pelo telefone, veio erro
+`no such column: u.phone` - fui direto pra `PRAGMA table_info(users)`
+num banco fresco, vi que a coluna realmente não existia mesmo com meu
+`add_column_if_not_exists` correto, e daí achei a migração escondida.
+Corrigido adicionando `phone` na `CREATE TABLE`/`INSERT...SELECT`
+dessa migração também - reproduzi o mesmo tipo de bug que o comentário
+já tinha documentado, prova de que vale a pena ler comentário de aviso
+antes de assumir "coluna nova, só rodar add_column_if_not_exists e
+pronto".
+
+**Reconhecimento por sufixo, não igualdade exata**: telefone digitado
+à mão no perfil ("+54 9 261 123-4567") raramente bate caractere a
+caractere com o formato cru que a Meta manda no webhook
+("5492611234567"). Em vez de normalizar formato de telefone de verdade
+(DDI/DDD/9 extra célular, problema notoriamente cheio de casos
+especiais por país), comparei só os ÚLTIMOS 8 DÍGITOS - simples,
+tolera qualquer formatação, e o risco de colisão é desprezível porque
+o universo de candidatos é pequeno (só a equipe de UM hostel
+específico, não qualquer telefone do mundo). Gate adicional: exige a
+permissão `"dashboard"` - um membro da equipe com telefone cadastrado
+mas SEM essa permissão nunca é reconhecido como dono, mesmo que o
+número bata.
+
+**Onde a interceptação acontece**: bem no topo de
+`process_incoming_message()`, ANTES de `get_or_create_guest_by_channel`
+- decisão deliberada pra nunca criar um registro de hóspede fantasma
+pro próprio dono conversando consigo mesmo. Quando ninguém bate (o
+caso de praticamente toda mensagem real, que são de hóspedes de
+verdade), a checagem é uma query rápida e o fluxo de hóspede segue
+exatamente como sempre foi - testei isso explicitamente como
+regressão, não só o caminho novo.
+
+**Resumo estático, não conversacional**: decisão consciente de escopo
+- o dono manda QUALQUER mensagem e recebe sempre a MESMA resposta
+fixa (ocupação/reservas/receita/oportunidades), sem IA nem
+tool-calling nenhum, reaproveitando os mesmos dados que o topo do
+Dashboard já calcula. Nada de conversa/pergunta de acompanhamento
+("e ontem, como foi?") nem "projeção de fechamento do mês" (métrica
+que não existe em lugar nenhum do backend hoje) - ambos ficam
+sinalizados pra uma v2 se o usuário pedir, não construídos às pressas
+numa sessão sem supervisão.
+
+Testado em 4 frentes: (1) `find_owner_mode_user` isolado - sem
+telefone cadastrado não reconhece nada; reconhece por sufixo mesmo com
+formatação de telefone bem diferente; número com os últimos 8 dígitos
+diferentes corretamente NÃO reconhecido; cross-tenant não vaza
+(telefone cadastrado no hostel A não é reconhecido como dono no hostel
+B); (2) `build_owner_mode_summary` com e sem a linha de ocupação
+conforme `account_kind`; (3) `process_incoming_message` end-to-end -
+mensagem do dono não cria guest nenhum (contagem antes/depois
+idêntica) e devolve o resumo certo; mensagem de um número qualquer
+NÃO cadastrado continua criando guest e rodando a IA normalmente
+(regressão explícita, o teste que mais importava aqui); (4) rotas
+`GET`/`PUT /team/my-owner-mode` via Flask test client com sessão real.
+Smoke test final rodando os 9 endpoints tocados na sessão inteira de
+hoje, todos 200.
+
+Com essa versão fecha o último item da pesquisa WhatsMinder/R2OS que
+ainda estava pendente (f/g/h já shippados, (a) e (b) continuam fora de
+propósito - sob demanda real e projeto grande à parte,
+respectivamente).
