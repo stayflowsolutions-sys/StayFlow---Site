@@ -7036,6 +7036,27 @@ function channelBadgeHtml(channel){
   return `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.02em;color:${color};border:1px solid ${color}55;background:${color}18;border-radius:999px;padding:2px 8px;white-space:nowrap">${channelDisplayLabel(key)}</span>`;
 }
 
+// Avatar circular com inicial + cor derivada do nome/telefone (mesmo
+// padrao usado no Meu chat/Suporte do painel interno, ver comentario
+// espelhado em admin.html) - global (fora de IIFE) de proposito, pra
+// assets/js/chats-live.js conseguir chamar direto.
+const CHAT_AVATAR_PALETTE = ["#0b84ff", "#23d2ff", "#26e0a0", "#ffbd4a", "#ff5d76", "#8b5cf6"];
+function chatAvatarColorFor(seed){
+  const s = String(seed || "?");
+  let hash = 0;
+  for(let i = 0; i < s.length; i++){ hash = (hash * 31 + s.charCodeAt(i)) >>> 0; }
+  return CHAT_AVATAR_PALETTE[hash % CHAT_AVATAR_PALETTE.length];
+}
+function chatAvatarHtml(label, seed, dotColor, rawContent){
+  // rawContent (ex: emoji) evita rodar charAt(0) em cima de um emoji -
+  // a maioria e par substituto UTF-16, charAt(0) sozinho quebraria o
+  // glifo pela metade.
+  const content = rawContent || ((label || "?").trim().charAt(0).toUpperCase() || "?");
+  const bg = chatAvatarColorFor(seed || label);
+  const dot = dotColor ? `<span class="chat-avatar-dot" style="background:${dotColor}"></span>` : "";
+  return `<div class="chat-avatar" style="background:${bg}">${content}${dot}</div>`;
+}
+
 // Nome do hospede clicavel (Reservas -> manda pra aba Hospedes, onde o
 // perfil de verdade vive) - pedido explicito do usuario: alem de
 // facilitar o acesso, garante que esse perfil "precisa existir" pra
@@ -12758,8 +12779,11 @@ window.handleChatContactSearch = function(value){
         <div style="display:grid;gap:6px">
           ${contacts.map(c => `
             <div class="chat-item" style="cursor:default" onclick="startChatWithContactUI(${c.id})">
-              <div class="chat-name"><span>📇 ${escapeHtml(c.name)}</span></div>
-              <div class="chat-preview">${escapeHtml(c.phone || "")}</div>
+              ${chatAvatarHtml(c.name, c.id, null, "📇")}
+              <div class="chat-item-body">
+                <div class="chat-name"><span>${escapeHtml(c.name)}</span></div>
+                <div class="chat-preview">${escapeHtml(c.phone || "")}</div>
+              </div>
             </div>
           `).join("")}
         </div>

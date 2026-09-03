@@ -5312,16 +5312,48 @@
     const label = CHAT_CHANNEL_LABELS[key] || key;
     return `<span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:.02em;color:${color};border:1px solid ${color}55;background:${color}18;border-radius:999px;padding:1px 7px;white-space:nowrap;margin-left:6px">${label}</span>`;
   }
+
+  // Avatar circular com inicial + cor derivada do nome/telefone (mesma
+  // ideia de Slack/Telegram pra diferenciar contato visualmente sem
+  // precisar de foto real, que a StayFlow nao tem). Bolinha de canal no
+  // canto inferior direito substitui o pill de texto cheio ao lado do
+  // nome - menos poluido numa lista mobile estreita (v1.121.0).
+  const CHAT_AVATAR_PALETTE = ["#0b84ff", "#23d2ff", "#26e0a0", "#ffbd4a", "#ff5d76", "#8b5cf6"];
+  function chatAvatarColorFor(seed){
+    const s = String(seed || "?");
+    let hash = 0;
+    for(let i = 0; i < s.length; i++){ hash = (hash * 31 + s.charCodeAt(i)) >>> 0; }
+    return CHAT_AVATAR_PALETTE[hash % CHAT_AVATAR_PALETTE.length];
+  }
+  function chatAvatarHtml(label, seed, dotColor, rawContent){
+    // rawContent (ex: emoji de kindIcon) evita rodar charAt(0) em cima
+    // de um emoji - a maioria e par substituto UTF-16, charAt(0) sozinho
+    // quebraria o glifo pela metade.
+    const content = rawContent || ((label || "?").trim().charAt(0).toUpperCase() || "?");
+    const bg = chatAvatarColorFor(seed || label);
+    const dot = dotColor ? `<span class="chat-avatar-dot" style="background:${dotColor}"></span>` : "";
+    return `<div class="chat-avatar" style="background:${bg}">${content}${dot}</div>`;
+  }
+
   function chatGuestItemHtml(g){
     const isMine = g.last_message_sender === "assistant";
     const preview = g.last_message ? `${isMine ? AT("chat.you") : ""}${g.last_message}` : AT("chat.noMessagesYet");
+    const displayName = (g.name || g.phone || AT("chat.noContactName")).replace(/</g, "&lt;");
+    const channelKey = (g.channel || "whatsapp").toLowerCase().trim();
+    const dotColor = CHAT_CHANNEL_BADGE_COLORS[channelKey] || "#7bc2ff";
     return `
-      <div class="chat-item sf-clickable-row ${g.id === myChatActiveGuestId ? "active" : ""}" data-guest-id="${g.id}" onclick="openMyChatGuest(${g.id})">
-        <div class="chat-name">
-          <span>${g.unread ? "🔵 " : ""}${(g.name || g.phone || AT("chat.noContactName")).replace(/</g, "&lt;")}${chatChannelBadgeHtml(g.channel)}</span>
-          <span class="chat-time">${timeAgo(g.last_message_at)}</span>
+      <div class="chat-item sf-clickable-row ${g.unread ? "unread" : ""} ${g.id === myChatActiveGuestId ? "active" : ""}" data-guest-id="${g.id}" onclick="openMyChatGuest(${g.id})">
+        ${chatAvatarHtml(displayName, g.phone || g.id, dotColor)}
+        <div class="chat-item-body">
+          <div class="chat-name">
+            <span title="${CHAT_CHANNEL_LABELS[channelKey] || channelKey}">${displayName}</span>
+            <span class="chat-time">${timeAgo(g.last_message_at)}</span>
+          </div>
+          <div class="chat-preview-row">
+            <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>
+            ${g.unread ? '<span class="chat-unread-dot"></span>' : ""}
+          </div>
         </div>
-        <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>
       </div>`;
   }
 
@@ -5525,13 +5557,21 @@
   function supportItemHtml(t){
     const isMine = t.last_message_sender === "stayflow";
     const preview = t.last_message ? `${isMine ? AT("chat.you") : ""}${t.last_message}` : AT("chat.noMessagesYet");
+    const hostelName = (t.hostel_name || AT("support.noHostelName")).replace(/</g, "&lt;");
+    const isUnread = t.unread_count > 0;
     return `
-      <div class="chat-item sf-clickable-row ${t.hostel_id === supportActiveHostelId ? "active" : ""}" data-hostel-id="${t.hostel_id}" onclick="openSupportThread(${t.hostel_id})">
-        <div class="chat-name">
-          <span>${t.unread_count > 0 ? "🔵 " : ""}${kindIcon(t)} ${(t.hostel_name || AT("support.noHostelName")).replace(/</g, "&lt;")}</span>
-          <span class="chat-time">${timeAgo(t.last_message_at)}</span>
+      <div class="chat-item sf-clickable-row ${isUnread ? "unread" : ""} ${t.hostel_id === supportActiveHostelId ? "active" : ""}" data-hostel-id="${t.hostel_id}" onclick="openSupportThread(${t.hostel_id})">
+        ${chatAvatarHtml(hostelName, t.hostel_id, null, kindIcon(t) || null)}
+        <div class="chat-item-body">
+          <div class="chat-name">
+            <span>${hostelName}</span>
+            <span class="chat-time">${timeAgo(t.last_message_at)}</span>
+          </div>
+          <div class="chat-preview-row">
+            <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>
+            ${isUnread ? '<span class="chat-unread-dot"></span>' : ""}
+          </div>
         </div>
-        <div class="chat-preview">${preview.replace(/</g, "&lt;").slice(0, 80)}</div>
       </div>`;
   }
 
