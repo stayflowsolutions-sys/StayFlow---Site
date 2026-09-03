@@ -10767,3 +10767,79 @@ Testado: paridade de chaves nos 11 idiomas (`tools/check_i18n_parity.py`,
 limpa das 3 chaves antigas (nenhuma referência sobrando) e nenhum
 `data-setting="google_review_link"` esquecido no HTML. Sem rota nem
 schema novo - mudança inteira ficou no frontend.
+
+### Auditoria completa de formulário exposto (v1.119.0)
+
+Usuário reforçou a regra depois de ver a v1.118.0: "nenhum formulário
+fica exposto, sempre guardados em botões" - e pediu explicitamente pra
+eu fazer uma busca refinada por qualquer formulário solto que tivesse
+sobrado e guardar todos atrás de botão, não só o caso pontual da
+avaliação do Google.
+
+Em vez de vasculhar as 11 mil linhas do `dashboard.html` na mão,
+mandei um agente de exploração dedicado fazer o levantamento primeiro
+- pedi pra ele enumerar TODO `<input`/`<select`/`<textarea` que
+renderiza direto numa página (fora de template de modal), cruzar com
+todo `data-settings-section=` de Configurações, e checar toda "card"
+das 21 páginas do sistema. Resultado tranquilizador: as outras 18
+páginas do produto já seguem a regra à risca - toda reserva, hóspede,
+despesa, contato, item de cardápio, cupom, chamado dos 5 módulos
+operacionais, tudo já abre modal. A dívida real estava concentrada em
+3 dos 10 itens do menu de Configurações: Empresa, Marca/White-label e
+IA StayFlow - os únicos 3 que renderizavam os campos direto na página
+em vez de atrás de um card clicável, mesmo com os outros 7 itens do
+MESMO menu (Modo Dono, Avaliações Google, WhatsApp, Facebook...) já
+seguindo o padrão certo. Bom sinal de que a disciplina já estava sendo
+aplicada consistentemente nesta sessão - só sobrou essa ilha isolada,
+provavelmente porque Empresa/Marca/IA são código mais antigo, de antes
+do padrão de modal virar hábito.
+
+**Conversão mecânica, sem reinventar nada**: os 3 viraram exatamente o
+mesmo padrão do Modo Dono/Avaliações Google - card `settings-summary-card`
+com descrição estática, `onclick` abrindo `openGenericModal(...)` com
+os MESMOS campos de sempre, mesmos ids, mesmos `data-setting`. Nenhum
+handler de salvar precisou mudar: Empresa e IA continuam chamando
+`saveSettings()`, a mesma função genérica de sempre - e ela já estava
+pronta pra isso, porque busca `[data-setting]` no `document` inteiro
+(não só dentro de `#settings`), decisão de design de uma versão
+anterior justamente pra suportar campos vivendo dentro de modal.
+Marca continua chamando `saveBrandingSettings()` sem tocar uma linha
+dele.
+
+**Achado real no caminho**: `hydrateSettingsFromBackend()` (que
+preenche os campos com o valor já salvo, ao carregar a página) É
+escopada só dentro de `#settings` - nunca alcança `#genericModalBody`,
+que é um elemento IRMÃO na árvore do DOM, fora dessa raiz. Os
+campos de Empresa e IA, ao virarem modal, ficariam sempre vazios na
+abertura (usuário veria o formulário em branco mesmo já tendo
+preenchido antes) se eu não resolvesse isso. Nova `hydrateModalSettingsFields()`
+- busca `/settings` de novo e preenche qualquer `[data-setting]`
+encontrado dentro do modal recém-aberto - reaproveitada pelos dois.
+Marca já tinha sua própria hidratação (`applyBranding`, chamada no
+bootstrap da página), só precisei rechamar ela depois de abrir o modal
+pra repopular os inputs recém-criados (que nascem vazios toda vez que
+o template é reconstruído). Segundo achado menor: os campos de
+checkin/checkout têm `data-required-account-kind="lodging"` (não fazem
+sentido pra agência) - esse gate normalmente roda uma vez só, no
+bootstrap da página inteira, então o modal recém-criado não passava
+por ele automaticamente; resolvido rechamando `applyAccountKindVisibility()`
+manualmente logo após montar o modal de Empresa.
+
+Sem navegador disponível neste ambiente pra clicar de fato nos 3
+modais novos - testei por revisão de código e lógica (mesmo padrão já
+usado e validado em produção pelo Modo Dono/Avaliações Google, mesmas
+funções de salvar sem nenhuma mudança), não por teste end-to-end
+clicando na UI real. Isso fica registrado explicitamente, não alegado
+como "testado" sem ressalva.
+
+Testado: paridade de chaves nos 11 idiomas (1 chave nova,
+`settings.ai.summaryDesc`, 1.582→1.583 - as outras 25 chaves usadas
+nos 3 modais novos já existiam, só passaram a ser lidas via `T(...)`
+em vez de `data-i18n`/`data-i18n-placeholder` declarativo, sem mudar
+o texto nem o idioma nenhum); balanceamento de chaves/parênteses/
+colchetes; contagem de crases pareada (sanidade rápida de template
+literal, já que o balanceamento de `{}`/`()`/`[]` sozinho não pega
+crase desbalanceada); grep confirmando as 3 funções novas definidas
+uma única vez cada e as 26 chaves `T(...)` usadas nos modais novos
+todas presentes no dicionário `pt` (nenhuma chave inventada/digitada
+errado). Sem rota nem schema novo - mudança inteira ficou no frontend.
