@@ -10304,3 +10304,75 @@ passo: pesquisar/escopar o agente de voz antes de começar a construir
 à parte", então merece uma investigação de viabilidade (telefonia,
 custo de STT/TTS, latência real-time) antes de qualquer linha de
 código, não só mergulhar direto como os itens f/g/h permitiram.
+
+Pesquisa de viabilidade do agente de voz feita e registrada num
+documento próprio (`docs/PLANO_AGENTE_DE_VOZ.md`) - arquitetura
+(Twilio Voice + Media Streams + OpenAI Realtime API, reaproveitando
+as tools já existentes via function calling), custo real estimado
+(~US$25-30/mês por hostel em volume baixo, primeira feature da
+StayFlow com custo variável direto), e uma lista de decisões que só
+o usuário resolve (billing, conta Twilio, piloto) antes de qualquer
+código. Não construído - documento de planejamento, fora do
+changelog versionado por não ser código shippado.
+
+Discussão sobre "Modo Dueño" (resumo reduzido dentro do WhatsApp do
+próprio dono) retomada com o usuário já acordado: apresentei 3
+opções de como reconhecer que uma mensagem é do dono e não de um
+hóspede - (a) número de WhatsApp separado, (b) palavra-chave de
+ativação, (c) reconhecer pelo número já cadastrado no perfil.
+Recomendei (c): reaproveita o MESMO raciocínio de segurança do
+self-service do multicorretor (v1.105.0) - resolver identidade pelo
+número de telefone de quem manda a mensagem, nunca por uma senha em
+texto solto que pode vazar (achado real de risco na opção b: dado
+financeiro/ocupação sensível ficaria protegido só por uma palavra).
+Usuário confirmou a opção (c) - construção ainda não iniciada, fica
+pra próxima etapa depois da tradução.
+
+### Tradução das ~100 chaves i18n pendentes (v1.112.0)
+
+Dívida de i18n identificada em auditoria durante a v1.97.0
+(2026-09-01), deliberadamente adiada pra focar nas melhorias
+competitivas ("sim temos que arrumar isso, já põe na lista" - fila,
+não urgente). Usuário pediu explicitamente pra atacar agora, em
+paralelo com a decisão do Modo Dueño ("pode começar a tradução das
+chaves também depois que decidirmos o que fazer com o 1").
+
+Reauditei do zero em vez de confiar na lista antiga (registrada há
+alguns dias) - mesmo método de sempre: grep de todo `T('chave', ...)`
+usado em `dashboard.html`/`stayflow-live.js`/`chats-live.js` contra o
+dicionário `pt` de `i18n-dashboard-data.js`. Resultado: exatamente as
+mesmas 100 chaves reais (a auditoria bateu 101, mas uma
+(`portfolio.realEstate.amenity.`) é falso-positivo - vem de uma
+concatenação dinâmica de chave em tempo de execução
+(`T('portfolio.realEstate.amenity.' + key, ...)`), e as chaves
+concretas por trás dela (`portfolio.realEstate.amenity.garagem`, etc)
+já existem desde a v1.101.0). Confirmação de que nada mudou desde o
+achado original - a fila realmente ficou intocada até agora.
+
+Pra cada chave, extraí o texto em PORTUGUÊS direto do próprio
+fallback já escrito no código (`T('chave', 'fallback aqui')`) em vez
+de escrever um texto novo do zero - garante que a versão "pt" da
+chave nova é EXATAMENTE o que já era mostrado quando a chave estava
+faltando, sem introduzir nenhuma divergência de tom/redação nova.
+Traduzi as outras 10 línguas a partir desse texto-base.
+
+Escala grande o bastante (100 chaves × 11 idiomas = 1.100 traduções)
+pra exigir uma abordagem diferente de inserção manual chave por
+chave: escrevi um script que localiza os 11 blocos de idioma pelo
+cabeçalho (`  xx: {`) e insere o lote inteiro de 100 linhas logo
+antes do fechamento de cada bloco, numa passada só por idioma.
+Cuidado tomado no script: inserir de trás pra frente (do último
+idioma pro primeiro) pra as posições de inserção dos idiomas
+anteriores não ficarem invalidadas pelas inserções já feitas nos
+posteriores.
+
+Testado: reauditoria completa rodada de novo depois da inserção,
+confirmando 0 chaves reais faltando (só o falso-positivo dinâmico
+continua aparecendo, como esperado - não é bug); `tools/check_i18n_parity.py`
+confirmando os 3 dicionários com paridade total (1.450→1.550 chaves
+no dashboard); contagem de ocorrência de chaves amostradas (exatamente
+11 cada, uma por idioma) confirmando que nenhuma chave foi duplicada
+nem colidiu com uma já existente; balanceamento de chaves/parênteses
+conferido no arquivo de tradução inteiro. Nenhuma mudança de
+`dashboard.html`/JS de comportamento nesta versão - só preenchimento
+de dicionário, risco de regressão praticamente zero.
