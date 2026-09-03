@@ -10962,4 +10962,61 @@ emojis "feios" espalhados pelo produto (inclusive os que eu acabei de
 usar como avatar de fallback, tipo 📇 nos contatos) e quer substituir
 tudo pelo padrão visual da StayFlow - ícones no azul marinho da marca,
 não emoji solto. Não é pra fazer agora, só ficou registrado como
-próximo item quando ele voltar ao assunto.
+próximo item quando ele voltar ao assunto. Depois ele detalhou melhor
+o escopo: quando for fazer, quer uma revisão COMPLETA - trocar o que
+já existe e está feio, E TAMBÉM colocar emoji/ícone azul StayFlow em
+lugares que fazem sentido ter um e ainda não têm nenhum. Registrado em
+memória com esse escopo mais completo.
+
+### Painéis de chat no mobile - fim da "caixa flutuante" (v1.122.0)
+
+Segundo print na mesma conversa: o padrão de linha (v1.121.0) já
+tinha melhorado, mas o usuário reparou que o painel INTEIRO (lista de
+conversas) ainda aparecia como um cartão flutuante dentro da tela -
+borda arredondada, sombra, margem visível em volta. Pediu pra tirar
+toda borda e deixar ocupar a tela cheia.
+
+Fui direto no motivo: no mobile, cada painel de chat (lista, janela de
+conversa, perfil do hóspede) já vira a TELA INTEIRA sozinho quando
+está ativo - isso é um mecanismo antigo, não mudou nada agora. O
+problema é que esse painel continuava sendo um `.card` normal (mesma
+classe usada em qualquer cartão do resto do app) - border-radius,
+borda, sombra e padding de 24px, tudo isso dentro da margem que
+`.main` já reserva ao redor da página inteira (20px em cima, 18px dos
+lados, 22px embaixo no mobile). Resultado: mesmo sendo tecnicamente
+"a tela inteira", visualmente parecia uma caixa arredondada boiando
+dentro de outra caixa.
+
+**Decisão importante**: NÃO mexi em `.main` nem em `.topbar` direto -
+essas duas classes são a moldura de TODO o app (Dashboard, Reservas,
+Financeiro, Configurações, todas as páginas), não só do chat. Zerar o
+padding delas globalmente ia arriscar quebrar alguma outra tela que eu
+não conseguiria conferir sem navegador. Em vez disso, usei margem
+negativa só nos 3 painéis de chat, cancelando EXATAMENTE o padding que
+`.main` aplica (`margin:0 -18px -22px` + largura/altura compensadas com
+`calc()`) - um jeito cirúrgico de "furar" a moldura só onde precisa,
+sem tocar na moldura em si. A lista zera o padding lateral por completo
+(cada linha já tem o próprio respiro desde a v1.121.0, não perde nada
+visualmente); a janela de conversa e o perfil do hóspede mantêm 16px
+de padding próprio (reduzido dos 24px originais) porque bolha de
+mensagem e campo de perfil não têm respiro embutido - zerar ali
+colaria o conteúdo direto na borda da tela, ficaria pior, não melhor.
+
+Uma regra CSS só cobriu os 3 lugares de uma vez (aba Chats do
+dashboard, Meu chat e Suporte do painel interno) porque todos os 3 já
+compartilhavam a mesma classe `.main.chat-fullscreen` que o JS liga
+quando qualquer um desses está aberto no mobile - não precisei prefixar
+por página como as regras de mostrar/esconder painel vizinhas fazem
+(aquelas SIM precisam ser por página, porque cada uma decide QUAL
+painel mostrar; esta aqui é o mesmo tratamento visual pros 3, então
+uma regra genérica basta).
+
+Testado: balanceamento de chaves/colchetes de `app.css`; a divergência
+de parênteses do arquivo (pré-existente desde a v1.107.0) continua
+exatamente do mesmo tamanho - conferido via `git diff` que as 11 linhas
+que adicionei somam 11 abre/11 fecha, perfeitamente balanceadas, então
+não fui eu que criei nem aumentei o desvio antigo. Sem navegador
+disponível neste ambiente pra ver o resultado de verdade - testado só
+por revisão do CSS. Avisei o usuário: se a janela de conversa ou o
+perfil do hóspede ainda parecerem "engaiolados" no mobile, é só mandar
+outro print que eu estendo o mesmo ajuste pra lá.

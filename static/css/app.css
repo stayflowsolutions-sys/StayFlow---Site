@@ -2205,6 +2205,41 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     display:inline-flex;
   }
 
+  /* No mobile, cada painel de chat (lista/conversa/perfil) OCUPA a
+     tela inteira sozinho (ver data-mobile-view acima) - nao faz
+     sentido continuar parecendo um cartao boiando dentro da pagina
+     (borda + raio + sombra + a margem lateral de .main) quando ele
+     JA E a tela inteira. Margem negativa cancela exatamente o padding
+     de .main.chat-fullscreen (20px 18px 22px) pra ir borda-a-borda de
+     verdade; .chat-list zera o padding lateral tambem porque cada
+     .chat-item ja tem o proprio padding interno (v1.121.0) - .chat-
+     window/.guest-profile mantem um padding menor (16px) porque o
+     CONTEUDO deles (bolhas de mensagem, campos de perfil) nao tem
+     padding proprio, precisaria de reforma maior pra tirar tambem.
+     Especificidade .main.chat-fullscreen (3 classes) bate .card.chat-
+     list (2 classes) sem precisar prefixar por #chatShell/#supportShell
+     feito nas regras de display acima - aqui e so um mesmo tratamento
+     visual pros 3 shells, nao uma condicao por pagina. */
+  .main.chat-fullscreen .chat-list,
+  .main.chat-fullscreen .chat-window,
+  .main.chat-fullscreen .guest-profile{
+    margin:0 -18px -22px;
+    width:calc(100% + 36px);
+    height:calc(100% + 22px);
+    border-radius:0;
+    border:none;
+    box-shadow:none;
+    background:transparent;
+  }
+  .main.chat-fullscreen .chat-list{
+    padding-left:0;
+    padding-right:0;
+  }
+  .main.chat-fullscreen .chat-window,
+  .main.chat-fullscreen .guest-profile{
+    padding:16px;
+  }
+
   /* Fix: grid de 12 colunas não colapsava no mobile, cortando os
      cards com span-3/4/5/6/7/8/9 (regra que faltava no arquivo
      original — não havia guerra de especificidade aqui). */
