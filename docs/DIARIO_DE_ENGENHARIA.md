@@ -11020,3 +11020,64 @@ disponível neste ambiente pra ver o resultado de verdade - testado só
 por revisão do CSS. Avisei o usuário: se a janela de conversa ou o
 perfil do hóspede ainda parecerem "engaiolados" no mobile, é só mandar
 outro print que eu estendo o mesmo ajuste pra lá.
+
+### Revisão de emojis - lote 1 (v1.123.0)
+
+Usuário confirmou a pendência anotada antes ("revisão completa" dos
+emojis) e detalhou o escopo: trocar o que já existe e está feio, E
+colocar ícone/emoji azul StayFlow onde ainda não tem nada. Antes de
+sair mexendo, mandei um agente de exploração levantar o tamanho real
+do trabalho - descoberta importante: **81 emojis diferentes, ~500
+lugares reais no código**, fora ~1.400 repetições que são só o mesmo
+texto traduzido em 11 idiomas. Achado bom: o menu lateral principal
+já é 100% livre de emoji desde sempre - usa ícone SVG no mesmo estilo
+que qualquer app premium usa (linha fina, `stroke:currentColor`, sem
+preenchimento). Esse já era o padrão certo, só não tinha sido
+estendido pro resto do produto.
+
+Apresentei duas opções pro usuário antes de tocar em 500 lugares:
+ícone SVG (mesmo padrão do menu) ou emoji recolorido por CSS.
+Recomendei SVG - emoji é uma imagem pronta do sistema operacional,
+forçar cor por CSS fica inconsistente entre Apple/Windows/Android e
+quebra o acabamento "premium" que a gente vem construindo desde o
+ajuste do inbox. Usuário topou.
+
+Dado o tamanho real (500 ocorrências não cabem numa edição só
+revisável), decidi atacar em lotes publicados um a um, mesma
+disciplina do resto da sessão. **Este primeiro lote**: os únicos
+lugares que quebravam o PRÓPRIO padrão de SVG que o produto já tinha -
+`admin-hostel.html`/`admin-list.html` (mini-menu com 🛠/🏨/✈️) e
+`Login.html` (botão "🛠 StayFlow — Admin") - convertidos pros MESMOS
+paths de ícone já usados no menu lateral principal (casa/prédio/avião),
+garantindo consistência automática em vez de desenhar ícone novo do
+zero. De brinde, dois achados de inconsistência que valiam a pena
+resolver junto: `.hostel-avatar` tinha 🏨 em `dashboard.html` mas 🏢 em
+`admin.html` - dois emojis diferentes pro MESMO conceito visual -
+unificados num ícone de prédio só, compartilhado via CSS; e o mapa
+`KIND_ICONS`/`kindIcon()` de `admin.html` (usado em 7 lugares,
+incluindo o avatar do Suporte que eu tinha acabado de construir na
+v1.121.0) também virou SVG, com o tamanho definido em `1em` em vez de
+pixel fixo - assim ele herda automaticamente o `font-size` de qualquer
+contexto onde for usado, sem precisar de uma variante por lugar.
+
+**Achado de segurança evitado antes de virar bug**: pra colocar ícone
+na linha de dados do dono da hospedagem (nome/e-mail/telefone/
+endereço, em `admin-hostel.html`), precisei trocar de `.textContent`
+pra `.innerHTML` - e como esses campos são preenchidos pelo próprio
+usuário no cadastro (não são texto fixo do código), isso abriria uma
+injeção de HTML se eu não escapasse antes. Adicionei um `escapeHtml()`
+novo e passei todo valor por ele antes de interpolar - mesma classe de
+risco que já tinha sido corrigida pra dado de hóspede na v1.39.0,
+prevenida aqui antes de existir, não depois.
+
+Testado: balanceamento de chaves/parênteses/colchetes/crases nos 6
+arquivos tocados; varredura com regex de emoji Unicode confirmando
+ZERO emoji restante nos 3 arquivos alvo (`admin-hostel.html`/
+`admin-list.html`/`Login.html`); grep confirmando os pontos específicos
+deste lote (`hostel-avatar`, `KIND_ICONS`) sem nenhuma ocorrência
+antiga sobrando.
+
+Ficam ~78 emojis/~490 ocorrências pra próximos lotes. O maior deles,
+sozinho: o badge "✅ Conectado" (201 ocorrências - praticamente um
+componente só, repetido em vários cards de integração × 11 idiomas),
+fica pra próxima versão.
