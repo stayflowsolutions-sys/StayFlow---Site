@@ -1609,6 +1609,16 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "Conexão automática ainda não está disponível.",
     "settings.whatsapp.oauthHint": "Ou preencha manualmente abaixo, se preferir.",
     "team.roleNamePlaceholderExampleAgency": "Ex: Vendedor",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 Modo Dono",
+    "ownerMode.summaryDescOff": "Receba um resumo rápido (ocupação, reservas, receita) no seu próprio WhatsApp, sem abrir o painel.",
+    "ownerMode.summaryDescOn": "Ativado — {phone} recebe o resumo pelo WhatsApp da hospedagem.",
+    "ownerMode.modalDesc": "Cadastre seu número de WhatsApp aqui. Quando você mandar QUALQUER mensagem pro número principal da hospedagem a partir desse número, em vez de tratar como um hóspede novo, você recebe de volta um resumo rápido — ocupação, reservas confirmadas, receita e oportunidades em aberto.",
+    "ownerMode.phoneLabel": "Seu número de WhatsApp",
+    "ownerMode.phonePlaceholder": "Ex: 5492611234567",
+    "ownerMode.saveFailed": "Não foi possível salvar.",
+    "ownerMode.saveSuccess": "Salvo!",
+    "ownerMode.saveConnError": "Erro de conexão ao salvar.",
   },
   en: {
     "nav.dashboard": "Dashboard",
@@ -3192,6 +3202,16 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "Automatic connection isn't available yet.",
     "settings.whatsapp.oauthHint": "Or fill it in manually below, if you prefer.",
     "team.roleNamePlaceholderExampleAgency": "E.g: Salesperson",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 Owner Mode",
+    "ownerMode.summaryDescOff": "Get a quick summary (occupancy, reservations, revenue) on your own WhatsApp, without opening the dashboard.",
+    "ownerMode.summaryDescOn": "Enabled — {phone} receives the summary via the property's WhatsApp.",
+    "ownerMode.modalDesc": "Register your WhatsApp number here. When you send ANY message to the property's main number from this number, instead of being treated as a new guest, you get back a quick summary — occupancy, confirmed reservations, revenue, and open opportunities.",
+    "ownerMode.phoneLabel": "Your WhatsApp number",
+    "ownerMode.phonePlaceholder": "E.g: 5492611234567",
+    "ownerMode.saveFailed": "Couldn't save.",
+    "ownerMode.saveSuccess": "Saved!",
+    "ownerMode.saveConnError": "Connection error while saving.",
   },
   es: {
     "nav.dashboard": "Dashboard",
@@ -4775,6 +4795,16 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "La conexión automática todavía no está disponible.",
     "settings.whatsapp.oauthHint": "O completá manualmente abajo, si preferís.",
     "team.roleNamePlaceholderExampleAgency": "Ej: Vendedor",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 Modo Dueño",
+    "ownerMode.summaryDescOff": "Recibí un resumen rápido (ocupación, reservas, ingresos) en tu propio WhatsApp, sin abrir el panel.",
+    "ownerMode.summaryDescOn": "Activado — {phone} recibe el resumen por el WhatsApp de la hospedaje.",
+    "ownerMode.modalDesc": "Registrá tu número de WhatsApp acá. Cuando mandes CUALQUIER mensaje al número principal de la hospedaje desde ese número, en vez de tratarte como un huésped nuevo, recibís de vuelta un resumen rápido — ocupación, reservas confirmadas, ingresos y oportunidades abiertas.",
+    "ownerMode.phoneLabel": "Tu número de WhatsApp",
+    "ownerMode.phonePlaceholder": "Ej: 5492611234567",
+    "ownerMode.saveFailed": "No fue posible guardar.",
+    "ownerMode.saveSuccess": "¡Guardado!",
+    "ownerMode.saveConnError": "Error de conexión al guardar.",
   },
   fr: {
     "nav.dashboard": "Dashboard",
@@ -6358,6 +6388,16 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "La connexion automatique n'est pas encore disponible.",
     "settings.whatsapp.oauthHint": "Ou remplissez manuellement ci-dessous, si vous préférez.",
     "team.roleNamePlaceholderExampleAgency": "Ex : Vendeur",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 Mode Propriétaire",
+    "ownerMode.summaryDescOff": "Recevez un résumé rapide (occupation, réservations, revenus) directement sur votre WhatsApp, sans ouvrir le tableau de bord.",
+    "ownerMode.summaryDescOn": "Activé — {phone} reçoit le résumé via le WhatsApp de l'établissement.",
+    "ownerMode.modalDesc": "Enregistrez votre numéro WhatsApp ici. Lorsque vous envoyez N'IMPORTE QUEL message au numéro principal de l'établissement depuis ce numéro, au lieu d'être traité comme un nouveau client, vous recevez un résumé rapide — occupation, réservations confirmées, revenus et opportunités ouvertes.",
+    "ownerMode.phoneLabel": "Votre numéro WhatsApp",
+    "ownerMode.phonePlaceholder": "Ex : 5492611234567",
+    "ownerMode.saveFailed": "Impossible d'enregistrer.",
+    "ownerMode.saveSuccess": "Enregistré !",
+    "ownerMode.saveConnError": "Erreur de connexion lors de l'enregistrement.",
   },
   de: {
     "nav.dashboard": "Dashboard",
@@ -7941,6 +7981,16 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "Die automatische Verbindung ist noch nicht verfügbar.",
     "settings.whatsapp.oauthHint": "Oder füllen Sie es unten manuell aus, wenn Sie möchten.",
     "team.roleNamePlaceholderExampleAgency": "Z. B.: Verkäufer",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 Besitzer-Modus",
+    "ownerMode.summaryDescOff": "Erhalten Sie eine schnelle Zusammenfassung (Auslastung, Reservierungen, Umsatz) direkt auf Ihrem WhatsApp, ohne das Dashboard zu öffnen.",
+    "ownerMode.summaryDescOn": "Aktiviert — {phone} erhält die Zusammenfassung über das WhatsApp der Unterkunft.",
+    "ownerMode.modalDesc": "Registrieren Sie hier Ihre WhatsApp-Nummer. Wenn Sie von dieser Nummer aus IRGENDEINE Nachricht an die Hauptnummer der Unterkunft senden, werden Sie nicht als neuer Gast behandelt, sondern erhalten eine schnelle Zusammenfassung — Auslastung, bestätigte Reservierungen, Umsatz und offene Chancen.",
+    "ownerMode.phoneLabel": "Ihre WhatsApp-Nummer",
+    "ownerMode.phonePlaceholder": "Z. B.: 5492611234567",
+    "ownerMode.saveFailed": "Konnte nicht gespeichert werden.",
+    "ownerMode.saveSuccess": "Gespeichert!",
+    "ownerMode.saveConnError": "Verbindungsfehler beim Speichern.",
   },
 
   ja: {
@@ -9495,6 +9545,16 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "自動接続はまだご利用いただけません。",
     "settings.whatsapp.oauthHint": "または、以下に手動で入力することもできます。",
     "team.roleNamePlaceholderExampleAgency": "例：営業担当",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 オーナーモード",
+    "ownerMode.summaryDescOff": "パネルを開かなくても、ご自身のWhatsAppで簡単なサマリー（稼働率、予約、収益）を受け取れます。",
+    "ownerMode.summaryDescOn": "有効 — {phone}が宿泊施設のWhatsApp経由でサマリーを受け取ります。",
+    "ownerMode.modalDesc": "ここでご自身のWhatsApp番号を登録してください。この番号から宿泊施設のメイン番号にどんなメッセージを送っても、新規ゲストとして扱われる代わりに、簡単なサマリー（稼働率、確定予約、収益、対応中の商談）が返信されます。",
+    "ownerMode.phoneLabel": "ご自身のWhatsApp番号",
+    "ownerMode.phonePlaceholder": "例：5492611234567",
+    "ownerMode.saveFailed": "保存できませんでした。",
+    "ownerMode.saveSuccess": "保存しました！",
+    "ownerMode.saveConnError": "保存中に接続エラーが発生しました。",
   },
 
   it: {
@@ -11049,6 +11109,16 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "La connessione automatica non è ancora disponibile.",
     "settings.whatsapp.oauthHint": "Oppure compila manualmente qui sotto, se preferisci.",
     "team.roleNamePlaceholderExampleAgency": "Es: Venditore",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 Modalità Proprietario",
+    "ownerMode.summaryDescOff": "Ricevi un riepilogo rapido (occupazione, prenotazioni, ricavi) sul tuo WhatsApp, senza aprire il pannello.",
+    "ownerMode.summaryDescOn": "Attivo — {phone} riceve il riepilogo tramite il WhatsApp della struttura.",
+    "ownerMode.modalDesc": "Registra qui il tuo numero WhatsApp. Quando invii QUALSIASI messaggio al numero principale della struttura da questo numero, invece di essere trattato come un nuovo ospite, ricevi un riepilogo rapido — occupazione, prenotazioni confermate, ricavi e opportunità aperte.",
+    "ownerMode.phoneLabel": "Il tuo numero WhatsApp",
+    "ownerMode.phonePlaceholder": "Es: 5492611234567",
+    "ownerMode.saveFailed": "Non è stato possibile salvare.",
+    "ownerMode.saveSuccess": "Salvato!",
+    "ownerMode.saveConnError": "Errore di connessione durante il salvataggio.",
   },
 
   zh: {
@@ -12603,6 +12673,16 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "自动连接功能尚不可用。",
     "settings.whatsapp.oauthHint": "或者，如果您愿意，也可以在下方手动填写。",
     "team.roleNamePlaceholderExampleAgency": "例如：销售员",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 老板模式",
+    "ownerMode.summaryDescOff": "无需打开面板，直接在您自己的WhatsApp上接收快速摘要（入住率、预订、收入）。",
+    "ownerMode.summaryDescOn": "已启用——{phone} 通过住宿的 WhatsApp 接收摘要。",
+    "ownerMode.modalDesc": "在此登记您的WhatsApp号码。当您从该号码向住宿的主号码发送任何消息时，系统不会将您当作新客人处理，而是会回复一份快速摘要——入住率、已确认预订、收入和待处理商机。",
+    "ownerMode.phoneLabel": "您的 WhatsApp 号码",
+    "ownerMode.phonePlaceholder": "例如：5492611234567",
+    "ownerMode.saveFailed": "无法保存。",
+    "ownerMode.saveSuccess": "已保存！",
+    "ownerMode.saveConnError": "保存时连接出错。",
   },
   ru: {
     "nav.dashboard": "Панель управления",
@@ -14156,6 +14236,16 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "Автоматическое подключение пока недоступно.",
     "settings.whatsapp.oauthHint": "Или заполните вручную ниже, если хотите.",
     "team.roleNamePlaceholderExampleAgency": "Напр.: Продавец",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 Режим владельца",
+    "ownerMode.summaryDescOff": "Получайте краткую сводку (заполняемость, бронирования, доход) прямо в своём WhatsApp, не открывая панель.",
+    "ownerMode.summaryDescOn": "Включено — {phone} получает сводку через WhatsApp объекта размещения.",
+    "ownerMode.modalDesc": "Зарегистрируйте здесь свой номер WhatsApp. Когда вы отправите ЛЮБОЕ сообщение на основной номер объекта размещения с этого номера, вместо обращения как с новым гостем вы получите краткую сводку — заполняемость, подтверждённые бронирования, доход и открытые возможности.",
+    "ownerMode.phoneLabel": "Ваш номер WhatsApp",
+    "ownerMode.phonePlaceholder": "Напр.: 5492611234567",
+    "ownerMode.saveFailed": "Не удалось сохранить.",
+    "ownerMode.saveSuccess": "Сохранено!",
+    "ownerMode.saveConnError": "Ошибка соединения при сохранении.",
   },
 
   ko: {
@@ -15710,6 +15800,16 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "자동 연결은 아직 사용할 수 없습니다.",
     "settings.whatsapp.oauthHint": "원하시면 아래에서 직접 입력할 수도 있습니다.",
     "team.roleNamePlaceholderExampleAgency": "예: 영업 담당자",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 사장님 모드",
+    "ownerMode.summaryDescOff": "패널을 열지 않아도 본인 WhatsApp으로 빠른 요약(객실 점유율, 예약, 매출)을 받아보세요.",
+    "ownerMode.summaryDescOn": "활성화됨 — {phone}이(가) 숙소 WhatsApp을 통해 요약을 받습니다.",
+    "ownerMode.modalDesc": "여기에 본인의 WhatsApp 번호를 등록하세요. 이 번호로 숙소의 대표 번호에 어떤 메시지를 보내든 신규 투숙객으로 처리되지 않고, 객실 점유율·확정 예약·매출·진행 중인 상담 기회가 담긴 빠른 요약을 받게 됩니다.",
+    "ownerMode.phoneLabel": "회원님의 WhatsApp 번호",
+    "ownerMode.phonePlaceholder": "예: 5492611234567",
+    "ownerMode.saveFailed": "저장할 수 없습니다.",
+    "ownerMode.saveSuccess": "저장되었습니다!",
+    "ownerMode.saveConnError": "저장 중 연결 오류가 발생했습니다.",
   },
 
   nl: {
@@ -17264,5 +17364,15 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthUnavailable": "Automatisch verbinden is nog niet beschikbaar.",
     "settings.whatsapp.oauthHint": "Of vul het hieronder handmatig in, als je dat liever hebt.",
     "team.roleNamePlaceholderExampleAgency": "Bijv.: Verkoper",
+    // ==== Modo Dono (v1.113.0) ====
+    "ownerMode.title": "📊 Eigenaarsmodus",
+    "ownerMode.summaryDescOff": "Ontvang een snel overzicht (bezetting, reserveringen, omzet) op je eigen WhatsApp, zonder het dashboard te openen.",
+    "ownerMode.summaryDescOn": "Ingeschakeld — {phone} ontvangt het overzicht via de WhatsApp van de accommodatie.",
+    "ownerMode.modalDesc": "Registreer hier je WhatsApp-nummer. Wanneer je vanaf dit nummer ELK bericht naar het hoofdnummer van de accommodatie stuurt, word je niet als nieuwe gast behandeld, maar krijg je een snel overzicht terug — bezetting, bevestigde reserveringen, omzet en openstaande kansen.",
+    "ownerMode.phoneLabel": "Jouw WhatsApp-nummer",
+    "ownerMode.phonePlaceholder": "Bijv.: 5492611234567",
+    "ownerMode.saveFailed": "Kon niet worden opgeslagen.",
+    "ownerMode.saveSuccess": "Opgeslagen!",
+    "ownerMode.saveConnError": "Verbindingsfout bij het opslaan.",
   },
 };
