@@ -10669,3 +10669,57 @@ contato dá erro claro; (4) as 5 rotas HTTP (`GET`/`POST`/`PATCH`/
 `DELETE /contacts`, `POST /contacts/<id>/start-chat`) via Flask test
 client com sessão real; (5) smoke test final com 14 endpoints tocados
 durante essa sessão inteira, todos 200.
+
+### Pedido automático de avaliação no Google pós-checkout (v1.117.0)
+
+Depois de fechar a Aba de Contatos, perguntei se havia mais alguma
+coisa. Usuário pediu explicitamente uma sugestão NOVA, fora de tudo
+que já estava na fila. Propus o pedido automático de avaliação no
+Google logo após o checkout - momento em que a experiência ainda está
+fresca na cabeça do hóspede, mesmo racional que apps de delivery e
+hotelaria usam. Aprovado com "Pode fazer".
+
+**Decisão de design deliberadamente simples**: opt-in pela PRESENÇA
+do link, não por um toggle separado. Cheguei a considerar um campo
+"ativar pedido de avaliação" + campo de link, mas isso são duas coisas
+pra configurar quando uma já basta - hostel que não quer a feature
+simplesmente não preenche o campo, hostel que preenche já está
+dizendo "sim, quero isso". Mesmo espírito de outras features desta
+sessão que evitaram switches redundantes.
+
+**Reaproveitamento total, zero infraestrutura nova**: a função
+`send_checkout_review_request` não precisou de nenhum mecanismo de
+envio novo - `send_message_to_guest_now()` já resolve canal certo e
+salva no histórico desde muito antes desta sessão. O único trabalho
+real foi decidir ONDE encaixar a chamada (dentro de
+`checkout_reservation_bed`, logo após o commit do checkout) e blindar
+esse ponto pra nunca deixar um problema no pedido de avaliação
+atrapalhar o checkout em si, que é a operação que realmente importa.
+Por isso a chamada vive dentro de um `try/except` silencioso que só
+imprime aviso no log.
+
+**Achado no teste, não bug de produção**: escrevi a primeira versão
+do teste isolado assumindo que `send_checkout_review_request`
+devolvia um booleano puro quando o link está configurado. Falhou -
+`send_message_to_guest_now()` (a função de baixo nível que ela
+chama) na verdade devolve um dict `{"sent": bool, "phone": str}`,
+não um booleano solto. Não é uma inconsistência que precisasse de
+correção no código - o único chamador (`checkout_reservation_bed`)
+nunca inspeciona esse valor de retorno, então o comportamento em
+produção sempre esteve correto. Só precisei corrigir a asserção do
+meu próprio script de teste pra refletir o formato real.
+
+Testado em 3 frentes: (1) SQLite isolado - sem link configurado
+devolve `False` direto sem tentar nada; com link configurado tenta
+enviar de verdade (hostel de teste sem credenciais reais de WhatsApp,
+então `sent: False`, mas confirma que o gate do link deixou passar em
+vez de sair cedo); checkout real de ponta a ponta não lança exceção;
+checkout de reserva sem `guest_id` vinculado (walk-in que nunca
+conversou pelo WhatsApp) corretamente não quebra nem tenta enviar
+nada; (2) rotas `GET`/`POST /settings` via Flask test client com
+sessão real confirmando que o campo novo persiste e volta certo -
+mecanismo genérico de `_SETTINGS_TEXT_FIELDS` funcionou de primeira,
+só precisou adicionar o nome do campo à lista e ao `SELECT` da rota;
+(3) paridade de chaves nos 11 idiomas (`tools/check_i18n_parity.py`,
+1.576→1.579) e balanceamento de chaves/parênteses/colchetes de
+`dashboard.html`/`i18n-dashboard-data.js` antes de publicar.
