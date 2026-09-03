@@ -11081,3 +11081,61 @@ Ficam ~78 emojis/~490 ocorrências pra próximos lotes. O maior deles,
 sozinho: o badge "✅ Conectado" (201 ocorrências - praticamente um
 componente só, repetido em vários cards de integração × 11 idiomas),
 fica pra próxima versão.
+
+### Revisão de emojis - lote 2, o badge "✅ Conectado" (v1.124.0)
+
+Ataquei o maior item isolado da auditoria: o badge de status
+"Conectado"/"Ativado"/"Configurado" que aparece nos cards de
+WhatsApp, Facebook, Instagram, Mercado Pago, Nuvemshop, Tokko, Beds24,
+webhook de saída e câmeras de segurança - 187 ocorrências reais
+confirmadas (14 chaves × 11 idiomas no dicionário externo + 3 chaves ×
+11 idiomas no dicionário embutido do `admin.html`).
+
+**Decisão de arquitetura que economizou o trabalho todo**: em vez de
+reescrever a estrutura de cada um dos 15 pontos que mostram esse
+status (trocar `.textContent` por `.innerHTML` em cada um, pra caber
+um `<svg>` dentro do texto, arriscando quebrar algum), tirei o emoji
+de dentro da PRÓPRIA STRING traduzida - "✅ Conectado" virou só
+"Conectado", nas 11 línguas, com o mesmo tipo de script mecânico que
+uso a sessão inteira pra inserir/remover chave de tradução. O ícone de
+check virou responsabilidade só do CSS: uma classe nova
+(`.settings-summary-desc.is-connected`) que pinta o texto de verde e
+desenha o check via `mask` (SVG embutido direto no CSS como data URI,
+cor 100% controlada por `background-color`, sem depender de fonte de
+emoji de sistema operacional nenhum). O JS só precisou ganhar UMA
+linha nova em cada ponto de chamada - `classList.toggle("is-connected",
+condição)` - reaproveitando a MESMA variável booleana que já decidia
+qual texto mostrar. Resultado: 15 pontos de chamada tocados, mas cada
+um com uma mudança mínima e de baixo risco, em vez de 15 reformas de
+estrutura.
+
+Nem todo ponto seguiu o padrão de card com a classe nova - 3 lugares
+(status do token do WhatsApp dentro do modal, e os 2 cards de
+comunicação da persona StayFlow em `admin.html`) usam `.style.color`
+direto porque não têm o wrapper `.settings-summary-card` por perto;
+2 lugares (resumo composto de notificações push, disponibilidade de
+espaço de evento) só perderam o emoji do texto sem ganhar ícone novo,
+porque já tinham sua própria lógica de cor ou eram texto composto
+demais pra caber no padrão binário conectado/desconectado. Nem tudo
+precisa do mesmo tratamento exato - o objetivo é consistência de
+qualidade, não repetir a mesma solução em todo canto sem pensar.
+
+De brinde, ao mexer nos pontos vizinhos: achei que `settings.whatsapp.tokenMissing`
+e `events.availability.busy` (⚠️, o PAR de aviso dos textos que
+acabaram de perder o ✅ na mesma função) ficariam com metade do par
+bonita e a outra metade feia se eu não tocasse - tirei o emoji das 11
+traduções desses dois também, mesmo sendo tecnicamente de outro lote
+(o de ⚠️, ainda não iniciado).
+
+187 valores de tradução alterados, zero chave nova, zero chave
+removida - paridade dos 3 dicionários (1.583/91/295 chaves) idêntica
+a antes.
+
+Testado: paridade de chaves nos 11 idiomas (`tools/check_i18n_parity.py`);
+balanceamento de chaves/parênteses/colchetes/crases em
+`dashboard.html`/`admin.html`/`i18n-dashboard-data.js`/`app.css`
+(divergência de parênteses do `app.css` continua a mesma pré-existente,
+confirmada via `git diff` que as 7 linhas que adicionei somam 7/7);
+grep confirmando ZERO `✅` restante nos 3 arquivos tocados.
+
+Ficam ~77 emojis/~300 ocorrências pra próximos lotes.

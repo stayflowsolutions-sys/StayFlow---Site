@@ -970,6 +970,25 @@ body::before{
   font-size:12px;
   color:var(--muted);
 }
+/* Estado "conectado/ativo" (v1.124.0) - ícone de check via CSS mask em
+   vez de emoji ✅ embutido na tradução; JS só alterna a classe
+   (`classList.toggle("is-connected", bool)`), o texto continua vindo
+   normal do dicionário i18n, sem emoji nenhum dentro da string. */
+.settings-summary-card .settings-summary-desc.is-connected{
+  color:var(--green);
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.settings-summary-card .settings-summary-desc.is-connected::before{
+  content:"";
+  width:13px;
+  height:13px;
+  flex:none;
+  background:var(--green);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E") center/contain no-repeat;
+}
 .settings-summary-chevron{
   color:var(--muted);
   font-size:20px;

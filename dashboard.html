@@ -3756,8 +3756,9 @@ async function deleteRoleConfirm(roleId){
       const summaryDesc = document.getElementById("nuvemshopSummaryDesc");
       if(summaryDesc){
         summaryDesc.textContent = data.connected
-          ? T('settings.nuvemshop.summaryConnected', '✅ Conectado')
+          ? T('settings.nuvemshop.summaryConnected', 'Conectado')
           : T('settings.nuvemshop.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+        summaryDesc.classList.toggle("is-connected", Boolean(data.connected));
       }
 
       const connectedEl = document.getElementById("nuvemshopConnected");
@@ -3819,8 +3820,9 @@ async function deleteRoleConfirm(roleId){
       const summaryDesc = document.getElementById("tokkoSummaryDesc");
       if(summaryDesc){
         summaryDesc.textContent = data.connected
-          ? T('settings.tokko.summaryConnected', '✅ Conectado')
+          ? T('settings.tokko.summaryConnected', 'Conectado')
           : T('settings.tokko.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+        summaryDesc.classList.toggle("is-connected", Boolean(data.connected));
       }
 
       const connectedEl = document.getElementById("tokkoConnected");
@@ -3958,8 +3960,9 @@ async function deleteRoleConfirm(roleId){
       const statusEl = document.getElementById("whatsappTokenStatus");
       if(statusEl){
         statusEl.textContent = data.has_access_token
-          ? T('settings.whatsapp.tokenConfigured', '✅ Access Token já configurado.')
-          : T('settings.whatsapp.tokenMissing', '⚠️ Nenhum Access Token salvo ainda.');
+          ? T('settings.whatsapp.tokenConfigured', 'Access Token já configurado.')
+          : T('settings.whatsapp.tokenMissing', 'Nenhum Access Token salvo ainda.');
+        statusEl.style.color = data.has_access_token ? "var(--green)" : "#ffbd4a";
       }
 
       const connected = Boolean(data.phone_number_id) && data.has_access_token;
@@ -3974,10 +3977,11 @@ async function deleteRoleConfirm(roleId){
       const summaryDesc = document.getElementById("whatsappSummaryDesc");
       if(summaryDesc){
         let text = connected
-          ? T('settings.whatsapp.summaryConnected', '✅ Conectado')
+          ? T('settings.whatsapp.summaryConnected', 'Conectado')
           : T('settings.whatsapp.summaryNotConnected', 'Não configurado ainda — clique pra conectar');
         if(connected && data.contact_phone) text += ` (${data.contact_phone})`;
         summaryDesc.textContent = text;
+        summaryDesc.classList.toggle("is-connected", connected);
       }
 
       // app_id/config_id nao sao segredo, mas so existem quando a
@@ -4111,10 +4115,11 @@ async function deleteRoleConfirm(roleId){
       const summaryDesc = document.getElementById("myWhatsappSummaryDesc");
       if(summaryDesc){
         let text = data.connected
-          ? T('settings.myWhatsapp.summaryConnected', '✅ Conectado')
+          ? T('settings.myWhatsapp.summaryConnected', 'Conectado')
           : T('settings.myWhatsapp.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
         if(data.connected && data.contact_phone) text += ` (${data.contact_phone})`;
         summaryDesc.textContent = text;
+        summaryDesc.classList.toggle("is-connected", Boolean(data.connected));
       }
 
       window.STAYFLOW_MY_WHATSAPP_OAUTH = data.oauth_available ? { appId: data.app_id, configId: data.config_id } : null;
@@ -4233,8 +4238,9 @@ async function deleteRoleConfirm(roleId){
       const summaryDesc = document.getElementById("facebookSummaryDesc");
       if(summaryDesc){
         summaryDesc.textContent = data.connected
-          ? T('settings.facebook.summaryConnected', '✅ Conectado')
+          ? T('settings.facebook.summaryConnected', 'Conectado')
           : T('settings.facebook.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+        summaryDesc.classList.toggle("is-connected", Boolean(data.connected));
       }
 
       const connectedEl = document.getElementById("facebookConnected");
@@ -4341,8 +4347,9 @@ async function deleteRoleConfirm(roleId){
       const summaryDesc = document.getElementById("mercadopagoSummaryDesc");
       if(summaryDesc){
         summaryDesc.textContent = data.connected
-          ? T('settings.mercadopago.summaryConnected', '✅ Conectado')
+          ? T('settings.mercadopago.summaryConnected', 'Conectado')
           : T('settings.mercadopago.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+        summaryDesc.classList.toggle("is-connected", Boolean(data.connected));
       }
 
       const connectedEl = document.getElementById("mercadopagoConnected");
@@ -4461,8 +4468,9 @@ async function deleteRoleConfirm(roleId){
       const summaryDesc = document.getElementById("instagramSummaryDesc");
       if(summaryDesc){
         summaryDesc.textContent = data.connected
-          ? T('settings.instagram.summaryConnected', '✅ Conectado')
+          ? T('settings.instagram.summaryConnected', 'Conectado')
           : T('settings.instagram.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+        summaryDesc.classList.toggle("is-connected", Boolean(data.connected));
       }
 
       const connectedEl = document.getElementById("instagramConnected");
@@ -4648,8 +4656,9 @@ async function deleteRoleConfirm(roleId){
         summaryDesc.textContent = !data.master_account_ready
           ? T('settings.beds24.summaryUnavailable', 'Ainda não disponível')
           : data.property_id
-            ? T('settings.beds24.summaryActive', '✅ Ativado')
+            ? T('settings.beds24.summaryActive', 'Ativado')
             : T('settings.beds24.summaryNotActive', 'Não ativado ainda — clique para ativar');
+        summaryDesc.classList.toggle("is-connected", Boolean(data.master_account_ready) && Boolean(data.property_id));
       }
 
       const unavailableEl = document.getElementById("beds24Unavailable");
@@ -5024,7 +5033,7 @@ async function deleteRoleConfirm(roleId){
       const settingsData = settingsRes.ok ? await settingsRes.json() : {};
 
       const parts = [pushData.this_device_subscribed
-        ? T('settings.communication.pushSummaryActiveHere', '✅ Ativado neste dispositivo')
+        ? T('settings.communication.pushSummaryActiveHere', 'Ativado neste dispositivo')
         : T('settings.communication.pushSummaryInactiveHere', 'Não ativado neste dispositivo')];
 
       if(settingsData.quiet_hours_start && settingsData.quiet_hours_end){
@@ -5192,8 +5201,9 @@ async function deleteRoleConfirm(roleId){
       const summaryDesc = document.getElementById("outboundWebhookSummaryDesc");
       if(summaryDesc){
         summaryDesc.textContent = data.enabled
-          ? T('settings.outboundWebhook.summaryActive', '✅ Ativado')
+          ? T('settings.outboundWebhook.summaryActive', 'Ativado')
           : T('settings.outboundWebhook.summaryNotActive', 'Não configurado ainda — clique pra configurar');
+        summaryDesc.classList.toggle("is-connected", Boolean(data.enabled));
       }
 
       const urlInput = document.getElementById("outboundWebhookUrl");
@@ -6623,7 +6633,7 @@ async function deleteRoleConfirm(roleId){
       actionsEl.innerHTML = "";
 
       if(data.enabled){
-        msgEl.textContent = T('settings.security.twoFAEnabled', '✅ Ativado · {count} código(s) de backup restante(s)', { count: data.backup_codes_remaining });
+        msgEl.textContent = T('settings.security.twoFAEnabled', 'Ativado · {count} código(s) de backup restante(s)', { count: data.backup_codes_remaining });
 
         const regenBtn = document.createElement("button");
         regenBtn.className = "btn secondary";
@@ -9672,10 +9682,10 @@ window.updateNewEventAvailability = async function(){
     if(!res.ok) return;
     const data = await res.json();
     if(data.available){
-      availEl.textContent = T('events.availability.free', '✅ Espaço disponível nesse horário.');
+      availEl.textContent = T('events.availability.free', 'Espaço disponível nesse horário.');
       availEl.style.color = "#6ff0bd";
     }else{
-      availEl.textContent = T('events.availability.busy', '⚠️ Espaço já reservado nesse horário.');
+      availEl.textContent = T('events.availability.busy', 'Espaço já reservado nesse horário.');
       availEl.style.color = "#ff9caf";
     }
   }catch(e){
@@ -11599,8 +11609,9 @@ async function loadCameraIntegration(){
     const summaryDesc = document.getElementById("cameraFeedSummaryDesc");
     if(summaryDesc){
       summaryDesc.textContent = url
-        ? T('patrimonialSecurity.integrations.summaryConfigured', '✅ Configurado')
+        ? T('patrimonialSecurity.integrations.summaryConfigured', 'Configurado')
         : T('patrimonialSecurity.integrations.summaryNotConfigured', 'Não configurado — clique pra adicionar a URL das câmeras');
+      summaryDesc.classList.toggle("is-connected", Boolean(url));
     }
 
     const urlInput = document.getElementById("cameraFeedUrl");
