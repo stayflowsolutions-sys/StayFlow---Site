@@ -10843,3 +10843,31 @@ crase desbalanceada); grep confirmando as 3 funções novas definidas
 uma única vez cada e as 26 chaves `T(...)` usadas nos modais novos
 todas presentes no dicionário `pt` (nenhuma chave inventada/digitada
 errado). Sem rota nem schema novo - mudança inteira ficou no frontend.
+
+### "Equipe" saiu do submenu de Configurações (v1.120.0)
+
+Usuário lembrou de uma coisa separada da auditoria de formulário:
+"Equipe" aparecia em 3 lugares - menu lateral, dentro do submenu de
+Configurações, e no dropdown do ícone de usuário. Ele achou que não
+fazia sentido estar nos 3 e sugeriu manter só menu lateral + ícone de
+usuário, tirando de dentro de Configurações.
+
+Conferi o código antes de concordar: os outros 7 botões do mesmo
+submenu de Configurações (Geral/Empresa/IA/Comunicação/Integrações/
+Segurança/Billing) trocam qual SEÇÃO aparece dentro da própria página
+de Configurações (`data-settings-target`, tratado por
+`switchSettingsSection()`). "Equipe" era o único que não fazia isso -
+só chamava `openPage('team', ...)`, saindo de Configurações e indo
+pra a página de Equipe de verdade. Ou seja, nem tecnicamente pertencia
+àquela lista - era um atalho de navegação disfarçado de item de menu,
+puramente redundante com o link do menu lateral que já faz exatamente
+a mesma coisa.
+
+Usuário confirmou, removida a linha do botão. Sem tocar em JS/CSS/
+backend - o botão nunca teve `data-settings-target`, então nunca fez
+parte da lógica de troca de seção, só sobrava na lista visualmente.
+
+Testado: balanceamento de chaves/parênteses/colchetes de
+`dashboard.html`, confirmado via grep que a chave i18n `nav.team`
+continua em uso nos outros 2 lugares (menu lateral, dropdown do
+ícone de usuário) - nenhuma chave órfã.
