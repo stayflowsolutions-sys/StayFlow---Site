@@ -2853,6 +2853,11 @@ async function deleteRoleConfirm(roleId){
           <div class="span-12">
             <input type="text" data-setting="logo_url" data-i18n-placeholder="settings.company.logoUrlPlaceholder" placeholder="URL do logo (opcional - cole o link de uma imagem já hospedada)">
           </div>
+          <div class="span-12" data-required-account-kind="lodging">
+            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="settings.company.googleReviewLinkLabel">Link de avaliação do Google (opcional)</label>
+            <input type="text" data-setting="google_review_link" data-i18n-placeholder="settings.company.googleReviewLinkPlaceholder" placeholder="Cole aqui o link de avaliação da sua hospedagem no Google">
+            <p style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="settings.company.googleReviewLinkHint">Quando preenchido, o hóspede recebe um pedido de avaliação automático assim que faz checkout.</p>
+          </div>
         </div>
 
         <div class="settings-actions" style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">

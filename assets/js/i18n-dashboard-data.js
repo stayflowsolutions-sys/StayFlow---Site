@@ -1637,6 +1637,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Erro de conexão ao iniciar a conversa.",
     "contacts.searchResultsTitle": "Contatos salvos",
     "chats.searchPlaceholder": "Buscar conversa ou contato salvo...",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Link de avaliação do Google (opcional)",
+    "settings.company.googleReviewLinkPlaceholder": "Cole aqui o link de avaliação da sua hospedagem no Google",
+    "settings.company.googleReviewLinkHint": "Quando preenchido, o hóspede recebe um pedido de avaliação automático assim que faz checkout.",
   },
   en: {
     "nav.dashboard": "Dashboard",
@@ -3248,6 +3252,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Connection error starting the conversation.",
     "contacts.searchResultsTitle": "Saved contacts",
     "chats.searchPlaceholder": "Search conversation or saved contact...",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Google review link (optional)",
+    "settings.company.googleReviewLinkPlaceholder": "Paste your property's Google review link here",
+    "settings.company.googleReviewLinkHint": "When filled in, the guest automatically receives a review request as soon as they check out.",
   },
   es: {
     "nav.dashboard": "Dashboard",
@@ -4859,6 +4867,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Error de conexión al iniciar la conversación.",
     "contacts.searchResultsTitle": "Contactos guardados",
     "chats.searchPlaceholder": "Buscar conversación o contacto guardado...",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Enlace de reseña de Google (opcional)",
+    "settings.company.googleReviewLinkPlaceholder": "Pegá acá el enlace de reseña de tu hospedaje en Google",
+    "settings.company.googleReviewLinkHint": "Cuando está completo, el huésped recibe un pedido de reseña automático apenas hace el checkout.",
   },
   fr: {
     "nav.dashboard": "Dashboard",
@@ -6470,6 +6482,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Erreur de connexion lors du démarrage de la conversation.",
     "contacts.searchResultsTitle": "Contacts enregistrés",
     "chats.searchPlaceholder": "Rechercher une conversation ou un contact enregistré...",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Lien d'avis Google (optionnel)",
+    "settings.company.googleReviewLinkPlaceholder": "Collez ici le lien d'avis Google de votre établissement",
+    "settings.company.googleReviewLinkHint": "Une fois rempli, le client reçoit automatiquement une demande d'avis dès son départ.",
   },
   de: {
     "nav.dashboard": "Dashboard",
@@ -8081,6 +8097,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Verbindungsfehler beim Starten des Gesprächs.",
     "contacts.searchResultsTitle": "Gespeicherte Kontakte",
     "chats.searchPlaceholder": "Gespräch oder gespeicherten Kontakt suchen...",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Google-Bewertungslink (optional)",
+    "settings.company.googleReviewLinkPlaceholder": "Fügen Sie hier den Google-Bewertungslink Ihrer Unterkunft ein",
+    "settings.company.googleReviewLinkHint": "Sobald ausgefüllt, erhält der Gast automatisch eine Bewertungsanfrage direkt nach dem Checkout.",
   },
 
   ja: {
@@ -9663,6 +9683,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "会話の開始中に接続エラーが発生しました。",
     "contacts.searchResultsTitle": "保存済みの連絡先",
     "chats.searchPlaceholder": "会話または保存済みの連絡先を検索...",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Googleクチコミのリンク（任意）",
+    "settings.company.googleReviewLinkPlaceholder": "宿泊施設のGoogleクチコミリンクをここに貼り付けてください",
+    "settings.company.googleReviewLinkHint": "入力すると、ゲストはチェックアウト直後に自動でクチコミ依頼を受け取ります。",
   },
 
   it: {
@@ -11245,6 +11269,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Errore di connessione durante l'avvio della conversazione.",
     "contacts.searchResultsTitle": "Contatti salvati",
     "chats.searchPlaceholder": "Cerca conversazione o contatto salvato...",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Link recensione Google (opzionale)",
+    "settings.company.googleReviewLinkPlaceholder": "Incolla qui il link recensione Google della tua struttura",
+    "settings.company.googleReviewLinkHint": "Una volta compilato, l'ospite riceve automaticamente una richiesta di recensione subito dopo il checkout.",
   },
 
   zh: {
@@ -12827,6 +12855,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "开始对话时连接出错。",
     "contacts.searchResultsTitle": "已保存的联系人",
     "chats.searchPlaceholder": "搜索对话或已保存的联系人……",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Google 评价链接（可选）",
+    "settings.company.googleReviewLinkPlaceholder": "在此粘贴您住宿的 Google 评价链接",
+    "settings.company.googleReviewLinkHint": "填写后，客人退房后会自动收到评价请求。",
   },
   ru: {
     "nav.dashboard": "Панель управления",
@@ -14408,6 +14440,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Ошибка соединения при начале разговора.",
     "contacts.searchResultsTitle": "Сохранённые контакты",
     "chats.searchPlaceholder": "Поиск разговора или сохранённого контакта...",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Ссылка для отзыва в Google (необязательно)",
+    "settings.company.googleReviewLinkPlaceholder": "Вставьте сюда ссылку для отзыва вашего объекта в Google",
+    "settings.company.googleReviewLinkHint": "После заполнения гость автоматически получит запрос на отзыв сразу после выезда.",
   },
 
   ko: {
@@ -15990,6 +16026,10 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "대화 시작 중 연결 오류가 발생했습니다.",
     "contacts.searchResultsTitle": "저장된 연락처",
     "chats.searchPlaceholder": "대화 또는 저장된 연락처 검색...",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Google 리뷰 링크(선택)",
+    "settings.company.googleReviewLinkPlaceholder": "숙소의 Google 리뷰 링크를 여기에 붙여넣으세요",
+    "settings.company.googleReviewLinkHint": "입력하면 투숙객이 체크아웃 즉시 자동으로 리뷰 요청을 받습니다.",
   },
 
   nl: {
@@ -17572,5 +17612,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Verbindingsfout bij het starten van het gesprek.",
     "contacts.searchResultsTitle": "Opgeslagen contacten",
     "chats.searchPlaceholder": "Gesprek of opgeslagen contact zoeken...",
+    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
+    "settings.company.googleReviewLinkLabel": "Google-reviewlink (optioneel)",
+    "settings.company.googleReviewLinkPlaceholder": "Plak hier de Google-reviewlink van je accommodatie",
+    "settings.company.googleReviewLinkHint": "Als dit is ingevuld, ontvangt de gast direct na het uitchecken automatisch een reviewverzoek.",
   },
 };
