@@ -171,7 +171,7 @@
     <div class="actions">
       <div class="hostel-selector-wrap">
         <div class="hostel-mini" onclick="togglePropertySelector(event)" title="Ir para o dashboard de uma propriedade" data-i18n-title="propertySelector.title">
-          <div class="hostel-avatar">🏢</div>
+          <div class="hostel-avatar"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h2M14 6h2M8 10h2M14 10h2M8 14h2M14 14h2"/></svg></div>
           <div class="profile-copy">
             <div class="hostel-name" data-i18n="propertySelector.name">Propriedades</div>
             <div class="hostel-meta" data-i18n="propertySelector.meta">Ir para o dashboard de...</div>
@@ -3734,7 +3734,18 @@
 
   const STATUS_KEYS = ["trialing", "active", "past_due", "canceled", "comp"];
   function statusLabel(status){ return STATUS_KEYS.includes(status) ? AT(`status.${status}`) : (status || "—"); }
-  const KIND_ICONS = { lodging: "🏨", agency: "✈️" };
+  function kindIconSvg(pathsHtml){
+    // width/height em 1em (nao px fixo) pra herdar o mesmo tamanho que o
+    // emoji antigo tinha de graca via font-size - cada .ico tem um
+    // font-size proprio (.alert-row/.prop-row), reaproveitado sem
+    // precisar de variante por contexto.
+    return `<svg viewBox="0 0 24 24" style="width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.15em">${pathsHtml}</svg>`;
+  }
+  const KIND_ICONS = {
+    lodging: kindIconSvg('<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h2M14 6h2M8 10h2M14 10h2M8 14h2M14 14h2"/>'),
+    agency: kindIconSvg('<path d="M17.8 19.2 16 11l3.5-3.5c1.5-1.5 2-3.5 1.5-4.5-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-1 .1-1.3.5l-.7.9c-.4.5-.2 1.3.4 1.6L9 12l-2 3H3l-1 1.5 3.5 1L7 21l1.5-1v-4l3-2 3.4 5.8c.3.6 1.1.8 1.6.4l.9-.7c.4-.3.6-.8.5-1.3z"/>'),
+  };
+  const KIND_ICON_IMOBILIARIA = kindIconSvg('<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/>');
   // Imobiliaria e' account_kind='agency' com agency_category='imobiliaria'
   // - antes disso KIND_ICONS[account_kind] sozinho mostrava aviao (generico
   // de agencia) pra QUALQUER categoria, imobiliaria incluida. h aceita
@@ -3744,7 +3755,7 @@
   function kindIcon(h, agencyCategory){
     const accountKind = (h && typeof h === "object") ? h.account_kind : h;
     const category = (h && typeof h === "object") ? h.agency_category : agencyCategory;
-    if(accountKind === "agency" && category === "imobiliaria") return "🏠";
+    if(accountKind === "agency" && category === "imobiliaria") return KIND_ICON_IMOBILIARIA;
     return KIND_ICONS[accountKind] || "";
   }
 
@@ -3755,7 +3766,7 @@
     const trial = h.trial_days_left != null ? AT("properties.trialSuffix", { days: h.trial_days_left }) : "";
     return `
       <a class="prop-row" href="admin-hostel.html?id=${h.hostel_id}">
-        <div class="ico">${kindIcon(h) || "🏢"}</div>
+        <div class="ico">${kindIcon(h) || KIND_ICONS.lodging}</div>
         <div>
           <div class="name">${h.hostel_name || AT("properties.noName")}</div>
           <div class="meta">${h.plan_name || AT("properties.noPlan")}${trial}</div>

@@ -197,7 +197,7 @@
         adminBtn.style.marginBottom = "16px";
         adminBtn.style.fontSize = "16px";
         adminBtn.style.padding = "16px";
-        adminBtn.textContent = "🛠 StayFlow — Admin (Meu painel)";
+        adminBtn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:8px"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>StayFlow — Admin (Meu painel)';
         adminBtn.addEventListener("click", () => {
           window.location.href = "admin.html";
         });
