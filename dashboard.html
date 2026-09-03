@@ -2807,6 +2807,16 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="geral" data-required-account-kind="lodging" onclick="openGoogleReviewModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="googleReview.title">⭐ Avaliações no Google</h2>
+            <p class="settings-summary-desc" id="googleReviewSummaryDesc" data-i18n="googleReview.summaryDescOff">Peça avaliação no Google automaticamente assim que o hóspede faz checkout.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <div class="card" data-settings-section="empresa">
         <h2 data-i18n="settings.company.title">Empresa</h2>
         <p data-i18n="settings.company.desc" style="margin-bottom:14px">Dados legais, horários padrão e identidade visual da hospedagem.</p>
@@ -2852,11 +2862,6 @@ async function deleteRoleConfirm(roleId){
           </div>
           <div class="span-12">
             <input type="text" data-setting="logo_url" data-i18n-placeholder="settings.company.logoUrlPlaceholder" placeholder="URL do logo (opcional - cole o link de uma imagem já hospedada)">
-          </div>
-          <div class="span-12" data-required-account-kind="lodging">
-            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px" data-i18n="settings.company.googleReviewLinkLabel">Link de avaliação do Google (opcional)</label>
-            <input type="text" data-setting="google_review_link" data-i18n-placeholder="settings.company.googleReviewLinkPlaceholder" placeholder="Cole aqui o link de avaliação da sua hospedagem no Google">
-            <p style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="settings.company.googleReviewLinkHint">Quando preenchido, o hóspede recebe um pedido de avaliação automático assim que faz checkout.</p>
           </div>
         </div>
 
@@ -5714,6 +5719,74 @@ async function deleteRoleConfirm(roleId){
       setTimeout(() => { if(typeof closeGenericModal === "function") closeGenericModal(); }, 900);
     }catch(e){
       if(msg){ msg.textContent = T('ownerMode.saveConnError', 'Erro de conexão ao salvar.'); msg.classList.add("error"); }
+    }
+  };
+
+  // Avaliacoes no Google - opt-in so pela PRESENCA do link (sem toggle
+  // separado, ver database.py::send_checkout_review_request). Reaproveita
+  // a mesma rota generica /settings que qualquer outro campo de
+  // Configuracoes usa, so chamada direto pelo modal em vez de
+  // saveSettings() em lote.
+  window.loadGoogleReviewSummary = async function(){
+    try{
+      const res = await fetch("/settings", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+      const summaryEl = document.getElementById("googleReviewSummaryDesc");
+      if(summaryEl){
+        summaryEl.textContent = data.google_review_link
+          ? T('googleReview.summaryDescOn', 'Ativado — hóspede recebe o pedido de avaliação assim que faz checkout.')
+          : T('googleReview.summaryDescOff', 'Peça avaliação no Google automaticamente assim que o hóspede faz checkout.');
+      }
+    }catch(e){
+      console.warn("Erro ao carregar resumo de Avaliações no Google:", e);
+    }
+  };
+
+  window.openGoogleReviewModal = async function(){
+    openGenericModal(T('googleReview.title', '⭐ Avaliações no Google'), `
+      <p style="margin-bottom:14px">${T('googleReview.modalDesc', 'Cole aqui o link de avaliação da sua hospedagem no Google. Quando configurado, o hóspede recebe uma mensagem pedindo uma avaliação rápida assim que faz checkout — enquanto a experiência ainda está fresca.')}</p>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('googleReview.linkLabel', 'Link de avaliação do Google')}</label>
+        <input type="text" id="googleReviewLinkInput" placeholder="${T('googleReview.linkPlaceholder', 'Cole aqui o link de avaliação da sua hospedagem no Google')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div id="googleReviewMessage" class="generic-modal-message"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="submitGoogleReviewLink()">${T('common.save', 'Salvar')}</button>
+      </div>
+    `);
+    try{
+      const res = await fetch("/settings", { credentials: "same-origin" });
+      if(res.ok){
+        const data = await res.json();
+        const input = document.getElementById("googleReviewLinkInput");
+        if(input && data.google_review_link) input.value = data.google_review_link;
+      }
+    }catch(e){
+      console.warn("Erro ao carregar link de Avaliações no Google:", e);
+    }
+  };
+
+  window.submitGoogleReviewLink = async function(){
+    const msg = document.getElementById("googleReviewMessage");
+    const link = (document.getElementById("googleReviewLinkInput")?.value || "").trim();
+    if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+    try{
+      const res = await fetch("/settings", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ google_review_link: link })
+      });
+      if(!res.ok){
+        if(msg){ msg.textContent = T('common.saveFailed', 'Não foi possível salvar.'); msg.classList.add("error"); }
+        return;
+      }
+      loadGoogleReviewSummary();
+      if(msg){ msg.textContent = T('common.savedMessage', 'Salvo!'); msg.classList.add("success"); }
+      setTimeout(() => { if(typeof closeGenericModal === "function") closeGenericModal(); }, 900);
+    }catch(e){
+      if(msg){ msg.textContent = T('common.saveConnError', 'Erro de conexão ao salvar.'); msg.classList.add("error"); }
     }
   };
 
@@ -13988,7 +14061,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     portfolio: ["loadPortfolio"],
     partners: ["loadPartners"],
     reports: ["loadReports"],
-    settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadOwnerModeSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings", "loadNuvemshopSettings", "loadBillingSummary"]
+    settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadOwnerModeSummary", "loadGoogleReviewSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings", "loadNuvemshopSettings", "loadBillingSummary"]
   };
 
   function reloadDynamicContent(pageId){
