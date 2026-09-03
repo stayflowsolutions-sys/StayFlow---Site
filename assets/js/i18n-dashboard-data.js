@@ -1637,10 +1637,13 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Erro de conexão ao iniciar a conversa.",
     "contacts.searchResultsTitle": "Contatos salvos",
     "chats.searchPlaceholder": "Buscar conversa ou contato salvo...",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Link de avaliação do Google (opcional)",
-    "settings.company.googleReviewLinkPlaceholder": "Cole aqui o link de avaliação da sua hospedagem no Google",
-    "settings.company.googleReviewLinkHint": "Quando preenchido, o hóspede recebe um pedido de avaliação automático assim que faz checkout.",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Avaliações no Google",
+    "googleReview.summaryDescOn": "Ativado — hóspede recebe o pedido de avaliação assim que faz checkout.",
+    "googleReview.summaryDescOff": "Peça avaliação no Google automaticamente assim que o hóspede faz checkout.",
+    "googleReview.modalDesc": "Cole aqui o link de avaliação da sua hospedagem no Google. Quando configurado, o hóspede recebe uma mensagem pedindo uma avaliação rápida assim que faz checkout — enquanto a experiência ainda está fresca.",
+    "googleReview.linkLabel": "Link de avaliação do Google",
+    "googleReview.linkPlaceholder": "Cole aqui o link de avaliação da sua hospedagem no Google",
   },
   en: {
     "nav.dashboard": "Dashboard",
@@ -3252,10 +3255,13 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Connection error starting the conversation.",
     "contacts.searchResultsTitle": "Saved contacts",
     "chats.searchPlaceholder": "Search conversation or saved contact...",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Google review link (optional)",
-    "settings.company.googleReviewLinkPlaceholder": "Paste your property's Google review link here",
-    "settings.company.googleReviewLinkHint": "When filled in, the guest automatically receives a review request as soon as they check out.",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Google reviews",
+    "googleReview.summaryDescOn": "Active — the guest receives the review request as soon as they check out.",
+    "googleReview.summaryDescOff": "Automatically ask for a Google review as soon as the guest checks out.",
+    "googleReview.modalDesc": "Paste your property's Google review link here. Once set, the guest gets a message asking for a quick review as soon as they check out — while the experience is still fresh.",
+    "googleReview.linkLabel": "Google review link",
+    "googleReview.linkPlaceholder": "Paste your property's Google review link here",
   },
   es: {
     "nav.dashboard": "Dashboard",
@@ -4867,10 +4873,13 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Error de conexión al iniciar la conversación.",
     "contacts.searchResultsTitle": "Contactos guardados",
     "chats.searchPlaceholder": "Buscar conversación o contacto guardado...",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Enlace de reseña de Google (opcional)",
-    "settings.company.googleReviewLinkPlaceholder": "Pegá acá el enlace de reseña de tu hospedaje en Google",
-    "settings.company.googleReviewLinkHint": "Cuando está completo, el huésped recibe un pedido de reseña automático apenas hace el checkout.",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Reseñas de Google",
+    "googleReview.summaryDescOn": "Activado — el huésped recibe el pedido de reseña apenas hace el checkout.",
+    "googleReview.summaryDescOff": "Pedí una reseña en Google automáticamente apenas el huésped hace el checkout.",
+    "googleReview.modalDesc": "Pegá acá el enlace de reseña de tu hospedaje en Google. Una vez configurado, el huésped recibe un mensaje pidiendo una reseña rápida apenas hace el checkout, mientras la experiencia todavía está fresca.",
+    "googleReview.linkLabel": "Enlace de reseña de Google",
+    "googleReview.linkPlaceholder": "Pegá acá el enlace de reseña de tu hospedaje en Google",
   },
   fr: {
     "nav.dashboard": "Dashboard",
@@ -6482,10 +6491,13 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Erreur de connexion lors du démarrage de la conversation.",
     "contacts.searchResultsTitle": "Contacts enregistrés",
     "chats.searchPlaceholder": "Rechercher une conversation ou un contact enregistré...",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Lien d'avis Google (optionnel)",
-    "settings.company.googleReviewLinkPlaceholder": "Collez ici le lien d'avis Google de votre établissement",
-    "settings.company.googleReviewLinkHint": "Une fois rempli, le client reçoit automatiquement une demande d'avis dès son départ.",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Avis Google",
+    "googleReview.summaryDescOn": "Activé — le client reçoit la demande d'avis dès son départ.",
+    "googleReview.summaryDescOff": "Demandez automatiquement un avis Google dès que le client part.",
+    "googleReview.modalDesc": "Collez ici le lien d'avis Google de votre établissement. Une fois configuré, le client reçoit un message lui demandant un avis rapide dès son départ, pendant que l'expérience est encore fraîche.",
+    "googleReview.linkLabel": "Lien d'avis Google",
+    "googleReview.linkPlaceholder": "Collez ici le lien d'avis Google de votre établissement",
   },
   de: {
     "nav.dashboard": "Dashboard",
@@ -8097,10 +8109,13 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Verbindungsfehler beim Starten des Gesprächs.",
     "contacts.searchResultsTitle": "Gespeicherte Kontakte",
     "chats.searchPlaceholder": "Gespräch oder gespeicherten Kontakt suchen...",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Google-Bewertungslink (optional)",
-    "settings.company.googleReviewLinkPlaceholder": "Fügen Sie hier den Google-Bewertungslink Ihrer Unterkunft ein",
-    "settings.company.googleReviewLinkHint": "Sobald ausgefüllt, erhält der Gast automatisch eine Bewertungsanfrage direkt nach dem Checkout.",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Google-Bewertungen",
+    "googleReview.summaryDescOn": "Aktiv — der Gast erhält die Bewertungsanfrage direkt nach dem Checkout.",
+    "googleReview.summaryDescOff": "Fordern Sie automatisch eine Google-Bewertung an, sobald der Gast auscheckt.",
+    "googleReview.modalDesc": "Fügen Sie hier den Google-Bewertungslink Ihrer Unterkunft ein. Sobald konfiguriert, erhält der Gast direkt nach dem Checkout eine Nachricht mit der Bitte um eine kurze Bewertung — solange die Erfahrung noch frisch ist.",
+    "googleReview.linkLabel": "Google-Bewertungslink",
+    "googleReview.linkPlaceholder": "Fügen Sie hier den Google-Bewertungslink Ihrer Unterkunft ein",
   },
 
   ja: {
@@ -9683,10 +9698,13 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "会話の開始中に接続エラーが発生しました。",
     "contacts.searchResultsTitle": "保存済みの連絡先",
     "chats.searchPlaceholder": "会話または保存済みの連絡先を検索...",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Googleクチコミのリンク（任意）",
-    "settings.company.googleReviewLinkPlaceholder": "宿泊施設のGoogleクチコミリンクをここに貼り付けてください",
-    "settings.company.googleReviewLinkHint": "入力すると、ゲストはチェックアウト直後に自動でクチコミ依頼を受け取ります。",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Googleクチコミ",
+    "googleReview.summaryDescOn": "有効 — ゲストはチェックアウト直後にクチコミ依頼を受け取ります。",
+    "googleReview.summaryDescOff": "ゲストがチェックアウトすると自動でGoogleクチコミを依頼します。",
+    "googleReview.modalDesc": "宿泊施設のGoogleクチコミリンクをここに貼り付けてください。設定すると、ゲストはチェックアウト直後に、体験の記憶が新しいうちに簡単なクチコミをお願いするメッセージを受け取ります。",
+    "googleReview.linkLabel": "Googleクチコミのリンク",
+    "googleReview.linkPlaceholder": "宿泊施設のGoogleクチコミリンクをここに貼り付けてください",
   },
 
   it: {
@@ -11269,10 +11287,13 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Errore di connessione durante l'avvio della conversazione.",
     "contacts.searchResultsTitle": "Contatti salvati",
     "chats.searchPlaceholder": "Cerca conversazione o contatto salvato...",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Link recensione Google (opzionale)",
-    "settings.company.googleReviewLinkPlaceholder": "Incolla qui il link recensione Google della tua struttura",
-    "settings.company.googleReviewLinkHint": "Una volta compilato, l'ospite riceve automaticamente una richiesta di recensione subito dopo il checkout.",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Recensioni Google",
+    "googleReview.summaryDescOn": "Attivo — l'ospite riceve la richiesta di recensione subito dopo il checkout.",
+    "googleReview.summaryDescOff": "Richiedi automaticamente una recensione Google non appena l'ospite fa il checkout.",
+    "googleReview.modalDesc": "Incolla qui il link recensione Google della tua struttura. Una volta impostato, l'ospite riceve un messaggio che chiede una recensione rapida subito dopo il checkout, mentre l'esperienza è ancora fresca.",
+    "googleReview.linkLabel": "Link recensione Google",
+    "googleReview.linkPlaceholder": "Incolla qui il link recensione Google della tua struttura",
   },
 
   zh: {
@@ -12855,10 +12876,13 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "开始对话时连接出错。",
     "contacts.searchResultsTitle": "已保存的联系人",
     "chats.searchPlaceholder": "搜索对话或已保存的联系人……",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Google 评价链接（可选）",
-    "settings.company.googleReviewLinkPlaceholder": "在此粘贴您住宿的 Google 评价链接",
-    "settings.company.googleReviewLinkHint": "填写后，客人退房后会自动收到评价请求。",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Google 评价",
+    "googleReview.summaryDescOn": "已启用 — 客人退房后会立即收到评价请求。",
+    "googleReview.summaryDescOff": "客人退房后自动请求 Google 评价。",
+    "googleReview.modalDesc": "在此粘贴您住宿的 Google 评价链接。设置后，客人退房时会立即收到一条消息，请求快速评价 — 趁体验记忆犹新。",
+    "googleReview.linkLabel": "Google 评价链接",
+    "googleReview.linkPlaceholder": "在此粘贴您住宿的 Google 评价链接",
   },
   ru: {
     "nav.dashboard": "Панель управления",
@@ -14440,10 +14464,13 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Ошибка соединения при начале разговора.",
     "contacts.searchResultsTitle": "Сохранённые контакты",
     "chats.searchPlaceholder": "Поиск разговора или сохранённого контакта...",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Ссылка для отзыва в Google (необязательно)",
-    "settings.company.googleReviewLinkPlaceholder": "Вставьте сюда ссылку для отзыва вашего объекта в Google",
-    "settings.company.googleReviewLinkHint": "После заполнения гость автоматически получит запрос на отзыв сразу после выезда.",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Отзывы в Google",
+    "googleReview.summaryDescOn": "Активно — гость получает запрос на отзыв сразу после выезда.",
+    "googleReview.summaryDescOff": "Автоматически запрашивайте отзыв в Google сразу после выезда гостя.",
+    "googleReview.modalDesc": "Вставьте сюда ссылку для отзыва вашего объекта в Google. После настройки гость сразу после выезда получит сообщение с просьбой оставить короткий отзыв, пока впечатления ещё свежи.",
+    "googleReview.linkLabel": "Ссылка для отзыва в Google",
+    "googleReview.linkPlaceholder": "Вставьте сюда ссылку для отзыва вашего объекта в Google",
   },
 
   ko: {
@@ -16026,10 +16053,13 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "대화 시작 중 연결 오류가 발생했습니다.",
     "contacts.searchResultsTitle": "저장된 연락처",
     "chats.searchPlaceholder": "대화 또는 저장된 연락처 검색...",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Google 리뷰 링크(선택)",
-    "settings.company.googleReviewLinkPlaceholder": "숙소의 Google 리뷰 링크를 여기에 붙여넣으세요",
-    "settings.company.googleReviewLinkHint": "입력하면 투숙객이 체크아웃 즉시 자동으로 리뷰 요청을 받습니다.",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Google 리뷰",
+    "googleReview.summaryDescOn": "활성화됨 — 투숙객이 체크아웃 즉시 리뷰 요청을 받습니다.",
+    "googleReview.summaryDescOff": "투숙객이 체크아웃하면 자동으로 Google 리뷰를 요청합니다.",
+    "googleReview.modalDesc": "숙소의 Google 리뷰 링크를 여기에 붙여넣으세요. 설정하면 투숙객이 체크아웃 직후, 경험이 아직 생생할 때 간단한 리뷰를 요청하는 메시지를 받습니다.",
+    "googleReview.linkLabel": "Google 리뷰 링크",
+    "googleReview.linkPlaceholder": "숙소의 Google 리뷰 링크를 여기에 붙여넣으세요",
   },
 
   nl: {
@@ -17612,9 +17642,12 @@ const STAYFLOW_DASHBOARD_I18N = {
     "contacts.startChatConnError": "Verbindingsfout bij het starten van het gesprek.",
     "contacts.searchResultsTitle": "Opgeslagen contacten",
     "chats.searchPlaceholder": "Gesprek of opgeslagen contact zoeken...",
-    // ==== Pedido de avaliacao pos-checkout (v1.117.0) ====
-    "settings.company.googleReviewLinkLabel": "Google-reviewlink (optioneel)",
-    "settings.company.googleReviewLinkPlaceholder": "Plak hier de Google-reviewlink van je accommodatie",
-    "settings.company.googleReviewLinkHint": "Als dit is ingevuld, ontvangt de gast direct na het uitchecken automatisch een reviewverzoek.",
+    // ==== Botao "Avaliacoes no Google" em Configuracoes (v1.118.0) ====
+    "googleReview.title": "⭐ Google-reviews",
+    "googleReview.summaryDescOn": "Actief — de gast ontvangt het reviewverzoek direct na het uitchecken.",
+    "googleReview.summaryDescOff": "Vraag automatisch om een Google-review zodra de gast uitcheckt.",
+    "googleReview.modalDesc": "Plak hier de Google-reviewlink van je accommodatie. Zodra dit is ingesteld, ontvangt de gast direct na het uitchecken een bericht met het verzoek om een korte review — terwijl de ervaring nog vers is.",
+    "googleReview.linkLabel": "Google-reviewlink",
+    "googleReview.linkPlaceholder": "Plak hier de Google-reviewlink van je accommodatie",
   },
 };

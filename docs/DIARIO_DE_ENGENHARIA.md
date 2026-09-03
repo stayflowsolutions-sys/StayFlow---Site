@@ -10723,3 +10723,47 @@ só precisou adicionar o nome do campo à lista e ao `SELECT` da rota;
 (3) paridade de chaves nos 11 idiomas (`tools/check_i18n_parity.py`,
 1.576→1.579) e balanceamento de chaves/parênteses/colchetes de
 `dashboard.html`/`i18n-dashboard-data.js` antes de publicar.
+
+### Botão dedicado pro link de avaliação, em vez de campo inline (v1.118.0)
+
+Publiquei a v1.117.0 e o usuário respondeu na hora: "quero que prepare
+um botão onde faça sentido pro dono da hospedagem cadastrar o link de
+avaliação em algum lugar né". Ele tinha razão - eu tinha enfiado o
+campo dentro do formulário grande de Empresa, junto com razão social,
+CUIT, endereço, timezone, moeda, check-in/check-out e logo. Funcional,
+mas fácil de nunca notar no meio de tanto campo, e sem destaque nenhum
+pra uma feature que manda mensagem automática pro hóspede.
+
+Em vez de inventar um padrão novo, copiei exatamente o que já existe
+pro Modo Dono: um card clicável em Configurações > Geral com resumo
+dinâmico (mostra se está Ativado ou não, sem precisar abrir nada) que
+abre um modal dedicado com explicação, campo e botão Salvar. Coloquei
+o card logo ao lado do Modo Dono - mesma seção, mesmo padrão visual,
+dono já espera encontrar esse tipo de configuração ali. O modal chama
+`/settings` direto (GET pra carregar o valor atual, POST pra salvar),
+em vez de passar pelo `saveSettings()` em lote que o formulário de
+Empresa usa - mais parecido com o `PUT /team/my-owner-mode` do Modo
+Dono do que com o resto de Empresa.
+
+**Zero mudança de backend.** `send_checkout_review_request` e o campo
+`settings.google_review_link` da v1.117.0 continuam idênticos - essa
+versão é 100% sobre ONDE e COMO o dono cadastra o link, não sobre o
+que acontece depois de cadastrado. Reaproveitei também as chaves i18n
+genéricas que já existiam (`common.save`/`common.savedMessage`/
+`common.saveFailed`/`common.saveConnError`) em vez de duplicar um set
+próprio, mesma economia que o Modo Dono já tinha feito.
+
+**Limpeza de dívida no caminho**: como o campo antigo saiu do
+formulário de Empresa, as 3 chaves i18n que ele usava
+(`settings.company.googleReviewLink{Label,Placeholder,Hint}`) ficariam
+órfãs se eu só adicionasse as novas por cima - removidas dos 11
+idiomas antes de inserir as 6 chaves novas do namespace `googleReview.*`,
+confirmado depois via grep que não sobrou nem referência no HTML nem
+chave morta no dicionário.
+
+Testado: paridade de chaves nos 11 idiomas (`tools/check_i18n_parity.py`,
+1.579→1.582), balanceamento de chaves/parênteses/colchetes de
+`dashboard.html`/`i18n-dashboard-data.js`, grep confirmando remoção
+limpa das 3 chaves antigas (nenhuma referência sobrando) e nenhum
+`data-setting="google_review_link"` esquecido no HTML. Sem rota nem
+schema novo - mudança inteira ficou no frontend.
