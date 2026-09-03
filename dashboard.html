@@ -1330,6 +1330,9 @@ async function deleteRoleConfirm(roleId){
     <button data-page="guests" data-hide-for-account-kind="promoter" onclick="openPage('guests',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4"/><circle cx="12" cy="9" r="3"/><path d="M20 19c0-1.7-1-3.1-2.5-3.7"/><path d="M17 7.2a2.5 2.5 0 0 1 0 3.6"/></svg></span><span data-i18n="nav.guests" id="navGuestsLabel">Hóspedes</span>
     </button>
+    <button data-page="contacts" data-required-permission="chats" data-hide-for-account-kind="promoter" onclick="openPage('contacts',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4z"/><circle cx="10" cy="11" r="2.5"/><path d="M6 17c.5-2 2-3 4-3s3.5 1 4 3"/><path d="M2 8v8"/></svg></span><span data-i18n="nav.contacts">Contatos</span>
+    </button>
     <button data-page="operations" data-required-account-kind="lodging" onclick="openPage('operations',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span><span data-i18n="nav.operations">Operações</span>
     </button>
@@ -1724,13 +1727,17 @@ async function deleteRoleConfirm(roleId){
 <!-- CHATS -->
 <section id="chats" class="page">
   <div class="chat-layout" data-mobile-view="list">
-    <div class="card chat-list" id="realChatList">
-      <h2 data-i18n="chats.conversationsTitle">Conversas</h2>
-      <!-- chats-live.js preenche esta área -->
-      <div class="sf-empty" id="chatListEmpty">
-        <div>
-          <strong data-i18n="chats.emptyTitle">Nenhuma conversa encontrada.</strong>
-          <span data-i18n="chats.emptyDesc">Assim que o StayFlow estiver conectado ao seu WhatsApp ou canal de mensagens, as conversas reais aparecerão nesta lista.</span>
+    <div class="chat-list-wrap" style="display:flex;flex-direction:column;height:100%;min-height:0;gap:8px">
+      <input type="text" id="chatContactSearchInput" oninput="handleChatContactSearch(this.value)" placeholder="Buscar conversa ou contato salvo..." data-i18n-placeholder="chats.searchPlaceholder" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 14px;flex:0 0 auto">
+      <div id="chatContactSearchResults" style="display:none;flex:0 0 auto"></div>
+      <div class="card chat-list" id="realChatList" style="flex:1;min-height:0">
+        <h2 data-i18n="chats.conversationsTitle">Conversas</h2>
+        <!-- chats-live.js preenche esta área -->
+        <div class="sf-empty" id="chatListEmpty">
+          <div>
+            <strong data-i18n="chats.emptyTitle">Nenhuma conversa encontrada.</strong>
+            <span data-i18n="chats.emptyDesc">Assim que o StayFlow estiver conectado ao seu WhatsApp ou canal de mensagens, as conversas reais aparecerão nesta lista.</span>
+          </div>
         </div>
       </div>
     </div>
@@ -2343,6 +2350,24 @@ async function deleteRoleConfirm(roleId){
         <!-- preenchido por live -->
       </tbody>
     </table>
+  </div>
+</section>
+
+<!-- CONTACTS -->
+<section id="contacts" class="page">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <h2 style="margin:0" data-i18n="contacts.title">📇 Contatos</h2>
+      <button type="button" class="btn primary" onclick="openContactModal()" data-i18n="contacts.addBtn">➕ Novo contato</button>
+    </div>
+    <input type="text" id="contactsSearchInput" oninput="handleContactsSearch(this.value)" placeholder="Buscar por nome ou telefone..." data-i18n-placeholder="contacts.searchPlaceholder" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 14px;margin-bottom:16px">
+    <div class="sf-empty" id="contactsEmpty">
+      <div>
+        <strong data-i18n="contacts.emptyTitle">Nenhum contato cadastrado ainda.</strong>
+        <span data-i18n="contacts.emptyDesc">Cadastre contatos aqui pra encontrá-los rápido na aba Chats e mandar mensagem, mesmo antes de eles falarem com você.</span>
+      </div>
+    </div>
+    <div id="contactsList" style="display:grid;gap:8px"></div>
   </div>
 </section>
 
@@ -12421,6 +12446,198 @@ window.onSettingsHostelTypeChange = async function(){
 
 // ===== HÓSPEDES: /guests =====
 
+// ===== Contatos (agenda) - v1.116.0. Separado de hospedes de proposito:
+// contato e alguem que a equipe SALVOU (pode nunca ter mandado
+// mensagem), hospede so existe depois de uma conversa real. =====
+
+let contactsSearchDebounce = null;
+
+window.loadContacts = async function(search){
+  const emptyEl = document.getElementById("contactsEmpty");
+  const listEl = document.getElementById("contactsList");
+  if(!listEl) return;
+
+  try{
+    const url = search ? `/contacts?search=${encodeURIComponent(search)}` : "/contacts";
+    const res = await fetch(url, { credentials: "same-origin" });
+    if(!res.ok) return;
+    const contacts = await res.json();
+
+    if(!contacts.length){
+      if(emptyEl) emptyEl.style.display = "flex";
+      listEl.innerHTML = "";
+      return;
+    }
+    if(emptyEl) emptyEl.style.display = "none";
+    listEl.innerHTML = contacts.map(contactRowHtml).join("");
+  }catch(e){
+    console.warn("Erro ao carregar contatos:", e);
+  }
+};
+
+function contactRowHtml(contact){
+  return `
+    <div class="card" style="margin:0;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <strong>${escapeHtml(contact.name)}</strong>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${escapeHtml(contact.phone || "")}${contact.email ? " · " + escapeHtml(contact.email) : ""}</div>
+        ${contact.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">${escapeHtml(contact.notes)}</div>` : ""}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button type="button" class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startChatWithContactUI(${contact.id})" ${contact.phone ? "" : "disabled"}>💬 ${T('contacts.messageBtn', 'Mandar mensagem')}</button>
+        <button type="button" class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="openContactModal(${contact.id})">${T('common.edit', 'Editar')}</button>
+        <button type="button" class="btn red" style="font-size:12px;padding:6px 12px" onclick="deleteContactUI(${contact.id}, '${escapeHtml(contact.name).replace(/'/g, "\\'")}')">${T('common.delete', 'Excluir')}</button>
+      </div>
+    </div>
+  `;
+}
+
+window.handleContactsSearch = function(value){
+  clearTimeout(contactsSearchDebounce);
+  contactsSearchDebounce = setTimeout(() => loadContacts(value.trim()), 250);
+};
+
+window._contactsCache = [];
+
+window.openContactModal = async function(contactId){
+  let contact = null;
+  if(contactId){
+    const res = await fetch("/contacts", { credentials: "same-origin" });
+    const contacts = res.ok ? await res.json() : [];
+    contact = contacts.find(c => c.id === contactId);
+  }
+
+  openGenericModal(contact ? T('contacts.editTitle', 'Editar contato') : T('contacts.newTitle', 'Novo contato'), `
+    <div style="display:grid;gap:var(--gap)">
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.name', 'Nome')}</label>
+        <input type="text" id="contactName" value="${contact ? escapeHtml(contact.name) : ""}" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.phone', 'Telefone')}</label>
+        <input type="tel" id="contactPhone" value="${contact && contact.phone ? escapeHtml(contact.phone) : ""}" placeholder="${T('ownerMode.phonePlaceholder', 'Ex: 5492611234567')}" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.email', 'Email')}</label>
+        <input type="email" id="contactEmail" value="${contact && contact.email ? escapeHtml(contact.email) : ""}" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('contacts.notesLabel', 'Notas (opcional)')}</label>
+        <textarea id="contactNotes" rows="2" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical">${contact && contact.notes ? escapeHtml(contact.notes) : ""}</textarea>
+      </div>
+    </div>
+    <div id="contactMessage" class="generic-modal-message"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="submitContact(${contactId || "null"})">${T('common.save', 'Salvar')}</button>
+    </div>
+  `);
+};
+
+window.submitContact = async function(contactId){
+  const msg = document.getElementById("contactMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const payload = {
+    name: document.getElementById("contactName").value.trim(),
+    phone: document.getElementById("contactPhone").value.trim(),
+    email: document.getElementById("contactEmail").value.trim(),
+    notes: document.getElementById("contactNotes").value.trim(),
+  };
+
+  try{
+    const res = await fetch(contactId ? `/contacts/${contactId}` : "/contacts", {
+      method: contactId ? "PATCH" : "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      if(msg){ msg.textContent = data.message || T('contacts.saveFailed', 'Não foi possível salvar o contato.'); msg.classList.add("error"); }
+      return;
+    }
+    if(typeof closeGenericModal === "function") closeGenericModal();
+    loadContacts();
+  }catch(e){
+    if(msg){ msg.textContent = T('contacts.saveConnError', 'Erro de conexão ao salvar.'); msg.classList.add("error"); }
+  }
+};
+
+window.deleteContactUI = async function(contactId, name){
+  if(!confirm(T('contacts.deleteConfirm', 'Excluir o contato "{name}"?', { name }))) return;
+  try{
+    await fetch(`/contacts/${contactId}`, { method: "DELETE", credentials: "same-origin" });
+    loadContacts();
+  }catch(e){
+    console.warn("Erro ao excluir contato:", e);
+  }
+};
+
+window.startChatWithContactUI = async function(contactId){
+  try{
+    const res = await fetch(`/contacts/${contactId}/start-chat`, { method: "POST", credentials: "same-origin" });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      alert(data.message || T('contacts.startChatFailed', 'Não foi possível iniciar a conversa.'));
+      return;
+    }
+    openPage("chats", document.querySelector('[data-page="chats"]'));
+    if(typeof loadGuestProfile === "function") loadGuestProfile(data.guest_id);
+    if(window.innerWidth <= 1100 && typeof setChatMobileView === "function") setChatMobileView("chat");
+  }catch(e){
+    alert(T('contacts.startChatConnError', 'Erro de conexão ao iniciar a conversa.'));
+  }
+};
+
+// Busca de contato salvo DENTRO da aba Chats (pedido explicito do
+// usuario) - filtra a lista de conversas ja carregada (client-side,
+// sem chamada nova) E busca contatos salvos que ainda nao tem
+// conversa nenhuma (server-side, /contacts?search=).
+window.handleChatContactSearch = function(value){
+  clearTimeout(contactsSearchDebounce);
+  const query = value.trim();
+  const resultsEl = document.getElementById("chatContactSearchResults");
+
+  document.querySelectorAll("#realChatList .chat-item").forEach(item => {
+    if(!query){ item.style.display = ""; return; }
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(query.toLowerCase()) ? "" : "none";
+  });
+
+  if(!query){
+    if(resultsEl){ resultsEl.style.display = "none"; resultsEl.innerHTML = ""; }
+    return;
+  }
+
+  contactsSearchDebounce = setTimeout(async () => {
+    try{
+      const res = await fetch(`/contacts?search=${encodeURIComponent(query)}`, { credentials: "same-origin" });
+      if(!res.ok) return;
+      const contacts = await res.json();
+      if(!resultsEl) return;
+      if(!contacts.length){
+        resultsEl.style.display = "none";
+        resultsEl.innerHTML = "";
+        return;
+      }
+      resultsEl.style.display = "block";
+      resultsEl.innerHTML = `
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">${T('contacts.searchResultsTitle', 'Contatos salvos')}</div>
+        <div style="display:grid;gap:6px">
+          ${contacts.map(c => `
+            <div class="chat-item" style="cursor:default" onclick="startChatWithContactUI(${c.id})">
+              <div class="chat-name"><span>📇 ${escapeHtml(c.name)}</span></div>
+              <div class="chat-preview">${escapeHtml(c.phone || "")}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }catch(e){
+      console.warn("Erro ao buscar contatos na aba Chats:", e);
+    }
+  }, 250);
+};
+
 async function loadGuests(){
   const emptyEl = document.getElementById("guestsEmpty");
   const tableEl = document.getElementById("guestsTable");
@@ -13758,6 +13975,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     operations: ["loadOperations", "loadKitchen", "loadMaintenance", "loadPatrimonialSecurity", "loadParking"],
     team: ["loadTeamList", "loadRolesList", "loadScheduling"],
     guests: ["loadGuests"],
+    contacts: ["loadContacts"],
     finance: ["loadFinance", "loadExchangeSummary"],
     inventory: ["loadInventory", "loadSuppliers"],
     revenue: ["loadRevenue"],

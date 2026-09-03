@@ -2091,6 +2091,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     height:100%;
   }
   #chats .chat-list,
+  #chats .chat-list-wrap,
   #chats .chat-window,
   #chats .guest-profile,
   #chatShell .chat-list,
@@ -2114,6 +2115,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   #chatShell[data-mobile-view="list"] .chat-list,
   #supportShell[data-mobile-view="list"] .chat-list{
     display:block;
+  }
+  #chats .chat-layout[data-mobile-view="list"] .chat-list-wrap{
+    display:flex;
   }
   #chats .chat-layout[data-mobile-view="chat"] .chat-window,
   #chatShell[data-mobile-view="chat"] .chat-window,
