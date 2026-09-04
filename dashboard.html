@@ -2674,7 +2674,10 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0" data-i18n="portfolio.title" id="portfolioSectionTitle">Meu Portfólio</h2>
-        <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="portfolio.addBtn">➕ Novo item</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn secondary" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openPasteListingModal()" data-i18n="portfolio.pasteListingBtn" style="display:none">📋 Colar anúncio</button>
+          <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="portfolio.addBtn">➕ Novo item</button>
+        </div>
       </div>
       <p style="color:var(--muted);font-size:13px;margin:0 0 14px" data-i18n="portfolio.subtitle" id="portfolioSubtitle">Itens que hospedagens podem ativar pra oferecer aos próprios hóspedes - você ganha o valor cheio menos a comissão combinada.</p>
       <div class="sf-empty" id="portfolioEmpty">
@@ -10753,12 +10756,20 @@ function portfolioRealEstateFieldsHtml(item){
   `;
 }
 
-window.openPortfolioItemModal = function(itemId){
-  const item = itemId ? portfolioItemsCache.find(i => i.id === itemId) : null;
+// prefillFields (opcional, v1.136.0): dados extraidos de um anuncio
+// colado pelo corretor (ver extractPortfolioItemFromPastedText) - mesmo
+// formato de um item salvo (name/operation_type/rooms/etc), so que sem
+// "id", pra preencher o modal de item NOVO pra revisao, nunca pra
+// editar um item ja existente. Todo lugar que decide edicao-vs-novo
+// (titulo, botao desativar, id no submit, carregar galeria) checa
+// itemId especificamente, nao a presenca de "item" - senao um rascunho
+// pre-preenchido seria tratado como edicao de item real.
+window.openPortfolioItemModal = function(itemId, prefillFields){
+  const item = itemId ? portfolioItemsCache.find(i => i.id === itemId) : (prefillFields || null);
 
   const existingCategories = [...new Set(portfolioItemsCache.map(i => i.category).filter(Boolean))];
 
-  openGenericModal(item ? T('portfolio.modal.editTitle', 'Editar item') : T('portfolio.modal.newTitle', 'Novo item'), `
+  openGenericModal(itemId ? T('portfolio.modal.editTitle', 'Editar item') : T('portfolio.modal.newTitle', 'Novo item'), `
     <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 12">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.name', 'Nome')}</label>
@@ -10796,12 +10807,12 @@ window.openPortfolioItemModal = function(itemId){
       ${portfolioRealEstateFieldsHtml(item)}
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
-      ${item ? `<button class="btn red" type="button" onclick="togglePortfolioItemActive(${item.id}, ${item.active ? 0 : 1})">${item.active ? T('events.spaces.deactivateBtn', 'Desativar') : T('events.spaces.activateBtn', 'Reativar')}</button>` : "<span></span>"}
-      <button class="btn" type="button" onclick="submitPortfolioItem(${item ? item.id : "null"})">${T('common.save', 'Salvar')}</button>
+      ${itemId ? `<button class="btn red" type="button" onclick="togglePortfolioItemActive(${item.id}, ${item.active ? 0 : 1})">${item.active ? T('events.spaces.deactivateBtn', 'Desativar') : T('events.spaces.activateBtn', 'Reativar')}</button>` : "<span></span>"}
+      <button class="btn" type="button" onclick="submitPortfolioItem(${itemId ? item.id : "null"})">${T('common.save', 'Salvar')}</button>
     </div>
     <div id="portfolioItemMessage" class="generic-modal-message"></div>
   `);
-  if(item) loadPortfolioItemGallery(item.id);
+  if(itemId) loadPortfolioItemGallery(item.id);
 };
 
 // Galeria de verdade (v1.101.0) - portfolio_photos ja aceitava N fotos
@@ -10989,6 +11000,75 @@ window.generatePortfolioItemDescriptionWithAI = async function(){
     if(msg){ msg.textContent = T('portfolio.generateDescriptionDone', 'Pronto - revise e ajuste antes de salvar.'); msg.classList.remove("error"); }
   }catch(e){
     console.warn("Erro ao gerar descrição com IA:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = originalLabel; }
+  }
+};
+
+// "Colar anúncio" (v1.136.0) - corretor cola o texto de um anúncio que
+// ele mesmo já encontrou (OLX, grupo de Facebook, placa na rua) e a IA
+// estrutura os campos pra revisão. Deliberadamente NUNCA busca URL
+// nenhuma sozinho - só processa o texto colado, pra não esbarrar em
+// scraping/termos de uso de terceiro (decisão registrada nesta versão).
+window.openPasteListingModal = function(){
+  openGenericModal(T('portfolio.pasteListingModal.title', '📋 Colar anúncio'), `
+    <p style="font-size:13px;color:var(--muted);margin:0 0 12px">${T('portfolio.pasteListingModal.desc', 'Cole abaixo o texto do anúncio que você encontrou (título, descrição, preço, contato) - a IA organiza os dados pra você revisar antes de salvar.')}</p>
+    <textarea id="pasteListingText" rows="8" placeholder="${T('portfolio.pasteListingModal.placeholder', 'Cole aqui o texto do anúncio...')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical"></textarea>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="submitPasteListing()">${T('portfolio.pasteListingModal.extractBtn', 'Extrair dados')}</button>
+    </div>
+    <div id="pasteListingMessage" class="generic-modal-message"></div>
+  `, true);
+};
+
+window.submitPasteListing = async function(){
+  const msg = document.getElementById("pasteListingMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const rawText = document.getElementById("pasteListingText")?.value.trim();
+  if(!rawText){
+    if(msg){ msg.textContent = T('portfolio.pasteListingModal.textRequired', 'Cole o texto do anúncio antes de extrair.'); msg.classList.add("error"); }
+    return;
+  }
+
+  const btn = event?.target;
+  const originalLabel = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = T('portfolio.generatingDescription', 'Gerando...'); }
+
+  try{
+    const res = await fetch("/portfolio/items/extract-from-text", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ raw_text: rawText })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+
+    closeGenericModal();
+    const fields = data.fields || {};
+    // portfolio_items nao tem campo de telefone (nao e um dado do imovel
+    // em si, e do anunciante) - anexado na descricao pra nao se perder,
+    // pessoa remove/move pra nota depois se quiser.
+    const descriptionParts = [fields.description || ""];
+    if(fields.contact_phone) descriptionParts.push(`${T('portfolio.pasteListingModal.contactPrefix', 'Contato do anunciante')}: ${fields.contact_phone}`);
+
+    openPortfolioItemModal(null, {
+      name: fields.name || "",
+      operation_type: fields.operation_type || null,
+      price: fields.price != null ? fields.price : null,
+      price_type: fields.price != null ? "fixed" : "variable",
+      location: fields.location || null,
+      rooms: fields.rooms != null ? fields.rooms : null,
+      bathrooms: fields.bathrooms != null ? fields.bathrooms : null,
+      surface_m2: fields.surface_m2 != null ? fields.surface_m2 : null,
+      description: descriptionParts.filter(Boolean).join(" — "),
+    });
+  }catch(e){
+    console.warn("Erro ao extrair dados do anúncio:", e);
     if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
   }finally{
     if(btn){ btn.disabled = false; btn.textContent = originalLabel; }

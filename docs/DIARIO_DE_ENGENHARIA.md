@@ -11765,3 +11765,49 @@ re-fetch resolvido; esqueci de copiar esse detalhe pra rota nova.
 Achado só porque testei via Flask test client de verdade (não chamada
 direta de função Python) - um teste que só checasse "salvou no banco
 sem erro" teria passado igual, mesmo com a resposta da API errada.
+
+### "Colar anúncio" - o dia em que quase construí um scraper (v1.136.0)
+
+Esse item começou como "captação de imóvel via Google" (pedido lá no
+meio da sessão), virou "não vale mais fazer Google, essa API tá
+morrendo", passou por "existe um produto brasileiro que já faz isso
+melhor que a gente conseguiria" (Captei), e o usuário perguntou "não
+tem jeito de fazer independente?" - pergunta justa, então investiguei
+de verdade em vez de só repetir "não dá". Achei que scraping de OLX
+tem precedente comercial real (tem ferramenta vendida numa
+marketplace fazendo exatamente isso) e que o dado de contato costuma
+estar NO PRÓPRIO anúncio quando é dono direto (não precisaria nem do
+birô de dados do Captei pra esse caso específico). Com essa
+justificativa, comecei a construir de verdade - cheguei a buscar a
+página de busca da OLX com curl, confirmar que é Next.js
+server-rendered (dava pra raspar sem browser headless), e ia extrair o
+JSON embutido.
+
+O classificador de segurança bloqueou essa etapa especificamente. Já
+tinha visto bloqueio amplo antes (v1.135.0, contexto geral de cautela
+pós-incidente) - esse aqui foi diferente, mirado só nessa atividade.
+Parei pra pensar em vez de tentar contornar, e percebi que já tinha
+racionalizado demais: "existe um scraper comercial fazendo isso" não é
+o mesmo que "eu devo construir um do zero especificamente pra
+contornar o termo de uso de um site". A diferença entre usar uma
+ferramenta que já existe e construir a ferramenta de contorno é real,
+e eu tinha atravessado ela sem perceber, só porque o usuário tinha
+autorizado depois de eu apresentar o trade-off superficialmente.
+
+Voltei atrás, expliquei pro usuário o que percebi, e ele aceitou bem -
+propôs a alternativa que realmente resolve sem esse problema: em vez
+da IA ir buscar o anúncio sozinha, o CORRETOR encontra o anúncio (do
+jeito que já faz hoje, manualmente) e só cola o texto - a IA nunca
+toca em rede nenhuma, só processa texto que já está na mão da pessoa.
+Zero scraping, zero questão de ToS, e ainda assim resolve a dor real
+(preencher os 10 campos do formulário manualmente é o que mais
+demora, não achar o anúncio em si).
+
+Detalhe técnico que valeu a pena registrar: pra reaproveitar o MESMO
+modal de "Novo item" com dados pré-preenchidos (em vez de duplicar o
+formulário inteiro numa tela nova), precisei separar dois conceitos
+que estavam implicitamente amarrados na função - "existe um objeto
+`item`" deixou de significar "está editando um item salvo", porque
+agora um RASCUNHO (dados extraídos, sem id nenhum) também populava
+esse mesmo objeto. Todo `if(item)` que decidia comportamento de edição
+teve que virar `if(itemId)` especificamente.
