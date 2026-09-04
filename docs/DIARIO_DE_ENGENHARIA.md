@@ -11609,3 +11609,35 @@ real de API) - válido pra confirmar que o parsing/fence-stripping/
 validação funcionam, mas não testa a QUALIDADE do texto gerado de
 verdade (isso só um teste manual no navegador, ou o usuário testando,
 consegue avaliar - sinalizado).
+
+### Roteamento automático de lead por fila (v1.133.0)
+
+Terceiro item da fila do Kenlo. O Kenlo cita 4 critérios de
+roteamento (plantão/fila/região/tipo/time) - decidi implementar só
+"fila" agora, porque é o único que não exige NENHUMA configuração nova
+da pessoa (região precisaria de tag de bairro por corretor, plantão
+precisaria de uma escala de horário que não existe ainda). Prefiro
+entregar uma coisa que funciona sozinha, sem tela de configuração
+nova, a começar 3 features de roteamento pela metade.
+
+Decisão de arquitetura que vale registrar: pensei em fazer um
+round-robin "de verdade" (guardar um cursor "de quem foi a vez por
+último" numa tabela separada), mas percebi que CONTAR quantos leads
+cada corretor já tem é estritamente melhor pra esse caso de uso -
+não precisa de tabela nova, e se autoequilibra sozinho mesmo se a
+imobiliária ficar uma semana sem captar lead nenhum (um cursor fixo
+"passaria a vez" de qualquer corretor que não recebeu nada naquele
+período, sem sentido nenhum). Só readequei quando um corretor fica
+INATIVO ou entra novo - a contagem automaticamente favorece quem tem
+menos, sem precisar resetar nada manualmente.
+
+Escolhi contar leads por `membership_id` com "menos leads = próximo"
+em vez de um campo "last_assigned_at" comparado - mais simples de testar
+(determinístico, dá pra prever o resultado exato com um `assert`) e
+mais barato (uma query só, sem precisar de índice novo).
+
+Reatribuição manual (`update_lead_broker`) foi incluída de propósito,
+não é feature separada - roteamento automático sem jeito de corrigir
+manualmente vira uma armadilha (corretor de férias recebendo lead que
+ninguém vai atender). Testei os 2 juntos: fila automática funcionando
+E reatribuição manual sobrepondo corretamente por cima.

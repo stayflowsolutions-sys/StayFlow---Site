@@ -301,6 +301,7 @@ async function loadOpportunities() {
 // ---------------------------------------------------------------
 
 const LEAD_STATUS_ORDER = ["new", "contacted", "converted", "lost"];
+let leadBrokersCache = [];
 
 function leadStatusLabel(status){
   const fallback = { new: "Novo", contacted: "Contatado", converted: "Convertido", lost: "Perdido" };
@@ -317,12 +318,21 @@ function leadRowHtml(lead){
     .map(s => `<option value="${s}" ${s === status ? "selected" : ""}>${leadStatusLabel(s)}</option>`)
     .join("");
 
+  // Roteamento automatico por fila (v1.133.0) atribui um corretor na
+  // criacao do lead, mas o select sempre permite reatribuir manualmente
+  // (corretor de ferias, erro de fila) - "Sem corretor" so aparece
+  // quando a conta ainda nao tinha nenhum corretor ativo no momento
+  // da captura (fila vazia), nao e um estado normal de uso.
+  const brokerOptions = `<option value="">${T('leads.brokerNone', 'Sem corretor')}</option>` +
+    leadBrokersCache.map(b => `<option value="${b.membership_id}" ${lead.membership_id === b.membership_id ? "selected" : ""}>${escapeHtml(b.name)}</option>`).join("");
+
   return `
     <tr>
       <td>${opportunityDateLabel(lead.created_at)}</td>
       <td>${name}</td>
       <td>${phone}</td>
       <td>${interest}</td>
+      <td><select onchange="updateLeadBroker(${lead.id}, this.value)">${brokerOptions}</select></td>
       <td><select onchange="updateLeadStatus(${lead.id}, this.value)">${options}</select></td>
     </tr>
   `;
@@ -334,8 +344,13 @@ async function loadLeads(){
   if (!tbody) return;
 
   try {
-    const res = await fetch("/leads", { credentials: "same-origin" });
-    const data = await res.json();
+    const [leadsRes, brokersRes] = await Promise.all([
+      fetch("/leads", { credentials: "same-origin" }),
+      fetch("/leads/brokers", { credentials: "same-origin" }),
+    ]);
+    const data = await leadsRes.json();
+    const brokersData = await brokersRes.json();
+    leadBrokersCache = (brokersData && brokersData.brokers) || [];
     const items = (data && data.leads) || [];
 
     tbody.innerHTML = items.map(leadRowHtml).join("");
@@ -360,6 +375,25 @@ window.updateLeadStatus = async function(leadId, status){
     }
   } catch (error) {
     console.error("Erro ao atualizar status do lead:", error);
+    loadLeads();
+  }
+};
+
+window.updateLeadBroker = async function(leadId, membershipId){
+  try {
+    const res = await fetch(`/leads/${leadId}/broker`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ membership_id: membershipId ? Number(membershipId) : null }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      console.warn("Erro ao reatribuir corretor do lead:", data.message);
+      loadLeads();
+    }
+  } catch (error) {
+    console.error("Erro ao reatribuir corretor do lead:", error);
     loadLeads();
   }
 };
