@@ -1646,6 +1646,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "Cole aqui o link de avaliação da sua hospedagem no Google",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "Resposta automática, geração de oportunidades e instruções personalizadas da IA.",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} com problema, dúvida ou frustração",
   },
   en: {
     "nav.dashboard": "Dashboard",
@@ -3266,6 +3268,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "Paste your property's Google review link here",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "Auto-reply, opportunity generation, and custom AI instructions.",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} with a problem, question, or frustration",
   },
   es: {
     "nav.dashboard": "Dashboard",
@@ -4886,6 +4890,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "Pegá acá el enlace de reseña de tu hospedaje en Google",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "Respuesta automática, generación de oportunidades e instrucciones personalizadas de la IA.",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} con un problema, duda o frustración",
   },
   fr: {
     "nav.dashboard": "Dashboard",
@@ -6506,6 +6512,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "Collez ici le lien d'avis Google de votre établissement",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "Réponse automatique, génération d'opportunités et instructions personnalisées de l'IA.",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} avec un problème, une question ou une frustration",
   },
   de: {
     "nav.dashboard": "Dashboard",
@@ -8126,6 +8134,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "Fügen Sie hier den Google-Bewertungslink Ihrer Unterkunft ein",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "Automatische Antwort, Chancen-Generierung und individuelle KI-Anweisungen.",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} mit einem Problem, einer Frage oder Frustration",
   },
 
   ja: {
@@ -9717,6 +9727,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "宿泊施設のGoogleクチコミリンクをここに貼り付けてください",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "自動返信、案件生成、AIのカスタム指示。",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "問題・質問・不満がある{noun}",
   },
 
   it: {
@@ -11308,6 +11320,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "Incolla qui il link recensione Google della tua struttura",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "Risposta automatica, generazione di opportunità e istruzioni personalizzate dell'IA.",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} con un problema, una domanda o una frustrazione",
   },
 
   zh: {
@@ -12899,6 +12913,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "在此粘贴您住宿的 Google 评价链接",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "自动回复、商机生成和自定义 AI 指令。",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "遇到问题、疑问或不满的{noun}",
   },
   ru: {
     "nav.dashboard": "Панель управления",
@@ -14489,6 +14505,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "Вставьте сюда ссылку для отзыва вашего объекта в Google",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "Автоответ, генерация возможностей и персональные инструкции ИИ.",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} с проблемой, вопросом или недовольством",
   },
 
   ko: {
@@ -16080,6 +16098,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "숙소의 Google 리뷰 링크를 여기에 붙여넣으세요",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "자동 응답, 기회 생성 및 맞춤 AI 지침.",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "문제, 질문 또는 불만이 있는 {noun}",
   },
 
   nl: {
@@ -17671,5 +17691,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "googleReview.linkPlaceholder": "Plak hier de Google-reviewlink van je accommodatie",
     // ==== Empresa/Marca/IA viraram modal (v1.119.0) ====
     "settings.ai.summaryDesc": "Automatisch antwoord, kansgeneratie en aangepaste AI-instructies.",
+    // ==== Auditoria contexto imobiliaria (v1.127.0) ====
+    "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} met een probleem, vraag of frustratie",
   },
 };

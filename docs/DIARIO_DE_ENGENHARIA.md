@@ -11232,3 +11232,71 @@ Testado: `ast.parse()` confirmando sintaxe válida de `app.py`; grep
 confirmando que não sobrou nenhuma referência ao valor antigo (6h/
 21600) fora do comentário que agora documenta a mudança pra quem ler
 o código depois.
+
+### Quarta rodada de auditoria imobiliária - achado real via print (v1.127.0)
+
+Enquanto eu explicava Tokko/matching/multicorretor pro usuário se
+preparar pra reunião, ele reparou sozinho que a classificação de
+intent ("booking/tour/upsell...") soava muito de hospedagem. Pedi pra
+conferir - e realmente já tinha sido corrigido parcialmente (booking
+vira "Negociação" pra agência), mas não por completo. Mandei auditoria
+dedicada, achou 11 pontos reais. Antes de eu terminar de reportar, o
+usuário mandou 2 prints AO VIVO do próprio painel confirmando dois
+achados da auditoria com os próprios olhos: o modal "Permissões de
+Caio" mostrando checkbox cru "parking"/"scheduling"/"events" (devia
+estar em português E nem devia aparecer pra imobiliária), e a página
+de Relatórios inteira vazia com rótulo "Hóspedes"/"Reservas
+confirmadas".
+
+**Investigação do achado dos prints, mais fundo do que parecia**: o
+modal de permissão individual usa `get_permission_detail()`, que
+iterava as 24 permissões inteiras sem filtro nenhum - diferente do
+catálogo usado pra CRIAR um cargo novo (`/permissions/catalog`), que já
+filtrava certo há tempos via `permissions_for_account_kind()`. Dois
+caminhos calculando a mesma coisa de dois jeitos diferentes - um
+certo, um esquecido. Como o catálogo (com o rótulo em português) não
+tinha essas chaves listadas pra agência, o frontend caía no fallback
+de mostrar a CHAVE CRUA em inglês quando não achava o rótulo - o
+"vazamento de contexto" e o "texto sem tradução" eram o MESMO bug
+aparecendo de duas formas.
+
+**Decisão de ir mais fundo do que o mínimo necessário**: em vez de só
+filtrar `get_permission_detail` (resolveria só aquele modal), apliquei
+o filtro na função CENTRAL `get_effective_permissions()` - usada
+também pela contagem "N permissões" no card de Equipe, pela sessão
+(`routes/auth.py`), pelo gate de rota de verdade (`utils/tenant.py`) e
+pelas ferramentas oferecidas à IA (`ask_agent_service.py`). Valeu a
+pena conferir a causa raiz: a role "Admin" é criada com TODAS as 24
+permissões pra QUALQUER tipo de conta - uma imobiliária tinha
+`parking`/`scheduling`/`events` genuinamente gravado na própria role,
+não era só um bug de exibição. Sem filtrar na fonte, o mesmo vazamento
+ia continuar aparecendo em lugar novo cada vez que alguém escrevesse
+código novo consumindo `get_effective_permissions` sem saber desse
+detalhe.
+
+Testei isolado antes de seguir: imobiliária não vaza nenhuma
+permissão lodging-only nem no cálculo de efetivas nem no detail do
+modal; hostel de hospedagem normal continua com as 24 completas, sem
+regressão nenhuma - importante confirmar isso porque mexer numa função
+tão central podia quebrar acesso de verdade se eu errasse a mão.
+
+**Resto do lote, mais rápido por já ter o padrão mapeado**: caixa de
+mensagem manual do Chat ("como recepção" → "como equipe" pra agência);
+card de Câmbio escondido pra agência (troco em moeda estrangeira não
+existe em venda de imóvel); página de Relatórios inteira (construída
+100% sobre reserva de hospedagem, sem gate nenhum) escondida do menu
+pra agência até merecer uma versão própria; 3 fallbacks "Hóspede" em
+notificação push trocados por `agency_guest_noun()` (Cliente/PAX
+conforme categoria); Opportunity Center parou de mostrar o enum cru
+quando a descrição vem vazia; botão "Gerar cobrança" não aparece mais
+pra imobiliária mesmo se a IA errar a classificação pra "upsell";
+checkbox de notificação de "hóspede com problema" ganhou variante
+certa pra agência.
+
+1 chave i18n nova (1.583→1.584). Testado: paridade de chaves,
+balanceamento de chaves/parênteses/colchetes em `dashboard.html`/
+`stayflow-live.js`/`i18n-dashboard-data.js`, `ast.parse()` dos 3
+arquivos Python tocados. Restam achados menores da auditoria (texto de
+descrição de ferramenta da IA ainda com "hóspede"/"hostel", papel do
+sistema do decision engine sempre em inglês de hospitalidade) - mais
+sutis que os achados visuais de hoje, ficam pra um lote futuro.
