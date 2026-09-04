@@ -11641,3 +11641,33 @@ não é feature separada - roteamento automático sem jeito de corrigir
 manualmente vira uma armadilha (corretor de férias recebendo lead que
 ninguém vai atender). Testei os 2 juntos: fila automática funcionando
 E reatribuição manual sobrepondo corretamente por cima.
+
+### Fix crítico: cache-busting esquecido durante toda a sequência (v1.133.1)
+
+Usuário: "me bugou o site, ve o que rolou" - sem print, sem detalhe.
+Antes de sair adivinhando CSS às cegas (que eu tinha acabado de dizer
+que não faria sem evidência, na resposta anterior sobre o corte de
+mobile), fui direto pro suspeito mais óbvio: alterei `app.css`/
+`stayflow-live.js`/`i18n-dashboard-data.js` repetidas vezes ao longo
+de 4 versões inteiras (v1.130-v1.133) e NUNCA bumpei o `?v=` -
+convenção que eu mesmo já sabia e apliquei em toda versão anterior
+desta sessão (`?v=1119` até `?v=1125`), só esqueci a partir da
+imobiliária. Confirmei rápido com um grep simples (`?v=1125` ainda
+presente em todo lugar que carrega os 3 arquivos) - não precisei de
+navegador nem print pra ter certeza desse, é factual (arquivo mudou,
+versão não).
+
+Isso é exatamente o tipo de bug "funciona no meu teste isolado mas
+quebra em produção" - meus testes deste dia inteiro rodaram
+Python/SQLite direto, nunca passaram pelo navegador servindo os
+arquivos estáticos com cache HTTP de verdade, então essa classe de bug
+é literalmente invisível pra qualquer teste que eu consiga rodar sem
+navegador. Bom lembrete pra não deixar essa convenção cair de novo -
+deveria ter bumpado a cada versão, não só no final.
+
+Publiquei o fix imediato (bug de produção ativo, não é feature nova
+pra passar pelo fluxo normal de "planejar com calma"). Avisei o
+usuário que, se o sintoma persistir, pode ser cache do PRÓPRIO HTML no
+navegador dele (não só dos assets), que só um hard-refresh resolve -
+não tenho como forçar isso do lado do servidor sem mexer em header de
+cache, mudança maior que não fiz reativamente sem mais contexto.
