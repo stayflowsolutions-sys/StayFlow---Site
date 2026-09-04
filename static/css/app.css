@@ -1339,7 +1339,7 @@ body::before{
 .chat-layout{
   display:grid;
   grid-template-columns:280px minmax(0,1fr) 260px;
-  gap:var(--gap);
+  gap:0;
   align-items:stretch;
   /* Fix: sem altura própria, height:100% dos filhos (abaixo) não tinha
      contra o que resolver — cada painel só crescia com o conteúdo, e
@@ -1349,6 +1349,41 @@ body::before{
      resolve contra isso corretamente. */
   height:100%;
   min-height:0;
+  /* No desktop, o layout inteiro vira UM painel so - antes disso cada
+     coluna (lista/conversa/perfil) era seu proprio .card flutuando com
+     gap:var(--gap) entre elas, dando a impressao de "3 caixas soltas"
+     em vez de um app de mensagens de verdade (mesma reclamacao ja
+     resolvida na lista via linha cheia, v1.121.0 - agora estendida pro
+     layout inteiro). Borda/raio/sombra que cada coluna tinha via
+     class="card" saem daqui, ficam so na moldura externa; divisoria
+     fina entre colunas substitui o gap. No mobile (@media max-width:
+     1100px), .chat-layout vira 1 coluna so e essa moldura nem aparece
+     de verdade atras dos paineis full-screen do .main.chat-fullscreen
+     (v1.122.0) - os dois tratamentos nao competem, cada um so e visivel
+     na largura de tela onde faz sentido. */
+  background:linear-gradient(180deg,#0c1828ee,#06101bee);
+  border:1px solid #17304d95;
+  border-radius:var(--card-radius);
+  box-shadow:var(--soft-shadow);
+  overflow:hidden;
+}
+.chat-layout .chat-list,
+.chat-layout .chat-window,
+.chat-layout .guest-profile{
+  border-radius:0;
+  border:none;
+  box-shadow:none;
+  background:transparent;
+}
+.chat-layout .chat-list{
+  border-right:1px solid var(--line);
+}
+.chat-layout .chat-window{
+  border-right:1px solid var(--line);
+  padding:20px;
+}
+.chat-layout .guest-profile{
+  padding:20px;
 }
 .chat-list,
 .chat-window,
@@ -2248,6 +2283,21 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
      list (2 classes) sem precisar prefixar por #chatShell/#supportShell
      feito nas regras de display acima - aqui e so um mesmo tratamento
      visual pros 3 shells, nao uma condicao por pagina. */
+  /* .chat-layout ganhou moldura propria (borda/fundo/sombra/raio) no
+     desktop pra virar "1 painel so" em vez de 3 caixas com gap - no
+     mobile isso precisa sumir de novo (senao volta o efeito de caixa,
+     so que na moldura externa em vez de em cada coluna) E o
+     overflow:hidden que arredonda os cantos no desktop precisa virar
+     visible aqui, senao CORTA os paineis que escapam via margem
+     negativa logo abaixo (o truque de ir borda-a-borda depende de
+     "vazar" pra fora da caixa do pai). */
+  .main.chat-fullscreen .chat-layout{
+    background:transparent;
+    border:none;
+    box-shadow:none;
+    border-radius:0;
+    overflow:visible;
+  }
   .main.chat-fullscreen .chat-list,
   .main.chat-fullscreen .chat-window,
   .main.chat-fullscreen .guest-profile{
@@ -2256,6 +2306,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     height:calc(100% + 22px);
     border-radius:0;
     border:none;
+    border-right:none;
     box-shadow:none;
     background:transparent;
   }
