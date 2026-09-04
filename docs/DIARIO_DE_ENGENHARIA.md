@@ -11300,3 +11300,58 @@ arquivos Python tocados. Restam achados menores da auditoria (texto de
 descrição de ferramenta da IA ainda com "hóspede"/"hostel", papel do
 sistema do decision engine sempre em inglês de hospitalidade) - mais
 sutis que os achados visuais de hoje, ficam pra um lote futuro.
+
+### Layout de Chats no desktop vira painel único (v1.128.0)
+
+No meio da preparação pra reunião, o usuário mandou uma imagem e
+reclamou que a janela de conversa "continua presa numa caixa". A
+imagem tinha nomes falsos e navegação que não bate com o produto -
+perguntei se era referência ou tela real antes de mexer em qualquer
+coisa, e ele confirmou: pediu pro ChatGPT gerar uma imagem só pra
+exemplificar o ESTILO que queria (inbox premium), não pra eu copiar
+literalmente.
+
+Fui direto investigar por que ainda parecia "caixa" mesmo depois da
+v1.121.0 (linha cheia na lista) e v1.122.0 (painel cheio no mobile).
+Achei: as duas correções anteriores nunca tocaram o `.chat-layout` do
+DESKTOP - lá, cada uma das 3 colunas (lista/conversa/perfil) continuava
+sendo seu próprio `.card` individual, com `gap:24px` entre elas. Três
+caixas separadas lado a lado, boiando com espaço entre si - exatamente
+a sensação que ele descreveu, só que no desktop, não no mobile onde eu
+já tinha resolvido.
+
+Apliquei o mesmo princípio da lista, mas no layout inteiro: em vez de
+3 cartões com gap, virou 1 painel único (a moldura - fundo, borda,
+raio, sombra - que cada coluna tinha, subiu pro `.chat-layout` como um
+todo) com uma linha fina dividindo as colunas em vez do espaço vazio
+antes. Mesma lógica visual de qualquer app de mensagens de verdade -
+WhatsApp Web, Slack, Telegram - nenhum deles mostra "sidebar" e
+"conversa" como painéis soltos, é sempre uma superfície contínua com
+divisória.
+
+**Cuidado que quase virou bug**: como `.chat-layout` ganhou
+`overflow:hidden` (necessário pra arredondar os cantos do painel único
+novo), isso ia CORTAR o truque de margem negativa que o mobile já usa
+desde a v1.122.0 pra fazer os painéis "vazarem" pra fora do container
+e ocupar a tela inteira - os dois mecanismos (moldura nova do desktop,
+vazamento do mobile) iam competir e quebrar um ao outro. Resolvido
+cancelando a moldura inteira (fundo/borda/sombra/raio) E trocando
+`overflow:hidden` por `visible` especificamente dentro do breakpoint
+mobile - cada tratamento só é visível na largura de tela certa, sem
+um atropelar o outro.
+
+Testado: balanceamento de chaves/parênteses/colchetes (divergência de
+parênteses do arquivo, pré-existente desde a v1.107.0, confirmada
+inalterada via contagem das 13 linhas novas, 13/13 balanceadas). Sem
+navegador disponível neste ambiente pra ver o resultado de verdade -
+testado por revisão de CSS/especificidade linha a linha, sinalizado
+explicitamente ao usuário como sempre que isso acontece.
+
+De quebra, o usuário gostou da ideia de barra de atalhos fixa embaixo
+(também vista na imagem de referência) mas notou que isso dá mais cara
+de "app de conversa" que de "ecossistema completo" - opinião dada:
+não trocar o menu hambúrguer (a StayFlow tem seções demais pra caber
+em 5 abas fixas), mas SOMAR uma barra de atalhos pros 3-4 itens mais
+usados no dia a dia, mantendo o hambúrguer pra navegação completa.
+Não implementado ainda, só registrado como ideia validada - fica pra
+quando o usuário confirmar que quer seguir com isso.
