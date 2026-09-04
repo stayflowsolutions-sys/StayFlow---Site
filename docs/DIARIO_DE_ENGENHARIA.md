@@ -11577,3 +11577,35 @@ confirmei que NÃO precisa de fix - reserva é feature
 agency por construção, então "Hóspede" ali sempre está certo no único
 tipo de conta que chega nesse código. Documentei a investigação em vez
 de silenciosamente ignorar o item.
+
+### Descrição de item de portfólio gerada por IA (v1.132.0)
+
+Segundo item da fila do Kenlo/Imoview - o César do Imoview gera
+título/descrição de imóvel a partir dos dados cadastrados, com a
+equipe revisando antes de publicar. Decisão de escopo: construir
+GENÉRICO pra qualquer item de Portfólio (imóvel, tour, aluguel de
+bike/equipamento, produto), não só imobiliária - o dado estruturado já
+existe pra todo item (nome/categoria/preço, e os campos extras de
+imóvel quando aplicável), então limitar isso a uma categoria só seria
+artificial.
+
+Escolha deliberada: o botão funciona ANTES de salvar o item, não só
+editando um já existente. `generate_portfolio_item_description(fields)`
+recebe um dict solto, não um `item_id` - o frontend manda os valores
+ATUAIS da tela (mesmo que a pessoa nunca tenha clicado "Salvar" ainda).
+Sem isso, o fluxo natural seria "preenche tudo, salva, edita de novo
+só pra gerar a descrição, salva de novo" - dois passos extras sem
+necessidade.
+
+Reaproveitei o mesmo padrão de parsing de JSON já usado em
+`decision_engine.py` (strip de fence de markdown ` ```json ` seguido
+de `json.loads`) em vez de `response_format={"type":"json_object"}` -
+não porque um seja melhor que o outro, mas porque manter os DOIS
+lugares que fazem "peça JSON pro modelo" com o mesmo padrão facilita
+manutenção futura (só precisa lembrar de um jeito).
+
+Testei mockando `client.chat.completions.create` (sem gastar chamada
+real de API) - válido pra confirmar que o parsing/fence-stripping/
+validação funcionam, mas não testa a QUALIDADE do texto gerado de
+verdade (isso só um teste manual no navegador, ou o usuário testando,
+consegue avaliar - sinalizado).
