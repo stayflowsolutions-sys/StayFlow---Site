@@ -1354,7 +1354,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="events" data-required-permission="events" data-required-account-kind="lodging" onclick="openPage('events',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/></svg></span><span data-i18n="nav.events">Eventos</span>
     </button>
-    <button data-page="reports" data-hide-for-account-kind="promoter" onclick="openPage('reports',this)">
+    <button data-page="reports" data-hide-for-account-kind="promoter,agency" onclick="openPage('reports',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M9 19v-7"/><path d="M13 19V8"/><path d="M17 19v-4"/></svg></span><span data-i18n="nav.reports">Relatórios</span>
     </button>
     <button data-page="settings" onclick="openPage('settings',this)">
@@ -1759,7 +1759,7 @@ async function deleteRoleConfirm(roleId){
         <button class="btn secondary" type="button" id="chatQuickReplyTrigger" onclick="toggleQuickReplyPicker(event)" data-i18n-title="chats.quickReplyTitle" title="Respostas rápidas" style="flex:0 0 auto">💬</button>
         <button class="btn secondary" type="button" id="chatAttachPhotoTrigger" onclick="document.getElementById('chatPhotoInput').click()" data-i18n-title="chats.attachPhotoTitle" title="Anexar foto" style="flex:0 0 auto">📷</button>
         <input type="file" id="chatPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="sendPhotoToGuestUI(this)">
-        <input data-i18n-placeholder="chats.inputPlaceholder" placeholder="Escrever mensagem como recepção...">
+        <input id="chatMessageInput" data-i18n-placeholder="chats.inputPlaceholder" placeholder="Escrever mensagem como recepção...">
         <button class="btn green" type="button" id="chatSendBtn" data-mode="assume" onclick="chatPrimaryBtnClick(this)" data-i18n="chats.takeoverBtn">Assumir</button>
         <button class="btn secondary" type="button" id="chatGiveBackBtn" style="display:none" onclick="giveBackChatUI()" data-i18n="chats.giveBackToAiBtn">Devolver</button>
 
@@ -2380,7 +2380,7 @@ async function deleteRoleConfirm(roleId){
       <div class="note" data-i18n="finance.kpi.confirmedNote">Aguardando reservas reais</div>
     </div>
 
-    <div class="card span-12 settings-summary-card" onclick="openExchangeModal()">
+    <div class="card span-12 settings-summary-card" data-required-account-kind="lodging" onclick="openExchangeModal()">
       <div class="settings-summary-row">
         <div>
           <h2 data-i18n="finance.exchange.title">💱 Câmbio (pagamento em moeda estrangeira)</h2>
@@ -5067,7 +5067,7 @@ async function deleteRoleConfirm(roleId){
           <input type="checkbox" data-setting="push_notification_types" value="late_arrival" id="pushTypeLateArrival">
         </label>
         <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
-          <span>${T('settings.communication.pushTypeGuestNeedsAttention', 'Hóspede com problema, dúvida ou frustração')}</span>
+          <span>${(window.STAYFLOW_SESSION || {}).account_kind === "agency" ? T('settings.communication.pushTypeGuestNeedsAttentionAgency', '{noun} com problema, dúvida ou frustração', { noun: agencyGuestNoun(window.STAYFLOW_SESSION) === "PAX" ? "PAX" : "Cliente" }) : T('settings.communication.pushTypeGuestNeedsAttention', 'Hóspede com problema, dúvida ou frustração')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="guest_needs_attention" id="pushTypeGuestNeedsAttention">
         </label>
         <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
@@ -10111,6 +10111,14 @@ function applyAgencyGuestNounLabels(session){
   if(opportunitiesGuestColLabel) opportunitiesGuestColLabel.textContent = noun;
   if(guestsEmptyTitle) guestsEmptyTitle.textContent = T('guests.emptyTitleAgency', 'Nenhum {noun} registrado.', { noun });
   if(guestsEmptyDesc) guestsEmptyDesc.textContent = T('guests.emptyDescAgency', 'Quando reservas e conversas estiverem conectadas, a base de {noun} será construída aqui com contato, histórico e valor gerado.', { noun });
+
+  // Achado ao vivo (2026-09-03): a caixa de mensagem manual da aba
+  // Chats sempre disse "recepção" - correto pra hospedagem (quem
+  // assume a conversa e literalmente a recepcao), sem sentido nenhum
+  // pra agencia/imobiliaria (nao tem recepcao de hospede). "Equipe" e
+  // neutro o bastante pra cobrir qualquer categoria de agencia.
+  const chatMessageInput = document.getElementById("chatMessageInput");
+  if(chatMessageInput) chatMessageInput.placeholder = T('chats.inputPlaceholderAgency', 'Escrever mensagem como equipe...');
 }
 
 // Home do Dashboard e Opportunity Center tinham 4 textos fixos falando

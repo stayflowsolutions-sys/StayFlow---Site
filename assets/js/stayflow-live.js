@@ -103,7 +103,13 @@ function opportunityRowHtml(opportunity){
   // "Gerar cobranca" so faz sentido pra oportunidade que a IA
   // classificou como passeio/upsell (tour/rental de verdade) - reserva,
   // pedido de ajuda humana e follow-up nao sao vendas cobraveis aqui.
-  const canCharge = opportunity.type === "tour" || opportunity.type === "upsell";
+  // Imobiliaria excluida de proposito (achado ao vivo, 2026-09-03,
+  // mesmo criterio de isOwnCatalogSuggestion()): imovel proprio nunca e
+  // cobrado por link de pagamento, mesmo se a IA classificar uma
+  // conversa (rara) como "upsell" em vez de "booking" - o chargeArgs
+  // abaixo tem chargeType:"tour" fixo, que nao faz sentido nenhum pra
+  // imovel.
+  const canCharge = (opportunity.type === "tour" || opportunity.type === "upsell") && !isOwnCatalogSuggestion();
   const chargeArgs = JSON.stringify({
     chargeType: "tour",
     guestId: opportunity.guest_id || null,
@@ -160,7 +166,7 @@ function opportunityRowHtml(opportunity){
         ${urgency.toUpperCase()}
       </span>
     </td>
-    <td>${escapeHtml(opportunity.description || opportunity.type || "-")}${partnerSuggestionHtml}</td>
+    <td>${escapeHtml(opportunity.description || intentLabel(opportunity.type, window.STAYFLOW_SESSION) || "-")}${partnerSuggestionHtml}</td>
     <td>${score}/100</td>
     <td>${formatMoney(estimatedValue)}</td>
     <td>${escapeHtml(opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.'))}</td>
