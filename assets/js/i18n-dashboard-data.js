@@ -10,6 +10,14 @@
 
 const STAYFLOW_DASHBOARD_I18N = {
   pt: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 Colar anúncio",
+    "portfolio.pasteListingModal.title": "📋 Colar anúncio",
+    "portfolio.pasteListingModal.desc": "Cole abaixo o texto do anúncio que você encontrou (título, descrição, preço, contato) - a IA organiza os dados pra você revisar antes de salvar.",
+    "portfolio.pasteListingModal.placeholder": "Cole aqui o texto do anúncio...",
+    "portfolio.pasteListingModal.extractBtn": "Extrair dados",
+    "portfolio.pasteListingModal.textRequired": "Cole o texto do anúncio antes de extrair.",
+    "portfolio.pasteListingModal.contactPrefix": "Contato do anunciante",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "Corretor",
     "leads.brokerNone": "Sem corretor",
@@ -1700,6 +1708,14 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "Mais",
   },
   en: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 Paste listing",
+    "portfolio.pasteListingModal.title": "📋 Paste listing",
+    "portfolio.pasteListingModal.desc": "Paste the listing text you found below (title, description, price, contact) - the AI organizes the data for you to review before saving.",
+    "portfolio.pasteListingModal.placeholder": "Paste the listing text here...",
+    "portfolio.pasteListingModal.extractBtn": "Extract data",
+    "portfolio.pasteListingModal.textRequired": "Paste the listing text before extracting.",
+    "portfolio.pasteListingModal.contactPrefix": "Advertiser contact",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "Broker",
     "leads.brokerNone": "No broker",
@@ -3372,6 +3388,14 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "More",
   },
   es: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 Pegar anuncio",
+    "portfolio.pasteListingModal.title": "📋 Pegar anuncio",
+    "portfolio.pasteListingModal.desc": "Pega abajo el texto del anuncio que encontraste (título, descripción, precio, contacto) - la IA organiza los datos para que los revises antes de guardar.",
+    "portfolio.pasteListingModal.placeholder": "Pega aquí el texto del anuncio...",
+    "portfolio.pasteListingModal.extractBtn": "Extraer datos",
+    "portfolio.pasteListingModal.textRequired": "Pega el texto del anuncio antes de extraer.",
+    "portfolio.pasteListingModal.contactPrefix": "Contacto del anunciante",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "Corredor",
     "leads.brokerNone": "Sin corredor",
@@ -5044,6 +5068,14 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "Más",
   },
   fr: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 Coller l'annonce",
+    "portfolio.pasteListingModal.title": "📋 Coller l'annonce",
+    "portfolio.pasteListingModal.desc": "Collez ci-dessous le texte de l'annonce que vous avez trouvée (titre, description, prix, contact) - l'IA organise les données pour que vous les révisiez avant d'enregistrer.",
+    "portfolio.pasteListingModal.placeholder": "Collez le texte de l'annonce ici...",
+    "portfolio.pasteListingModal.extractBtn": "Extraire les données",
+    "portfolio.pasteListingModal.textRequired": "Collez le texte de l'annonce avant d'extraire.",
+    "portfolio.pasteListingModal.contactPrefix": "Contact de l'annonceur",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "Agent",
     "leads.brokerNone": "Aucun agent",
@@ -6716,6 +6748,14 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "Plus",
   },
   de: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 Anzeige einfügen",
+    "portfolio.pasteListingModal.title": "📋 Anzeige einfügen",
+    "portfolio.pasteListingModal.desc": "Fügen Sie unten den Anzeigentext ein, den Sie gefunden haben (Titel, Beschreibung, Preis, Kontakt) - die KI ordnet die Daten zur Überprüfung vor dem Speichern.",
+    "portfolio.pasteListingModal.placeholder": "Anzeigentext hier einfügen...",
+    "portfolio.pasteListingModal.extractBtn": "Daten extrahieren",
+    "portfolio.pasteListingModal.textRequired": "Fügen Sie den Anzeigentext ein, bevor Sie extrahieren.",
+    "portfolio.pasteListingModal.contactPrefix": "Kontakt des Anzeigenden",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "Makler",
     "leads.brokerNone": "Kein Makler",
@@ -8389,6 +8429,14 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   ja: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 広告を貼り付け",
+    "portfolio.pasteListingModal.title": "📋 広告を貼り付け",
+    "portfolio.pasteListingModal.desc": "見つけた広告のテキスト(タイトル、説明、価格、連絡先)を下に貼り付けてください - AIが保存前に確認できるようデータを整理します。",
+    "portfolio.pasteListingModal.placeholder": "ここに広告のテキストを貼り付け...",
+    "portfolio.pasteListingModal.extractBtn": "データを抽出",
+    "portfolio.pasteListingModal.textRequired": "抽出する前に広告のテキストを貼り付けてください。",
+    "portfolio.pasteListingModal.contactPrefix": "広告主の連絡先",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "担当者",
     "leads.brokerNone": "担当者なし",
@@ -10032,6 +10080,14 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   it: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 Incolla annuncio",
+    "portfolio.pasteListingModal.title": "📋 Incolla annuncio",
+    "portfolio.pasteListingModal.desc": "Incolla qui sotto il testo dell'annuncio che hai trovato (titolo, descrizione, prezzo, contatto) - l'IA organizza i dati per la tua revisione prima di salvare.",
+    "portfolio.pasteListingModal.placeholder": "Incolla qui il testo dell'annuncio...",
+    "portfolio.pasteListingModal.extractBtn": "Estrai dati",
+    "portfolio.pasteListingModal.textRequired": "Incolla il testo dell'annuncio prima di estrarre.",
+    "portfolio.pasteListingModal.contactPrefix": "Contatto dell'inserzionista",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "Agente",
     "leads.brokerNone": "Nessun agente",
@@ -11675,6 +11731,14 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   zh: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 粘贴广告",
+    "portfolio.pasteListingModal.title": "📋 粘贴广告",
+    "portfolio.pasteListingModal.desc": "在下方粘贴你找到的广告文本(标题、描述、价格、联系方式) - AI会整理数据供你保存前审核。",
+    "portfolio.pasteListingModal.placeholder": "在此粘贴广告文本...",
+    "portfolio.pasteListingModal.extractBtn": "提取数据",
+    "portfolio.pasteListingModal.textRequired": "提取前请先粘贴广告文本。",
+    "portfolio.pasteListingModal.contactPrefix": "广告发布者联系方式",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "经纪人",
     "leads.brokerNone": "无经纪人",
@@ -13317,6 +13381,14 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "更多",
   },
   ru: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 Вставить объявление",
+    "portfolio.pasteListingModal.title": "📋 Вставить объявление",
+    "portfolio.pasteListingModal.desc": "Вставьте ниже текст найденного объявления (заголовок, описание, цена, контакт) - ИИ структурирует данные для проверки перед сохранением.",
+    "portfolio.pasteListingModal.placeholder": "Вставьте текст объявления здесь...",
+    "portfolio.pasteListingModal.extractBtn": "Извлечь данные",
+    "portfolio.pasteListingModal.textRequired": "Вставьте текст объявления перед извлечением.",
+    "portfolio.pasteListingModal.contactPrefix": "Контакт объявителя",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "Риелтор",
     "leads.brokerNone": "Без риелтора",
@@ -14960,6 +15032,14 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   ko: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 광고 붙여넣기",
+    "portfolio.pasteListingModal.title": "📋 광고 붙여넣기",
+    "portfolio.pasteListingModal.desc": "찾은 광고 텍스트(제목, 설명, 가격, 연락처)를 아래에 붙여넣으세요 - AI가 저장 전 검토할 수 있도록 데이터를 정리합니다.",
+    "portfolio.pasteListingModal.placeholder": "여기에 광고 텍스트를 붙여넣으세요...",
+    "portfolio.pasteListingModal.extractBtn": "데이터 추출",
+    "portfolio.pasteListingModal.textRequired": "추출하기 전에 광고 텍스트를 붙여넣으세요.",
+    "portfolio.pasteListingModal.contactPrefix": "광고주 연락처",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "중개인",
     "leads.brokerNone": "중개인 없음",
@@ -16603,6 +16683,14 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   nl: {
+    // ===== Colar anuncio de imovel (v1.136.0) =====
+    "portfolio.pasteListingBtn": "📋 Advertentie plakken",
+    "portfolio.pasteListingModal.title": "📋 Advertentie plakken",
+    "portfolio.pasteListingModal.desc": "Plak hieronder de advertentietekst die je hebt gevonden (titel, beschrijving, prijs, contact) - de AI ordent de gegevens zodat je ze kunt controleren voordat je opslaat.",
+    "portfolio.pasteListingModal.placeholder": "Plak hier de advertentietekst...",
+    "portfolio.pasteListingModal.extractBtn": "Gegevens extraheren",
+    "portfolio.pasteListingModal.textRequired": "Plak de advertentietekst voordat je gegevens extraheert.",
+    "portfolio.pasteListingModal.contactPrefix": "Contact van adverteerder",
     // ===== Roteamento de lead por fila (v1.133.0) =====
     "leads.col.broker": "Makelaar",
     "leads.brokerNone": "Geen makelaar",
