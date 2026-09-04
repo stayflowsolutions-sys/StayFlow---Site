@@ -11200,3 +11200,35 @@ tocados. Avisei o usuário pra fazer um refresh de verdade (não só
 reabrir a aba) depois do deploy, já que o HTML em si (que agora
 referencia os assets com `?v=1125`) também precisa ser buscado de
 novo pelo menos uma vez.
+
+### Resync do Tokko Broker de 6h pra 15min (v1.126.0)
+
+Contexto: usuário se preparando pra reunião de amanhã com a Julia de
+Luna (indicadora do setor imobiliário, Bauru-SP) pediu pra eu explicar
+com detalhe como funciona a integração com o Tokko Broker, já que ele
+não conhecia o produto de terceiro e queria chegar seguro na conversa.
+Expliquei o que é o Tokko (CRM imobiliário líder na Argentina),
+confirmei via busca externa, e detalhei o fluxo técnico real da
+integração (chave de API colada manualmente, sync só de leitura,
+resync automático de fundo a cada 6h + botão manual). Ao explicar a
+frequência de 6h, ele achou devagar demais - um imóvel vendido podia
+ficar aparecendo disponível na StayFlow por até 6 horas.
+
+Concordei e ajustei na hora: `_tokko_resync_loop` em `app.py` já
+seguia o mesmo padrão de outros laços em background do arquivo
+(`_lead_alarm_loop`, `_late_arrival_alert_loop`) - só precisei trocar
+uma constante (`time.sleep(21600)` → `time.sleep(900)`), alinhando com
+o MESMO ritmo de 15 minutos que `_late_arrival_alert_loop` já usa pros
+alertas de atraso/no-show. Escolhi esse número em vez de inventar um
+novo porque já é uma frequência comprovada nesta mesma arquitetura -
+roda em paralelo nos 3 workers do gunicorn sem problema, sem
+sobrecarregar a API do Tokko à toa.
+
+Mudança de uma linha, zero risco - o mecanismo de sync em si
+(`resync_all_tokko_properties`) não mudou nada, só a cadência de
+quando ele roda sozinho.
+
+Testado: `ast.parse()` confirmando sintaxe válida de `app.py`; grep
+confirmando que não sobrou nenhuma referência ao valor antigo (6h/
+21600) fora do comentário que agora documenta a mudança pra quem ler
+o código depois.
