@@ -11425,3 +11425,120 @@ no dicionário `pt`. Sem navegador disponível - testado por revisão de
 CSS/especificidade. Usuário avisado que a barra é experimental
 ("se não gostar, tira"), registrado como tal, não uma decisão de
 produto definitiva.
+
+### Agenda de Visitas + captação de lead pela IA (v1.130.0)
+
+Usuário pediu direto: "na área da imobiliária to sentindo falta da
+agenda" → confirmado com "começa a fazer a agenda" e "pode fazer uma
+caprichada, não precisa ser simples assim, pode fazer uma pró" - ou
+seja, explicitamente pediu polimento visual, não um MVP raso. No meio
+do trabalho, pediu também pesquisa sobre o Imoview (sistema que a
+imobiliária da Julia usa) e depois uma "ferramenta de captação" - as
+duas coisas junto viraram este pacote: Agenda de Visitas + tool de IA
+`capture_lead`.
+
+**Pesquisa Imoview primeiro** (Universal Software): confirmou que eles
+têm exatamente os dois módulos que eu ia construir - Agendador nativo
+e "Imoview PRÉ" (pré-qualificação de lead antes de entrar no CRM) -
+mas cobrados à parte, em cima de planos de R$450-3.250/mês MAIS
+usuário extra (R$35) MAIS pacote de contrato extra (R$150/100). O
+assistente de IA deles (César) conversa por WhatsApp, consulta o
+portfólio e verifica horário de visita, mas não ficou claro nas fontes
+se ele CONFIRMA o agendamento sozinho ou só checa disponibilidade -
+usei isso como critério de design: o `schedule_property_visit` da
+StayFlow fecha o agendamento de verdade na conversa, com conflito
+checado no ato.
+
+**Agenda de Visitas** (`property_visits`): decisão de arquitetura mais
+importante foi o conflito ser checado POR CORRETOR
+(`membership_id`), não por imóvel - dois corretores diferentes podem
+levar clientes diferentes no mesmo imóvel no mesmo horário (situação
+real: mais de um interessado, cada um com seu corretor), mas o mesmo
+corretor não pode estar em dois lugares ao mesmo tempo. Status por
+transição (`scheduled`→`completed`/`cancelled`/`no_show`), nunca
+delete - histórico fica preservado. Deliberadamente uma tabela
+SEPARADA de `events` (que já existe pra hospedagem) - `events` exige
+`space_id` de um espaço alugável da própria hospedagem, conceito
+errado pra "visitar um imóvel de terceiro que pode virar venda".
+
+**Tool `schedule_property_visit`** exclusiva de `agency_category=
+'imobiliaria'` (não faz sentido pra turismo/aluguel de carro/bike) -
+reescrevi o texto de fechamento do prompt daquela categoria pra
+instruir a IA a chamar a tool quando o cliente combinar imóvel E
+horário específicos, em vez do texto antigo que só prometia retorno da
+equipe. Descobri no caminho que `get_offerings` (usada por toda conta
+agency) nunca devolvia o `id` do item - só nome/descrição/preço - sem
+isso a IA não tinha como dizer "agenda ESSE imóvel especificamente".
+Corrigido antes de escrever a tool nova, senão ela nasceria quebrada.
+
+**Tool `capture_lead`** - aqui a decisão foi NÃO deixar exclusiva de
+imobiliária. Turismo, aluguel de carro/bike/equipamento também se
+beneficiam de salvar nome+contato+interesse quando o cliente não fecha
+na hora. Fui atrás da tabela `leads` no schema (já existia desde antes
+- `hostel_id`, `guest_name`, `phone`, `interest`, `status` - mas ZERO
+função CRUD, zero rota, zero consumidor, puro código morto) e liguei
+ela de verdade em vez de criar uma tabela nova do zero. A instrução de
+QUANDO chamar a tool foi pro skeleton COMPARTILHADO do prompt de
+agência (`_AGENCY_PROMPT_SKELETON`), não duplicada em cada categoria -
+mesmo princípio já registrado no comentário do código-fonte
+("espinha dorsal idêntica em todas - são garantias do produto, não
+sabor de nicho").
+
+**Frontend da Agenda**: primeira vez que um ITEM DE MENU (não um card
+solto) usa `data-required-agency-category` - até agora esse atributo
+só existia em cards de Configurações/Equipe, tratados por
+`applyAccountKindVisibility()`, que pula `.menu` de propósito (itens
+de menu sempre passaram só por `hideNavItemsWithoutPermission()`).
+Precisei estender essa segunda função pra aceitar o atributo também,
+senão a aba Agenda apareceria pra QUALQUER conta agency, não só
+imobiliária. Página com visual "caprichado" como pedido: agrupada por
+dia (Hoje/Amanhã/data por extenso em vez de só a data crua), cards com
+borda esquerda colorida por status, select inline pra mudar status sem
+abrir modal, botão "Reagendar" abrindo um modal minúsculo (só o campo
+de data/hora, sem repetir os outros campos). Reaproveitei
+`eventsToBackendDatetime`/`eventsFromBackendDatetime`/
+`formatEventDateTime` que já existiam pra Eventos - mesmo formato
+`datetime-local` do input HTML, sem reinventar conversão de data.
+
+**Leads capturados** virou uma SEÇÃO nova dentro do Opportunity Center
+existente, não uma aba própria - já tinha decidido durante a auditoria
+de posicionamento anterior que o menu lateral não devia crescer sem
+necessidade real, e lead é conceitualmente parte do mesmo funil de
+oportunidade.
+
+**Bugs reais pegos pelos testes** (suite isolada em SQLite temporário,
+nunca no banco real - `STAYFLOW_DATA_DIR` apontando pra pasta temp):
+`list_leads` ordenava só por `created_at DESC`, sem tie-break - como
+`CURRENT_TIMESTAMP` do SQLite tem resolução de SEGUNDO, dois leads
+capturados no mesmo segundo (plausível com a IA respondendo rápido)
+ficavam em ordem indefinida. Corrigido com `ORDER BY created_at DESC,
+id DESC`. Também descobri na prática que a migração de `users` (
+v1.5x, não lembro o número exato) remove `hostel_id`/`role` da tabela
+e reconstrói ela pra usar só `hostel_memberships` - meu primeiro
+rascunho de teste tentou inserir `users` com essas colunas antigas e
+quebrou, corrigido ajustando o teste, não o código de produção (a
+migração está certa, meu teste que estava desatualizado com o schema
+atual).
+
+38 chaves i18n novas (nav.agenda, leads.*, agenda.*) em 11 idiomas =
+418 traduções, 1.586→1.624 chaves. Testado: `tools/check_i18n_parity.py`
+OK, suite isolada cobrindo conflito por corretor (bloqueia overlap do
+mesmo corretor, permite overlap de corretores diferentes, visita
+`completed` já não bloqueia mais o horário - só `scheduled` conta pro
+conflito), reagendamento (bloqueia contra visita ainda `scheduled`,
+aceita reagendar pro próprio horário atual sem se auto-bloquear),
+CRUD de leads (isolamento multi-tenant por `hostel_id` confirmado -
+`get_lead` com hostel_id errado retorna None). App inteiro importado
+com sucesso, confirmando as 5 rotas de visita + 2 rotas de lead
+registradas sem colisão com `/stayflow-admin/leads` (CRM interno da
+StayFlow pra PROSPECTAR CLIENTE NOVO da própria StayFlow, tabela
+`stayflow_leads` - sistema completamente diferente, mesma palavra
+"lead" por coincidência de domínio). `ast.parse()` em todos os
+arquivos Python tocados, balanceamento de chaves/parênteses/colchetes
+em `dashboard.html`/`app.css`/`i18n-dashboard-data.js`. Sem teste HTTP
+end-to-end com sessão real (autenticação usa token opaco em tabela
+própria, não sessão assinada do Flask, monta mais trabalho que o
+tempo disponível permitia) - coberto por revisão manual do contrato de
+cada rota contra o mesmo decorator `@require_permission` já usado em
+produção em dezenas de outras rotas. Sem navegador disponível pra
+conferir visualmente - sinalizado como sempre.

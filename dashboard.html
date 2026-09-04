@@ -1327,6 +1327,9 @@ async function deleteRoleConfirm(roleId){
     <button data-page="portfolio" data-required-permission="portfolio" onclick="openPage('portfolio',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span><span data-i18n="nav.portfolio" id="navPortfolioLabel">Meu Portfólio</span>
     </button>
+    <button data-page="agenda" data-required-permission="portfolio" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openPage('agenda',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/><path d="M8 14h2"/><path d="M14 14h2"/><path d="M8 17h2"/></svg></span><span data-i18n="nav.agenda">Agenda</span>
+    </button>
     <button data-page="guests" data-hide-for-account-kind="promoter" onclick="openPage('guests',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4"/><circle cx="12" cy="9" r="3"/><path d="M20 19c0-1.7-1-3.1-2.5-3.7"/><path d="M17 7.2a2.5 2.5 0 0 1 0 3.6"/></svg></span><span data-i18n="nav.guests" id="navGuestsLabel">Hóspedes</span>
     </button>
@@ -1927,6 +1930,32 @@ async function deleteRoleConfirm(roleId){
       <div id="opportunitiesPriorityEmpty" class="sf-empty">
         <div>
           <strong data-i18n="opportunities.priorityEmpty">Nenhuma oportunidade prioritária no momento.</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="card span-12">
+      <h2 data-i18n="leads.title">🧲 Leads capturados</h2>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="common.date">Data</th>
+              <th data-i18n="leads.col.name">Nome</th>
+              <th data-i18n="leads.col.contact">Contato</th>
+              <th data-i18n="leads.col.interest">Interesse</th>
+              <th data-i18n="leads.col.status">Status</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTableBody">
+            <!-- Linhas reais serão inseridas por stayflow-live.js -->
+          </tbody>
+        </table>
+      </div>
+      <div id="leadsEmpty" class="sf-empty">
+        <div>
+          <strong data-i18n="leads.emptyTitle">Nenhum lead capturado ainda.</strong>
+          <span data-i18n="leads.emptyDesc">Quando a IA coletar nome, contato e interesse de um cliente, o lead aparece aqui pra sua equipe dar seguimento.</span>
         </div>
       </div>
     </div>
@@ -2654,6 +2683,40 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
       <div id="portfolioList" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"></div>
+    </div>
+  </div>
+</section>
+
+<!-- AGENDA DE VISITAS (v1.130.0 - so agency_category=imobiliaria) -->
+<section id="agenda" class="page">
+  <div class="grid" style="margin-bottom:var(--gap)">
+    <div class="card span-4 kpi">
+      <div class="label" data-i18n="agenda.kpi.todayLabel">Visitas hoje</div>
+      <div class="value" id="kpiVisitsToday">0</div>
+    </div>
+    <div class="card span-4 kpi">
+      <div class="label" data-i18n="agenda.kpi.weekLabel">Essa semana</div>
+      <div class="value" id="kpiVisitsWeek">0</div>
+    </div>
+    <div class="card span-4 kpi">
+      <div class="label" data-i18n="agenda.kpi.nextLabel">Próxima visita</div>
+      <div id="kpiVisitsNext" style="font-size:14px;color:var(--muted);margin-top:8px" data-i18n="agenda.kpi.nextEmpty">Nenhuma visita agendada.</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card span-12">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <h2 style="margin:0" data-i18n="agenda.title">📅 Agenda de visitas</h2>
+        <button type="button" class="btn primary" onclick="openNewVisitModal()" data-i18n="agenda.addBtn">➕ Nova visita</button>
+      </div>
+      <div class="sf-empty" id="agendaEmpty">
+        <div>
+          <strong data-i18n="agenda.emptyTitle">Nenhuma visita agendada.</strong>
+          <span data-i18n="agenda.emptyDesc">Visitas marcadas pela sua equipe ou direto pela IA no chat aparecem aqui, organizadas por dia.</span>
+        </div>
+      </div>
+      <div id="agendaTimeline" style="display:flex;flex-direction:column;gap:24px"></div>
     </div>
   </div>
 </section>
@@ -10236,6 +10299,301 @@ window.loadPortfolio = async function(){
   }
 };
 
+// ===== AGENDA DE VISITAS (v1.130.0) - so agency_category=imobiliaria =====
+let agendaVisitsCache = [];
+let agendaBrokersCache = [];
+
+const VISIT_STATUS_ORDER = ["scheduled", "completed", "cancelled", "no_show"];
+
+function visitStatusLabel(status){
+  const fallback = { scheduled: "Agendada", completed: "Concluída", cancelled: "Cancelada", no_show: "Não compareceu" };
+  const key = VISIT_STATUS_ORDER.includes(status) ? status : "scheduled";
+  return T(`agenda.status.${key}`, fallback[key]);
+}
+
+// mesmo formato "YYYY-MM-DD HH:MM:SS" usado por eventos - reaproveita as
+// funcoes de conversao ja existentes (eventsToBackendDatetime/
+// eventsFromBackendDatetime), so o nome ficou "events" por terem sido
+// escritas antes da Agenda existir.
+function visitDateObj(scheduledAt){
+  if(!scheduledAt) return new Date(NaN);
+  const iso = eventsFromBackendDatetime(scheduledAt) || scheduledAt.replace(" ", "T");
+  return new Date(iso);
+}
+
+function visitTimeLabel(scheduledAt){
+  const date = visitDateObj(scheduledAt);
+  if(isNaN(date.getTime())) return "-";
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function agendaDayLabel(dateObj){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const target = new Date(dateObj); target.setHours(0,0,0,0);
+  if(target.getTime() === today.getTime()) return T('agenda.day.today', 'Hoje');
+  if(target.getTime() === tomorrow.getTime()) return T('agenda.day.tomorrow', 'Amanhã');
+  const lang = window.StayFlowI18n ? StayFlowI18n.currentLang() : "pt";
+  return dateObj.toLocaleDateString(lang, { weekday: "long", day: "2-digit", month: "long" });
+}
+
+function visitCardHtml(visit){
+  const status = VISIT_STATUS_ORDER.includes(visit.status) ? visit.status : "scheduled";
+  const options = VISIT_STATUS_ORDER
+    .map(s => `<option value="${s}" ${s === status ? "selected" : ""}>${visitStatusLabel(s)}</option>`)
+    .join("");
+  const metaParts = [escapeHtml(visit.client_name || "-")];
+  if(visit.client_phone) metaParts.push(escapeHtml(visit.client_phone));
+  if(visit.broker_name) metaParts.push(escapeHtml(visit.broker_name));
+
+  return `
+    <div class="agenda-visit-card status-${status}" data-visit-id="${visit.id}">
+      <div class="agenda-visit-time">${visitTimeLabel(visit.scheduled_at)}</div>
+      <div class="agenda-visit-body">
+        <div class="agenda-visit-property">${escapeHtml(visit.property_name || "-")}</div>
+        <div class="agenda-visit-meta">${metaParts.join(" · ")}</div>
+      </div>
+      <div class="agenda-visit-actions">
+        <button type="button" class="btn secondary" style="padding:6px 10px;font-size:11px" onclick="openRescheduleVisitModal(${visit.id})">${T('agenda.rescheduleBtn', 'Reagendar')}</button>
+        <select onchange="updateVisitStatus(${visit.id}, this.value)">${options}</select>
+      </div>
+    </div>
+  `;
+}
+
+function renderAgendaTimeline(visits){
+  const emptyEl = document.getElementById("agendaEmpty");
+  const timelineEl = document.getElementById("agendaTimeline");
+  if(!emptyEl || !timelineEl) return;
+
+  if(!visits.length){
+    emptyEl.style.display = "flex";
+    timelineEl.innerHTML = "";
+    return;
+  }
+  emptyEl.style.display = "none";
+
+  // visits ja vem ordenada por scheduled_at ASC do backend - so precisa
+  // agrupar sequencialmente por dia calendario, sem reordenar nada.
+  const groups = [];
+  let currentKey = null;
+  visits.forEach(visit => {
+    const date = visitDateObj(visit.scheduled_at);
+    const key = isNaN(date.getTime()) ? "-" : date.toDateString();
+    if(key !== currentKey){
+      groups.push({ date, visits: [] });
+      currentKey = key;
+    }
+    groups[groups.length - 1].visits.push(visit);
+  });
+
+  timelineEl.innerHTML = groups.map(group => `
+    <div class="agenda-day-group">
+      <div class="agenda-day-label">
+        ${escapeHtml(agendaDayLabel(group.date))}
+        <span class="agenda-day-count">${T('agenda.visitCount', '{n} visita(s)', { n: group.visits.length })}</span>
+      </div>
+      <div class="agenda-visit-list">${group.visits.map(visitCardHtml).join("")}</div>
+    </div>
+  `).join("");
+}
+
+function renderAgendaKpis(visits){
+  const now = new Date();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
+
+  const scheduled = visits.filter(v => v.status === "scheduled");
+
+  const todayCount = scheduled.filter(v => {
+    const d = visitDateObj(v.scheduled_at);
+    const dayOnly = new Date(d); dayOnly.setHours(0,0,0,0);
+    return dayOnly.getTime() === today.getTime();
+  }).length;
+
+  const weekCount = scheduled.filter(v => {
+    const d = visitDateObj(v.scheduled_at);
+    return d >= today && d < weekEnd;
+  }).length;
+
+  const todayEl = document.getElementById("kpiVisitsToday");
+  if(todayEl) todayEl.textContent = String(todayCount);
+  const weekEl = document.getElementById("kpiVisitsWeek");
+  if(weekEl) weekEl.textContent = String(weekCount);
+
+  const nextEl = document.getElementById("kpiVisitsNext");
+  if(nextEl){
+    const next = scheduled.find(v => visitDateObj(v.scheduled_at) >= now);
+    nextEl.textContent = next
+      ? `${next.property_name} · ${next.client_name} · ${formatEventDateTime(next.scheduled_at)}`
+      : T('agenda.kpi.nextEmpty', 'Nenhuma visita agendada.');
+  }
+}
+
+window.loadAgendaVisits = async function(){
+  try{
+    const res = await fetch("/portfolio/visits", { credentials: "same-origin" });
+    const data = await res.json();
+    agendaVisitsCache = (data && data.visits) || [];
+    renderAgendaTimeline(agendaVisitsCache);
+    renderAgendaKpis(agendaVisitsCache);
+  }catch(e){
+    console.warn("Erro ao carregar agenda de visitas:", e);
+  }
+};
+
+window.updateVisitStatus = async function(visitId, status){
+  try{
+    const res = await fetch(`/portfolio/visits/${visitId}/status`, {
+      method: "PATCH", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success) console.warn("Erro ao atualizar status da visita:", data.message);
+  }catch(e){
+    console.error("Erro ao atualizar status da visita:", e);
+  }
+  loadAgendaVisits();
+};
+
+window.openRescheduleVisitModal = function(visitId){
+  const visit = agendaVisitsCache.find(v => v.id === visitId);
+  if(!visit) return;
+
+  openGenericModal(T('agenda.rescheduleModal.title', '🔁 Reagendar visita'), `
+    <p style="font-size:13px;color:var(--muted);margin:0 0 12px">${escapeHtml(visit.property_name)} · ${escapeHtml(visit.client_name)}</p>
+    <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('agenda.newModal.when', 'Data e hora')}</label>
+    <input type="datetime-local" id="rescheduleVisitAt" value="${eventsFromBackendDatetime(visit.scheduled_at)}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="submitRescheduleVisit(${visitId})">${T('common.save', 'Salvar')}</button>
+    </div>
+    <div id="rescheduleVisitMessage" class="generic-modal-message"></div>
+  `, true);
+};
+
+window.submitRescheduleVisit = async function(visitId){
+  const value = document.getElementById("rescheduleVisitAt")?.value;
+  const msg = document.getElementById("rescheduleVisitMessage");
+  if(!value){
+    if(msg){ msg.textContent = T('agenda.newModal.whenRequired', 'Informe data e hora.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch(`/portfolio/visits/${visitId}/reschedule`, {
+      method: "PATCH", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scheduled_at: eventsToBackendDatetime(value) }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadAgendaVisits();
+  }catch(e){
+    console.error("Erro ao reagendar visita:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+window.openNewVisitModal = async function(){
+  if(!portfolioItemsCache.length){
+    try{ await loadPortfolio(); }catch(e){}
+  }
+  if(!portfolioItemsCache.length){
+    alert(T('agenda.needPropertyFirst', 'Cadastre um imóvel primeiro (aba Meu Portfólio).'));
+    return;
+  }
+
+  try{
+    const res = await fetch("/portfolio/visits/brokers", { credentials: "same-origin" });
+    const data = await res.json();
+    agendaBrokersCache = (data && data.brokers) || [];
+  }catch(e){
+    agendaBrokersCache = [];
+  }
+
+  const propertyOptions = portfolioItemsCache.map(i => `<option value="${i.id}">${escapeHtml(i.name)}</option>`).join("");
+  const brokerOptions = `<option value="">${T('agenda.newModal.brokerNone', 'Sem corretor definido')}</option>` +
+    agendaBrokersCache.map(b => `<option value="${b.membership_id}">${escapeHtml(b.name)}</option>`).join("");
+
+  openGenericModal(T('agenda.newModal.title', '📅 Nova visita'), `
+    <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('agenda.newModal.property', 'Imóvel')}</label>
+        <select id="newVisitProperty" style="width:100%">${propertyOptions}</select>
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('agenda.newModal.clientName', 'Nome do cliente')}</label>
+        <input type="text" id="newVisitClientName" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.phone', 'Telefone')}</label>
+        <input type="text" id="newVisitClientPhone" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('agenda.newModal.when', 'Data e hora')}</label>
+        <input type="datetime-local" id="newVisitAt" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+      </div>
+      <div style="grid-column:span 6">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('agenda.newModal.broker', 'Corretor responsável')}</label>
+        <select id="newVisitBroker" style="width:100%">${brokerOptions}</select>
+      </div>
+      <div style="grid-column:span 12">
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.notes', 'Observações')}</label>
+        <textarea id="newVisitNotes" rows="2" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" type="button" onclick="submitNewVisit()">${T('common.save', 'Salvar')}</button>
+    </div>
+    <div id="newVisitMessage" class="generic-modal-message"></div>
+  `, true);
+};
+
+window.submitNewVisit = async function(){
+  const propertyId = document.getElementById("newVisitProperty")?.value;
+  const clientName = document.getElementById("newVisitClientName")?.value.trim();
+  const clientPhone = document.getElementById("newVisitClientPhone")?.value.trim();
+  const scheduledAt = document.getElementById("newVisitAt")?.value;
+  const brokerId = document.getElementById("newVisitBroker")?.value;
+  const notes = document.getElementById("newVisitNotes")?.value.trim();
+  const msg = document.getElementById("newVisitMessage");
+
+  if(!propertyId || !clientName || !scheduledAt){
+    if(msg){ msg.textContent = T('agenda.newModal.requiredFields', 'Imóvel, nome do cliente e horário são obrigatórios.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch("/portfolio/visits", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        portfolio_item_id: Number(propertyId),
+        client_name: clientName,
+        client_phone: clientPhone || null,
+        scheduled_at: eventsToBackendDatetime(scheduledAt),
+        membership_id: brokerId ? Number(brokerId) : null,
+        notes: notes || null,
+      }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadAgendaVisits();
+  }catch(e){
+    console.error("Erro ao criar visita:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
 // Resumo compacto dos dados de imovel no card da lista (Meu Portfolio) -
 // so aparece quando pelo menos um campo foi preenchido (sync do Tokko
 // OU cadastro manual, ver portfolioRealEstateFieldsHtml/_save_real_estate_fields
@@ -13559,7 +13917,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     return key.split(",").some(k => permissions.includes(k.trim()));
   }
 
-  function hideNavItemsWithoutPermission(permissions, accountKind){
+  function hideNavItemsWithoutPermission(permissions, accountKind, agencyCategory){
     // accountKind ("lodging"/"agency"/"promoter") e um segundo eixo,
     // independente de permissao - uma agencia-admin tem a permissao
     // "events" mas nunca deveria ver o item "Eventos" pensado pra
@@ -13585,7 +13943,9 @@ window.uploadGuestDocumentUI = async function(guestId){
       const kindOk = !requiredKind || requiredKind === (accountKind || "lodging");
       const hideForKinds = btn.dataset.hideForAccountKind ? btn.dataset.hideForAccountKind.split(",").map(s => s.trim()) : [];
       const hiddenByKind = hideForKinds.includes(accountKind || "lodging");
-      btn.style.display = (permissionOk && kindOk && !hiddenByKind) ? "" : "none";
+      const categoryRequired = btn.dataset.requiredAgencyCategory;
+      const categoryOk = !categoryRequired || categoryRequired === agencyCategory;
+      btn.style.display = (permissionOk && kindOk && !hiddenByKind && categoryOk) ? "" : "none";
     });
   }
 
@@ -13701,7 +14061,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     try{ populateHostelSelector(session); }catch(e){ console.error("Erro ao popular seletor de hospedagem:", e); }
     try{ applyPermissionVisibility(session.permissions || []); }catch(e){ console.error("Erro ao aplicar visibilidade por permissao:", e); }
     try{ applyAccountKindVisibility(session.account_kind, session.agency_category); }catch(e){ console.error("Erro ao aplicar visibilidade por tipo de conta:", e); }
-    try{ hideNavItemsWithoutPermission(session.permissions || [], session.account_kind); }catch(e){ console.error("Erro ao esconder itens de menu sem permissao:", e); }
+    try{ hideNavItemsWithoutPermission(session.permissions || [], session.account_kind, session.agency_category); }catch(e){ console.error("Erro ao esconder itens de menu sem permissao:", e); }
     try{ applyHideForAccountKind(session.account_kind); }catch(e){ console.error("Erro ao esconder itens especificos de tipo de conta:", e); }
     try{ if(session.account_kind === "promoter") applyPromoterHome(session); }catch(e){ console.error("Erro ao montar home do promotor:", e); }
     try{
@@ -13790,6 +14150,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     // Só carrega dados depois de confirmar sessão de verdade —
     // evita bater nas rotas protegidas antes de saber se está logado.
     if (typeof loadOpportunities === "function") loadOpportunities();
+    if (typeof loadLeads === "function") loadLeads();
     if (typeof loadDashboardStats === "function") loadDashboardStats();
     if (typeof loadExecutiveSummary === "function") loadExecutiveSummary();
     if (typeof loadReservations === "function") loadReservations();
@@ -14189,6 +14550,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     revenue: ["loadRevenue"],
     events: ["loadEvents"],
     portfolio: ["loadPortfolio"],
+    agenda: ["loadAgendaVisits"],
     partners: ["loadPartners"],
     reports: ["loadReports"],
     settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadOwnerModeSummary", "loadGoogleReviewSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings", "loadNuvemshopSettings", "loadBillingSummary"]

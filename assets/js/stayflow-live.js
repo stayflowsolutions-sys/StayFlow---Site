@@ -293,6 +293,78 @@ async function loadOpportunities() {
 }
 
 // ---------------------------------------------------------------
+// Leads capturados pela IA (capture_lead, v1.130.0) - diferente de
+// Opportunity Center: oportunidade e deteccao PASSIVA de intencao em
+// qualquer conversa, lead e uma acao EXPLICITA da IA quando ja tem
+// nome+contato+interesse reais pra time seguir. Tabela/rota propria
+// (/leads), sem paginacao (volume baixo) nem kanban.
+// ---------------------------------------------------------------
+
+const LEAD_STATUS_ORDER = ["new", "contacted", "converted", "lost"];
+
+function leadStatusLabel(status){
+  const fallback = { new: "Novo", contacted: "Contatado", converted: "Convertido", lost: "Perdido" };
+  const key = LEAD_STATUS_ORDER.includes(status) ? status : "new";
+  return T(`leads.status.${key}`, fallback[key]);
+}
+
+function leadRowHtml(lead){
+  const name = escapeHtml(lead.guest_name || "-");
+  const phone = escapeHtml(lead.phone || "-");
+  const interest = escapeHtml(lead.interest || "-");
+  const status = LEAD_STATUS_ORDER.includes(lead.status) ? lead.status : "new";
+  const options = LEAD_STATUS_ORDER
+    .map(s => `<option value="${s}" ${s === status ? "selected" : ""}>${leadStatusLabel(s)}</option>`)
+    .join("");
+
+  return `
+    <tr>
+      <td>${opportunityDateLabel(lead.created_at)}</td>
+      <td>${name}</td>
+      <td>${phone}</td>
+      <td>${interest}</td>
+      <td><select onchange="updateLeadStatus(${lead.id}, this.value)">${options}</select></td>
+    </tr>
+  `;
+}
+
+async function loadLeads(){
+  const tbody = document.getElementById("leadsTableBody");
+  const emptyState = document.getElementById("leadsEmpty");
+  if (!tbody) return;
+
+  try {
+    const res = await fetch("/leads", { credentials: "same-origin" });
+    const data = await res.json();
+    const items = (data && data.leads) || [];
+
+    tbody.innerHTML = items.map(leadRowHtml).join("");
+    if (emptyState) emptyState.style.display = items.length ? "none" : "flex";
+  } catch (error) {
+    console.error("Erro ao carregar leads:", error);
+  }
+}
+
+window.updateLeadStatus = async function(leadId, status){
+  try {
+    const res = await fetch(`/leads/${leadId}/status`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      console.warn("Erro ao atualizar status do lead:", data.message);
+      loadLeads();
+    }
+  } catch (error) {
+    console.error("Erro ao atualizar status do lead:", error);
+    loadLeads();
+  }
+};
+
+// ---------------------------------------------------------------
 // Opportunity Center em pipeline (kanban) - toggle "Lista | Pipeline"
 // ao lado do titulo. Reaproveita 100% o mesmo /opportunities (so pede
 // limit maior, o teto ja existente de 100 por chamada) - stage e um

@@ -250,6 +250,90 @@ body::before{
   font-size:11px;
   padding:5px 6px;
 }
+.agenda-day-group .agenda-day-label{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  font-size:12px;
+  font-weight:800;
+  color:var(--blue2);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  padding-bottom:8px;
+  margin-bottom:10px;
+  border-bottom:1px solid #ffffff12;
+}
+.agenda-day-label .agenda-day-count{
+  font-size:11px;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:none;
+  letter-spacing:0;
+}
+.agenda-visit-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.agenda-visit-card{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:12px 14px;
+  border-radius:14px;
+  background:#ffffff05;
+  border:1px solid #ffffff12;
+  border-left:3px solid var(--blue2);
+  transition:background .15s ease;
+}
+.agenda-visit-card:hover{
+  background:#ffffff09;
+}
+.agenda-visit-card.status-completed{border-left-color:#6ff0bd}
+.agenda-visit-card.status-cancelled{border-left-color:#ff9caf;opacity:.65}
+.agenda-visit-card.status-no_show{border-left-color:#ffbd4a;opacity:.75}
+.agenda-visit-time{
+  font-size:15px;
+  font-weight:800;
+  color:#fff;
+  min-width:52px;
+  text-align:center;
+  flex-shrink:0;
+}
+.agenda-visit-body{
+  flex:1;
+  min-width:0;
+}
+.agenda-visit-property{
+  font-size:13px;
+  font-weight:700;
+  color:#fff;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.agenda-visit-meta{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:2px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.agenda-visit-actions{
+  display:flex;
+  gap:6px;
+  align-items:center;
+  flex-shrink:0;
+}
+.agenda-visit-actions select{
+  background:#02070d;
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:#fff;
+  font-size:11px;
+  padding:6px 8px;
+}
 .hostel-selector-option .option-name{
   font-weight:800;
   font-size:13px;
@@ -2501,6 +2585,13 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   }
   .main{
     padding:16px 14px 18px;
+  }
+  .agenda-visit-card{
+    flex-wrap:wrap;
+  }
+  .agenda-visit-actions{
+    width:100%;
+    justify-content:flex-end;
   }
   .brand-word{
     font-size:24px;
