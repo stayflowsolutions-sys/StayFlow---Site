@@ -11542,3 +11542,38 @@ tempo disponível permitia) - coberto por revisão manual do contrato de
 cada rota contra o mesmo decorator `@require_permission` já usado em
 produção em dezenas de outras rotas. Sem navegador disponível pra
 conferir visualmente - sinalizado como sempre.
+
+### Fecha os 3 achados pendentes da auditoria imobiliária (v1.131.0)
+
+Usuário pediu pra "soltar a fila desde o Kenlo" enquanto ia pra uma
+reunião - esse é o item mais rápido/seguro da fila, então comecei por
+ele. Os 3 achados estavam registrados desde a v1.127.0 como "mais
+sutis, ficam pra um lote futuro".
+
+Fixei os 2 primeiros com uma abordagem que não mexe no módulo
+compartilhado: `TOOLS_CATALOG` (ask_agent_service.py) é uma lista
+module-level, construída UMA VEZ quando o processo sobe - se eu
+mutasse o dict de uma tool ali dentro pra trocar "hóspede" por "PAX"
+quando via uma conta agency, a próxima requisição de uma conta
+LODGING veria o texto errado também (bug de estado compartilhado
+clássico). Resolvido construindo specs NOVOS por requisição via dict
+comprehension com `{**spec, "function": {**spec["function"], ...}}`,
+só quando `account_kind=='agency'` - testei explicitamente comparando
+a referência antes/depois pra confirmar que `TOOLS_CATALOG` continua
+intocado.
+
+No meio da leitura da função de `decision_engine.py` pra trocar o role
+"hospitality operations" fixo, achei um problema adicional que não
+estava na lista original: o log de conversa mandado pro classificador
+rotulava toda linha do hóspede como `"Hospede:"` hardcoded, mesmo pra
+conta agency - ou seja, o próprio HISTÓRICO que o modelo lê pra
+classificar intenção tinha o substantivo errado, um nível mais
+profundo que só o role de sistema. Corrigido junto, já que estava ali
+mesmo.
+
+O 3º achado (fallback de push de reserva criada) investiguei e
+confirmei que NÃO precisa de fix - reserva é feature
+`LODGING_ONLY_PERMISSIONS`, literalmente inalcançável por conta
+agency por construção, então "Hóspede" ali sempre está certo no único
+tipo de conta que chega nesse código. Documentei a investigação em vez
+de silenciosamente ignorar o item.
