@@ -10786,7 +10786,10 @@ window.openPortfolioItemModal = function(itemId){
         <div id="portfolioItemPhotoPending" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
       </div>
       <div style="grid-column:span 12">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.description', 'Descrição')}</label>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <label style="display:block;font-size:11px;color:var(--muted)">${T('common.description', 'Descrição')}</label>
+          <button type="button" class="btn secondary" style="padding:5px 10px;font-size:11px" onclick="generatePortfolioItemDescriptionWithAI()">${T('portfolio.generateDescriptionBtn', '✨ Gerar com IA')}</button>
+        </div>
         <textarea id="portfolioItemDescription" rows="2" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical">${item && item.description ? escapeHtml(item.description) : ""}</textarea>
       </div>
       ${portfolioRealEstateFieldsHtml(item)}
@@ -10922,6 +10925,72 @@ window.submitPortfolioItem = async function(itemId){
   }catch(e){
     console.warn("Erro ao salvar item de portfólio:", e);
     if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+// Gera titulo+descricao com IA a partir do que ja esta preenchido na
+// tela (mesmo item novo, ainda nao salvo) - le os MESMOS campos que
+// submitPortfolioItem usa pro payload de salvar, so que sem exigir
+// nome ja salvo. Nunca salva sozinho: so preenche os campos pra
+// revisao, igual todo outro fluxo de texto gerado por IA no produto.
+window.generatePortfolioItemDescriptionWithAI = async function(){
+  const msg = document.getElementById("portfolioItemMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const name = document.getElementById("portfolioItemName")?.value.trim();
+  if(!name){
+    if(msg){ msg.textContent = T('portfolio.generateDescriptionNeedsName', 'Preencha o nome antes de gerar a descrição.'); msg.classList.add("error"); }
+    return;
+  }
+
+  const priceType = document.getElementById("portfolioItemPriceType")?.value;
+  const payload = {
+    name,
+    category: document.getElementById("portfolioItemCategory")?.value || null,
+    price_type: priceType,
+    price: priceType === "fixed" ? (document.getElementById("portfolioItemPrice")?.value || null) : null,
+    existing_description: document.getElementById("portfolioItemDescription")?.value.trim() || null,
+  };
+
+  const operationTypeEl = document.getElementById("portfolioItemOperationType");
+  if(operationTypeEl){
+    payload.operation_type = operationTypeEl.value || null;
+    payload.location = document.getElementById("portfolioItemLocation")?.value.trim() || null;
+    payload.rooms = document.getElementById("portfolioItemRooms")?.value || null;
+    payload.bathrooms = document.getElementById("portfolioItemBathrooms")?.value || null;
+    payload.surface_m2 = document.getElementById("portfolioItemSurface")?.value || null;
+    payload.useful_area_m2 = document.getElementById("portfolioItemUsefulArea")?.value || null;
+    payload.condo_fee = document.getElementById("portfolioItemCondoFee")?.value || null;
+    payload.iptu_fee = document.getElementById("portfolioItemIptuFee")?.value || null;
+    payload.amenities = Array.from(document.querySelectorAll(".portfolioAmenityCheckbox:checked")).map(el => el.value);
+  }
+
+  const btn = event?.target;
+  const originalLabel = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = T('portfolio.generatingDescription', 'Gerando...'); }
+
+  try{
+    const res = await fetch("/portfolio/items/generate-description", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+
+    const nameEl = document.getElementById("portfolioItemName");
+    const descEl = document.getElementById("portfolioItemDescription");
+    if(nameEl && data.title) nameEl.value = data.title;
+    if(descEl && data.description) descEl.value = data.description;
+    if(msg){ msg.textContent = T('portfolio.generateDescriptionDone', 'Pronto - revise e ajuste antes de salvar.'); msg.classList.remove("error"); }
+  }catch(e){
+    console.warn("Erro ao gerar descrição com IA:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = originalLabel; }
   }
 };
 

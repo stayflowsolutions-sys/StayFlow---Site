@@ -10,6 +10,11 @@
 
 const STAYFLOW_DASHBOARD_I18N = {
   pt: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ Gerar com IA",
+    "portfolio.generateDescriptionNeedsName": "Preencha o nome antes de gerar a descrição.",
+    "portfolio.generatingDescription": "Gerando...",
+    "portfolio.generateDescriptionDone": "Pronto - revise e ajuste antes de salvar.",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "Agenda",
     "leads.title": "🧲 Leads capturados",
@@ -1692,6 +1697,11 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "Mais",
   },
   en: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ Generate with AI",
+    "portfolio.generateDescriptionNeedsName": "Fill in the name before generating the description.",
+    "portfolio.generatingDescription": "Generating...",
+    "portfolio.generateDescriptionDone": "Done - review and adjust before saving.",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "Schedule",
     "leads.title": "🧲 Captured leads",
@@ -3356,6 +3366,11 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "More",
   },
   es: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ Generar con IA",
+    "portfolio.generateDescriptionNeedsName": "Completa el nombre antes de generar la descripción.",
+    "portfolio.generatingDescription": "Generando...",
+    "portfolio.generateDescriptionDone": "Listo - revisa y ajusta antes de guardar.",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "Agenda",
     "leads.title": "🧲 Leads captados",
@@ -5020,6 +5035,11 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "Más",
   },
   fr: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ Générer avec l'IA",
+    "portfolio.generateDescriptionNeedsName": "Renseignez le nom avant de générer la description.",
+    "portfolio.generatingDescription": "Génération...",
+    "portfolio.generateDescriptionDone": "Terminé - relisez et ajustez avant d'enregistrer.",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "Agenda",
     "leads.title": "🧲 Prospects capturés",
@@ -6684,6 +6704,11 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "Plus",
   },
   de: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ Mit KI erstellen",
+    "portfolio.generateDescriptionNeedsName": "Geben Sie zuerst den Namen ein, bevor Sie die Beschreibung erstellen.",
+    "portfolio.generatingDescription": "Wird erstellt...",
+    "portfolio.generateDescriptionDone": "Fertig - vor dem Speichern prüfen und anpassen.",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "Termine",
     "leads.title": "🧲 Erfasste Leads",
@@ -8349,6 +8374,11 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   ja: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ AIで生成",
+    "portfolio.generateDescriptionNeedsName": "説明を生成する前に名前を入力してください。",
+    "portfolio.generatingDescription": "生成中...",
+    "portfolio.generateDescriptionDone": "完了 - 保存する前に確認・調整してください。",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "予約",
     "leads.title": "🧲 獲得したリード",
@@ -9984,6 +10014,11 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   it: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ Genera con IA",
+    "portfolio.generateDescriptionNeedsName": "Inserisci il nome prima di generare la descrizione.",
+    "portfolio.generatingDescription": "Generazione...",
+    "portfolio.generateDescriptionDone": "Fatto - rivedi e correggi prima di salvare.",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "Agenda",
     "leads.title": "🧲 Lead acquisiti",
@@ -11619,6 +11654,11 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   zh: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ 用AI生成",
+    "portfolio.generateDescriptionNeedsName": "生成描述前请先填写名称。",
+    "portfolio.generatingDescription": "生成中...",
+    "portfolio.generateDescriptionDone": "已生成 - 保存前请检查并调整。",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "日程",
     "leads.title": "🧲 已捕获的潜在客户",
@@ -13253,6 +13293,11 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "更多",
   },
   ru: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ Создать с ИИ",
+    "portfolio.generateDescriptionNeedsName": "Заполните название перед созданием описания.",
+    "portfolio.generatingDescription": "Создаётся...",
+    "portfolio.generateDescriptionDone": "Готово - проверьте и подкорректируйте перед сохранением.",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "Расписание",
     "leads.title": "🧲 Собранные лиды",
@@ -14888,6 +14933,11 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   ko: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ AI로 생성",
+    "portfolio.generateDescriptionNeedsName": "설명을 생성하기 전에 이름을 입력하세요.",
+    "portfolio.generatingDescription": "생성 중...",
+    "portfolio.generateDescriptionDone": "완료 - 저장하기 전에 검토하고 조정하세요.",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "일정",
     "leads.title": "🧲 확보된 리드",
@@ -16523,6 +16573,11 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   nl: {
+    // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
+    "portfolio.generateDescriptionBtn": "✨ Genereren met AI",
+    "portfolio.generateDescriptionNeedsName": "Vul de naam in voordat je de beschrijving genereert.",
+    "portfolio.generatingDescription": "Genereren...",
+    "portfolio.generateDescriptionDone": "Klaar - controleer en pas aan voordat je opslaat.",
     // ===== Leads + Agenda de visitas (v1.130.0 - imobiliaria) =====
     "nav.agenda": "Agenda",
     "leads.title": "🧲 Vastgelegde leads",
