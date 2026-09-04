@@ -10,6 +10,9 @@
 
 const STAYFLOW_DASHBOARD_I18N = {
   pt: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "Corretor",
+    "leads.brokerNone": "Sem corretor",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ Gerar com IA",
     "portfolio.generateDescriptionNeedsName": "Preencha o nome antes de gerar a descrição.",
@@ -1697,6 +1700,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "Mais",
   },
   en: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "Broker",
+    "leads.brokerNone": "No broker",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ Generate with AI",
     "portfolio.generateDescriptionNeedsName": "Fill in the name before generating the description.",
@@ -3366,6 +3372,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "More",
   },
   es: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "Corredor",
+    "leads.brokerNone": "Sin corredor",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ Generar con IA",
     "portfolio.generateDescriptionNeedsName": "Completa el nombre antes de generar la descripción.",
@@ -5035,6 +5044,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "Más",
   },
   fr: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "Agent",
+    "leads.brokerNone": "Aucun agent",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ Générer avec l'IA",
     "portfolio.generateDescriptionNeedsName": "Renseignez le nom avant de générer la description.",
@@ -6704,6 +6716,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "Plus",
   },
   de: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "Makler",
+    "leads.brokerNone": "Kein Makler",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ Mit KI erstellen",
     "portfolio.generateDescriptionNeedsName": "Geben Sie zuerst den Namen ein, bevor Sie die Beschreibung erstellen.",
@@ -8374,6 +8389,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   ja: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "担当者",
+    "leads.brokerNone": "担当者なし",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ AIで生成",
     "portfolio.generateDescriptionNeedsName": "説明を生成する前に名前を入力してください。",
@@ -10014,6 +10032,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   it: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "Agente",
+    "leads.brokerNone": "Nessun agente",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ Genera con IA",
     "portfolio.generateDescriptionNeedsName": "Inserisci il nome prima di generare la descrizione.",
@@ -11654,6 +11675,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   zh: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "经纪人",
+    "leads.brokerNone": "无经纪人",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ 用AI生成",
     "portfolio.generateDescriptionNeedsName": "生成描述前请先填写名称。",
@@ -13293,6 +13317,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "nav.mobileTabbarMore": "更多",
   },
   ru: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "Риелтор",
+    "leads.brokerNone": "Без риелтора",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ Создать с ИИ",
     "portfolio.generateDescriptionNeedsName": "Заполните название перед созданием описания.",
@@ -14933,6 +14960,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   ko: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "중개인",
+    "leads.brokerNone": "중개인 없음",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ AI로 생성",
     "portfolio.generateDescriptionNeedsName": "설명을 생성하기 전에 이름을 입력하세요.",
@@ -16573,6 +16603,9 @@ const STAYFLOW_DASHBOARD_I18N = {
   },
 
   nl: {
+    // ===== Roteamento de lead por fila (v1.133.0) =====
+    "leads.col.broker": "Makelaar",
+    "leads.brokerNone": "Geen makelaar",
     // ===== Descricao de portfolio gerada por IA (v1.132.0) =====
     "portfolio.generateDescriptionBtn": "✨ Genereren met AI",
     "portfolio.generateDescriptionNeedsName": "Vul de naam in voordat je de beschrijving genereert.",
