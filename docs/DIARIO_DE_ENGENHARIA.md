@@ -11355,3 +11355,73 @@ em 5 abas fixas), mas SOMAR uma barra de atalhos pros 3-4 itens mais
 usados no dia a dia, mantendo o hambúrguer pra navegação completa.
 Não implementado ainda, só registrado como ideia validada - fica pra
 quando o usuário confirmar que quer seguir com isso.
+
+### Bug real na aba Chats + barra de atalhos implementada (v1.129.0)
+
+O usuário topou a ideia da barra de atalhos ("vamos colocar, se eu não
+gostar a gente tira") e, no mesmo fôlego, mandou um print real da aba
+Chats mostrando avatar e texto cortados do lado esquerdo - "onversas"
+em vez de "Conversas". Bug de verdade, não relacionado à barra nova.
+
+**Investigação do corte**: a v1.122.0 já tinha dado fuga de margem
+negativa pro `#realChatList` pra ele ocupar a tela inteira sem borda -
+só que essa correção foi pensada olhando pro "Meu chat"/"Suporte" do
+`admin.html`, onde `#chatGuestList`/`#supportThreadList` SÃO o filho
+direto que fica dentro do padding de `.main`. A aba Chats do dashboard
+normal é diferente: desde a v1.116.0 (busca de contato) existe um
+`.chat-list-wrap` por FORA de `#realChatList`, carregando o campo de
+busca acima da lista. Esse wrap é quem realmente ocupa a célula do
+grid dentro do padding de `.main` - a fuga de margem que eu tinha dado
+pro `#realChatList` só conseguia escapar até a borda do PRÓPRIO
+wrapper, que continuava preso dentro do padding de `.main` sem nenhuma
+fuga própria. Resultado: o conteúdo tentava ir borda-a-borda, mas
+ficava cortado pelo wrapper que nunca saiu do lugar.
+
+Corrigido passando a fuga de margem pro `.chat-list-wrap` (o container
+que de fato precisa dela) e devolvendo `#realChatList` ao normal (já
+que agora ele mora dentro de um pai que já é borda-a-borda - dar fuga
+nos dois ao mesmo tempo empilharia a margem negativa duas vezes,
+provavelmente a causa real do corte visto no print). `admin.html` não
+foi tocado - lá não existe wrapper, a regra antiga continua servindo.
+
+**Foto do WhatsApp do cliente**: usuário perguntou se dava pra puxar a
+foto de perfil do WhatsApp do contato pro avatar, já que reparou no
+corte "cortando o ícone da foto". Pesquisei antes de responder -
+confirmado que a API OFICIAL do WhatsApp Business (Cloud API, a que a
+StayFlow usa) só tem endpoint pra definir a PRÓPRIA foto do número
+comercial, nenhum endpoint oficial pra ler a foto de um contato/
+cliente. Os serviços que oferecem isso (Whapi.Cloud, WASenderApi etc.)
+são todos APIs não-oficiais imitando o WhatsApp Web por fora do canal
+aprovado pela Meta - risco real de banimento do número, desaconselhado
+com a mesma lógica de sempre nesta sessão (nunca trocar caminho oficial
+por atalho arriscado). O avatar de iniciais coloridas (v1.121.0)
+continua sendo a solução certa - é literalmente o mesmo padrão que
+WhatsApp Web/Telegram/Slack usam pra contato sem foto, não é solução
+provisória.
+
+**Barra de atalhos** (`.mobile-tabbar`, só mobile): implementada como
+combinada, não substituição - 3 atalhos (Dashboard/Chats/Oportunidades)
++ "Mais" abrindo o menu hambúrguer de sempre. Reaproveitando os MESMOS
+atributos `data-hide-for-account-kind`/`data-required-permission` dos
+botões espelhados no menu lateral, a visibilidade certa por tipo de
+conta veio de graça, sem nenhum JS novo de permissão. `setActiveMenu()`
+ganhou uma segunda passada pra marcar o botão ativo também na barra
+nova, já que ela vive fora de `.menu` (a função original só olhava
+lá). Espaço reservado com `.page{padding-bottom:70px}` dentro do
+breakpoint mobile - como o reset global já usa `box-sizing:border-box`,
+esse padding é DESCONTADO da altura declarada, não somado por cima,
+então o `.chat-layout` (que usa `height:100%`) encolhe sozinho pra
+sobrar espaço pra barra sem precisar de nenhuma regra especial só pra
+Chats - o mesmo padding genérico resolve pra todas as páginas de uma
+vez. Rótulo do atalho de Oportunidades ganhou chave i18n PRÓPRIA em
+vez de reaproveitar "Opportunity Center" (19 caracteres, estouraria a
+largura de uma aba estreita) - "Oportunidades"/"Leads" conforme
+idioma, mais curto.
+
+2 chaves i18n novas, 11 idiomas (1.584→1.586). Testado: paridade de
+chaves, balanceamento de chaves/parênteses/colchetes em `dashboard.html`/
+`app.css`/`i18n-dashboard-data.js`, grep confirmando as 2 chaves novas
+no dicionário `pt`. Sem navegador disponível - testado por revisão de
+CSS/especificidade. Usuário avisado que a barra é experimental
+("se não gostar, tira"), registrado como tal, não uma decisão de
+produto definitiva.

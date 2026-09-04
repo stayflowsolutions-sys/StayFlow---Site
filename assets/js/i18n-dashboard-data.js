@@ -1648,6 +1648,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "Resposta automática, geração de oportunidades e instruções personalizadas da IA.",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} com problema, dúvida ou frustração",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "Oportunidades",
+    "nav.mobileTabbarMore": "Mais",
   },
   en: {
     "nav.dashboard": "Dashboard",
@@ -3270,6 +3273,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "Auto-reply, opportunity generation, and custom AI instructions.",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} with a problem, question, or frustration",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "Leads",
+    "nav.mobileTabbarMore": "More",
   },
   es: {
     "nav.dashboard": "Dashboard",
@@ -4892,6 +4898,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "Respuesta automática, generación de oportunidades e instrucciones personalizadas de la IA.",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} con un problema, duda o frustración",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "Oportunidades",
+    "nav.mobileTabbarMore": "Más",
   },
   fr: {
     "nav.dashboard": "Dashboard",
@@ -6514,6 +6523,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "Réponse automatique, génération d'opportunités et instructions personnalisées de l'IA.",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} avec un problème, une question ou une frustration",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "Opportunités",
+    "nav.mobileTabbarMore": "Plus",
   },
   de: {
     "nav.dashboard": "Dashboard",
@@ -8136,6 +8148,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "Automatische Antwort, Chancen-Generierung und individuelle KI-Anweisungen.",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} mit einem Problem, einer Frage oder Frustration",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "Chancen",
+    "nav.mobileTabbarMore": "Mehr",
   },
 
   ja: {
@@ -9729,6 +9744,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "自動返信、案件生成、AIのカスタム指示。",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "問題・質問・不満がある{noun}",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "案件",
+    "nav.mobileTabbarMore": "その他",
   },
 
   it: {
@@ -11322,6 +11340,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "Risposta automatica, generazione di opportunità e istruzioni personalizzate dell'IA.",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} con un problema, una domanda o una frustrazione",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "Opportunità",
+    "nav.mobileTabbarMore": "Altro",
   },
 
   zh: {
@@ -12915,6 +12936,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "自动回复、商机生成和自定义 AI 指令。",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "遇到问题、疑问或不满的{noun}",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "商机",
+    "nav.mobileTabbarMore": "更多",
   },
   ru: {
     "nav.dashboard": "Панель управления",
@@ -14507,6 +14531,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "Автоответ, генерация возможностей и персональные инструкции ИИ.",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} с проблемой, вопросом или недовольством",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "Возможности",
+    "nav.mobileTabbarMore": "Ещё",
   },
 
   ko: {
@@ -16100,6 +16127,9 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "자동 응답, 기회 생성 및 맞춤 AI 지침.",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "문제, 질문 또는 불만이 있는 {noun}",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "기회",
+    "nav.mobileTabbarMore": "더보기",
   },
 
   nl: {
@@ -17693,5 +17723,8 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.ai.summaryDesc": "Automatisch antwoord, kansgeneratie en aangepaste AI-instructies.",
     // ==== Auditoria contexto imobiliaria (v1.127.0) ====
     "settings.communication.pushTypeGuestNeedsAttentionAgency": "{noun} met een probleem, vraag of frustratie",
+    // ==== Barra de atalhos fixa no mobile (v1.129.0) ====
+    "nav.mobileTabbarOpportunities": "Kansen",
+    "nav.mobileTabbarMore": "Meer",
   },
 };

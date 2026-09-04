@@ -719,6 +719,59 @@ body::before{
   letter-spacing:-1.5px;
   font-weight:800;
 }
+/* Barra de atalhos fixa no mobile (v1.129.0) - escondida por padrao,
+   so aparece dentro do breakpoint mobile (@media max-width:1100px)
+   mais abaixo neste arquivo. Soma ao menu hamburguer, nao substitui -
+   ver comentario no HTML (dashboard.html) sobre a decisao de manter os
+   dois. */
+.mobile-tabbar{
+  display:none;
+  position:fixed;
+  left:0;right:0;bottom:0;
+  z-index:45;
+  background:linear-gradient(180deg,#0a1522f5,#050a12fa);
+  border-top:1px solid var(--line);
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  gap:2px;
+}
+.mobile-tabbar button{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  background:transparent;
+  border:none;
+  color:#97a5b8;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:-.1px;
+  padding:6px 2px;
+  border-radius:12px;
+  cursor:pointer;
+  font-family:inherit;
+  min-width:0;
+}
+.mobile-tabbar button span{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mobile-tabbar button svg{
+  width:20px;
+  height:20px;
+  stroke:currentColor;
+  fill:none;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  flex:none;
+}
+.mobile-tabbar button.active{
+  color:var(--blue2);
+}
 .topbar p{
   margin:7px 0 0;
   color:var(--muted);
@@ -2268,6 +2321,21 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
     display:inline-flex;
   }
 
+  /* Barra de atalhos fixa (v1.129.0) - so aparece no mobile. .page
+     ganha padding-bottom pra nenhuma pagina (inclusive a de Chats, que
+     controla a propria altura via .main.chat-fullscreen) ter conteudo
+     escondido atras da barra fixa - como o reset global e
+     box-sizing:border-box (reset.css), esse padding e DESCONTADO da
+     altura/largura declarada, nao somado por cima, entao o
+     .chat-layout (height:100%) automaticamente encolhe pra sobrar
+     espaco pra barra sem precisar de nenhuma regra extra so pra Chats. */
+  .mobile-tabbar{
+    display:flex;
+  }
+  .page{
+    padding-bottom:70px;
+  }
+
   /* No mobile, cada painel de chat (lista/conversa/perfil) OCUPA a
      tela inteira sozinho (ver data-mobile-view acima) - nao faz
      sentido continuar parecendo um cartao boiando dentro da pagina
@@ -2313,6 +2381,30 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator{
   .main.chat-fullscreen .chat-list{
     padding-left:0;
     padding-right:0;
+  }
+  /* Achado ao vivo (print real, 2026-09-04): a aba Chats do dashboard
+     (diferente de Meu chat/Suporte do admin.html) tem um wrapper extra
+     em volta de #realChatList - .chat-list-wrap, que carrega a busca de
+     contato acima da lista (v1.116.0). A regra .chat-list acima escapa
+     a margem de #realChatList sozinho, mas quem realmente ocupa a
+     celula do grid (dentro do padding de .main) e o WRAP, nao o
+     #realChatList - a margem negativa de #realChatList so conseguia
+     vazar ate a borda do proprio wrap, que continuava preso dentro do
+     padding de .main, cortando a lista (avatar/texto) do lado. Fix: o
+     WRAP e quem ganha a fuga de margem agora; #realChatList (ja dentro
+     de um pai que virou borda-a-borda) volta a ser 100% normal, sem
+     fugir de novo por cima - dupla fuga empilhada e o que causava o
+     corte. #chatGuestList/#supportThreadList (admin.html, sem wrap
+     nenhum) continuam pela regra .chat-list generica acima, intactos. */
+  .main.chat-fullscreen .chat-list-wrap{
+    margin:0 -18px -22px;
+    width:calc(100% + 36px);
+    height:calc(100% + 22px);
+  }
+  .main.chat-fullscreen #realChatList{
+    margin:0;
+    width:100%;
+    height:100%;
   }
   .main.chat-fullscreen .chat-window,
   .main.chat-fullscreen .guest-profile{

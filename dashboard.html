@@ -1454,6 +1454,34 @@ async function deleteRoleConfirm(roleId){
   </div>
 </header>
 
+<!-- Barra de atalhos fixa no mobile (v1.129.0) - some no desktop via
+     CSS. Ideia validada com o usuario a partir de uma imagem de
+     referencia (estilo "inbox premium"): soma um atalho rapido pros
+     3 itens mais usados no dia a dia, SEM substituir o menu hamburguer
+     completo (a StayFlow tem secoes demais pra caber em so 5 abas -
+     "Mais" abre o menu de sempre, com tudo). Mesmos atributos
+     data-hide-for-account-kind/data-required-account-kind/
+     data-required-permission dos botoes espelhados no <nav class="menu">,
+     pra herdar a mesma logica de visibilidade sem JS novo. -->
+<nav class="mobile-tabbar">
+  <button data-page="dashboard" onclick="openPage('dashboard', document.querySelector('.menu button[data-page=dashboard]'))">
+    <svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>
+    <span data-i18n="nav.dashboard">Dashboard</span>
+  </button>
+  <button data-page="chats" onclick="openPage('chats', document.querySelector('.menu button[data-page=chats]'))">
+    <svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg>
+    <span data-i18n="nav.chats">Chats</span>
+  </button>
+  <button data-page="opportunities" data-hide-for-account-kind="promoter" onclick="openPage('opportunities', document.querySelector('.menu button[data-page=opportunities]'))">
+    <svg viewBox="0 0 24 24"><path d="M12 3s4 4 4 8a4 4 0 0 1-8 0c0-4 4-8 4-8z"/><path d="M7 14a5 5 0 0 0 10 0"/></svg>
+    <span data-i18n="nav.mobileTabbarOpportunities">Oportunidades</span>
+  </button>
+  <button type="button" onclick="toggleSidebar()">
+    <svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+    <span data-i18n="nav.mobileTabbarMore">Mais</span>
+  </button>
+</nav>
+
 <!-- DASHBOARD -->
 <section id="dashboard" class="page active">
   <div class="grid dashboard-grid" id="dashboardNormalContent">
@@ -3211,6 +3239,11 @@ async function deleteRoleConfirm(roleId){
     if(btn && !btn.classList.contains("collapse-menu")){
       btn.classList.add("active");
     }
+    // Barra de atalhos fixa do mobile (v1.129.0) - mesmo pageId, botao
+    // separado do menu lateral, precisa da propria marcacao de ativo.
+    $$(".mobile-tabbar button[data-page]").forEach(btn => btn.classList.remove("active"));
+    const tabbarBtn = $(`.mobile-tabbar button[data-page="${pageId}"]`);
+    if(tabbarBtn) tabbarBtn.classList.add("active");
   }
 
   function updateTopbar(pageId){
