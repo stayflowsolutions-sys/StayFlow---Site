@@ -11671,3 +11671,60 @@ usuário que, se o sintoma persistir, pode ser cache do PRÓPRIO HTML no
 navegador dele (não só dos assets), que só um hard-refresh resolve -
 não tenho como forçar isso do lado do servidor sem mexer em header de
 cache, mudança maior que não fiz reativamente sem mais contexto.
+
+### Fix de achado real: visita/lead sem corretor perde o cliente (v1.134.0)
+
+Depois da reunião conturbada, o usuário mandou print de conversa com a
+Julia - a dona (Elaine) gostou, ia assinar com outra empresa mas
+decidiu testar a StayFlow em vez disso. No meio da conversa, ela
+descreveu (por áudio) o problema real que teve com a IA anterior: "não
+identifica o momento certo de passar pro corretor, o cliente já quer
+agendar visita e não é passado, acaba perdendo o cliente".
+
+Achado imediato ao ler isso: eu tinha construído exatamente essa
+lacuna hoje mesmo, sem perceber. `schedule_property_visit` (a tool que
+a IA usa pra agendar visita direto na conversa, v1.130.0) nunca passava
+`membership_id` - a visita nascia sem corretor, visível na Agenda mas
+sem ninguém "dono" dela. Pior: mesmo o roteamento automático de LEAD
+que construí hoje mais cedo (v1.133.0) não cobria visita nenhuma - só
+`capture_lead` passava pela fila, `schedule_property_visit` ficava de
+fora completamente. Ou seja, o cenário exato que a Elaine descreveu já
+ia acontecer no primeiro teste dela.
+
+Duas decisões de design que valem registrar:
+
+1. **Roteamento de visita precisa ser mais esperto que roteamento de
+   lead.** Lead não tem horário - "quem tem menos fila" já resolve.
+   Visita TEM horário - atribuir pro corretor "da vez" sem checar se
+   ele está livre naquele horário especificamente só trocaria um
+   problema por outro (agendamento falhando por conflito, em vez de
+   nascer sem dono). `_next_available_broker_for_visit` percorre a
+   fila em ordem e pega o primeiro LIVRE nesse horário, não só o
+   primeiro da fila cega.
+
+2. **Atribuir sem avisar não resolve o problema de verdade.** Fiquei
+   tentado a parar só no roteamento automático (já é uma melhoria
+   real), mas pensando no cenário que a Elaine descreveu - ela quer
+   ver ATENDIMENTO em tempo real, vai mandar mensagem como se fosse
+   cliente - se o corretor só descobre que tem uma visita nova abrindo
+   o painel por conta própria, o "perde o cliente" continua
+   acontecendo na prática, só que agora com um campo `membership_id`
+   preenchido no banco que ninguém está olhando. Por isso entrou push
+   notification (`_notify_hostel_of_new_opportunity`) reaproveitando o
+   mesmo mecanismo já usado pros chamados operacionais - o dono
+   pediu suporte em tempo real pra Elaine testar, e notificação sem
+   atraso é literalmente parte do que está sendo demonstrado.
+
+Reaproveitei `notification_type="opportunity"` (já existe, já vem
+ligado por padrão) em vez de criar uma preferência nova em
+Configurações - lead/visita capturados pela IA SÃO uma oportunidade,
+não precisa fragmentar mais a tela de notificações por uma diferença
+que não importa pro dono decidir.
+
+Testei tudo isolado de novo (incluindo reexecutar as suítes de
+lead/Agenda de antes, sem regressão) e publiquei numa leva só - dessa
+vez com cuidado redobrado depois do incidente de hoje: nada de
+múltiplos pushes espaçados, um commit por repo, testado antes de
+publicar. Reunião já tinha terminado, mas o hábito de agrupar antes de
+publicar vale manter daqui pra frente, não só quando tem gente
+assistindo.
