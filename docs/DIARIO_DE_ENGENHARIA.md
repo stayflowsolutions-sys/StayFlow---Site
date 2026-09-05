@@ -11841,3 +11841,115 @@ cada hotel tem a própria conta deles - então o modelo de credencial
 seria mais parecido com o do Tokko Broker (chave por conta) do que
 com o Beds24. Só confirma isso com documentação real, mas vale deixar
 registrado como suposição de trabalho pro plano.
+
+### Auditoria do mapa de quartos - dois bugs reais de check-in/checkout duplicado (v1.137.0-6)
+
+Depois de popular a conta `Teste2` pra reunião do Grupo Primavera, o
+usuário mandou uma sequência de screenshots reportando problemas: mapa
+de quartos só mostrando uma reserva, hóspedes com dado incompleto,
+perfil vazio, Contatos vazio. O pedido mais sério veio junto de um
+alerta que eu não podia tratar como reclamação genérica: "no último
+teste com o Miguel Seda também deu uma falhada, tem que estar redondo
+senão vai dar ruim". Não tenho detalhe nenhum sobre o que aconteceu
+nesse teste - mas duas falhas relatadas em testes ao vivo diferentes é
+sinal de que vale investigar a sério, não assumir que é só percepção.
+
+Primeiro passo foi ler `get_bed_map` de novo com calma. O "só pegou uma
+reserva" tem explicação no próprio código: existe um comentário
+explícito dizendo que reserva com check-in futuro NÃO deve pintar a
+cama de "reservada" com antecedência (pedido de usuário de antes desta
+sessão) - Fernanda Lima tinha check-in pra 4 dias depois da data atual,
+então o comportamento tava correto, não era bug. Guardei essa
+conclusão pra explicar no fim, sem usar de desculpa antes de terminar
+a investigação de verdade.
+
+Aí fui pras três funções que o usuário realmente queria que eu
+auditasse: `checkin_reservation_to_bed`, `checkout_reservation_bed`,
+`mark_bed_cleaned`. Lendo com atenção ao que cada uma ASSUME sobre o
+estado anterior (não só ao que ela faz no caminho feliz), achei dois
+bugs de verdade:
+
+1. **Check-in duplicado deixa cama órfã.** Nada impedia chamar
+   `checkin_reservation_to_bed` duas vezes pra mesma reserva com camas
+   diferentes. A reserva sobrescreve o `bed_id` pra segunda cama; a
+   PRIMEIRA cama fica com status `occupied` pra sempre, porque nada
+   mais no sistema aponta mais pra ela - o checkout só mexe na cama que
+   está no `bed_id` ATUAL da reserva.
+
+2. **Checkout duplicado pode corromper a cama de outro hóspede.** Essa
+   é a mais séria. `checkout_reservation_bed` nunca verificava se a
+   reserva já tinha `checked_out_at` preenchido. E o `bed_id` da
+   reserva NUNCA é limpo depois do checkout - fica lá de propósito,
+   porque `get_bed_map` usa isso pra mostrar "quem foi o último
+   hóspede" numa cama suja ou ocupada (`guest_by_bed`). Consequência:
+   um checkout repetido da MESMA reserva (duplo clique no botão, retry
+   de rede, aba do navegador desatualizada reaberta) reusa esse
+   `bed_id` antigo e força a cama pra `needs_cleaning` - mesmo que,
+   nesse meio tempo, outro hóspede já tenha feito check-in de verdade
+   NAQUELA MESMA CAMA. Resultado visível: a cama de um hóspede
+   completamente sem relação com a reserva original "vira suja do
+   nada" no mapa, do ponto de vista de quem está olhando o painel. Bate
+   exatamente com o tipo de sintoma que o usuário descreveu.
+
+Corrigi as duas: `checkin_reservation_to_bed` agora rejeita
+(`ValueError`) se a reserva já tem `checked_in_at` sem `checked_out_at`
+correspondente; `checkout_reservation_bed` rejeita se `checked_out_at`
+já estiver preenchido. Reproduzi o cenário exato num banco SQLite
+isolado antes de considerar resolvido: reserva A faz check-in na cama
+1, dá checkout, cama é limpa, reserva B faz check-in NA MESMA cama 1 -
+aí tento chamar checkout de A de novo (simulando o duplo clique/retry)
+e confirmo que a ação é bloqueada E que a cama 1 continua `occupied`
+intacta (não vira `needs_cleaning` por baixo da reserva B). Sem esse
+teste especificamente desenhado pra reproduzir a corrida, um teste que
+só checasse "checkout funciona" isoladamente não teria pego nada -
+o bug só aparece na SEGUNDA chamada, depois que outra reserva já
+ocupou a cama no meio do caminho.
+
+Não achei nada de errado em `set_bed_maintenance` nem em
+`get_cleaning_list` - já tinham a trava certa (manutenção só entra se
+a cama estiver livre) e a query mais simples possível,
+respectivamente.
+
+Com o bug corrigido, voltei pro pedido original de popular dado de
+demonstração de verdade: câmaras ocupadas de verdade (não só
+reservadas), chamados de manutenção reais ligados aos hóspedes
+ocupando essas camas, perfil completo, e - pedido que chegou no meio
+do trabalho - estoque/roupa de cama/lavanderia/alerta de reposição
+também populados. Pra isso sem duplicar lógica, adicionei mais 7 rotas
+na API interna: check-in, checkout, criar chamado de manutenção
+(reaproveitando o MESMO caminho que a IA usa no chat -
+`create_maintenance_ticket` + `notify_on_duty_staff_for_ticket` -
+pra realmente espelhar em notificação de plantão, não um atalho que só
+insere linha), marcar cama limpa, leitura de reservas de um hóspede e
+do mapa de camas (pra eu achar `reservation_id`/`bed_id` certos sem
+acesso direto ao banco), ajustar plano de billing (precisei disso
+porque o módulo de manutenção é gated por plano e a conta de demo
+estava no Starter, sem cobertura - subi pra `enterprise`/`comp`,
+cortesia, coerente com ser conta de teste da própria StayFlow), e
+criar fornecedor/item de estoque/kit de roupa de cama.
+
+Detalhe que vale registrar: a rota de criar reserva de demo já existia
+desde a v1.136.2, mas nunca repassava `phone`/`email`/`nationality`
+pro `create_reservation_record` - mesmo a função de baixo já aceitando
+esses campos e criando o hóspede com eles preenchidos. Foi a causa
+raiz de Marcos Andrade e Fernanda Lima terem nascido com perfil
+completamente vazio (reportado pelo usuário no screenshot do modal de
+hóspede). Corrigido, e as reservas novas (Rafael Nogueira, Beatriz
+Carvalho, Juliana Prado) já nasceram com perfil completo.
+
+Pra gerar um "pedido de lavanderia" de verdade (não fake), rodei o
+ciclo real duas vezes com hóspedes extras: um ciclo completo
+(check-in → checkout → `mark_bed_cleaned`) que consome o kit de roupa
+de cama configurado e deixa `in_laundry_quantity` genuinamente maior
+que zero num item de estoque de verdade; e um ciclo parado em
+`needs_cleaning` (checkout sem limpeza ainda) pra mostrar a fila de
+arrumação pendente. Também deixei um item de estoque (Sabonete)
+deliberadamente abaixo do `min_threshold`, com fornecedor vinculado,
+pra `get_inventory_with_alerts` gerar o alerta de reposição de verdade
+com mensagem sugerida pronta.
+
+Duas quedas passageiras de 502 no Render aconteceram no meio do
+trabalho (confirmadas via polling, recuperadas sozinhas em 1-2
+tentativas) - sem relação com nenhum deploy meu, mantive a disciplina
+de nunca seguir pro próximo passo sem confirmar que o anterior
+realmente estava no ar.
