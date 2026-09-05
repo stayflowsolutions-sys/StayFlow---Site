@@ -11811,3 +11811,33 @@ que estavam implicitamente amarrados na função - "existe um objeto
 agora um RASCUNHO (dados extraídos, sem id nenhum) também populava
 esse mesmo objeto. Todo `if(item)` que decidia comportamento de edição
 teve que virar `if(itemId)` especificamente.
+
+### Plano técnico do Omnibees — pesquisado, não construído
+
+Prep pra reunião do Grupo Primavera (Hotel Real + Vila Serrana, Sete
+Lagoas) revelou que o Omnibees - channel manager líder no Brasil - é o
+que eles já usam. Usuário perguntou "não tem API do Omnibees pra
+conectar?" depois de eu já ter descartado a ideia rápido demais na
+primeira resposta - pesquisei de verdade e achei que sim, existe
+("Bee Connect", protocolo OTA XML 2014B, padrão aberto da indústria,
+não proprietário fechado, com portal de certificação próprio).
+
+Decisão importante: não escrevi código de integração nenhum ainda.
+O padrão SOAP/`.asmx` do endpoint encontrado não tem documentação
+pública de cada operação - só a URL do serviço. Escrever cliente
+contra um schema adivinhado tinha chance real de sair errado, e pior,
+de PARECER pronto sem ser testável contra nada real (não temos
+credencial de homologação ainda). Segui o mesmo padrão já usado pro
+agente de voz (`docs/PLANO_AGENTE_DE_VOZ.md`) - pesquisa completa,
+plano técnico documentado, bloqueado numa dependência externa (aqui:
+aprovação de parceria PMS pelo Omnibees), sem construir nada além
+disso. Rascunhei a mensagem de contato pro formulário de parceria
+deles, usuário vai mandar.
+
+Achado arquitetural que documentei no plano: a integração Beds24 já
+existente usa um modelo de CONTA MESTRA única da StayFlow (cliente
+vira sub-propriedade). O Omnibees provavelmente não funciona assim -
+cada hotel tem a própria conta deles - então o modelo de credencial
+seria mais parecido com o do Tokko Broker (chave por conta) do que
+com o Beds24. Só confirma isso com documentação real, mas vale deixar
+registrado como suposição de trabalho pro plano.
