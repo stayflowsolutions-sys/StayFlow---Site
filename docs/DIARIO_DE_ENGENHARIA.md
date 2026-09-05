@@ -11953,3 +11953,49 @@ trabalho (confirmadas via polling, recuperadas sozinhas em 1-2
 tentativas) - sem relação com nenhum deploy meu, mantive a disciplina
 de nunca seguir pro próximo passo sem confirmar que o anterior
 realmente estava no ar.
+
+### Hóspede vira Contato sozinho - mas só depois de confirmar que era pra reverter o design (v1.138.0-1)
+
+Enquanto ainda no meio da auditoria, o usuário tinha mandado um
+screenshot de Contatos vazio com um comentário direto: "um hóspede
+deveria automaticamente virar um contato, porque a StayFlow
+supostamente já teria a informação e criaria isso sozinha". Antes de
+mexer, fui ler o motivo de Contatos existir separado - achei um
+comentário bem explícito no schema, da v1.116.0: contato é alguém que
+a EQUIPE salvou (pode nunca ter mandado mensagem - fornecedor, contato
+pessoal), guest só existe depois de conversa/reserva de verdade. A
+relação hoje é só numa direção: mandar mensagem pra um contato
+resolve-ou-cria o guest, nunca o contrário.
+
+O pedido do usuário inverte essa lógica. Isso não é um bug a corrigir -
+é uma decisão de produto que reverte um design deliberado, e que
+afeta toda conta StayFlow em produção, não só a de demo. Por isso
+expliquei o trade-off e as duas opções (sincronizar em toda reserva
+criada vs. só no check-in de verdade) antes de escrever qualquer
+código, e recomendei a segunda: reserva ainda não confirmada, rascunho
+abandonado, não deveria virar contato - só faz sentido quando a pessoa
+realmente chegou. Usuário confirmou com um "ok" direto, segui com a
+recomendação.
+
+`sync_guest_to_contact(hostel_id, guest_id)` só roda em dois pontos
+reais de ocupação de cama (`checkin_reservation_to_bed` e
+`create_indefinite_stay` quando já ocupa a cama na criação) e só
+quando o hóspede tem telefone - único jeito confiável de saber se já
+existe um contato igual, já que `contacts.phone` nunca teve `UNIQUE`
+constraint (diferente de `guests`, que já tinha isso resolvido desde
+antes). Testei especificamente os casos que um teste ingênuo deixaria
+passar batido: hóspede que se hospeda de novo (não duplica, reaproveita
+o contato já existente pelo telefone), hóspede sem telefone nenhum
+(não gera contato - de nada adianta um contato sem jeito de contatar),
+e o caso mais sutil, um telefone que já tinha CONTATO MANUAL cadastrado
+antes de qualquer hóspede existir - o sync tem que reconhecer que já
+existe e não criar um duplicado por baixo.
+
+Como o hook só passou a existir a partir desse deploy, os 4 hóspedes
+de demo que já tinham feito check-in antes (Marcos, Rafael, Beatriz,
+Juliana) não ganhariam contato sozinhos - adicionei um endpoint de
+backfill manual (`POST /internal/guests/<id>/sync-contact`) só pra
+isso, e rodei pros quatro. Fernanda Lima ficou de fora de propósito -
+reserva dela ainda não teve check-in (chega dia 09/09), então ainda
+não deveria aparecer em Contatos - vai entrar sozinha quando o
+check-in de verdade acontecer, sem eu precisar fazer nada na hora.
