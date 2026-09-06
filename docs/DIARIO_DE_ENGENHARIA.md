@@ -11999,3 +11999,43 @@ isso, e rodei pros quatro. Fernanda Lima ficou de fora de propósito -
 reserva dela ainda não teve check-in (chega dia 09/09), então ainda
 não deveria aparecer em Contatos - vai entrar sozinha quando o
 check-in de verdade acontecer, sem eu precisar fazer nada na hora.
+
+### Pedido de reposição de estoque de verdade, não só texto sugerido (v1.139.0)
+
+Último pedido da leva: o usuário olhou o alerta de estoque baixo que eu
+mesmo tinha populado (Sabonete, v1.137.0-6) e perguntou por que não
+tem um botão pra "ela mesma" (a StayFlow) identificar o fornecedor
+cadastrado e mandar o pedido sozinha, em vez de só sugerir uma
+mensagem pra copiar. Bom sinal de que o alerta que criei já parecia
+completo o suficiente pra ele esperar o próximo passo óbvio.
+
+A peça que faltava já existia em partes: `build_reorder_message` já
+montava o texto certo, e `send_whatsapp_message`
+(`services/whatsapp_service.py`) já sabia mandar mensagem de texto por
+WhatsApp Business - só nunca tinha sido usado fora do contexto de
+hóspede (sempre `guest_id` + resolução de canal). Fornecedor não é
+hóspede (não tem conceito de canal, só telefone/email fixos), então a
+função nova (`send_inventory_reorder_request`) vai direto: pega
+telefone do fornecedor cadastrado no item, usa o WhatsApp Business da
+PRÓPRIA hospedagem (mesma credencial do Embedded Signup) pra mandar.
+
+Pontos que fizeram questão de testar antes de considerar pronto: o que
+acontece quando falta fornecedor (erro claro, não silêncio), quando o
+fornecedor não tem telefone (erro claro), e quando a hospedagem ainda
+não conectou o WhatsApp Business dela (erro claro apontando pra
+Configurações) - em nenhum desses três casos a função deveria fingir
+que enviou. Só depois disso testei o caminho feliz, com
+`send_whatsapp_message` mockado (não ia mandar mensagem de verdade
+num teste). Adicionei `reorder_requested_at` na tabela pra evitar
+pedido duplicado com clique repetido e dar feedback visual de "já foi
+enviado".
+
+Decisão consciente de não testar isso contra produção de ponta a
+ponta: o fornecedor que cadastrei na conta de demo tem um número de
+telefone que EU inventei pra popular o exemplo - se eu chamasse a
+rota de verdade contra `Teste2`, ia mandar uma mensagem de WhatsApp
+real pra um número aleatório que pode pertencer a uma pessoa real sem
+nenhuma relação com isso. A validação ficou só no nível de lógica
+(SQLite + mock), que já cobre 100% do comportamento da função - o
+único jeito de testar o envio de verdade seria com um fornecedor real
+e telefone real, que não é o caso aqui.
