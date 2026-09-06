@@ -12961,6 +12961,28 @@ window.copySuggestedMessage = function(button, text){
   });
 };
 
+window.requestInventoryReorder = async function(button, itemId){
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = T('inventory.alerts.requestingBtn', 'Enviando...');
+  try{
+    const res = await fetch(`/inventory/${itemId}/request-reorder`, { method: "POST", credentials: "same-origin" });
+    const data = await res.json();
+    if(!data.success){
+      alert(data.message || T('inventory.alerts.requestFailedBtn', 'Não foi possível enviar o pedido.'));
+      button.disabled = false;
+      button.textContent = original;
+      return;
+    }
+    button.textContent = T('inventory.alerts.requestSentBtn', 'Pedido enviado!');
+    setTimeout(loadInventory, 1200);
+  }catch(e){
+    alert(T('inventory.alerts.requestFailedBtn', 'Não foi possível enviar o pedido.'));
+    button.disabled = false;
+    button.textContent = original;
+  }
+};
+
 async function loadInventory(){
   const emptyEl = document.getElementById("inventoryEmpty");
   const tableEl = document.getElementById("inventoryTable");
@@ -13014,12 +13036,20 @@ async function loadInventory(){
         alerts.forEach(a => {
           const card = document.createElement("div");
           card.style.cssText = "border:1px solid #ff5d7628;background:#ff5d7610;border-radius:14px;padding:14px;";
+          const canAutoOrder = !!(a.supplier && a.supplier.phone);
+          const requestedNote = a.reorder_requested_at
+            ? `<div style="color:var(--muted);font-size:12px;margin-top:8px">${T('inventory.alerts.requestedAt', 'Pedido enviado em {date}', { date: new Date(a.reorder_requested_at.replace(" ", "T")).toLocaleString() })}</div>`
+            : "";
           card.innerHTML = `
             <div style="font-weight:800;margin-bottom:6px">
               ${a.name} — ${a.quantity} ${a.unit} (${T('inventory.alerts.minimumLabel', 'mínimo')}: ${a.min_threshold} ${a.unit})
             </div>
             <div style="color:var(--muted);font-size:13px;margin-bottom:8px">${a.suggested_message}</div>
-            <button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copySuggestedMessage(this, ${JSON.stringify(a.suggested_message)})">${T('inventory.copyMessageBtn', 'Copiar mensagem')}</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copySuggestedMessage(this, ${JSON.stringify(a.suggested_message)})">${T('inventory.copyMessageBtn', 'Copiar mensagem')}</button>
+              ${canAutoOrder ? `<button class="btn" style="padding:6px 12px;font-size:12px" onclick="requestInventoryReorder(this, ${a.id})">${T('inventory.alerts.requestNowBtn', 'Pedir agora pelo WhatsApp')}</button>` : ""}
+            </div>
+            ${requestedNote}
           `;
           alertsListEl.appendChild(card);
         });
