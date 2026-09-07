@@ -12098,9 +12098,37 @@ publicado e pendente de confirmação via `simulate-message` contra a
 conta real do promotor (`hostel_id=10`) assim que a chave de API
 interna estiver disponível pra rodar o teste ao vivo.
 
-Pedido seguinte do usuário, ainda não iniciado: usar o mesmo raciocínio
-pro Ask StayFlow (assistente interno) - quando um promotor não tem
-certeza de alguma informação enquanto fala com um hotel/imobiliária,
-poder clicar no Ask StayFlow e receber não só a resposta certa, mas
-também dica de venda/argumento forte/diferencial competitivo. Fica
-registrado como próximo passo.
+### Ask StayFlow vira consultor de venda pro promotor (v1.144.0)
+
+Pedido seguinte do usuário, direto na sequência do fix acima: "quero
+que o ASK STAYFLOW possa tirar qualquer duvida que um promotor possa
+ter, por exemplo se o promotor ta falando com um hotel ou imobiliaria e
+nao tem certeza de uma informação, ele clica no ask stayflow e
+pergunta... e tambem sugere dica de como vender, argumentos fortes,
+destaca pontos positivos na venda que a concorrencia nao tem" - refinado
+logo depois pra "dica de vendas e com informação sobre funcionalidades
+de hoteis e imobiliarias por enquanto, que é onde to atacando".
+
+Fui investigar `services/ask_agent_service.py` esperando construir do
+zero, e descobri que o Ask StayFlow JÁ tinha um `PROMOTER_SYSTEM_PROMPT`
+próprio, com um programa de indicação inteiro por trás
+(`get_promoter_dashboard_data`: código de indicação, faixa de comissão,
+indicações ativas, total a receber/já recebido) - feature real, só que
+nunca tinha sido registrada neste diário antes de agora. O que faltava
+era exatamente o pedido de hoje: o prompt só tinha um parágrafo genérico
+de "o que é a StayFlow", sem nada de funcionalidade detalhada por tipo
+de negócio nem dica de venda nenhuma.
+
+Adicionei 2 blocos - hotel/pousada/hostel e imobiliária, as duas
+frentes de venda ativas - cada um com a funcionalidade real (não
+inventada) e um argumento pronto contra a objeção mais comum daquele
+tipo de cliente. Pro "diferencial que a concorrência não tem", em vez
+de inventar algo genérico, usei achado real já validado nesta mesma
+sessão: pra hotel, o fato dos módulos operacionais (cozinha,
+manutenção, segurança, portaria) ficarem no MESMO painel que atende o
+hóspede, diferente de um assistente de WhatsApp isolado do resto da
+operação; pra imobiliária, o WhatsApp Coexistence (v1.142.0) - a pessoa
+continua usando o número que já tem no celular, não precisa migrar nada
+pra ligar a IA. Os dois são diferenciais verdadeiros, não copy de
+marketing genérico - se um dia deixarem de ser verdade (concorrente
+lançar o mesmo), esse texto precisa ser revisado.
