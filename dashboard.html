@@ -3710,7 +3710,7 @@ async function deleteRoleConfirm(roleId){
           <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.aiPersonaLabel', 'Este número responde como')}</label>
           <select id="whatsappAiPersona" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
             <option value="">${T('settings.whatsapp.aiPersonaGuest', 'Atendimento da hospedagem (padrão)')}</option>
-            <option value="software">${T('settings.whatsapp.aiPersonaSoftware', 'Assistente comercial da StayFlow (só pro número oficial da StayFlow)')}</option>
+            ${(window.STAYFLOW_SESSION || {}).is_stayflow_admin ? `<option value="software">${T('settings.whatsapp.aiPersonaSoftware', 'Assistente comercial da StayFlow (só pro número oficial da StayFlow)')}</option>` : ""}
           </select>
           <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.aiPersonaHint', 'Deixe em "Atendimento da hospedagem" a menos que este seja o número comercial da própria StayFlow — nesse caso, a IA se apresenta como assistente do software, não como recepção.')}</div>
         </div>
