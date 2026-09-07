@@ -12132,3 +12132,84 @@ continua usando o número que já tem no celular, não precisa migrar nada
 pra ligar a IA. Os dois são diferenciais verdadeiros, não copy de
 marketing genérico - se um dia deixarem de ser verdade (concorrente
 lançar o mesmo), esse texto precisa ser revisado.
+
+### WhatsApp multi-número: achado de segurança + 5 rodadas de ajuste ao vivo (v1.145.0 a v1.146.6)
+
+Voltando pra prep da Viana Soluções Imobiliárias (Elaine), fui checar
+o status real do WhatsApp dela via `simulate-message`/API interna e
+achei um `phone_number_id` que era literalmente o e-mail do usuário
+("caiocfacosta@icloud.com") - lixo salvo por engano numa sessão de
+teste anterior, nunca limpo. Enquanto discutia isso, o usuário
+perguntou direto: "hoje temos um controle pra que o mesmo numero nao
+possa ser cadastrada em uma outra conta wpp, instagram ou facebook se
+ja foi cadastrado na stayflow??". Fui checar e a resposta era não -
+`save_hostel_whatsapp_config`/`save_hostel_facebook_config`/
+`save_hostel_instagram_config` faziam `UPDATE` sem checar nada, e
+`get_hostel_id_by_whatsapp_phone_number_id` fazia `fetchone()` sem
+`ORDER BY` - se dois hostels colidissem no mesmo identificador, o
+webhook resolveria pra um deles de forma arbitrária, podendo vazar
+mensagem de um cliente pra conta errada. Achado real, não hipotético,
+corrigido com trava de unicidade cross-tenant nos 3 canais.
+
+Enquanto mexia nesse código, o usuário pediu a feature que motivou
+boa parte do resto: "adiciona uma opção de remover o numero
+cadastrado... e outro botao pra adicionar mais numeros caso a
+imobiliaria atenda com mais de um numero principal". Construí a
+tabela `hostel_whatsapp_extra_numbers` (100% aditiva - o principal
+continua vivendo nas colunas de sempre, sem risco pra conta de um
+número só), e ele então refinou o pedido de "adicionar": em vez de
+repetir o popup de login da Meta uma vez por número, quis um picker
+que lista os números QUE JÁ EXISTEM na conta Meta pra escolher via
+checkbox - mas fez questão de confirmar antes: "cada negocio deve ver
+só os numeros que tem cadastrados no seu negocio... se for assim pode
+fazer". Expliquei que esse isolamento vem de graça do próprio escopo
+do token OAuth (a Meta só deixa a pessoa ver o que ela mesma tem
+acesso, não é um filtro nosso) - ele testou isso pessoalmente (viu a
+tela pedindo pra logar como "Caio Acosta" e perguntou se um cliente
+veria a própria conta dele, não a minha) e confirmou que fazia
+sentido continuar.
+
+Pedido similar pro "remover": desinscrever de verdade da Meta
+(`DELETE /subscribed_apps`), não só apagar do nosso lado - "sem
+nenhum vinculo mais com esse numero". Precisei persistir
+`whatsapp_waba_id`, que já vinha no OAuth exchange desde sempre mas
+nunca tinha sido salvo (só usado na hora e descartado).
+
+**Cinco rodadas de ajuste fino, cada uma a partir de um print do
+usuário testando ao vivo** - registro aqui porque é um padrão de
+trabalho, não só uma lista de bugs:
+1. Botão "+ Adicionar outro número" não alinhava com o "Salvar" -
+   reposicionado pra mesma linha.
+2. Lista mostrava o `phone_number_id` cru (ID interno da Meta -
+   inclusive o lixo do e-mail) em vez do telefone real. Corrigido
+   calculando um `display_number` no backend (telefone visível pro
+   hóspede pro principal, o que a Meta devolve no picker pro extra).
+3. "Remover" virou um picker de checkbox (igual o de adicionar) em vez
+   de botão vermelho por linha - pedido explícito do usuário.
+4. Picker de adicionar E de remover apareciam como caixa embutida
+   dentro do modal principal - usuário pediu "modal na tela, nada de
+   formulários soltos" duas vezes (uma pro picker, depois de novo pro
+   formulário manual) até os três (picker de add, picker de remove,
+   formulário manual) virarem modais próprios via `openGenericModal`.
+5. No meio dessa sequência, um bug crítico de produção pego pelo
+   próprio usuário: a tela de WhatsApp ficou toda em branco, sem
+   nenhum botão. Causa: adicionei a coluna `display_phone_number` só
+   no `CREATE TABLE IF NOT EXISTS` de `hostel_whatsapp_extra_numbers`
+   - como essa tabela JÁ EXISTIA em produção (criada no commit
+   anterior, mesma sessão), `CREATE TABLE IF NOT EXISTS` não altera
+   uma tabela já criada. Toda leitura da tabela quebrava com "no such
+   column", devolvendo 500 pro frontend, que silenciosamente não
+   atualizava nada na tela (nem erro visível, só ficava tudo com o
+   `display:none` padrão do HTML). Corrigido com o `ALTER TABLE`
+   (`add_column_if_not_exists`) que devia ter vindo junto desde o
+   início - testado simulando o schema exato de produção (tabela sem
+   a coluna nova) antes de publicar de novo, pra nunca mais deixar
+   passar esse tipo de erro.
+
+Padrão que vale generalizar: **toda vez que uma coluna nova é
+adicionada numa tabela que pode já existir em produção de um deploy
+anterior da MESMA sessão, ela precisa do `add_column_if_not_exists`
+sempre, mesmo que o `CREATE TABLE IF NOT EXISTS` já "pareça" cobrir
+os dois casos** - só cobre de verdade quando a tabela nasce naquele
+exato commit, nunca quando um commit anterior já criou a tabela sem
+aquela coluna.
