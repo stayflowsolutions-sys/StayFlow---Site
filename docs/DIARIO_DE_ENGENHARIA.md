@@ -11954,6 +11954,120 @@ tentativas) - sem relação com nenhum deploy meu, mantive a disciplina
 de nunca seguir pro próximo passo sem confirmar que o anterior
 realmente estava no ar.
 
+### Auditoria de conversa antes de conectar WhatsApp real numa imobiliária (v1.140.0-5)
+
+Dois dias depois (07/09), o usuário voltou pra confirmar que ia
+conectar um número de WhatsApp brasileiro de verdade numa conta - só
+que não era a `Teste2` (hospedagem) que eu tinha passado a sessão
+inteira arrumando, era outra: `Imobiliaria Teste`, que na prática já
+representava um cliente real (Elaine, Viana Soluções Imobiliárias).
+Bom lembrete de que "a conta de demo" não é uma coisa só - tem mais de
+uma rodando em paralelo, cada uma com seu próprio contexto.
+
+O pedido era direto: "ela não pode travar, nem ficar dando volta que
+nem tonta, preciso que isso esteja 100% contextualizada nela" - antes
+de deixar uma pessoa de carne e osso mandar mensagem de verdade. Não
+dava pra responder isso só lendo código (já sabia que o prompt tinha
+guardas explícitas contra repetição/loop) - precisava ver a IA
+CONVERSANDO de verdade. Adicionei `POST /internal/hostels/<id>/
+simulate-message`, reaproveitando `process_incoming_message` (a MESMA
+função que os webhooks reais do WhatsApp/Meta chamam) com
+`send_reply=False` - roda o modelo de verdade, com tool calling de
+verdade, sem nunca despachar uma mensagem real pra ninguém.
+
+Rodei várias conversas simuladas, turno a turno: alugar um
+apartamento (achou o certo, cotou o preço real, sem inventar nada),
+comprar uma casa, perguntar sobre financiamento que não existe
+(respondeu que não tem, sem inventar), perguntar se vendem terreno
+(disse que não, corretamente), uma pergunta de propósito absurda
+("vocês entregam pizza?" - lidou bem, com humor, sem travar) e voltar
+numa conversa já em andamento pra confirmar que não reperguntava nome/
+telefone que já tinha. Tudo limpo - nenhum loop, nenhuma repetição,
+nenhuma invenção de preço ou imóvel.
+
+Achei um bug real mesmo assim, só porque testei justamente o caso que
+ninguém tinha testado antes: agendar visita dizendo o dia da semana
+sem data ("quinta que vem"). Hoje era segunda-feira - "quinta que vem"
+foi resolvido pra quinta da semana SEGUINTE (10 dias depois) em vez da
+mais próxima (3 dias depois), e a IA confirmou usando só a frase
+relativa, sem nunca falar a data de verdade. Isso é exatamente o tipo
+de coisa que rende uma "falha ao vivo" se ninguém pegar antes - cliente
+e corretor cada um com uma data diferente na cabeça, sem nenhum dos
+dois perceber até o dia errado chegar.
+
+Corrigi em duas rodadas. A primeira tentativa de instrução
+(_WEEKDAY_DATE_DISAMBIGUATION, reaproveitada nos 3 prompts com data
+relativa - hospedagem, agência, software, porque o risco é o mesmo nos
+três) só resolveu METADE do problema: a IA passou a sempre confirmar
+com a data completa (bom - já dá pro cliente perceber e corrigir na
+hora, mesmo que a interpretação erre), mas continuou escolhendo a
+quinta errada. Só quando reforcei a instrução com um exemplo concreto
+ancorado ("se hoje é segunda, quinta que vem = quinta DESSA MESMA
+semana, não a de depois") o modelo passou a resolver certo. Fica
+registrado como aprendizado: pra esse tipo de raciocínio de data
+relativa, exemplo concreto funciona bem melhor que regra abstrata -
+não adianta só descrever a regra, precisa ancorar com um caso.
+
+### Consolidação do catálogo de extras - achado do próprio usuário (v1.141.0)
+
+No meio da explicação de "Serviços Extras" (Portfólio) vs "Receitas",
+o usuário fez uma pergunta que eu não tinha pensado sozinho: "mas em
+Receitas também tem a opção de adicionar os passeios, certo? seria
+centralizar tudo que faça sentido em um só". Investiguei em vez de
+responder de cabeça, e ele estava certo: existiam DOIS catálogos de
+item vendável completamente separados, sem eu ter percebido isso
+antes apesar de ter mexido nos dois ao longo da sessão. Receitas tinha
+um mini-formulário antigo (nome/tipo "Tour ou Upsell"/preço) que
+gravava numa tabela `offerings` própria, com sua própria ferramenta de
+IA (`get_addons`); Portfólio/"Serviços extras" tinha o catálogo
+completo (com descrição/categoria/foto) gravando em `portfolio_items`,
+com a ferramenta `get_offerings`. Pior: o texto de exemplo dos DOIS
+convidava a cadastrar exatamente a mesma coisa ("tours, late checkout,
+aluguel de toalha") - um dono de hospedagem cadastrando um item em
+Receitas nunca veria ele aparecer em Portfólio, e vice-versa.
+
+Antes de mexer em qualquer coisa, chequei se algum cliente real já
+tinha dado cadastrado na tabela antiga - `list_all_offerings_for_audit`
+(função temporária, removida depois de confirmado) mostrou zero linhas
+em TODOS os hostels. Sem isso, eu não saberia se consolidar ia apagar
+dado real de algum piloto. Com a tabela confirmada vazia, segui direto
+pra remover a duplicação (não migrar nada, porque não havia nada pra
+migrar): tirei a ferramenta `get_addons` e seu handler, as rotas de
+criar/excluir oferta antiga, e fundi o parágrafo de "extras simples"
+(toalha/cobertor) na mesma seção do prompt que já falava de
+Serviços Extras via `get_offerings` - não faz sentido pra IA ter duas
+instruções separadas pra chamar catálogos que agora são o mesmo.
+
+Quando perguntei se o usuário queria fazer essa consolidação agora ou
+depois, ele topou na hora e pediu mais uma coisa: manter um botão de
+adicionar manualmente em Receitas também, pra não perder esse atalho.
+Ótimo pedido, mas ele mesmo notou o risco antes de eu precisar avisar:
+"mas você mesmo disse que o outro [formulário] era mais pobre, então o
+mesmo formulário pode faltar informação? coloca formulário completo" -
+exatamente certo, e exatamente o que eu já tinha planejado: o botão
+novo em Receitas abre o MESMO modal completo de Portfólio
+(`openPortfolioItemModal()`), não uma versão simplificada em paralelo.
+Isso é o ponto principal da consolidação - não ter duas fontes de
+verdade pra editar a mesma coisa.
+
+Publiquei e testei tudo de novo via conversa simulada, nas DUAS
+contas que iam ser afetadas: a imobiliária (listou os 3 imóveis de
+locação certos) e a hospedagem `Teste2` (listou os 3 itens de
+cross-sell certos, confirmando que a fusão das duas ferramentas de IA
+num prompt só não quebrou nada que já funcionava antes). Isso
+importava mais que o normal porque o usuário estava literalmente
+prestes a instalar o número de WhatsApp de verdade na imobiliária
+nesse exato momento - qualquer regressão ali ia aparecer pro cliente
+real, não só pra mim testando sozinho.
+
+Bug pequeno pego no caminho, antes de publicar: uma das 11 traduções
+novas (chinês) usava aspas retas (`"`) dentro de uma string JavaScript
+já delimitada por aspas retas - quebraria o parse do arquivo inteiro.
+Corrigido trocando pelas aspas angulares chinesas (「」) antes de
+qualquer deploy - o checklist de balanceamento de aspas/chaves que já
+uso depois de toda edição de i18n pegou isso antes de virar problema
+em produção.
+
 ### Hóspede vira Contato sozinho - mas só depois de confirmar que era pra reverter o design (v1.138.0-1)
 
 Enquanto ainda no meio da auditoria, o usuário tinha mandado um
