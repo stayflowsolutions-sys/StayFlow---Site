@@ -4063,7 +4063,7 @@ async function deleteRoleConfirm(roleId){
       }
 
       window._whatsappAddExtraMode = false;
-      alert(T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
+      alert(data.warning || T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
       openWhatsappSettingsModal();
     }catch(e){
       console.error("Erro ao salvar WhatsApp:", e);
