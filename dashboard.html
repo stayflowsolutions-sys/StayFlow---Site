@@ -3690,11 +3690,6 @@ async function deleteRoleConfirm(roleId){
 
       <div id="whatsappNumbersList" style="margin-bottom:14px"></div>
 
-      <div id="whatsappAddExtraRow" style="display:none;margin-bottom:14px">
-        <button type="button" class="btn secondary" onclick="startAddingWhatsappExtraNumber()">${T('settings.whatsapp.numbers.addExtraBtn', '+ Adicionar outro número')}</button>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.numbers.addExtraHint', 'Use isso se a hospedagem atende por mais de um número principal (ex: um pra vendas, outro pra locação).')}</div>
-      </div>
-
       <div id="whatsappOauthRow" style="display:none;margin-bottom:14px">
         <button type="button" class="btn" id="whatsappOauthBtn" onclick="toggleWhatsappManualForm()">${T('settings.whatsapp.connectBtn', 'Cadastrar número novo')}</button>
         <div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:10px">${T('settings.whatsapp.newNumberHint', 'Use essa opção pra cadastrar manualmente um número que ainda não está em nenhum WhatsApp.')}</div>
@@ -3739,8 +3734,12 @@ async function deleteRoleConfirm(roleId){
         <div style="font-size:11px;color:var(--muted);margin-top:10px">${T('settings.whatsapp.localWarning', '⚠️ Se ainda estiver testando local (127.0.0.1), a Meta não consegue acessar essa URL — você vai precisar de uma ferramenta como o ngrok pra criar um link público temporário até o servidor estar hospedado de vez.')}</div>
       </div>
 
-      <div style="display:flex;justify-content:flex-end;margin-top:14px">
-        <button class="btn" type="button" onclick="saveWhatsappSettings()">${T('settings.whatsapp.saveBtn', 'Salvar WhatsApp')}</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:10px">
+        <div id="whatsappAddExtraRow" style="display:none">
+          <button type="button" class="btn secondary" onclick="startAddingWhatsappExtraNumber()">${T('settings.whatsapp.numbers.addExtraBtn', '+ Adicionar outro número')}</button>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.numbers.addExtraHint', 'Use isso se a hospedagem atende por mais de um número principal (ex: um pra vendas, outro pra locação).')}</div>
+        </div>
+        <button class="btn" type="button" style="margin-left:auto" onclick="saveWhatsappSettings()">${T('settings.whatsapp.saveBtn', 'Salvar WhatsApp')}</button>
       </div>
     `);
     loadWhatsappSettings();
