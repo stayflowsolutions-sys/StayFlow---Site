@@ -3688,8 +3688,12 @@ async function deleteRoleConfirm(roleId){
       <p style="margin-bottom:14px">${T('settings.whatsapp.desc', 'Conecte o número oficial da hospedagem no WhatsApp (Meta Cloud API).')}</p>
 
       <div id="whatsappOauthRow" style="display:none;margin-bottom:14px">
-        <button type="button" class="btn" id="whatsappOauthBtn" onclick="connectWhatsappEmbedded()">${T('settings.whatsapp.connectBtn', 'Conectar via WhatsApp')}</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn" id="whatsappOauthBtn" onclick="connectWhatsappEmbedded(false)">${T('settings.whatsapp.connectBtn', 'Conectar via WhatsApp')}</button>
+          <button type="button" class="btn secondary" id="whatsappCoexistenceBtn" onclick="connectWhatsappEmbedded(true)">${T('settings.whatsapp.connectCoexistenceBtn', 'Conectar mantendo o WhatsApp Business no celular')}</button>
+        </div>
         <div style="font-size:11px;color:var(--muted);margin-top:6px">${T('settings.whatsapp.oauthHint', 'Ou preencha manualmente abaixo, se preferir.')}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.coexistenceHint', 'Use a segunda opção se o número já está em uso no app WhatsApp Business do celular e você quer continuar usando os dois ao mesmo tempo. Só funciona com números já cadastrados no app WhatsApp Business (não o WhatsApp comum).')}</div>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
@@ -4082,7 +4086,7 @@ async function deleteRoleConfirm(roleId){
     }
   };
 
-  window.connectWhatsappEmbedded = function(){
+  window.connectWhatsappEmbedded = function(coexistence){
     const config = window.STAYFLOW_WHATSAPP_OAUTH;
     if(!config){
       alert(T('settings.whatsapp.msg.oauthUnavailable', 'Conexão automática ainda não está disponível.'));
@@ -4093,16 +4097,30 @@ async function deleteRoleConfirm(roleId){
       window.FB.init({ appId: config.appId, xfbml: false, version: "v20.0" });
 
       let sessionInfo = null;
+      let finishEvent = null;
       function onMessage(event){
         if(typeof event.origin !== "string" || !event.origin.endsWith("facebook.com")) return;
         try{
           const payload = JSON.parse(event.data);
           if(payload.type === "WA_EMBEDDED_SIGNUP" && payload.data){
             sessionInfo = payload.data;
+            finishEvent = payload.event || null;
           }
         }catch(e){ /* mensagens de outra origem/formato - ignora */ }
       }
       window.addEventListener("message", onMessage);
+
+      // extras.featureType so existe pro modo coexistence ("Onboard
+      // WhatsApp Business app users") - no modo padrao a Meta usa o
+      // fluxo normal de sempre (feature so um rotulo nosso, ignorado
+      // pela Meta se nao reconhecido). O evento de FATO recebido
+      // (finishEvent, capturado acima) decide qual rota fecha a
+      // conexao - nao qual botao foi clicado - porque a propria tela
+      // da Meta pode deixar a pessoa escolher criar do zero mesmo
+      // tendo entrado pelo caminho de coexistence.
+      const extras = coexistence
+        ? { featureType: "whatsapp_business_app_onboarding", sessionInfoVersion: "3" }
+        : { feature: "whatsapp_embedded_signup", sessionInfoVersion: "3" };
 
       window.FB.login(function(response){
         window.removeEventListener("message", onMessage);
@@ -4111,12 +4129,13 @@ async function deleteRoleConfirm(roleId){
           if(response && response.authResponse) alert(T('settings.whatsapp.msg.oauthIncomplete', 'Conexão incompleta — tenta de novo.'));
           return;
         }
-        finishWhatsappEmbeddedSignup(code, sessionInfo.phone_number_id, sessionInfo.waba_id);
+        const isCoexistence = finishEvent === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING";
+        finishWhatsappEmbeddedSignup(code, sessionInfo.phone_number_id, sessionInfo.waba_id, isCoexistence);
       }, {
         config_id: config.configId,
         response_type: "code",
         override_default_response_type: true,
-        extras: { feature: "whatsapp_embedded_signup", sessionInfoVersion: "3" },
+        extras: extras,
       });
     }
 
@@ -4127,9 +4146,9 @@ async function deleteRoleConfirm(roleId){
     document.body.appendChild(script);
   };
 
-  window.finishWhatsappEmbeddedSignup = async function(code, phoneNumberId, wabaId){
+  window.finishWhatsappEmbeddedSignup = async function(code, phoneNumberId, wabaId, isCoexistence){
     try{
-      const res = await fetch("/settings/whatsapp/embedded-signup", {
+      const res = await fetch(isCoexistence ? "/settings/whatsapp/coexistence-signup" : "/settings/whatsapp/embedded-signup", {
         method: "POST", credentials: "same-origin",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({ code, phone_number_id: phoneNumberId, waba_id: wabaId }),
@@ -4139,7 +4158,9 @@ async function deleteRoleConfirm(roleId){
         alert(data.message || T('common.error.generic', 'Erro de conexão.'));
         return;
       }
-      alert(T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
+      alert(isCoexistence
+        ? T('settings.whatsapp.msg.savedCoexistence', 'WhatsApp conectado! Seu app WhatsApp Business continua funcionando normalmente no celular.')
+        : T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
       loadWhatsappSettings();
     }catch(e){
       console.warn("Erro ao finalizar WhatsApp Embedded Signup:", e);
