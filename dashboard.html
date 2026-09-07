@@ -3685,10 +3685,20 @@ async function deleteRoleConfirm(roleId){
   // agora so existem no DOM enquanto o modal esta aberto.
   window.openWhatsappSettingsModal = function(){
     window._whatsappAddExtraMode = false;
+    window._whatsappDiscovered = null;
     openGenericModal(T('settings.whatsapp.title', '📱 WhatsApp Business'), `
       <p style="margin-bottom:14px">${T('settings.whatsapp.desc', 'Conecte o número oficial da hospedagem no WhatsApp (Meta Cloud API).')}</p>
 
       <div id="whatsappNumbersList" style="margin-bottom:14px"></div>
+
+      <div id="whatsappNumberPicker" style="display:none;margin-bottom:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#ffffff05">
+        <div style="font-weight:700;margin-bottom:8px">${T('settings.whatsapp.numbers.pickerTitle', 'Números encontrados nessa conta Meta — marque quais usar:')}</div>
+        <div id="whatsappNumberPickerList"></div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button type="button" class="btn" onclick="confirmWhatsappNumberPicker()">${T('settings.whatsapp.numbers.pickerConfirm', 'Ativar selecionados')}</button>
+          <button type="button" class="btn secondary" onclick="cancelWhatsappNumberPicker()">${T('common.cancel', 'Cancelar')}</button>
+        </div>
+      </div>
 
       <div id="whatsappOauthRow" style="display:none;margin-bottom:14px">
         <button type="button" class="btn" id="whatsappOauthBtn" onclick="toggleWhatsappManualForm()">${T('settings.whatsapp.connectBtn', 'Cadastrar número novo')}</button>
@@ -4136,6 +4146,99 @@ async function deleteRoleConfirm(roleId){
     loadWhatsappSettings();
   };
 
+  // Picker de numeros (v1.146.2) - so entra em jogo quando "+ Adicionar
+  // outro numero" usa o caminho de Coexistence (OAuth); a lista vem da
+  // MESMA WABA que a pessoa acabou de autorizar no FB.login(), nunca de
+  // outro negocio - isolamento garantido pelo escopo do proprio token,
+  // nao por filtro nosso.
+  window.discoverAndPickWhatsappNumbers = async function(code, wabaId, isCoexistence){
+    try{
+      const res = await fetch("/settings/whatsapp/discover-numbers", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ code, waba_id: wabaId }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+      if(!data.numbers || data.numbers.length === 0){
+        alert(T('settings.whatsapp.numbers.noneFound', 'Nenhum número encontrado nessa conta Meta.'));
+        window._whatsappAddExtraMode = false;
+        return;
+      }
+      window._whatsappDiscovered = { accessToken: data.access_token, wabaId: wabaId, isCoexistence: isCoexistence, numbers: data.numbers };
+      renderWhatsappNumberPicker();
+    }catch(e){
+      console.warn("Erro ao descobrir números WhatsApp:", e);
+      alert(T('common.error.generic', 'Erro de conexão.'));
+    }
+  };
+
+  window.renderWhatsappNumberPicker = function(){
+    const state = window._whatsappDiscovered;
+    const listEl = document.getElementById("whatsappNumberPickerList");
+    if(listEl && state){
+      listEl.innerHTML = state.numbers.map((n, i) => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0">
+          <input type="checkbox" class="whatsapp-picker-checkbox" data-index="${i}">
+          <span>${n.verified_name || n.display_phone_number || n.id} <span style="color:var(--muted);font-size:11px">(${n.display_phone_number || n.id})</span></span>
+        </label>
+      `).join("");
+    }
+    document.getElementById("whatsappNumberPicker").style.display = "block";
+    document.getElementById("whatsappNumbersList").style.display = "none";
+    const oauthRow = document.getElementById("whatsappOauthRow");
+    const addExtraRow = document.getElementById("whatsappAddExtraRow");
+    if(oauthRow) oauthRow.style.display = "none";
+    if(addExtraRow) addExtraRow.style.display = "none";
+  };
+
+  window.cancelWhatsappNumberPicker = function(){
+    window._whatsappDiscovered = null;
+    window._whatsappAddExtraMode = false;
+    document.getElementById("whatsappNumberPicker").style.display = "none";
+    document.getElementById("whatsappNumbersList").style.display = "block";
+    loadWhatsappSettings();
+  };
+
+  window.confirmWhatsappNumberPicker = async function(){
+    const state = window._whatsappDiscovered;
+    if(!state) return;
+    const checked = Array.from(document.querySelectorAll(".whatsapp-picker-checkbox:checked")).map(el => state.numbers[Number(el.dataset.index)]);
+    if(checked.length === 0){
+      alert(T('settings.whatsapp.numbers.pickerNoneSelected', 'Marque pelo menos um número.'));
+      return;
+    }
+    try{
+      const res = await fetch("/settings/whatsapp/activate-numbers", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          waba_id: state.wabaId,
+          access_token: state.accessToken,
+          coexistence: state.isCoexistence,
+          numbers: checked.map(n => ({ phone_number_id: n.id, label: n.verified_name || n.display_phone_number || "" })),
+        }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+      window._whatsappDiscovered = null;
+      window._whatsappAddExtraMode = false;
+      document.getElementById("whatsappNumberPicker").style.display = "none";
+      document.getElementById("whatsappNumbersList").style.display = "block";
+      alert(T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
+      loadWhatsappSettings();
+    }catch(e){
+      console.warn("Erro ao ativar números WhatsApp:", e);
+      alert(T('common.error.generic', 'Erro de conexão.'));
+    }
+  };
+
   window.removeWhatsappNumber = async function(id){
     const confirmed = await stayflowConfirm(T('settings.whatsapp.numbers.removeConfirm', 'Remover esse número? Ele para de receber e responder mensagem até conectar de novo.'));
     if(!confirmed) return;
@@ -4203,7 +4306,17 @@ async function deleteRoleConfirm(roleId){
           return;
         }
         const isCoexistence = finishEvent === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING";
-        finishWhatsappEmbeddedSignup(code, sessionInfo.phone_number_id, sessionInfo.waba_id, isCoexistence);
+        // "+ Adicionar outro numero" (v1.146.2) - em vez de ja registrar
+        // o UNICO numero que veio no sessionInfo, descobre TODOS os
+        // numeros que existem nessa WABA (a mesma que a pessoa acabou
+        // de autorizar nesse login - nunca vaza numero de outro negocio,
+        // isso e garantido pelo escopo do proprio token da Meta) e deixa
+        // a pessoa escolher via checkbox quais ativar.
+        if(window._whatsappAddExtraMode){
+          discoverAndPickWhatsappNumbers(code, sessionInfo.waba_id, isCoexistence);
+        } else {
+          finishWhatsappEmbeddedSignup(code, sessionInfo.phone_number_id, sessionInfo.waba_id, isCoexistence);
+        }
       }, {
         config_id: config.configId,
         response_type: "code",
