@@ -2530,26 +2530,12 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-8">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0" data-i18n="revenue.catalogTitle">🍷 Catálogo de experiências e upsells</h2>
-        <button type="button" class="btn primary" onclick="openNewOfferingModal()" data-i18n="revenue.addBtn">➕ Adicionar</button>
-      </div>
-
-      <div class="sf-empty" id="offeringsEmpty">
-        <div>
-          <strong data-i18n="revenue.emptyOfferingsTitle">Nenhuma experiência ou upsell cadastrado.</strong>
-          <span data-i18n="revenue.emptyOfferingsDesc">Cadastre tours, late checkout, aluguel de toalha e outras ofertas da sua hospedagem.</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn secondary" onclick="openPage('portfolio')" data-i18n="revenue.viewCatalogBtn">Ver catálogo completo</button>
+          <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="revenue.addBtn">➕ Adicionar</button>
         </div>
       </div>
-      <table class="table" id="offeringsTable" style="display:none">
-        <thead>
-          <tr>
-            <th data-i18n="common.name">Nome</th>
-            <th data-i18n="common.type">Tipo</th>
-            <th data-i18n="revenue.col.price">Preço</th>
-            <th data-i18n="reservations.col.actions">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="offeringsTableBody"></tbody>
-      </table>
+      <p style="color:var(--muted);font-size:13px;margin:0" data-i18n="revenue.catalogRedirectDesc">Tours, late checkout, aluguel de toalha e outras ofertas da sua hospedagem — o catálogo completo (com foto e descrição) fica na aba Serviços extras.</p>
     </div>
 
     <div class="card span-4">
@@ -12622,81 +12608,12 @@ window.createShiftUI = async function(){
   }
 };
 
-// ===== RECEITAS: /revenue e /offerings =====
-
-window.openNewOfferingModal = function(){
-  openGenericModal(T('revenue.catalogTitle', '🍷 Catálogo de experiências e upsells'), `
-    <form onsubmit="submitNewOffering(event)" autocomplete="off" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
-      <div style="grid-column:span 12">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.name', 'Nome')}</label>
-        <input name="name" autocomplete="off" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-      </div>
-      <div style="grid-column:span 6">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.type', 'Tipo')}</label>
-        <select name="type" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          <option value="tour">${T('revenue.type.tour', 'Tour / Experiência')}</option>
-          <option value="upsell">${T('revenue.type.upsell', 'Upsell')}</option>
-        </select>
-      </div>
-      <div style="grid-column:span 6">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('revenue.priceLabel', 'Preço')} (${currencySymbol()})</label>
-        <input name="price" type="number" step="0.01" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-      </div>
-      <div style="grid-column:span 12;display:flex;justify-content:flex-end">
-        <button type="submit" class="btn">${T('revenue.addBtn', '➕ Adicionar')}</button>
-      </div>
-    </form>
-  `);
-};
-
-window.submitNewOffering = async function(event){
-  event.preventDefault();
-  const form = event.target;
-
-  const payload = {
-    name: form.name.value.trim(),
-    type: form.type.value,
-    price: form.price.value || 0
-  };
-
-  if(!payload.name){
-    alert(T('revenue.msg.nameRequired', 'Digita o nome da experiência/upsell.'));
-    return;
-  }
-
-  try{
-    const res = await fetch("/offerings", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload)
-    });
-
-    if(!res.ok){
-      alert(T('revenue.msg.createFailed', 'Não foi possível criar a oferta.'));
-      return;
-    }
-
-    form.reset();
-    closeGenericModal();
-    loadRevenue();
-  }catch(e){
-    console.error("Erro ao criar oferta:", e);
-  }
-};
-
-window.deleteOffering = async function(offeringId){
-  if(!await stayflowConfirm(T('revenue.msg.deleteConfirm', 'Excluir esta oferta?'))) return;
-  try{
-    await fetch(`/offerings/${offeringId}`, {
-      method: "DELETE",
-      credentials: "same-origin"
-    });
-    loadRevenue();
-  }catch(e){
-    console.error("Erro ao excluir oferta:", e);
-  }
-};
+// ===== RECEITAS: /revenue =====
+// Catalogo de itens vendaveis (o que pode ser oferecido) mora inteiro em
+// Portfolio/"Servicos extras" desde a v1.141.0 - Receitas so mostra o lado
+// financeiro (oportunidades abertas + soma estimada), sem catalogo proprio
+// duplicado. offeringTypeLabel() continua aqui porque as OPORTUNIDADES
+// (tour/upsell detectadas pela IA) ainda usam esses mesmos rotulos.
 
 const OFFERING_TYPE_LABELS_PT = { tour: "Tour / Experiência", upsell: "Upsell" };
 function offeringTypeLabel(type){
@@ -12712,33 +12629,6 @@ async function loadRevenue(){
 
     const kpiExtra = document.getElementById("kpiExtraRevenue");
     if(kpiExtra) kpiExtra.textContent = formatMoney(data.extra_revenue);
-
-    // Catálogo de ofertas
-    const offerings = data.offerings || [];
-    const offeringsEmpty = document.getElementById("offeringsEmpty");
-    const offeringsTable = document.getElementById("offeringsTable");
-    const offeringsBody = document.getElementById("offeringsTableBody");
-
-    if(!offerings.length){
-      if(offeringsEmpty) offeringsEmpty.style.display = "flex";
-      if(offeringsTable) offeringsTable.style.display = "none";
-    }else{
-      if(offeringsEmpty) offeringsEmpty.style.display = "none";
-      if(offeringsTable) offeringsTable.style.display = "table";
-      if(offeringsBody){
-        offeringsBody.innerHTML = "";
-        offerings.forEach(o => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${o.name}</td>
-            <td>${offeringTypeLabel(o.type)}</td>
-            <td>${formatMoney(o.price)}</td>
-            <td><button class="btn red" style="padding:6px 10px;font-size:12px" onclick="deleteOffering(${o.id})">${T('common.delete', 'Excluir')}</button></td>
-          `;
-          offeringsBody.appendChild(row);
-        });
-      }
-    }
 
     // Oportunidades de receita (tour/upsell detectados pela IA)
     const opportunities = data.opportunities || [];
