@@ -3692,38 +3692,10 @@ async function deleteRoleConfirm(roleId){
       <div id="whatsappNumbersList" style="margin-bottom:14px"></div>
 
       <div id="whatsappOauthRow" style="display:none;margin-bottom:14px">
-        <button type="button" class="btn" id="whatsappOauthBtn" onclick="toggleWhatsappManualForm()">${T('settings.whatsapp.connectBtn', 'Cadastrar número novo')}</button>
+        <button type="button" class="btn" id="whatsappOauthBtn" onclick="openWhatsappManualFormModal()">${T('settings.whatsapp.connectBtn', 'Cadastrar número novo')}</button>
         <div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:10px">${T('settings.whatsapp.newNumberHint', 'Use essa opção pra cadastrar manualmente um número que ainda não está em nenhum WhatsApp.')}</div>
-        <button type="button" class="btn secondary" id="whatsappCoexistenceBtn" onclick="connectWhatsappEmbedded(true)">${T('settings.whatsapp.connectCoexistenceBtn', 'Conectar WhatsApp já existente')}</button>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.coexistenceHint', 'Use essa opção se o número já está em uso no app WhatsApp Business do celular e você quer continuar usando os dois ao mesmo tempo. Só funciona com números já cadastrados no app WhatsApp Business (não o WhatsApp comum).')}</div>
-      </div>
-
-      <div id="whatsappManualForm" style="display:none">
-        <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
-          <div style="grid-column:span 6">
-            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.phoneIdLabel', 'Phone Number ID (da Meta)')}</label>
-            <input type="text" id="whatsappPhoneNumberId" autocomplete="off" placeholder="ex: 123456789012345" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          </div>
-          <div style="grid-column:span 6">
-            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.tokenLabel', 'Access Token')}</label>
-            <input type="password" id="whatsappAccessToken" autocomplete="off" placeholder="${T('settings.whatsapp.tokenPlaceholder', 'Deixe em branco pra manter o já salvo')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          </div>
-          <div style="grid-column:span 12">
-            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.contactPhoneLabel', 'Número de WhatsApp visível pro hóspede')}</label>
-            <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.contactPhoneHint', 'Usado pela IA pra sugerir esse número como contato alternativo em conversas de Messenger/Instagram.')}</div>
-          </div>
-          <div style="grid-column:span 12">
-            <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.aiPersonaLabel', 'Este número responde como')}</label>
-            <select id="whatsappAiPersona" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-              <option value="">${T('settings.whatsapp.aiPersonaGuest', 'Atendimento normal (padrão)')}</option>
-              ${(window.STAYFLOW_SESSION || {}).is_stayflow_admin ? `<option value="software">${T('settings.whatsapp.aiPersonaSoftware', 'Assistente comercial da StayFlow (só pro número oficial da StayFlow)')}</option>` : ""}
-            </select>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.aiPersonaHint', 'Deixe em "Atendimento normal" a menos que este seja o número comercial da própria StayFlow — nesse caso, a IA se apresenta como assistente do software, não como a própria conta. O tipo de atendimento já é automático, de acordo com o tipo da conta.')}</div>
-          </div>
-        </div>
-
-        <div id="whatsappTokenStatus" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
+        <button type="button" class="btn secondary" id="whatsappCoexistenceBtn" style="display:none" onclick="connectWhatsappEmbedded(true)">${T('settings.whatsapp.connectCoexistenceBtn', 'Conectar WhatsApp já existente')}</button>
+        <div id="whatsappCoexistenceHint" style="display:none;font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.coexistenceHint', 'Use essa opção se o número já está em uso no app WhatsApp Business do celular e você quer continuar usando os dois ao mesmo tempo. Só funciona com números já cadastrados no app WhatsApp Business (não o WhatsApp comum).')}</div>
       </div>
 
       <div style="margin-top:14px;padding:14px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff05">
@@ -3739,7 +3711,6 @@ async function deleteRoleConfirm(roleId){
         <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
           <button type="button" class="btn red" id="whatsappRemoveBtn" style="display:none" onclick="startRemovingWhatsappNumber()">${T('settings.whatsapp.numbers.removeBtn', 'Remover')}</button>
           <button type="button" class="btn secondary" id="whatsappAddExtraBtn" style="display:none" onclick="startAddingWhatsappExtraNumber()">${T('settings.whatsapp.numbers.addExtraBtn', '+ Adicionar outro número')}</button>
-          <button class="btn" type="button" style="margin-left:auto" onclick="saveWhatsappSettings()">${T('settings.whatsapp.saveBtn', 'Salvar WhatsApp')}</button>
         </div>
         <div id="whatsappAddExtraHint" style="display:none;font-size:11px;color:var(--muted);margin-top:6px">${T('settings.whatsapp.numbers.addExtraHint', 'Use isso se a hospedagem atende por mais de um número principal (ex: um pra vendas, outro pra locação).')}</div>
       </div>
@@ -4003,6 +3974,67 @@ async function deleteRoleConfirm(roleId){
     }
   };
 
+  // Formulario manual abre em modal PROPRIO (v1.146.6) - feedback do
+  // usuario: "modal na tela, nada de formularios soltos". Busca o
+  // estado atual pra pre-preencher (numero, telefone visivel, persona)
+  // quando esta editando o PRINCIPAL - numero extra novo sempre
+  // comeca em branco (nao faz sentido herdar dado de outro numero).
+  window.openWhatsappManualFormModal = async function(){
+    let data = {};
+    try{
+      const res = await fetch("/settings/whatsapp", { credentials: "same-origin" });
+      if(res.ok) data = await res.json();
+    }catch(e){ /* segue com campos vazios se a busca falhar */ }
+
+    const asExtra = Boolean(window._whatsappAddExtraMode);
+
+    openGenericModal(T('settings.whatsapp.connectBtn', 'Cadastrar número novo'), `
+      <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.phoneIdLabel', 'Phone Number ID (da Meta)')}</label>
+          <input type="text" id="whatsappPhoneNumberId" autocomplete="off" placeholder="ex: 123456789012345" value="${asExtra ? '' : (data.phone_number_id || '')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.tokenLabel', 'Access Token')}</label>
+          <input type="password" id="whatsappAccessToken" autocomplete="off" placeholder="${T('settings.whatsapp.tokenPlaceholder', 'Deixe em branco pra manter o já salvo')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 12">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.contactPhoneLabel', 'Número de WhatsApp visível pro hóspede')}</label>
+          <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" value="${asExtra ? '' : (data.contact_phone || '')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.contactPhoneHint', 'Usado pela IA pra sugerir esse número como contato alternativo em conversas de Messenger/Instagram.')}</div>
+        </div>
+        <div style="grid-column:span 12">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.aiPersonaLabel', 'Este número responde como')}</label>
+          <select id="whatsappAiPersona" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+            <option value="">${T('settings.whatsapp.aiPersonaGuest', 'Atendimento normal (padrão)')}</option>
+            ${(window.STAYFLOW_SESSION || {}).is_stayflow_admin ? `<option value="software">${T('settings.whatsapp.aiPersonaSoftware', 'Assistente comercial da StayFlow (só pro número oficial da StayFlow)')}</option>` : ""}
+          </select>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.aiPersonaHint', 'Deixe em "Atendimento normal" a menos que este seja o número comercial da própria StayFlow — nesse caso, a IA se apresenta como assistente do software, não como a própria conta. O tipo de atendimento já é automático, de acordo com o tipo da conta.')}</div>
+        </div>
+      </div>
+
+      <div id="whatsappTokenStatus" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
+
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn" type="button" onclick="saveWhatsappSettings()">${T('settings.whatsapp.saveBtn', 'Salvar WhatsApp')}</button>
+        <button type="button" class="btn secondary" onclick="openWhatsappSettingsModal()">${T('common.cancel', 'Cancelar')}</button>
+      </div>
+    `);
+
+    if(!asExtra){
+      const aiPersonaInput = document.getElementById("whatsappAiPersona");
+      if(aiPersonaInput) aiPersonaInput.value = data.ai_persona || "";
+
+      const statusEl = document.getElementById("whatsappTokenStatus");
+      if(statusEl){
+        statusEl.textContent = data.has_access_token
+          ? T('settings.whatsapp.tokenConfigured', 'Access Token já configurado.')
+          : T('settings.whatsapp.tokenMissing', 'Nenhum Access Token salvo ainda.');
+        statusEl.style.color = data.has_access_token ? "var(--green)" : "#ffbd4a";
+      }
+    }
+  };
+
   window.saveWhatsappSettings = async function(){
     const phoneNumberId = document.getElementById("whatsappPhoneNumberId").value.trim();
     const accessToken = document.getElementById("whatsappAccessToken").value.trim();
@@ -4032,8 +4064,7 @@ async function deleteRoleConfirm(roleId){
 
       window._whatsappAddExtraMode = false;
       alert(T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
-      document.getElementById("whatsappAccessToken").value = "";
-      loadWhatsappSettings();
+      openWhatsappSettingsModal();
     }catch(e){
       console.error("Erro ao salvar WhatsApp:", e);
       alert(T('common.saveConnError', 'Erro de conexão ao salvar.'));
@@ -4050,23 +4081,10 @@ async function deleteRoleConfirm(roleId){
 
       const data = await res.json();
 
-      const phoneInput = document.getElementById("whatsappPhoneNumberId");
-      if(phoneInput && data.phone_number_id) phoneInput.value = data.phone_number_id;
-
-      const contactPhoneInput = document.getElementById("whatsappContactPhone");
-      if(contactPhoneInput) contactPhoneInput.value = data.contact_phone || "";
-
-      const aiPersonaInput = document.getElementById("whatsappAiPersona");
-      if(aiPersonaInput) aiPersonaInput.value = data.ai_persona || "";
-
-      const statusEl = document.getElementById("whatsappTokenStatus");
-      if(statusEl){
-        statusEl.textContent = data.has_access_token
-          ? T('settings.whatsapp.tokenConfigured', 'Access Token já configurado.')
-          : T('settings.whatsapp.tokenMissing', 'Nenhum Access Token salvo ainda.');
-        statusEl.style.color = data.has_access_token ? "var(--green)" : "#ffbd4a";
-      }
-
+      // Campos do formulario manual (phone_number_id/access_token/
+      // contact_phone/ai_persona) nao vivem mais nesse modal (v1.146.6)
+      // - agora so existem dentro de openWhatsappManualFormModal, que
+      // busca o proprio estado quando abre.
       const connected = Boolean(data.phone_number_id) && data.has_access_token;
 
       const whatsappPill = document.getElementById("statusWhatsappPill");
@@ -4111,26 +4129,24 @@ async function deleteRoleConfirm(roleId){
       }
 
       const oauthRow = document.getElementById("whatsappOauthRow");
+      const coexistenceBtn = document.getElementById("whatsappCoexistenceBtn");
+      const coexistenceHint = document.getElementById("whatsappCoexistenceHint");
       const addExtraBtn = document.getElementById("whatsappAddExtraBtn");
       const addExtraHint = document.getElementById("whatsappAddExtraHint");
       const removeBtn = document.getElementById("whatsappRemoveBtn");
       const hasAnyNumber = numbers.length > 0;
       const addingExtra = Boolean(window._whatsappAddExtraMode);
+      const showConnectOptions = !hasAnyNumber || addingExtra;
 
-      if(oauthRow) oauthRow.style.display = (data.oauth_available && (!hasAnyNumber || addingExtra)) ? "block" : "none";
-      if(addExtraBtn) addExtraBtn.style.display = (data.oauth_available && hasAnyNumber && !addingExtra) ? "inline-flex" : "none";
-      if(addExtraHint) addExtraHint.style.display = (data.oauth_available && hasAnyNumber && !addingExtra) ? "block" : "none";
+      // "Cadastrar número novo" (manual, abre modal proprio) nunca
+      // depende de oauth_available - so "Conectar WhatsApp já
+      // existente" (OAuth de verdade) precisa do Config ID configurado.
+      if(oauthRow) oauthRow.style.display = showConnectOptions ? "block" : "none";
+      if(coexistenceBtn) coexistenceBtn.style.display = (data.oauth_available && showConnectOptions) ? "inline-flex" : "none";
+      if(coexistenceHint) coexistenceHint.style.display = (data.oauth_available && showConnectOptions) ? "block" : "none";
+      if(addExtraBtn) addExtraBtn.style.display = (hasAnyNumber && !addingExtra) ? "inline-flex" : "none";
+      if(addExtraHint) addExtraHint.style.display = (hasAnyNumber && !addingExtra) ? "block" : "none";
       if(removeBtn) removeBtn.style.display = (hasAnyNumber && !addingExtra) ? "inline-flex" : "none";
-
-      // Formulario manual so fica visivel de cara quando NAO ha opcao
-      // automatica (Config ID ainda nao configurado) e nao ha numero
-      // nenhum ainda - com Config ID disponivel, ou ja tendo numero
-      // conectado, fica escondido atras do botao (achado real de uso:
-      // campo preenchido com lixo de teste antigo, ai ficando visivel
-      // ao lado dos botoes, confundiu o usuario a ponto de salvar isso
-      // por engano como se fosse a conexao de verdade).
-      const manualForm = document.getElementById("whatsappManualForm");
-      if(manualForm) manualForm.style.display = (!data.oauth_available && !hasAnyNumber) ? "grid" : "none";
     }catch(e){
       console.warn("Erro ao carregar config WhatsApp:", e);
     }
@@ -4284,11 +4300,6 @@ async function deleteRoleConfirm(roleId){
       console.warn("Erro ao ativar números WhatsApp:", e);
       alert(T('common.error.generic', 'Erro de conexão.'));
     }
-  };
-
-  window.toggleWhatsappManualForm = function(){
-    const form = document.getElementById("whatsappManualForm");
-    if(form) form.style.display = form.style.display === "none" ? "grid" : "none";
   };
 
   window.connectWhatsappEmbedded = function(coexistence){
