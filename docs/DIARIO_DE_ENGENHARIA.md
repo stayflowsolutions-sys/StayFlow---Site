@@ -12153,3 +12153,90 @@ nenhuma relação com isso. A validação ficou só no nível de lógica
 (SQLite + mock), que já cobre 100% do comportamento da função - o
 único jeito de testar o envio de verdade seria com um fornecedor real
 e telefone real, que não é o caso aqui.
+
+### WhatsApp Coexistence - da tentativa real de conectar um número até o plano técnico virar código (v1.142.0)
+
+O gatilho pra essa feature inteira foi bem concreto: o usuário estava,
+literalmente na minha frente (via screenshots), tentando conectar um
+número brasileiro de verdade na conta da Viana Soluções (a imobiliária
+que renomeei mais cedo hoje). No meio da explicação de como funciona o
+fluxo padrão de conexão, ele perguntou "e se eu quiser que o cliente
+continue usando o WhatsApp normal também?" - pergunta que eu já tinha
+antecipado que ia vir, porque o fluxo padrão da Meta MIGRA o número
+(desconecta ele do app do celular). Expliquei que isso existe
+(Coexistence) mas que era um recurso de verdade pra construir, não um
+ajuste de 5 minutos - ele topou fazer o simples primeiro pra destravar
+o teste de hoje, e me pediu pra já deixar o Coexistence pronto
+enquanto ele mexia no painel da Meta.
+
+A tentativa de conexão real dele virou uma via-crúcis instrutiva por
+conta própria: descobrimos juntos que `WHATSAPP_CONFIG_ID` nunca tinha
+sido configurado de verdade (o botão "Conectar via WhatsApp" nem
+aparecia - ele confirmou "é verdade, já deveria ir automático, tinha
+esquecido dessa"), e teve que navegar o painel de desenvolvedor da
+Meta (que mudou de estrutura - "Casos de uso" substituiu os produtos
+separados no menu lateral), criou 3 WABAs duplicadas sem querer
+(cada tentativa fechada/reaberta criava uma nova em vez de reaproveitar
+a anterior), e no fim bateu num rate limit de verificação de SMS/
+ligação por pedir código demais. Fui guiando passo a passo pelas
+telas reais (screenshot por screenshot), incluindo corrigir uma
+confusão minha própria (falei "Sete Lagoas" quando o cliente certo era
+Bauru - o usuário corrigiu na hora, salvei isso em memória pra não
+repetir).
+
+Com o teste real travado esperando o rate limit passar, usei esse
+tempo morto exatamente como ele pediu: pesquisar Coexistence a fundo
+antes de escrever qualquer linha. Isso valeu a pena de um jeito
+concreto - meu PRIMEIRO fetch (de um site de reseller, 360dialog) trouxe
+um formato de payload pros webhooks `history`/`smb_app_state_sync`
+diferente do formato real (sem o envelope `object/entry/changes/value`
+que a Meta usa de verdade - o reseller tinha simplificado a
+apresentação na própria doc deles). Só descobri a diferença cruzando
+com a documentação OFICIAL da Meta logo em seguida - se eu tivesse
+construído em cima do formato do reseller sem checar, o parser do
+webhook simplesmente nunca teria batido com o payload real chegando em
+produção, e eu só descobriria isso quando a Elaine mandasse mensagem
+de verdade e nada acontecesse. Lição registrada: pra API de terceiro
+com muito conteúdo de reseller/wrapper na internet, sempre buscar a
+doc do dono original antes de confiar num formato reformatado, mesmo
+quando o reseller parece bem documentado.
+
+Outro achado de pesquisa que mudou o design: o parâmetro que falta pra
+habilitar o modo coexistence no `FB.login()` não é o `feature` que o
+código já usava (`"whatsapp_embedded_signup"`) - é um campo DIFERENTE,
+`featureType: "whatsapp_business_app_onboarding"`. Como não dava pra
+saber de antemão qual dos dois eventos a Meta ia devolver (ela pode
+deixar a pessoa mudar de ideia no meio do fluxo e criar do zero mesmo
+tendo entrado pelo caminho de coexistence), decidi que a escolha de
+qual rota de backend fechar a conexão tem que vir do EVENTO realmente
+recebido no `postMessage` (`FINISH` vs
+`FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING`), nunca de qual botão a
+pessoa clicou - mais robusto contra esse caminho alternativo que a
+própria Meta permite.
+
+A diferença técnica mais importante entre os dois fluxos, e a que mais
+me preocupava errar: o fluxo padrão sempre chama `/register` com um
+PIN pra registrar o número - isso é exatamente o passo que, num número
+JÁ registrado no app WhatsApp Business do cliente, desconectaria o app
+dele. `exchange_whatsapp_coexistence_signup` PULA esse passo de
+propósito - é a diferença central entre os dois caminhos, documentada
+bem grande no código pra ninguém "simplificar" isso sem entender o
+motivo no futuro.
+
+Testei os 3 tipos de webhook novos (`message_echoes`/`history`/
+`state_sync`) isolado antes de publicar, com atenção especial a dois
+detalhes que um teste ingênuo deixaria passar: (1) o mesmo hóspede
+aparecendo em DUAS chamadas de webhook separadas (uma via echo, outra
+via history) tem que resultar num hóspede só, não dois - confirmado
+via `get_or_create_guest_by_channel`, que já resolve isso certo; (2) o
+timestamp de uma mensagem de histórico tem que vir da mensagem de
+verdade, não de "agora" - `save_message_db_for_guest` ganhou um
+parâmetro `created_at` opcional só pra esse caso, e o teste confirmou
+uma mensagem de 2023 (data de teste que usei) gravada com essa data
+mesmo, não a data de hoje.
+
+Deixei bem claro no commit e vou deixar bem claro pro usuário também:
+o código está pronto e testado, mas a feature não fica UTILIZÁVEL até
+ele fazer 3 coisas no painel da própria Meta que estão fora do meu
+alcance - nenhuma delas é código, são configuração de conta/app que só
+quem tem acesso ao painel de desenvolvedor consegue fazer.
