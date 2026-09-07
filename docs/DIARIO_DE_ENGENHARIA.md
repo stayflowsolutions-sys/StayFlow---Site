@@ -11841,3 +11841,266 @@ cada hotel tem a própria conta deles - então o modelo de credencial
 seria mais parecido com o do Tokko Broker (chave por conta) do que
 com o Beds24. Só confirma isso com documentação real, mas vale deixar
 registrado como suposição de trabalho pro plano.
+
+### Fix crítico: checkout duplicado corrompia cama de outro hóspede (v1.137.0)
+
+Pedido direto do usuário: "revisa todo fluxo que estiver no mapa, de
+manutenção, check in check out etc e garante que eles funcionem bem,
+no último teste com o Miguel Seda também deu uma falhada, tem que
+estar redondo senão vai dar ruim". Auditei `checkin_reservation_to_bed`
+e `checkout_reservation_bed` de verdade em vez de só ler o código por
+cima, e reproduzi o cenário em SQLite isolado: `checkout_reservation_bed`
+nunca checava se aquela reserva já tinha sido checada-out antes de
+agir, e o `bed_id` da reserva não é limpo depois do checkout (é assim
+de propósito, pra manter histórico de exibição). Consequência real:
+um checkout retido/reenviado (duplo clique, webhook reentregue) podia
+achar a MESMA cama - que nesse meio-tempo já tinha um hóspede NOVO
+dormindo nela - e marcar essa cama de um estranho como
+`needs_cleaning`, ou pior, mexer no estado de alguém que nem é o
+hóspede da chamada.
+
+Confirmei a corrupção ponta a ponta antes de mexer em qualquer coisa
+(checkout → check-in de outro hóspede na mesma cama → checkout
+duplicado do primeiro → estado da cama do segundo hóspede
+incorretamente alterado), só depois escrevi o fix (guarda explícita
+`checked_out_at IS NOT NULL` nas duas funções, idempotente) e
+reconfirmei a MESMA sequência sem corrupção nenhuma. Foi o achado mais
+sério desta sessão inteira - um bug silencioso, sem exceção nem log de
+erro, que só aparecia como "conta bugada" pro cliente meses depois.
+Motivou construir a API interna de simulação (linha abaixo) - precisava
+de um jeito de reproduzir o fluxo operacional inteiro sem depender de
+sessão de navegador pra poder testar isso de verdade.
+
+### API interna ganha o fluxo operacional inteiro (v1.137.1 a v1.137.6, v1.138.1, v1.139.1-2, v1.140.0-1/4-5)
+
+Ao longo dos dias seguintes fui completando a API interna
+(`require_internal_api_key`, nascida na v1.135.0) com o que faltava pra
+auditar e popular conta de teste sem precisar de sessão de navegador:
+check-in/check-out/chamado de manutenção, leitura de mapa de cama e de
+reservas de um hóspede, reserva de demo aceitando telefone/e-mail/
+nacionalidade, ajuste de plano/billing, cadastro de estoque/fornecedor/
+kit de limpeza, listagem de contatos e de itens de portfólio,
+renomeação de hostel, listagem/atualização de visita de imóvel, e
+auditoria da tabela `offerings` antes de aposentá-la. O pedaço mais
+importante do lote é o `POST /internal/hostels/<id>/simulate-message`
+(v1.140.0) - roda `process_incoming_message` de VERDADE (mesmo caminho
+do webhook real, tool-calling real contra a IA) com `send_reply=False`,
+nunca manda mensagem de verdade pra ninguém. Virou o método padrão do
+resto da sessão pra auditar qualidade de conversa antes de ligar
+qualquer número de WhatsApp real numa conta nova - usado na auditoria
+da imobiliária mais adiante e no teste do fix de promotor (v1.143.0).
+
+### Hóspede vira Contato automaticamente (v1.138.0)
+
+Usuário notou em Contatos: "um hóspede deveria automaticamente virar um
+contato, porque a StayFlow supostamente já teria a informação e criaria
+isso sozinha". Fazia sentido do ponto de vista de quem usa o painel,
+mas isso reverte uma decisão de design deliberada da v1.116.0 (hóspede
+e contato mantidos como conceitos separados de propósito, pra não
+poluir Contatos com gente que só mandou uma mensagem e sumiu) - então
+confirmei explicitamente com o usuário antes de construir, por afetar
+toda conta em produção de uma vez, não só a de teste dele. `sync_guest_to_contact`
+roda no momento do CHECK-IN real (não em toda mensagem recebida) -
+check-in é o sinal confiável de que a pessoa é hóspede de fato da casa,
+diferente de alguém que só mandou "oi" uma vez e nunca respondeu de
+novo. Rodei um backfill (v1.138.1) sobre hóspedes já existentes, pra
+conta antiga não ficar pra trás do comportamento novo.
+
+### Reposição automática de estoque via WhatsApp (v1.139.0)
+
+Antes de construir `send_inventory_reorder_request`, o usuário
+perguntou o que valia a pena confirmar antes de qualquer feature nova
+desde então: "isso não vai ser necessário com todo cliente né?".
+Confirmado que é opt-in - só dispara pra quem tem fornecedor com
+WhatsApp cadastrado e item de inventário configurado com ponto de
+reposição (ambos setados manualmente, nunca assumidos). Quando o
+estoque de um item cruza o mínimo, o sistema monta e manda o pedido de
+reposição direto pro WhatsApp do fornecedor - fecha o loop que o
+cadastro de estoque/fornecedor da v1.137.6 preparou, sem depender de
+alguém lembrar de fazer isso manualmente.
+
+### Fix "quinta que vem" precisou de dois reforços (v1.140.2 e v1.140.3)
+
+Achado durante a auditoria de confiabilidade da IA da imobiliária antes
+de conectar o WhatsApp real da Elaine/Julia ("ela não pode travar, nem
+ficar dando volta que nem tonta, preciso que isso esteja 100%
+contextualizada"): perguntado numa segunda-feira, "quinta que vem"
+resolvia pra Quinta da semana SEGUINTE em vez da mais próxima. Primeira
+tentativa de fix (v1.140.2) só instruiu a IA a "sempre declarar a data
+explícita" - resolveu a transparência (a IA passou a dizer a data em
+vez de ficar vaga), mas não a lógica: continuava escolhendo a data
+errada, só que agora dizendo ela em voz alta. Precisou de um segundo
+reforço (v1.140.3) com um exemplo CONCRETO embutido no prompt ("se hoje
+é segunda-feira, 'quinta que vem' é a quinta-feira DESSA MESMA semana")
+antes da IA de fato escolher certo - verificado via `simulate-message`
+antes e depois de cada tentativa, não só lendo o prompt e assumindo que
+ia funcionar.
+
+### Consolidação do catálogo de extras: dois sistemas viram um só (v1.141.0)
+
+Usuário notou a duplicação sozinho: "em Receitas também tem a opção de
+adicionar os passeios... seria centralizar tudo que faça sentido em um
+só". Investigação confirmou dois sistemas de catálogo de "coisa
+vendável" rodando em paralelo - a tabela legada `offerings`/tool
+`get_addons`, e `portfolio_items`/tool `get_offerings`. A auditoria da
+v1.140.5 confirmou que `offerings` estava vazia em TODA conta de
+produção, zero uso real - o que deu segurança pra remover a tabela
+inteira (rotas, tool, parágrafo de prompt) em vez de tentar sincronizar
+os dois sistemas, consolidando tudo em Portfólio como única fonte de
+verdade, tanto pra hospedagem quanto pra agência.
+
+### `ai_persona="software"` vazando pra qualquer conta cliente (v1.141.1 e v1.142.2)
+
+Descoberto ao vivo pelo próprio usuário testando o dropdown de persona
+de IA em Configurações: "Isso aparece pro cliente? ou só pra mim?
+porque isso deveria ser só pra mim". Tinha razão - a opção
+`ai_persona="software"` é reservada pro número oficial da própria
+StayFlow (a IA que vende o SOFTWARE, não a hospedagem), mas o dropdown
+não escondia isso de ninguém. Risco real, não só cosmético:
+`get_hostel_id_by_ai_persona` resolve por `LIMIT 1`, então uma segunda
+conta configurando essa opção por engano (ou querendo abusar) sequestrava
+o painel "Meu chat" da própria StayFlow. Corrigido nas duas camadas -
+de novo o mesmo padrão desta sessão inteira: esconder no frontend NUNCA
+basta sozinho. Backend (`routes/settings.py`) passou a exigir
+`is_stayflow_admin_email` antes de aceitar essa persona; o rótulo do
+dropdown também foi trocado de "Atendimento da hospedagem (padrão)" pra
+"Atendimento normal (padrão)" (v1.142.2), porque o texto antigo dava a
+entender que era uma escolha normal do cliente escolher entre as duas.
+
+### WhatsApp Coexistence: a prioridade máxima da sessão (v1.142.0)
+
+Prep da imobiliária Viana Soluções chegou no ponto de precisar ligar um
+número de WhatsApp real, e o usuário foi direto: "quero que faça uma
+checagem completa... quero que seja possível o cliente continuar
+usando o whatsapp normal também sem ser obrigado a mudar pro stayflow
+exclusivamente" - e depois, no mesmo dia: "vamos construir esse
+coexistence como prioridade principal, quando eu sair pra trabalhar vou
+deixar voce construindo isso". Fluxo padrão de Embedded Signup da Meta
+registra/migra o número, o que quebraria o uso do app WhatsApp Business
+que a Elaine já usa no celular - inaceitável pro pedido do usuário.
+
+Pesquisei a fundo antes de escrever qualquer linha de integração. Uma
+primeira busca bateu num site de revenda/reseller que descrevia um
+formato de payload de webhook mais simples do que o real - eu tinha
+quase usado esse formato, mas fui checar a documentação OFICIAL da Meta
+diretamente e descobri que estava errado (envelope simplificado demais,
+faltando campos). Descartei antes de virar código - o tipo de erro que
+só aparece em produção, com um WABA real, se eu tivesse confiado na
+primeira fonte.
+
+O fluxo Coexistence de verdade: `extras.featureType:
+"whatsapp_business_app_onboarding"` no lado do SDK JS, evento
+`FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING` em vez do evento padrão de
+signup, NUNCA chama `/register` (esse é o passo que pede PIN e migra o
+número de dono), e exige sincronização via `/{phone_number_id}/smb_app_data`
+(dois `sync_type` diferentes - `smb_app_state_sync` e `history`) dentro
+de 24h da conexão. Construí `exchange_whatsapp_coexistence_signup` e
+`request_smb_app_data_sync` em `services/meta_oauth_service.py`, rota
+nova `POST /settings/whatsapp/coexistence-signup`, coluna
+`hostels.whatsapp_coexistence`, e 3 tipos de campo novo no webhook
+(`history`, `state_sync`, `message_echoes`) - todos compartilhando o
+MESMO envelope padrão `object/entry/changes/value/field` que o webhook
+já tratava, só com nomes de campo diferentes dentro de `value`.
+
+### Card do Nuvemshop exposto pra qualquer tipo de agência (v1.142.1)
+
+Mesmo padrão de bug já visto duas vezes nesta sessão (gating cosmético
+sem enforcement no backend) - dessa vez achado ao vivo pelo usuário
+testando a tela de Configurações da imobiliária: "aqui tbm... e ainda
+aparece coisa no geral que nao deveria". O card e as rotas do Nuvemshop
+(integração de loja virtual, faz sentido só pra `agency_category ==
+"comercio"`) apareciam pra QUALQUER categoria de agência - inclusive o
+próprio código já tinha um comentário reconhecendo essa lacuna, nunca
+corrigida. Fix nas duas camadas de novo: atributo
+`data-required-agency-category="comercio"` no card, e `_require_commerce_agency()`
+novo aplicado nas rotas de settings e na rota de conexão OAuth.
+
+### WhatsApp: botões que não funcionavam + Portfólio vazando pra promotor (v1.142.3 e v1.142.4)
+
+O usuário mesmo acionou o próximo bug ao vivo: salvou dado de teste no
+formulário manual de WhatsApp (que ficava sempre visível, pré-preenchido
+com lixo de uma sessão de teste anterior) e recebeu "WhatsApp
+conectado" sem NENHUMA validação real contra a API da Meta - "eu salvei
+o numero manualmente agora, mas nao me mandou nada de codigo de
+whatsapp nem nada, só apareceu salvo". Primeira correção (v1.142.3)
+escondeu o formulário manual atrás de um toggle explícito, em vez de
+deixá-lo sempre visível e clicável por engano.
+
+O usuário então pediu uma reestruturação bem mais específica dos dois
+botões, com nome, comportamento e texto de cada um definidos por ele
+mesmo: botão 1 vira "Cadastrar número novo" (revela o formulário
+manual - pra número que ainda não está em nenhum WhatsApp), botão 2
+vira "Conectar WhatsApp já existente" (fluxo OAuth de Coexistence da
+v1.142.0 - pra número que já está no app do celular), cada um com sua
+frase de explicação embaixo, e o antigo botão avulso "prefiro conectar
+manualmente" removido (absorvido pelo botão 1). Junto veio um pedido
+de investigação: "checa tbm porque hoje nenhum dos 2 botões funcionam".
+Achado real: `connectWhatsappEmbedded` (e a cópia usada em "Meu
+WhatsApp") não tinha `script.onerror` nenhum - se o SDK da Meta
+(`connect.facebook.net/en_US/sdk.js`) falhasse ao carregar, o clique no
+botão literalmente não fazia nada, sem erro nenhum na tela. Adicionei o
+handler faltante, com uma mensagem que já cobre a suspeita mais
+provável (o app desktop custom da StayFlow pode ter comportamento de
+popup diferente de um navegador normal) - sinalizado como risco
+residual, precisa de teste num navegador de verdade pra confirmar 100%.
+
+No mesmo commit, resolvi um achado tangencial de uma investigação
+anterior: um print de uma conta "Promotor Teste" (`hostel_id=10`)
+mostrando o nav "Meu Portfólio" cheio e funcionando. `_require_agency()`
+em `routes/portfolio.py` tinha sido simplificado pra só "hostel existe"
+na v1.108.0 (quando Portfólio abriu pra hospedagem também), mas ninguém
+adicionou uma exclusão pra `promoter` - conta de promotor não deveria
+ter Portfólio nenhum. Fix nas duas camadas, testado em SQLite isolado
+confirmando que mesmo uma conta promotor com a permissão "portfolio"
+setada manualmente (cenário de conta legada com role ampla) recebe 403.
+
+### IA de promotor virava recepcionista de hotel (v1.143.0)
+
+Enquanto ainda estava corrigindo o achado de Portfólio acima, o usuário
+sinalizou a prioridade real do momento: "isso é importante porque agora
+vou começar a cadastrar novos promotores, alias, um novo promotor
+acaba de cadastrar... faz uma checagem se ta tudo funcionando bem pra
+eles, se a IA trata eles como promotor sem se perder etc". Fui direto
+em `ask_ai()` conferir o branching por `account_kind`, e confirmei um
+bug real: existia `is_software`/`is_agency`, mas nenhum `is_promoter` -
+uma conta `account_kind="promoter"` caía inteira no `else` genérico e
+recebia o `SYSTEM_PROMPT` completo de recepção de hotel (quartos,
+check-in/out, reserva). Isso é reachable de verdade em produção -
+`PROMOTER_PERMISSIONS` inclui `"settings"` e `"chats"`, ou seja, um
+promotor pode conectar seu próprio WhatsApp e receber mensagem de
+verdade, que bateria direto nesse prompt errado.
+
+Antes de escrever o prompt novo, o usuário pediu mais um detalhe pelo
+caminho: "dica de vendas e com informação sobre funcionalidades de
+hoteis e imobiliarias por enquanto, que é onde to atacando, pra
+explicar as funçoes de cada um pro promotor". Em vez de duplicar o
+texto de produto/preço que já existia (e já era usado) dentro do
+`SOFTWARE_SYSTEM_PROMPT`, extraí esse bloco pra uma constante
+compartilhada (`_STAYFLOW_PRODUCT_AND_PRICING`) - assim as duas personas
+(software e promotor) sempre citam o MESMO preço/feature, nunca
+divergem se um dia eu editar só um dos dois prompts sem lembrar do
+outro. `PROMOTER_SYSTEM_PROMPT` novo reaproveita esse bloco e soma duas
+seções de argumento de venda (uma pra hotel/hostel/pousada, outra pra
+imobiliária - os dois focos ativos de venda hoje, comentário no código
+já deixa claro que dá pra somar mais blocos se StayFlow atacar outro
+tipo de negócio no futuro), cada uma com um "talking point" pronto pra
+rebater a objeção mais óbvia daquele tipo de cliente ("já uso WhatsApp
+Business" / "já tenho um CRM"), e instrução explícita pra nunca inventar
+número de comissão/programa de indicação que a IA não sabe de verdade.
+Tools do promotor restritas só a `capture_lead` (nada de
+`get_offerings`/reserva/portfólio - não fazem sentido nenhum pro
+papel). Testado localmente com o client da OpenAI inteiramente mockado
+(sem chamada de rede real) confirmando que o prompt formata sem erro,
+contém a identidade de parceiro indicador e as duas seções de venda, e
+que a lista de ferramentas é exatamente `[save_guest_name,
+save_guest_language, capture_lead]` - nem a mais, nem a menos. Deploy
+publicado e pendente de confirmação via `simulate-message` contra a
+conta real do promotor (`hostel_id=10`) assim que a chave de API
+interna estiver disponível pra rodar o teste ao vivo.
+
+Pedido seguinte do usuário, ainda não iniciado: usar o mesmo raciocínio
+pro Ask StayFlow (assistente interno) - quando um promotor não tem
+certeza de alguma informação enquanto fala com um hotel/imobiliária,
+poder clicar no Ask StayFlow e receber não só a resposta certa, mas
+também dica de venda/argumento forte/diferencial competitivo. Fica
+registrado como próximo passo.
