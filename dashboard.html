@@ -3684,8 +3684,16 @@ async function deleteRoleConfirm(roleId){
   // campos (whatsappPhoneNumberId etc.) sao os MESMOS de sempre, so que
   // agora so existem no DOM enquanto o modal esta aberto.
   window.openWhatsappSettingsModal = function(){
+    window._whatsappAddExtraMode = false;
     openGenericModal(T('settings.whatsapp.title', '📱 WhatsApp Business'), `
       <p style="margin-bottom:14px">${T('settings.whatsapp.desc', 'Conecte o número oficial da hospedagem no WhatsApp (Meta Cloud API).')}</p>
+
+      <div id="whatsappNumbersList" style="margin-bottom:14px"></div>
+
+      <div id="whatsappAddExtraRow" style="display:none;margin-bottom:14px">
+        <button type="button" class="btn secondary" onclick="startAddingWhatsappExtraNumber()">${T('settings.whatsapp.numbers.addExtraBtn', '+ Adicionar outro número')}</button>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.numbers.addExtraHint', 'Use isso se a hospedagem atende por mais de um número principal (ex: um pra vendas, outro pra locação).')}</div>
+      </div>
 
       <div id="whatsappOauthRow" style="display:none;margin-bottom:14px">
         <button type="button" class="btn" id="whatsappOauthBtn" onclick="toggleWhatsappManualForm()">${T('settings.whatsapp.connectBtn', 'Cadastrar número novo')}</button>
@@ -4007,18 +4015,21 @@ async function deleteRoleConfirm(roleId){
     }
 
     try{
+      const asExtra = Boolean(window._whatsappAddExtraMode);
       const res = await fetch("/settings/whatsapp", {
         method: "POST",
         credentials: "same-origin",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ phone_number_id: phoneNumberId, access_token: accessToken, contact_phone: contactPhone, ai_persona: aiPersona })
+        body: JSON.stringify({ phone_number_id: phoneNumberId, access_token: accessToken, contact_phone: contactPhone, ai_persona: aiPersona, as_extra: asExtra })
       });
 
-      if(!res.ok){
-        alert(T('settings.whatsapp.msg.saveFailed', 'Não foi possível salvar a configuração do WhatsApp.'));
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        alert(data.message || T('settings.whatsapp.msg.saveFailed', 'Não foi possível salvar a configuração do WhatsApp.'));
         return;
       }
 
+      window._whatsappAddExtraMode = false;
       alert(T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
       document.getElementById("whatsappAccessToken").value = "";
       loadWhatsappSettings();
@@ -4079,20 +4090,68 @@ async function deleteRoleConfirm(roleId){
       // painel da Meta (ver oauth_available) - guardados aqui pra
       // connectWhatsappEmbedded() usar sem precisar buscar de novo.
       window.STAYFLOW_WHATSAPP_OAUTH = data.oauth_available ? { appId: data.app_id, configId: data.config_id } : null;
+
+      // Lista de numeros (principal + extras, v1.145.0) - cada um com
+      // botao vermelho de remover. Quando ja existe pelo menos um
+      // numero, os botoes de conectar ficam escondidos atras de "+
+      // Adicionar outro numero" em vez de aparecerem direto (senao
+      // pareceria que clicar neles ia SUBSTITUIR o numero atual).
+      const numbers = data.numbers || [];
+      const listEl = document.getElementById("whatsappNumbersList");
+      if(listEl){
+        listEl.innerHTML = numbers.map(n => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:#ffffff05">
+            <div>
+              <div style="font-weight:700">${n.label ? n.label : (n.is_primary ? T('settings.whatsapp.numbers.primaryLabel', 'Número principal') : T('settings.whatsapp.numbers.extraLabel', 'Número adicional'))}</div>
+              <div style="font-size:11px;color:var(--muted)">${n.phone_number_id}${n.coexistence ? ' · ' + T('settings.whatsapp.numbers.coexistenceBadge', 'Coexistence') : ''}</div>
+            </div>
+            <button type="button" class="btn red" style="padding:6px 12px;font-size:12px" onclick="removeWhatsappNumber('${n.id}')">${T('settings.whatsapp.numbers.removeBtn', 'Remover')}</button>
+          </div>
+        `).join("");
+      }
+
+      const addExtraRow = document.getElementById("whatsappAddExtraRow");
       const oauthRow = document.getElementById("whatsappOauthRow");
-      if(oauthRow) oauthRow.style.display = data.oauth_available ? "block" : "none";
+      const hasAnyNumber = numbers.length > 0;
+      const addingExtra = Boolean(window._whatsappAddExtraMode);
+
+      if(oauthRow) oauthRow.style.display = (data.oauth_available && (!hasAnyNumber || addingExtra)) ? "block" : "none";
+      if(addExtraRow) addExtraRow.style.display = (data.oauth_available && hasAnyNumber && !addingExtra) ? "block" : "none";
 
       // Formulario manual so fica visivel de cara quando NAO ha opcao
-      // automatica (Config ID ainda nao configurado) - com Config ID
-      // disponivel, fica escondido atras do botao "Prefiro preencher
-      // manualmente" (achado real de uso: campo preenchido com lixo de
-      // teste antigo, ai ficando visivel ao lado dos botoes, confundiu
-      // o usuario a ponto de salvar isso por engano como se fosse a
-      // conexao de verdade).
+      // automatica (Config ID ainda nao configurado) e nao ha numero
+      // nenhum ainda - com Config ID disponivel, ou ja tendo numero
+      // conectado, fica escondido atras do botao (achado real de uso:
+      // campo preenchido com lixo de teste antigo, ai ficando visivel
+      // ao lado dos botoes, confundiu o usuario a ponto de salvar isso
+      // por engano como se fosse a conexao de verdade).
       const manualForm = document.getElementById("whatsappManualForm");
-      if(manualForm) manualForm.style.display = data.oauth_available ? "none" : "grid";
+      if(manualForm) manualForm.style.display = (!data.oauth_available && !hasAnyNumber) ? "grid" : "none";
     }catch(e){
       console.warn("Erro ao carregar config WhatsApp:", e);
+    }
+  };
+
+  window.startAddingWhatsappExtraNumber = function(){
+    window._whatsappAddExtraMode = true;
+    loadWhatsappSettings();
+  };
+
+  window.removeWhatsappNumber = async function(id){
+    const confirmed = await stayflowConfirm(T('settings.whatsapp.numbers.removeConfirm', 'Remover esse número? Ele para de receber e responder mensagem até conectar de novo.'));
+    if(!confirmed) return;
+    try{
+      const url = id === "primary" ? "/settings/whatsapp" : `/settings/whatsapp/numbers/${id}`;
+      const res = await fetch(url, { method: "DELETE", credentials: "same-origin" });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+      loadWhatsappSettings();
+    }catch(e){
+      console.warn("Erro ao remover número WhatsApp:", e);
+      alert(T('common.error.generic', 'Erro de conexão.'));
     }
   };
 
@@ -4173,13 +4232,14 @@ async function deleteRoleConfirm(roleId){
       const res = await fetch(isCoexistence ? "/settings/whatsapp/coexistence-signup" : "/settings/whatsapp/embedded-signup", {
         method: "POST", credentials: "same-origin",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ code, phone_number_id: phoneNumberId, waba_id: wabaId }),
+        body: JSON.stringify({ code, phone_number_id: phoneNumberId, waba_id: wabaId, as_extra: Boolean(window._whatsappAddExtraMode) }),
       });
       const data = await res.json();
       if(!data.success){
         alert(data.message || T('common.error.generic', 'Erro de conexão.'));
         return;
       }
+      window._whatsappAddExtraMode = false;
       alert(isCoexistence
         ? T('settings.whatsapp.msg.savedCoexistence', 'WhatsApp conectado! Seu app WhatsApp Business continua funcionando normalmente no celular.')
         : T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
