@@ -2947,7 +2947,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" onclick="openNuvemshopSettingsModal()">
+      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" data-required-agency-category="comercio" onclick="openNuvemshopSettingsModal()">
         <div class="settings-summary-row">
           <div>
             <h2 data-i18n="settings.nuvemshop.title">🛍️ Nuvemshop / Tiendanube</h2>
@@ -14081,9 +14081,10 @@ window.uploadGuestDocumentUI = async function(guestId){
       const kindMatches = el.dataset.requiredAccountKind === (accountKind || "lodging");
       // data-required-agency-category e mais especifico que account-kind
       // ("agency" sozinho nao basta, precisa ser a categoria certa,
-      // ex: so imobiliaria ve o card do Tokko Broker) - primeiro gate
-      // desse tipo no sistema, os outros cards de agencia (Nuvemshop
-      // etc) nao tem esse atributo e continuam so com o gate antigo.
+      // ex: so imobiliaria ve o card do Tokko Broker, so comercio ve o
+      // card do Nuvemshop/Tiendanube - achado real em auditoria de
+      // usuario, 07/09/2026: imobiliaria via o card de loja online sem
+      // gate nenhum).
       const categoryRequired = el.dataset.requiredAgencyCategory;
       const categoryMatches = !categoryRequired || categoryRequired === agencyCategory;
       el.style.display = (kindMatches && categoryMatches) ? "" : "none";
