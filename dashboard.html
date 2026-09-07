@@ -3685,15 +3685,25 @@ async function deleteRoleConfirm(roleId){
   // agora so existem no DOM enquanto o modal esta aberto.
   window.openWhatsappSettingsModal = function(){
     window._whatsappAddExtraMode = false;
+    window._whatsappRemoveMode = false;
     window._whatsappDiscovered = null;
     openGenericModal(T('settings.whatsapp.title', '📱 WhatsApp Business'), `
       <p style="margin-bottom:14px">${T('settings.whatsapp.desc', 'Conecte o número oficial da hospedagem no WhatsApp (Meta Cloud API).')}</p>
 
       <div id="whatsappNumbersList" style="margin-bottom:14px"></div>
 
-      <div id="whatsappNumberPicker" style="display:none;margin-bottom:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#ffffff05">
+      <div id="whatsappRemoveNumberPicker" style="display:none;margin-bottom:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#ffffff05">
+        <div style="font-weight:700;margin-bottom:8px">${T('settings.whatsapp.numbers.removePickerTitle', 'Marque qual(is) número(s) remover:')}</div>
+        <div id="whatsappRemoveNumberPickerList"></div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button type="button" class="btn red" onclick="confirmWhatsappRemovePicker()">${T('settings.whatsapp.numbers.removeBtn', 'Remover')}</button>
+          <button type="button" class="btn secondary" onclick="cancelWhatsappRemovePicker()">${T('common.cancel', 'Cancelar')}</button>
+        </div>
+      </div>
+
+      <div id="whatsappAddNumberPicker" style="display:none;margin-bottom:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#ffffff05">
         <div style="font-weight:700;margin-bottom:8px">${T('settings.whatsapp.numbers.pickerTitle', 'Números encontrados nessa conta Meta — marque quais usar:')}</div>
-        <div id="whatsappNumberPickerList"></div>
+        <div id="whatsappAddNumberPickerList"></div>
         <div style="display:flex;gap:10px;margin-top:12px">
           <button type="button" class="btn" onclick="confirmWhatsappNumberPicker()">${T('settings.whatsapp.numbers.pickerConfirm', 'Ativar selecionados')}</button>
           <button type="button" class="btn secondary" onclick="cancelWhatsappNumberPicker()">${T('common.cancel', 'Cancelar')}</button>
@@ -3744,12 +3754,13 @@ async function deleteRoleConfirm(roleId){
         <div style="font-size:11px;color:var(--muted);margin-top:10px">${T('settings.whatsapp.localWarning', '⚠️ Se ainda estiver testando local (127.0.0.1), a Meta não consegue acessar essa URL — você vai precisar de uma ferramenta como o ngrok pra criar um link público temporário até o servidor estar hospedado de vez.')}</div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:10px">
-        <div id="whatsappAddExtraRow" style="display:none">
-          <button type="button" class="btn secondary" onclick="startAddingWhatsappExtraNumber()">${T('settings.whatsapp.numbers.addExtraBtn', '+ Adicionar outro número')}</button>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.numbers.addExtraHint', 'Use isso se a hospedagem atende por mais de um número principal (ex: um pra vendas, outro pra locação).')}</div>
+      <div style="margin-top:14px">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+          <button type="button" class="btn red" id="whatsappRemoveBtn" style="display:none" onclick="startRemovingWhatsappNumber()">${T('settings.whatsapp.numbers.removeBtn', 'Remover')}</button>
+          <button type="button" class="btn secondary" id="whatsappAddExtraBtn" style="display:none" onclick="startAddingWhatsappExtraNumber()">${T('settings.whatsapp.numbers.addExtraBtn', '+ Adicionar outro número')}</button>
+          <button class="btn" type="button" style="margin-left:auto" onclick="saveWhatsappSettings()">${T('settings.whatsapp.saveBtn', 'Salvar WhatsApp')}</button>
         </div>
-        <button class="btn" type="button" style="margin-left:auto" onclick="saveWhatsappSettings()">${T('settings.whatsapp.saveBtn', 'Salvar WhatsApp')}</button>
+        <div id="whatsappAddExtraHint" style="display:none;font-size:11px;color:var(--muted);margin-top:6px">${T('settings.whatsapp.numbers.addExtraHint', 'Use isso se a hospedagem atende por mais de um número principal (ex: um pra vendas, outro pra locação).')}</div>
       </div>
     `);
     loadWhatsappSettings();
@@ -4100,32 +4111,36 @@ async function deleteRoleConfirm(roleId){
       // connectWhatsappEmbedded() usar sem precisar buscar de novo.
       window.STAYFLOW_WHATSAPP_OAUTH = data.oauth_available ? { appId: data.app_id, configId: data.config_id } : null;
 
-      // Lista de numeros (principal + extras, v1.145.0) - cada um com
-      // botao vermelho de remover. Quando ja existe pelo menos um
-      // numero, os botoes de conectar ficam escondidos atras de "+
-      // Adicionar outro numero" em vez de aparecerem direto (senao
-      // pareceria que clicar neles ia SUBSTITUIR o numero atual).
+      // Lista de numeros (principal + extras, v1.145.0) - so leitura,
+      // sem botao por linha (remover agora e via picker de checkbox, ver
+      // startRemovingWhatsappNumber). display_number e o numero de
+      // telefone LEGIVEL (calculado no backend) - nunca o
+      // phone_number_id cru, que e um ID interno opaco da Meta e podia
+      // aparecer como lixo de teste (achado real, v1.146.3).
       const numbers = data.numbers || [];
+      window._whatsappNumbers = numbers;
       const listEl = document.getElementById("whatsappNumbersList");
       if(listEl){
         listEl.innerHTML = numbers.map(n => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:#ffffff05">
-            <div>
-              <div style="font-weight:700">${n.label ? n.label : (n.is_primary ? T('settings.whatsapp.numbers.primaryLabel', 'Número principal') : T('settings.whatsapp.numbers.extraLabel', 'Número adicional'))}</div>
-              <div style="font-size:11px;color:var(--muted)">${n.phone_number_id}${n.coexistence ? ' · ' + T('settings.whatsapp.numbers.coexistenceBadge', 'Coexistence') : ''}</div>
-            </div>
-            <button type="button" class="btn red" style="padding:6px 12px;font-size:12px" onclick="removeWhatsappNumber('${n.id}')">${T('settings.whatsapp.numbers.removeBtn', 'Remover')}</button>
+          <div style="padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:#ffffff05">
+            <div style="font-weight:700">${n.label ? n.label : (n.is_primary ? T('settings.whatsapp.numbers.primaryLabel', 'Número principal') : T('settings.whatsapp.numbers.extraLabel', 'Número adicional'))}</div>
+            <div style="font-size:11px;color:var(--muted)">${n.display_number}${n.coexistence ? ' · ' + T('settings.whatsapp.numbers.coexistenceBadge', 'Coexistence') : ''}</div>
           </div>
         `).join("");
       }
 
-      const addExtraRow = document.getElementById("whatsappAddExtraRow");
       const oauthRow = document.getElementById("whatsappOauthRow");
+      const addExtraBtn = document.getElementById("whatsappAddExtraBtn");
+      const addExtraHint = document.getElementById("whatsappAddExtraHint");
+      const removeBtn = document.getElementById("whatsappRemoveBtn");
       const hasAnyNumber = numbers.length > 0;
       const addingExtra = Boolean(window._whatsappAddExtraMode);
+      const removingMode = Boolean(window._whatsappRemoveMode);
 
-      if(oauthRow) oauthRow.style.display = (data.oauth_available && (!hasAnyNumber || addingExtra)) ? "block" : "none";
-      if(addExtraRow) addExtraRow.style.display = (data.oauth_available && hasAnyNumber && !addingExtra) ? "block" : "none";
+      if(oauthRow) oauthRow.style.display = (data.oauth_available && (!hasAnyNumber || addingExtra) && !removingMode) ? "block" : "none";
+      if(addExtraBtn) addExtraBtn.style.display = (data.oauth_available && hasAnyNumber && !addingExtra && !removingMode) ? "inline-flex" : "none";
+      if(addExtraHint) addExtraHint.style.display = (data.oauth_available && hasAnyNumber && !addingExtra && !removingMode) ? "block" : "none";
+      if(removeBtn) removeBtn.style.display = (hasAnyNumber && !addingExtra && !removingMode) ? "inline-flex" : "none";
 
       // Formulario manual so fica visivel de cara quando NAO ha opcao
       // automatica (Config ID ainda nao configurado) e nao ha numero
@@ -4146,7 +4161,66 @@ async function deleteRoleConfirm(roleId){
     loadWhatsappSettings();
   };
 
-  // Picker de numeros (v1.146.2) - so entra em jogo quando "+ Adicionar
+  // Picker de REMOCAO (v1.146.3, pedido do usuario: "que apareça todos
+  // os numeros em lista com checkbox, pra ele selecionar qual quer
+  // remover" - substitui o botao vermelho por linha). Usa os numeros ja
+  // carregados (window._whatsappNumbers), sem chamada nova - a lista e
+  // sempre da PROPRIA conta, nunca precisa ir na Meta pra isso.
+  window.startRemovingWhatsappNumber = function(){
+    window._whatsappRemoveMode = true;
+    const numbers = window._whatsappNumbers || [];
+    const listEl = document.getElementById("whatsappRemoveNumberPickerList");
+    if(listEl){
+      listEl.innerHTML = numbers.map((n, i) => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0">
+          <input type="checkbox" class="whatsapp-remove-checkbox" data-index="${i}">
+          <span>${n.label ? n.label : (n.is_primary ? T('settings.whatsapp.numbers.primaryLabel', 'Número principal') : T('settings.whatsapp.numbers.extraLabel', 'Número adicional'))} <span style="color:var(--muted);font-size:11px">(${n.display_number})</span></span>
+        </label>
+      `).join("");
+    }
+    document.getElementById("whatsappRemoveNumberPicker").style.display = "block";
+    document.getElementById("whatsappNumbersList").style.display = "none";
+    loadWhatsappSettings();
+  };
+
+  window.cancelWhatsappRemovePicker = function(){
+    window._whatsappRemoveMode = false;
+    document.getElementById("whatsappRemoveNumberPicker").style.display = "none";
+    document.getElementById("whatsappNumbersList").style.display = "block";
+    loadWhatsappSettings();
+  };
+
+  window.confirmWhatsappRemovePicker = async function(){
+    const numbers = window._whatsappNumbers || [];
+    const checked = Array.from(document.querySelectorAll(".whatsapp-remove-checkbox:checked")).map(el => numbers[Number(el.dataset.index)]);
+    if(checked.length === 0){
+      alert(T('settings.whatsapp.numbers.pickerNoneSelected', 'Marque pelo menos um número.'));
+      return;
+    }
+    const confirmed = await stayflowConfirm(T('settings.whatsapp.numbers.removeConfirm', 'Remover esse número? Ele para de receber e responder mensagem até conectar de novo.'));
+    if(!confirmed) return;
+
+    try{
+      for(const n of checked){
+        const url = n.id === "primary" ? "/settings/whatsapp" : `/settings/whatsapp/numbers/${n.id}`;
+        const res = await fetch(url, { method: "DELETE", credentials: "same-origin" });
+        const data = await res.json();
+        if(!data.success){
+          alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+          return;
+        }
+      }
+      window._whatsappRemoveMode = false;
+      document.getElementById("whatsappRemoveNumberPicker").style.display = "none";
+      document.getElementById("whatsappNumbersList").style.display = "block";
+      loadWhatsappSettings();
+    }catch(e){
+      console.warn("Erro ao remover número WhatsApp:", e);
+      alert(T('common.error.generic', 'Erro de conexão.'));
+    }
+  };
+
+  // Picker de ADICAO (v1.146.2) - so entra em jogo quando "+ Adicionar
   // outro numero" usa o caminho de Coexistence (OAuth); a lista vem da
   // MESMA WABA que a pessoa acabou de autorizar no FB.login(), nunca de
   // outro negocio - isolamento garantido pelo escopo do proprio token,
@@ -4178,7 +4252,7 @@ async function deleteRoleConfirm(roleId){
 
   window.renderWhatsappNumberPicker = function(){
     const state = window._whatsappDiscovered;
-    const listEl = document.getElementById("whatsappNumberPickerList");
+    const listEl = document.getElementById("whatsappAddNumberPickerList");
     if(listEl && state){
       listEl.innerHTML = state.numbers.map((n, i) => `
         <label style="display:flex;align-items:center;gap:8px;padding:6px 0">
@@ -4187,18 +4261,22 @@ async function deleteRoleConfirm(roleId){
         </label>
       `).join("");
     }
-    document.getElementById("whatsappNumberPicker").style.display = "block";
+    document.getElementById("whatsappAddNumberPicker").style.display = "block";
     document.getElementById("whatsappNumbersList").style.display = "none";
     const oauthRow = document.getElementById("whatsappOauthRow");
-    const addExtraRow = document.getElementById("whatsappAddExtraRow");
+    const addExtraBtn = document.getElementById("whatsappAddExtraBtn");
+    const addExtraHint = document.getElementById("whatsappAddExtraHint");
+    const removeBtn = document.getElementById("whatsappRemoveBtn");
     if(oauthRow) oauthRow.style.display = "none";
-    if(addExtraRow) addExtraRow.style.display = "none";
+    if(addExtraBtn) addExtraBtn.style.display = "none";
+    if(addExtraHint) addExtraHint.style.display = "none";
+    if(removeBtn) removeBtn.style.display = "none";
   };
 
   window.cancelWhatsappNumberPicker = function(){
     window._whatsappDiscovered = null;
     window._whatsappAddExtraMode = false;
-    document.getElementById("whatsappNumberPicker").style.display = "none";
+    document.getElementById("whatsappAddNumberPicker").style.display = "none";
     document.getElementById("whatsappNumbersList").style.display = "block";
     loadWhatsappSettings();
   };
@@ -4219,7 +4297,7 @@ async function deleteRoleConfirm(roleId){
           waba_id: state.wabaId,
           access_token: state.accessToken,
           coexistence: state.isCoexistence,
-          numbers: checked.map(n => ({ phone_number_id: n.id, label: n.verified_name || n.display_phone_number || "" })),
+          numbers: checked.map(n => ({ phone_number_id: n.id, label: n.verified_name || n.display_phone_number || "", display_phone_number: n.display_phone_number || "" })),
         }),
       });
       const data = await res.json();
@@ -4229,30 +4307,12 @@ async function deleteRoleConfirm(roleId){
       }
       window._whatsappDiscovered = null;
       window._whatsappAddExtraMode = false;
-      document.getElementById("whatsappNumberPicker").style.display = "none";
+      document.getElementById("whatsappAddNumberPicker").style.display = "none";
       document.getElementById("whatsappNumbersList").style.display = "block";
       alert(T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
       loadWhatsappSettings();
     }catch(e){
       console.warn("Erro ao ativar números WhatsApp:", e);
-      alert(T('common.error.generic', 'Erro de conexão.'));
-    }
-  };
-
-  window.removeWhatsappNumber = async function(id){
-    const confirmed = await stayflowConfirm(T('settings.whatsapp.numbers.removeConfirm', 'Remover esse número? Ele para de receber e responder mensagem até conectar de novo.'));
-    if(!confirmed) return;
-    try{
-      const url = id === "primary" ? "/settings/whatsapp" : `/settings/whatsapp/numbers/${id}`;
-      const res = await fetch(url, { method: "DELETE", credentials: "same-origin" });
-      const data = await res.json();
-      if(!data.success){
-        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
-        return;
-      }
-      loadWhatsappSettings();
-    }catch(e){
-      console.warn("Erro ao remover número WhatsApp:", e);
       alert(T('common.error.generic', 'Erro de conexão.'));
     }
   };
