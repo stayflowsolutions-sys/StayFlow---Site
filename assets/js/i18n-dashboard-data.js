@@ -1673,6 +1673,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "Conexão incompleta — tenta de novo.",
     "settings.whatsapp.msg.oauthUnavailable": "Conexão automática ainda não está disponível.",
     "settings.whatsapp.oauthHint": "Ou preencha manualmente abaixo, se preferir.",
+    "settings.whatsapp.manualToggle": "Prefiro preencher manualmente",
     "team.roleNamePlaceholderExampleAgency": "Ex: Vendedor",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 Modo Dono",
@@ -3363,6 +3364,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "Incomplete connection — try again.",
     "settings.whatsapp.msg.oauthUnavailable": "Automatic connection isn't available yet.",
     "settings.whatsapp.oauthHint": "Or fill it in manually below, if you prefer.",
+    "settings.whatsapp.manualToggle": "I'd rather fill it in manually",
     "team.roleNamePlaceholderExampleAgency": "E.g: Salesperson",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 Owner Mode",
@@ -5053,6 +5055,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "Conexión incompleta — intentá de nuevo.",
     "settings.whatsapp.msg.oauthUnavailable": "La conexión automática todavía no está disponible.",
     "settings.whatsapp.oauthHint": "O completá manualmente abajo, si preferís.",
+    "settings.whatsapp.manualToggle": "Prefiero completarlo manualmente",
     "team.roleNamePlaceholderExampleAgency": "Ej: Vendedor",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 Modo Dueño",
@@ -6743,6 +6746,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "Connexion incomplète — réessayez.",
     "settings.whatsapp.msg.oauthUnavailable": "La connexion automatique n'est pas encore disponible.",
     "settings.whatsapp.oauthHint": "Ou remplissez manuellement ci-dessous, si vous préférez.",
+    "settings.whatsapp.manualToggle": "Je préfère remplir manuellement",
     "team.roleNamePlaceholderExampleAgency": "Ex : Vendeur",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 Mode Propriétaire",
@@ -8433,6 +8437,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "Verbindung unvollständig — versuchen Sie es erneut.",
     "settings.whatsapp.msg.oauthUnavailable": "Die automatische Verbindung ist noch nicht verfügbar.",
     "settings.whatsapp.oauthHint": "Oder füllen Sie es unten manuell aus, wenn Sie möchten.",
+    "settings.whatsapp.manualToggle": "Ich möchte es lieber manuell ausfüllen",
     "team.roleNamePlaceholderExampleAgency": "Z. B.: Verkäufer",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 Besitzer-Modus",
@@ -10094,6 +10099,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "接続が完了しませんでした — もう一度お試しください。",
     "settings.whatsapp.msg.oauthUnavailable": "自動接続はまだご利用いただけません。",
     "settings.whatsapp.oauthHint": "または、以下に手動で入力することもできます。",
+    "settings.whatsapp.manualToggle": "手動で入力したい",
     "team.roleNamePlaceholderExampleAgency": "例：営業担当",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 オーナーモード",
@@ -11755,6 +11761,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "Connessione incompleta — riprova.",
     "settings.whatsapp.msg.oauthUnavailable": "La connessione automatica non è ancora disponibile.",
     "settings.whatsapp.oauthHint": "Oppure compila manualmente qui sotto, se preferisci.",
+    "settings.whatsapp.manualToggle": "Preferisco compilare manualmente",
     "team.roleNamePlaceholderExampleAgency": "Es: Venditore",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 Modalità Proprietario",
@@ -13416,6 +13423,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "连接未完成——请重试。",
     "settings.whatsapp.msg.oauthUnavailable": "自动连接功能尚不可用。",
     "settings.whatsapp.oauthHint": "或者，如果您愿意，也可以在下方手动填写。",
+    "settings.whatsapp.manualToggle": "我想手动填写",
     "team.roleNamePlaceholderExampleAgency": "例如：销售员",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 老板模式",
@@ -15076,6 +15084,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "Подключение не завершено — попробуйте снова.",
     "settings.whatsapp.msg.oauthUnavailable": "Автоматическое подключение пока недоступно.",
     "settings.whatsapp.oauthHint": "Или заполните вручную ниже, если хотите.",
+    "settings.whatsapp.manualToggle": "Хочу заполнить вручную",
     "team.roleNamePlaceholderExampleAgency": "Напр.: Продавец",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 Режим владельца",
@@ -16737,6 +16746,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "연결이 완료되지 않았습니다 — 다시 시도하세요.",
     "settings.whatsapp.msg.oauthUnavailable": "자동 연결은 아직 사용할 수 없습니다.",
     "settings.whatsapp.oauthHint": "원하시면 아래에서 직접 입력할 수도 있습니다.",
+    "settings.whatsapp.manualToggle": "직접 입력할게요",
     "team.roleNamePlaceholderExampleAgency": "예: 영업 담당자",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 사장님 모드",
@@ -18398,6 +18408,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "settings.whatsapp.msg.oauthIncomplete": "Verbinding niet voltooid — probeer het opnieuw.",
     "settings.whatsapp.msg.oauthUnavailable": "Automatisch verbinden is nog niet beschikbaar.",
     "settings.whatsapp.oauthHint": "Of vul het hieronder handmatig in, als je dat liever hebt.",
+    "settings.whatsapp.manualToggle": "Ik vul het liever handmatig in",
     "team.roleNamePlaceholderExampleAgency": "Bijv.: Verkoper",
     // ==== Modo Dono (v1.113.0) ====
     "ownerMode.title": "📊 Eigenaarsmodus",
