@@ -12213,3 +12213,94 @@ sempre, mesmo que o `CREATE TABLE IF NOT EXISTS` já "pareça" cobrir
 os dois casos** - só cobre de verdade quando a tabela nasce naquele
 exato commit, nunca quando um commit anterior já criou a tabela sem
 aquela coluna.
+
+### A maratona de conectar o WhatsApp de verdade (v1.146.7 a v1.146.13)
+
+Com a UI toda pronta, o usuário foi tentar conectar o número real da
+Viana Soluções pela primeira vez - e o que devia ser "cola o token e
+pronto" virou uma sessão inteira de debugging ao vivo, screenshot por
+screenshot, dentro do próprio Meta Business Manager. Vale registrar em
+detalhe porque revelou 3 bugs reais que só apareciam em uso de
+verdade, nenhum deles visível em teste isolado.
+
+**Cadastro manual nunca inscrevia a WABA (v1.146.7).** Primeiro
+sintoma: mensagem de teste enviada de verdade pro número nunca
+aparecia nem no webhook nem na aba Chats. Investigação revelou que só
+os fluxos de OAuth (`exchange_whatsapp_embedded_signup`/
+`coexistence_signup`/`activate_whatsapp_numbers`) chamavam
+`POST /{waba_id}/subscribed_apps` - o cadastro MANUAL (colar Phone
+Number ID + Access Token direto, sem passar pela Meta) nunca fazia
+isso, então a Meta nunca sabia que devia mandar mensagem pro nosso
+webhook. Primeira tentativa de correção tentou DESCOBRIR a WABA
+sozinho a partir do `phone_number_id` via
+`GET .../{phone_number_id}?fields=whatsapp_business_account` - parecia
+razoável, mas semanas de uso e um diagnóstico direto em produção (ver
+abaixo) confirmaram que esse campo simplesmente não existe nessa API
+("(#100) Tried accessing nonexisting field") - a tentativa nunca podia
+ter funcionado. Corrigido de vez na v1.146.13 com um campo OPCIONAL de
+WABA ID no formulário manual (a pessoa já vê esse valor na mesma tela
+da Meta onde pega o Phone Number ID) - sem adivinhar mais nada.
+
+**Instrumentação de diagnóstico direto em produção.** Como não tenho
+acesso ao log do servidor (Render), toda vez que um "funciona aqui,
+não funciona lá" aparecia, a única saída era instrumentar o código de
+verdade e ler o resultado via uma rota interna nova:
+- `POST /internal/hostels/<id>/test-whatsapp-send` - manda uma
+  mensagem de teste usando as credenciais REAIS salvas, devolvendo a
+  resposta crua da Meta (não só True/False).
+- Extensão dela pra aceitar `guest_id` e replicar a decisão EXATA de
+  `_dispatch_send` (corretor dono tem prioridade sobre o número
+  principal) - importante porque um teste direto ao hostel_id sempre
+  pula essa checagem, e por um tempo cheguei a suspeitar (errado) que
+  o roteamento por corretor fosse a causa.
+- `save_whatsapp_send_debug`/`GET /internal/hostels/<id>/whatsapp-send-log`
+  - guarda a ÚLTIMA tentativa de envio real (não simulada) direto no
+  banco, incluindo o corpo cru da resposta da Meta. Foi isso que
+  provou que o envio da IA respondendo o hóspede estava de fato
+  chegando na Meta com sucesso (200 + `wamid`), eliminando de vez a
+  hipótese de token/permissão errada.
+- Captura do webhook de STATUS assíncrono da Meta (entregue/lido/
+  falhou) no mesmo campo de debug - esse foi o que resolveu o mistério
+  de verdade: a Meta aceita o envio (por isso o `wamid` sempre vinha
+  certo) e só reporta a falha de ENTREGA depois, de forma assíncrona.
+
+**A causa raiz real: "Business account is restricted from messaging
+users in this country"** (código de erro 130497 da Meta). Depois de
+provar exaustivamente que token, phone_number_id, permissão e lógica
+de roteamento estavam todos certos - inclusive um teste manual direto
+no Graph API Explorer que funcionou perfeitamente - o webhook de
+status assíncrono revelou o motivo de verdade: a conta de negócio
+usada pra esse teste nunca completou a verificação de negócio da
+Meta (Paso 3, "En curso"), e sem isso a Meta bloqueia a ENTREGA final
+de mensagem pra números daquele país, mesmo aceitando o envio na hora
+da chamada de API. Não é bug nenhum do lado da StayFlow - é uma
+exigência de compliance da própria Meta, que qualquer negócio real
+(com CNPJ, documentos) completa normalmente. A conta de teste usada
+aqui não tinha documento nenhum de empresa por trás, por isso travou;
+a conta real da Viana Soluções (imobiliária de verdade) deve passar
+sem esse problema quando for verificada com os documentos dela.
+
+**Formulário pré-preenchia com dado de outra hora/conta (v1.146.12).**
+Achado tangencial durante essa mesma sessão: em 2 momentos diferentes,
+o formulário "Cadastrar número novo" abriu mostrando dado que não
+batia com a conta atual (o e-mail de teste antigo, um número de
+contato de outro país) - mesmo com "Viana Soluções Imobiliárias"
+certo no cabeçalho da página. Nunca cheguei a uma causa raiz 100%
+confirmada (as hipóteses investigadas - sessão de impersonation presa,
+múltiplas abas com cookies diferentes, corrida entre delete/save - não
+foram todas descartáveis nem confirmáveis remotamente sem acesso a log
+de sessão). Em vez de continuar caçando uma causa intermitente,
+resolvido pela raiz do jeito mais direto: o formulário PAROU de buscar
+e pré-preencher qualquer dado já salvo - agora sempre abre 100% em
+branco, forçando a pessoa a digitar o valor de propósito toda vez.
+Isso torna esse tipo de confusão estruturalmente impossível,
+independente de qual fosse a causa exata. O número atual continua
+visível (só leitura) na lista acima do formulário, pra referência.
+
+Padrão de trabalho que vale generalizar desta sessão inteira: quando
+um teste manual isolado funciona mas o caminho de produção não, a
+resposta certa não é ficar testando variações às cegas - é
+instrumentar o CAMINHO REAL com uma forma de ler o resultado (aqui,
+gravando no banco e expondo por uma rota interna), porque só isso
+revelou o erro verdadeiro (o webhook de status assíncrono), que nenhum
+teste manual direto jamais mostraria sozinho.
