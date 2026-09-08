@@ -3975,32 +3975,30 @@ async function deleteRoleConfirm(roleId){
   };
 
   // Formulario manual abre em modal PROPRIO (v1.146.6) - feedback do
-  // usuario: "modal na tela, nada de formularios soltos". Busca o
-  // estado atual pra pre-preencher (numero, telefone visivel, persona)
-  // quando esta editando o PRINCIPAL - numero extra novo sempre
-  // comeca em branco (nao faz sentido herdar dado de outro numero).
-  window.openWhatsappManualFormModal = async function(){
-    let data = {};
-    try{
-      const res = await fetch("/settings/whatsapp", { credentials: "same-origin" });
-      if(res.ok) data = await res.json();
-    }catch(e){ /* segue com campos vazios se a busca falhar */ }
-
+  // usuario: "modal na tela, nada de formularios soltos". v1.146.12:
+  // PARA de pre-preencher com o que ja esta salvo (mesmo pro numero
+  // PRINCIPAL) - achado real de sessao (2x): o formulario apareceu com
+  // dado de outro momento/conta sem a pessoa perceber, quase causando
+  // um salvamento errado. Sempre comeca 100% em branco agora - nao
+  // existe cenario onde mostrar um valor que PODE estar errado seja
+  // mais seguro que so pedir pra digitar de novo. O numero atual
+  // continua visivel (read-only) na lista logo acima deste botao.
+  window.openWhatsappManualFormModal = function(){
     const asExtra = Boolean(window._whatsappAddExtraMode);
 
     openGenericModal(T('settings.whatsapp.connectBtn', 'Cadastrar número novo'), `
       <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
         <div style="grid-column:span 6">
           <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.phoneIdLabel', 'Phone Number ID (da Meta)')}</label>
-          <input type="text" id="whatsappPhoneNumberId" autocomplete="off" placeholder="ex: 123456789012345" value="${asExtra ? '' : (data.phone_number_id || '')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <input type="text" id="whatsappPhoneNumberId" autocomplete="off" placeholder="ex: 123456789012345" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
         <div style="grid-column:span 6">
           <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.tokenLabel', 'Access Token')}</label>
-          <input type="password" id="whatsappAccessToken" autocomplete="off" placeholder="${T('settings.whatsapp.tokenPlaceholder', 'Deixe em branco pra manter o já salvo')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <input type="password" id="whatsappAccessToken" autocomplete="off" placeholder="${T('settings.whatsapp.tokenPlaceholder', 'Cole o token de acesso')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
         <div style="grid-column:span 12">
           <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.contactPhoneLabel', 'Número de WhatsApp visível pro hóspede')}</label>
-          <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" value="${asExtra ? '' : (data.contact_phone || '')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
           <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.contactPhoneHint', 'Usado pela IA pra sugerir esse número como contato alternativo em conversas de Messenger/Instagram.')}</div>
         </div>
         <div style="grid-column:span 12">
@@ -4013,26 +4011,11 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div id="whatsappTokenStatus" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
-
       <div style="display:flex;gap:10px;margin-top:16px">
         <button class="btn" type="button" onclick="saveWhatsappSettings()">${T('settings.whatsapp.saveBtn', 'Salvar WhatsApp')}</button>
         <button type="button" class="btn secondary" onclick="openWhatsappSettingsModal()">${T('common.cancel', 'Cancelar')}</button>
       </div>
     `);
-
-    if(!asExtra){
-      const aiPersonaInput = document.getElementById("whatsappAiPersona");
-      if(aiPersonaInput) aiPersonaInput.value = data.ai_persona || "";
-
-      const statusEl = document.getElementById("whatsappTokenStatus");
-      if(statusEl){
-        statusEl.textContent = data.has_access_token
-          ? T('settings.whatsapp.tokenConfigured', 'Access Token já configurado.')
-          : T('settings.whatsapp.tokenMissing', 'Nenhum Access Token salvo ainda.');
-        statusEl.style.color = data.has_access_token ? "var(--green)" : "#ffbd4a";
-      }
-    }
   };
 
   window.saveWhatsappSettings = async function(){
