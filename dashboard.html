@@ -5504,53 +5504,77 @@ async function deleteRoleConfirm(roleId){
 
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff12">
         <div style="font-size:13px;font-weight:700;margin-bottom:8px">${T('settings.communication.pushTypesTitle', 'O que deve notificar')}</div>
-        <label data-required-permission="opportunities" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="opportunities" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeOpportunity', 'Nova oportunidade de alta prioridade')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="opportunity" id="pushTypeOpportunity">
+          </span>
         </label>
-        <label data-required-permission="reservations" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="reservations" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeReservation', 'Nova reserva pendente de confirmação')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="reservation" id="pushTypeReservation">
+          </span>
         </label>
-        <label data-required-permission="reservations" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="reservations" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeLateArrival', 'Chegada de hoje sem check-in até 18h')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="late_arrival" id="pushTypeLateArrival">
+          </span>
         </label>
-        <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="chats" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${(window.STAYFLOW_SESSION || {}).account_kind === "agency" ? T('settings.communication.pushTypeGuestNeedsAttentionAgency', '{noun} com problema, dúvida ou frustração', { noun: agencyGuestNoun(window.STAYFLOW_SESSION) === "PAX" ? "PAX" : "Cliente" }) : T('settings.communication.pushTypeGuestNeedsAttention', 'Hóspede com problema, dúvida ou frustração')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="guest_needs_attention" id="pushTypeGuestNeedsAttention">
+          </span>
         </label>
-        <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="chats" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeAssumedConversation', 'Mensagem nova numa conversa assumida')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="assumed_conversation" id="pushTypeAssumedConversation">
+          </span>
         </label>
-        <label data-required-permission="kitchen" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="kitchen" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeKitchenOrder', 'Novo pedido na cozinha')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="kitchen_order" id="pushTypeKitchenOrder">
+          </span>
         </label>
-        <label data-required-permission="maintenance" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="maintenance" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeMaintenanceTicket', 'Novo chamado de manutenção')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="maintenance_ticket" id="pushTypeMaintenanceTicket">
+          </span>
         </label>
-        <label data-required-permission="patrimonial_security" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="patrimonial_security" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeSecurityIncident', 'Nova ocorrência de segurança')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="security_incident" id="pushTypeSecurityIncident">
+          </span>
         </label>
-        <label data-required-permission="parking" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="parking" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeValetRequest', 'Novo chamado de manobrista')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="valet_request" id="pushTypeValetRequest">
+          </span>
         </label>
-        <label data-required-permission="events" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="events" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeNewEvent', 'Novo evento cadastrado')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="new_event" id="pushTypeNewEvent">
+          </span>
         </label>
-        <label data-required-permission="portfolio" data-required-account-kind="agency" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="portfolio" data-required-account-kind="agency" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeNuvemshopOrder', 'Novo pedido na loja (Nuvemshop)')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="nuvemshop_order" id="pushTypeNuvemshopOrder">
+          </span>
         </label>
-        <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="chats" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeChatMessage', 'Toda mensagem nova no chat')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="chat_message" id="pushTypeChatMessage">
+          </span>
         </label>
       </div>
 
@@ -14981,7 +15005,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 <script src="assets/js/chats-live.js?v=1125"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1150"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1151"></script>
 <script>
 (function(){
   "use strict";
