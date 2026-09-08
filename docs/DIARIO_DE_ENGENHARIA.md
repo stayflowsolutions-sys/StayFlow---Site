@@ -12304,3 +12304,50 @@ instrumentar o CAMINHO REAL com uma forma de ler o resultado (aqui,
 gravando no banco e expondo por uma rota interna), porque só isso
 revelou o erro verdadeiro (o webhook de status assíncrono), que nenhum
 teste manual direto jamais mostraria sozinho.
+
+### Opportunity Center vira cards clicáveis (v1.147.0)
+
+Com o WhatsApp bloqueado esperando a verificação de negócio da Meta,
+voltei pro item que já estava na fila havia um tempo: o usuário queria
+"as oportunidades clicáveis e em caixas, não estáticas como estão
+hoje", com um menu ☰ oferecendo "ver conversa, responder manualmente,
+sugerir resposta para a IA". Perguntei o que exatamente "sugerir
+resposta pra IA" deveria fazer, e a resposta veio detalhada: um campo
+de texto onde a pessoa escreve informalmente o que quer transmitir (a
+IA reescreve num tom adequado, nunca manda o texto cru) OU um botão
+✨ que funciona sem nada escrito, lendo a conversa sozinha - nos dois
+casos, sempre um rascunho pra aprovar/recusar antes de qualquer coisa
+sair de verdade, nunca envio automático.
+
+Pesquisando antes de construir, descobri que boa parte do encanamento
+JÁ EXISTIA: `propose_guest_message`/`send_guest_message`/
+`cancel_guest_message_draft` (tabela `guest_message_drafts`) já
+faziam exatamente esse ciclo de rascunho→aprovação→envio - só que
+eram usados APENAS como ferramenta de tool-calling do Ask StayFlow,
+nunca expostos como rota HTTP direta pro dashboard chamar. Em vez de
+duplicar esse ciclo, só adicionei o que faltava: `create_guest_message_draft`
+(versão que recebe `guest_id` direto, já que o card clicado sabe
+exatamente qual hóspede é - `propose_guest_message` existe pra
+resolver por NOME porque a IA de chat não tem o id à mão) e uma nova
+`draft_guest_reply()` que é uma chamada ÚNICA à OpenAI (não um loop de
+tool-calling como `ask_ai`) só pra gerar o texto sugerido a partir do
+histórico real da conversa (`get_guest_profile`).
+
+Reaproveitar o visual do card já existia também - o sidebar "Mais
+importantes" já mostrava as oportunidades em formato de card, só a
+lista PRINCIPAL é que continuava em linha de tabela antiga. Bastou
+generalizar esse mesmo card, adicionar o clique (abre o menu de
+ações) e o botão ☰ dedicado.
+
+**Achado de sessão que quase passou despercebido**: ao ir bumpar o
+cache-busting do `stayflow-live.js` (que mexi agora), reparei que
+`i18n-dashboard-data.js` estava parado em `?v=1144` desde MUITO antes
+- mas ao longo da maratona toda do WhatsApp desta mesma sessão, editei
+esse arquivo várias vezes (chaves novas de picker, formulário manual,
+WABA ID) sem nunca bumpar o cache de novo. Exatamente o mesmo tipo de
+esquecimento que já causou um incidente de produção registrado lá na
+v1.133.1 ("bugou o site") - só não virou incidente de novo porque
+ninguém testou o dashboard num navegador com cache antigo nesse meio
+tempo. Bumpado agora, mas fica registrado como lembrete: depois de
+qualquer sequência longa de edições de i18n, checar o cache-busting
+antes de considerar terminado, não só na PRIMEIRA edição da sequência.
