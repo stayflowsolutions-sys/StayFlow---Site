@@ -94,47 +94,40 @@ function updatePriorityActionsFromOpportunities(opportunities){
   });
 }
 
-function opportunityRowHtml(opportunity){
+// Card clicavel do Opportunity Center (v1.147.0) - substitui a linha
+// de tabela antiga. Reaproveita o visual ja usado no sidebar "Mais
+// importantes" (updateOpportunitiesPrioritySidebar), so que clicavel e
+// com o menu ☰ de acoes (Ver conversa/Responder manualmente/Sugerir
+// resposta pra IA) - pedido explicito do usuario.
+function opportunityCardHtml(opportunity){
   const urgency = opportunityUrgencyPillClass(opportunity);
   const score = Number(opportunity.score || 0);
   const estimatedValue = Number(opportunity.estimated_value || 0);
-  const guestLabel = escapeHtml(opportunity.name || opportunity.phone || "-");
+  const guestLabel = opportunity.name || opportunity.phone || "-";
+  const guestLabelSafe = escapeHtml(guestLabel);
+  const guestId = opportunity.guest_id || null;
 
-  // "Gerar cobranca" so faz sentido pra oportunidade que a IA
-  // classificou como passeio/upsell (tour/rental de verdade) - reserva,
-  // pedido de ajuda humana e follow-up nao sao vendas cobraveis aqui.
-  // Imobiliaria excluida de proposito (achado ao vivo, 2026-09-03,
-  // mesmo criterio de isOwnCatalogSuggestion()): imovel proprio nunca e
-  // cobrado por link de pagamento, mesmo se a IA classificar uma
-  // conversa (rara) como "upsell" em vez de "booking" - o chargeArgs
-  // abaixo tem chargeType:"tour" fixo, que nao faz sentido nenhum pra
-  // imovel.
   const canCharge = (opportunity.type === "tour" || opportunity.type === "upsell") && !isOwnCatalogSuggestion();
   const chargeArgs = JSON.stringify({
     chargeType: "tour",
-    guestId: opportunity.guest_id || null,
+    guestId: guestId,
     opportunityId: opportunity.id,
     title: opportunity.description || "",
     amount: estimatedValue || "",
-    guestLabel: opportunity.name || opportunity.phone || "",
+    guestLabel: guestLabel,
   }).replace(/"/g, "&quot;");
 
-  // Sugestao de parceiro (decision_engine.py) - so aparece quando a
-  // hospedagem tem um item de portfolio de agencia ja ativado e o
-  // hospede pediu algo do tipo 'tour'. Botao separado do "Gerar
-  // cobranca" normal porque o vendedor de verdade e a agencia, nao a
-  // hospedagem (ver routes/guest_charges.py, charge_type='partner_item').
   let partnerSuggestionHtml = "";
   if(opportunity.suggested_partner_item_id){
     const isOwnItem = isOwnCatalogSuggestion();
     const partnerChargeArgs = JSON.stringify({
       chargeType: "partner_item",
       portfolioItemId: opportunity.suggested_partner_item_id,
-      guestId: opportunity.guest_id || null,
+      guestId: guestId,
       opportunityId: opportunity.id,
       title: opportunity.suggested_partner_item_name || "",
       amount: opportunity.suggested_partner_item_price_type === "fixed" ? (opportunity.suggested_partner_item_price || "") : "",
-      guestLabel: opportunity.name || opportunity.phone || "",
+      guestLabel: guestLabel,
     }).replace(/"/g, "&quot;");
     const suggestionText = isOwnItem
       ? T('opportunities.ownItemSuggestion', 'Sugestão: {item}', {item: escapeHtml(opportunity.suggested_partner_item_name || "")})
@@ -142,37 +135,196 @@ function opportunityRowHtml(opportunity){
     const suggestionBtnLabel = isOwnItem
       ? T('opportunities.offerOwnItemBtn', 'Oferecer imóvel')
       : T('opportunities.offerPartnerBtn', 'Oferecer parceiro');
-    // Imovel proprio (imobiliaria) NAO e cobrado via link de pagamento
-    // (openGuestChargeModal, feito pra passeio/aluguel de verdade) -
-    // "oferecer" um imovel e mandar a informacao pro lead decidir, nao
-    // gerar cobranca. Sugestao de PARCEIRO (agencia terceira) continua
-    // no fluxo de cobranca normal, isso nao mudou.
     const suggestionOnClick = isOwnItem
       ? `openOfferPropertyModal(${partnerChargeArgs})`
       : `openGuestChargeModal(${partnerChargeArgs})`;
     partnerSuggestionHtml = `
-      <div style="margin-top:6px;font-size:11px;color:var(--blue2)">
-        💡 ${suggestionText}
-      </div>
-      <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="${suggestionOnClick}">${suggestionBtnLabel}</button>
+      <div style="margin-top:6px;font-size:11px;color:var(--blue2)">💡 ${suggestionText}</div>
+      <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="event.stopPropagation();${suggestionOnClick}">${suggestionBtnLabel}</button>
     `;
   }
 
-  return `
-    <td>${opportunityDateLabel(opportunity.created_at)}</td>
-    <td>${guestLabel}</td>
-    <td>
-      <span class="status-pill ${urgency}">
-        ${urgency.toUpperCase()}
-      </span>
-    </td>
-    <td>${escapeHtml(opportunity.description || intentLabel(opportunity.type, window.STAYFLOW_SESSION) || "-")}${partnerSuggestionHtml}</td>
-    <td>${score}/100</td>
-    <td>${formatMoney(estimatedValue)}</td>
-    <td>${escapeHtml(opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.'))}</td>
-    <td>${canCharge ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="openGuestChargeModal(${chargeArgs})">${T('guestCharge.generateBtn', 'Gerar cobrança')}</button>` : "—"}</td>
+  const chargeBtnHtml = canCharge
+    ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="event.stopPropagation();openGuestChargeModal(${chargeArgs})">${T('guestCharge.generateBtn', 'Gerar cobrança')}</button>`
+    : "";
+
+  const card = document.createElement("div");
+  card.className = "opportunity-card";
+  card.style.cssText = "background:#02070d;border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer";
+  card.onclick = () => openOpportunityActionsModal(guestId, guestLabel);
+  card.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+      <div>
+        <strong style="font-size:13px">${guestLabelSafe}</strong>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${opportunityDateLabel(opportunity.created_at)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="status-pill ${urgency}">${urgency.toUpperCase()}</span>
+        <button type="button" class="btn secondary" style="padding:4px 10px;font-size:14px;line-height:1" title="${T('opportunities.actionsTitle', 'Ações')}" onclick="event.stopPropagation();openOpportunityActionsModal(${guestId}, '${guestLabelSafe.replace(/'/g, "\\'")}')">☰</button>
+      </div>
+    </div>
+    <div style="margin:8px 0;font-size:13px">${escapeHtml(opportunity.description || intentLabel(opportunity.type, window.STAYFLOW_SESSION) || "-")}</div>
+    ${partnerSuggestionHtml}
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">${T('opportunities.col.nextAction', 'Próxima ação')}: ${escapeHtml(opportunity.next_action || T('opportunities.defaultAction', 'Revisar conversa manualmente.'))}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+      <div style="display:flex;gap:14px;font-size:12px">
+        <span style="color:var(--blue2);font-weight:700">${estimatedValue > 0 ? formatMoney(estimatedValue) : "—"}</span>
+        <span style="color:var(--muted)">${T('opportunities.col.score', 'Score')}: ${score}/100</span>
+      </div>
+      ${chargeBtnHtml}
+    </div>
   `;
+  return card;
 }
+
+// Menu de acoes de uma oportunidade (v1.147.0, pedido explicito do
+// usuario): "ver conversa, responder manualmente, sugerir resposta
+// para a IA". openGenericModal ja existe globalmente (dashboard.html).
+window.openOpportunityActionsModal = function(guestId, guestLabel){
+  if(!guestId){
+    alert(T('opportunities.action.noGuest', 'Essa oportunidade não tem um contato de WhatsApp associado.'));
+    return;
+  }
+  const labelArg = JSON.stringify(guestLabel || "").replace(/"/g, "&quot;");
+  openGenericModal(guestLabel || T('opportunities.actionsTitle', 'Ações'), `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button type="button" class="btn secondary" onclick="goToGuestChat(${guestId})">${T('opportunities.action.viewChat', '💬 Ver conversa')}</button>
+      <button type="button" class="btn secondary" onclick="openManualReplyModal(${guestId}, ${labelArg})">${T('opportunities.action.manualReply', '✍️ Responder manualmente')}</button>
+      <button type="button" class="btn secondary" onclick="openSuggestReplyModal(${guestId}, ${labelArg})">${T('opportunities.action.suggestReply', '✨ Sugerir resposta pra IA')}</button>
+    </div>
+  `);
+};
+
+window.goToGuestChat = function(guestId){
+  closeGenericModal();
+  if(typeof openPage === "function") openPage("chats", document.querySelector('[data-page="chats"]'));
+  if(typeof loadGuestProfile === "function") loadGuestProfile(guestId);
+};
+
+// "Responder manualmente" - texto EXATO que a equipe escreveu, sem IA
+// no meio. Reaproveita o mesmo rascunho (guest_message_drafts) que o
+// Ask StayFlow ja usa - so entra direto (create+send em sequencia,
+// sem tela de revisao) porque a pessoa ja escreveu com intencao clara,
+// diferente do fluxo de sugestao da IA (que sempre revisa antes).
+window.openManualReplyModal = function(guestId, guestLabel){
+  const labelArg = JSON.stringify(guestLabel || "").replace(/"/g, "&quot;");
+  openGenericModal(T('opportunities.manualReply.title', '✍️ Responder manualmente'), `
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">${T('opportunities.manualReply.desc', 'Escreva a mensagem exata que o cliente vai receber.')}</p>
+    <textarea id="opportunityManualReplyText" rows="5" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:12px;color:white;padding:10px 12px;resize:vertical"></textarea>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button type="button" class="btn" onclick="submitManualReply(${guestId})">${T('opportunities.manualReply.sendBtn', 'Enviar')}</button>
+      <button type="button" class="btn secondary" onclick="openOpportunityActionsModal(${guestId}, ${labelArg})">${T('common.cancel', 'Cancelar')}</button>
+    </div>
+  `);
+};
+
+window.submitManualReply = async function(guestId){
+  const textEl = document.getElementById("opportunityManualReplyText");
+  const text = (textEl ? textEl.value : "").trim();
+  if(!text){
+    alert(T('opportunities.manualReply.emptyError', 'Escreve a mensagem antes de enviar.'));
+    return;
+  }
+  try{
+    const draftRes = await fetch(`/opportunities/guest/${guestId}/manual-reply`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ message: text }),
+    });
+    const draftData = await draftRes.json();
+    if(!draftData.success){ alert(draftData.message || T('common.error.generic', 'Erro de conexão.')); return; }
+
+    const sendRes = await fetch(`/opportunities/drafts/${draftData.draft_id}/send`, { method: "POST", credentials: "same-origin" });
+    const sendData = await sendRes.json();
+    if(!sendData.success || !sendData.sent){
+      alert(T('opportunities.manualReply.sendFailed', 'Mensagem salva, mas não foi possível enviar pelo WhatsApp agora.'));
+    }
+    closeGenericModal();
+    if(typeof loadOpportunities === "function") loadOpportunities();
+  }catch(e){
+    console.error("Erro ao responder manualmente:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+// "Sugerir resposta pra IA" - campo de instrucao informal (opcional) +
+// botao ✨ que tambem funciona sem nada escrito (IA le a conversa
+// sozinha). SEMPRE mostra o rascunho antes de enviar (Enviar/Refazer),
+// nunca manda direto - pedido explicito do usuario.
+window.openSuggestReplyModal = function(guestId, guestLabel){
+  window._lastSuggestDraftId = null;
+  const labelArg = JSON.stringify(guestLabel || "").replace(/"/g, "&quot;");
+  openGenericModal(T('opportunities.suggestReply.title', '✨ Sugerir resposta com IA'), `
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">${T('opportunities.suggestReply.desc', 'Escreva o que você quer transmitir (em qualquer formato — a IA reescreve pro cliente) ou deixe em branco e clique em Sugerir pra IA ler a conversa sozinha.')}</p>
+    <textarea id="opportunitySuggestInstruction" rows="3" placeholder="${T('opportunities.suggestReply.placeholder', 'Ex: fala que esse imóvel já foi alugado mas que temos outro parecido')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:12px;color:white;padding:10px 12px;resize:vertical"></textarea>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button type="button" class="btn" id="opportunitySuggestBtn" onclick="requestSuggestedReply(${guestId})">✨ ${T('opportunities.suggestReply.suggestBtn', 'Sugerir')}</button>
+      <button type="button" class="btn secondary" onclick="openOpportunityActionsModal(${guestId}, ${labelArg})">${T('common.cancel', 'Cancelar')}</button>
+    </div>
+    <div id="opportunitySuggestResult" style="margin-top:16px"></div>
+  `);
+};
+
+window.requestSuggestedReply = async function(guestId){
+  const instructionEl = document.getElementById("opportunitySuggestInstruction");
+  const instruction = (instructionEl ? instructionEl.value : "").trim();
+  const btn = document.getElementById("opportunitySuggestBtn");
+  const resultEl = document.getElementById("opportunitySuggestResult");
+
+  // Refazer descarta o rascunho anterior em vez de deixar orfao - best
+  // effort, nao trava se falhar.
+  if(window._lastSuggestDraftId){
+    fetch(`/opportunities/drafts/${window._lastSuggestDraftId}/cancel`, { method: "POST", credentials: "same-origin" }).catch(() => {});
+    window._lastSuggestDraftId = null;
+  }
+
+  if(btn){ btn.disabled = true; btn.textContent = T('common.loading', 'Carregando...'); }
+  if(resultEl) resultEl.innerHTML = "";
+
+  try{
+    const res = await fetch(`/opportunities/guest/${guestId}/suggest-reply`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ instruction }),
+    });
+    const data = await res.json();
+    if(!data.success){ alert(data.message || T('common.error.generic', 'Erro de conexão.')); return; }
+
+    window._lastSuggestDraftId = data.draft_id;
+    if(resultEl){
+      const msgSafe = escapeHtml(data.message).replace(/\n/g, "<br>");
+      resultEl.innerHTML = `
+        <div style="background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px;margin-bottom:10px">${msgSafe}</div>
+        <div style="display:flex;gap:10px">
+          <button type="button" class="btn" onclick="confirmSuggestedReply(${guestId}, ${data.draft_id})">${T('opportunities.suggestReply.sendBtn', 'Enviar')}</button>
+          <button type="button" class="btn secondary" onclick="requestSuggestedReply(${guestId})">${T('opportunities.suggestReply.redoBtn', 'Refazer')}</button>
+        </div>
+      `;
+    }
+  }catch(e){
+    console.error("Erro ao sugerir resposta:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = "✨ " + T('opportunities.suggestReply.suggestBtn', 'Sugerir'); }
+  }
+};
+
+window.confirmSuggestedReply = async function(guestId, draftId){
+  try{
+    const res = await fetch(`/opportunities/drafts/${draftId}/send`, { method: "POST", credentials: "same-origin" });
+    const data = await res.json();
+    if(!data.success || !data.sent){
+      alert(T('opportunities.suggestReply.sendFailed', 'Não foi possível enviar pelo WhatsApp agora.'));
+      return;
+    }
+    window._lastSuggestDraftId = null;
+    closeGenericModal();
+    if(typeof loadOpportunities === "function") loadOpportunities();
+  }catch(e){
+    console.error("Erro ao confirmar envio:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
 
 function updateOpportunityCenterTable(opportunities, append){
   const container = document.getElementById("opportunitiesTableBody");
@@ -190,9 +342,7 @@ function updateOpportunityCenterTable(opportunities, append){
   if (emptyState) emptyState.style.display = "none";
 
   opportunities.forEach((opportunity) => {
-    const row = document.createElement("tr");
-    row.innerHTML = opportunityRowHtml(opportunity);
-    container.appendChild(row);
+    container.appendChild(opportunityCardHtml(opportunity));
   });
 }
 

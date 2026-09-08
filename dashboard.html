@@ -1324,7 +1324,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="partners" data-required-permission="partners" data-required-account-kind="lodging" onclick="openPage('partners',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5c1.7.4 3 2 3 3.9s-1.3 3.5-3 3.9"/><path d="M22 20c0-2.8-2-5.2-4.7-5.8"/></svg></span><span data-i18n="nav.partners">Parceiros</span>
     </button>
-    <button data-page="portfolio" data-required-permission="portfolio" onclick="openPage('portfolio',this)">
+    <button data-page="portfolio" data-required-permission="portfolio" data-hide-for-account-kind="promoter" onclick="openPage('portfolio',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span><span data-i18n="nav.portfolio" id="navPortfolioLabel">Meu Portfólio</span>
     </button>
     <button data-page="agenda" data-required-permission="portfolio" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openPage('agenda',this)">
@@ -1397,7 +1397,8 @@ async function deleteRoleConfirm(roleId){
           <span data-i18n="topbar.hostelSwitch.addHostel">+ Adicionar hospedagem</span>
         </button>
         <button type="button" class="hostel-selector-settings-link" onclick="toggleHostelSelector(); openPage('settings', document.querySelector('[data-page=settings]'))">
-          <span data-i18n="topbar.hostelSwitch.settingsLink">⚙ Configurações da hospedagem</span>
+          <span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 2.9a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1l.4 2.9h4.8l.4-2.9a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6a7 7 0 0 0 .1-1z"/></svg></span>
+          <span data-i18n="topbar.hostelSwitch.settingsLink" style="vertical-align:middle">Configurações da hospedagem</span>
         </button>
       </div>
     </div>
@@ -1410,7 +1411,10 @@ async function deleteRoleConfirm(roleId){
 
       <div id="notifPanel" class="notif-panel" style="display:none;">
         <div class="notif-panel-header">
-          <span data-i18n="notif.title">🔔 Notificações</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span class="nav-ico" style="color:#0b84ff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+            <span data-i18n="notif.title">Notificações</span>
+          </span>
         </div>
         <div id="notifFilterChips" class="notif-filter-chips"></div>
         <div id="notifList"></div>
@@ -1444,10 +1448,12 @@ async function deleteRoleConfirm(roleId){
         </div>
         <div class="hostel-selector-divider"></div>
         <button type="button" id="userMenuEquipeItem" data-required-permission="team,scheduling" data-hide-for-account-kind="promoter" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openPage('team', document.querySelector('[data-page=team]'))">
-          <span data-i18n="topbar.userMenu.team">👥 Equipe</span>
+          <span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span>
+          <span data-i18n="topbar.userMenu.team" style="vertical-align:middle">Equipe</span>
         </button>
         <button type="button" id="userMenuStayflowAdminItem" class="hostel-selector-settings-link" style="display:none;" onclick="window.location.href='/admin.html'">
-          <span>🛠 Painel StayFlow</span>
+          <span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2-2z"/></svg></span>
+          <span style="vertical-align:middle">Painel StayFlow</span>
         </button>
         <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
           <span data-i18n="topbar.userMenu.logout">↪ Sair</span>
@@ -1889,24 +1895,8 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div id="opportunitiesListView">
-        <div style="overflow-x:auto">
-          <table class="table">
-            <thead>
-              <tr>
-                <th data-i18n="common.date">Data</th>
-                <th data-i18n="opportunities.col.guest" id="opportunitiesGuestColLabel">Hóspede</th>
-                <th data-i18n="opportunities.col.urgency">Urgência</th>
-                <th data-i18n="opportunities.col.reason">Motivo</th>
-                <th data-i18n="opportunities.col.score">Score</th>
-                <th data-i18n="opportunities.col.revenue">Receita</th>
-                <th data-i18n="opportunities.col.nextAction">Próxima ação</th>
-                <th data-i18n="opportunities.col.action">Ação</th>
-              </tr>
-            </thead>
-            <tbody id="opportunitiesTableBody">
-              <!-- Linhas reais serão inseridas por stayflow-live.js -->
-            </tbody>
-          </table>
+        <div id="opportunitiesTableBody" style="display:flex;flex-direction:column;gap:10px">
+          <!-- Cards reais serão inseridos por stayflow-live.js -->
         </div>
         <div id="opportunitiesEmpty" class="sf-empty">
           <div>
@@ -2530,26 +2520,12 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-8">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0" data-i18n="revenue.catalogTitle">🍷 Catálogo de experiências e upsells</h2>
-        <button type="button" class="btn primary" onclick="openNewOfferingModal()" data-i18n="revenue.addBtn">➕ Adicionar</button>
-      </div>
-
-      <div class="sf-empty" id="offeringsEmpty">
-        <div>
-          <strong data-i18n="revenue.emptyOfferingsTitle">Nenhuma experiência ou upsell cadastrado.</strong>
-          <span data-i18n="revenue.emptyOfferingsDesc">Cadastre tours, late checkout, aluguel de toalha e outras ofertas da sua hospedagem.</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn secondary" onclick="openPage('portfolio')" data-i18n="revenue.viewCatalogBtn">Ver catálogo completo</button>
+          <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="revenue.addBtn">➕ Adicionar</button>
         </div>
       </div>
-      <table class="table" id="offeringsTable" style="display:none">
-        <thead>
-          <tr>
-            <th data-i18n="common.name">Nome</th>
-            <th data-i18n="common.type">Tipo</th>
-            <th data-i18n="revenue.col.price">Preço</th>
-            <th data-i18n="reservations.col.actions">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="offeringsTableBody"></tbody>
-      </table>
+      <p style="color:var(--muted);font-size:13px;margin:0" data-i18n="revenue.catalogRedirectDesc">Tours, late checkout, aluguel de toalha e outras ofertas da sua hospedagem — o catálogo completo (com foto e descrição) fica na aba Serviços extras.</p>
     </div>
 
     <div class="card span-4">
@@ -2961,7 +2937,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" onclick="openNuvemshopSettingsModal()">
+      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" data-required-agency-category="comercio" onclick="openNuvemshopSettingsModal()">
         <div class="settings-summary-row">
           <div>
             <h2 data-i18n="settings.nuvemshop.title">🛍️ Nuvemshop / Tiendanube</h2>
@@ -2976,6 +2952,16 @@ async function deleteRoleConfirm(roleId){
           <div>
             <h2 data-i18n="settings.tokko.title">🏠 Tokko Broker</h2>
             <p class="settings-summary-desc" id="tokkoSummaryDesc" data-i18n="settings.tokko.desc">Conecte sua conta do Tokko Broker pra sincronizar o catálogo de imóveis.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
+      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openPraediumSettingsModal()" style="display:none">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.praedium.title">🏠 Praedium</h2>
+            <p class="settings-summary-desc" id="praediumSummaryDesc" data-i18n="settings.praedium.desc">Conecte o feed XML da Praedium pra sincronizar o catálogo de imóveis.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
         </div>
@@ -3698,39 +3684,19 @@ async function deleteRoleConfirm(roleId){
   // campos (whatsappPhoneNumberId etc.) sao os MESMOS de sempre, so que
   // agora so existem no DOM enquanto o modal esta aberto.
   window.openWhatsappSettingsModal = function(){
+    window._whatsappAddExtraMode = false;
+    window._whatsappDiscovered = null;
     openGenericModal(T('settings.whatsapp.title', '📱 WhatsApp Business'), `
       <p style="margin-bottom:14px">${T('settings.whatsapp.desc', 'Conecte o número oficial da hospedagem no WhatsApp (Meta Cloud API).')}</p>
 
+      <div id="whatsappNumbersList" style="margin-bottom:14px"></div>
+
       <div id="whatsappOauthRow" style="display:none;margin-bottom:14px">
-        <button type="button" class="btn" id="whatsappOauthBtn" onclick="connectWhatsappEmbedded()">${T('settings.whatsapp.connectBtn', 'Conectar via WhatsApp')}</button>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px">${T('settings.whatsapp.oauthHint', 'Ou preencha manualmente abaixo, se preferir.')}</div>
+        <button type="button" class="btn" id="whatsappOauthBtn" onclick="openWhatsappManualFormModal()">${T('settings.whatsapp.connectBtn', 'Cadastrar número novo')}</button>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:10px">${T('settings.whatsapp.newNumberHint', 'Use essa opção pra cadastrar manualmente um número que ainda não está em nenhum WhatsApp.')}</div>
+        <button type="button" class="btn secondary" id="whatsappCoexistenceBtn" style="display:none" onclick="connectWhatsappEmbedded(true)">${T('settings.whatsapp.connectCoexistenceBtn', 'Conectar WhatsApp já existente')}</button>
+        <div id="whatsappCoexistenceHint" style="display:none;font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.coexistenceHint', 'Use essa opção se o número já está em uso no app WhatsApp Business do celular e você quer continuar usando os dois ao mesmo tempo. Só funciona com números já cadastrados no app WhatsApp Business (não o WhatsApp comum).')}</div>
       </div>
-
-      <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
-        <div style="grid-column:span 6">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.phoneIdLabel', 'Phone Number ID (da Meta)')}</label>
-          <input type="text" id="whatsappPhoneNumberId" autocomplete="off" placeholder="ex: 123456789012345" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-        <div style="grid-column:span 6">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.tokenLabel', 'Access Token')}</label>
-          <input type="password" id="whatsappAccessToken" autocomplete="off" placeholder="${T('settings.whatsapp.tokenPlaceholder', 'Deixe em branco pra manter o já salvo')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-        </div>
-        <div style="grid-column:span 12">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.contactPhoneLabel', 'Número de WhatsApp visível pro hóspede')}</label>
-          <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.contactPhoneHint', 'Usado pela IA pra sugerir esse número como contato alternativo em conversas de Messenger/Instagram.')}</div>
-        </div>
-        <div style="grid-column:span 12">
-          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.aiPersonaLabel', 'Este número responde como')}</label>
-          <select id="whatsappAiPersona" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-            <option value="">${T('settings.whatsapp.aiPersonaGuest', 'Atendimento da hospedagem (padrão)')}</option>
-            <option value="software">${T('settings.whatsapp.aiPersonaSoftware', 'Assistente comercial da StayFlow (só pro número oficial da StayFlow)')}</option>
-          </select>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.aiPersonaHint', 'Deixe em "Atendimento da hospedagem" a menos que este seja o número comercial da própria StayFlow — nesse caso, a IA se apresenta como assistente do software, não como recepção.')}</div>
-        </div>
-      </div>
-
-      <div id="whatsappTokenStatus" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
 
       <div style="margin-top:14px;padding:14px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff05">
         <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${T('settings.whatsapp.webhookIntro', 'Configure isso no painel da Meta, na seção Webhooks do seu app WhatsApp Business:')}</div>
@@ -3741,8 +3707,12 @@ async function deleteRoleConfirm(roleId){
         <div style="font-size:11px;color:var(--muted);margin-top:10px">${T('settings.whatsapp.localWarning', '⚠️ Se ainda estiver testando local (127.0.0.1), a Meta não consegue acessar essa URL — você vai precisar de uma ferramenta como o ngrok pra criar um link público temporário até o servidor estar hospedado de vez.')}</div>
       </div>
 
-      <div style="display:flex;justify-content:flex-end;margin-top:14px">
-        <button class="btn" type="button" onclick="saveWhatsappSettings()">${T('settings.whatsapp.saveBtn', 'Salvar WhatsApp')}</button>
+      <div style="margin-top:14px">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+          <button type="button" class="btn red" id="whatsappRemoveBtn" style="display:none" onclick="startRemovingWhatsappNumber()">${T('settings.whatsapp.numbers.removeBtn', 'Remover')}</button>
+          <button type="button" class="btn secondary" id="whatsappAddExtraBtn" style="display:none" onclick="startAddingWhatsappExtraNumber()">${T('settings.whatsapp.numbers.addExtraBtn', '+ Adicionar outro número')}</button>
+        </div>
+        <div id="whatsappAddExtraHint" style="display:none;font-size:11px;color:var(--muted);margin-top:6px">${T('settings.whatsapp.numbers.addExtraHint', 'Use isso se a hospedagem atende por mais de um número principal (ex: um pra vendas, outro pra locação).')}</div>
       </div>
     `);
     loadWhatsappSettings();
@@ -4004,10 +3974,177 @@ async function deleteRoleConfirm(roleId){
     }
   };
 
+  window.openPraediumSettingsModal = function(){
+    openGenericModal(T('settings.praedium.title', '🏠 Praedium'), `
+      <p style="margin-bottom:14px">${T('settings.praedium.modalDesc', 'Cole a URL do feed XML de imóveis da Praedium (Configurações → Integrações → Dados da Integração, no painel deles) pra sincronizar seu catálogo.')}</p>
+
+      <div id="praediumConnected" style="display:none">
+        <p style="margin:0 0 12px">
+          <span>${T('settings.praedium.statusLabel', 'Status:')}</span>
+          <strong style="color:#3ddc97">${T('settings.praedium.statusActive', 'Conectado')}</strong>
+        </p>
+        <button type="button" class="btn" onclick="syncPraedium()" id="praediumSyncBtn">${T('settings.praedium.syncBtn', 'Sincronizar agora')}</button>
+        <button type="button" class="btn red" onclick="disconnectPraedium()">${T('settings.praedium.disconnectBtn', 'Desconectar')}</button>
+      </div>
+
+      <div id="praediumNotConnected">
+        <input type="text" id="praediumXmlUrlInput" placeholder="${T('settings.praedium.urlPlaceholder', 'URL do feed XML da Praedium')}">
+        <button type="button" class="btn" onclick="savePraediumSettings()">${T('settings.praedium.connectBtn', 'Conectar')}</button>
+      </div>
+
+      <div id="praediumMessage" class="generic-modal-message"></div>
+    `);
+    loadPraediumSettings();
+  };
+
+  window.loadPraediumSettings = async function(){
+    try{
+      const res = await fetch("/settings/praedium", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const summaryDesc = document.getElementById("praediumSummaryDesc");
+      if(summaryDesc){
+        summaryDesc.textContent = data.connected
+          ? T('settings.praedium.summaryConnected', 'Conectado')
+          : T('settings.praedium.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+        summaryDesc.classList.toggle("is-connected", Boolean(data.connected));
+      }
+
+      const connectedEl = document.getElementById("praediumConnected");
+      const notConnectedEl = document.getElementById("praediumNotConnected");
+      if(!connectedEl || !notConnectedEl) return;
+
+      connectedEl.style.display = data.connected ? "block" : "none";
+      notConnectedEl.style.display = data.connected ? "none" : "block";
+    }catch(e){
+      console.warn("Erro ao carregar configuração da Praedium:", e);
+    }
+  };
+
+  window.savePraediumSettings = async function(){
+    const msg = document.getElementById("praediumMessage");
+    msg.textContent = "";
+    msg.className = "generic-modal-message";
+
+    const xmlUrl = document.getElementById("praediumXmlUrlInput").value.trim();
+    if(!xmlUrl){
+      msg.textContent = T('settings.praedium.msg.urlRequired', 'Informe a URL do feed XML.');
+      msg.classList.add("error");
+      return;
+    }
+
+    try{
+      const res = await fetch("/settings/praedium", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ xml_url: xmlUrl })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || T('settings.praedium.msg.saveFailed', 'Não foi possível salvar a URL.');
+        msg.classList.add("error");
+        return;
+      }
+      loadPraediumSettings();
+    }catch(e){
+      msg.textContent = T('common.connectionError', 'Erro de conexão.');
+      msg.classList.add("error");
+    }
+  };
+
+  window.disconnectPraedium = async function(){
+    const confirmed = await stayflowConfirm(T('settings.praedium.disconnectConfirm', 'Desconectar a Praedium? O catálogo para de sincronizar até reconectar.'));
+    if(!confirmed) return;
+
+    try{
+      await fetch("/settings/praedium", { method: "DELETE", credentials: "same-origin" });
+      loadPraediumSettings();
+    }catch(e){
+      console.warn("Erro ao desconectar Praedium:", e);
+    }
+  };
+
+  window.syncPraedium = async function(){
+    const msg = document.getElementById("praediumMessage");
+    const btn = document.getElementById("praediumSyncBtn");
+    msg.textContent = "";
+    msg.className = "generic-modal-message";
+    if(btn){ btn.disabled = true; btn.textContent = T('settings.praedium.syncing', 'Sincronizando...'); }
+
+    try{
+      const res = await fetch("/settings/praedium/sync", { method: "POST", credentials: "same-origin" });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || T('settings.praedium.msg.syncFailed', 'Não foi possível sincronizar.');
+        msg.classList.add("error");
+      }else{
+        msg.textContent = T('settings.praedium.msg.syncSuccess', '{count} imóveis sincronizados.', { count: data.synced_count });
+      }
+    }catch(e){
+      msg.textContent = T('common.connectionError', 'Erro de conexão.');
+      msg.classList.add("error");
+    }finally{
+      if(btn){ btn.disabled = false; btn.textContent = T('settings.praedium.syncBtn', 'Sincronizar agora'); }
+    }
+  };
+
+  // Formulario manual abre em modal PROPRIO (v1.146.6) - feedback do
+  // usuario: "modal na tela, nada de formularios soltos". v1.146.12:
+  // PARA de pre-preencher com o que ja esta salvo (mesmo pro numero
+  // PRINCIPAL) - achado real de sessao (2x): o formulario apareceu com
+  // dado de outro momento/conta sem a pessoa perceber, quase causando
+  // um salvamento errado. Sempre comeca 100% em branco agora - nao
+  // existe cenario onde mostrar um valor que PODE estar errado seja
+  // mais seguro que so pedir pra digitar de novo. O numero atual
+  // continua visivel (read-only) na lista logo acima deste botao.
+  window.openWhatsappManualFormModal = function(){
+    const asExtra = Boolean(window._whatsappAddExtraMode);
+
+    openGenericModal(T('settings.whatsapp.connectBtn', 'Cadastrar número novo'), `
+      <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.phoneIdLabel', 'Phone Number ID (da Meta)')}</label>
+          <input type="text" id="whatsappPhoneNumberId" autocomplete="off" placeholder="ex: 123456789012345" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.tokenLabel', 'Access Token')}</label>
+          <input type="password" id="whatsappAccessToken" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 12">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.wabaIdLabel', 'WhatsApp Business account ID (opcional)')}</label>
+          <input type="text" id="whatsappWabaId" autocomplete="off" placeholder="ex: 969900449476604" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.wabaIdHint', 'Aparece na mesma tela da Meta onde você pegou o Phone Number ID. Sem isso, o recebimento automático de mensagem precisa ser ativado manualmente no painel da Meta ("Suscribir webhooks").')}</div>
+        </div>
+        <div style="grid-column:span 12">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.contactPhoneLabel', 'Número de WhatsApp visível pro hóspede')}</label>
+          <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.contactPhoneHint', 'Usado pela IA pra sugerir esse número como contato alternativo em conversas de Messenger/Instagram.')}</div>
+        </div>
+        <div style="grid-column:span 12">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.aiPersonaLabel', 'Este número responde como')}</label>
+          <select id="whatsappAiPersona" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+            <option value="">${T('settings.whatsapp.aiPersonaGuest', 'Atendimento normal (padrão)')}</option>
+            ${(window.STAYFLOW_SESSION || {}).is_stayflow_admin ? `<option value="software">${T('settings.whatsapp.aiPersonaSoftware', 'Assistente comercial da StayFlow (só pro número oficial da StayFlow)')}</option>` : ""}
+          </select>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.aiPersonaHint', 'Deixe em "Atendimento normal" a menos que este seja o número comercial da própria StayFlow — nesse caso, a IA se apresenta como assistente do software, não como a própria conta. O tipo de atendimento já é automático, de acordo com o tipo da conta.')}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn" type="button" onclick="saveWhatsappSettings()">${T('settings.whatsapp.saveBtn', 'Salvar WhatsApp')}</button>
+        <button type="button" class="btn secondary" onclick="openWhatsappSettingsModal()">${T('common.cancel', 'Cancelar')}</button>
+      </div>
+    `);
+  };
+
   window.saveWhatsappSettings = async function(){
     const phoneNumberId = document.getElementById("whatsappPhoneNumberId").value.trim();
     const accessToken = document.getElementById("whatsappAccessToken").value.trim();
     const contactPhone = document.getElementById("whatsappContactPhone").value.trim();
+    const wabaIdEl = document.getElementById("whatsappWabaId");
+    const wabaId = wabaIdEl ? wabaIdEl.value.trim() : "";
     const aiPersonaEl = document.getElementById("whatsappAiPersona");
     const aiPersona = aiPersonaEl ? aiPersonaEl.value : "";
 
@@ -4017,21 +4154,23 @@ async function deleteRoleConfirm(roleId){
     }
 
     try{
+      const asExtra = Boolean(window._whatsappAddExtraMode);
       const res = await fetch("/settings/whatsapp", {
         method: "POST",
         credentials: "same-origin",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ phone_number_id: phoneNumberId, access_token: accessToken, contact_phone: contactPhone, ai_persona: aiPersona })
+        body: JSON.stringify({ phone_number_id: phoneNumberId, access_token: accessToken, contact_phone: contactPhone, waba_id: wabaId, ai_persona: aiPersona, as_extra: asExtra })
       });
 
-      if(!res.ok){
-        alert(T('settings.whatsapp.msg.saveFailed', 'Não foi possível salvar a configuração do WhatsApp.'));
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        alert(data.message || T('settings.whatsapp.msg.saveFailed', 'Não foi possível salvar a configuração do WhatsApp.'));
         return;
       }
 
-      alert(T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
-      document.getElementById("whatsappAccessToken").value = "";
-      loadWhatsappSettings();
+      window._whatsappAddExtraMode = false;
+      alert(data.warning || T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
+      openWhatsappSettingsModal();
     }catch(e){
       console.error("Erro ao salvar WhatsApp:", e);
       alert(T('common.saveConnError', 'Erro de conexão ao salvar.'));
@@ -4048,23 +4187,10 @@ async function deleteRoleConfirm(roleId){
 
       const data = await res.json();
 
-      const phoneInput = document.getElementById("whatsappPhoneNumberId");
-      if(phoneInput && data.phone_number_id) phoneInput.value = data.phone_number_id;
-
-      const contactPhoneInput = document.getElementById("whatsappContactPhone");
-      if(contactPhoneInput) contactPhoneInput.value = data.contact_phone || "";
-
-      const aiPersonaInput = document.getElementById("whatsappAiPersona");
-      if(aiPersonaInput) aiPersonaInput.value = data.ai_persona || "";
-
-      const statusEl = document.getElementById("whatsappTokenStatus");
-      if(statusEl){
-        statusEl.textContent = data.has_access_token
-          ? T('settings.whatsapp.tokenConfigured', 'Access Token já configurado.')
-          : T('settings.whatsapp.tokenMissing', 'Nenhum Access Token salvo ainda.');
-        statusEl.style.color = data.has_access_token ? "var(--green)" : "#ffbd4a";
-      }
-
+      // Campos do formulario manual (phone_number_id/access_token/
+      // contact_phone/ai_persona) nao vivem mais nesse modal (v1.146.6)
+      // - agora so existem dentro de openWhatsappManualFormModal, que
+      // busca o proprio estado quando abre.
       const connected = Boolean(data.phone_number_id) && data.has_access_token;
 
       const whatsappPill = document.getElementById("statusWhatsappPill");
@@ -4089,14 +4215,200 @@ async function deleteRoleConfirm(roleId){
       // painel da Meta (ver oauth_available) - guardados aqui pra
       // connectWhatsappEmbedded() usar sem precisar buscar de novo.
       window.STAYFLOW_WHATSAPP_OAUTH = data.oauth_available ? { appId: data.app_id, configId: data.config_id } : null;
+
+      // Lista de numeros (principal + extras, v1.145.0) - so leitura,
+      // sem botao por linha (remover agora e via picker de checkbox, ver
+      // startRemovingWhatsappNumber). display_number e o numero de
+      // telefone LEGIVEL (calculado no backend) - nunca o
+      // phone_number_id cru, que e um ID interno opaco da Meta e podia
+      // aparecer como lixo de teste (achado real, v1.146.3).
+      const numbers = data.numbers || [];
+      window._whatsappNumbers = numbers;
+      const listEl = document.getElementById("whatsappNumbersList");
+      if(listEl){
+        listEl.innerHTML = numbers.map(n => `
+          <div style="padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:#ffffff05">
+            <div style="font-weight:700">${n.label ? n.label : (n.is_primary ? T('settings.whatsapp.numbers.primaryLabel', 'Número principal') : T('settings.whatsapp.numbers.extraLabel', 'Número adicional'))}</div>
+            <div style="font-size:11px;color:var(--muted)">${n.display_number}${n.coexistence ? ' · ' + T('settings.whatsapp.numbers.coexistenceBadge', 'Coexistence') : ''}</div>
+          </div>
+        `).join("");
+      }
+
       const oauthRow = document.getElementById("whatsappOauthRow");
-      if(oauthRow) oauthRow.style.display = data.oauth_available ? "block" : "none";
+      const coexistenceBtn = document.getElementById("whatsappCoexistenceBtn");
+      const coexistenceHint = document.getElementById("whatsappCoexistenceHint");
+      const addExtraBtn = document.getElementById("whatsappAddExtraBtn");
+      const addExtraHint = document.getElementById("whatsappAddExtraHint");
+      const removeBtn = document.getElementById("whatsappRemoveBtn");
+      const hasAnyNumber = numbers.length > 0;
+      const addingExtra = Boolean(window._whatsappAddExtraMode);
+      const showConnectOptions = !hasAnyNumber || addingExtra;
+
+      // "Cadastrar número novo" (manual, abre modal proprio) nunca
+      // depende de oauth_available - so "Conectar WhatsApp já
+      // existente" (OAuth de verdade) precisa do Config ID configurado.
+      if(oauthRow) oauthRow.style.display = showConnectOptions ? "block" : "none";
+      if(coexistenceBtn) coexistenceBtn.style.display = (data.oauth_available && showConnectOptions) ? "inline-flex" : "none";
+      if(coexistenceHint) coexistenceHint.style.display = (data.oauth_available && showConnectOptions) ? "block" : "none";
+      if(addExtraBtn) addExtraBtn.style.display = (hasAnyNumber && !addingExtra) ? "inline-flex" : "none";
+      if(addExtraHint) addExtraHint.style.display = (hasAnyNumber && !addingExtra) ? "block" : "none";
+      if(removeBtn) removeBtn.style.display = (hasAnyNumber && !addingExtra) ? "inline-flex" : "none";
     }catch(e){
       console.warn("Erro ao carregar config WhatsApp:", e);
     }
   };
 
-  window.connectWhatsappEmbedded = function(){
+  window.startAddingWhatsappExtraNumber = function(){
+    window._whatsappAddExtraMode = true;
+    loadWhatsappSettings();
+  };
+
+  // Picker de REMOCAO (v1.146.5) - abre como modal PROPRIO no meio da
+  // tela (openGenericModal substitui o conteudo do mesmo modal
+  // generico), nao mais como caixa embutida dentro do modal de
+  // WhatsApp (feedback do usuario: "quero que apareça tipo do
+  // formulario, que abre no meio da tela"). Usa os numeros ja
+  // carregados (window._whatsappNumbers), sem chamada nova - a lista e
+  // sempre da PROPRIA conta, nunca precisa ir na Meta pra isso.
+  window.startRemovingWhatsappNumber = function(){
+    const numbers = window._whatsappNumbers || [];
+    openGenericModal(T('settings.whatsapp.numbers.removePickerTitle', 'Remover número de WhatsApp'), `
+      <div id="whatsappRemoveNumberPickerList">
+        ${numbers.map((n, i) => `
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 0">
+            <input type="checkbox" class="whatsapp-remove-checkbox" data-index="${i}">
+            <span>${n.label ? n.label : (n.is_primary ? T('settings.whatsapp.numbers.primaryLabel', 'Número principal') : T('settings.whatsapp.numbers.extraLabel', 'Número adicional'))} <span style="color:var(--muted);font-size:12px">(${n.display_number})</span></span>
+          </label>
+        `).join("")}
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button type="button" class="btn red" onclick="confirmWhatsappRemovePicker()">${T('settings.whatsapp.numbers.removeBtn', 'Remover')}</button>
+        <button type="button" class="btn secondary" onclick="openWhatsappSettingsModal()">${T('common.cancel', 'Cancelar')}</button>
+      </div>
+    `);
+  };
+
+  window.confirmWhatsappRemovePicker = async function(){
+    const numbers = window._whatsappNumbers || [];
+    const checked = Array.from(document.querySelectorAll(".whatsapp-remove-checkbox:checked")).map(el => numbers[Number(el.dataset.index)]);
+    if(checked.length === 0){
+      alert(T('settings.whatsapp.numbers.pickerNoneSelected', 'Marque pelo menos um número.'));
+      return;
+    }
+    const confirmed = await stayflowConfirm(T('settings.whatsapp.numbers.removeConfirm', 'Remover esse número? Ele para de receber e responder mensagem até conectar de novo.'));
+    if(!confirmed) return;
+
+    try{
+      for(const n of checked){
+        const url = n.id === "primary" ? "/settings/whatsapp" : `/settings/whatsapp/numbers/${n.id}`;
+        const res = await fetch(url, { method: "DELETE", credentials: "same-origin" });
+        const data = await res.json();
+        if(!data.success){
+          alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+          return;
+        }
+      }
+      openWhatsappSettingsModal();
+    }catch(e){
+      console.warn("Erro ao remover número WhatsApp:", e);
+      alert(T('common.error.generic', 'Erro de conexão.'));
+    }
+  };
+
+  // Picker de ADICAO (v1.146.2) - so entra em jogo quando "+ Adicionar
+  // outro numero" usa o caminho de Coexistence (OAuth); a lista vem da
+  // MESMA WABA que a pessoa acabou de autorizar no FB.login(), nunca de
+  // outro negocio - isolamento garantido pelo escopo do proprio token,
+  // nao por filtro nosso.
+  window.discoverAndPickWhatsappNumbers = async function(code, wabaId, isCoexistence){
+    try{
+      const res = await fetch("/settings/whatsapp/discover-numbers", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ code, waba_id: wabaId }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+      if(!data.numbers || data.numbers.length === 0){
+        alert(T('settings.whatsapp.numbers.noneFound', 'Nenhum número encontrado nessa conta Meta.'));
+        window._whatsappAddExtraMode = false;
+        return;
+      }
+      window._whatsappDiscovered = { accessToken: data.access_token, wabaId: wabaId, isCoexistence: isCoexistence, numbers: data.numbers };
+      renderWhatsappNumberPicker();
+    }catch(e){
+      console.warn("Erro ao descobrir números WhatsApp:", e);
+      alert(T('common.error.generic', 'Erro de conexão.'));
+    }
+  };
+
+  // Modal proprio no meio da tela (v1.146.5), mesmo tratamento do
+  // picker de remocao acima - openGenericModal substitui o conteudo do
+  // modal generico em vez de embutir a lista dentro do modal de
+  // WhatsApp.
+  window.renderWhatsappNumberPicker = function(){
+    const state = window._whatsappDiscovered;
+    if(!state) return;
+    openGenericModal(T('settings.whatsapp.numbers.pickerTitle', 'Números encontrados nessa conta Meta — marque quais usar:'), `
+      <div id="whatsappAddNumberPickerList">
+        ${state.numbers.map((n, i) => `
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 0">
+            <input type="checkbox" class="whatsapp-picker-checkbox" data-index="${i}">
+            <span>${n.verified_name || n.display_phone_number || n.id} <span style="color:var(--muted);font-size:12px">(${n.display_phone_number || n.id})</span></span>
+          </label>
+        `).join("")}
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button type="button" class="btn" onclick="confirmWhatsappNumberPicker()">${T('settings.whatsapp.numbers.pickerConfirm', 'Ativar selecionados')}</button>
+        <button type="button" class="btn secondary" onclick="cancelWhatsappNumberPicker()">${T('common.cancel', 'Cancelar')}</button>
+      </div>
+    `);
+  };
+
+  window.cancelWhatsappNumberPicker = function(){
+    window._whatsappDiscovered = null;
+    window._whatsappAddExtraMode = false;
+    openWhatsappSettingsModal();
+  };
+
+  window.confirmWhatsappNumberPicker = async function(){
+    const state = window._whatsappDiscovered;
+    if(!state) return;
+    const checked = Array.from(document.querySelectorAll(".whatsapp-picker-checkbox:checked")).map(el => state.numbers[Number(el.dataset.index)]);
+    if(checked.length === 0){
+      alert(T('settings.whatsapp.numbers.pickerNoneSelected', 'Marque pelo menos um número.'));
+      return;
+    }
+    try{
+      const res = await fetch("/settings/whatsapp/activate-numbers", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          waba_id: state.wabaId,
+          access_token: state.accessToken,
+          coexistence: state.isCoexistence,
+          numbers: checked.map(n => ({ phone_number_id: n.id, label: n.verified_name || n.display_phone_number || "", display_phone_number: n.display_phone_number || "" })),
+        }),
+      });
+      const data = await res.json();
+      if(!data.success){
+        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+      window._whatsappDiscovered = null;
+      window._whatsappAddExtraMode = false;
+      alert(T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
+      openWhatsappSettingsModal();
+    }catch(e){
+      console.warn("Erro ao ativar números WhatsApp:", e);
+      alert(T('common.error.generic', 'Erro de conexão.'));
+    }
+  };
+
+  window.connectWhatsappEmbedded = function(coexistence){
     const config = window.STAYFLOW_WHATSAPP_OAUTH;
     if(!config){
       alert(T('settings.whatsapp.msg.oauthUnavailable', 'Conexão automática ainda não está disponível.'));
@@ -4107,16 +4419,30 @@ async function deleteRoleConfirm(roleId){
       window.FB.init({ appId: config.appId, xfbml: false, version: "v20.0" });
 
       let sessionInfo = null;
+      let finishEvent = null;
       function onMessage(event){
         if(typeof event.origin !== "string" || !event.origin.endsWith("facebook.com")) return;
         try{
           const payload = JSON.parse(event.data);
           if(payload.type === "WA_EMBEDDED_SIGNUP" && payload.data){
             sessionInfo = payload.data;
+            finishEvent = payload.event || null;
           }
         }catch(e){ /* mensagens de outra origem/formato - ignora */ }
       }
       window.addEventListener("message", onMessage);
+
+      // extras.featureType so existe pro modo coexistence ("Onboard
+      // WhatsApp Business app users") - no modo padrao a Meta usa o
+      // fluxo normal de sempre (feature so um rotulo nosso, ignorado
+      // pela Meta se nao reconhecido). O evento de FATO recebido
+      // (finishEvent, capturado acima) decide qual rota fecha a
+      // conexao - nao qual botao foi clicado - porque a propria tela
+      // da Meta pode deixar a pessoa escolher criar do zero mesmo
+      // tendo entrado pelo caminho de coexistence.
+      const extras = coexistence
+        ? { featureType: "whatsapp_business_app_onboarding", sessionInfoVersion: "3" }
+        : { feature: "whatsapp_embedded_signup", sessionInfoVersion: "3" };
 
       window.FB.login(function(response){
         window.removeEventListener("message", onMessage);
@@ -4125,12 +4451,23 @@ async function deleteRoleConfirm(roleId){
           if(response && response.authResponse) alert(T('settings.whatsapp.msg.oauthIncomplete', 'Conexão incompleta — tenta de novo.'));
           return;
         }
-        finishWhatsappEmbeddedSignup(code, sessionInfo.phone_number_id, sessionInfo.waba_id);
+        const isCoexistence = finishEvent === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING";
+        // "+ Adicionar outro numero" (v1.146.2) - em vez de ja registrar
+        // o UNICO numero que veio no sessionInfo, descobre TODOS os
+        // numeros que existem nessa WABA (a mesma que a pessoa acabou
+        // de autorizar nesse login - nunca vaza numero de outro negocio,
+        // isso e garantido pelo escopo do proprio token da Meta) e deixa
+        // a pessoa escolher via checkbox quais ativar.
+        if(window._whatsappAddExtraMode){
+          discoverAndPickWhatsappNumbers(code, sessionInfo.waba_id, isCoexistence);
+        } else {
+          finishWhatsappEmbeddedSignup(code, sessionInfo.phone_number_id, sessionInfo.waba_id, isCoexistence);
+        }
       }, {
         config_id: config.configId,
         response_type: "code",
         override_default_response_type: true,
-        extras: { feature: "whatsapp_embedded_signup", sessionInfoVersion: "3" },
+        extras: extras,
       });
     }
 
@@ -4138,22 +4475,32 @@ async function deleteRoleConfirm(roleId){
     const script = document.createElement("script");
     script.src = "https://connect.facebook.net/en_US/sdk.js";
     script.onload = launch;
+    // Sem isso, se o script da Meta nao carregar (rede bloqueada, CSP
+    // de um wrapper desktop mais restrito, etc.) o clique no botao nao
+    // fazia NADA - sem erro nenhum, parecia que o botao estava quebrado
+    // (achado real do usuario: "hoje nenhum dos 2 botoes funciona").
+    script.onerror = function(){
+      alert(T('settings.whatsapp.msg.sdkLoadError', 'Não foi possível carregar o SDK da Meta. Se estiver usando o app desktop da StayFlow, tenta abrir o painel num navegador normal (Chrome/Edge) e conectar por lá.'));
+    };
     document.body.appendChild(script);
   };
 
-  window.finishWhatsappEmbeddedSignup = async function(code, phoneNumberId, wabaId){
+  window.finishWhatsappEmbeddedSignup = async function(code, phoneNumberId, wabaId, isCoexistence){
     try{
-      const res = await fetch("/settings/whatsapp/embedded-signup", {
+      const res = await fetch(isCoexistence ? "/settings/whatsapp/coexistence-signup" : "/settings/whatsapp/embedded-signup", {
         method: "POST", credentials: "same-origin",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ code, phone_number_id: phoneNumberId, waba_id: wabaId }),
+        body: JSON.stringify({ code, phone_number_id: phoneNumberId, waba_id: wabaId, as_extra: Boolean(window._whatsappAddExtraMode) }),
       });
       const data = await res.json();
       if(!data.success){
         alert(data.message || T('common.error.generic', 'Erro de conexão.'));
         return;
       }
-      alert(T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
+      window._whatsappAddExtraMode = false;
+      alert(isCoexistence
+        ? T('settings.whatsapp.msg.savedCoexistence', 'WhatsApp conectado! Seu app WhatsApp Business continua funcionando normalmente no celular.')
+        : T('settings.whatsapp.msg.saved', 'WhatsApp salvo.'));
       loadWhatsappSettings();
     }catch(e){
       console.warn("Erro ao finalizar WhatsApp Embedded Signup:", e);
@@ -4270,6 +4617,9 @@ async function deleteRoleConfirm(roleId){
     const script = document.createElement("script");
     script.src = "https://connect.facebook.net/en_US/sdk.js";
     script.onload = launch;
+    script.onerror = function(){
+      alert(T('settings.whatsapp.msg.sdkLoadError', 'Não foi possível carregar o SDK da Meta. Se estiver usando o app desktop da StayFlow, tenta abrir o painel num navegador normal (Chrome/Edge) e conectar por lá.'));
+    };
     document.body.appendChild(script);
   };
 
@@ -5154,53 +5504,77 @@ async function deleteRoleConfirm(roleId){
 
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid #ffffff12">
         <div style="font-size:13px;font-weight:700;margin-bottom:8px">${T('settings.communication.pushTypesTitle', 'O que deve notificar')}</div>
-        <label data-required-permission="opportunities" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="opportunities" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeOpportunity', 'Nova oportunidade de alta prioridade')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="opportunity" id="pushTypeOpportunity">
+          </span>
         </label>
-        <label data-required-permission="reservations" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="reservations" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeReservation', 'Nova reserva pendente de confirmação')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="reservation" id="pushTypeReservation">
+          </span>
         </label>
-        <label data-required-permission="reservations" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="reservations" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeLateArrival', 'Chegada de hoje sem check-in até 18h')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="late_arrival" id="pushTypeLateArrival">
+          </span>
         </label>
-        <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="chats" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${(window.STAYFLOW_SESSION || {}).account_kind === "agency" ? T('settings.communication.pushTypeGuestNeedsAttentionAgency', '{noun} com problema, dúvida ou frustração', { noun: agencyGuestNoun(window.STAYFLOW_SESSION) === "PAX" ? "PAX" : "Cliente" }) : T('settings.communication.pushTypeGuestNeedsAttention', 'Hóspede com problema, dúvida ou frustração')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="guest_needs_attention" id="pushTypeGuestNeedsAttention">
+          </span>
         </label>
-        <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="chats" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeAssumedConversation', 'Mensagem nova numa conversa assumida')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="assumed_conversation" id="pushTypeAssumedConversation">
+          </span>
         </label>
-        <label data-required-permission="kitchen" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="kitchen" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeKitchenOrder', 'Novo pedido na cozinha')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="kitchen_order" id="pushTypeKitchenOrder">
+          </span>
         </label>
-        <label data-required-permission="maintenance" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="maintenance" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeMaintenanceTicket', 'Novo chamado de manutenção')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="maintenance_ticket" id="pushTypeMaintenanceTicket">
+          </span>
         </label>
-        <label data-required-permission="patrimonial_security" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="patrimonial_security" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeSecurityIncident', 'Nova ocorrência de segurança')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="security_incident" id="pushTypeSecurityIncident">
+          </span>
         </label>
-        <label data-required-permission="parking" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="parking" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeValetRequest', 'Novo chamado de manobrista')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="valet_request" id="pushTypeValetRequest">
+          </span>
         </label>
-        <label data-required-permission="events" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="events" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeNewEvent', 'Novo evento cadastrado')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="new_event" id="pushTypeNewEvent">
+          </span>
         </label>
-        <label data-required-permission="portfolio" data-required-account-kind="agency" data-hide-for-account-kind="promoter" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="portfolio" data-required-account-kind="agency" data-hide-for-account-kind="promoter" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeNuvemshopOrder', 'Novo pedido na loja (Nuvemshop)')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="nuvemshop_order" id="pushTypeNuvemshopOrder">
+          </span>
         </label>
-        <label data-required-permission="chats" style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:14px;">
+        <label data-required-permission="chats" style="margin:8px 0;font-size:14px;">
+          <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
           <span>${T('settings.communication.pushTypeChatMessage', 'Toda mensagem nova no chat')}</span>
           <input type="checkbox" data-setting="push_notification_types" value="chat_message" id="pushTypeChatMessage">
+          </span>
         </label>
       </div>
 
@@ -5843,7 +6217,7 @@ async function deleteRoleConfirm(roleId){
           <input type="text" data-setting="legal_name" placeholder="${T('settings.company.legalNamePlaceholder', 'Razão social')}">
         </div>
         <div class="span-6">
-          <input type="text" data-setting="tax_id" placeholder="CUIT/RUT">
+          <input type="text" data-setting="tax_id" id="settingsTaxIdInput" placeholder="CUIT/RUT">
         </div>
         <div class="span-12">
           <input type="text" data-setting="address" placeholder="${T('settings.company.addressPlaceholder', 'Endereço completo')}">
@@ -5860,7 +6234,7 @@ async function deleteRoleConfirm(roleId){
           </select>
         </div>
         <div class="span-6">
-          <select data-setting="currency" id="settingsCurrencySelect">
+          <select data-setting="currency" id="settingsCurrencySelect" onchange="updateTaxIdPlaceholder()">
             <option value="">${T('settings.company.currencyOption', 'Moeda')}</option>
             <option value="ARS">ARS - Peso argentino</option>
             <option value="CLP">CLP - Peso chileno</option>
@@ -5877,6 +6251,9 @@ async function deleteRoleConfirm(roleId){
         <div class="span-6" data-required-account-kind="lodging">
           <input type="text" data-setting="checkout" placeholder="${T('settings.company.checkoutPlaceholder', 'Check-out padrão (ex: 11:00)')}">
         </div>
+        <div class="span-6" data-required-agency-category="imobiliaria">
+          <input type="text" data-setting="creci" placeholder="${T('settings.company.creciPlaceholder', 'CRECI (registro de corretor/imobiliária)')}">
+        </div>
         <div class="span-12">
           <input type="text" data-setting="logo_url" placeholder="${T('settings.company.logoUrlPlaceholder', 'URL do logo (opcional - cole o link de uma imagem já hospedada)')}">
         </div>
@@ -5888,6 +6265,26 @@ async function deleteRoleConfirm(roleId){
     const session = window.STAYFLOW_SESSION || {};
     try{ applyAccountKindVisibility(session.account_kind, session.agency_category); }catch(e){ console.error("Erro ao aplicar visibilidade por tipo de conta no modal de Empresa:", e); }
     hydrateModalSettingsFields();
+    updateTaxIdPlaceholder();
+  };
+
+  // Rotulo do campo de identificacao fiscal muda de acordo com a moeda
+  // escolhida (proxy de pais, ja que nao existe campo de pais separado) -
+  // item da fila pendente desde a auditoria da imobiliaria: "CUIT/RUT"
+  // fixo nao fazia sentido pra conta brasileira (deveria ser CNPJ).
+  const TAX_ID_LABEL_BY_CURRENCY = {
+    BRL: "CNPJ",
+    ARS: "CUIT",
+    CLP: "RUT",
+    PEN: "RUC",
+    BOB: "NIT",
+    COP: "NIT",
+  };
+  window.updateTaxIdPlaceholder = function(){
+    const currencySelect = document.getElementById("settingsCurrencySelect");
+    const taxIdInput = document.getElementById("settingsTaxIdInput");
+    if(!currencySelect || !taxIdInput) return;
+    taxIdInput.placeholder = TAX_ID_LABEL_BY_CURRENCY[currencySelect.value] || "CUIT/RUT";
   };
 
   // Marca/White-label - mesmos campos e mesmo handler (saveBrandingSettings)
@@ -7020,7 +7417,7 @@ async function deleteRoleConfirm(roleId){
      assets/js/stayflow-live.js (era código embutido aqui antes, movido
      pra manter uma única fonte de verdade). loadOpportunities() segue
      sendo chamado pelo evento stayflow:session-ready, mais abaixo. -->
-<script src="assets/js/stayflow-live.js?v=1133"></script>
+<script src="assets/js/stayflow-live.js?v=1147"></script>
 
 <script>
 // ===== DASHBOARD: /dashboard e /executive-summary =====
@@ -12622,81 +13019,12 @@ window.createShiftUI = async function(){
   }
 };
 
-// ===== RECEITAS: /revenue e /offerings =====
-
-window.openNewOfferingModal = function(){
-  openGenericModal(T('revenue.catalogTitle', '🍷 Catálogo de experiências e upsells'), `
-    <form onsubmit="submitNewOffering(event)" autocomplete="off" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
-      <div style="grid-column:span 12">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.name', 'Nome')}</label>
-        <input name="name" autocomplete="off" required style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-      </div>
-      <div style="grid-column:span 6">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('common.type', 'Tipo')}</label>
-        <select name="type" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-          <option value="tour">${T('revenue.type.tour', 'Tour / Experiência')}</option>
-          <option value="upsell">${T('revenue.type.upsell', 'Upsell')}</option>
-        </select>
-      </div>
-      <div style="grid-column:span 6">
-        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('revenue.priceLabel', 'Preço')} (${currencySymbol()})</label>
-        <input name="price" type="number" step="0.01" autocomplete="off" placeholder="0" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
-      </div>
-      <div style="grid-column:span 12;display:flex;justify-content:flex-end">
-        <button type="submit" class="btn">${T('revenue.addBtn', '➕ Adicionar')}</button>
-      </div>
-    </form>
-  `);
-};
-
-window.submitNewOffering = async function(event){
-  event.preventDefault();
-  const form = event.target;
-
-  const payload = {
-    name: form.name.value.trim(),
-    type: form.type.value,
-    price: form.price.value || 0
-  };
-
-  if(!payload.name){
-    alert(T('revenue.msg.nameRequired', 'Digita o nome da experiência/upsell.'));
-    return;
-  }
-
-  try{
-    const res = await fetch("/offerings", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload)
-    });
-
-    if(!res.ok){
-      alert(T('revenue.msg.createFailed', 'Não foi possível criar a oferta.'));
-      return;
-    }
-
-    form.reset();
-    closeGenericModal();
-    loadRevenue();
-  }catch(e){
-    console.error("Erro ao criar oferta:", e);
-  }
-};
-
-window.deleteOffering = async function(offeringId){
-  if(!await stayflowConfirm(T('revenue.msg.deleteConfirm', 'Excluir esta oferta?'))) return;
-  try{
-    await fetch(`/offerings/${offeringId}`, {
-      method: "DELETE",
-      credentials: "same-origin"
-    });
-    loadRevenue();
-  }catch(e){
-    console.error("Erro ao excluir oferta:", e);
-  }
-};
+// ===== RECEITAS: /revenue =====
+// Catalogo de itens vendaveis (o que pode ser oferecido) mora inteiro em
+// Portfolio/"Servicos extras" desde a v1.141.0 - Receitas so mostra o lado
+// financeiro (oportunidades abertas + soma estimada), sem catalogo proprio
+// duplicado. offeringTypeLabel() continua aqui porque as OPORTUNIDADES
+// (tour/upsell detectadas pela IA) ainda usam esses mesmos rotulos.
 
 const OFFERING_TYPE_LABELS_PT = { tour: "Tour / Experiência", upsell: "Upsell" };
 function offeringTypeLabel(type){
@@ -12712,33 +13040,6 @@ async function loadRevenue(){
 
     const kpiExtra = document.getElementById("kpiExtraRevenue");
     if(kpiExtra) kpiExtra.textContent = formatMoney(data.extra_revenue);
-
-    // Catálogo de ofertas
-    const offerings = data.offerings || [];
-    const offeringsEmpty = document.getElementById("offeringsEmpty");
-    const offeringsTable = document.getElementById("offeringsTable");
-    const offeringsBody = document.getElementById("offeringsTableBody");
-
-    if(!offerings.length){
-      if(offeringsEmpty) offeringsEmpty.style.display = "flex";
-      if(offeringsTable) offeringsTable.style.display = "none";
-    }else{
-      if(offeringsEmpty) offeringsEmpty.style.display = "none";
-      if(offeringsTable) offeringsTable.style.display = "table";
-      if(offeringsBody){
-        offeringsBody.innerHTML = "";
-        offerings.forEach(o => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${o.name}</td>
-            <td>${offeringTypeLabel(o.type)}</td>
-            <td>${formatMoney(o.price)}</td>
-            <td><button class="btn red" style="padding:6px 10px;font-size:12px" onclick="deleteOffering(${o.id})">${T('common.delete', 'Excluir')}</button></td>
-          `;
-          offeringsBody.appendChild(row);
-        });
-      }
-    }
 
     // Oportunidades de receita (tour/upsell detectados pela IA)
     const opportunities = data.opportunities || [];
@@ -12961,6 +13262,28 @@ window.copySuggestedMessage = function(button, text){
   });
 };
 
+window.requestInventoryReorder = async function(button, itemId){
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = T('inventory.alerts.requestingBtn', 'Enviando...');
+  try{
+    const res = await fetch(`/inventory/${itemId}/request-reorder`, { method: "POST", credentials: "same-origin" });
+    const data = await res.json();
+    if(!data.success){
+      alert(data.message || T('inventory.alerts.requestFailedBtn', 'Não foi possível enviar o pedido.'));
+      button.disabled = false;
+      button.textContent = original;
+      return;
+    }
+    button.textContent = T('inventory.alerts.requestSentBtn', 'Pedido enviado!');
+    setTimeout(loadInventory, 1200);
+  }catch(e){
+    alert(T('inventory.alerts.requestFailedBtn', 'Não foi possível enviar o pedido.'));
+    button.disabled = false;
+    button.textContent = original;
+  }
+};
+
 async function loadInventory(){
   const emptyEl = document.getElementById("inventoryEmpty");
   const tableEl = document.getElementById("inventoryTable");
@@ -13014,12 +13337,20 @@ async function loadInventory(){
         alerts.forEach(a => {
           const card = document.createElement("div");
           card.style.cssText = "border:1px solid #ff5d7628;background:#ff5d7610;border-radius:14px;padding:14px;";
+          const canAutoOrder = !!(a.supplier && a.supplier.phone);
+          const requestedNote = a.reorder_requested_at
+            ? `<div style="color:var(--muted);font-size:12px;margin-top:8px">${T('inventory.alerts.requestedAt', 'Pedido enviado em {date}', { date: new Date(a.reorder_requested_at.replace(" ", "T")).toLocaleString() })}</div>`
+            : "";
           card.innerHTML = `
             <div style="font-weight:800;margin-bottom:6px">
               ${a.name} — ${a.quantity} ${a.unit} (${T('inventory.alerts.minimumLabel', 'mínimo')}: ${a.min_threshold} ${a.unit})
             </div>
             <div style="color:var(--muted);font-size:13px;margin-bottom:8px">${a.suggested_message}</div>
-            <button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copySuggestedMessage(this, ${JSON.stringify(a.suggested_message)})">${T('inventory.copyMessageBtn', 'Copiar mensagem')}</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copySuggestedMessage(this, ${JSON.stringify(a.suggested_message)})">${T('inventory.copyMessageBtn', 'Copiar mensagem')}</button>
+              ${canAutoOrder ? `<button class="btn" style="padding:6px 12px;font-size:12px" onclick="requestInventoryReorder(this, ${a.id})">${T('inventory.alerts.requestNowBtn', 'Pedir agora pelo WhatsApp')}</button>` : ""}
+            </div>
+            ${requestedNote}
           `;
           alertsListEl.appendChild(card);
         });
@@ -14140,9 +14471,10 @@ window.uploadGuestDocumentUI = async function(guestId){
       const kindMatches = el.dataset.requiredAccountKind === (accountKind || "lodging");
       // data-required-agency-category e mais especifico que account-kind
       // ("agency" sozinho nao basta, precisa ser a categoria certa,
-      // ex: so imobiliaria ve o card do Tokko Broker) - primeiro gate
-      // desse tipo no sistema, os outros cards de agencia (Nuvemshop
-      // etc) nao tem esse atributo e continuam so com o gate antigo.
+      // ex: so imobiliaria ve o card do Tokko Broker, so comercio ve o
+      // card do Nuvemshop/Tiendanube - achado real em auditoria de
+      // usuario, 07/09/2026: imobiliaria via o card de loja online sem
+      // gate nenhum).
       const categoryRequired = el.dataset.requiredAgencyCategory;
       const categoryMatches = !categoryRequired || categoryRequired === agencyCategory;
       el.style.display = (kindMatches && categoryMatches) ? "" : "none";
@@ -14673,7 +15005,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 <script src="assets/js/chats-live.js?v=1125"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1133"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1151"></script>
 <script>
 (function(){
   "use strict";
