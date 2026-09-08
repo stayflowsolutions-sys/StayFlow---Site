@@ -1397,7 +1397,8 @@ async function deleteRoleConfirm(roleId){
           <span data-i18n="topbar.hostelSwitch.addHostel">+ Adicionar hospedagem</span>
         </button>
         <button type="button" class="hostel-selector-settings-link" onclick="toggleHostelSelector(); openPage('settings', document.querySelector('[data-page=settings]'))">
-          <span data-i18n="topbar.hostelSwitch.settingsLink">⚙ Configurações da hospedagem</span>
+          <span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 2.9a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1l.4 2.9h4.8l.4-2.9a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6a7 7 0 0 0 .1-1z"/></svg></span>
+          <span data-i18n="topbar.hostelSwitch.settingsLink" style="vertical-align:middle">Configurações da hospedagem</span>
         </button>
       </div>
     </div>
@@ -1410,7 +1411,10 @@ async function deleteRoleConfirm(roleId){
 
       <div id="notifPanel" class="notif-panel" style="display:none;">
         <div class="notif-panel-header">
-          <span data-i18n="notif.title">🔔 Notificações</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span class="nav-ico" style="color:#0b84ff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+            <span data-i18n="notif.title">Notificações</span>
+          </span>
         </div>
         <div id="notifFilterChips" class="notif-filter-chips"></div>
         <div id="notifList"></div>
@@ -1444,10 +1448,12 @@ async function deleteRoleConfirm(roleId){
         </div>
         <div class="hostel-selector-divider"></div>
         <button type="button" id="userMenuEquipeItem" data-required-permission="team,scheduling" data-hide-for-account-kind="promoter" class="hostel-selector-settings-link" onclick="toggleUserMenu(); openPage('team', document.querySelector('[data-page=team]'))">
-          <span data-i18n="topbar.userMenu.team">👥 Equipe</span>
+          <span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span>
+          <span data-i18n="topbar.userMenu.team" style="vertical-align:middle">Equipe</span>
         </button>
         <button type="button" id="userMenuStayflowAdminItem" class="hostel-selector-settings-link" style="display:none;" onclick="window.location.href='/admin.html'">
-          <span>🛠 Painel StayFlow</span>
+          <span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2-2z"/></svg></span>
+          <span style="vertical-align:middle">Painel StayFlow</span>
         </button>
         <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
           <span data-i18n="topbar.userMenu.logout">↪ Sair</span>
@@ -2951,6 +2957,16 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
+      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openPraediumSettingsModal()" style="display:none">
+        <div class="settings-summary-row">
+          <div>
+            <h2 data-i18n="settings.praedium.title">🏠 Praedium</h2>
+            <p class="settings-summary-desc" id="praediumSummaryDesc" data-i18n="settings.praedium.desc">Conecte o feed XML da Praedium pra sincronizar o catálogo de imóveis.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
       <!-- Multi-corretor (v1.105.0): cada corretor conecta o PROPRIO
            WhatsApp, alem do numero principal da agencia (card acima) -
            por enquanto so pra imobiliaria, mesmo escopo pedido pelo
@@ -3955,6 +3971,122 @@ async function deleteRoleConfirm(roleId){
       msg.classList.add("error");
     }finally{
       if(btn){ btn.disabled = false; btn.textContent = T('settings.tokko.syncBtn', 'Sincronizar agora'); }
+    }
+  };
+
+  window.openPraediumSettingsModal = function(){
+    openGenericModal(T('settings.praedium.title', '🏠 Praedium'), `
+      <p style="margin-bottom:14px">${T('settings.praedium.modalDesc', 'Cole a URL do feed XML de imóveis da Praedium (Configurações → Integrações → Dados da Integração, no painel deles) pra sincronizar seu catálogo.')}</p>
+
+      <div id="praediumConnected" style="display:none">
+        <p style="margin:0 0 12px">
+          <span>${T('settings.praedium.statusLabel', 'Status:')}</span>
+          <strong style="color:#3ddc97">${T('settings.praedium.statusActive', 'Conectado')}</strong>
+        </p>
+        <button type="button" class="btn" onclick="syncPraedium()" id="praediumSyncBtn">${T('settings.praedium.syncBtn', 'Sincronizar agora')}</button>
+        <button type="button" class="btn red" onclick="disconnectPraedium()">${T('settings.praedium.disconnectBtn', 'Desconectar')}</button>
+      </div>
+
+      <div id="praediumNotConnected">
+        <input type="text" id="praediumXmlUrlInput" placeholder="${T('settings.praedium.urlPlaceholder', 'URL do feed XML da Praedium')}">
+        <button type="button" class="btn" onclick="savePraediumSettings()">${T('settings.praedium.connectBtn', 'Conectar')}</button>
+      </div>
+
+      <div id="praediumMessage" class="generic-modal-message"></div>
+    `);
+    loadPraediumSettings();
+  };
+
+  window.loadPraediumSettings = async function(){
+    try{
+      const res = await fetch("/settings/praedium", { credentials: "same-origin" });
+      if(!res.ok) return;
+      const data = await res.json();
+
+      const summaryDesc = document.getElementById("praediumSummaryDesc");
+      if(summaryDesc){
+        summaryDesc.textContent = data.connected
+          ? T('settings.praedium.summaryConnected', 'Conectado')
+          : T('settings.praedium.summaryNotConnected', 'Não conectado ainda — clique pra conectar');
+        summaryDesc.classList.toggle("is-connected", Boolean(data.connected));
+      }
+
+      const connectedEl = document.getElementById("praediumConnected");
+      const notConnectedEl = document.getElementById("praediumNotConnected");
+      if(!connectedEl || !notConnectedEl) return;
+
+      connectedEl.style.display = data.connected ? "block" : "none";
+      notConnectedEl.style.display = data.connected ? "none" : "block";
+    }catch(e){
+      console.warn("Erro ao carregar configuração da Praedium:", e);
+    }
+  };
+
+  window.savePraediumSettings = async function(){
+    const msg = document.getElementById("praediumMessage");
+    msg.textContent = "";
+    msg.className = "generic-modal-message";
+
+    const xmlUrl = document.getElementById("praediumXmlUrlInput").value.trim();
+    if(!xmlUrl){
+      msg.textContent = T('settings.praedium.msg.urlRequired', 'Informe a URL do feed XML.');
+      msg.classList.add("error");
+      return;
+    }
+
+    try{
+      const res = await fetch("/settings/praedium", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ xml_url: xmlUrl })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || T('settings.praedium.msg.saveFailed', 'Não foi possível salvar a URL.');
+        msg.classList.add("error");
+        return;
+      }
+      loadPraediumSettings();
+    }catch(e){
+      msg.textContent = T('common.connectionError', 'Erro de conexão.');
+      msg.classList.add("error");
+    }
+  };
+
+  window.disconnectPraedium = async function(){
+    const confirmed = await stayflowConfirm(T('settings.praedium.disconnectConfirm', 'Desconectar a Praedium? O catálogo para de sincronizar até reconectar.'));
+    if(!confirmed) return;
+
+    try{
+      await fetch("/settings/praedium", { method: "DELETE", credentials: "same-origin" });
+      loadPraediumSettings();
+    }catch(e){
+      console.warn("Erro ao desconectar Praedium:", e);
+    }
+  };
+
+  window.syncPraedium = async function(){
+    const msg = document.getElementById("praediumMessage");
+    const btn = document.getElementById("praediumSyncBtn");
+    msg.textContent = "";
+    msg.className = "generic-modal-message";
+    if(btn){ btn.disabled = true; btn.textContent = T('settings.praedium.syncing', 'Sincronizando...'); }
+
+    try{
+      const res = await fetch("/settings/praedium/sync", { method: "POST", credentials: "same-origin" });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.success){
+        msg.textContent = data.message || T('settings.praedium.msg.syncFailed', 'Não foi possível sincronizar.');
+        msg.classList.add("error");
+      }else{
+        msg.textContent = T('settings.praedium.msg.syncSuccess', '{count} imóveis sincronizados.', { count: data.synced_count });
+      }
+    }catch(e){
+      msg.textContent = T('common.connectionError', 'Erro de conexão.');
+      msg.classList.add("error");
+    }finally{
+      if(btn){ btn.disabled = false; btn.textContent = T('settings.praedium.syncBtn', 'Sincronizar agora'); }
     }
   };
 
@@ -14849,7 +14981,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 <script src="assets/js/chats-live.js?v=1125"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1148"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1150"></script>
 <script>
 (function(){
   "use strict";
