@@ -12422,3 +12422,72 @@ trás é dívida técnica real: um `git subtree pull` futuro correndo
 sobre essa base desatualizada tem potencial real de conflito. Não
 corrigido nesta sessão (escopo grande demais pra resolver de
 passagem, sem ter sido pedido) — só registrado pra não se perder.
+
+### Auditoria de 3 frentes em paralelo, com o usuário fora (v1.150.0)
+
+Usuário saiu pra feira e pediu, num único comando, três coisas
+diferentes: arrumar a divergência do Git (ver acima), pesquisar a
+fundo qualquer inconsistência ou bug "em qualquer área da StayFlow",
+e resolver tudo o que fosse encontrado. Decisão de execução: 3 agentes
+em paralelo, cada um com um recorte de arquivo exclusivo (banco/
+services, frontend, rotas) pra não colidirem editando a mesma coisa
+ao mesmo tempo — tentei isolar via git worktree primeiro, mas a
+criação de worktree falhou (o diretório de trabalho principal desta
+sessão é o repo `StayFlow---Site`, não o `HostelBot` que eu queria
+auditar, e o mecanismo de isolamento se confundiu com isso); segui
+sem isolamento, só com fronteira de arquivo clara por agente.
+
+Os dois achados mais sérios foram cross-tenant (IDOR): status de item
+de pedido de cozinha e pedido/aceite de cobertura de turno não
+validavam que o `ticket_id`/`shift_id`/`membership_id` recebido
+pertencia ao MESMO hostel de quem estava logado — bastava ter a
+permissão "kitchen" ou "scheduling" em QUALQUER conta e adivinhar/
+incrementar um id na URL pra mexer no pedido de cozinha ou reatribuir
+o turno de OUTRO hostel. O agente que achou isso (auditoria de banco)
+deliberadamente NÃO corrigiu, porque a correção de verdade precisava
+tocar `routes/kitchen.py` e `routes/scheduling.py`, fora do escopo de
+arquivo dele - reportou certinho e deixou pra mim aplicar depois que
+o agente de rotas também tivesse terminado (só assim os dois arquivos
+ficavam livres de edição concorrente). Corrigi os dois casos com o
+mesmo padrão já usado em `get_ticket` (JOIN/WHERE por `hostel_id`) e
+escrevi um teste isolado (dois hostels de mentira, tentando mexer um
+no dado do outro) antes de considerar resolvido - os dois ataques
+falharam certo, e o fluxo legítimo continuou funcionando.
+
+Achado mais grave de todos: `POST /message`, uma rota que o próprio
+comentário do código descrevia como "endpoint de teste manual...
+não envia mensagem real". Só que "não envia mensagem" não quer dizer
+"não faz nada" - ela rodava o pipeline de IA de VERDADE (`ask_ai`
+completo, com o `system_prompt`/instruções reais do hostel, escrita
+de guest/mensagem no banco) pra QUALQUER pessoa que soubesse um
+telefone cadastrado, sem exigir login nem chave nenhuma. Confirmei
+que o dashboard não chama essa rota em lugar nenhum antes de travar
+com `@require_internal_api_key` - mesma proteção que a rota-irmã
+interna (`internal_simulate_message`) já tinha.
+
+De quebra, o agente de rotas achou que `require_internal_api_key`
+comparava a chave recebida com `!=` direto, um vetor de timing attack
+pequeno mas real - trocado por `hmac.compare_digest` sem mudar
+nenhum comportamento. E o agente de frontend achou o MESMO padrão de
+bug que eu tinha acabado de corrigir no topbar (v1.148.0) escondido
+em outro lugar: os 12 checkboxes do modal de Notificações perdiam o
+alinhamento assim que `applyPermissionVisibility` recalculava a
+visibilidade - lição generalizada: qualquer elemento com
+`data-required-permission`/`data-required-account-kind` NUNCA pode
+depender do próprio `style="display:..."` pra layout, porque esse
+valor é resetado toda vez que a permissão é reavaliada.
+
+Duas coisas foram reportadas mas deliberadamente NÃO corrigidas,
+mesmo com o pedido explícito de "resolve tudo": assinatura de webhook
+do Mercado Pago (mexer errado em código de pagamento sem poder testar
+contra o Mercado Pago de verdade é risco alto demais pra fazer às
+cegas - o impacto já é mitigado porque o status do pagamento é sempre
+reconfirmado via API com o token do próprio hostel, não dá pra forjar
+um "aprovado" só mandando um webhook falso) e o nav de Reservas sem
+gate de permissão (só tem gate de `account_kind` - pode ser
+intencional, tratada como página núcleo tipo Dashboard/Chats, não
+módulo opcional; precisa confirmação do usuário antes de mudar).
+Mesma disciplina de sempre: corrigir o que dá pra verificar com
+confiança, reportar honestamente o que precisa de julgamento humano,
+nunca inventar uma correção especulativa só pra marcar a tarefa como
+"resolvida".
