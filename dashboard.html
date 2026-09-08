@@ -6061,7 +6061,7 @@ async function deleteRoleConfirm(roleId){
           <input type="text" data-setting="legal_name" placeholder="${T('settings.company.legalNamePlaceholder', 'Razão social')}">
         </div>
         <div class="span-6">
-          <input type="text" data-setting="tax_id" placeholder="CUIT/RUT">
+          <input type="text" data-setting="tax_id" id="settingsTaxIdInput" placeholder="CUIT/RUT">
         </div>
         <div class="span-12">
           <input type="text" data-setting="address" placeholder="${T('settings.company.addressPlaceholder', 'Endereço completo')}">
@@ -6078,7 +6078,7 @@ async function deleteRoleConfirm(roleId){
           </select>
         </div>
         <div class="span-6">
-          <select data-setting="currency" id="settingsCurrencySelect">
+          <select data-setting="currency" id="settingsCurrencySelect" onchange="updateTaxIdPlaceholder()">
             <option value="">${T('settings.company.currencyOption', 'Moeda')}</option>
             <option value="ARS">ARS - Peso argentino</option>
             <option value="CLP">CLP - Peso chileno</option>
@@ -6095,6 +6095,9 @@ async function deleteRoleConfirm(roleId){
         <div class="span-6" data-required-account-kind="lodging">
           <input type="text" data-setting="checkout" placeholder="${T('settings.company.checkoutPlaceholder', 'Check-out padrão (ex: 11:00)')}">
         </div>
+        <div class="span-6" data-required-agency-category="imobiliaria">
+          <input type="text" data-setting="creci" placeholder="${T('settings.company.creciPlaceholder', 'CRECI (registro de corretor/imobiliária)')}">
+        </div>
         <div class="span-12">
           <input type="text" data-setting="logo_url" placeholder="${T('settings.company.logoUrlPlaceholder', 'URL do logo (opcional - cole o link de uma imagem já hospedada)')}">
         </div>
@@ -6106,6 +6109,26 @@ async function deleteRoleConfirm(roleId){
     const session = window.STAYFLOW_SESSION || {};
     try{ applyAccountKindVisibility(session.account_kind, session.agency_category); }catch(e){ console.error("Erro ao aplicar visibilidade por tipo de conta no modal de Empresa:", e); }
     hydrateModalSettingsFields();
+    updateTaxIdPlaceholder();
+  };
+
+  // Rotulo do campo de identificacao fiscal muda de acordo com a moeda
+  // escolhida (proxy de pais, ja que nao existe campo de pais separado) -
+  // item da fila pendente desde a auditoria da imobiliaria: "CUIT/RUT"
+  // fixo nao fazia sentido pra conta brasileira (deveria ser CNPJ).
+  const TAX_ID_LABEL_BY_CURRENCY = {
+    BRL: "CNPJ",
+    ARS: "CUIT",
+    CLP: "RUT",
+    PEN: "RUC",
+    BOB: "NIT",
+    COP: "NIT",
+  };
+  window.updateTaxIdPlaceholder = function(){
+    const currencySelect = document.getElementById("settingsCurrencySelect");
+    const taxIdInput = document.getElementById("settingsTaxIdInput");
+    if(!currencySelect || !taxIdInput) return;
+    taxIdInput.placeholder = TAX_ID_LABEL_BY_CURRENCY[currencySelect.value] || "CUIT/RUT";
   };
 
   // Marca/White-label - mesmos campos e mesmo handler (saveBrandingSettings)
@@ -14826,7 +14849,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 <script src="assets/js/chats-live.js?v=1125"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1147"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1148"></script>
 <script>
 (function(){
   "use strict";
