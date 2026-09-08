@@ -3997,6 +3997,11 @@ async function deleteRoleConfirm(roleId){
           <input type="password" id="whatsappAccessToken" autocomplete="off" placeholder="${T('settings.whatsapp.tokenPlaceholder', 'Cole o token de acesso')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
         </div>
         <div style="grid-column:span 12">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.wabaIdLabel', 'WhatsApp Business account ID (opcional)')}</label>
+          <input type="text" id="whatsappWabaId" autocomplete="off" placeholder="ex: 969900449476604" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.wabaIdHint', 'Aparece na mesma tela da Meta onde você pegou o Phone Number ID. Sem isso, o recebimento automático de mensagem precisa ser ativado manualmente no painel da Meta ("Suscribir webhooks").')}</div>
+        </div>
+        <div style="grid-column:span 12">
           <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('settings.whatsapp.contactPhoneLabel', 'Número de WhatsApp visível pro hóspede')}</label>
           <input type="text" id="whatsappContactPhone" autocomplete="off" placeholder="+5493883154375" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
           <div style="font-size:11px;color:var(--muted);margin-top:4px">${T('settings.whatsapp.contactPhoneHint', 'Usado pela IA pra sugerir esse número como contato alternativo em conversas de Messenger/Instagram.')}</div>
@@ -4022,6 +4027,8 @@ async function deleteRoleConfirm(roleId){
     const phoneNumberId = document.getElementById("whatsappPhoneNumberId").value.trim();
     const accessToken = document.getElementById("whatsappAccessToken").value.trim();
     const contactPhone = document.getElementById("whatsappContactPhone").value.trim();
+    const wabaIdEl = document.getElementById("whatsappWabaId");
+    const wabaId = wabaIdEl ? wabaIdEl.value.trim() : "";
     const aiPersonaEl = document.getElementById("whatsappAiPersona");
     const aiPersona = aiPersonaEl ? aiPersonaEl.value : "";
 
@@ -4036,7 +4043,7 @@ async function deleteRoleConfirm(roleId){
         method: "POST",
         credentials: "same-origin",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ phone_number_id: phoneNumberId, access_token: accessToken, contact_phone: contactPhone, ai_persona: aiPersona, as_extra: asExtra })
+        body: JSON.stringify({ phone_number_id: phoneNumberId, access_token: accessToken, contact_phone: contactPhone, waba_id: wabaId, ai_persona: aiPersona, as_extra: asExtra })
       });
 
       const data = await res.json().catch(() => ({}));
