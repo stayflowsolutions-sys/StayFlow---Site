@@ -8,7 +8,7 @@
 <title>StayFlow | More bookings. Less work.</title>
 <link rel="stylesheet" href="static/css/tokens.css?v=1125">
 <link rel="stylesheet" href="static/css/reset.css?v=1125">
-<link rel="stylesheet" href="static/css/landing.css?v=1125">
+<link rel="stylesheet" href="static/css/landing.css?v=1151">
 </head>
 <body>
 <div class="container">
@@ -301,7 +301,7 @@
 </a>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-landing-data.js?v=1125"></script>
+<script src="assets/js/i18n-landing-data.js?v=1151"></script>
 <script>
 // Dicionario (STAYFLOW_LANDING_I18N) e motor compartilhado (StayFlowI18n)
 // vem dos scripts incluidos acima - so a logica especifica desta pagina
@@ -322,40 +322,56 @@ function applyLanguage(lang){
 
 // Seletor "Hospedagens / Imobiliárias" (pedido do usuário, 09/2026,
 // pra apresentar o site de forma condizente enquanto ele prospecta os
-// dois segmentos ao mesmo tempo). Conteúdo da variante Imobiliárias é
-// só em portugues por enquanto (mercado que ele está prospectando
-// pessoalmente agora) - deliberado, não esquecimento; traduzir pros
-// outros 10 idiomas fica pra quando/se fizer sentido vender fora do
-// Brasil pra esse segmento. Rodada DEPOIS de applyLanguage (chamada
-// acima) porque troca de idioma reaplica o dicionario inteiro via
-// data-i18n-html, o que reverteria a variante Imobiliária de volta
-// pra hospedagem se essa funcao rodasse antes.
+// dois segmentos ao mesmo tempo). Totalmente traduzido nos 11 idiomas
+// (usuário pediu explicitamente "nada pela metade" depois de ver a
+// primeira versão, que só cobria o hero em português) - toda chave
+// nova vive em STAYFLOW_LANDING_I18N (assets/js/i18n-landing-data.js)
+// com sufixo ".re" (real estate) ao lado da chave original de
+// hospedagem, ex: "hero.title" / "hero.title.re". Isso deixa o motor
+// de troca GENÉRICO: qualquer elemento [data-i18n]/[data-i18n-html]
+// que tenha uma chave ".re" correspondente é sobrescrito sozinho,
+// sem precisar listar elemento por elemento - novas seções que
+// ganharem uma chave ".re" no futuro entram automaticamente.
+// Só ícones (SVG dos nós do diagrama e da faixa de segmentos) continuam
+// bespoke aqui, porque não são texto simples - mas o RÓTULO de cada um
+// vem do mesmo dicionário, não mais hardcoded em português.
 let currentVertical = 'lodging';
 
-const VERTICAL_CONTENT = {
-  imobiliaria: {
-    heroTitle: 'Leads em imóveis,<br><em>convertidos com precisão.</em>',
-    heroText: 'A StayFlow é o gerente digital que sua imobiliária merece — <strong>imobiliárias, corretoras e corretores autônomos</strong>. Ela responde, qualifica lead e agenda visita pelos seus canais, enquanto sua equipe fecha negócio.',
-    stripLabel: 'Construída pra qualquer operação imobiliária',
-    stripItems: [
-      { label: 'Compra e venda', svg: '<path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M9 13h6M9 17h6M9 9h3"/>' },
-      { label: 'Locação', svg: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/>' },
-      { label: 'Administração', svg: '<rect x="6" y="3" width="12" height="18" rx="1"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/><path d="M10 21v-4h4v4"/>' },
-      { label: 'Corretor autônomo', svg: '<circle cx="12" cy="8" r="3.2"/><path d="M5 21c0-4 3.1-7 7-7s7 3 7 7"/>' },
-    ],
-    gnodeMapa: { label: 'Agenda de<br>Visitas', svg: '<rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/><path d="M9 15l2 2 4-4"/>' },
-    gnodeInteg1: { label: 'Tokko Broker', svg: '<rect x="4" y="3" width="16" height="18" rx="3"/><text x="12" y="16.5" font-size="9.5" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Georgia,serif">Tokko</text>' },
-    gnodeInteg2: { label: 'Praedium', svg: '<rect x="4" y="3" width="16" height="18" rx="3"/><text x="12" y="16.5" font-size="8.5" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Georgia,serif">Praed.</text>' },
-    gnodeInteg3: { label: 'Portais', svg: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3 3 15 0 18"/><path d="M12 3c-3 3-3 15 0 18"/>' },
+const STRIP_ICONS_RE = [
+  '<path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M9 13h6M9 17h6M9 9h3"/>',
+  '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/>',
+  '<rect x="6" y="3" width="12" height="18" rx="1"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/><path d="M10 21v-4h4v4"/>',
+  '<circle cx="12" cy="8" r="3.2"/><path d="M5 21c0-4 3.1-7 7-7s7 3 7 7"/>',
+];
+const STRIP_ICONS_LODGING = [
+  '<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/>',
+  '<path d="M4 21V10l8-6 8 6v11M9 21v-5a3 3 0 0 1 6 0v5"/>',
+  '<rect x="4" y="10" width="16" height="11"/><path d="M8 21v-6h8v6M4 10l8-6 8 6"/>',
+  '<path d="M4 21V9l8-5 8 5v12M10 21v-5h4v5"/>',
+];
+const DIAGRAM_SVG = {
+  mapa: {
+    lodging: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',
+    imobiliaria: '<rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/><path d="M9 15l2 2 4-4"/>',
   },
-  lodging: {
-    heroTitle: null, heroText: null, stripLabel: null, stripItems: null,
-    gnodeMapa: { label: 'Mapa de<br>Quartos', svg: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>' },
-    gnodeInteg1: { label: 'Booking.com', svg: '<rect x="4" y="3" width="16" height="18" rx="3"/><text x="12" y="17" font-size="12" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Georgia,serif">B</text>' },
-    gnodeInteg2: { label: 'Airbnb', svg: '<path d="M12 4c3.2 4.3 6 8.4 6 11.2a6 6 0 0 1-12 0C6 12.4 8.8 8.3 12 4z"/><path d="M8.4 15.6a3.7 3.7 0 0 0 7.2 0" opacity=".6"/>' },
-    gnodeInteg3: { label: 'PMS', svg: '<path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.3 15a7 7 0 0 0 12.6 2M18.7 9a7 7 0 0 0-12.6-2"/>' },
+  integ1: {
+    lodging: { label: 'Booking.com', svg: '<rect x="4" y="3" width="16" height="18" rx="3"/><text x="12" y="17" font-size="12" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Georgia,serif">B</text>' },
+    imobiliaria: { label: 'Tokko Broker', svg: '<rect x="4" y="3" width="16" height="18" rx="3"/><text x="12" y="16.5" font-size="9.5" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Georgia,serif">Tokko</text>' },
+  },
+  integ2: {
+    lodging: { label: 'Airbnb', svg: '<path d="M12 4c3.2 4.3 6 8.4 6 11.2a6 6 0 0 1-12 0C6 12.4 8.8 8.3 12 4z"/><path d="M8.4 15.6a3.7 3.7 0 0 0 7.2 0" opacity=".6"/>' },
+    imobiliaria: { label: 'Praedium', svg: '<rect x="4" y="3" width="16" height="18" rx="3"/><text x="12" y="16.5" font-size="8.5" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Georgia,serif">Praed.</text>' },
+  },
+  integ3: {
+    lodging: { label: 'PMS', svg: '<path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.3 15a7 7 0 0 0 12.6 2M18.7 9a7 7 0 0 0-12.6-2"/>' },
+    imobiliaria: { svg: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3 3 15 0 18"/><path d="M12 3c-3 3-3 15 0 18"/>' },
   },
 };
+
+function landingDict(){
+  const lang = StayFlowI18n.currentLang();
+  return (STAYFLOW_LANDING_I18N && STAYFLOW_LANDING_I18N[lang]) || (STAYFLOW_LANDING_I18N && STAYFLOW_LANDING_I18N.en) || {};
+}
 
 function applyVertical(vertical){
   currentVertical = vertical;
@@ -366,36 +382,54 @@ function applyVertical(vertical){
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
   });
 
-  const data = VERTICAL_CONTENT[vertical];
-  if(!data) return;
+  const dict = landingDict();
+  const re = vertical === 'imobiliaria';
 
-  if(vertical === 'imobiliaria'){
-    const titleEl = document.getElementById('heroTitle');
-    const textEl = document.getElementById('heroText');
-    if(titleEl) titleEl.innerHTML = data.heroTitle;
-    if(textEl) textEl.innerHTML = data.heroText;
+  // Motor generico: qualquer [data-i18n]/[data-i18n-html] com uma
+  // chave ".re" correspondente no dicionario e sobrescrito - cobre
+  // hero, strip label, features, platform, how, future, final e
+  // footer automaticamente, sem lista manual de elementos.
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const reKey = key + '.re';
+    if(re && dict[reKey] !== undefined) el.textContent = dict[reKey];
+    else if(dict[key] !== undefined) el.textContent = dict[key];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    const reKey = key + '.re';
+    if(re && dict[reKey] !== undefined) el.innerHTML = dict[reKey];
+    else if(dict[key] !== undefined) el.innerHTML = dict[key];
+  });
 
-    const stripLabelEl = document.getElementById('stripLabel');
-    if(stripLabelEl) stripLabelEl.textContent = data.stripLabel;
-
-    const stripItemsEl = document.getElementById('stripItems');
-    if(stripItemsEl){
-      stripItemsEl.innerHTML = data.stripItems.map(item =>
-        `<div class="strip-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round">${item.svg}</svg><span>${item.label}</span></div>`
-      ).join('');
-    }
+  // Faixa de segmentos - icones bespoke, rotulo vem do dicionario.
+  const stripItemsEl = document.getElementById('stripItems');
+  if(stripItemsEl){
+    const icons = re ? STRIP_ICONS_RE : STRIP_ICONS_LODGING;
+    const labelKeys = re
+      ? ['strip.item1', 'strip.item2', 'strip.item3', 'strip.item4']
+      : ['strip.hotels', 'strip.resorts', 'strip.hostels', 'strip.guesthouses'];
+    stripItemsEl.innerHTML = icons.map((svg, i) =>
+      `<div class="strip-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round">${svg}</svg><span>${dict[labelKeys[i]] || ''}</span></div>`
+    ).join('');
   }
-  // vertical === 'lodging': nao mexe em heroTitle/heroText/stripLabel/
-  // stripItems - applyLanguage ja reaplicou o texto original (com
-  // data-i18n-html/data-i18n) um instante atras, no idioma certo.
 
-  ['gnodeMapa', 'gnodeInteg1', 'gnodeInteg2', 'gnodeInteg3'].forEach(id => {
-    const el = document.getElementById(id);
-    const info = data[id];
+  // Diagrama radial - 4 nos trocam de icone/rotulo (mapa->agenda,
+  // Booking/Airbnb/PMS->Tokko/Praedium/Portais).
+  const mapaEl = document.getElementById('gnodeMapa');
+  if(mapaEl){
+    const bubble = mapaEl.querySelector('.bubble');
+    const label = re ? dict['diagram.mapa.re'] : dict['diagram.mapa'];
+    if(bubble) bubble.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8">${DIAGRAM_SVG.mapa[vertical]}</svg><div class="gcap">${label || ''}</div>`;
+  }
+  [['gnodeInteg1', 'integ1'], ['gnodeInteg2', 'integ2'], ['gnodeInteg3', 'integ3']].forEach(([elId, key]) => {
+    const el = document.getElementById(elId);
+    const info = DIAGRAM_SVG[key][vertical];
     if(!el || !info) return;
     const bubble = el.querySelector('.bubble');
     if(!bubble) return;
-    bubble.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8">${info.svg}</svg><div class="gcap">${info.label}</div>`;
+    const label = info.label || dict['diagram.portals'] || '';
+    bubble.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8">${info.svg}</svg><div class="gcap">${label}</div>`;
   });
 
   if(typeof rebuildSlider === 'function') rebuildSlider(vertical);
