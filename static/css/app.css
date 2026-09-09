@@ -1945,6 +1945,15 @@ body.chats-page-active .ask-floating{
 body.chats-page-active .reserva-floating{
   bottom:170px;
 }
+/* Achado ao vivo pelo usuario: no Portfolio de Vendas (aba do
+   promotor), o botao "Proximo" fica colado no rodape do card e o
+   floating "Ask StayFlow" - maior desde que virou "so a logo" pra
+   conta promotor/agencia (160px de altura, ver regra
+   :not([data-account-kind="lodging"]) acima) - cobria o botao
+   inteiro. Sobe o floating so nessa aba. */
+body.salesportfolio-page-active .ask-floating{
+  bottom:200px;
+}
 .reserva-floating{
   position:fixed;
   right:24px;
