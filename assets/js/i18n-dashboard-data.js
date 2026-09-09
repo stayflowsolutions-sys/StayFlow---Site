@@ -13842,7 +13842,7 @@ const STAYFLOW_DASHBOARD_I18N = {
     "home.priorityActions.col.priority": "优先级",
     "home.priorityActions.col.impact": "影响",
     "home.priorityActions.emptyTitle": "目前没有建议操作。",
-    "home.priorityActions.emptyDesc": "一旦AI检测到有风险的预订、等待回复的客人或加售商机，将在此列出。"
+    "home.priorityActions.emptyDesc": "一旦AI检测到有风险的预订、等待回复的客人或加售商机，将在此列出。",
     // ==== Chaves faltando (auditoria 2026-09-03) ====
     "common.location.required": "请输入地点。",
     "guestCharge.copyBtn": "复制链接",
