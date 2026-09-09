@@ -49,8 +49,12 @@
 
   <section class="hero-heading">
     <div class="eyebrow" data-i18n="hero.eyebrow">Gerente digital com IA</div>
-    <h1 data-i18n-html="hero.title">A hospitalidade de alto padrão,<br><em>operada com precisão.</em></h1>
-    <p class="hero-heading-text" data-i18n-html="hero.text">A StayFlow é o gerente digital que sua hospedagem merece — <strong>hotéis, resorts, hostels e pousadas</strong>. Ela responde, negocia e fecha reservas pelos seus canais, enquanto sua equipe cuida do que só um humano pode fazer.</p>
+    <div class="vertical-toggle" role="tablist" aria-label="Segmento">
+      <button type="button" class="vertical-tab active" data-vertical="lodging" role="tab" aria-selected="true">Hospedagens</button>
+      <button type="button" class="vertical-tab" data-vertical="imobiliaria" role="tab" aria-selected="false">Imobiliárias</button>
+    </div>
+    <h1 id="heroTitle" data-i18n-html="hero.title">A hospitalidade de alto padrão,<br><em>operada com precisão.</em></h1>
+    <p class="hero-heading-text" id="heroText" data-i18n-html="hero.text">A StayFlow é o gerente digital que sua hospedagem merece — <strong>hotéis, resorts, hostels e pousadas</strong>. Ela responde, negocia e fecha reservas pelos seus canais, enquanto sua equipe cuida do que só um humano pode fazer.</p>
   </section>
 
   <div class="hero-split">
@@ -65,36 +69,23 @@
             <div class="tabs" id="tabLabel">Dashboard</div>
           </div>
           <div class="slider">
-            <img class="slide active" data-i="0" data-label="Dashboard" src="assets/images/product/dashboard.jpg" alt="Dashboard StayFlow">
-            <img class="slide" data-i="1" data-label="Chats" src="assets/images/product/chats.jpg" alt="Chats StayFlow">
-            <img class="slide" data-i="2" data-label="Reservas" src="assets/images/product/reservations.jpg" alt="Reservas StayFlow">
-            <img class="slide" data-i="3" data-label="Mapa de Quartos" src="assets/images/product/roommap.jpg" alt="Mapa de Quartos StayFlow">
-            <img class="slide" data-i="4" data-label="Opportunity Center" src="assets/images/product/opportunities.jpg" alt="Opportunity Center StayFlow">
-            <img class="slide" data-i="5" data-label="Hóspedes" src="assets/images/product/guests.jpg" alt="Hóspedes StayFlow">
-            <img class="slide" data-i="6" data-label="Operações" src="assets/images/product/operations.jpg" alt="Operações StayFlow">
-            <img class="slide" data-i="7" data-label="Equipe" src="assets/images/product/team.jpg" alt="Equipe StayFlow">
-            <img class="slide" data-i="8" data-label="Financeiro" src="assets/images/product/finance.jpg" alt="Financeiro StayFlow">
-            <img class="slide" data-i="9" data-label="Estoque" src="assets/images/product/inventory.jpg" alt="Estoque StayFlow">
-            <img class="slide" data-i="10" data-label="Receitas" src="assets/images/product/revenue.jpg" alt="Receitas StayFlow">
-            <img class="slide" data-i="11" data-label="Eventos" src="assets/images/product/events.jpg" alt="Eventos StayFlow">
-            <img class="slide" data-i="12" data-label="Relatórios" src="assets/images/product/reports.jpg" alt="Relatórios StayFlow">
+            <img class="slide active" data-vertical="both" data-label="Dashboard" src="assets/images/product/dashboard.jpg" alt="Dashboard StayFlow">
+            <img class="slide" data-vertical="both" data-label="Chats" src="assets/images/product/chats.jpg" alt="Chats StayFlow">
+            <img class="slide" data-vertical="lodging" data-label="Reservas" src="assets/images/product/reservations.jpg" alt="Reservas StayFlow">
+            <img class="slide" data-vertical="lodging" data-label="Mapa de Quartos" src="assets/images/product/roommap.jpg" alt="Mapa de Quartos StayFlow">
+            <img class="slide" data-vertical="both" data-label="Opportunity Center" src="assets/images/product/opportunities.jpg" alt="Opportunity Center StayFlow">
+            <img class="slide" data-vertical="lodging" data-label="Hóspedes" src="assets/images/product/guests.jpg" alt="Hóspedes StayFlow">
+            <img class="slide" data-vertical="lodging" data-label="Operações" src="assets/images/product/operations.jpg" alt="Operações StayFlow">
+            <img class="slide" data-vertical="both" data-label="Equipe" src="assets/images/product/team.jpg" alt="Equipe StayFlow">
+            <img class="slide" data-vertical="both" data-label="Financeiro" src="assets/images/product/finance.jpg" alt="Financeiro StayFlow">
+            <img class="slide" data-vertical="lodging" data-label="Estoque" src="assets/images/product/inventory.jpg" alt="Estoque StayFlow">
+            <img class="slide" data-vertical="lodging" data-label="Receitas" src="assets/images/product/revenue.jpg" alt="Receitas StayFlow">
+            <img class="slide" data-vertical="lodging" data-label="Eventos" src="assets/images/product/events.jpg" alt="Eventos StayFlow">
+            <img class="slide" data-vertical="lodging" data-label="Relatórios" src="assets/images/product/reports.jpg" alt="Relatórios StayFlow">
             <button type="button" class="slide-nav prev" aria-label="Tela anterior">‹</button>
             <button type="button" class="slide-nav next" aria-label="Próxima tela">›</button>
           </div>
-          <div class="dots">
-            <button class="dot active" data-i="0" data-label="Dashboard"></button>
-            <button class="dot" data-i="1" data-label="Chats"></button>
-            <button class="dot" data-i="2" data-label="Reservas"></button>
-            <button class="dot" data-i="3" data-label="Mapa de Quartos"></button>
-            <button class="dot" data-i="4" data-label="Opportunity Center"></button>
-            <button class="dot" data-i="5" data-label="Hóspedes"></button>
-            <button class="dot" data-i="6" data-label="Operações"></button>
-            <button class="dot" data-i="7" data-label="Equipe"></button>
-            <button class="dot" data-i="8" data-label="Financeiro"></button>
-            <button class="dot" data-i="9" data-label="Estoque"></button>
-            <button class="dot" data-i="10" data-label="Receitas"></button>
-            <button class="dot" data-i="11" data-label="Eventos"></button>
-            <button class="dot" data-i="12" data-label="Relatórios"></button>
+          <div class="dots" id="dotsContainer">
             <span class="dot-label">Dashboard</span>
           </div>
         </div>
@@ -151,19 +142,19 @@
               <div class="gcap" data-i18n-html="diagram.integracoes">Integrações</div>
             </div>
           </div>
-          <div class="gnode gold leaf-node" style="left:81.64%;top:31.74%">
+          <div class="gnode gold leaf-node" id="gnodeInteg1" style="left:81.64%;top:31.74%">
             <div class="bubble">
               <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="3"/><text x="12" y="17" font-size="12" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Georgia,serif">B</text></svg>
               <div class="gcap">Booking.com</div>
             </div>
           </div>
-          <div class="gnode gold leaf-node" style="left:86.53%;top:50.00%">
+          <div class="gnode gold leaf-node" id="gnodeInteg2" style="left:86.53%;top:50.00%">
             <div class="bubble">
               <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 4c3.2 4.3 6 8.4 6 11.2a6 6 0 0 1-12 0C6 12.4 8.8 8.3 12 4z"/><path d="M8.4 15.6a3.7 3.7 0 0 0 7.2 0" opacity=".6"/></svg>
               <div class="gcap">Airbnb</div>
             </div>
           </div>
-          <div class="gnode gold leaf-node" style="left:81.64%;top:68.26%">
+          <div class="gnode gold leaf-node" id="gnodeInteg3" style="left:81.64%;top:68.26%">
             <div class="bubble">
               <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.3 15a7 7 0 0 0 12.6 2M18.7 9a7 7 0 0 0-12.6-2"/></svg>
               <div class="gcap">PMS</div>
@@ -175,7 +166,7 @@
               <div class="gcap" data-i18n-html="diagram.operacoes">Operações</div>
             </div>
           </div>
-          <div class="gnode cyan leaf-node" style="left:68.26%;top:81.64%">
+          <div class="gnode cyan leaf-node" id="gnodeMapa" style="left:68.26%;top:81.64%">
             <div class="bubble">
               <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
               <div class="gcap" data-i18n-html="diagram.mapa">Mapa de<br>Quartos</div>
@@ -227,12 +218,12 @@
 
   <div class="strip">
     <div class="strip-inner">
-      <div class="strip-label" data-i18n="strip.label">Construída para qualquer padrão de hospedagem</div>
+      <div class="strip-label" id="stripLabel" data-i18n="strip.label">Construída para qualquer padrão de hospedagem</div>
       <div class="proof">
         <div><strong>24/7</strong>&nbsp;<span data-i18n="proof.response">resposta ao hóspede</span></div>
         <div><strong>3</strong>&nbsp;<span data-i18n="proof.channels">canais, uma só IA</span></div>
       </div>
-      <div class="strip-items">
+      <div class="strip-items" id="stripItems">
         <div class="strip-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg><span data-i18n="strip.hotels">Hotéis</span></div>
         <div class="strip-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><path d="M4 21V10l8-6 8 6v11M9 21v-5a3 3 0 0 1 6 0v5"/></svg><span data-i18n="strip.resorts">Resorts</span></div>
         <div class="strip-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><rect x="4" y="10" width="16" height="11"/><path d="M8 21v-6h8v6M4 10l8-6 8 6"/></svg><span data-i18n="strip.hostels">Hostels</span></div>
@@ -326,7 +317,93 @@ const LANDING_TITLES={
 function applyLanguage(lang){
   const safeLang=StayFlowI18n.applyTranslations(STAYFLOW_LANDING_I18N, lang);
   document.title=LANDING_TITLES[safeLang]||LANDING_TITLES.en;
+  applyVertical(currentVertical);
 }
+
+// Seletor "Hospedagens / Imobiliárias" (pedido do usuário, 09/2026,
+// pra apresentar o site de forma condizente enquanto ele prospecta os
+// dois segmentos ao mesmo tempo). Conteúdo da variante Imobiliárias é
+// só em portugues por enquanto (mercado que ele está prospectando
+// pessoalmente agora) - deliberado, não esquecimento; traduzir pros
+// outros 10 idiomas fica pra quando/se fizer sentido vender fora do
+// Brasil pra esse segmento. Rodada DEPOIS de applyLanguage (chamada
+// acima) porque troca de idioma reaplica o dicionario inteiro via
+// data-i18n-html, o que reverteria a variante Imobiliária de volta
+// pra hospedagem se essa funcao rodasse antes.
+let currentVertical = 'lodging';
+
+const VERTICAL_CONTENT = {
+  imobiliaria: {
+    heroTitle: 'Leads em imóveis,<br><em>convertidos com precisão.</em>',
+    heroText: 'A StayFlow é o gerente digital que sua imobiliária merece — <strong>imobiliárias, corretoras e corretores autônomos</strong>. Ela responde, qualifica lead e agenda visita pelos seus canais, enquanto sua equipe fecha negócio.',
+    stripLabel: 'Construída pra qualquer operação imobiliária',
+    stripItems: [
+      { label: 'Compra e venda', svg: '<path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/><path d="M9 13h6M9 17h6M9 9h3"/>' },
+      { label: 'Locação', svg: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/>' },
+      { label: 'Administração', svg: '<rect x="6" y="3" width="12" height="18" rx="1"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/><path d="M10 21v-4h4v4"/>' },
+      { label: 'Corretor autônomo', svg: '<circle cx="12" cy="8" r="3.2"/><path d="M5 21c0-4 3.1-7 7-7s7 3 7 7"/>' },
+    ],
+    gnodeMapa: { label: 'Agenda de<br>Visitas', svg: '<rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/><path d="M9 15l2 2 4-4"/>' },
+    gnodeInteg1: { label: 'Tokko Broker', svg: '<rect x="4" y="3" width="16" height="18" rx="3"/><text x="12" y="16.5" font-size="9.5" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Georgia,serif">Tokko</text>' },
+    gnodeInteg2: { label: 'Praedium', svg: '<rect x="4" y="3" width="16" height="18" rx="3"/><text x="12" y="16.5" font-size="8.5" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Georgia,serif">Praed.</text>' },
+    gnodeInteg3: { label: 'Portais', svg: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3 3 15 0 18"/><path d="M12 3c-3 3-3 15 0 18"/>' },
+  },
+  lodging: {
+    heroTitle: null, heroText: null, stripLabel: null, stripItems: null,
+    gnodeMapa: { label: 'Mapa de<br>Quartos', svg: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>' },
+    gnodeInteg1: { label: 'Booking.com', svg: '<rect x="4" y="3" width="16" height="18" rx="3"/><text x="12" y="17" font-size="12" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Georgia,serif">B</text>' },
+    gnodeInteg2: { label: 'Airbnb', svg: '<path d="M12 4c3.2 4.3 6 8.4 6 11.2a6 6 0 0 1-12 0C6 12.4 8.8 8.3 12 4z"/><path d="M8.4 15.6a3.7 3.7 0 0 0 7.2 0" opacity=".6"/>' },
+    gnodeInteg3: { label: 'PMS', svg: '<path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.3 15a7 7 0 0 0 12.6 2M18.7 9a7 7 0 0 0-12.6-2"/>' },
+  },
+};
+
+function applyVertical(vertical){
+  currentVertical = vertical;
+
+  document.querySelectorAll('.vertical-tab').forEach(btn => {
+    const active = btn.dataset.vertical === vertical;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+
+  const data = VERTICAL_CONTENT[vertical];
+  if(!data) return;
+
+  if(vertical === 'imobiliaria'){
+    const titleEl = document.getElementById('heroTitle');
+    const textEl = document.getElementById('heroText');
+    if(titleEl) titleEl.innerHTML = data.heroTitle;
+    if(textEl) textEl.innerHTML = data.heroText;
+
+    const stripLabelEl = document.getElementById('stripLabel');
+    if(stripLabelEl) stripLabelEl.textContent = data.stripLabel;
+
+    const stripItemsEl = document.getElementById('stripItems');
+    if(stripItemsEl){
+      stripItemsEl.innerHTML = data.stripItems.map(item =>
+        `<div class="strip-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round">${item.svg}</svg><span>${item.label}</span></div>`
+      ).join('');
+    }
+  }
+  // vertical === 'lodging': nao mexe em heroTitle/heroText/stripLabel/
+  // stripItems - applyLanguage ja reaplicou o texto original (com
+  // data-i18n-html/data-i18n) um instante atras, no idioma certo.
+
+  ['gnodeMapa', 'gnodeInteg1', 'gnodeInteg2', 'gnodeInteg3'].forEach(id => {
+    const el = document.getElementById(id);
+    const info = data[id];
+    if(!el || !info) return;
+    const bubble = el.querySelector('.bubble');
+    if(!bubble) return;
+    bubble.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8">${info.svg}</svg><div class="gcap">${info.label}</div>`;
+  });
+
+  if(typeof rebuildSlider === 'function') rebuildSlider(vertical);
+}
+
+document.querySelectorAll('.vertical-tab').forEach(btn => {
+  btn.addEventListener('click', () => applyVertical(btn.dataset.vertical));
+});
 
 const langSelect=document.getElementById('langSelect');
 const langCurrent=document.getElementById('langCurrent');
@@ -351,50 +428,74 @@ document.addEventListener('click',()=>{
 
 applyLanguage(StayFlowI18n.getInitialLang());
 
-// Slide do "produto por dentro" (13 telas do menu) - dots, setas
-// clicaveis e autoplay, com respeito a prefers-reduced-motion.
+// Slide do "produto por dentro" - dots, setas clicaveis e autoplay,
+// com respeito a prefers-reduced-motion. Filtra por vertical (data-
+// vertical="both"|"lodging" em cada <img class="slide">) - telas
+// exclusivas de hospedagem (Reservas, Mapa de Quartos, Estoque etc)
+// somem na variante Imobiliárias, que ainda nao tem screenshot
+// proprio das telas dela (Portfólio de imóveis, Agenda de visitas) -
+// pendencia conhecida, registrada no diario, nao esquecimento.
+let rebuildSlider;
 (function(){
-  const slides = document.querySelectorAll('.slide');
-  const dots = document.querySelectorAll('.dot');
+  const allSlides = Array.from(document.querySelectorAll('.slide'));
   const label = document.querySelector('.dot-label');
   const tabLabel = document.getElementById('tabLabel');
-  if(!slides.length || !dots.length) return;
+  const dotsContainer = document.getElementById('dotsContainer');
+  if(!allSlides.length || !dotsContainer) return;
 
+  let visibleSlides = allSlides;
   let current = 0;
   let timer = null;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function show(i){
     current = i;
-    slides.forEach(s => s.classList.toggle('active', +s.dataset.i === i));
-    dots.forEach(d => d.classList.toggle('active', +d.dataset.i === i));
-    const activeDot = document.querySelector(`.dot[data-i="${i}"]`);
-    if(label && activeDot) label.textContent = activeDot.dataset.label;
-    if(tabLabel && activeDot) tabLabel.textContent = activeDot.dataset.label;
+    const activeSlide = visibleSlides[i];
+    allSlides.forEach(s => s.classList.toggle('active', s === activeSlide));
+    dotsContainer.querySelectorAll('.dot').forEach((d, di) => d.classList.toggle('active', di === i));
+    if(activeSlide){
+      if(label) label.textContent = activeSlide.dataset.label;
+      if(tabLabel) tabLabel.textContent = activeSlide.dataset.label;
+    }
   }
 
-  dots.forEach(d => {
-    d.addEventListener('click', () => { show(+d.dataset.i); restart(); });
-  });
+  function tick(){ show((current + 1) % visibleSlides.length); }
+  function restart(){
+    if(timer) clearInterval(timer);
+    if(!reduceMotion && visibleSlides.length > 1) timer = setInterval(tick, 3200);
+  }
 
   const prevBtn = document.querySelector('.slide-nav.prev');
   const nextBtn = document.querySelector('.slide-nav.next');
   if(prevBtn) prevBtn.addEventListener('click', () => {
-    show((current - 1 + slides.length) % slides.length);
+    show((current - 1 + visibleSlides.length) % visibleSlides.length);
     restart();
   });
   if(nextBtn) nextBtn.addEventListener('click', () => {
-    show((current + 1) % slides.length);
+    show((current + 1) % visibleSlides.length);
     restart();
   });
 
-  function tick(){ show((current + 1) % slides.length); }
-  function restart(){
-    if(timer) clearInterval(timer);
-    if(!reduceMotion) timer = setInterval(tick, 3200);
-  }
+  rebuildSlider = function(vertical){
+    visibleSlides = allSlides.filter(s => s.dataset.vertical === 'both' || s.dataset.vertical === vertical);
+    allSlides.forEach(s => { s.style.display = visibleSlides.includes(s) ? '' : 'none'; });
 
-  restart();
+    dotsContainer.querySelectorAll('.dot').forEach(d => d.remove());
+    const labelNode = dotsContainer.querySelector('.dot-label');
+    visibleSlides.forEach((s, i) => {
+      const dot = document.createElement('button');
+      dot.className = 'dot';
+      dot.type = 'button';
+      dot.dataset.label = s.dataset.label;
+      dot.addEventListener('click', () => { show(i); restart(); });
+      dotsContainer.insertBefore(dot, labelNode);
+    });
+
+    show(0);
+    restart();
+  };
+
+  rebuildSlider('lodging');
 })();
 </script>
 </body>
