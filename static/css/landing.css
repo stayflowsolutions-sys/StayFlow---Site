@@ -1109,6 +1109,10 @@ nav{
   color:var(--gold-soft);margin-bottom:28px;
 }
 .hero-heading .eyebrow::before{content:"";width:6px;height:6px;background:var(--gold);border-radius:50%;box-shadow:0 0 10px rgba(217,184,114,.7)}
+.vertical-toggle{display:inline-flex;gap:4px;padding:4px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;margin-bottom:26px}
+.vertical-tab{padding:9px 22px;border:0;background:none;border-radius:999px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:.2s;white-space:nowrap}
+.vertical-tab:hover:not(.active){color:var(--text)}
+.vertical-tab.active{background:linear-gradient(180deg,#0f8bff,#056ee7);color:#fff;box-shadow:0 8px 18px #0b84ff40}
 .hero-heading h1{
   font-family:var(--serif)!important;font-weight:900!important;font-size:clamp(32px,4vw,54px)!important;
   line-height:1.05!important;letter-spacing:-2px!important;text-wrap:balance;
