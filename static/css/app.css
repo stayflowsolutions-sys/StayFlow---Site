@@ -1889,25 +1889,35 @@ body::before{
 .ask-floating:hover{
   transform:translateY(-4px) scale(1.04);
 }
-/* SO promotor (pedido explicito do usuario): mesmo tratamento visual
-   do index.html - sem circulo, so a logo grande (160px) flutuando.
-   Gateado por [data-account-kind="promoter"] no proprio botao
-   (setado via JS na hidratacao de sessao, dashboard.html), nunca por
-   CSS solto sem esse escopo. */
-.ask-floating[data-account-kind="promoter"]{
+/* Qualquer painel SEM o botao flutuante de reserva (ou seja, tudo que
+   nao e lodging - agencia e promotor): mesmo tratamento visual do
+   index.html/admin.html - sem circulo, so a logo grande (160px)
+   flutuando com as cores originais, em vez do circulo azul com a
+   logo mascarada de uma cor so. Pedido original era so pra promotor;
+   estendido pra agencia depois, pelo mesmo motivo (painel de agencia
+   tambem nao tem o botao de reserva). Gateado por
+   [data-account-kind] no proprio botao (setado via JS na hidratacao
+   de sessao, dashboard.html) - nunca via applyAccountKindVisibility/
+   applyHideForAccountKind nos filhos, que resetam style.display toda
+   vez que a permissao e reavaliada (mesmo bug ja corrigido em outros
+   pontos nesta sessao) e quebrariam esse toggle. */
+.ask-floating:not([data-account-kind="lodging"]){
   width:auto;
   height:auto;
   background:transparent;
   box-shadow:none;
   display:block;
 }
-.ask-floating[data-account-kind="promoter"] img{
+.ask-floating:not([data-account-kind="lodging"]) .brand-logo-mask{
+  display:none;
+}
+.ask-floating:not([data-account-kind="lodging"]) img{
+  display:block;
   width:160px;
   height:auto;
-  display:block;
   filter:drop-shadow(0 10px 22px #0b84ff4a);
 }
-.ask-floating[data-account-kind="promoter"]:hover{
+.ask-floating:not([data-account-kind="lodging"]):hover{
   transform:translateY(-4px);
 }
 /* Na aba Chats a barra de envio (botao "Assumir") tambem fica no canto
