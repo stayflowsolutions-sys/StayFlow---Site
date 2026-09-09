@@ -1312,7 +1312,7 @@ async function deleteRoleConfirm(roleId){
     <button data-page="chats" onclick="openPage('chats',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="nav.chats">Chats</span>
     </button>
-    <button data-page="reservations" data-required-account-kind="lodging" onclick="openPage('reservations',this)">
+    <button data-page="reservations" data-required-permission="reservations" data-required-account-kind="lodging" onclick="openPage('reservations',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 11h16v8"/><path d="M4 19V7"/><path d="M8 11V8h8v3"/></svg></span><span data-i18n="nav.reservations">Reservas</span>
     </button>
     <button data-page="roommap" data-required-permission="operations" data-required-account-kind="lodging" onclick="openPage('roommap',this)">
@@ -1496,7 +1496,7 @@ async function deleteRoleConfirm(roleId){
   <div class="grid dashboard-grid" id="dashboardNormalContent">
 
     <!-- KPIs principais -->
-    <div class="card kpi" data-required-account-kind="lodging" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))">
+    <div class="card kpi" data-required-permission="reservations" data-required-account-kind="lodging" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))">
       <div class="kpi-top">
         <div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 11h16v8"/><path d="M4 19V7"/><path d="M8 11V8h8v3"/></svg></div>
         <div class="kpi-arrow">›</div>
@@ -1508,7 +1508,7 @@ async function deleteRoleConfirm(roleId){
       </div>
     </div>
 
-    <div class="card kpi" data-required-account-kind="lodging" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))">
+    <div class="card kpi" data-required-permission="reservations" data-required-account-kind="lodging" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))">
       <div class="kpi-top">
         <div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg></div>
         <div class="kpi-arrow">›</div>
@@ -3228,13 +3228,13 @@ async function deleteRoleConfirm(roleId){
   </div>
 </aside>
 
-<button class="reserva-floating" data-required-account-kind="lodging" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" data-i18n-title="reservations.newReservation.title2" title="Nova reserva">
+<button class="reserva-floating" data-required-permission="reservations" data-required-account-kind="lodging" onclick="openPage('reservations', document.querySelector('[data-page=reservations]'))" aria-label="Nova reserva" data-i18n-title="reservations.newReservation.title2" title="Nova reserva">
   <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#06101b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
 </button>
 
 <button class="ask-floating" onclick="openAskStayFlow()" aria-label="Pergunte à StayFlow" data-i18n-title="ask.title" title="Pergunte à StayFlow">
-  <span class="brand-logo-mask" data-hide-for-account-kind="promoter" role="img" aria-label="StayFlow"></span>
-  <img src="assets/images/logo2.png" alt="StayFlow" data-required-account-kind="promoter" style="display:none">
+  <span class="brand-logo-mask" role="img" aria-label="StayFlow"></span>
+  <img src="assets/images/logo2.png" alt="StayFlow">
 </button>
 
 <div id="genericModalOverlay" class="generic-modal-overlay" onclick="closeGenericModal()"></div>
