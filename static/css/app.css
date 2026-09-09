@@ -1886,6 +1886,19 @@ body::before{
   -webkit-mask-position:center 35%;
   mask-position:center 35%;
 }
+/* BUG CRITICO achado ao vivo pelo usuario (09/09): a imagem crua
+   (logo2.png, 1536x1024px de verdade) ficava SEM NENHUMA regra de
+   display por padrao desde que o "style=display:none" inline foi
+   removido do HTML (troca pro esquema todo-CSS de hoje) - o
+   navegador rendeizava ela no tamanho NATURAL, enorme, em QUALQUER
+   conta (lodging inclusive), porque so existia regra de MOSTRAR pra
+   promotor/agencia, nunca uma de ESCONDER por padrao. Hospedagem
+   nunca deveria ver esse img de jeito nenhum - default explicito
+   aqui, sobrescrito so pelas regras [data-account-kind="promoter"/
+   "agency"] abaixo. */
+.ask-floating img{
+  display:none;
+}
 .ask-floating:hover{
   transform:translateY(-4px) scale(1.04);
 }
