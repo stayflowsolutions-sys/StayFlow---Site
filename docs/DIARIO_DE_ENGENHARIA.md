@@ -12491,3 +12491,73 @@ Mesma disciplina de sempre: corrigir o que dá pra verificar com
 confiança, reportar honestamente o que precisa de julgamento humano,
 nunca inventar uma correção especulativa só pra marcar a tarefa como
 "resolvida".
+
+### Trava de acesso: cadastro deixa de ser self-service (v1.151.0)
+
+Motivação real, não hipotética: o usuário estava conversando com a
+ex-namorada dele, que trabalha numa empresa de marketing genérica (a
+Solutudo, que eu tinha acabado de pesquisar a pedido dele por causa de
+um vídeo de YouTube sobre "IA de atendimento") — e ela comentou que é
+fácil demais hoje qualquer pessoa entrar no StayFlow e copiar. Boa
+observação: `/register` era público, sem fricção nenhuma, pra
+`account_kind` lodging/agency - um concorrente (ou o scout de um)
+conseguia criar uma conta completa e navegar o produto inteiro de
+graça, incluindo a IA de verdade.
+
+Decisão de design discutida antes de codar: pagamento não resolve
+(concorrente paga um plano baixo só pra olhar), aprovação manual sim
+- e como o crescimento real do usuário hoje é por prospecção ativa
+(Rodrigo da AZV, Grupo Primavera etc.), não por self-serve, essa
+fricção não custa quase nada em vendas de verdade. Implementado:
+`/register` (`routes/auth.py`) rejeita lodging/agency sem
+`reseller_code` válido; nova tabela `access_requests` +
+`SolicitarAcesso.html` (formulário público, mesmo estilo visual do
+Register.html) + aba nova em `admin.html` (Solicitações de acesso)
+onde o usuário aprova (cria a conta com senha temporária, mesmo
+padrão já usado em `/team/invite` - mostrada uma única vez, ele
+repassa por WhatsApp) ou rejeita. Promotor continua 100% aberto
+(`PromoterSignup.html`) - risco considerado aceitável.
+
+Segunda pergunta do usuário, essa sim identificando um buraco real:
+"o promotor tem opção de criar outras propriedades, devemos proteger
+isso também?". Sim - e mais que isso, o botão "+ Adicionar
+hospedagem" (`/account/add-hostel`) não tinha NENHUMA das travas que
+acabei de colocar no `/register`, então qualquer promotor recém-
+cadastrado (cadastro aberto) conseguia criar uma hospedagem/agência
+completa e instantânea por ali, contornando toda a trava que tinha
+acabado de fazer. Corrigido com a mesma lógica (só libera criação
+instantânea pra quem já é cliente real ou reseller), mas com cuidado
+de não quebrar um uso legítimo: promotores mostram demos ao vivo do
+produto pra fechar clientes (foi assim que as 4 contas demo da Maria
+Vitória foram pensadas, v1.150.6) - então quando é um promotor de
+verdade pedindo, em vez de bloquear, vira automaticamente um
+`access_request` (mesma fila, aprovação rápida), e o botão do modal
+muda de texto pra "Solicitar demo de apresentação" nesse caso
+específico. Achei também, só investigando o código do modal, que
+o PRÓPRIO admin.html (`submitAddProperty`, botão "+ Adicionar
+propriedade de teste" que o Caio usa direto) chama essa MESMA rota -
+precisou de um bypass explícito pra e-mail de admin StayFlow, senão eu
+mesmo ia travar a ferramenta interna dele sem querer.
+
+De brinde, removida "chats" de `PROMOTER_PERMISSIONS`
+(`utils/permissions.py`) - a aba de Chats usa o MESMO motor de IA de
+qualquer hospedagem, então um promotor (cadastro aberto, lembrar)
+conseguia conectar um WhatsApp de teste e observar exatamente como a
+IA da StayFlow responde, de graça. Ao investigar isso descobri mais
+um gap: o botão de nav do Chats nunca teve NENHUM
+`data-required-permission` (ao contrário de quase todo resto do
+menu) - removendo a permissão sozinho não escondia nada, o botão
+continuava lá levando a uma página que ia dar 403 no backend.
+Adicionado `data-required-permission="chats"` no botão (sidebar +
+tabbar mobile), que não existia antes.
+
+Testado de ponta a ponta contra um SQLite descartável
+(`STAYFLOW_DATA_DIR` apontando pra pasta temporária, nunca tocando no
+banco real): criar pedido → listar pendente → aprovar (usuário e
+hostel nascem de verdade, `must_change_password=1`) → rejeitar →
+tentar aprovar de novo um pedido já processado (bloqueado com
+`ValueError`, como esperado) → confirmar que "chats" realmente saiu
+do conjunto de permissões de promotor. Mesma disciplina de sempre:
+não declarar uma trava de segurança "pronta" só porque o código
+parece certo - rodar o fluxo de verdade antes de dizer que fechou o
+buraco.

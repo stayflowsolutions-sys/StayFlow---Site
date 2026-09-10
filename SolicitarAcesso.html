@@ -1,0 +1,148 @@
+<!DOCTYPE html><html lang='pt-BR' translate='no'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><meta name='google' content='notranslate'><title>StayFlow | Solicitar Acesso</title><link rel='manifest' href='/manifest.json'><meta name='theme-color' content='#03070d'><link rel='icon' href='/assets/images/icon-192.png'><link rel='apple-touch-icon' href='/assets/images/apple-touch-icon.png'><meta name='apple-mobile-web-app-capable' content='yes'><meta name='apple-mobile-web-app-title' content='StayFlow'><script>if("serviceWorker" in navigator){window.addEventListener("load", () => {navigator.serviceWorker.register("/sw.js").catch(e => console.warn("Erro ao registrar service worker:", e));});}</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#06101b;color:#fff;overflow:auto}
+body:before{content:'';position:fixed;inset:0;opacity:.22;background:url('https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg') center/cover no-repeat}
+.card{position:relative;z-index:1;width:500px;background:rgba(8,12,20,.9);padding:42px;border-radius:28px;border:1px solid #233652;margin:24px 0}
+.brand{text-align:center;margin-bottom:22px}.brand img{width:128px}
+label{display:block;font-size:13px;color:#9aa8bb;margin-bottom:4px}
+input,select,textarea{width:100%;padding:15px;margin:0 0 16px;background:#0d1421;border:1px solid #233652;border-radius:15px;color:#fff;font-size:15px;font-family:inherit}
+textarea{resize:vertical;min-height:80px}
+button{width:100%;padding:16px;background:#2f7dff;border:none;border-radius:16px;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+a{color:#8fb4ff;text-decoration:none}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+#successBox{display:none}
+.note{font-size:13px;color:#9aa8bb;margin-bottom:18px;line-height:1.6}
+</style></head><body><div class='card'>
+<div class='brand' style='display:flex;justify-content:center;align-items:center;gap:0px'><img src='assets/images/logo2.png' style='width:128px;margin-right:-28px'><h1 style='font-size:34px;margin:0'>STAY<span style='color:#2f7dff'>FLOW</span></h1></div>
+
+<div id='formBox'>
+  <h2>Solicitar acesso</h2><br>
+  <p class='note'>O cadastro de hospedagens, agências, locadoras e imobiliárias na StayFlow é feito por convite. Preencha seus dados e entraremos em contato pra liberar seu acesso.</p>
+  <label>Tipo de estabelecimento</label>
+  <select id='account_kind' onchange='toggleAgencyCategory()'>
+    <option value='lodging'>Hospedagem</option>
+    <option value='agency'>Loja, prestador de serviço, locadora ou imobiliária</option>
+  </select>
+  <div id='agencyCategoryWrap' style='display:none'>
+    <label>Tipo de negócio</label>
+    <select id='agency_category' onchange='toggleAgencySubcategory()'>
+      <option value='turismo'>Turismo</option>
+      <option value='aluguel_carro'>Aluguel de carro</option>
+      <option value='aluguel_bike'>Aluguel de bike</option>
+      <option value='aluguel_equipamentos'>Aluguel de equipamentos</option>
+      <option value='imobiliaria'>Imobiliária</option>
+      <option value='automotivo'>Automotivo (estética, película, mecânica...)</option>
+      <option value='comercio'>Comércio (loja, estamparia...)</option>
+      <option value='servico_generico'>Outro tipo de negócio</option>
+    </select>
+  </div>
+  <div id='agencySubcategoryWrap' style='display:none'>
+    <label>Especifique</label>
+    <select id='agency_subcategory_select' onchange='onAgencySubcategoryChange()'></select>
+    <input id='agency_subcategory_custom' style='display:none' placeholder='Digite o tipo do seu negócio'>
+  </div>
+  <label id='hostelNameLabel'>Nome da hospedagem</label><input id='hostel_name' placeholder='Digite o nome da hospedagem'>
+  <label>Seu nome</label><input id='name' placeholder='Digite seu nome'>
+  <label>Telefone / WhatsApp</label><input id='phone' placeholder='Digite seu telefone com DDD/código do país'>
+  <label>E-mail</label><input id='email' type='email' placeholder='Digite seu e-mail'>
+  <label>Conte um pouco (opcional)</label><textarea id='message' placeholder='Quantas unidades/propriedades, onde fica, o que mais te interessa na StayFlow...'></textarea>
+  <input class='hp' id='website' tabindex='-1' autocomplete='off'>
+  <button onclick='submitRequest()'>Solicitar acesso</button><p id='m' style='font-size:13px;color:#ff5d76;margin-top:10px'></p><br>
+  <a href='PromoterSignup.html'>Não tem hospedagem própria? Seja promotor</a><br><br>
+  <a href='Login.html'>Já possui uma conta? Entrar</a>
+</div>
+
+<div id='successBox'>
+  <h2>Solicitação enviada! 🎉</h2><br>
+  <p class='note'>Recebemos seu pedido. Vamos analisar e entrar em contato em breve pelo e-mail ou telefone informado pra liberar seu acesso.</p>
+  <a href='index.html'>Voltar pro site</a>
+</div>
+
+</div>
+<script>
+const PLAN_LABELS={starter:'Starter',business:'Business',enterprise:'Enterprise'};
+const selectedPlan=new URLSearchParams(location.search).get('plan');
+if(selectedPlan && PLAN_LABELS[selectedPlan]){
+  document.getElementById('message').value = `Plano de interesse: ${PLAN_LABELS[selectedPlan]}`;
+}
+const AGENCY_SUBCATEGORY_PRESETS={
+  automotivo:['Estética automotiva','Película automotiva','Mecânica','Funilaria e pintura','Elétrica automotiva','Borracharia','Peças de carro','Peças de moto','Peças de caminhão','Peças de máquinas'],
+  comercio:['Loja online','Estamparia'],
+};
+function toggleAgencyCategory(){
+  const isAgency = account_kind.value === 'agency';
+  agencyCategoryWrap.style.display = isAgency ? 'block' : 'none';
+  hostelNameLabel.textContent = isAgency ? 'Nome do negócio' : 'Nome da hospedagem';
+  hostel_name.placeholder = isAgency ? 'Digite o nome do seu negócio' : 'Digite o nome da hospedagem';
+  toggleAgencySubcategory();
+}
+function toggleAgencySubcategory(){
+  const cat = agency_category.value;
+  const presets = AGENCY_SUBCATEGORY_PRESETS[cat];
+  agencySubcategoryWrap.style.display = presets ? 'block' : 'none';
+  if(!presets) return;
+  const select = document.getElementById('agency_subcategory_select');
+  select.innerHTML = '';
+  presets.forEach(opt=>{
+    const o = document.createElement('option');
+    o.value = opt; o.textContent = opt;
+    select.appendChild(o);
+  });
+  const newOpt = document.createElement('option');
+  newOpt.value = '__new__'; newOpt.textContent = '+ Outro (digite abaixo)';
+  select.appendChild(newOpt);
+  const custom = document.getElementById('agency_subcategory_custom');
+  custom.style.display = 'none';
+  custom.value = '';
+}
+function onAgencySubcategoryChange(){
+  const select = document.getElementById('agency_subcategory_select');
+  const custom = document.getElementById('agency_subcategory_custom');
+  custom.style.display = select.value === '__new__' ? 'block' : 'none';
+}
+async function submitRequest(){
+  const m = document.getElementById('m');
+  m.textContent = '';
+
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const hostel_name = document.getElementById('hostel_name').value.trim();
+  const account_kind = document.getElementById('account_kind').value;
+  const message = document.getElementById('message').value.trim();
+  const website = document.getElementById('website').value.trim();
+
+  if(!name){ m.textContent = 'Digite seu nome.'; return; }
+  if(!email){ m.textContent = 'Digite seu e-mail.'; return; }
+  if(!hostel_name){ m.textContent = 'Digite o nome do seu negócio.'; return; }
+
+  let agencySubcategoryValue = null;
+  if(account_kind === 'agency' && AGENCY_SUBCATEGORY_PRESETS[agency_category.value]){
+    const select = document.getElementById('agency_subcategory_select');
+    const custom = document.getElementById('agency_subcategory_custom');
+    agencySubcategoryValue = (select.value === '__new__' ? custom.value : select.value).trim() || null;
+  }
+
+  try{
+    const res = await fetch('/access-requests', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        name, email, phone, hostel_name, account_kind,
+        agency_category: account_kind === 'agency' ? agency_category.value : null,
+        agency_subcategory: agencySubcategoryValue,
+        message, website,
+      }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      m.textContent = data.message || 'Não foi possível enviar a solicitação.';
+      return;
+    }
+    document.getElementById('formBox').style.display = 'none';
+    document.getElementById('successBox').style.display = 'block';
+  }catch(e){
+    m.textContent = 'Erro de conexão. Tente novamente.';
+  }
+}
+</script></body></html>
