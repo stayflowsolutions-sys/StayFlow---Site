@@ -12561,3 +12561,74 @@ do conjunto de permissões de promotor. Mesma disciplina de sempre:
 não declarar uma trava de segurança "pronta" só porque o código
 parece certo - rodar o fluxo de verdade antes de dizer que fechou o
 buraco.
+
+### Limpeza de emoji, segundo lote: 71 cabeçalhos + 39 modais (v1.151.1)
+
+Pedido direto do usuário logo depois da trava de acesso: "pode
+continuar os emojis" - retomando o item represado desde a v1.148.0,
+que só tinha coberto o chrome do topbar (Configurações/Notificações/
+Equipe/Painel StayFlow). Levantamento no `dashboard.html` inteiro
+achou 214 instâncias de emoji distribuídas em 72 caracteres
+diferentes - grande demais pra atacar tudo de uma vez com cuidado.
+Escopo real definido: os `<h2>/<h3>/<h4>` que são título de seção
+(71 no total, cobrindo praticamente toda página do dashboard) e os
+títulos de modal via `openGenericModal(T(...))` (mais 39, achados só
+depois, numa varredura de "sobrou alguma coisa?").
+
+Dado o volume, decidi não editar linha por linha - escrevi um script
+Python que le um mapa `chave i18n → nome do ícone` e reescreve tanto
+o HTML (insere `<span class="nav-ico">` com um SVG monoline azul,
+removendo o emoji do texto) quanto o dicionário `i18n-dashboard-
+data.js` (tira o emoji da própria chave, nos 11 idiomas, já que é lá
+que o texto de verdade vem de qualquer forma). 24 ícones novos
+desenhados no mesmo estilo dos que já existiam no menu lateral
+(stroke fino, sem preenchimento, viewBox 24x24); outros 11 cabeçalhos
+reaproveitaram literalmente o ícone que a própria página já tem na
+sidebar (ex: Opportunity Center ganhou de volta a "chama" que já era
+o ícone dele lá, coincidência nenhuma - o emoji 🔥 original claramente
+tinha sido escolhido pensando na mesma coisa).
+
+Duas rodadas de bug pegas ANTES de aplicar no arquivo de verdade
+(revertido via `git checkout` entre as tentativas, nunca deixando o
+dashboard.html quebrado no meio do caminho):
+
+1. Primeira versão do script inseria o ícone ANTES da tag `<h2>`
+inteira, não dentro dela - motivo: `data-i18n="chave"` nesses
+cabeçalhos é atributo DIRETO do próprio `<h2>` (diferente do menu
+lateral, que usa um `<span>` só pro texto) - inserir o ícone ali do
+lado de fora virava um `<span>` irmão do `<h2>`, que por ser
+block-level jogava o ícone pra cima, numa linha separada da própria
+palavra.
+
+2. Corrigido pra inserir DENTRO do `<h2>` - só que aí bati de novo no
+MESMO achado técnico da v1.148.0, generalizado: `applyTranslations`
+(`assets/js/i18n-core.js`) faz `el.textContent = dict[chave]` bem no
+elemento que tem `data-i18n`. Como esse elemento agora era o próprio
+`<h2>` (não um `<span>` interno), `textContent` reseta TODOS os
+filhos - o `<span>` do ícone que eu tinha acabado de inserir dentro
+seria apagado no primeiro `applyTranslations()` (ou seja, imediato,
+no carregamento da página). Resolvido restruturando de vez o
+cabeçalho pra `<h2><span class="nav-ico">ícone</span><span
+data-i18n="chave">texto</span></h2>` - EXATAMENTE o padrão de dois
+`<span>` irmãos que o menu lateral já usa desde sempre, só que
+ninguém tinha replicado pros títulos DENTRO de cada página até agora.
+Lição geral (a mesma de sempre, reforçada): qualquer elemento que
+carrega `data-i18n`/`data-required-permission` diretamente NUNCA pode
+depender de ter filhos HTML próprios que não sejam texto puro -
+sempre isolar o texto traduzido no seu próprio `<span>` folha.
+
+Achado extra na varredura final: 18 das 39 chaves de modal só tinham
+o emoji sobrando no argumento default do `T('chave', 'EMOJI texto')`
+- código morto na prática, já que a chave existe no dicionário (então
+`T()` sempre resolve pelo dicionário, nunca cai no fallback) - mas
+deixado assim seria uma inconsistência besta pra quem for mexer
+depois vendo emoji "escondido" que nunca aparece. Limpo também, sem
+adicionar ícone (modal não tem esse padrão visual, só a página em si).
+
+Verificação final: `check_i18n_syntax.py` e `check_cache_busting.py`
+passando limpo, chaves `{`/`}` do dicionário balanceadas
+(837 pares antes e depois), e uma varredura dedicada confirmando ZERO
+emoji restante em qualquer `<h1-4>` ou título de modal - 924
+substituições de string no total entre HTML e dicionário, feitas por
+script em vez de à mão, precisamente PORQUE o volume tornava edição
+manual arriscada demais pra fazer com confiança.

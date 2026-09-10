@@ -743,7 +743,7 @@ async function loadTeamList() {
 // so o que interessa pra visao gerencial (numero conectado, telefone
 // de contato, apresentacao que o corretor escreveu).
 window.openTeamWhatsappAuditModal = async function(){
-  openGenericModal(T('team.whatsappAudit.title', '📱 WhatsApp da equipe'), `
+  openGenericModal(T('team.whatsappAudit.title', 'WhatsApp da equipe'), `
     <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('team.whatsappAudit.desc', 'Cada corretor conecta o próprio WhatsApp em Configurações → Comunicação. Aqui você acompanha quem já conectou.')}</p>
     <div id="teamWhatsappAuditList">${T('common.loading', 'Carregando...')}</div>
   `, true);
@@ -845,7 +845,7 @@ window.openMemberActivityLog = async function(membershipId, memberName){
     <p style="font-size:12px;color:var(--muted);margin:0 0 12px">${T('team.activityLog.desc', 'Ponto batido e ações registradas (limpeza/manutenção de cama, chamados assumidos e resolvidos) — mais recente primeiro.')}</p>
     <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="attendance.title">⏱️ Ponto</h4>
     <div id="memberActivityAttendance" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:12px">${T('common.loading', 'Carregando...')}</div>
-    <h4 style="font-size:12px;font-weight:800;margin:0 0 6px">${T('team.activityLog.actionsTitle', '📋 Ações')}</h4>
+    <h4 style="font-size:12px;font-weight:800;margin:0 0 6px"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v3h3"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span>${T('team.activityLog.actionsTitle', 'Ações')}</h4>
     <div id="memberActivityActions" style="display:flex;flex-direction:column;gap:6px;font-size:12px">${T('common.loading', 'Carregando...')}</div>
   `);
 
@@ -1659,7 +1659,7 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-12">
-      <h2 data-i18n="promoterHome.performanceTitle">📈 Seu desempenho</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></span><span data-i18n="promoterHome.performanceTitle">Seu desempenho</span></h2>
       <p style="color:var(--muted);font-size:13px;margin:6px 0 14px" data-i18n="promoterHome.performanceDesc">Comissão gerada por mês, últimos 6 meses.</p>
       <canvas id="promoterPerformanceCanvas" style="width:100%;height:220px;display:none"></canvas>
       <div class="sf-empty" id="promoterPerformanceEmpty">
@@ -1678,7 +1678,7 @@ async function deleteRoleConfirm(roleId){
      propria com visual mais trabalhado a pedido do usuario. -->
 <section id="referrals" class="page">
   <div class="card span-12" style="background:linear-gradient(135deg,#0b84ff1c,#23d2ff0c);border:1px solid #0b84ff30">
-    <h2 data-i18n="referrals.linkTitle">🔗 Seu link de indicação</h2>
+    <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M9 15 15 9"/><path d="M10 6l1-1a4 4 0 0 1 6 6l-1 1"/><path d="M14 18l-1 1a4 4 0 0 1-6-6l1-1"/></svg></span><span data-i18n="referrals.linkTitle">Seu link de indicação</span></h2>
     <p style="color:var(--muted);font-size:13px;margin:6px 0 16px" data-i18n="referrals.linkDesc">Compartilhe com qualquer hospedagem — quando alguém se cadastrar por ele e virar cliente pagante, a comissão cai automaticamente pra você, todo mês.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px 16px">
       <span style="font-size:16px;line-height:1">🔗</span>
@@ -1690,7 +1690,7 @@ async function deleteRoleConfirm(roleId){
   </div>
 
   <div class="card span-12" style="margin-top:16px">
-    <h2 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px" data-i18n="referrals.tierTitle">📈 Sua faixa de comissão</h2>
+    <h2 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></span><span data-i18n="referrals.tierTitle">Sua faixa de comissão</span></h2>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:8px">
       <span style="font-size:34px;font-weight:800" id="referralsTierPct">—</span>
       <span style="font-size:12px;color:var(--muted)" id="referralsNextTierHint"></span>
@@ -1701,7 +1701,7 @@ async function deleteRoleConfirm(roleId){
   </div>
 
   <div class="card span-12" style="margin-top:16px">
-    <h2 data-i18n="referrals.hostelsTitle">🏨 Hospedagens indicadas</h2>
+    <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-6h4v6"/></svg></span><span data-i18n="referrals.hostelsTitle">Hospedagens indicadas</span></h2>
     <div id="referralsHostelsList" style="margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
     <p class="sf-empty-inline" id="referralsHostelsEmpty" style="color:var(--muted);font-size:13px;display:none" data-i18n="referrals.hostelsEmpty">Nenhuma hospedagem indicada ainda.</p>
   </div>
@@ -1726,7 +1726,7 @@ async function deleteRoleConfirm(roleId){
   <div class="card settings-summary-card span-12" style="margin-top:16px" onclick="openPayoutInfoModal()">
     <div class="settings-summary-row">
       <div>
-        <h2 data-i18n="wallet.payoutTitle">💳 Como você quer receber</h2>
+        <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg></span><span data-i18n="wallet.payoutTitle">Como você quer receber</span></h2>
         <p class="settings-summary-desc" id="walletPayoutSummaryDesc" data-i18n="wallet.payoutSummaryDescEmpty">Nenhum dado de recebimento cadastrado ainda.</p>
       </div>
       <span class="settings-summary-chevron">›</span>
@@ -1734,14 +1734,14 @@ async function deleteRoleConfirm(roleId){
   </div>
 
   <div class="card span-12" style="margin-top:16px">
-    <h2 data-i18n="wallet.monthlyTitle">📅 Relatório mensal</h2>
+    <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/></svg></span><span data-i18n="wallet.monthlyTitle">Relatório mensal</span></h2>
     <p style="color:var(--muted);font-size:13px;margin:6px 0 14px" data-i18n="wallet.monthlyDesc">Comissão gerada por mês (soma de todos os lançamentos, pagos ou não).</p>
     <div id="walletMonthlyList" style="display:flex;flex-direction:column;gap:8px"></div>
     <p class="sf-empty-inline" id="walletMonthlyEmpty" style="color:var(--muted);font-size:13px;display:none" data-i18n="wallet.monthlyEmpty">Nenhum lançamento ainda.</p>
   </div>
 
   <div class="card span-12" style="margin-top:16px">
-    <h2 data-i18n="wallet.historyTitle">🧾 Extrato</h2>
+    <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v3h3"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span data-i18n="wallet.historyTitle">Extrato</span></h2>
     <div style="overflow-x:auto">
       <table class="table">
         <thead>
@@ -1825,7 +1825,7 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div class="smart-profile-section">
-        <h3 data-i18n="chats.tagsTitle">🏷️ Etiquetas</h3>
+        <h3><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3h6a2 2 0 0 1 2 2v6a2 2 0 0 1-.6 1.4l-8 8a2 2 0 0 1-2.8 0l-6-6a2 2 0 0 1 0-2.8l8-8A2 2 0 0 1 12 3z"/><circle cx="15.5" cy="8.5" r="1.2"/></svg></span><span data-i18n="chats.tagsTitle">Etiquetas</span></h3>
         <div id="guestTagsList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
         <div style="display:flex;gap:8px">
           <input type="text" id="guestTagInput" data-i18n-placeholder="chats.tagInputPlaceholder" placeholder="Nova etiqueta..." style="flex:1;padding:8px 10px;border-radius:10px;border:1px solid #ffffff22;background:#0d1421;color:#fff;font-size:13px" onkeydown="if(event.key==='Enter')addGuestTag()">
@@ -1834,28 +1834,28 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div class="smart-profile-section">
-        <h3 data-i18n="chats.notesTitle">🗒️ Notas internas</h3>
+        <h3><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v3h3"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span data-i18n="chats.notesTitle">Notas internas</span></h3>
         <div id="guestNotesList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;font-size:13px"></div>
         <textarea id="guestNoteInput" data-i18n-placeholder="chats.noteInputPlaceholder" placeholder="Escrever nota interna (só a equipe vê)..." style="width:100%;min-height:56px;padding:8px 10px;border-radius:10px;border:1px solid #ffffff22;background:#0d1421;color:#fff;font-size:13px;resize:vertical"></textarea>
         <button type="button" class="btn secondary" style="margin-top:6px" onclick="addGuestNote()" data-i18n="chats.noteAddBtn">Adicionar nota</button>
       </div>
 
       <div class="smart-profile-section">
-        <h3 data-i18n="chats.aiSummaryTitle">📋 Resumo da IA</h3>
+        <h3><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3v4"/><path d="M12 17v4"/><path d="M3 12h4"/><path d="M17 12h4"/><path d="M6 6l2.8 2.8"/><path d="M15.2 15.2 18 18"/><path d="M18 6l-2.8 2.8"/><path d="M8.8 15.2 6 18"/><circle cx="12" cy="12" r="2.3"/></svg></span><span data-i18n="chats.aiSummaryTitle">Resumo da IA</span></h3>
         <div class="ai-summary-box" id="guestNotes" data-i18n="chats.aiSummaryDefault">
           As observações serão geradas a partir das mensagens reais do hóspede e das reservas associadas.
         </div>
       </div>
 
       <div class="smart-profile-section">
-        <h3 data-i18n="chats.nextActionTitle">🎯 Próxima melhor ação</h3>
+        <h3><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6"/></svg></span><span data-i18n="chats.nextActionTitle">Próxima melhor ação</span></h3>
         <div class="next-action-box" id="guestNextAction" data-i18n="chats.nextActionDefault">
           Assim que houver dados, a IA recomendará aqui o próximo passo para fechar reserva, evitar cancelamento ou vender uma experiência.
         </div>
       </div>
 
       <div class="smart-profile-section">
-        <h3 data-i18n="chats.aiHistoryTitle">📈 Histórico IA</h3>
+        <h3><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3v4"/><path d="M12 17v4"/><path d="M3 12h4"/><path d="M17 12h4"/><path d="M6 6l2.8 2.8"/><path d="M15.2 15.2 18 18"/><path d="M18 6l-2.8 2.8"/><path d="M8.8 15.2 6 18"/><circle cx="12" cy="12" r="2.3"/></svg></span><span data-i18n="chats.aiHistoryTitle">Histórico IA</span></h3>
         <div class="ai-history" id="guestAIHistory">
           <div class="ai-history-item">
             <div class="ai-history-time" data-i18n="chats.aiHistoryNow">Agora</div>
@@ -1868,7 +1868,7 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div class="smart-profile-section" id="guestDocumentsSection" style="display:none">
-        <h3 data-i18n="chats.documentsTitle">🪪 Documentos recebidos</h3>
+        <h3><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 17c.4-1.8 1.7-2.8 3-2.8s2.6 1 3 2.8"/><path d="M14 9h5"/><path d="M14 13h5"/></svg></span><span data-i18n="chats.documentsTitle">Documentos recebidos</span></h3>
         <div id="guestDocumentsList" style="font-size:13px;color:var(--muted)"></div>
       </div>
 
@@ -1884,7 +1884,7 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
     <div class="card span-8">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <h2 data-i18n="opportunities.title">🔥 Opportunity Center</h2>
+        <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3s4 4 4 8a4 4 0 0 1-8 0c0-4 4-8 4-8z"/><path d="M7 14a5 5 0 0 0 10 0"/></svg></span><span data-i18n="opportunities.title">Opportunity Center</span></h2>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <div style="display:flex;gap:6px">
             <button type="button" class="btn secondary opportunities-view-btn active" data-view="list" onclick="setOpportunitiesView('list')" data-i18n="opportunities.view.list">Lista</button>
@@ -1915,7 +1915,7 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-4">
-      <h2 data-i18n="opportunities.priorityTitle">⭐ Mais importantes</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="m12 3 2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6z"/></svg></span><span data-i18n="opportunities.priorityTitle">Mais importantes</span></h2>
       <div id="opportunitiesPriorityList" style="display:flex;flex-direction:column;gap:10px"></div>
       <div id="opportunitiesPriorityEmpty" class="sf-empty">
         <div>
@@ -1925,7 +1925,7 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-12">
-      <h2 data-i18n="leads.title">🧲 Leads capturados</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6"/></svg></span><span data-i18n="leads.title">Leads capturados</span></h2>
       <div style="overflow-x:auto">
         <table class="table">
           <thead>
@@ -1984,7 +1984,7 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-12">
-      <h2 data-i18n="reservations.table.title">🛏 Reservas</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 11h16v8"/><path d="M4 19V7"/><path d="M8 11V8h8v3"/></svg></span><span data-i18n="reservations.table.title">Reservas</span></h2>
       <div class="sf-empty" id="reservationsEmpty">
         <div>
           <strong data-i18n="reservations.emptyTitle">Nenhuma reserva encontrada.</strong>
@@ -2017,7 +2017,7 @@ async function deleteRoleConfirm(roleId){
 
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;position:relative;z-index:2">
-        <h2 data-i18n="roommap.title" style="margin:0">🗺️ Mapa de Quartos</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="6" rx="1.5"/><rect x="13" y="13" width="8" height="6" rx="1.5"/></svg></span><span data-i18n="roommap.title">Mapa de Quartos</span></h2>
         <div class="hostel-selector-wrap">
           <button type="button" class="btn secondary" id="roomMapActionsBtn" onclick="toggleRoomMapMenu(event)" data-i18n-title="roommap.actionsMenu.title" title="Ações">
             ☰ <span data-i18n="roommap.actionsMenu.label">Ações</span>
@@ -2067,7 +2067,7 @@ async function deleteRoleConfirm(roleId){
   <div data-ops-section="tasks" class="grid">
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="operations.tasks.title">🧹 Tarefas operacionais</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span><span data-i18n="operations.tasks.title">Tarefas operacionais</span></h2>
         <button type="button" class="btn primary" onclick="openNewTaskModal()" data-i18n="operations.tasks.newBtn">➕ Novo chamado</button>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="tasks">
@@ -2122,7 +2122,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card settings-summary-card" onclick="openMenuModal()">
       <div class="settings-summary-row">
         <div>
-          <h2 data-i18n="kitchen.menu.title">📋 Cardápio</h2>
+          <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v3h3"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span data-i18n="kitchen.menu.title">Cardápio</span></h2>
           <p class="settings-summary-desc" id="menuSummaryDesc" data-i18n="kitchen.menu.desc">Itens que a IA usa pra tirar pedido pelo chat.</p>
         </div>
         <span class="settings-summary-chevron">›</span>
@@ -2130,7 +2130,7 @@ async function deleteRoleConfirm(roleId){
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="kitchen.orders.title">🍽️ Pedidos em aberto</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M3 15h18"/><path d="M5 15V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8"/><path d="M3 15v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3"/></svg></span><span data-i18n="kitchen.orders.title">Pedidos em aberto</span></h2>
         <button type="button" class="btn primary" onclick="openNewKitchenOrderModal()" data-i18n="kitchen.orders.newBtn">➕ Novo pedido</button>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="kitchen">
@@ -2182,7 +2182,7 @@ async function deleteRoleConfirm(roleId){
   <div data-ops-section="maintenance" style="display:none">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="maintenance.tickets.title">🔧 Chamados em aberto</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2z"/></svg></span><span data-i18n="maintenance.tickets.title">Chamados em aberto</span></h2>
         <button type="button" class="btn primary" onclick="openNewMaintenanceTicketModal()" data-i18n="maintenance.tickets.newBtn">➕ Novo chamado</button>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="maintenance">
@@ -2231,7 +2231,7 @@ async function deleteRoleConfirm(roleId){
       </div>
     </div>
     <div class="card" id="maintenanceRecurringCard" style="display:none">
-      <h2 data-i18n="maintenance.recurring.title">⚠️ Padrão recorrente</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17v.01"/></svg></span><span data-i18n="maintenance.recurring.title">Padrão recorrente</span></h2>
       <ul id="maintenanceRecurringList" style="margin:0;padding-left:16px;color:var(--muted);font-size:14px;line-height:1.5"></ul>
     </div>
   </div>
@@ -2239,7 +2239,7 @@ async function deleteRoleConfirm(roleId){
   <div data-ops-section="patrimonialSecurity" style="display:none">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="patrimonialSecurity.incidents.title">🛡️ Incidentes em aberto</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg></span><span data-i18n="patrimonialSecurity.incidents.title">Incidentes em aberto</span></h2>
         <button type="button" class="btn primary" onclick="openNewSecurityIncidentModal()" data-i18n="patrimonialSecurity.incidents.newBtn">➕ Novo chamado</button>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="patrimonialSecurity">
@@ -2290,7 +2290,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card settings-summary-card" onclick="openCameraSettingsModal()">
       <div class="settings-summary-row">
         <div>
-          <h2 data-i18n="patrimonialSecurity.integrations.title">🎥 Câmeras de vigilância</h2>
+          <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg></span><span data-i18n="patrimonialSecurity.integrations.title">Câmeras de vigilância</span></h2>
           <p class="settings-summary-desc" id="cameraFeedSummaryDesc" data-i18n="patrimonialSecurity.integrations.desc">Cadastre a URL de acesso ao sistema de câmeras quando a hospedagem tiver um configurado.</p>
         </div>
         <span class="settings-summary-chevron">›</span>
@@ -2301,7 +2301,7 @@ async function deleteRoleConfirm(roleId){
   <div data-ops-section="parking" style="display:none">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="parking.vehicles.title">🚗 Veículos no estacionamento</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 16V11l2-5h12l2 5v5"/><path d="M4 16h16"/><circle cx="7.5" cy="16" r="1.6"/><circle cx="16.5" cy="16" r="1.6"/></svg></span><span data-i18n="parking.vehicles.title">Veículos no estacionamento</span></h2>
         <button type="button" class="btn primary" onclick="openAddVehicleModal()" data-i18n="parking.vehicles.addBtn">➕ Adicionar veículo</button>
       </div>
       <div class="sf-empty" id="parkingVehiclesEmpty">
@@ -2325,7 +2325,7 @@ async function deleteRoleConfirm(roleId){
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="parking.valet.title">🔑 Solicitações de manobrista</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="7" cy="14" r="3.3"/><path d="M9.3 11.7 18 3"/><path d="M15 6l2.5 2.5"/><path d="M13 8l2 2"/></svg></span><span data-i18n="parking.valet.title">Solicitações de manobrista</span></h2>
         <button type="button" class="btn primary" onclick="openNewValetRequestModal()" data-i18n="parking.valet.newBtn">➕ Novo chamado de manobrista</button>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="parking">
@@ -2377,7 +2377,7 @@ async function deleteRoleConfirm(roleId){
 <!-- GUESTS -->
 <section id="guests" class="page">
   <div class="card">
-    <h2 data-i18n="guests.title" id="guestsSectionTitle">👥 Hóspedes</h2>
+    <h2 id="guestsSectionTitle"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4"/><circle cx="12" cy="9" r="3"/><path d="M20 19c0-1.7-1-3.1-2.5-3.7"/><path d="M17 7.2a2.5 2.5 0 0 1 0 3.6"/></svg></span><span data-i18n="guests.title">Hóspedes</span></h2>
     <div class="sf-empty" id="guestsEmpty">
       <div>
         <strong data-i18n="guests.emptyTitle" id="guestsEmptyTitle">Nenhum hóspede registrado.</strong>
@@ -2405,7 +2405,7 @@ async function deleteRoleConfirm(roleId){
 <section id="contacts" class="page">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-      <h2 style="margin:0" data-i18n="contacts.title">📇 Contatos</h2>
+      <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4z"/><circle cx="10" cy="11" r="2.5"/><path d="M6 17c.5-2 2-3 4-3s3.5 1 4 3"/><path d="M2 8v8"/></svg></span><span data-i18n="contacts.title">Contatos</span></h2>
       <button type="button" class="btn primary" onclick="openContactModal()" data-i18n="contacts.addBtn">➕ Novo contato</button>
     </div>
     <input type="text" id="contactsSearchInput" oninput="handleContactsSearch(this.value)" placeholder="Buscar por nome ou telefone..." data-i18n-placeholder="contacts.searchPlaceholder" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 14px;margin-bottom:16px">
@@ -2431,7 +2431,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-12 settings-summary-card" data-required-account-kind="lodging" onclick="openExchangeModal()">
       <div class="settings-summary-row">
         <div>
-          <h2 data-i18n="finance.exchange.title">💱 Câmbio (pagamento em moeda estrangeira)</h2>
+          <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 8h13"/><path d="M15 4l3 4-3 4"/><path d="M19 16H6"/><path d="M9 12l-3 4 3 4"/></svg></span><span data-i18n="finance.exchange.title">Câmbio (pagamento em moeda estrangeira)</span></h2>
           <p class="settings-summary-desc" id="exchangeSummaryDesc" data-i18n="finance.exchange.desc">Registre pagamentos recebidos em dinheiro numa moeda diferente da sua.</p>
         </div>
         <span class="settings-summary-chevron">›</span>
@@ -2439,7 +2439,7 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-12">
-      <h2 data-i18n="finance.title">💰 Financeiro</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v10"/><path d="M15 9.5c-.5-.9-1.6-1.5-3-1.5-1.7 0-3 1-3 2.3 0 1.5 1.4 2 3 2.2 1.8.3 3 .8 3 2.3 0 1.3-1.3 2.2-3 2.2-1.5 0-2.6-.6-3.2-1.6"/></svg></span><span data-i18n="finance.title">Financeiro</span></h2>
       <div class="sf-empty" id="financeEmpty">
         <div>
           <strong data-i18n="finance.emptyTitle">Nenhuma movimentação financeira registrada.</strong>
@@ -2470,7 +2470,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-12 settings-summary-card" onclick="openNewInventoryItemModal()">
       <div class="settings-summary-row">
         <div>
-          <h2 data-i18n="inventory.newItem.title">📦 Novo produto</h2>
+          <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span><span data-i18n="inventory.newItem.title">Novo produto</span></h2>
           <p class="settings-summary-desc" data-i18n="inventory.newItem.desc">Cadastre café da manhã, produtos de limpeza, enxoval e outros itens de estoque.</p>
         </div>
         <span class="settings-summary-chevron">›</span>
@@ -2478,7 +2478,7 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-12">
-      <h2 data-i18n="inventory.itemsTitle">🗂 Itens em estoque</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 8 12 4l8 4-8 4-8-4z"/><path d="M4 8v8l8 4 8-4V8"/><path d="M12 12v8"/></svg></span><span data-i18n="inventory.itemsTitle">Itens em estoque</span></h2>
       <div class="sf-empty" id="inventoryEmpty">
         <div>
           <strong data-i18n="inventory.emptyTitle">Nenhum item cadastrado.</strong>
@@ -2501,7 +2501,7 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-12">
-      <h2 data-i18n="inventory.alertsTitle">⚠️ Alertas de reposição</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17v.01"/></svg></span><span data-i18n="inventory.alertsTitle">Alertas de reposição</span></h2>
       <div class="sf-empty" id="inventoryAlertsEmpty">
         <div>
           <strong data-i18n="inventory.alertsEmptyTitle">Nenhum alerta de estoque.</strong>
@@ -2519,7 +2519,7 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
     <div class="card span-8">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="revenue.catalogTitle">🍷 Catálogo de experiências e upsells</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></span><span data-i18n="revenue.catalogTitle">Catálogo de experiências e upsells</span></h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn secondary" onclick="openPage('portfolio')" data-i18n="revenue.viewCatalogBtn">Ver catálogo completo</button>
           <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="revenue.addBtn">➕ Adicionar</button>
@@ -2529,13 +2529,13 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-4">
-      <h2 data-i18n="revenue.extraTitle">💰 Receita extra</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></span><span data-i18n="revenue.extraTitle">Receita extra</span></h2>
       <div class="value" style="font-size:34px;font-weight:900;color:var(--blue)" id="kpiExtraRevenue">0</div>
       <p data-i18n="revenue.extraDesc">Soma das oportunidades abertas de tour/upsell identificadas pela IA.</p>
     </div>
 
     <div class="card span-12">
-      <h2 data-i18n="revenue.opportunitiesTitle">📈 Oportunidades de receita</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></span><span data-i18n="revenue.opportunitiesTitle">Oportunidades de receita</span></h2>
       <div class="sf-empty" id="revenueEmpty">
         <div>
           <strong data-i18n="revenue.emptyOpportunitiesTitle">Nenhuma oportunidade cadastrada.</strong>
@@ -2564,15 +2564,15 @@ async function deleteRoleConfirm(roleId){
 <section id="events" class="page">
   <div class="grid" style="margin-bottom:var(--gap)">
     <div class="card span-4">
-      <h2 data-i18n="events.kpi.confirmedTitle">🎉 Eventos confirmados (mês)</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/></svg></span><span data-i18n="events.kpi.confirmedTitle">Eventos confirmados (mês)</span></h2>
       <div class="value" style="font-size:34px;font-weight:900;color:var(--blue)" id="kpiEventsConfirmed">0</div>
     </div>
     <div class="card span-4">
-      <h2 data-i18n="events.kpi.revenueTitle">💰 Receita prevista</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></span><span data-i18n="events.kpi.revenueTitle">Receita prevista</span></h2>
       <div class="value" style="font-size:34px;font-weight:900;color:var(--blue)" id="kpiEventsRevenue">—</div>
     </div>
     <div class="card span-4">
-      <h2 data-i18n="events.kpi.nextTitle">📅 Próximo evento</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/></svg></span><span data-i18n="events.kpi.nextTitle">Próximo evento</span></h2>
       <div id="kpiEventsNext" style="font-size:14px;color:var(--muted);margin-top:8px" data-i18n="events.kpi.nextEmpty">Nenhum evento futuro.</div>
     </div>
   </div>
@@ -2687,7 +2687,7 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <h2 style="margin:0" data-i18n="agenda.title">📅 Agenda de visitas</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/><path d="M8 14h2"/><path d="M14 14h2"/><path d="M8 17h2"/></svg></span><span data-i18n="agenda.title">Agenda de visitas</span></h2>
         <button type="button" class="btn primary" onclick="openNewVisitModal()" data-i18n="agenda.addBtn">➕ Nova visita</button>
       </div>
       <div class="sf-empty" id="agendaEmpty">
@@ -2722,7 +2722,7 @@ async function deleteRoleConfirm(roleId){
 <section id="reports" class="page">
   <div class="grid">
     <div class="card span-6">
-      <h2 data-i18n="reports.channelTitle">📊 Receita por canal</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M9 19v-7"/><path d="M13 19V8"/><path d="M17 19v-4"/></svg></span><span data-i18n="reports.channelTitle">Receita por canal</span></h2>
       <div class="sf-empty" id="reportsChannelEmpty">
         <div>
           <strong data-i18n="reports.channelEmptyTitle">Nenhum canal com receita registrada.</strong>
@@ -2743,7 +2743,7 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-6">
-      <h2 data-i18n="reports.funnelTitle">📈 Conversão por etapa</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M9 19v-7"/><path d="M13 19V8"/><path d="M17 19v-4"/></svg></span><span data-i18n="reports.funnelTitle">Conversão por etapa</span></h2>
       <div class="sf-empty" id="reportsFunnelEmpty">
         <div>
           <strong data-i18n="reports.funnelEmptyTitle">Nenhuma conversão registrada.</strong>
@@ -2769,7 +2769,7 @@ async function deleteRoleConfirm(roleId){
 
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
-        <h2 style="margin:0" data-i18n="reports.chatActivityTitle">💬 Atividade de chat</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="reports.chatActivityTitle">Atividade de chat</span></h2>
         <div id="reportsPeriodSelector" style="display:flex;gap:6px">
           <button type="button" class="btn secondary reports-period-btn active" data-period="daily" onclick="setReportsPeriod('daily')" data-i18n="reports.period.daily">Diário</button>
           <button type="button" class="btn secondary reports-period-btn" data-period="weekly" onclick="setReportsPeriod('weekly')" data-i18n="reports.period.weekly">Semanal</button>
@@ -2791,7 +2791,7 @@ async function deleteRoleConfirm(roleId){
     </div>
 
     <div class="card span-12">
-      <h2 data-i18n="reports.dailyTitle">📋 Relatório diário IA</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M9 19v-7"/><path d="M13 19V8"/><path d="M17 19v-4"/></svg></span><span data-i18n="reports.dailyTitle">Relatório diário IA</span></h2>
       <div class="sf-empty" id="reportsDailyEmpty">
         <div>
           <strong data-i18n="reports.dailyEmptyTitle">Nenhum relatório disponível.</strong>
@@ -2814,7 +2814,7 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
 
     <div class="card span-4">
-      <h2 data-i18n="nav.settings">⚙ Configurações</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 2.9a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1l.4 2.9h4.8l.4-2.9a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6a7 7 0 0 0 .1-1z"/></svg></span><span data-i18n="nav.settings">Configurações</span></h2>
 
       <div class="sf-empty">
         <div>
@@ -2870,7 +2870,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="geral" onclick="openOwnerModeModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="ownerMode.title">📊 Modo Dono</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg></span><span data-i18n="ownerMode.title">Modo Dono</span></h2>
             <p class="settings-summary-desc" id="ownerModeSummaryDesc" data-i18n="ownerMode.summaryDescOff">Receba um resumo rápido (ocupação, reservas, receita) no seu próprio WhatsApp, sem abrir o painel.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2880,7 +2880,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="geral" data-required-account-kind="lodging" onclick="openGoogleReviewModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="googleReview.title">⭐ Avaliações no Google</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="m12 3 2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6z"/></svg></span><span data-i18n="googleReview.title">Avaliações no Google</span></h2>
             <p class="settings-summary-desc" id="googleReviewSummaryDesc" data-i18n="googleReview.summaryDescOff">Peça avaliação no Google automaticamente assim que o hóspede faz checkout.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2900,7 +2900,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="empresa" data-required-permission="branding" data-hide-for-account-kind="promoter" onclick="openBrandingModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.branding.title">🎨 Marca (White-label)</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-.9.7-1.5 1.5-1.5H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="8" r="1"/></svg></span><span data-i18n="settings.branding.title">Marca (White-label)</span></h2>
             <p class="settings-summary-desc" data-i18n="settings.branding.desc">Personalize logo, nome exibido e cor do painel — pra revendedores ou hospedagens com marca própria.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2910,7 +2910,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openWhatsappSettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.whatsapp.title">📱 WhatsApp Business</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="settings.whatsapp.title">WhatsApp Business</span></h2>
             <p class="settings-summary-desc" id="whatsappSummaryDesc" data-i18n="settings.whatsapp.desc">Conecte o número oficial da hospedagem no WhatsApp (Meta Cloud API).</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2920,7 +2920,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openFacebookSettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.facebook.title">💬 Facebook Messenger</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="settings.facebook.title">Facebook Messenger</span></h2>
             <p class="settings-summary-desc" id="facebookSummaryDesc" data-i18n="settings.facebook.desc">Conecte a Página do Facebook da hospedagem pra atender pelo Messenger.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2930,7 +2930,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openInstagramSettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.instagram.title">📷 Instagram Direct</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg></span><span data-i18n="settings.instagram.title">Instagram Direct</span></h2>
             <p class="settings-summary-desc" id="instagramSummaryDesc" data-i18n="settings.instagram.desc">Conecte a conta profissional do Instagram da hospedagem pra atender pelo Direct.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2940,7 +2940,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" data-required-agency-category="comercio" onclick="openNuvemshopSettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.nuvemshop.title">🛍️ Nuvemshop / Tiendanube</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M6 8h12l1 12H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><span data-i18n="settings.nuvemshop.title">Nuvemshop / Tiendanube</span></h2>
             <p class="settings-summary-desc" id="nuvemshopSummaryDesc" data-i18n="settings.nuvemshop.desc">Conecte sua loja online pra sincronizar o catálogo e ser avisado de pedidos novos.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2950,7 +2950,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openTokkoSettingsModal()" style="display:none">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.tokko.title">🏠 Tokko Broker</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-6h4v6"/></svg></span><span data-i18n="settings.tokko.title">Tokko Broker</span></h2>
             <p class="settings-summary-desc" id="tokkoSummaryDesc" data-i18n="settings.tokko.desc">Conecte sua conta do Tokko Broker pra sincronizar o catálogo de imóveis.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2960,7 +2960,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openPraediumSettingsModal()" style="display:none">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.praedium.title">🏠 Praedium</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-6h4v6"/></svg></span><span data-i18n="settings.praedium.title">Praedium</span></h2>
             <p class="settings-summary-desc" id="praediumSummaryDesc" data-i18n="settings.praedium.desc">Conecte o feed XML da Praedium pra sincronizar o catálogo de imóveis.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2974,7 +2974,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openMyWhatsappModal()" style="display:none">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.myWhatsapp.title">📱 Meu WhatsApp (corretor)</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="settings.myWhatsapp.title">Meu WhatsApp (corretor)</span></h2>
             <p class="settings-summary-desc" id="myWhatsappSummaryDesc" data-i18n="settings.myWhatsapp.desc">Conecte seu próprio número pra atender seus leads com sua própria IA.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2984,7 +2984,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openNotificationsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.communication.pushTitle">🔔 Notificações</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span><span data-i18n="settings.communication.pushTitle">Notificações</span></h2>
             <p class="settings-summary-desc" id="notificationsSummaryDesc" data-i18n="settings.communication.pushDesc">Receba um aviso no navegador quando surgir algo urgente (nova oportunidade de alta prioridade, reserva pendente de confirmação), mesmo com a aba fechada. Ative em cada dispositivo separadamente.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2994,7 +2994,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openQuickRepliesModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.communication.quickRepliesTitle">💬 Respostas rápidas</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="settings.communication.quickRepliesTitle">Respostas rápidas</span></h2>
             <p class="settings-summary-desc" id="quickRepliesSummaryDesc" data-i18n="settings.quickReplies.summaryDesc">Frases prontas pra responder hóspedes mais rápido no chat.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -3014,7 +3014,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="seguranca" onclick="openChangePasswordModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.security.changePasswordTitle">🔒 Trocar senha</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span data-i18n="settings.security.changePasswordTitle">Trocar senha</span></h2>
             <p class="settings-summary-desc" data-i18n="settings.security.changePasswordSummaryDesc">Atualize a senha da sua conta.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -3047,7 +3047,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="billing" data-hide-for-account-kind="promoter" onclick="openReferralSettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.referral.title">🤝 Programa de indicação</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5c1.7.4 3 2 3 3.9s-1.3 3.5-3 3.9"/><path d="M22 20c0-2.8-2-5.2-4.7-5.8"/></svg></span><span data-i18n="settings.referral.title">Programa de indicação</span></h2>
             <p class="settings-summary-desc" id="referralSummaryDesc" data-i18n="settings.referral.intro">Indique outras hospedagens pro StayFlow e ganhe comissão recorrente enquanto elas continuarem assinando.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -3057,7 +3057,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="integracoes" data-required-account-kind="lodging" onclick="openBeds24SettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.beds24.title">🔌 Integração com canais (Booking.com, Airbnb, Hostelworld)</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M9 3v6"/><path d="M15 3v6"/><path d="M6 9h12v3a6 6 0 0 1-12 0z"/><path d="M12 18v3"/></svg></span><span data-i18n="settings.beds24.title">Integração com canais (Booking.com, Airbnb, Hostelworld)</span></h2>
             <p class="settings-summary-desc" id="beds24SummaryDesc" data-i18n="settings.beds24.intro">Conecta sua hospedagem com Booking.com, Airbnb e Hostelworld — reservas feitas nesses canais caem automaticamente no seu mapa de quartos, e sua disponibilidade é mantida atualizada lá também, sem risco de overbooking entre canais.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -3067,7 +3067,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="integracoes" data-hide-for-account-kind="promoter" onclick="openOutboundWebhookSettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.outboundWebhook.title">📡 Webhook de saída</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 21V9"/><path d="M8 6a5.7 5.7 0 0 1 8 0"/><path d="M5.5 3.5a9.5 9.5 0 0 1 13 0"/><circle cx="12" cy="9" r="1.6"/></svg></span><span data-i18n="settings.outboundWebhook.title">Webhook de saída</span></h2>
             <p class="settings-summary-desc" id="outboundWebhookSummaryDesc" data-i18n="settings.outboundWebhook.intro">Se você já tem um sistema próprio e usa o StayFlow só pra atendimento/IA, cadastre aqui uma URL sua — toda reserva criada, alterada, cancelada ou com check-in/check-out feito dispara um aviso automático (POST) pra ela, de qualquer origem (WhatsApp, manual ou canais como Booking/Airbnb).</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -3077,7 +3077,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="integracoes" data-hide-for-account-kind="promoter" onclick="openMercadoPagoSettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.mercadopago.title">💳 Mercado Pago</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg></span><span data-i18n="settings.mercadopago.title">Mercado Pago</span></h2>
             <p class="settings-summary-desc" id="mercadopagoSummaryDesc" data-i18n="settings.mercadopago.desc">Conecte a conta Mercado Pago da hospedagem pra receber pagamento de reserva, passeio e aluguel direto do hóspede.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -3093,7 +3093,7 @@ async function deleteRoleConfirm(roleId){
 <section id="support" class="page">
   <div class="grid">
     <div class="card span-12" style="display:flex;flex-direction:column;height:min(640px,72vh)">
-      <h2>💬 Fale com a StayFlow</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span>Fale com a StayFlow</h2>
       <p style="color:var(--muted);font-size:13px;margin:-6px 0 0">Manda sua dúvida ou pedido aqui — a equipe da StayFlow responde direto nesta conversa.</p>
       <div class="messages" id="supportMessages" style="flex:1;min-height:0;overflow-y:auto;margin:14px 0"></div>
       <div class="chat-input">
@@ -3107,7 +3107,7 @@ async function deleteRoleConfirm(roleId){
 <!-- PORTFOLIO DE VENDAS (item 27b - so pro promotor) -->
 <section id="salesportfolio" class="page">
   <div class="card" style="margin-bottom:16px">
-    <h2 data-i18n="salesPortfolio.headerTitle">📊 Portfólio de vendas</h2>
+    <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></span><span data-i18n="salesPortfolio.headerTitle">Portfólio de vendas</span></h2>
     <p style="color:var(--muted);font-size:13px;margin-top:6px" data-i18n="salesPortfolio.headerDesc">Um guia por setor pra você estudar a StayFlow com calma — e também apresentar numa call ou reunião quando estiver pronto. Escolha o setor certo pro seu prospect e navegue pelos slides; se tiver dúvida em qualquer um, pergunte direto ao Ask StayFlow.</p>
   </div>
   <div class="ops-tabs">
@@ -3164,7 +3164,7 @@ async function deleteRoleConfirm(roleId){
       <button type="button" class="btn" id="attendanceToggleBtn" onclick="toggleAttendance()" data-i18n="attendance.clockInBtn">Bater ponto de entrada</button>
     </div>
     <div class="card span-12">
-      <h2 data-i18n="scheduling.onDuty.title">🕐 Quem está de plantão agora</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 19c.2-2 1.7-3.5 3.5-3.8"/></svg></span><span data-i18n="scheduling.onDuty.title">Quem está de plantão agora</span></h2>
       <div style="overflow-x:auto">
         <table class="table">
           <thead>
@@ -3180,7 +3180,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-12 settings-summary-card" onclick="openNewShiftModal()">
       <div class="settings-summary-row">
         <div>
-          <h2 data-i18n="scheduling.newShift.title">➕ Novo turno</h2>
+          <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8"/><path d="M8 12h8"/></svg></span><span data-i18n="scheduling.newShift.title">Novo turno</span></h2>
           <p class="settings-summary-desc" data-i18n="scheduling.newShift.desc">Cadastre um turno de trabalho pra você ou pra equipe.</p>
         </div>
         <span class="settings-summary-chevron">›</span>
@@ -3693,7 +3693,7 @@ async function deleteRoleConfirm(roleId){
   window.openWhatsappSettingsModal = function(){
     window._whatsappAddExtraMode = false;
     window._whatsappDiscovered = null;
-    openGenericModal(T('settings.whatsapp.title', '📱 WhatsApp Business'), `
+    openGenericModal(T('settings.whatsapp.title', 'WhatsApp Business'), `
       <p style="margin-bottom:14px">${T('settings.whatsapp.desc', 'Conecte o número oficial da hospedagem no WhatsApp (Meta Cloud API).')}</p>
 
       <div id="whatsappNumbersList" style="margin-bottom:14px"></div>
@@ -3726,7 +3726,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openFacebookSettingsModal = function(){
-    openGenericModal(T('settings.facebook.title', '💬 Facebook Messenger'), `
+    openGenericModal(T('settings.facebook.title', 'Facebook Messenger'), `
       <p style="margin-bottom:14px">${T('settings.facebook.desc', 'Conecte a Página do Facebook da hospedagem pra atender pelo Messenger.')}</p>
 
       <div id="facebookConnected" style="display:none">
@@ -3766,7 +3766,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openInstagramSettingsModal = function(){
-    openGenericModal(T('settings.instagram.title', '📷 Instagram Direct'), `
+    openGenericModal(T('settings.instagram.title', 'Instagram Direct'), `
       <p style="margin-bottom:14px">${T('settings.instagram.desc', 'Conecte a conta profissional do Instagram da hospedagem pra atender pelo Direct.')}</p>
 
       <div id="instagramConnected" style="display:none">
@@ -3806,7 +3806,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openNuvemshopSettingsModal = function(){
-    openGenericModal(T('settings.nuvemshop.title', '🛍️ Nuvemshop / Tiendanube'), `
+    openGenericModal(T('settings.nuvemshop.title', 'Nuvemshop / Tiendanube'), `
       <p style="margin-bottom:14px">${T('settings.nuvemshop.desc', 'Conecte sua loja online pra sincronizar o catálogo em Meu Portfólio e ser avisado de pedidos novos.')}</p>
 
       <div id="nuvemshopConnected" style="display:none">
@@ -3866,7 +3866,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openTokkoSettingsModal = function(){
-    openGenericModal(T('settings.tokko.title', '🏠 Tokko Broker'), `
+    openGenericModal(T('settings.tokko.title', 'Tokko Broker'), `
       <p style="margin-bottom:14px">${T('settings.tokko.modalDesc', 'Cole a chave da API do Tokko Broker (Mi Empresa → Permisos, no painel deles) pra sincronizar seu catálogo de imóveis.')}</p>
 
       <div id="tokkoConnected" style="display:none">
@@ -3982,7 +3982,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openPraediumSettingsModal = function(){
-    openGenericModal(T('settings.praedium.title', '🏠 Praedium'), `
+    openGenericModal(T('settings.praedium.title', 'Praedium'), `
       <p style="margin-bottom:14px">${T('settings.praedium.modalDesc', 'Cole a URL do feed XML de imóveis da Praedium (Configurações → Integrações → Dados da Integração, no painel deles) pra sincronizar seu catálogo.')}</p>
 
       <div id="praediumConnected" style="display:none">
@@ -4523,7 +4523,7 @@ async function deleteRoleConfirm(roleId){
   // existente de proposito - evita qualquer risco de regressao no
   // fluxo de WhatsApp da agencia, que ja esta em producao.
   window.openMyWhatsappModal = function(){
-    openGenericModal(T('settings.myWhatsapp.title', '📱 Meu WhatsApp (corretor)'), `
+    openGenericModal(T('settings.myWhatsapp.title', 'Meu WhatsApp (corretor)'), `
       <p style="margin-bottom:14px">${T('settings.myWhatsapp.modalDesc', 'Conecte seu próprio número de WhatsApp Business — a IA responde seus leads usando sua própria persona, e eles ficam vinculados a você mesmo aparecendo no painel geral da imobiliária.')}</p>
 
       <div id="myWhatsappConnected" style="display:none">
@@ -4775,7 +4775,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openMercadoPagoSettingsModal = function(){
-    openGenericModal(T('settings.mercadopago.title', '💳 Mercado Pago'), `
+    openGenericModal(T('settings.mercadopago.title', 'Mercado Pago'), `
       <p style="margin-bottom:14px">${T('settings.mercadopago.desc', 'Conecte a conta Mercado Pago da hospedagem pra receber pagamento de reserva, passeio e aluguel direto do hóspede — o dinheiro cai direto na sua conta, com a taxa da StayFlow já descontada automaticamente.')}</p>
 
       <div id="mercadopagoConnected" style="display:none">
@@ -4837,7 +4837,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openReferralSettingsModal = function(){
-    openGenericModal(T('settings.referral.title', '🤝 Programa de indicação'), `
+    openGenericModal(T('settings.referral.title', 'Programa de indicação'), `
       <p style="margin-bottom:14px">${T('settings.referral.desc', 'Compartilhe seu link com outras hospedagens. Toda hospedagem que se cadastrar por ele e assinar um plano gera comissão recorrente pra você, enquanto ela continuar pagando.')}</p>
 
       <div style="display:flex;gap:8px;margin-bottom:16px">
@@ -5028,7 +5028,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openBeds24SettingsModal = function(){
-    openGenericModal(T('settings.beds24.title', '🔌 Integração com canais (Booking.com, Airbnb, Hostelworld)'), `
+    openGenericModal(T('settings.beds24.title', 'Integração com canais (Booking.com, Airbnb, Hostelworld)'), `
       <div id="beds24Unavailable" class="sf-empty" style="display:none">
         <div>
           <strong>${T('settings.beds24.unavailableTitle', 'Integração ainda não disponível')}</strong>
@@ -5075,7 +5075,7 @@ async function deleteRoleConfirm(roleId){
     const webhookIntro = isAgencyAccount
       ? T('settings.outboundWebhook.introAgency', 'Se você já tem um sistema próprio, cadastre aqui uma URL sua — toda vez que uma oportunidade nova (cliente interessado) é detectada numa conversa, um aviso automático (POST) é disparado pra ela.')
       : T('settings.outboundWebhook.intro', 'Se você já tem um sistema próprio e usa o StayFlow só pra atendimento/IA, cadastre aqui uma URL sua — toda reserva criada, alterada, cancelada ou com check-in/check-out feito dispara um aviso automático (POST) pra ela, de qualquer origem (WhatsApp, manual ou canais como Booking/Airbnb).');
-    openGenericModal(T('settings.outboundWebhook.title', '📡 Webhook de saída'), `
+    openGenericModal(T('settings.outboundWebhook.title', 'Webhook de saída'), `
       <p style="font-size:13px;color:var(--muted);margin:0 0 14px">${webhookIntro}</p>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
@@ -5504,7 +5504,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openNotificationsModal = async function(){
-    openGenericModal(T('settings.communication.pushTitle', '🔔 Notificações'), `
+    openGenericModal(T('settings.communication.pushTitle', 'Notificações'), `
       <p style="margin-bottom:14px">${T('settings.communication.pushDesc', 'Receba um aviso no navegador quando surgir algo urgente (nova oportunidade de alta prioridade, reserva pendente de confirmação), mesmo com a aba fechada. Ative em cada dispositivo separadamente.')}</p>
       <div id="pushStatusMessage" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
       <button class="btn secondary" type="button" id="pushToggleBtn" onclick="togglePushNotifications()">${T('settings.communication.pushEnableBtn', 'Ativar neste dispositivo')}</button>
@@ -6079,7 +6079,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openOwnerModeModal = async function(){
-    openGenericModal(T('ownerMode.title', '📊 Modo Dono'), `
+    openGenericModal(T('ownerMode.title', 'Modo Dono'), `
       <p style="margin-bottom:14px">${T('ownerMode.modalDesc', 'Cadastre seu número de WhatsApp aqui. Quando você mandar QUALQUER mensagem pro número principal da hospedagem a partir desse número, em vez de tratar como um hóspede novo, você recebe de volta um resumo rápido — ocupação, reservas confirmadas, receita e oportunidades em aberto.')}</p>
       <div>
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('ownerMode.phoneLabel', 'Seu número de WhatsApp')}</label>
@@ -6147,7 +6147,7 @@ async function deleteRoleConfirm(roleId){
   };
 
   window.openGoogleReviewModal = async function(){
-    openGenericModal(T('googleReview.title', '⭐ Avaliações no Google'), `
+    openGenericModal(T('googleReview.title', 'Avaliações no Google'), `
       <p style="margin-bottom:14px">${T('googleReview.modalDesc', 'Cole aqui o link de avaliação da sua hospedagem no Google. Quando configurado, o hóspede recebe uma mensagem pedindo uma avaliação rápida assim que faz checkout — enquanto a experiência ainda está fresca.')}</p>
       <div>
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('googleReview.linkLabel', 'Link de avaliação do Google')}</label>
@@ -6298,7 +6298,7 @@ async function deleteRoleConfirm(roleId){
   // de sempre, so movidos pra dentro de um modal em vez de ficarem
   // expostos direto na pagina de Configuracoes.
   window.openBrandingModal = function(){
-    openGenericModal(T('settings.branding.title', '🎨 Marca (White-label)'), `
+    openGenericModal(T('settings.branding.title', 'Marca (White-label)'), `
       <p style="margin-bottom:14px">${T('settings.branding.desc', 'Personalize logo, nome exibido e cor do painel — pra revendedores ou hospedagens com marca própria.')}</p>
       <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
         <div class="span-12">
@@ -6823,7 +6823,7 @@ async function deleteRoleConfirm(roleId){
   }
 
   window.openQuickRepliesModal = function(){
-    openGenericModal(T('settings.communication.quickRepliesTitle', '💬 Respostas rápidas'), `
+    openGenericModal(T('settings.communication.quickRepliesTitle', 'Respostas rápidas'), `
       <div id="quickRepliesList" style="display:grid;gap:8px"></div>
       <div style="display:flex;gap:10px;margin-top:10px">
         <input type="text" id="newQuickReplyText" placeholder="${T('settings.communication.newQuickReplyPlaceholder', 'Nova resposta rápida...')}">
@@ -6890,7 +6890,7 @@ async function deleteRoleConfirm(roleId){
   // mesmos ids de input continuam existindo (so injetados dentro do
   // modal agora), entao submitChangePassword() nao precisou mudar nada.
   window.openChangePasswordModal = function(){
-    openGenericModal(T('settings.security.changePasswordTitle', '🔒 Trocar senha'), `
+    openGenericModal(T('settings.security.changePasswordTitle', 'Trocar senha'), `
       <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
         <div class="span-12">
           <input type="password" id="currentPasswordInput" placeholder="${T('settings.security.currentPasswordPlaceholder', 'Senha atual')}" autocomplete="current-password">
@@ -6919,7 +6919,7 @@ async function deleteRoleConfirm(roleId){
     const info = window._promoterPayoutInfo || {};
     const method = info.payout_method || "";
     const details = info.payout_details || "";
-    openGenericModal(T('wallet.payoutTitle', '💳 Como você quer receber'), `
+    openGenericModal(T('wallet.payoutTitle', 'Como você quer receber'), `
       <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('wallet.payoutModalDesc', 'O repasse continua manual - esse dado é só pra quem for te pagar saber pra onde mandar.')}</p>
       <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
         <div class="span-12">
@@ -8716,7 +8716,7 @@ window.editCategoryUI = function(categoryId){
     <button class="btn" type="button" onclick="submitEditCategory(${category.id})">${T('common.save', 'Salvar')}</button>
 
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #ffffff12">
-      <h4 style="margin:0 0 4px;font-size:13px;font-weight:800">${T('rates.sectionTitle', '📅 Tarifas por período')}</h4>
+      <h4 style="margin:0 0 4px;font-size:13px;font-weight:800"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/></svg></span>${T('rates.sectionTitle', 'Tarifas por período')}</h4>
       <p style="font-size:12px;color:var(--muted);margin:0 0 10px">${T('rates.sectionDesc', 'Defina um preço diferente pra um intervalo de datas (ex: alta temporada) — fora desses períodos, vale a diária normal acima.')}</p>
       <div id="editCatRatesList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">${T('common.loading', 'Carregando...')}</div>
       <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px">
@@ -9035,7 +9035,7 @@ document.addEventListener("click", (event) => {
 });
 
 window.openCreateCategoryModal = function(){
-  openGenericModal(T('roommap.categories.title', '🏷️ Modalidades de quarto'), `
+  openGenericModal(T('roommap.categories.title', 'Modalidades de quarto'), `
     <p style="margin-bottom:14px">${T('roommap.categories.modalDesc', 'Defina os tipos de acomodação da sua hospedagem (dormitório, suíte, etc.) para organizar quartos e preços.')}</p>
     <form onsubmit="submitNewRoomCategory(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
       <div style="grid-column:span 6">
@@ -9083,7 +9083,7 @@ function couponRowHtml(coupon){
 }
 
 window.openCouponsModal = async function(){
-  openGenericModal(T('coupons.title', '🎟️ Cupons de desconto'), `
+  openGenericModal(T('coupons.title', 'Cupons de desconto'), `
     <p style="margin-bottom:14px">${T('coupons.modalDesc', 'Crie códigos que a IA valida automaticamente na conversa antes de aplicar qualquer desconto — nunca aceita um código sem checar aqui primeiro.')}</p>
     <form onsubmit="submitNewCoupon(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap);">
       <div style="grid-column:span 5">
@@ -9177,7 +9177,7 @@ window.deleteCouponUI = async function(couponId, code){
 
 window.openCreateRoomModal = function(){
   const categoryOptions = ROOM_CATEGORIES_CACHE.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}${c.capacity ? ` (${c.capacity})` : ""}</option>`).join("");
-  openGenericModal(T('roommap.newRoom.title', '🚪 Novo quarto'), `
+  openGenericModal(T('roommap.newRoom.title', 'Novo quarto'), `
     <form onsubmit="submitNewRoom(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
       <input class="span-4" name="name" placeholder="${T('roommap.newRoom.namePlaceholder', 'Número/nome do quarto')}" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
       <select class="span-4" name="category_name" id="roomCategorySelect" style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
@@ -9202,7 +9202,7 @@ window.openCreateRoomModal = function(){
 
 window.openCreateBedModal = function(){
   const roomOptions = ROOM_MAP_ROOMS_CACHE.map(r => `<option value="${r.id}">${escapeHtml(r.name)}${r.category_name ? " - " + escapeHtml(r.category_name) : ""}</option>`).join("");
-  openGenericModal(T('roommap.newBed.title', '🛏️ Nova cama'), `
+  openGenericModal(T('roommap.newBed.title', 'Nova cama'), `
     <form onsubmit="submitNewBed(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
       <select class="span-4" name="room_id" id="bedRoomSelect" required style="grid-column:span 4;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
         <option value="">${T('roommap.roomSelectPlaceholder', 'Quarto...')}</option>
@@ -9222,7 +9222,7 @@ window.openCreateBedModal = function(){
 };
 
 window.openCleaningListModal = function(){
-  openGenericModal(T('roommap.cleaning.title', '🧺 Lista de limpeza do dia'), `
+  openGenericModal(T('roommap.cleaning.title', 'Lista de limpeza do dia'), `
     <div class="sf-empty" id="cleaningListEmpty">
       <div>
         <strong>${T('roommap.cleaning.emptyTitle', 'Nenhuma cama aguardando limpeza.')}</strong>
@@ -9238,7 +9238,7 @@ window.openCleaningListModal = function(){
 };
 
 window.openLaundryReturnModal = function(){
-  openGenericModal(T('roommap.laundry.title', '🔄 Devolver da lavanderia'), `
+  openGenericModal(T('roommap.laundry.title', 'Devolver da lavanderia'), `
     <form onsubmit="submitReturnFromLaundry(event)" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;">
       <input class="span-7" name="item_name" placeholder="${T('roommap.laundry.itemPlaceholder', 'Nome do item (ex: Lençol solteiro)')}" required style="grid-column:span 7;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
       <input class="span-3" type="number" min="1" name="quantity" placeholder="${T('roommap.laundry.qtyPlaceholder', 'Qtd')}" required style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 12px;">
@@ -9739,7 +9739,7 @@ window.openExchangeModal = async function(){
     console.warn("Erro ao carregar hóspedes pro câmbio:", e);
   }
 
-  openGenericModal(T('finance.exchange.title', '💱 Câmbio (pagamento em moeda estrangeira)'), `
+  openGenericModal(T('finance.exchange.title', 'Câmbio (pagamento em moeda estrangeira)'), `
     <p style="margin-bottom:14px">${T('finance.exchange.modalDesc', 'Cotação usada mais baixa que a atual gera lucro pro hostel na diferença.')}</p>
     <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 4">
@@ -10110,7 +10110,7 @@ window.openNewEventModal = function(){
 
   const spaceOptions = eventSpacesCache.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("");
 
-  openGenericModal(T('events.newModal.title', '🎉 Novo evento'), `
+  openGenericModal(T('events.newModal.title', 'Novo evento'), `
     <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 6">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('events.col.space', 'Espaço')}</label>
@@ -10869,7 +10869,7 @@ window.openRescheduleVisitModal = function(visitId){
   const visit = agendaVisitsCache.find(v => v.id === visitId);
   if(!visit) return;
 
-  openGenericModal(T('agenda.rescheduleModal.title', '🔁 Reagendar visita'), `
+  openGenericModal(T('agenda.rescheduleModal.title', 'Reagendar visita'), `
     <p style="font-size:13px;color:var(--muted);margin:0 0 12px">${escapeHtml(visit.property_name)} · ${escapeHtml(visit.client_name)}</p>
     <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('agenda.newModal.when', 'Data e hora')}</label>
     <input type="datetime-local" id="rescheduleVisitAt" value="${eventsFromBackendDatetime(visit.scheduled_at)}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
@@ -10928,7 +10928,7 @@ window.openNewVisitModal = async function(){
   const brokerOptions = `<option value="">${T('agenda.newModal.brokerNone', 'Sem corretor definido')}</option>` +
     agendaBrokersCache.map(b => `<option value="${b.membership_id}">${escapeHtml(b.name)}</option>`).join("");
 
-  openGenericModal(T('agenda.newModal.title', '📅 Nova visita'), `
+  openGenericModal(T('agenda.newModal.title', 'Nova visita'), `
     <div class="grid" style="grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 12">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('agenda.newModal.property', 'Imóvel')}</label>
@@ -11416,7 +11416,7 @@ window.generatePortfolioItemDescriptionWithAI = async function(){
 // nenhuma sozinho - só processa o texto colado, pra não esbarrar em
 // scraping/termos de uso de terceiro (decisão registrada nesta versão).
 window.openPasteListingModal = function(){
-  openGenericModal(T('portfolio.pasteListingModal.title', '📋 Colar anúncio'), `
+  openGenericModal(T('portfolio.pasteListingModal.title', 'Colar anúncio'), `
     <p style="font-size:13px;color:var(--muted);margin:0 0 12px">${T('portfolio.pasteListingModal.desc', 'Cole abaixo o texto do anúncio que você encontrou (título, descrição, preço, contato) - a IA organiza os dados pra você revisar antes de salvar.')}</p>
     <textarea id="pasteListingText" rows="8" placeholder="${T('portfolio.pasteListingModal.placeholder', 'Cole aqui o texto do anúncio...')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical"></textarea>
     <div style="display:flex;justify-content:flex-end;margin-top:14px">
@@ -11747,7 +11747,7 @@ window.switchOperationsTab = function(tabId){
 };
 
 window.openNewTaskModal = function(){
-  openGenericModal(T('operations.tasks.newModalTitle', '🧹 Novo chamado'), `
+  openGenericModal(T('operations.tasks.newModalTitle', 'Novo chamado'), `
     <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('operations.tasks.newModalDesc', 'Pra tarefa avulsa que não é pedido de cozinha, manutenção nem segurança.')}</p>
     <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 6">
@@ -12060,7 +12060,7 @@ window.loadMenuSummary = async function(){
 };
 
 window.openNewKitchenOrderModal = async function(){
-  openGenericModal(T('kitchen.orders.newModalTitle', '🍽️ Novo pedido'), `<p style="color:var(--muted);font-size:13px">Carregando cardápio…</p>`);
+  openGenericModal(T('kitchen.orders.newModalTitle', 'Novo pedido'), `<p style="color:var(--muted);font-size:13px">Carregando cardápio…</p>`);
 
   let items = [];
   try{
@@ -12137,7 +12137,7 @@ window.submitNewKitchenOrder = async function(){
 };
 
 window.openMenuModal = function(){
-  openGenericModal(T('kitchen.menu.modalTitle', '📋 Cardápio'), `
+  openGenericModal(T('kitchen.menu.modalTitle', 'Cardápio'), `
     <p style="margin-bottom:14px">${T('kitchen.menu.modalDesc', 'Itens que a IA usa pra tirar pedido pelo chat, e que aparecem pra equipe da cozinha.')}</p>
     <div id="menuItemsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
     <div style="border-top:1px solid var(--line);padding-top:14px">
@@ -12275,7 +12275,7 @@ window.advanceKitchenItem = async function(ticketId, itemId, currentStatus){
 // ----- Manutencao -----
 
 window.openNewMaintenanceTicketModal = function(){
-  openGenericModal(T('maintenance.tickets.newModalTitle', '🔧 Novo chamado'), `
+  openGenericModal(T('maintenance.tickets.newModalTitle', 'Novo chamado'), `
     <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('maintenance.tickets.newModalDesc', 'Pra problema relatado no balcão/recepção, não pelo chat.')}</p>
     <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 6">
@@ -12410,7 +12410,7 @@ window.resolveMaintenanceTicket = async function(ticketId){
 // ----- Seguranca Patrimonial -----
 
 window.openNewSecurityIncidentModal = function(){
-  openGenericModal(T('patrimonialSecurity.incidents.newModalTitle', '🛡️ Novo chamado'), `
+  openGenericModal(T('patrimonialSecurity.incidents.newModalTitle', 'Novo chamado'), `
     <p style="margin-bottom:14px;color:var(--muted);font-size:13px">${T('patrimonialSecurity.incidents.newModalDesc', 'Pra ocorrência registrada pela equipe (ronda, relato no balcão), não pelo chat.')}</p>
     <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 6">
@@ -12531,7 +12531,7 @@ window.resolveSecurityIncident = async function(ticketId){
 // quanto os campos do modal (so quando ele esta aberto, por isso os
 // guards de elemento nulo).
 window.openCameraSettingsModal = function(){
-  openGenericModal(T('patrimonialSecurity.integrations.title', '🎥 Câmeras de vigilância'), `
+  openGenericModal(T('patrimonialSecurity.integrations.title', 'Câmeras de vigilância'), `
     <p style="margin-bottom:14px">${T('patrimonialSecurity.integrations.desc', 'Cadastre a URL de acesso ao sistema de câmeras quando a hospedagem tiver um configurado. Sem isso, a segurança patrimonial segue funcionando normalmente pelo modo manual (aviso pra quem está de plantão), só sem o atalho direto.')}</p>
     <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 12">
@@ -12619,7 +12619,7 @@ window.saveCameraIntegration = async function(){
 // ----- Estacionamento -----
 
 window.openAddVehicleModal = function(){
-  openGenericModal(T('parking.vehicles.addModalTitle', '🚗 Adicionar veículo'), `
+  openGenericModal(T('parking.vehicles.addModalTitle', 'Adicionar veículo'), `
     <p style="margin-bottom:14px">${T('parking.vehicles.addModalDesc', 'Pra quem chegou agora sem reserva/cadastro ainda - só o nome já serve, sem precisar buscar hóspede no sistema.')}</p>
     <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
       <div style="grid-column:span 12">
@@ -12755,7 +12755,7 @@ async function loadParking(){
 }
 
 window.openNewValetRequestModal = async function(){
-  openGenericModal(T('parking.valet.newModalTitle', '🔑 Novo chamado de manobrista'), `<p style="color:var(--muted);font-size:13px">Carregando veículos…</p>`);
+  openGenericModal(T('parking.valet.newModalTitle', 'Novo chamado de manobrista'), `<p style="color:var(--muted);font-size:13px">Carregando veículos…</p>`);
 
   let vehicles = [];
   try{
@@ -12967,7 +12967,7 @@ window.openNewShiftModal = function(){
     `<option value="${dept.key}">${T(dept.labelKey, dept.labelFallback)}</option>`
   ).join("");
 
-  openGenericModal(T('scheduling.newShift.title', '➕ Novo turno'), `
+  openGenericModal(T('scheduling.newShift.title', 'Novo turno'), `
     <p style="margin-bottom:14px">${T('scheduling.newShift.desc', 'Cadastre um turno de trabalho pra você ou pra equipe.')}</p>
     <div class="form-grid">
       <div class="field">
@@ -13403,7 +13403,7 @@ window.onInventoryCategorySelectChange = async function(){
 };
 
 window.openNewInventoryItemModal = function(){
-  openGenericModal(T('inventory.newItem.title', '📦 Novo produto'), `
+  openGenericModal(T('inventory.newItem.title', 'Novo produto'), `
     <form onsubmit="submitNewInventoryItem(event)" autocomplete="off" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;">
       <div style="grid-column:span 6">
         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('inventory.newItem.nameLabel', 'Nome do produto')}</label>
@@ -13874,12 +13874,12 @@ function renderGuestProfileModal(profile, editMode){
     </div>
 
     <div class="guest-profile-section">
-      <h4>${T('finance.exchange.title', '💱 Câmbio (pagamento em moeda estrangeira)')}</h4>
+      <h4><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 8h13"/><path d="M15 4l3 4-3 4"/><path d="M19 16H6"/><path d="M9 12l-3 4 3 4"/></svg></span>${T('finance.exchange.title', 'Câmbio (pagamento em moeda estrangeira)')}</h4>
       ${exchangesHtml}
     </div>
 
     <div class="guest-profile-section">
-      <h4>${T('guests.privacy.title', '🔒 Privacidade')}</h4>
+      <h4><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>${T('guests.privacy.title', 'Privacidade')}</h4>
       <p style="font-size:12px;color:var(--muted);margin:0 0 10px">${T('guests.privacy.desc', 'A pedido do hóspede, remove documentos e conversas, e anonimiza nome/telefone/email/documento. Reservas e valores ficam registrados sem identificar a pessoa. Ação irreversível.')}</p>
       <button class="btn red" type="button" onclick="eraseGuestDataUI(${g.id})">${T('guests.privacy.eraseBtn', '🗑️ Excluir dados do hóspede')}</button>
       <div id="guestEraseMessage" class="generic-modal-message"></div>
@@ -15032,7 +15032,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 <script src="assets/js/chats-live.js?v=1125"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1152"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1153"></script>
 <script>
 (function(){
   "use strict";
