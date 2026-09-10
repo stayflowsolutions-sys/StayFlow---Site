@@ -14,12 +14,15 @@ a{color:#8fb4ff;text-decoration:none}
 Plano selecionado: <strong id='planBadgeName'></strong> — <span id='planBadgePrice'></span>
 <br><a href='planos.html' style='font-size:12px'>Trocar plano</a>
 </div>
-<label>Tipo de estabelecimento</label>
-<select id='account_kind' onchange='toggleAgencyCategory()'>
+<label id='accountKindLabel' style='display:none'>Tipo de estabelecimento</label>
+<select id='account_kind' onchange='toggleAgencyCategory()' style='display:none'>
 <option value='lodging'>Hospedagem</option>
 <option value='agency'>Loja, prestador de serviço ou agência</option>
 <option value='promoter'>Promotor / Indicador (sem hospedagem própria)</option>
 </select>
+<div id='requestAccessNote' style='background:#0d1421;border:1px solid #2f7dff;border-radius:15px;padding:14px 16px;margin-bottom:16px;font-size:13.5px;color:#9aa8bb;line-height:1.6'>
+Esta conta é de <strong style='color:#fff'>promotor</strong> (indicação, sem hospedagem própria). Tem uma hospedagem, agência, locadora ou imobiliária? <a href='SolicitarAcesso.html'>Solicite acesso</a> — o cadastro é por convite.
+</div>
 <div id='agencyCategoryWrap' style='display:none'>
 <label>Tipo de negócio</label>
 <select id='agency_category' onchange='toggleAgencySubcategory()'>
@@ -78,6 +81,23 @@ if(selectedPlan && PLAN_LABELS[selectedPlan]){
   planBadgeName.textContent=PLAN_LABELS[selectedPlan][0];
   planBadgePrice.textContent=PLAN_LABELS[selectedPlan][1]+' (30 dias grátis pra testar)';
   planBadge.style.display='block';
+}
+// Trava de acesso (2026-09-10): cadastro aberto de hospedagem/agencia
+// foi desligado no backend (ver /register em routes/auth.py) - so quem
+// chega com ?reseller=CODE (link repassado por um revendedor ja
+// vetado) ve as 3 opcoes de tipo de conta; qualquer outro visitante so
+// consegue criar conta de Promotor aqui, com um aviso linkando pra
+// SolicitarAcesso.html pros outros casos. selectedPlan nunca aparece
+// sem reseller nesse cenario (planos.html manda pra SolicitarAcesso.html
+// direto), mas o dropdown continua liberado se um plano vier junto de
+// um reseller_code (fluxo do proprio revendedor cobrando o cliente).
+if(resellerCode){
+  document.getElementById('accountKindLabel').style.display='block';
+  document.getElementById('account_kind').style.display='block';
+  document.getElementById('requestAccessNote').style.display='none';
+}else{
+  document.getElementById('account_kind').value='promoter';
+  toggleAgencyCategory();
 }
 const AGENCY_SUBCATEGORY_PRESETS={
   automotivo:['Estética automotiva','Película automotiva','Mecânica','Funilaria e pintura','Elétrica automotiva','Borracharia','Peças de carro','Peças de moto','Peças de caminhão','Peças de máquinas'],
