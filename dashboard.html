@@ -34,7 +34,7 @@
 
 <body>
 <div id="impersonationBanner" style="display:none;background:#ff9500;color:#1a1200;padding:10px 20px;align-items:center;justify-content:center;gap:14px;text-align:center;font-size:13px;font-weight:700;position:sticky;top:0;z-index:9999">
-  <span>🔑 Você está visitando o painel de <span id="impersonationHostelName"></span> como StayFlow Admin</span>
+ <span>Você está visitando o painel de <span id="impersonationHostelName"></span> como StayFlow Admin</span>
   <button type="button" onclick="exitImpersonation()" style="background:#1a1200;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">Sair da visualização</button>
 </div>
 <div class="app">
@@ -272,7 +272,7 @@ function portfolioSlideIconHtml(kind){
 
 const PORTFOLIO_SLIDES = {
   lodging: [
-    { kind: "problem", title: "🏨 Hospedagens — o problema", body: "Hotéis, pousadas e hostels perdem reserva todo dia por três motivos que se repetem em qualquer conversa com o dono: demora pra responder o WhatsApp (principalmente à noite e fim de semana), atendimento manual que não escala quando o volume de mensagens sobe, e nenhuma visão clara de ocupação, reservas e financeiro num lugar só — cada coisa numa planilha ou caderno diferente." },
+ { kind: "problem", title: "Hospedagens — o problema", body: "Hotéis, pousadas e hostels perdem reserva todo dia por três motivos que se repetem em qualquer conversa com o dono: demora pra responder o WhatsApp (principalmente à noite e fim de semana), atendimento manual que não escala quando o volume de mensagens sobe, e nenhuma visão clara de ocupação, reservas e financeiro num lugar só — cada coisa numa planilha ou caderno diferente." },
     { kind: "solution", title: "Como a StayFlow resolve", body: "Uma IA treinada pra hospedagem atende automaticamente no WhatsApp, Instagram e Facebook, 24 horas por dia, sem perder um lead — segue o tom que o dono configurar, mas nunca inventa preço nem fecha uma reserva sozinha fora da política definida. Enquanto isso, reservas, mapa de quartos e financeiro ficam organizados num painel único, acessível do celular ou computador." },
     { kind: "features", title: "Recursos principais", body: "O que mais chama atenção de quem já opera uma hospedagem:", bullets: [
       "Mapa de quartos visual — ocupado, livre ou aguardando limpeza, em tempo real",
@@ -285,7 +285,7 @@ const PORTFOLIO_SLIDES = {
     { kind: "plans", title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito. Cadastro leva menos de 2 minutos, direto pelo link de indicação." },
   ],
   agency: [
-    { kind: "problem", title: "🧭 Agências de turismo — o problema", body: "Leads chegam pelo WhatsApp e Instagram o dia inteiro, mas se perdem no meio de conversas manuais — sem controle de disponibilidade dos passeios/serviços, sem histórico organizado de quem já foi atendido, e sem forma fácil de saber qual produto oferecer pra cada perfil de cliente." },
+ { kind: "problem", title: "Agências de turismo — o problema", body: "Leads chegam pelo WhatsApp e Instagram o dia inteiro, mas se perdem no meio de conversas manuais — sem controle de disponibilidade dos passeios/serviços, sem histórico organizado de quem já foi atendido, e sem forma fácil de saber qual produto oferecer pra cada perfil de cliente." },
     { kind: "solution", title: "Como a StayFlow resolve", body: "Um catálogo de passeios e serviços com preço, fotos e disponibilidade, mais uma IA que entende o que o cliente está pedindo dentro da própria conversa e sugere o produto certo — com cobrança direta pelo chat, sem precisar sair pra outro app." },
     { kind: "features", title: "Recursos principais", body: "O que mais diferencia esse setor:", bullets: [
       "Portfólio de itens/serviços com fotos, preço e disponibilidade sempre atualizada",
@@ -297,7 +297,7 @@ const PORTFOLIO_SLIDES = {
     { kind: "plans", title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito." },
   ],
   rental: [
-    { kind: "problem", title: "🚗 Locadoras — o problema", body: "Disponibilidade de carro, bike ou equipamento é difícil de acompanhar numa planilha, e cada reserva vira uma ida e volta manual no WhatsApp — com risco real de alugar o mesmo item duas vezes pro mesmo período, o pior tipo de erro nesse negócio." },
+ { kind: "problem", title: "Locadoras — o problema", body: "Disponibilidade de carro, bike ou equipamento é difícil de acompanhar numa planilha, e cada reserva vira uma ida e volta manual no WhatsApp — com risco real de alugar o mesmo item duas vezes pro mesmo período, o pior tipo de erro nesse negócio." },
     { kind: "solution", title: "Como a StayFlow resolve", body: "Catálogo com disponibilidade em tempo real (elimina o risco de dupla reserva), atendimento automático por IA 24h, e conexão direta com hospedagens parceiras da rede StayFlow que já indicam locação pros próprios hóspedes — trazendo cliente sem custo de aquisição." },
     { kind: "features", title: "Recursos principais", body: "O que mais chama atenção de quem já opera uma locadora:", bullets: [
       "Catálogo de veículos/equipamentos com disponibilidade sempre atualizada",
@@ -309,7 +309,7 @@ const PORTFOLIO_SLIDES = {
     { kind: "plans", title: "Planos e teste grátis", body: "Starter, Business e Enterprise — 30 dias grátis pra testar, sem cartão de crédito." },
   ],
   realestate: [
-    { kind: "problem", title: "🏠 Imobiliárias — o problema", body: "Leads de aluguel e venda chegam por vários canais ao mesmo tempo (WhatsApp, Instagram, site), e o corretor perde tempo cruzando manualmente o que cada cliente pede (bairro, quantos quartos, faixa de preço, aluguel ou venda) com o estoque de imóveis disponível — e fora do expediente comercial, a maioria fica simplesmente sem resposta até o dia seguinte." },
+ { kind: "problem", title: "Imobiliárias — o problema", body: "Leads de aluguel e venda chegam por vários canais ao mesmo tempo (WhatsApp, Instagram, site), e o corretor perde tempo cruzando manualmente o que cada cliente pede (bairro, quantos quartos, faixa de preço, aluguel ou venda) com o estoque de imóveis disponível — e fora do expediente comercial, a maioria fica simplesmente sem resposta até o dia seguinte." },
     { kind: "solution", title: "Como a StayFlow resolve", body: "O catálogo de imóveis sincroniza automaticamente com o Tokko Broker (sistema que a maioria das imobiliárias já usa), e a IA cruza o que o cliente pede na conversa — bairro, número de quartos, faixa de preço, aluguel ou venda — com o estoque real, sugerindo o imóvel certo direto no WhatsApp, Instagram ou Facebook, 24 horas por dia." },
     { kind: "features", title: "Recursos principais", body: "O que mais diferencia esse setor:", bullets: [
       "Sincronização automática de catálogo com o Tokko Broker (quartos, banheiros, m², localização, tipo de operação)",
@@ -356,7 +356,7 @@ function renderPortfolioSlide(){
     </div>
     <p style="font-size:15px;line-height:1.8;white-space:pre-line;color:var(--text)">${text.body}</p>
     ${bulletsHtml}
-    <button type="button" class="btn secondary" style="margin-top:22px" onclick="askAboutPortfolioSlide()">${T('salesPortfolio.askAboutBtn', '🤖 Perguntar ao Ask StayFlow sobre isso')}</button>
+ <button type="button" class="btn secondary" style="margin-top:22px" onclick="askAboutPortfolioSlide()">${T('salesPortfolio.askAboutBtn', 'Perguntar ao Ask StayFlow sobre isso')}</button>
   `;
   const counter = document.getElementById("portfolioSlideCounter");
   if(counter) counter.textContent = `${portfolioCurrentSlide + 1} / ${slides.length}`;
@@ -449,7 +449,7 @@ async function loadPromoterHomeData(){
       if(hintEl) hintEl.textContent = T('referrals.nextTierHint', 'Faltam {remaining} indicação(ões) ativa(s) pra chegar a {pct}%', { remaining: data.next_tier.remaining, pct: Math.round(data.next_tier.pct * 100) });
       if(barEl) barEl.style.width = `${Math.min(100, (data.active_referral_count / data.next_tier.threshold) * 100)}%`;
     }else{
-      if(hintEl) hintEl.textContent = T('referrals.maxTierReached', 'Faixa máxima atingida 🎉');
+ if(hintEl) hintEl.textContent = T('referrals.maxTierReached', 'Faixa máxima atingida');
       if(barEl) barEl.style.width = "100%";
     }
 
@@ -843,7 +843,7 @@ function closeGenericModal(){
 window.openMemberActivityLog = async function(membershipId, memberName){
   openGenericModal(`${T('team.activityLog.titlePrefix', 'Histórico de')} ${memberName}`, `
     <p style="font-size:12px;color:var(--muted);margin:0 0 12px">${T('team.activityLog.desc', 'Ponto batido e ações registradas (limpeza/manutenção de cama, chamados assumidos e resolvidos) — mais recente primeiro.')}</p>
-    <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="attendance.title">⏱️ Ponto</h4>
+ <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="attendance.title">Ponto</h4>
     <div id="memberActivityAttendance" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:12px">${T('common.loading', 'Carregando...')}</div>
     <h4 style="font-size:12px;font-weight:800;margin:0 0 6px"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v3h3"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span>${T('team.activityLog.actionsTitle', 'Ações')}</h4>
     <div id="memberActivityActions" style="display:flex;flex-direction:column;gap:6px;font-size:12px">${T('common.loading', 'Carregando...')}</div>
@@ -860,7 +860,7 @@ window.openMemberActivityLog = async function(membershipId, memberName){
         ? data.attendance.map(a => `
             <div style="background:#0d1421;border:1px solid #ffffff14;border-radius:10px;padding:8px 10px">
               ${a.clock_in_at} → ${a.clock_out_at || T('attendance.stillIn', 'ainda dentro')}
-              ${a.clock_in_lat != null ? ` · <a href="https://www.google.com/maps?q=${a.clock_in_lat},${a.clock_in_lng}" target="_blank" rel="noopener" style="color:var(--accent,#0b84ff)">${T('attendance.viewLocation', '📍 Ver local')}</a>` : ""}
+ ${a.clock_in_lat != null ? ` · <a href="https://www.google.com/maps?q=${a.clock_in_lat},${a.clock_in_lng}" target="_blank" rel="noopener" style="color:var(--accent,#0b84ff)">${T('attendance.viewLocation', 'Ver local')}</a>` : ""}
             </div>
           `).join("")
         : `<span style="color:var(--muted)">${T('team.activityLog.attendanceEmpty', 'Nenhum ponto registrado ainda.')}</span>`;
@@ -1683,8 +1683,8 @@ async function deleteRoleConfirm(roleId){
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px 16px">
       <span style="font-size:16px;line-height:1">🔗</span>
       <input id="promoterHomeLink" readonly style="flex:1;min-width:220px;background:transparent;border:none;font-family:ui-monospace,'SF Mono',Consolas,monospace;font-size:13px;color:#f7fbff;outline:none">
-      <button class="btn secondary" type="button" onclick="copyPromoterHomeLink()"><span data-i18n="referrals.copyBtn">📋 Copiar</span></button>
-      <button class="btn" type="button" id="promoterHomeShareBtn" style="display:none" onclick="sharePromoterHomeLink()"><span data-i18n="referrals.shareBtn">📤 Compartilhar</span></button>
+ <button class="btn secondary" type="button" onclick="copyPromoterHomeLink()"><span data-i18n="referrals.copyBtn">Copiar</span></button>
+ <button class="btn" type="button" id="promoterHomeShareBtn" style="display:none" onclick="sharePromoterHomeLink()"><span data-i18n="referrals.shareBtn">Compartilhar</span></button>
     </div>
     <p id="promoterHomeCopyMsg" style="font-size:12px;color:var(--green,#26e0a0);margin-top:8px;min-height:16px"></p>
   </div>
@@ -1979,8 +1979,8 @@ async function deleteRoleConfirm(roleId){
 
     <div class="card span-12" style="display:flex;gap:12px;flex-wrap:wrap">
       <button type="button" class="btn" onclick="openNewReservationModal()">+ <span data-i18n="reservations.newReservation.title">Nova reserva</span></button>
-      <button type="button" class="btn secondary" onclick="openNewIndefiniteStayModal()">🏠 <span data-i18n="longTermStay.title">Morador de longa duração</span></button>
-      <button type="button" class="btn secondary" onclick="openCancelledReservationsModal()">🗑️ <span data-i18n="reservations.cancelledBtn">Ver cancelamentos</span></button>
+ <button type="button" class="btn secondary" onclick="openNewIndefiniteStayModal()"><span data-i18n="longTermStay.title">Morador de longa duração</span></button>
+ <button type="button" class="btn secondary" onclick="openCancelledReservationsModal()"><span data-i18n="reservations.cancelledBtn">Ver cancelamentos</span></button>
     </div>
 
     <div class="card span-12">
@@ -2023,13 +2023,13 @@ async function deleteRoleConfirm(roleId){
             ☰ <span data-i18n="roommap.actionsMenu.label">Ações</span>
           </button>
           <div id="roomMapActionsDropdown" class="hostel-selector-dropdown" style="display:none;min-width:240px;left:auto;right:0">
-            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateCategoryModal()">🏷️ <span data-i18n="roommap.categories.title">Modalidades de quarto</span></button>
-            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateRoomModal()">🚪 <span data-i18n="roommap.newRoom.title">Novo quarto</span></button>
-            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateBedModal()">🛏️ <span data-i18n="roommap.newBed.title">Nova cama</span></button>
-            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCouponsModal()">🎟️ <span data-i18n="coupons.title">Cupons de desconto</span></button>
+ <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateCategoryModal()"><span data-i18n="roommap.categories.title">Modalidades de quarto</span></button>
+ <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateRoomModal()"><span data-i18n="roommap.newRoom.title">Novo quarto</span></button>
+ <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateBedModal()"><span data-i18n="roommap.newBed.title">Nova cama</span></button>
+ <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCouponsModal()"><span data-i18n="coupons.title">Cupons de desconto</span></button>
             <div class="hostel-selector-divider"></div>
-            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCleaningListModal()">🧺 <span data-i18n="roommap.cleaning.title">Lista de limpeza do dia</span></button>
-            <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openLaundryReturnModal()">🔄 <span data-i18n="roommap.laundry.title">Devolver da lavanderia</span></button>
+ <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCleaningListModal()"><span data-i18n="roommap.cleaning.title">Lista de limpeza do dia</span></button>
+ <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openLaundryReturnModal()"><span data-i18n="roommap.laundry.title">Devolver da lavanderia</span></button>
           </div>
         </div>
       </div>
@@ -2057,7 +2057,7 @@ async function deleteRoleConfirm(roleId){
 <!-- OPERATIONS -->
 <section id="operations" class="page">
   <div class="ops-tabs">
-    <button type="button" class="ops-tab active" data-ops-tab="tasks" onclick="switchOperationsTab('tasks')" data-i18n="operations.tab.tasks">🧹 Tarefas</button>
+ <button type="button" class="ops-tab active" data-ops-tab="tasks" onclick="switchOperationsTab('tasks')" data-i18n="operations.tab.tasks">Tarefas</button>
     <button type="button" class="ops-tab" data-ops-tab="kitchen" data-required-permission="kitchen" onclick="switchOperationsTab('kitchen')" data-i18n="nav.kitchen">Cozinha</button>
     <button type="button" class="ops-tab" data-ops-tab="maintenance" data-required-permission="maintenance" onclick="switchOperationsTab('maintenance')" data-i18n="nav.maintenance">Manutenção</button>
     <button type="button" class="ops-tab" data-ops-tab="patrimonialSecurity" data-required-permission="patrimonial_security" onclick="switchOperationsTab('patrimonialSecurity')" data-i18n="nav.patrimonialSecurity">Segurança Patrimonial</button>
@@ -2068,7 +2068,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span><span data-i18n="operations.tasks.title">Tarefas operacionais</span></h2>
-        <button type="button" class="btn primary" onclick="openNewTaskModal()" data-i18n="operations.tasks.newBtn">➕ Novo chamado</button>
+ <button type="button" class="btn primary" onclick="openNewTaskModal()" data-i18n="operations.tasks.newBtn">Novo chamado</button>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="tasks">
         <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('tasks','open')" data-i18n="tickets.tabOpen">Abertos</button>
@@ -2131,7 +2131,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M3 15h18"/><path d="M5 15V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8"/><path d="M3 15v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3"/></svg></span><span data-i18n="kitchen.orders.title">Pedidos em aberto</span></h2>
-        <button type="button" class="btn primary" onclick="openNewKitchenOrderModal()" data-i18n="kitchen.orders.newBtn">➕ Novo pedido</button>
+ <button type="button" class="btn primary" onclick="openNewKitchenOrderModal()" data-i18n="kitchen.orders.newBtn">Novo pedido</button>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="kitchen">
         <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('kitchen','open')" data-i18n="tickets.tabOpen">Abertos</button>
@@ -2183,7 +2183,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2z"/></svg></span><span data-i18n="maintenance.tickets.title">Chamados em aberto</span></h2>
-        <button type="button" class="btn primary" onclick="openNewMaintenanceTicketModal()" data-i18n="maintenance.tickets.newBtn">➕ Novo chamado</button>
+ <button type="button" class="btn primary" onclick="openNewMaintenanceTicketModal()" data-i18n="maintenance.tickets.newBtn">Novo chamado</button>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="maintenance">
         <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('maintenance','open')" data-i18n="tickets.tabOpen">Abertos</button>
@@ -2240,7 +2240,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg></span><span data-i18n="patrimonialSecurity.incidents.title">Incidentes em aberto</span></h2>
-        <button type="button" class="btn primary" onclick="openNewSecurityIncidentModal()" data-i18n="patrimonialSecurity.incidents.newBtn">➕ Novo chamado</button>
+ <button type="button" class="btn primary" onclick="openNewSecurityIncidentModal()" data-i18n="patrimonialSecurity.incidents.newBtn">Novo chamado</button>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="patrimonialSecurity">
         <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('patrimonialSecurity','open')" data-i18n="tickets.tabOpen">Abertos</button>
@@ -2302,7 +2302,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 16V11l2-5h12l2 5v5"/><path d="M4 16h16"/><circle cx="7.5" cy="16" r="1.6"/><circle cx="16.5" cy="16" r="1.6"/></svg></span><span data-i18n="parking.vehicles.title">Veículos no estacionamento</span></h2>
-        <button type="button" class="btn primary" onclick="openAddVehicleModal()" data-i18n="parking.vehicles.addBtn">➕ Adicionar veículo</button>
+ <button type="button" class="btn primary" onclick="openAddVehicleModal()" data-i18n="parking.vehicles.addBtn">Adicionar veículo</button>
       </div>
       <div class="sf-empty" id="parkingVehiclesEmpty">
         <div>
@@ -2326,7 +2326,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="7" cy="14" r="3.3"/><path d="M9.3 11.7 18 3"/><path d="M15 6l2.5 2.5"/><path d="M13 8l2 2"/></svg></span><span data-i18n="parking.valet.title">Solicitações de manobrista</span></h2>
-        <button type="button" class="btn primary" onclick="openNewValetRequestModal()" data-i18n="parking.valet.newBtn">➕ Novo chamado de manobrista</button>
+ <button type="button" class="btn primary" onclick="openNewValetRequestModal()" data-i18n="parking.valet.newBtn">Novo chamado de manobrista</button>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="parking">
         <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('parking','open')" data-i18n="tickets.tabOpen">Abertos</button>
@@ -2406,7 +2406,7 @@ async function deleteRoleConfirm(roleId){
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
       <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4z"/><circle cx="10" cy="11" r="2.5"/><path d="M6 17c.5-2 2-3 4-3s3.5 1 4 3"/><path d="M2 8v8"/></svg></span><span data-i18n="contacts.title">Contatos</span></h2>
-      <button type="button" class="btn primary" onclick="openContactModal()" data-i18n="contacts.addBtn">➕ Novo contato</button>
+ <button type="button" class="btn primary" onclick="openContactModal()" data-i18n="contacts.addBtn">Novo contato</button>
     </div>
     <input type="text" id="contactsSearchInput" oninput="handleContactsSearch(this.value)" placeholder="Buscar por nome ou telefone..." data-i18n-placeholder="contacts.searchPlaceholder" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 14px;margin-bottom:16px">
     <div class="sf-empty" id="contactsEmpty">
@@ -2522,7 +2522,7 @@ async function deleteRoleConfirm(roleId){
         <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M5 19h14"/><path d="m8 15 3-3 2 2 5-6"/></svg></span><span data-i18n="revenue.catalogTitle">Catálogo de experiências e upsells</span></h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn secondary" onclick="openPage('portfolio')" data-i18n="revenue.viewCatalogBtn">Ver catálogo completo</button>
-          <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="revenue.addBtn">➕ Adicionar</button>
+ <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="revenue.addBtn">Adicionar</button>
         </div>
       </div>
       <p style="color:var(--muted);font-size:13px;margin:0" data-i18n="revenue.catalogRedirectDesc">Tours, late checkout, aluguel de toalha e outras ofertas da sua hospedagem — o catálogo completo (com foto e descrição) fica na aba Serviços extras.</p>
@@ -2578,16 +2578,16 @@ async function deleteRoleConfirm(roleId){
   </div>
 
   <div class="ops-tabs">
-    <button type="button" class="ops-tab active" data-ops-tab="list" onclick="switchEventsTab('list')" data-i18n="events.tab.list">📋 Eventos</button>
-    <button type="button" class="ops-tab" data-ops-tab="spaces" onclick="switchEventsTab('spaces')" data-i18n="events.tab.spaces">🏛️ Espaços</button>
-    <button type="button" class="ops-tab" data-ops-tab="addons" onclick="switchEventsTab('addons')" data-i18n="events.tab.addons">🍽️ Adicionais</button>
+ <button type="button" class="ops-tab active" data-ops-tab="list" onclick="switchEventsTab('list')" data-i18n="events.tab.list">Eventos</button>
+ <button type="button" class="ops-tab" data-ops-tab="spaces" onclick="switchEventsTab('spaces')" data-i18n="events.tab.spaces">Espaços</button>
+ <button type="button" class="ops-tab" data-ops-tab="addons" onclick="switchEventsTab('addons')" data-i18n="events.tab.addons">Adicionais</button>
   </div>
 
   <div data-events-section="list" class="grid">
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0" data-i18n="events.list.title">Eventos agendados</h2>
-        <button type="button" class="btn primary" onclick="openNewEventModal()" data-i18n="events.list.addBtn">➕ Novo evento</button>
+ <button type="button" class="btn primary" onclick="openNewEventModal()" data-i18n="events.list.addBtn">Novo evento</button>
       </div>
 
       <div class="sf-empty" id="eventsListEmpty">
@@ -2615,7 +2615,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0" data-i18n="events.spaces.title">Espaços para eventos</h2>
-        <button type="button" class="btn primary" onclick="openEventSpaceModal()" data-i18n="events.spaces.addBtn">➕ Novo espaço</button>
+ <button type="button" class="btn primary" onclick="openEventSpaceModal()" data-i18n="events.spaces.addBtn">Novo espaço</button>
       </div>
       <div class="sf-empty" id="eventSpacesEmpty">
         <div>
@@ -2631,7 +2631,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0" data-i18n="events.addons.title">Adicionais e serviços extras</h2>
-        <button type="button" class="btn primary" onclick="openEventAddonModal()" data-i18n="events.addons.addBtn">➕ Novo adicional</button>
+ <button type="button" class="btn primary" onclick="openEventAddonModal()" data-i18n="events.addons.addBtn">Novo adicional</button>
       </div>
       <div class="sf-empty" id="eventAddonsEmpty">
         <div>
@@ -2651,8 +2651,8 @@ async function deleteRoleConfirm(roleId){
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0" data-i18n="portfolio.title" id="portfolioSectionTitle">Meu Portfólio</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn secondary" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openPasteListingModal()" data-i18n="portfolio.pasteListingBtn" style="display:none">📋 Colar anúncio</button>
-          <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="portfolio.addBtn">➕ Novo item</button>
+ <button type="button" class="btn secondary" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openPasteListingModal()" data-i18n="portfolio.pasteListingBtn" style="display:none">Colar anúncio</button>
+ <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="portfolio.addBtn">Novo item</button>
         </div>
       </div>
       <p style="color:var(--muted);font-size:13px;margin:0 0 14px" data-i18n="portfolio.subtitle" id="portfolioSubtitle">Itens que hospedagens podem ativar pra oferecer aos próprios hóspedes - você ganha o valor cheio menos a comissão combinada.</p>
@@ -2688,7 +2688,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
         <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1.5"/><path d="M4 10h16"/><path d="M8 4v4"/><path d="M16 4v4"/><path d="M8 14h2"/><path d="M14 14h2"/><path d="M8 17h2"/></svg></span><span data-i18n="agenda.title">Agenda de visitas</span></h2>
-        <button type="button" class="btn primary" onclick="openNewVisitModal()" data-i18n="agenda.addBtn">➕ Nova visita</button>
+ <button type="button" class="btn primary" onclick="openNewVisitModal()" data-i18n="agenda.addBtn">Nova visita</button>
       </div>
       <div class="sf-empty" id="agendaEmpty">
         <div>
@@ -2762,7 +2762,7 @@ async function deleteRoleConfirm(roleId){
         </tbody>
       </table>
       <div id="reportsAvgTicket" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);justify-content:space-between;align-items:center">
-        <span style="color:var(--muted);font-size:13px" data-i18n="reports.avgTicketLabel">🎟️ Ticket médio (reservas confirmadas)</span>
+ <span style="color:var(--muted);font-size:13px" data-i18n="reports.avgTicketLabel">Ticket médio (reservas confirmadas)</span>
         <strong id="reportsAvgTicketValue">—</strong>
       </div>
     </div>
@@ -3111,10 +3111,10 @@ async function deleteRoleConfirm(roleId){
     <p style="color:var(--muted);font-size:13px;margin-top:6px" data-i18n="salesPortfolio.headerDesc">Um guia por setor pra você estudar a StayFlow com calma — e também apresentar numa call ou reunião quando estiver pronto. Escolha o setor certo pro seu prospect e navegue pelos slides; se tiver dúvida em qualquer um, pergunte direto ao Ask StayFlow.</p>
   </div>
   <div class="ops-tabs">
-    <button type="button" class="ops-tab active" data-portfolio-sector="lodging" onclick="switchPortfolioSector('lodging')"><span data-i18n="salesPortfolio.tab.lodging">🏨 Hospedagens</span></button>
-    <button type="button" class="ops-tab" data-portfolio-sector="agency" onclick="switchPortfolioSector('agency')"><span data-i18n="salesPortfolio.tab.agency">🧭 Agências</span></button>
-    <button type="button" class="ops-tab" data-portfolio-sector="rental" onclick="switchPortfolioSector('rental')"><span data-i18n="salesPortfolio.tab.rental">🚗 Locadoras</span></button>
-    <button type="button" class="ops-tab" data-portfolio-sector="realestate" onclick="switchPortfolioSector('realestate')"><span data-i18n="salesPortfolio.tab.realestate">🏠 Imobiliárias</span></button>
+ <button type="button" class="ops-tab active" data-portfolio-sector="lodging" onclick="switchPortfolioSector('lodging')"><span data-i18n="salesPortfolio.tab.lodging">Hospedagens</span></button>
+ <button type="button" class="ops-tab" data-portfolio-sector="agency" onclick="switchPortfolioSector('agency')"><span data-i18n="salesPortfolio.tab.agency">Agências</span></button>
+ <button type="button" class="ops-tab" data-portfolio-sector="rental" onclick="switchPortfolioSector('rental')"><span data-i18n="salesPortfolio.tab.rental">Locadoras</span></button>
+ <button type="button" class="ops-tab" data-portfolio-sector="realestate" onclick="switchPortfolioSector('realestate')"><span data-i18n="salesPortfolio.tab.realestate">Imobiliárias</span></button>
   </div>
   <div class="card" style="min-height:420px;display:flex;flex-direction:column">
     <div id="portfolioSlideContent" style="flex:1"></div>
@@ -3139,7 +3139,7 @@ async function deleteRoleConfirm(roleId){
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0" data-i18n="team.tab.members">Equipe</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn secondary" type="button" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openTeamWhatsappAuditModal()" data-i18n="team.whatsappAuditBtn" style="display:none">📱 WhatsApp da equipe</button>
+ <button class="btn secondary" type="button" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openTeamWhatsappAuditModal()" data-i18n="team.whatsappAuditBtn" style="display:none">WhatsApp da equipe</button>
           <button class="btn primary" type="button" onclick="openInviteForm()" data-i18n="team.inviteBtn">+ Convidar</button>
         </div>
       </div>
@@ -3159,7 +3159,7 @@ async function deleteRoleConfirm(roleId){
 
   <div data-team-section="scheduling" class="grid" style="display:none">
     <div class="card span-12">
-      <h2 data-i18n="attendance.title">⏱️ Ponto</h2>
+ <h2 data-i18n="attendance.title">Ponto</h2>
       <p id="attendanceStatusText" style="color:var(--muted);font-size:13px;margin:0 0 10px" data-i18n="attendance.loading">Carregando...</p>
       <button type="button" class="btn" id="attendanceToggleBtn" onclick="toggleAttendance()" data-i18n="attendance.clockInBtn">Bater ponto de entrada</button>
     </div>
@@ -3490,7 +3490,7 @@ async function deleteRoleConfirm(roleId){
     const preview = document.getElementById("askFilePreview");
     const previewName = document.getElementById("askFilePreviewName");
     if(file){
-      if(previewName) previewName.textContent = `📷 ${file.name}`;
+ if(previewName) previewName.textContent = `${file.name}`;
       if(preview) preview.style.display = "flex";
     }else if(preview){
       preview.style.display = "none";
@@ -3520,7 +3520,7 @@ async function deleteRoleConfirm(roleId){
     const container = $(".ask-body", scope);
     if(!container) return;
 
-    addMessage(container, pendingFile ? `📷 ${text || "Imagem enviada"}` : text, "user");
+ addMessage(container, pendingFile ? `${text || "Imagem enviada"}` : text, "user");
     askStayFlowClearFile();
     button.disabled = true;
 
@@ -3711,7 +3711,7 @@ async function deleteRoleConfirm(roleId){
         <code id="whatsappWebhookUrl" style="display:block;margin:4px 0 10px;word-break:break-all;color:#7bc2ff">carregando...</code>
         <div style="font-size:13px;font-weight:700">${T('settings.whatsapp.verifyTokenLabel', 'Verify Token:')}</div>
         <code style="display:block;margin-top:4px;color:#7bc2ff">stayflow-verify-token</code>
-        <div style="font-size:11px;color:var(--muted);margin-top:10px">${T('settings.whatsapp.localWarning', '⚠️ Se ainda estiver testando local (127.0.0.1), a Meta não consegue acessar essa URL — você vai precisar de uma ferramenta como o ngrok pra criar um link público temporário até o servidor estar hospedado de vez.')}</div>
+ <div style="font-size:11px;color:var(--muted);margin-top:10px">${T('settings.whatsapp.localWarning', 'Se ainda estiver testando local (127.0.0.1), a Meta não consegue acessar essa URL — você vai precisar de uma ferramenta como o ngrok pra criar um link público temporário até o servidor estar hospedado de vez.')}</div>
       </div>
 
       <div style="margin-top:14px">
@@ -5951,7 +5951,7 @@ async function deleteRoleConfirm(roleId){
   function _billingResellerPriceHtml(data){
     return `
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid #ffffff12">
-        <p style="font-size:13px;font-weight:800;margin:0 0 6px">${T('settings.billing.resellerPrice.title', '🏷️ Preço próprio (revendedor)')}</p>
+ <p style="font-size:13px;font-weight:800;margin:0 0 6px">${T('settings.billing.resellerPrice.title', 'Preço próprio (revendedor)')}</p>
         <p style="color:var(--muted);font-size:12px;margin:0 0 8px">${T('settings.billing.resellerPrice.desc', 'Deixe em branco pra usar o preço de tabela. Só o revendedor responsável por esta hospedagem pode alterar.')}</p>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input type="number" id="resellerCustomPriceInput" min="1" step="0.01" placeholder="ARS" value="${data.custom_price_ars ?? ""}" style="max-width:160px">
@@ -6646,7 +6646,7 @@ async function deleteRoleConfirm(roleId){
             </div>`
           : "";
         const rolesWarningHtml = (data.roles_created_empty && data.roles_created_empty.length)
-          ? `<p style="color:var(--yellow);font-size:12.5px;margin-top:8px">⚠ Função(ões) criada(s) sem nenhuma permissão: <strong>${data.roles_created_empty.join(", ")}</strong>. Vá em Equipe &gt; Funções e defina o acesso antes de avisar essas pessoas.</p>`
+ ? `<p style="color:var(--yellow);font-size:12.5px;margin-top:8px">Função(ões) criada(s) sem nenhuma permissão: <strong>${data.roles_created_empty.join(", ")}</strong>. Vá em Equipe &gt; Funções e defina o acesso antes de avisar essas pessoas.</p>`
           : "";
         previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${data.invited.length} pessoa(s) convidada(s).</p>${credentialsHtml}${rolesWarningHtml}${errorsHtml}`);
       } else {
@@ -7498,7 +7498,7 @@ async function loadExecutiveSummary(){
         const row = document.createElement("div");
         row.className = "recommendation";
         row.innerHTML = `
-          <div class="rec-icon">🎯</div>
+ <div class="rec-icon"><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6"/></svg></div>
           <div>
             <div class="rec-title">${T('home.brief.recommendedAction', 'Ação recomendada')}</div>
             <div class="rec-text">${action}</div>
@@ -7667,7 +7667,7 @@ async function loadReservations(){
 
       row.innerHTML = `
         <td>${guestNameLink(r.guest_id, r.guest_name)}</td>
-        <td>${r.room_type || "-"}${r.bed ? " · " + r.bed : ""}${r.group_id ? `<div style="font-size:11px;color:var(--muted)">👥 ${T('reservations.group.badge', 'Parte de um grupo')}</div>` : ""}</td>
+ <td>${r.room_type || "-"}${r.bed ? " · " + r.bed : ""}${r.group_id ? `<div style="font-size:11px;color:var(--muted)">${T('reservations.group.badge', 'Parte de um grupo')}</div>` : ""}</td>
         <td style="${isOverdue ? "color:#ff9caf;font-weight:700" : ""}">${r.checkin_date || "-"} → ${r.checkout_date || "-"}${isOverdue ? `<div style="font-size:11px;font-weight:700">${T('reservations.checkoutOverdueLabel', 'Checkout atrasado')}</div>` : ""}</td>
         <td>${channelDisplayLabel(r.source)}</td>
         <td>
@@ -9519,7 +9519,7 @@ async function loadReportsDailySummary(){
       (summary.priority_actions || []).forEach(action => {
         const row = document.createElement("div");
         row.style.cssText = "display:flex;gap:8px;align-items:flex-start;font-size:13px";
-        row.innerHTML = `<span>🎯</span><span>${action}</span>`;
+ row.innerHTML = `<span><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6"/></svg></span><span>${action}</span>`;
         actionsEl.appendChild(row);
       });
     }
@@ -10611,7 +10611,7 @@ function applyAgencyGuestNounLabels(session){
   const guestsEmptyTitle = document.getElementById("guestsEmptyTitle");
   const guestsEmptyDesc = document.getElementById("guestsEmptyDesc");
   if(navGuestsLabel) navGuestsLabel.textContent = noun;
-  if(guestsSectionTitle) guestsSectionTitle.textContent = "👥 " + noun;
+ if(guestsSectionTitle) guestsSectionTitle.textContent = "" + noun;
   if(opportunitiesGuestColLabel) opportunitiesGuestColLabel.textContent = noun;
   if(guestsEmptyTitle) guestsEmptyTitle.textContent = T('guests.emptyTitleAgency', 'Nenhum {noun} registrado.', { noun });
   if(guestsEmptyDesc) guestsEmptyDesc.textContent = T('guests.emptyDescAgency', 'Quando reservas e conversas estiverem conectadas, a base de {noun} será construída aqui com contato, histórico e valor gerado.', { noun });
@@ -11028,7 +11028,7 @@ function portfolioRealEstateSummaryHtml(item){
   if(item.amenities && item.amenities.length) costParts.push(T('portfolio.realEstate.amenitiesSummary', '{n} comodidades', { n: item.amenities.length }));
 
   return `
-    <div style="font-size:12px;color:var(--muted);margin-top:6px">🏠 ${parts.join(" · ")}</div>
+ <div style="font-size:12px;color:var(--muted);margin-top:6px">${parts.join(" · ")}</div>
     ${costParts.length ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${costParts.join(" · ")}</div>` : ""}
   `;
 }
@@ -11104,7 +11104,7 @@ function portfolioRealEstateFieldsHtml(item){
   const amenities = (item && item.amenities) || [];
   return `
     <div style="grid-column:span 12;border-top:1px solid var(--line);padding-top:14px;margin-top:2px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em">${T('portfolio.realEstate.sectionTitle', '🏠 Dados do imóvel')}</div>
+ <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em">${T('portfolio.realEstate.sectionTitle', 'Dados do imóvel')}</div>
     </div>
     <div style="grid-column:span 6">
       <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('portfolio.realEstate.operationLabel', 'Operação')}</label>
@@ -11204,7 +11204,7 @@ window.openPortfolioItemModal = function(itemId, prefillFields){
       <div style="grid-column:span 12">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <label style="display:block;font-size:11px;color:var(--muted)">${T('common.description', 'Descrição')}</label>
-          <button type="button" class="btn secondary" style="padding:5px 10px;font-size:11px" onclick="generatePortfolioItemDescriptionWithAI()">${T('portfolio.generateDescriptionBtn', '✨ Gerar com IA')}</button>
+ <button type="button" class="btn secondary" style="padding:5px 10px;font-size:11px" onclick="generatePortfolioItemDescriptionWithAI()">${T('portfolio.generateDescriptionBtn', 'Gerar com IA')}</button>
         </div>
         <textarea id="portfolioItemDescription" rows="2" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;resize:vertical">${item && item.description ? escapeHtml(item.description) : ""}</textarea>
       </div>
@@ -12705,7 +12705,7 @@ async function loadParking(){
         vehicles.forEach(v => {
           const serviceLabel = v.service_type === "manobrista" ? T('parking.service.valet', 'Manobrista') : T('parking.service.selfPark', 'Autoatendimento');
           const valetBtn = v.service_type === "manobrista"
-            ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-right:6px" onclick="requestValetUI(${v.id})">${T('parking.requestValetBtn', '🔑 Chamar carro')}</button>`
+ ? `<button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px;margin-right:6px" onclick="requestValetUI(${v.id})">${T('parking.requestValetBtn', 'Chamar carro')}</button>`
             : "";
           const row = document.createElement("tr");
           row.innerHTML = `
@@ -13535,7 +13535,7 @@ function contactRowHtml(contact){
         ${contact.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">${escapeHtml(contact.notes)}</div>` : ""}
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button type="button" class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startChatWithContactUI(${contact.id})" ${contact.phone ? "" : "disabled"}>💬 ${T('contacts.messageBtn', 'Mandar mensagem')}</button>
+ <button type="button" class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="startChatWithContactUI(${contact.id})" ${contact.phone ? "" : "disabled"}>${T('contacts.messageBtn', 'Mandar mensagem')}</button>
         <button type="button" class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="openContactModal(${contact.id})">${T('common.edit', 'Editar')}</button>
         <button type="button" class="btn red" style="font-size:12px;padding:6px 12px" onclick="deleteContactUI(${contact.id}, '${escapeHtml(contact.name).replace(/'/g, "\\'")}')">${T('common.delete', 'Excluir')}</button>
       </div>
@@ -13849,7 +13849,7 @@ function renderGuestProfileModal(profile, editMode){
       <div><label>${T('guests.profile.documentTypeLabel', 'Tipo de documento')}</label>${guestReadonlyField(g.document_type)}</div>
       <div><label>${T('guests.profile.documentNumberLabel', 'Número do documento')}</label>${guestReadonlyField(g.document_number)}</div>
     </div>
-    <button class="btn secondary" type="button" style="margin-top:12px" onclick="renderGuestProfileModal(window._currentGuestProfile, true)">✏️ ${T('guests.profile.editBtn', 'Editar')}</button>
+ <button class="btn secondary" type="button" style="margin-top:12px" onclick="renderGuestProfileModal(window._currentGuestProfile, true)">${T('guests.profile.editBtn', 'Editar')}</button>
   `;
 
   openGenericModal(g.name || T('guests.noName', 'Sem nome'), `
@@ -13881,7 +13881,7 @@ function renderGuestProfileModal(profile, editMode){
     <div class="guest-profile-section">
       <h4><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>${T('guests.privacy.title', 'Privacidade')}</h4>
       <p style="font-size:12px;color:var(--muted);margin:0 0 10px">${T('guests.privacy.desc', 'A pedido do hóspede, remove documentos e conversas, e anonimiza nome/telefone/email/documento. Reservas e valores ficam registrados sem identificar a pessoa. Ação irreversível.')}</p>
-      <button class="btn red" type="button" onclick="eraseGuestDataUI(${g.id})">${T('guests.privacy.eraseBtn', '🗑️ Excluir dados do hóspede')}</button>
+ <button class="btn red" type="button" onclick="eraseGuestDataUI(${g.id})">${T('guests.privacy.eraseBtn', 'Excluir dados do hóspede')}</button>
       <div id="guestEraseMessage" class="generic-modal-message"></div>
     </div>
   `, true);
@@ -14198,7 +14198,7 @@ window.uploadGuestDocumentUI = async function(guestId){
       allBtn.type = "button";
       allBtn.className = "hostel-selector-option hostel-selector-all";
       allBtn.innerHTML = `
-        <span class="option-name">🗂️ ${T('allProperties.selectorOption', 'Todas as propriedades')}</span>
+ <span class="option-name">${T('allProperties.selectorOption', 'Todas as propriedades')}</span>
       `;
       allBtn.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -14888,7 +14888,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     if(accountKind === "promoter"){
       return [
         {
-          titleKey: "onboarding.tour.promoter.welcome.title", title: "👋 Bem-vindo(a) à StayFlow",
+ titleKey: "onboarding.tour.promoter.welcome.title", title: "Bem-vindo(a) à StayFlow",
           bodyKey: "onboarding.tour.promoter.welcome.body", body: "Esse é o seu Dashboard - o resumo da sua conta de promotor. Vamos mostrar rapidinho o que tem em cada bloco.",
         },
         {
@@ -14922,7 +14922,7 @@ window.uploadGuestDocumentUI = async function(guestId){
         : "Mostra hóspedes com potencial de venda (passeio, upgrade, aluguel), detectado automaticamente pelas conversas - pra você não deixar dinheiro na mesa.");
     return [
       {
-        titleKey: isImobiliaria ? "onboarding.tour.imobiliaria.welcome.title" : "onboarding.tour.default.welcome.title", title: "👋 Bem-vindo(a) à StayFlow",
+ titleKey: isImobiliaria ? "onboarding.tour.imobiliaria.welcome.title" : "onboarding.tour.default.welcome.title", title: "Bem-vindo(a) à StayFlow",
         bodyKey: isImobiliaria ? "onboarding.tour.imobiliaria.welcome.body" : "onboarding.tour.default.welcome.body",
         body: isImobiliaria
           ? "Esse é o seu Dashboard - o resumo do que está acontecendo com seus imóveis agora. Vamos mostrar rapidinho o que tem em cada bloco."
@@ -15032,7 +15032,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 <script src="assets/js/chats-live.js?v=1125"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1153"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1154"></script>
 <script>
 (function(){
   "use strict";

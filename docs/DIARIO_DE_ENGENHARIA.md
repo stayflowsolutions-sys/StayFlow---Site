@@ -12632,3 +12632,72 @@ emoji restante em qualquer `<h1-4>` ou título de modal - 924
 substituições de string no total entre HTML e dicionário, feitas por
 script em vez de à mão, precisamente PORQUE o volume tornava edição
 manual arriscada demais pra fazer com confiança.
+
+### Fechando o item de emoji de vez: "dessa vez até o final" (v1.151.2)
+
+Duas sessões depois (usuário voltou de uma prova de habilitação),
+pedido explícito: continuar os emoji "até o final, quero tudo limpo" -
+sem escopo parcial dessa vez. Levantamento completo mostrou que o
+`dashboard.html` ainda tinha 103 instâncias sobrando fora dos
+cabeçalhos/modais já feitos (botões, abas, badges) - e o `admin.html`,
+nunca tocado em nenhum lote anterior, tinha 189.
+
+Decisão central antes de codar: nem tudo devia virar ícone. Os dois
+lotes anteriores (cabeçalhos, modais) eram texto de destaque, onde um
+ícone fazia sentido visual. Esse lote é botão/aba/badge menor - forçar
+um ícone SVG novo pra cada um seria trabalho de design que o pedido
+não pedia ("limpo" != "com ícone bonito em tudo"). Regra aplicada: só
+REMOVER o emoji na maioria dos casos; ícone só onde já existia um
+pronto pra reaproveitar (o alvo 🎯 de "Próxima melhor ação", que já
+tinha virado SVG no lote anterior pra `chats.nextActionTitle` - os 2
+usos soltos desse mesmo conceito ganharam o mesmo ícone, por
+consistência).
+
+Antes de rodar qualquer coisa em escala, precisei resolver um problema
+que os lotes anteriores não tinham: como saber quais das ~300
+instâncias eram "emoji decorativo de sobra" vs. "emoji que É o próprio
+ícone daquela linha"? Fiz uma varredura dedicada procurando elementos
+cujo conteúdo INTEIRO era só o emoji (`>EMOJI<`) - e ela pegou tanto
+os casos reais (`NOTIF_CATEGORY_META`, ícones de integração, avatar
+de contato sem foto, ícone de tipo de documento, e uns 6 botões
+icon-only tipo "anexar foto"/"perfil do hóspede"/"respostas rápidas"
+que ficariam completamente em branco se eu só apagasse o emoji) quanto
+falsos positivos (emoji decorativo logo ANTES de um `<span
+data-i18n>` com texto real do lado, que minha regex simples também
+enxergava como ">EMOJI<" por causa do `<` de abertura do span
+seguinte). Separei os dois manualmente, e nesse processo achei um
+quase-erro: `✎` (lápis de editar quarto/modalidade, botão sem texto
+nenhum) quase foi apagado porque eu só tinha colocado `✓`/`✕` na lista
+de símbolos "isso não é emoji feio, é um caractere funcional" - faltava
+o lápis. Pego a tempo comparando as duas varreduras antes de rodar o
+script de verdade contra o arquivo.
+
+Resultado: `dashboard.html` foi de 103 pra 42 sobrando (tudo
+documentado - símbolos de navegação tipo →/←/☰ e os botões/blocos
+icon-only listados acima), `admin.html` de 189 pra 99 pela mesma
+lógica. Achado de bônus: o dicionário do `admin.html` (`ADMIN_I18N`)
+fica dentro do PRÓPRIO arquivo, ao contrário do `i18n-dashboard-
+data.js` que é separado - isso simplificou o trabalho lá, porque a
+mesma passada de linha que limpa o HTML/JS já limpa as 11 traduções
+de cada chave junto, sem precisar de uma etapa de dicionário à parte
+(tentei rodar essa etapa extra mesmo assim, por segurança - deu 0
+substituições em tudo, confirmando que já tinha sido pego no passe
+principal).
+
+Sobraram 3 arquivos pequenos com emoji genuinamente decorativo
+(`PromoterDashboard.html`, `SolicitarAcesso.html`,
+`ReferralPartner.html`) - editados um por um, sem script, por serem
+poucos casos. E um achado à parte: `settings.html` tinha um `⚙
+Settings` sobrando, mas ao confirmar com uma busca de referência no
+projeto inteiro, é um arquivo morto - nenhuma página real inclui ele
+(mockup antigo de uma versão anterior da tela de Configurações, que
+hoje vive de verdade dentro do `dashboard.html`). Não mexi - limpar
+código morto não é o mesmo trabalho que "deixar a StayFlow limpa", e
+mexer nele só criaria a falsa impressão de que o arquivo importa.
+
+Escopo final documentado e comunicado ao usuário, não escondido: 3
+categorias ficaram de fora de propósito (símbolos de wayfinding,
+emoji-que-é-o-próprio-ícone, e uma saudação de exemplo em
+`inbox.html`) - "tudo limpo" quis dizer "todo emoji decorativo de
+chrome", não literalmente cada caractere Unicode fora do alfabeto
+latino que o regex conseguisse encontrar.
