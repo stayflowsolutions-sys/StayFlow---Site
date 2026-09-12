@@ -918,17 +918,21 @@
     <section class="page" id="page-access-requests">
       <p style="color:var(--muted);font-size:13px;margin:0 0 16px" data-i18n="accessRequests.subtitle">Cadastro de hospedagem/agência é por convite (ver SolicitarAcesso.html) - aprove pra criar a conta com senha temporária, ou rejeite. Inclui pedidos de demo de apresentação feitos por promotores.</p>
 
-      <div id="accessRequestApprovedBox" style="display:none;margin-bottom:18px;padding:14px;border-radius:14px;background:#26e0a014;border:1px solid #26e0a030">
-        <div style="font-size:12.5px;color:var(--muted);margin-bottom:6px" data-i18n="accessRequests.tempPasswordHint">Conta criada! Senha temporária (compartilhe com a pessoa agora — não é possível ver de novo depois):</div>
-        <code id="accessRequestPasswordValue" style="font-size:15px;font-weight:800;color:#6ff0bd"></code>
-      </div>
-
       <div class="prop-list" id="accessRequestsList"></div>
       <div class="alert-empty" id="accessRequestsEmpty" style="display:none" data-i18n="accessRequests.empty">Nenhuma solicitação pendente.</div>
     </section>
   </div>
 </div>
 
+</div>
+
+<div id="genericModalOverlay" class="generic-modal-overlay" onclick="closeGenericModal()"></div>
+<div id="genericModal" class="generic-modal">
+  <div class="generic-modal-head">
+    <h3 id="genericModalTitle"></h3>
+    <button class="close-btn" onclick="closeGenericModal()">×</button>
+  </div>
+  <div id="genericModalBody" class="generic-modal-body"></div>
 </div>
 
 <div id="askAdminOverlay" class="ask-overlay" onclick="closeAskAdmin()"></div>
@@ -1050,6 +1054,7 @@
       "nav.expenses": "Despesas", "nav.prospects": "Prospecção", "nav.team": "Equipe", "nav.accessRequests": "Solicitações de acesso",
       "accessRequests.subtitle": "Cadastro de hospedagem/agência é por convite (ver SolicitarAcesso.html) - aprove pra criar a conta com senha temporária, ou rejeite. Inclui pedidos de demo de apresentação feitos por promotores.",
       "accessRequests.tempPasswordHint": "Conta criada! Senha temporária (compartilhe com a pessoa agora — não é possível ver de novo depois):",
+      "accessRequests.approvedTitle": "Conta aprovada", "accessRequests.copyBtn": "Copiar", "accessRequests.copiedMsg": "Copiado!",
       "accessRequests.empty": "Nenhuma solicitação pendente.",
       "accessRequests.approveBtn": "Aprovar", "accessRequests.rejectBtn": "Rejeitar",
       "accessRequests.demoTag": "Demo de apresentação (promotor)",
@@ -1228,6 +1233,7 @@
       "nav.expenses": "Expenses", "nav.prospects": "Prospecting", "nav.team": "Team", "nav.accessRequests": "Access requests",
       "accessRequests.subtitle": "Hostel/agency signup is invite-only (see SolicitarAcesso.html) - approve to create the account with a temporary password, or reject. Includes presentation-demo requests from promoters.",
       "accessRequests.tempPasswordHint": "Account created! Temporary password (share it with the person now — it can't be shown again):",
+      "accessRequests.approvedTitle": "Account approved", "accessRequests.copyBtn": "Copy", "accessRequests.copiedMsg": "Copied!",
       "accessRequests.empty": "No pending requests.",
       "accessRequests.approveBtn": "Approve", "accessRequests.rejectBtn": "Reject",
       "accessRequests.demoTag": "Presentation demo (promoter)",
@@ -3639,6 +3645,20 @@
   };
 
   // ===== Dropdowns genericos (propriedades / notificacoes / idioma / usuario) =====
+  // Modal generico (mesmo padrao/CSS de dashboard.html, .generic-modal*
+  // ja existe em app.css compartilhado - so faltava a instancia do HTML
+  // e essas 2 funcoes aqui, nunca precisou antes de hoje).
+  window.openGenericModal = function(title, bodyHtml){
+    document.getElementById("genericModalTitle").textContent = title;
+    document.getElementById("genericModalBody").innerHTML = bodyHtml;
+    document.getElementById("genericModalOverlay").classList.add("open");
+    document.getElementById("genericModal").classList.add("open");
+  };
+  window.closeGenericModal = function(){
+    document.getElementById("genericModalOverlay").classList.remove("open");
+    document.getElementById("genericModal").classList.remove("open");
+  };
+
   function closeAllDropdowns(except){
     ["propertySelectorDropdown", "adminNotifPanel", "langDropdown", "userMenuDropdown"].forEach(id => {
       if(id === except) return;
@@ -5356,12 +5376,26 @@
         alert(data.message || "Não foi possível aprovar.");
         return;
       }
-      document.getElementById("accessRequestPasswordValue").textContent = data.temporary_password;
-      document.getElementById("accessRequestApprovedBox").style.display = "block";
+      openGenericModal(AT("accessRequests.approvedTitle"), `
+        <p style="font-size:13px;color:var(--muted);margin:0 0 14px">${AT("accessRequests.tempPasswordHint")}</p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <code id="accessRequestPasswordValue" style="flex:1;font-size:16px;font-weight:800;color:#6ff0bd;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px 14px">${data.temporary_password}</code>
+          <button type="button" class="btn secondary" style="width:auto" onclick="copyAccessRequestPassword(this)">${AT("accessRequests.copyBtn")}</button>
+        </div>
+      `);
       loadAccessRequests();
     }catch(e){
       console.warn("Erro ao aprovar solicitação de acesso:", e);
     }
+  };
+
+  window.copyAccessRequestPassword = function(btn){
+    const value = document.getElementById("accessRequestPasswordValue")?.textContent || "";
+    navigator.clipboard.writeText(value).then(() => {
+      const original = btn.textContent;
+      btn.textContent = AT("accessRequests.copiedMsg");
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    }).catch(() => {});
   };
 
   window.rejectAccessRequestUI = async function(id, name){
@@ -5916,6 +5950,7 @@
     setInterval(() => { loadOverview().catch(() => {}); }, 45000);
     setInterval(() => { loadMyChatGuests().catch(() => {}); }, 10000);
     setInterval(() => { loadSupportThreads().catch(() => {}); }, 10000);
+    setInterval(() => { loadAccessRequests().catch(() => {}); }, 15000);
     setInterval(() => {
       if(myChatActiveGuestId) openMyChatGuest(myChatActiveGuestId);
       if(supportActiveHostelId) openSupportThread(supportActiveHostelId);
