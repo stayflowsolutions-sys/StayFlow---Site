@@ -216,7 +216,7 @@
           <span id="adminNotifBadge" class="notif-badge" style="display:none">0</span>
         </button>
         <div id="adminNotifPanel" class="notif-panel" style="display:none">
-          <div class="notif-panel-header"><span data-i18n="notif.title">🔔 Notificações</span></div>
+ <div class="notif-panel-header"><span data-i18n="notif.title">Notificações</span></div>
           <div id="adminNotifList"></div>
         </div>
       </div>
@@ -401,10 +401,10 @@
     <!-- ===== Financeiro ===== -->
     <section class="page" id="page-finance">
       <div class="ops-tabs">
-        <button type="button" class="ops-tab active" data-finance-tab="overview" onclick="switchFinanceTab('overview')" data-i18n="finance.tab.overview">📊 Visão geral</button>
+ <button type="button" class="ops-tab active" data-finance-tab="overview" onclick="switchFinanceTab('overview')" data-i18n="finance.tab.overview">Visão geral</button>
         <button type="button" class="ops-tab" data-finance-tab="expenses" onclick="switchFinanceTab('expenses')" data-i18n="nav.expenses">Despesas</button>
-        <button type="button" class="ops-tab" data-finance-tab="referral" onclick="switchFinanceTab('referral')" data-i18n="finance.tab.referral">🤝 Indicações</button>
-        <button type="button" class="ops-tab" data-finance-tab="resellers" onclick="switchFinanceTab('resellers')" data-i18n="finance.tab.resellers">🏷️ Revendedores</button>
+ <button type="button" class="ops-tab" data-finance-tab="referral" onclick="switchFinanceTab('referral')" data-i18n="finance.tab.referral">Indicações</button>
+ <button type="button" class="ops-tab" data-finance-tab="resellers" onclick="switchFinanceTab('resellers')" data-i18n="finance.tab.resellers">Revendedores</button>
       </div>
 
       <div id="financeTabOverview">
@@ -624,11 +624,11 @@
             <h3 id="referralPartnerDetailsTitle" style="margin:0;font-size:14px" data-i18n="referral.details.title">Detalhes do parceiro</h3>
             <button type="button" class="btn secondary" style="padding:4px 12px;font-size:12px" onclick="closeReferralPartnerDetails()" data-i18n="expenses.form.cancel">Cancelar</button>
           </div>
-          <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.payoutTitle">💳 Dados de recebimento</h4>
+ <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.payoutTitle">Dados de recebimento</h4>
           <div id="referralPartnerDetailsPayout" style="margin-bottom:14px;font-size:12px;color:var(--muted)"></div>
-          <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.hostelsTitle">🏨 Hospedagens indicadas</h4>
+ <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.hostelsTitle">Hospedagens indicadas</h4>
           <div id="referralPartnerDetailsHostels" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:12px"></div>
-          <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.historyTitle">📋 Histórico de lançamentos</h4>
+ <h4 style="font-size:12px;font-weight:800;margin:0 0 6px" data-i18n="referral.details.historyTitle">Histórico de lançamentos</h4>
           <div id="referralPartnerDetailsHistory" style="display:flex;flex-direction:column;gap:6px;font-size:12px"></div>
         </div>
       </div>
@@ -695,18 +695,18 @@
       <div class="section-title" data-i18n="config.section.communication">Comunicação (canais do assistente comercial)</div>
       <div class="grid" id="adminCommCardsWrap" style="display:none">
         <div class="card span-4">
-          <p style="font-size:13px;font-weight:800;margin:0 0 6px">📱 WhatsApp</p>
+ <p style="font-size:13px;font-weight:800;margin:0 0 6px">WhatsApp</p>
           <p id="adminWhatsappStatus" style="color:var(--muted);font-size:12px;margin:0 0 12px" data-i18n="loading">Carregando...</p>
           <button type="button" class="btn" id="adminWhatsappConnectBtn" onclick="connectAdminWhatsappEmbedded()" style="display:none" data-i18n="settings.whatsapp.connectBtn">Conectar via WhatsApp</button>
         </div>
         <div class="card span-4">
-          <p style="font-size:13px;font-weight:800;margin:0 0 6px">💬 Facebook Messenger</p>
+ <p style="font-size:13px;font-weight:800;margin:0 0 6px">Facebook Messenger</p>
           <p id="adminFacebookStatus" style="color:var(--muted);font-size:12px;margin:0 0 12px" data-i18n="loading">Carregando...</p>
           <button type="button" class="btn" id="adminFacebookConnectBtn" onclick="connectAdminPersonaChannel('facebook')" data-i18n="settings.facebook.connectBtn">Conectar Facebook</button>
           <button type="button" class="btn red" id="adminFacebookDisconnectBtn" onclick="disconnectAdminPersonaChannel('facebook')" style="display:none" data-i18n="settings.facebook.disconnectBtn">Desconectar</button>
         </div>
         <div class="card span-4">
-          <p style="font-size:13px;font-weight:800;margin:0 0 6px">📷 Instagram Direct</p>
+ <p style="font-size:13px;font-weight:800;margin:0 0 6px">Instagram Direct</p>
           <p id="adminInstagramStatus" style="color:var(--muted);font-size:12px;margin:0 0 12px" data-i18n="loading">Carregando...</p>
           <button type="button" class="btn" id="adminInstagramConnectBtn" onclick="connectAdminPersonaChannel('instagram')" data-i18n="settings.instagram.connectBtn">Conectar Instagram</button>
           <button type="button" class="btn red" id="adminInstagramDisconnectBtn" onclick="disconnectAdminPersonaChannel('instagram')" style="display:none" data-i18n="settings.instagram.disconnectBtn">Desconectar</button>
@@ -831,7 +831,7 @@
           <div class="span-12">
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
               <input type="checkbox" id="leadTrainingCandidate" style="width:auto;margin:0">
-              🎓 Operação grande — candidata a treinamento pago
+ Operação grande — candidata a treinamento pago
             </label>
           </div>
         </div>
@@ -864,7 +864,7 @@
         </select>
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap">
           <input type="checkbox" id="leadTrainingFilter" onchange="loadLeads()" style="width:auto;margin:0">
-          🎓 Só candidatos a treinamento
+ Só candidatos a treinamento
         </label>
       </div>
       <div style="overflow-x:auto">
@@ -968,9 +968,9 @@
     pt: {
       "nav.overview": "Visão geral", "nav.chat": "Meu chat", "nav.support": "Suporte",
       "nav.properties": "Propriedades", "nav.finance": "Financeiro", "nav.ranking": "Ranking",
-      "finance.tab.overview": "📊 Visão geral",
+ "finance.tab.overview": "Visão geral",
       "common.back": "Voltar",
-      "finance.tab.referral": "🤝 Indicações",
+ "finance.tab.referral": "Indicações",
       "referral.section.title": "Comissão de indicação",
       "referral.manualPartner.btn": "+ Parceiro manual",
       "referral.subtitle": "Comissão recorrente devida a cada parceiro (hotel cliente ou promotor externo) por hotéis indicados que estão pagando assinatura — mesmo modelo de repasse manual do quadro acima.",
@@ -986,7 +986,7 @@
       "referral.table.activeCount": "Indicações ativas",
       "referral.table.currentTier": "Comissão atual",
       "referral.empty": "Nenhuma comissão de indicação pendente.",
-      "finance.tab.resellers": "🏷️ Revendedores",
+ "finance.tab.resellers": "Revendedores",
       "resellers.section.title": "Revendedores (tier white-label)",
       "resellers.createBtn": "+ Criar revendedor",
       "resellers.subtitle": "Cada revendedor gerencia N hospedagens-cliente com marca e preço próprios. Depois de criar, repasse o código pra ele se registrar e usar \"Adicionar hospedagem\" pra criar clientes já vinculados.",
@@ -1007,11 +1007,11 @@
       "resellers.table.margin": "Margem devida",
       "referral.details.title": "Detalhes do parceiro",
       "referral.details.viewBtn": "Ver detalhes",
-      "referral.details.hostelsTitle": "🏨 Hospedagens indicadas",
-      "referral.details.payoutTitle": "💳 Dados de recebimento",
+ "referral.details.hostelsTitle": "Hospedagens indicadas",
+ "referral.details.payoutTitle": "Dados de recebimento",
       "referral.details.payoutBank": "Transferência bancária",
       "referral.details.payoutEmpty": "Nenhum dado de recebimento cadastrado ainda.",
-      "referral.details.historyTitle": "📋 Histórico de lançamentos",
+ "referral.details.historyTitle": "Histórico de lançamentos",
       "referral.details.hostelsEmpty": "Nenhuma hospedagem indicada ainda.",
       "referral.details.historyEmpty": "Nenhum lançamento ainda.",
       "referral.details.statusPaid": "Pago",
@@ -1089,7 +1089,7 @@
       "addHostel.submitBtn": "Criar hospedagem",
       "propertySelector.empty": "Nenhuma conta de teste marcada ainda.<br>Marca uma no perfil dela (aba Propriedades → abrir a conta → \"Marcar como minha conta de teste\").",
       "propertySelector.noMatch": "Nenhuma propriedade encontrada.",
-      "notif.title": "🔔 Notificações", "notif.empty": "Nenhuma novidade.", "notif.button.title": "Notificações",
+ "notif.title": "Notificações", "notif.empty": "Nenhuma novidade.", "notif.button.title": "Notificações",
       "lang.title": "Idioma", "userMenu.title": "Menu do usuário", "userMenu.role": "Dono · StayFlow", "userMenu.logout": "↪ Sair",
       "loading": "Carregando...", "error": "Não foi possível carregar o painel.",
       "overview.kpi.accounts": "Contas", "overview.kpi.mrr": "MRR estimado", "overview.kpi.mrr.note": "Cobrança automática ainda não ligada — valor de tabela.",
@@ -1146,9 +1146,9 @@
     en: {
       "nav.overview": "Overview", "nav.chat": "My chat", "nav.support": "Support",
       "nav.properties": "Properties", "nav.finance": "Finance", "nav.ranking": "Ranking",
-      "finance.tab.overview": "📊 Overview",
+ "finance.tab.overview": "Overview",
       "common.back": "Back",
-      "finance.tab.referral": "🤝 Referrals",
+ "finance.tab.referral": "Referrals",
       "referral.section.title": "Referral commission",
       "referral.manualPartner.btn": "+ Manual partner",
       "referral.subtitle": "Recurring commission owed to each partner (client hotel or external promoter) for referred hotels currently paying a subscription — same manual payout model as the panel above.",
@@ -1164,7 +1164,7 @@
       "referral.table.activeCount": "Active referrals",
       "referral.table.currentTier": "Current commission",
       "referral.empty": "No referral commission pending.",
-      "finance.tab.resellers": "🏷️ Resellers",
+ "finance.tab.resellers": "Resellers",
       "resellers.section.title": "Resellers (white-label tier)",
       "resellers.createBtn": "+ Create reseller",
       "resellers.subtitle": "Each reseller manages N client hostels with their own brand and price. After creating, share the code so they can register and use \"Add hostel\" to create already-linked clients.",
@@ -1185,11 +1185,11 @@
       "resellers.table.margin": "Margin owed",
       "referral.details.title": "Partner details",
       "referral.details.viewBtn": "View details",
-      "referral.details.hostelsTitle": "🏨 Referred hostels",
-      "referral.details.payoutTitle": "💳 Payout details",
+ "referral.details.hostelsTitle": "Referred hostels",
+ "referral.details.payoutTitle": "Payout details",
       "referral.details.payoutBank": "Bank transfer",
       "referral.details.payoutEmpty": "No payout details registered yet.",
-      "referral.details.historyTitle": "📋 Ledger history",
+ "referral.details.historyTitle": "Ledger history",
       "referral.details.hostelsEmpty": "No hostel referred yet.",
       "referral.details.historyEmpty": "No entries yet.",
       "referral.details.statusPaid": "Paid",
@@ -1267,7 +1267,7 @@
       "addHostel.submitBtn": "Create property",
       "propertySelector.empty": "No test account marked yet.<br>Mark one on its profile (Properties tab → open the account → \"Mark as my test account\").",
       "propertySelector.noMatch": "No property found.",
-      "notif.title": "🔔 Notifications", "notif.empty": "Nothing new.", "notif.button.title": "Notifications",
+ "notif.title": "Notifications", "notif.empty": "Nothing new.", "notif.button.title": "Notifications",
       "lang.title": "Language", "userMenu.title": "User menu", "userMenu.role": "Owner · StayFlow", "userMenu.logout": "↪ Log out",
       "loading": "Loading...", "error": "Could not load the panel.",
       "overview.kpi.accounts": "Accounts", "overview.kpi.mrr": "Estimated MRR", "overview.kpi.mrr.note": "Automatic billing not connected yet — list value.",
@@ -1324,9 +1324,9 @@
     es: {
       "nav.overview": "Visión general", "nav.chat": "Mi chat", "nav.support": "Soporte",
       "nav.properties": "Propiedades", "nav.finance": "Finanzas", "nav.ranking": "Ranking",
-      "finance.tab.overview": "📊 Visión general",
+ "finance.tab.overview": "Visión general",
       "common.back": "Volver",
-      "finance.tab.referral": "🤝 Referidos",
+ "finance.tab.referral": "Referidos",
       "referral.section.title": "Comisión de referidos",
       "referral.manualPartner.btn": "+ Parceiro manual",
       "referral.subtitle": "Comisión recurrente adeudada a cada parceiro (hotel cliente o promotor externo) por hoteles referidos que están pagando una suscripción — mismo modelo de repase manual del cuadro de arriba.",
@@ -1342,7 +1342,7 @@
       "referral.table.activeCount": "Indicaciones activas",
       "referral.table.currentTier": "Comisión actual",
       "referral.empty": "Ninguna comisión de referidos pendiente.",
-      "finance.tab.resellers": "🏷️ Revendedores",
+ "finance.tab.resellers": "Revendedores",
       "resellers.section.title": "Revendedores (nivel white-label)",
       "resellers.createBtn": "+ Crear revendedor",
       "resellers.subtitle": "Cada revendedor gestiona N hospedajes-cliente con marca y precio propios. Después de crear, comparte el código para que se registre y use \"Agregar hospedaje\" para crear clientes ya vinculados.",
@@ -1363,11 +1363,11 @@
       "resellers.table.margin": "Margen adeudado",
       "referral.details.title": "Detalles del socio",
       "referral.details.viewBtn": "Ver detalles",
-      "referral.details.hostelsTitle": "🏨 Hospedajes indicados",
-      "referral.details.payoutTitle": "💳 Datos de cobro",
+ "referral.details.hostelsTitle": "Hospedajes indicados",
+ "referral.details.payoutTitle": "Datos de cobro",
       "referral.details.payoutBank": "Transferencia bancaria",
       "referral.details.payoutEmpty": "Todavía no hay datos de cobro registrados.",
-      "referral.details.historyTitle": "📋 Historial de movimientos",
+ "referral.details.historyTitle": "Historial de movimientos",
       "referral.details.hostelsEmpty": "Ningún hospedaje indicado todavía.",
       "referral.details.historyEmpty": "Ningún movimiento todavía.",
       "referral.details.statusPaid": "Pagado",
@@ -1437,7 +1437,7 @@
       "addHostel.submitBtn": "Crear hospedaje",
       "propertySelector.empty": "Todavía no marcaste ninguna cuenta de prueba.<br>Marcala en su perfil (pestaña Propiedades → abrir la cuenta → \"Marcar como mi cuenta de prueba\").",
       "propertySelector.noMatch": "No se encontró ninguna propiedad.",
-      "notif.title": "🔔 Notificaciones", "notif.empty": "Nada nuevo.", "notif.button.title": "Notificaciones",
+ "notif.title": "Notificaciones", "notif.empty": "Nada nuevo.", "notif.button.title": "Notificaciones",
       "lang.title": "Idioma", "userMenu.title": "Menú de usuario", "userMenu.role": "Dueño · StayFlow", "userMenu.logout": "↪ Salir",
       "loading": "Cargando...", "error": "No se pudo cargar el panel.",
       "overview.kpi.accounts": "Cuentas", "overview.kpi.mrr": "MRR estimado", "overview.kpi.mrr.note": "El cobro automático todavía no está conectado — valor de lista.",
@@ -1494,9 +1494,9 @@
     fr: {
       "nav.overview": "Vue d'ensemble", "nav.chat": "Mon chat", "nav.support": "Support",
       "nav.properties": "Propriétés", "nav.finance": "Finances", "nav.ranking": "Classement",
-      "finance.tab.overview": "📊 Vue d'ensemble",
+ "finance.tab.overview": "Vue d'ensemble",
       "common.back": "Retour",
-      "finance.tab.referral": "🤝 Parrainages",
+ "finance.tab.referral": "Parrainages",
       "referral.section.title": "Commission de parrainage",
       "referral.manualPartner.btn": "+ Partenaire manuel",
       "referral.subtitle": "Commission récurrente due à chaque partenaire (hôtel client ou promoteur externe) pour les hôtels parrainés qui paient actuellement un abonnement — même modèle de versement manuel que le tableau ci-dessus.",
@@ -1512,7 +1512,7 @@
       "referral.table.activeCount": "Recommandations actives",
       "referral.table.currentTier": "Commission actuelle",
       "referral.empty": "Aucune commission de parrainage en attente.",
-      "finance.tab.resellers": "🏷️ Revendeurs",
+ "finance.tab.resellers": "Revendeurs",
       "resellers.section.title": "Revendeurs (niveau white-label)",
       "resellers.createBtn": "+ Créer un revendeur",
       "resellers.subtitle": "Chaque revendeur gère N hébergements clients avec sa propre marque et son propre prix. Après création, partagez le code pour qu'il s'inscrive et utilise \"Ajouter un hébergement\" pour créer des clients déjà liés.",
@@ -1533,11 +1533,11 @@
       "resellers.table.margin": "Marge due",
       "referral.details.title": "Détails du partenaire",
       "referral.details.viewBtn": "Voir les détails",
-      "referral.details.hostelsTitle": "🏨 Hébergements parrainés",
-      "referral.details.payoutTitle": "💳 Coordonnées de paiement",
+ "referral.details.hostelsTitle": "Hébergements parrainés",
+ "referral.details.payoutTitle": "Coordonnées de paiement",
       "referral.details.payoutBank": "Virement bancaire",
       "referral.details.payoutEmpty": "Aucune coordonnée de paiement enregistrée pour le moment.",
-      "referral.details.historyTitle": "📋 Historique des mouvements",
+ "referral.details.historyTitle": "Historique des mouvements",
       "referral.details.hostelsEmpty": "Aucun hébergement parrainé pour le moment.",
       "referral.details.historyEmpty": "Aucun mouvement pour le moment.",
       "referral.details.statusPaid": "Payé",
@@ -1607,7 +1607,7 @@
       "addHostel.submitBtn": "Créer l'hébergement",
       "propertySelector.empty": "Aucun compte de test marqué pour l'instant.<br>Marquez-en un sur son profil (onglet Propriétés → ouvrir le compte → \"Marquer comme mon compte de test\").",
       "propertySelector.noMatch": "Aucune propriété trouvée.",
-      "notif.title": "🔔 Notifications", "notif.empty": "Rien de nouveau.", "notif.button.title": "Notifications",
+ "notif.title": "Notifications", "notif.empty": "Rien de nouveau.", "notif.button.title": "Notifications",
       "lang.title": "Langue", "userMenu.title": "Menu utilisateur", "userMenu.role": "Propriétaire · StayFlow", "userMenu.logout": "↪ Se déconnecter",
       "loading": "Chargement...", "error": "Impossible de charger le panneau.",
       "overview.kpi.accounts": "Comptes", "overview.kpi.mrr": "MRR estimé", "overview.kpi.mrr.note": "Facturation automatique pas encore connectée — valeur catalogue.",
@@ -1664,9 +1664,9 @@
     de: {
       "nav.overview": "Übersicht", "nav.chat": "Mein Chat", "nav.support": "Support",
       "nav.properties": "Unterkünfte", "nav.finance": "Finanzen", "nav.ranking": "Rangliste",
-      "finance.tab.overview": "📊 Übersicht",
+ "finance.tab.overview": "Übersicht",
       "common.back": "Zurück",
-      "finance.tab.referral": "🤝 Empfehlungen",
+ "finance.tab.referral": "Empfehlungen",
       "referral.section.title": "Empfehlungsprovision",
       "referral.manualPartner.btn": "+ Manueller Partner",
       "referral.subtitle": "Wiederkehrende Provision, die jedem Partner (Kundenhotel oder externer Promoter) für empfohlene Hotels geschuldet wird, die derzeit ein Abo bezahlen — gleiches manuelles Auszahlungsmodell wie im Feld oben.",
@@ -1682,7 +1682,7 @@
       "referral.table.activeCount": "Aktive Empfehlungen",
       "referral.table.currentTier": "Aktuelle Provision",
       "referral.empty": "Keine ausstehende Empfehlungsprovision.",
-      "finance.tab.resellers": "🏷️ Wiederverkäufer",
+ "finance.tab.resellers": "Wiederverkäufer",
       "resellers.section.title": "Wiederverkäufer (White-Label-Stufe)",
       "resellers.createBtn": "+ Wiederverkäufer erstellen",
       "resellers.subtitle": "Jeder Wiederverkäufer verwaltet N Kunden-Unterkünfte mit eigener Marke und eigenem Preis. Teilen Sie nach der Erstellung den Code, damit sich die Person registrieren und über \"Unterkunft hinzufügen\" bereits verknüpfte Kunden anlegen kann.",
@@ -1703,11 +1703,11 @@
       "resellers.table.margin": "Fällige Marge",
       "referral.details.title": "Partnerdetails",
       "referral.details.viewBtn": "Details ansehen",
-      "referral.details.hostelsTitle": "🏨 Empfohlene Unterkünfte",
-      "referral.details.payoutTitle": "💳 Auszahlungsdaten",
+ "referral.details.hostelsTitle": "Empfohlene Unterkünfte",
+ "referral.details.payoutTitle": "Auszahlungsdaten",
       "referral.details.payoutBank": "Banküberweisung",
       "referral.details.payoutEmpty": "Noch keine Auszahlungsdaten hinterlegt.",
-      "referral.details.historyTitle": "📋 Buchungsverlauf",
+ "referral.details.historyTitle": "Buchungsverlauf",
       "referral.details.hostelsEmpty": "Noch keine Unterkunft empfohlen.",
       "referral.details.historyEmpty": "Noch keine Buchungen.",
       "referral.details.statusPaid": "Bezahlt",
@@ -1777,7 +1777,7 @@
       "addHostel.submitBtn": "Unterkunft erstellen",
       "propertySelector.empty": "Noch kein Testkonto markiert.<br>Markieren Sie eines im Profil (Reiter Unterkünfte → Konto öffnen → \"Als mein Testkonto markieren\").",
       "propertySelector.noMatch": "Keine Unterkunft gefunden.",
-      "notif.title": "🔔 Benachrichtigungen", "notif.empty": "Nichts Neues.", "notif.button.title": "Benachrichtigungen",
+ "notif.title": "Benachrichtigungen", "notif.empty": "Nichts Neues.", "notif.button.title": "Benachrichtigungen",
       "lang.title": "Sprache", "userMenu.title": "Benutzermenü", "userMenu.role": "Inhaber · StayFlow", "userMenu.logout": "↪ Abmelden",
       "loading": "Wird geladen...", "error": "Panel konnte nicht geladen werden.",
       "overview.kpi.accounts": "Konten", "overview.kpi.mrr": "Geschätzter MRR", "overview.kpi.mrr.note": "Automatische Abrechnung noch nicht angebunden — Listenwert.",
@@ -1837,9 +1837,9 @@
       "nav.support": "サポート",
       "nav.properties": "施設",
       "nav.finance": "財務",
-      "finance.tab.overview": "📊 概要",
+ "finance.tab.overview": "概要",
       "common.back": "戻る",
-      "finance.tab.referral": "🤝 紹介",
+ "finance.tab.referral": "紹介",
       "referral.section.title": "紹介報酬",
       "referral.manualPartner.btn": "+ 手動でパートナー登録",
       "referral.subtitle": "現在サブスクリプションを支払っている紹介先ホテルについて、各パートナー（顧客ホテルまたは外部プロモーター）に支払うべき継続報酬 — 上の表と同じ手動精算モデルです。",
@@ -1855,7 +1855,7 @@
       "referral.table.activeCount": "有効な紹介数",
       "referral.table.currentTier": "現在の手数料率",
       "referral.empty": "保留中の紹介報酬はありません。",
-      "finance.tab.resellers": "🏷️ 販売代理店",
+ "finance.tab.resellers": "販売代理店",
       "resellers.section.title": "販売代理店（ホワイトラベル・ティア）",
       "resellers.createBtn": "+ 代理店を作成",
       "resellers.subtitle": "各代理店は独自のブランドと価格でN件のクライアント施設を管理します。作成後、コードを共有してもらい、\"施設を追加\"を使って既に紐づいたクライアントを作成してもらいましょう。",
@@ -1876,11 +1876,11 @@
       "resellers.table.margin": "未払いマージン",
       "referral.details.title": "パートナー詳細",
       "referral.details.viewBtn": "詳細を見る",
-      "referral.details.hostelsTitle": "🏨 紹介した宿泊施設",
-      "referral.details.payoutTitle": "💳 受取情報",
+ "referral.details.hostelsTitle": "紹介した宿泊施設",
+ "referral.details.payoutTitle": "受取情報",
       "referral.details.payoutBank": "銀行振込",
       "referral.details.payoutEmpty": "まだ受取情報が登録されていません。",
-      "referral.details.historyTitle": "📋 明細履歴",
+ "referral.details.historyTitle": "明細履歴",
       "referral.details.hostelsEmpty": "まだ紹介した施設はありません。",
       "referral.details.historyEmpty": "まだ明細はありません。",
       "referral.details.statusPaid": "支払済み",
@@ -1998,7 +1998,7 @@
       "addHostel.submitBtn": "施設を作成",
       "propertySelector.empty": "まだテストアカウントが設定されていません。<br>プロフィール画面で設定してください（施設タブ → アカウントを開く → 「自分のテストアカウントとして設定」）。",
       "propertySelector.noMatch": "施設が見つかりません。",
-      "notif.title": "🔔 通知",
+ "notif.title": "通知",
       "notif.empty": "新しい通知はありません。",
       "notif.button.title": "通知",
       "lang.title": "言語",
@@ -2135,9 +2135,9 @@
       "nav.support": "Supporto",
       "nav.properties": "Strutture",
       "nav.finance": "Finanze",
-      "finance.tab.overview": "📊 Panoramica",
+ "finance.tab.overview": "Panoramica",
       "common.back": "Indietro",
-      "finance.tab.referral": "🤝 Segnalazioni",
+ "finance.tab.referral": "Segnalazioni",
       "referral.section.title": "Commissione di segnalazione",
       "referral.manualPartner.btn": "+ Partner manuale",
       "referral.subtitle": "Commissione ricorrente dovuta a ogni partner (hotel cliente o promotore esterno) per gli hotel segnalati che stanno pagando un abbonamento — stesso modello di rimborso manuale del riquadro sopra.",
@@ -2153,7 +2153,7 @@
       "referral.table.activeCount": "Segnalazioni attive",
       "referral.table.currentTier": "Commissione attuale",
       "referral.empty": "Nessuna commissione di segnalazione in sospeso.",
-      "finance.tab.resellers": "🏷️ Rivenditori",
+ "finance.tab.resellers": "Rivenditori",
       "resellers.section.title": "Rivenditori (livello white-label)",
       "resellers.createBtn": "+ Crea rivenditore",
       "resellers.subtitle": "Ogni rivenditore gestisce N strutture clienti con marchio e prezzo propri. Dopo la creazione, condividi il codice per permettergli di registrarsi e usare \"Aggiungi struttura\" per creare clienti già collegati.",
@@ -2174,11 +2174,11 @@
       "resellers.table.margin": "Margine dovuto",
       "referral.details.title": "Dettagli del partner",
       "referral.details.viewBtn": "Vedi dettagli",
-      "referral.details.hostelsTitle": "🏨 Strutture segnalate",
-      "referral.details.payoutTitle": "💳 Dati di pagamento",
+ "referral.details.hostelsTitle": "Strutture segnalate",
+ "referral.details.payoutTitle": "Dati di pagamento",
       "referral.details.payoutBank": "Bonifico bancario",
       "referral.details.payoutEmpty": "Nessun dato di pagamento registrato ancora.",
-      "referral.details.historyTitle": "📋 Storico movimenti",
+ "referral.details.historyTitle": "Storico movimenti",
       "referral.details.hostelsEmpty": "Nessuna struttura segnalata ancora.",
       "referral.details.historyEmpty": "Nessun movimento ancora.",
       "referral.details.statusPaid": "Pagato",
@@ -2296,7 +2296,7 @@
       "addHostel.submitBtn": "Crea struttura",
       "propertySelector.empty": "Nessun account di test ancora contrassegnato.<br>Contrassegnane uno nel suo profilo (scheda Strutture → apri l'account → \"Contrassegna come mio account di test\").",
       "propertySelector.noMatch": "Nessuna struttura trovata.",
-      "notif.title": "🔔 Notifiche",
+ "notif.title": "Notifiche",
       "notif.empty": "Niente di nuovo.",
       "notif.button.title": "Notifiche",
       "lang.title": "Lingua",
@@ -2433,9 +2433,9 @@
       "nav.support": "支持",
       "nav.properties": "物业",
       "nav.finance": "财务",
-      "finance.tab.overview": "📊 概览",
+ "finance.tab.overview": "概览",
       "common.back": "返回",
-      "finance.tab.referral": "🤝 推荐",
+ "finance.tab.referral": "推荐",
       "referral.section.title": "推荐佣金",
       "referral.manualPartner.btn": "+ 手动添加合作伙伴",
       "referral.subtitle": "因推荐的酒店正在支付订阅费用，而欠每位合作伙伴（客户酒店或外部推广人）的持续佣金 — 与上方表格相同的手动结算模式。",
@@ -2451,7 +2451,7 @@
       "referral.table.activeCount": "有效推荐数",
       "referral.table.currentTier": "当前佣金比例",
       "referral.empty": "没有待结算的推荐佣金。",
-      "finance.tab.resellers": "🏷️ 经销商",
+ "finance.tab.resellers": "经销商",
       "resellers.section.title": "经销商（白标层级）",
       "resellers.createBtn": "+ 创建经销商",
       "resellers.subtitle": "每个经销商可管理多个拥有自己品牌和价格的客户住宿。创建后，把代码分享给对方，让其注册并使用\"添加住宿\"来创建已关联的客户。",
@@ -2472,11 +2472,11 @@
       "resellers.table.margin": "应付差价",
       "referral.details.title": "合作伙伴详情",
       "referral.details.viewBtn": "查看详情",
-      "referral.details.hostelsTitle": "🏨 已推荐住宿",
-      "referral.details.payoutTitle": "💳 收款信息",
+ "referral.details.hostelsTitle": "已推荐住宿",
+ "referral.details.payoutTitle": "收款信息",
       "referral.details.payoutBank": "银行转账",
       "referral.details.payoutEmpty": "尚未登记收款信息。",
-      "referral.details.historyTitle": "📋 结算历史",
+ "referral.details.historyTitle": "结算历史",
       "referral.details.hostelsEmpty": "尚未推荐任何住宿。",
       "referral.details.historyEmpty": "尚无记录。",
       "referral.details.statusPaid": "已支付",
@@ -2594,7 +2594,7 @@
       "addHostel.submitBtn": "创建住宿",
       "propertySelector.empty": "尚未标记任何测试账户。<br>请在物业档案中标记一个（“物业”标签页 → 打开该账户 → “标记为我的测试账户”）。",
       "propertySelector.noMatch": "未找到相关物业。",
-      "notif.title": "🔔 通知",
+ "notif.title": "通知",
       "notif.empty": "暂无新内容。",
       "notif.button.title": "通知",
       "lang.title": "语言",
@@ -2730,9 +2730,9 @@
       "nav.support": "Поддержка",
       "nav.properties": "Объекты",
       "nav.finance": "Финансы",
-      "finance.tab.overview": "📊 Обзор",
+ "finance.tab.overview": "Обзор",
       "common.back": "Назад",
-      "finance.tab.referral": "🤝 Рекомендации",
+ "finance.tab.referral": "Рекомендации",
       "referral.section.title": "Комиссия за рекомендации",
       "referral.manualPartner.btn": "+ Партнёр вручную",
       "referral.subtitle": "Регулярная комиссия, причитающаяся каждому партнёру (отелю-клиенту или внешнему промоутеру) за рекомендованные отели, которые сейчас оплачивают подписку — та же модель ручной выплаты, что и в таблице выше.",
@@ -2748,7 +2748,7 @@
       "referral.table.activeCount": "Активные рефералы",
       "referral.table.currentTier": "Текущая комиссия",
       "referral.empty": "Нет ожидающих выплат по рекомендациям.",
-      "finance.tab.resellers": "🏷️ Реселлеры",
+ "finance.tab.resellers": "Реселлеры",
       "resellers.section.title": "Реселлеры (White-label уровень)",
       "resellers.createBtn": "+ Создать реселлера",
       "resellers.subtitle": "Каждый реселлер управляет N клиентскими объектами с собственным брендом и ценой. После создания передайте код, чтобы он зарегистрировался и использовал «Добавить объект» для создания уже привязанных клиентов.",
@@ -2769,11 +2769,11 @@
       "resellers.table.margin": "Причитающаяся маржа",
       "referral.details.title": "Детали партнёра",
       "referral.details.viewBtn": "Посмотреть детали",
-      "referral.details.hostelsTitle": "🏨 Рекомендованные объекты",
-      "referral.details.payoutTitle": "💳 Реквизиты для выплат",
+ "referral.details.hostelsTitle": "Рекомендованные объекты",
+ "referral.details.payoutTitle": "Реквизиты для выплат",
       "referral.details.payoutBank": "Банковский перевод",
       "referral.details.payoutEmpty": "Реквизиты для выплат пока не указаны.",
-      "referral.details.historyTitle": "📋 История начислений",
+ "referral.details.historyTitle": "История начислений",
       "referral.details.hostelsEmpty": "Пока нет рекомендованных объектов.",
       "referral.details.historyEmpty": "Пока нет записей.",
       "referral.details.statusPaid": "Выплачено",
@@ -2891,7 +2891,7 @@
       "addHostel.submitBtn": "Создать объект",
       "propertySelector.empty": "Пока не отмечен ни один тестовый аккаунт.<br>Отметьте его в профиле (вкладка «Объекты» → откройте аккаунт → «Отметить как мой тестовый аккаунт»).",
       "propertySelector.noMatch": "Объект не найден.",
-      "notif.title": "🔔 Уведомления",
+ "notif.title": "Уведомления",
       "notif.empty": "Ничего нового.",
       "notif.button.title": "Уведомления",
       "lang.title": "Язык",
@@ -3028,9 +3028,9 @@
       "nav.support": "지원",
       "nav.properties": "숙박시설",
       "nav.finance": "재무",
-      "finance.tab.overview": "📊 개요",
+ "finance.tab.overview": "개요",
       "common.back": "뒤로",
-      "finance.tab.referral": "🤝 추천",
+ "finance.tab.referral": "추천",
       "referral.section.title": "추천 수수료",
       "referral.manualPartner.btn": "+ 수동 파트너 추가",
       "referral.subtitle": "현재 구독료를 결제 중인 추천 호텔에 대해 각 파트너(고객 호텔 또는 외부 프로모터)에게 지급해야 할 지속 수수료 — 위 표와 동일한 수동 정산 방식입니다.",
@@ -3046,7 +3046,7 @@
       "referral.table.activeCount": "활성 추천 수",
       "referral.table.currentTier": "현재 수수료율",
       "referral.empty": "대기 중인 추천 수수료가 없습니다.",
-      "finance.tab.resellers": "🏷️ 리셀러",
+ "finance.tab.resellers": "리셀러",
       "resellers.section.title": "리셀러 (화이트라벨 등급)",
       "resellers.createBtn": "+ 리셀러 생성",
       "resellers.subtitle": "각 리셀러는 자체 브랜드와 가격으로 여러 고객 숙소를 관리합니다. 생성 후 코드를 전달하면 리셀러가 가입하고 \"숙소 추가\"를 사용해 이미 연결된 고객을 만들 수 있습니다.",
@@ -3067,11 +3067,11 @@
       "resellers.table.margin": "미지급 마진",
       "referral.details.title": "파트너 상세정보",
       "referral.details.viewBtn": "상세보기",
-      "referral.details.hostelsTitle": "🏨 추천한 숙소",
-      "referral.details.payoutTitle": "💳 수령 정보",
+ "referral.details.hostelsTitle": "추천한 숙소",
+ "referral.details.payoutTitle": "수령 정보",
       "referral.details.payoutBank": "은행 송금",
       "referral.details.payoutEmpty": "아직 등록된 수령 정보가 없습니다.",
-      "referral.details.historyTitle": "📋 정산 내역",
+ "referral.details.historyTitle": "정산 내역",
       "referral.details.hostelsEmpty": "아직 추천한 숙소가 없습니다.",
       "referral.details.historyEmpty": "아직 내역이 없습니다.",
       "referral.details.statusPaid": "지급됨",
@@ -3189,7 +3189,7 @@
       "addHostel.submitBtn": "숙소 생성",
       "propertySelector.empty": "테스트 계정으로 표시된 것이 아직 없습니다.<br>프로필에서 하나를 표시하세요 (숙박시설 탭 → 계정 열기 → \"내 테스트 계정으로 표시\").",
       "propertySelector.noMatch": "숙박시설을 찾을 수 없습니다.",
-      "notif.title": "🔔 알림",
+ "notif.title": "알림",
       "notif.empty": "새로운 알림이 없습니다.",
       "notif.button.title": "알림",
       "lang.title": "언어",
@@ -3326,9 +3326,9 @@
       "nav.support": "Ondersteuning",
       "nav.properties": "Accommodaties",
       "nav.finance": "Financiën",
-      "finance.tab.overview": "📊 Overzicht",
+ "finance.tab.overview": "Overzicht",
       "common.back": "Terug",
-      "finance.tab.referral": "🤝 Verwijzingen",
+ "finance.tab.referral": "Verwijzingen",
       "referral.section.title": "Verwijzingscommissie",
       "referral.manualPartner.btn": "+ Handmatige partner",
       "referral.subtitle": "Terugkerende commissie verschuldigd aan elke partner (klanthotel of externe promotor) voor doorverwezen hotels die momenteel een abonnement betalen — zelfde handmatige uitbetalingsmodel als het paneel hierboven.",
@@ -3344,7 +3344,7 @@
       "referral.table.activeCount": "Actieve verwijzingen",
       "referral.table.currentTier": "Huidige commissie",
       "referral.empty": "Geen openstaande verwijzingscommissie.",
-      "finance.tab.resellers": "🏷️ Resellers",
+ "finance.tab.resellers": "Resellers",
       "resellers.section.title": "Resellers (white-label niveau)",
       "resellers.createBtn": "+ Reseller aanmaken",
       "resellers.subtitle": "Elke reseller beheert N klantaccommodaties met een eigen merk en prijs. Deel na het aanmaken de code zodat diegene zich kan registreren en \"Accommodatie toevoegen\" kan gebruiken om al gekoppelde klanten aan te maken.",
@@ -3365,11 +3365,11 @@
       "resellers.table.margin": "Verschuldigde marge",
       "referral.details.title": "Partnerdetails",
       "referral.details.viewBtn": "Details bekijken",
-      "referral.details.hostelsTitle": "🏨 Doorverwezen accommodaties",
-      "referral.details.payoutTitle": "💳 Uitbetalingsgegevens",
+ "referral.details.hostelsTitle": "Doorverwezen accommodaties",
+ "referral.details.payoutTitle": "Uitbetalingsgegevens",
       "referral.details.payoutBank": "Bankoverschrijving",
       "referral.details.payoutEmpty": "Nog geen uitbetalingsgegevens geregistreerd.",
-      "referral.details.historyTitle": "📋 Overzicht",
+ "referral.details.historyTitle": "Overzicht",
       "referral.details.hostelsEmpty": "Nog geen accommodatie doorverwezen.",
       "referral.details.historyEmpty": "Nog geen items.",
       "referral.details.statusPaid": "Betaald",
@@ -3487,7 +3487,7 @@
       "addHostel.submitBtn": "Accommodatie aanmaken",
       "propertySelector.empty": "Nog geen testaccount gemarkeerd.<br>Markeer er een in het profiel (tab Accommodaties → account openen → \"Markeren als mijn testaccount\").",
       "propertySelector.noMatch": "Geen accommodatie gevonden.",
-      "notif.title": "🔔 Meldingen",
+ "notif.title": "Meldingen",
       "notif.empty": "Niets nieuws.",
       "notif.button.title": "Meldingen",
       "lang.title": "Taal",
@@ -3813,10 +3813,10 @@
     const rows = [];
     hostels.forEach(h => {
       if(h.status === "trialing" && h.trial_days_left != null && h.trial_days_left <= 3){
-        rows.push({ kind: "warn", ico: "⏳", h, detail: h.trial_days_left <= 0 ? AT("overview.attention.trialToday") : AT("overview.attention.trialDays", { days: h.trial_days_left }), right: `${h.trial_days_left}d` });
+ rows.push({ kind: "warn", ico: "", h, detail: h.trial_days_left <= 0 ? AT("overview.attention.trialToday") : AT("overview.attention.trialDays", { days: h.trial_days_left }), right: `${h.trial_days_left}d` });
       }
       if(h.status === "past_due"){
-        rows.push({ kind: "danger", ico: "⚠️", h, detail: AT("overview.attention.pastDue"), right: AT("overview.attention.pastDueTag") });
+ rows.push({ kind: "danger", ico: "", h, detail: AT("overview.attention.pastDue"), right: AT("overview.attention.pastDueTag") });
       }
     });
 

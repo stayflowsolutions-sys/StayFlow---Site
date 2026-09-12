@@ -42,7 +42,7 @@ td{padding:10px;border-bottom:1px solid #16233a}
   </div>
 
   <div class='card'>
-    <h2>🔗 Seu link de indicação</h2>
+    <h2>Seu link de indicação</h2>
     <p class='desc'>Compartilhe com qualquer hospedagem — quando alguém se cadastrar por ele e virar cliente pagante, a comissão cai automaticamente pra você, todo mês.</p>
     <div class='codeRow'>
       <input id='referralLink' readonly>
@@ -53,7 +53,7 @@ td{padding:10px;border-bottom:1px solid #16233a}
   </div>
 
   <div class='card'>
-    <h2>📢 Materiais pra divulgar</h2>
+    <h2>Materiais pra divulgar</h2>
     <p class='desc'>Textos prontos pra você mandar direto — já com o seu link de indicação incluído.</p>
     <label style='display:block;font-size:12px;color:#9aa8bb;margin-bottom:6px'>Mensagem de WhatsApp</label>
     <textarea id='materialWhatsapp' readonly style='width:100%;min-height:110px;padding:12px;background:#0d1421;border:1px solid #233652;border-radius:13px;color:#fff;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:8px'></textarea>
@@ -67,7 +67,7 @@ td{padding:10px;border-bottom:1px solid #16233a}
   </div>
 
   <div class='card'>
-    <h2>💰 Sua comissão</h2>
+    <h2>Sua comissão</h2>
     <div class='statsGrid'>
       <div class='statBox'><div class='label'>Faixa atual</div><div class='value' id='statTier'>—</div></div>
       <div class='statBox'><div class='label'>Indicações ativas</div><div class='value' id='statActiveCount'>—</div></div>
@@ -78,7 +78,7 @@ td{padding:10px;border-bottom:1px solid #16233a}
   </div>
 
   <div class='card'>
-    <h2>🏨 Hospedagens indicadas</h2>
+    <h2>Hospedagens indicadas</h2>
     <p class='desc'>Todas as hospedagens que já se cadastraram com o seu link.</p>
     <div class='tableWrap'>
       <table id='hostelsTable' style='display:none'>
@@ -90,7 +90,7 @@ td{padding:10px;border-bottom:1px solid #16233a}
   </div>
 
   <div class='card'>
-    <h2>📋 Histórico de comissões</h2>
+    <h2>Histórico de comissões</h2>
     <div class='tableWrap'>
       <table id='historyTable' style='display:none'>
         <thead><tr><th>Data</th><th>Hospedagem</th><th>Valor</th><th>%</th><th>Status</th></tr></thead>
@@ -101,7 +101,7 @@ td{padding:10px;border-bottom:1px solid #16233a}
   </div>
 
   <div class='card'>
-    <h2>📬 Contato de recebimento</h2>
+    <h2>Contato de recebimento</h2>
     <p class='desc'>E-mail e telefone que a StayFlow usa pra te avisar e combinar o repasse da comissão.</p>
     <label style='display:block;font-size:12px;color:#9aa8bb;margin-bottom:4px'>E-mail</label>
     <input id='contactEmailInput' type='email' placeholder='seu@email.com' style='width:100%;padding:14px;margin:0 0 14px;background:#0d1421;border:1px solid #233652;border-radius:13px;color:#fff;font-size:14px'>
@@ -157,7 +157,7 @@ async function loadDashboard(){
     if(data.next_tier){
       tierNote.innerHTML = `Faltam <strong>${data.next_tier.remaining}</strong> indicação(ões) ativa(s) pra você subir pra <strong>${Math.round(data.next_tier.pct * 100)}%</strong>.`;
     }else{
-      tierNote.innerHTML = `Você está na faixa máxima de comissão. 🎉`;
+      tierNote.innerHTML = `Você está na faixa máxima de comissão.`;
     }
 
     const hostelsTable = document.getElementById('hostelsTable');
