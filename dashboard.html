@@ -13991,7 +13991,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 // ===== CHATS: /chats =====
 // loadChats() vive em assets/js/chats-live.js (versão completa: lista
 // clicável + perfil do hóspede). Havia uma definição duplicada aqui
-// que nunca rodava de verdade — o <script src="assets/js/chats-live.js?v=1125">
+// que nunca rodava de verdade — o <script src="assets/js/chats-live.js?v=1126">
 // carrega depois deste bloco e sobrescreve a função global antes de
 // qualquer coisa chamá-la, então essa cópia só causava um fetch
 // duplicado em /chats a cada carregamento de página. Removida.
@@ -15029,7 +15029,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 })();
 </script>
 
-<script src="assets/js/chats-live.js?v=1125"></script>
+<script src="assets/js/chats-live.js?v=1126"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
 <script src="assets/js/i18n-dashboard-data.js?v=1154"></script>
@@ -15119,6 +15119,23 @@ window.uploadGuestDocumentUI = async function(guestId){
   dirtyPages.delete(currentPageId());
 
   StayFlowI18n.wireLanguageSwitcher("langCurrentBtn", "langDropdown", STAYFLOW_DASHBOARD_I18N);
+
+  // Chats ao vivo (2026-09-12, achado do usuario testando a trava de
+  // acesso: "tem muita coisa que deve ser atualizado na hora, tipo um
+  // chat") - ate aqui, a aba Chats so carregava mensagem nova ao trocar
+  // de pagina e voltar; sem NENHUM polling, diferente do "Meu chat" do
+  // admin.html (que ja atualiza sozinho a cada 5-10s). Mesmo padrao
+  // replicado aqui: lista a cada 10s, conversa aberta a cada 5s - so
+  // roda de verdade quando a aba Chats esta na tela (currentPageId()),
+  // pra nao gastar requisicao a toa em conta que nem tem essa aba
+  // aberta. loadGuestProfile ja foi ajustado pra so re-renderizar
+  // quando a QUANTIDADE de mensagens muda, entao nao reseta a rolagem
+  // nem pisca a tela quando o ciclo roda sem nada novo.
+  setInterval(() => {
+    if(currentPageId() !== "chats") return;
+    if(typeof loadChats === "function") loadChats(true);
+    if(stayflowCurrentGuestId && typeof loadGuestProfile === "function") loadGuestProfile(stayflowCurrentGuestId);
+  }, 5000);
 })();
 </script>
 </body>

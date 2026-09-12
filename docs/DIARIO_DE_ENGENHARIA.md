@@ -12701,3 +12701,72 @@ emoji-que-é-o-próprio-ícone, e uma saudação de exemplo em
 `inbox.html`) - "tudo limpo" quis dizer "todo emoji decorativo de
 chrome", não literalmente cada caractere Unicode fora do alfabeto
 latino que o regex conseguisse encontrar.
+
+### Testando a trava de acesso ao vivo: 2 achados reais (v1.151.3)
+
+Depois de fechar os emoji, hora de testar de verdade a trava de acesso
+construída dias antes - nunca tinha sido clicada num navegador de
+verdade. Eu não tenho ferramenta de navegador/screenshot neste
+ambiente, e testar autenticado em produção é bloqueado pelo
+classificador do Claude Code mesmo com autorização explícita (achado
+repetido nesta sessão, não é novidade) - então o plano foi: eu
+verifico o que dá por fora (curl nas páginas públicas, e até um teste
+funcional de verdade no endpoint público `/access-requests`, que
+voltou `{"success":true,"request_id":1}` - confirmando que o fluxo
+inteiro funciona de ponta a ponta antes mesmo do usuário abrir
+qualquer coisa), e o usuário testa o que exige login, me contando o
+que vê.
+
+Segundo passo dele já trouxe dois achados reais:
+
+**1) Senha temporária num modal.** A caixa estática que eu tinha
+colocado (mesmo padrão do convite de equipe, `#teamNewPasswordBox`)
+"ficava presa na tela" - pedido pra virar modal. Descobri que
+`admin.html` nunca teve NENHUM modal - só `dashboard.html` tinha
+`openGenericModal`. Mas o CSS (`.generic-modal*`) já vive em
+`app.css`, compartilhado pelos dois arquivos - só faltava a instância
+de HTML e as 2 funções JS, que portei direto, sem inventar nada novo.
+Aproveitei pra adicionar botão de copiar a senha (padrão já usado em
+`planos.html` pro link de indicação).
+
+**2) O achado grande.** O usuário generalizou o problema com uma frase
+solta: "tem muita coisa que deve ser atualizado na hora, tipo um chat
+ou uma solicitação, me entende?" - antes de sair implementando
+qualquer coisa, fui checar o que JÁ existia de tempo real no projeto.
+Descoberta: `admin.html` (o painel interno, meu/do Caio) já tinha um
+polling decente havia tempo - lista de chat a cada 10s, suporte a cada
+10s, conversa aberta a cada 5s. Mas o `dashboard.html` - o PRODUTO,
+usado por toda hospedagem/agência cliente - não tinha NADA disso na
+aba Chats. Um hóspede mandava mensagem e o dono só via saindo da aba e
+voltando. Gap real, não imaginário, e bem mais importante que a
+"Solicitações de acesso" que motivou a pergunta dele.
+
+Repliquei o MESMO padrão já provado do `admin.html` em vez de inventar
+um mecanismo novo - lista + conversa aberta a cada 5s, só rodando
+quando a aba Chats está mesmo na tela (`currentPageId() === "chats"`,
+função que já existia pra outro propósito, reaproveitada). Antes de
+subir, li a função `loadChats()` INTEIRA (não só colei o polling em
+cima) e achei um bug que só ia aparecer em produção, ao vivo, na frente
+do usuário: ela sempre auto-selecionava e abria a PRIMEIRA conversa da
+lista, sem condição nenhuma. Rodar isso a cada 5 segundos em segundo
+plano ia arrancar o dono de volta pra primeira conversa a cada 5
+segundos, mesmo enquanto ele estivesse lendo uma conversa diferente -
+um bug que teria estreado exatamente na função que deveria "deixar
+tudo bonitinho", e do jeito mais visível possível (a tela mudando
+sozinha na cara da pessoa). Corrigido com um parâmetro
+`isBackgroundRefresh`: o refresh automático realça a conversa que JÁ
+está aberta e nunca troca sozinho; só auto-seleciona a primeira numa
+carga de verdade (os 2 call-sites antigos, sem esse parâmetro,
+continuam com o comportamento de sempre). Mesmo cuidado em
+`loadGuestProfile()`, que sempre zerava e re-renderizava TODAS as
+mensagens e forçava a rolagem pro fim, toda vez - ganhou um contador
+(`stayflowLastMessageCount`) copiado do mesmo mecanismo que o "Meu
+chat" do `admin.html` já usava (`myChatLastMessageCount`) - só
+re-renderiza quando a quantidade de mensagens muda de verdade,
+preservando a rolagem se o dono estiver lendo uma mensagem antiga.
+
+Lição de novo reforçada, já repetida várias vezes nesta sessão: antes
+de copiar um padrão "que já funciona em outro lugar" pra um lugar
+novo, ler a função inteira que vai rodar em loop - o problema nunca é
+"o polling em si", é o efeito colateral de rodar de novo e de novo
+uma função que foi escrita pensando em rodar uma vez só.

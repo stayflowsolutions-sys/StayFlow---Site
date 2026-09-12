@@ -2,6 +2,11 @@
 // Consome /chats e /guests/<id> para alimentar a aba "Chats".
 
 let stayflowCurrentGuestId = null;
+// Pra polling automatico da conversa aberta (ver setInterval em
+// dashboard.html) nao resetar a rolagem/re-renderizar tudo a cada
+// ciclo quando nao chegou mensagem nova - mesmo padrao ja usado no
+// "Meu chat" do admin.html (myChatLastMessageCount).
+let stayflowLastMessageCount = 0;
 
 // "type"/"intent" da oportunidade (decision_engine.py: booking/tour/
 // upsell/human_help/follow_up/general) vazava cru em ingles na tela
@@ -153,7 +158,7 @@ function chatMediaBubbleHtml(msg) {
     return `<a href="${src}" target="_blank" rel="noopener"><img class="msg-photo" src="${src}" alt="Foto" loading="lazy"></a>${caption}`;
 }
 
-async function loadChats() {
+async function loadChats(isBackgroundRefresh) {
     try {
         const response = await fetch("/chats");
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -239,11 +244,24 @@ async function loadChats() {
             list.appendChild(item);
         });
 
-        // Seleciona automaticamente o primeiro chat, se existir
-        const first = list.querySelector(".chat-item");
-        if (first && chats[0]) {
-            first.classList.add("active");
-            loadGuestProfile(chats[0].guest_id);
+        // Realca a conversa que ja esta aberta (se o refresh automatico
+        // rodou com alguma aberta) - NUNCA troca de conversa sozinho.
+        // So auto-seleciona a primeira quando e carga de verdade (pagina
+        // aberta agora, nada selecionado ainda) - sem isso, o polling em
+        // segundo plano (ver setInterval em dashboard.html) puxava o
+        // dono de volta pra primeira conversa da lista a cada 5s,
+        // mesmo enquanto ele lia uma conversa diferente.
+        const activeItem = stayflowCurrentGuestId
+            ? list.querySelector(`.chat-item[data-guest-id="${stayflowCurrentGuestId}"]`)
+            : null;
+        if (activeItem) {
+            activeItem.classList.add("active");
+        } else if (!isBackgroundRefresh) {
+            const first = list.querySelector(".chat-item");
+            if (first && chats[0]) {
+                first.classList.add("active");
+                loadGuestProfile(chats[0].guest_id);
+            }
         }
 
     } catch (err) {
@@ -280,6 +298,8 @@ async function loadGuestProfile(guestId) {
         const opportunities = data.opportunities || [];
         const documents = data.documents || [];
 
+        const isSameGuest = stayflowCurrentGuestId === (guest.id || guestId);
+        if(!isSameGuest) stayflowLastMessageCount = 0;
         stayflowCurrentGuestId = guest.id || guestId;
 
         const docsSection = document.getElementById("guestDocumentsSection");
@@ -323,9 +343,12 @@ async function loadGuestProfile(guestId) {
             chatTitle.innerHTML = `${escapeHtml(titleText)} ${channelBadgeHtml(guest.channel)}`;
         }
 
-        // Mensagens
+        // Mensagens - so re-renderiza se a QUANTIDADE mudou (evita resetar
+        // a rolagem/piscar a tela a cada ciclo do polling automatico
+        // quando nada de novo chegou, mesmo padrao do "Meu chat" admin).
         const chatMessages = document.getElementById("chatMessages");
-        if (chatMessages) {
+        if (chatMessages && messages.length !== stayflowLastMessageCount) {
+            const wasNearBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 80;
             chatMessages.innerHTML = "";
             if (!messages.length) {
                 chatMessages.innerHTML = `<div class="msg bot">${T('chats.noMessagesForGuest', 'Nenhuma mensagem registrada para este hóspede.')}</div>`;
@@ -351,8 +374,9 @@ async function loadGuestProfile(guestId) {
                     }
                     chatMessages.appendChild(div);
                 });
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                if (wasNearBottom || stayflowLastMessageCount === 0) chatMessages.scrollTop = chatMessages.scrollHeight;
             }
+            stayflowLastMessageCount = messages.length;
         }
 
         // Perfil do hóspede (painel direito)
