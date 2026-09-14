@@ -2908,7 +2908,17 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openWhatsappSettingsModal()">
+      <div class="card settings-summary-card" data-settings-section="comunicacao" id="chatsAccessRequestCard" style="display:none;cursor:default" onclick="event.stopPropagation()">
+        <div class="settings-summary-row">
+          <div>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="settings.chatsAccessRequest.title">Conectar WhatsApp/Instagram/Facebook</span></h2>
+            <p class="settings-summary-desc" data-i18n="settings.chatsAccessRequest.desc">Conectar suas redes e usar o Chats é um recurso à parte — solicite acesso e a StayFlow libera pra você.</p>
+          </div>
+          <button type="button" class="btn secondary" id="chatsAccessRequestBtn" style="width:auto;flex:none" onclick="requestChatsAccessUI()" data-i18n="settings.chatsAccessRequest.btn">Solicitar acesso</button>
+        </div>
+      </div>
+
+      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-permission="chats" onclick="openWhatsappSettingsModal()">
         <div class="settings-summary-row">
           <div>
             <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="settings.whatsapp.title">WhatsApp Business</span></h2>
@@ -2918,7 +2928,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openFacebookSettingsModal()">
+      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-permission="chats" onclick="openFacebookSettingsModal()">
         <div class="settings-summary-row">
           <div>
             <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span><span data-i18n="settings.facebook.title">Facebook Messenger</span></h2>
@@ -2928,7 +2938,7 @@ async function deleteRoleConfirm(roleId){
         </div>
       </div>
 
-      <div class="card settings-summary-card" data-settings-section="comunicacao" onclick="openInstagramSettingsModal()">
+      <div class="card settings-summary-card" data-settings-section="comunicacao" data-required-permission="chats" onclick="openInstagramSettingsModal()">
         <div class="settings-summary-row">
           <div>
             <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg></span><span data-i18n="settings.instagram.title">Instagram Direct</span></h2>
@@ -14548,6 +14558,40 @@ window.uploadGuestDocumentUI = async function(guestId){
     });
   }
 
+  // Card "Solicitar acesso" (2026-09-14) - so aparece pra quem NAO tem
+  // "chats" ainda (hoje, so promotor cadastrado sem ter pedido/ganho
+  // acesso - ver PROMOTER_PERMISSIONS). Inverso simples demais pra
+  // virar atributo declarativo generico (data-required-permission so
+  // sabe MOSTRAR quando TEM a permissao, nunca o contrario) - um card
+  // so, resolvido direto aqui.
+  function applyChatsAccessRequestCard(session){
+    const card = document.getElementById("chatsAccessRequestCard");
+    if(!card) return;
+    const hasChats = (session.permissions || []).includes("chats");
+    card.style.display = hasChats ? "none" : "";
+  }
+
+  window.requestChatsAccessUI = async function(){
+    const btn = document.getElementById("chatsAccessRequestBtn");
+    if(btn.disabled) return;
+    btn.disabled = true;
+    try{
+      const res = await fetch("/settings/request-chats-access", {
+        method: "POST", credentials: "same-origin",
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!data.success){
+        btn.disabled = false;
+        alert(data.message || T('settings.chatsAccessRequest.failed', 'Não foi possível enviar o pedido.'));
+        return;
+      }
+      btn.textContent = T('settings.chatsAccessRequest.pending', 'Pedido enviado — aguardando aprovação');
+    }catch(e){
+      btn.disabled = false;
+      alert(T('common.connectionError', 'Erro de conexão.'));
+    }
+  };
+
   // Inverso do de cima: esconde SO pra esse(s) tipo(s) de conta,
   // mantendo visivel pros outros - roda sobre TODO elemento marcado
   // (dentro ou fora do .menu), diferente de applyAccountKindVisibility
@@ -14612,6 +14656,7 @@ window.uploadGuestDocumentUI = async function(guestId){
     try{ applyAccountKindVisibility(session.account_kind, session.agency_category); }catch(e){ console.error("Erro ao aplicar visibilidade por tipo de conta:", e); }
     try{ hideNavItemsWithoutPermission(session.permissions || [], session.account_kind, session.agency_category); }catch(e){ console.error("Erro ao esconder itens de menu sem permissao:", e); }
     try{ applyHideForAccountKind(session.account_kind); }catch(e){ console.error("Erro ao esconder itens especificos de tipo de conta:", e); }
+    try{ applyChatsAccessRequestCard(session); }catch(e){ console.error("Erro ao aplicar card de solicitar acesso a Comunicacao:", e); }
     try{ if(session.account_kind === "promoter") applyPromoterHome(session); }catch(e){ console.error("Erro ao montar home do promotor:", e); }
     try{
       // Promotor nao tem "Geral" (padrao de fabrica de Configuracoes) -
@@ -15072,7 +15117,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 <script src="assets/js/chats-live.js?v=1127"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1154"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1155"></script>
 <script>
 (function(){
   "use strict";
