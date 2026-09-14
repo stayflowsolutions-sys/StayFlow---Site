@@ -13078,3 +13078,114 @@ Testado com banco descartável confirmando que o `hostel_id` devolvido
 bate exatamente com o hostel do promotor (não outro qualquer) antes de
 subir - detalhe pequeno, mas mandar push pro hostel errado seria pior
 que não mandar nada.
+
+### Plano Promotor: chats pago, comissão e ferramenta de prospecção (v1.153.0)
+
+Depois de destravar Chats pro promotor de graça (v1.151.8), Caio
+perguntou minha opinião sobre cobrar por isso. Respondi que sim -
+Chats é o motor mais caro de entregar (IA conversando de verdade com
+o hóspede/prospect), e dar de graça deixa o promotor com acesso ao
+"produto completo" sem pagar por ele. Ele concordou e foi além: quis
+já desenhar um plano pago completo, incluindo uma ferramenta de
+captação de clientes "igual a que fizemos pra imobiliária" (que ele
+pudesse usar pra trazer novos clientes pra StayFlow, não só indicar
+por link passivo).
+
+Antes de propor arquitetura, mandei 3 agentes de pesquisa em paralelo
+(billing/Mercado Pago, permissões de chats + UI do promotor, e o
+mecanismo de captura de lead por IA). Duas descobertas mudaram o
+desenho:
+
+1. **Não existe bloqueio de acesso por inadimplência em lugar nenhum
+   do sistema hoje.** `expire_stale_trials()` só marca `past_due` pra
+   refletir na tela - o próprio código documenta a decisão deliberada
+   da v1.59.0 de nunca travar rota nenhuma com base nisso ("risco alto
+   demais de derrubar um piloto real por engano"). Isso significava
+   que "se ele não pagar já bloqueia o acesso" (pedido explícito do
+   Caio) ia ser a PRIMEIRA vez que esse padrão existe no sistema -
+   decidi manter o escopo bem contido (só a permissão `chats` de quem
+   assina o Plano Promotor), em vez de generalizar pra hospedagem/
+   agência normal, que é uma decisão maior e não pedida.
+
+2. **`account_kind='promoter'` já tinha um `PROMOTER_SYSTEM_PROMPT` +
+   `CAPTURE_LEAD_TOOL` dedicado desde a v1.145.0** - quando alguém
+   manda mensagem pro canal QUE O PROMOTOR CONECTAR, a IA já pitcha a
+   StayFlow e captura o lead sozinha. Isso é só INBOUND. A ideia
+   original do Caio ("ele joga o link e a StayFlow contata") também
+   dava pra ler como OUTBOUND - a IA mandando a primeira mensagem pra
+   um contato que o promotor cola, sem nunca ter escrito antes. Isso
+   esbarra numa trava real da Meta: primeira mensagem pra número sem
+   sessão aberta exige template pré-aprovado (HSM), outra fila de
+   aprovação burocrática igual à do App Review do Instagram que já
+   está pendente há tempo. Levei essa descoberta de volta pro Caio
+   antes de escolher - expliquei os dois caminhos possíveis e por que
+   um dava pra construir na hora e o outro não. Ele confirmou o
+   caminho viável (link de captação que o promotor divulga, e quem
+   responde primeiro entra pela porta que já funciona).
+
+Com isso resolvido, entrei em modo de planejamento formal (`EnterPlanMode`)
+dado o tamanho da mudança - arquitetura completa, aprovada pelo Caio,
+antes de escrever qualquer código.
+
+**Decisão de arquitetura mais delicada**: a aprovação manual do pedido
+de acesso a chats (`approve_access_request`, branch `chats_access`)
+deixou de conceder a permissão na hora - agora só marca elegibilidade.
+A permissão `chats` de verdade vira um reflexo direto do status da
+assinatura: concedida quando o Mercado Pago confirma o primeiro
+pagamento (ou qualquer pagamento de recuperação depois de um
+`past_due`), revogada quando um pagamento falha/é cancelado. Um único
+"lever" (`membership_permission_overrides`) faz tanto o trabalho de
+"libera o produto" quanto "bloqueia por inadimplência" - sem inventar
+um segundo mecanismo. Nova função `set_prospector_plan_chats_access`
+resolve a membership certa (via `requesting_user_id` gravado no pedido
+aprovado) e chama o `set_membership_override` de sempre, chamada tanto
+pelo webhook do Mercado Pago quanto por uma rede de segurança nova
+(`expire_stale_prospector_trials`, pro caso raro de uma notificação do
+Mercado Pago se perder e o trial vencer sem nunca confirmar pagamento).
+
+`plan_name="prospector"` (não "promoter") foi escolha deliberada - a
+pesquisa achou que `account_kind='promoter'` já é um conceito
+existente e não relacionado (o programa de indicação gratuito, item
+27b), então usar a mesma palavra pro plano pago ia confundir qualquer
+busca futura no código.
+
+**Comissão (Cenário A, dos 3 que propus)**: assinante do Plano
+Promotor pula direto pra faixa de 25% (hoje por volume: 20%/25%/30%),
+funcionando como PISO - nunca reduz quem já estava mais alto por
+volume de indicação, sem duplo bônus no teto de 30%. Caio pediu os
+cenários explicitamente ("me sugere os cenários pra ver qual é a boa")
+em vez de eu decidir sozinho - bom lembrete de que decisão de
+monetização/precificação é dele, não minha, mesmo quando technically
+simples de implementar qualquer uma das 3.
+
+**Ferramenta de captação**: em vez de construir algo novo do zero,
+só dei VISIBILIDADE pro que já existia - link `wa.me` no
+`PromoterDashboard.html` (a partir do número que o promotor já tem
+conectado) + aba "Prospecção" reaproveitando a mesma tabela `leads`
+genérica que a imobiliária usa (já escrita pelo `CAPTURE_LEAD_TOOL`
+pra conta de promotor desde sempre - só nunca tinha UI nenhuma pra
+mostrar). Precisou abrir `"opportunities"` em `PROMOTER_PERMISSIONS`,
+mas só o suficiente pra rota `/leads` funcionar - o Opportunity Center
+inteiro (upsell/risco de cancelamento de hóspede) continua escondido
+do promotor, que nunca teria hóspede nenhum pra aplicar isso.
+
+Notificação dupla foi outro pedido explícito ("pode ser pra mim, mas
+o promotor também pode ser notificado... um lembrete de que eu tenho
+isso e me manter ativo") - `create_lead` manda push extra pro admin
+quando é lead de conta de promotor, e um laço semanal novo
+(`services/weekly_prospect_reminder_service.py`, só age numa
+segunda-feira, dedup pelo mesmo padrão `INSERT OR IGNORE` de
+`late_arrival_alerts_fired`) avisa o promotor quantas prospecções tem
+em aberto.
+
+Testado em duas rodadas com banco SQLite descartável, 25 asserções no
+total: a cadeia inteira de billing/permissão primeiro (aprovação não
+concede nada → assinatura em trial → webhook aprovado concede → webhook
+rejeitado revoga → recuperação regrava → trial nunca confirmado expira
+e revoga → piso de comissão sem double-dip → parceiro sem hostel
+vinculado nunca quebra), depois a parte de leads/lembrete (permissão
+liberada, `create_lead` não quebra com a notificação dupla, lista de
+lembrete só inclui quem está em dia, dedup semanal funciona, laço só
+age numa segunda-feira). `python -m py_compile` em todos os arquivos
+tocados, `check_cache_busting.py`/`check_i18n_syntax.py` limpos antes
+de documentar e sincronizar.
