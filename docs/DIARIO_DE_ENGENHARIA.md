@@ -12486,11 +12486,165 @@ reconfirmado via API com o token do próprio hostel, não dá pra forjar
 um "aprovado" só mandando um webhook falso) e o nav de Reservas sem
 gate de permissão (só tem gate de `account_kind` - pode ser
 intencional, tratada como página núcleo tipo Dashboard/Chats, não
-módulo opcional; precisa confirmação do usuário antes de mudar).
+módulo opcional; precisa confirmação do usuário antes de mudar - **o
+usuário voltou da feira no mesmo dia e confirmou que queria a trava
+sim, fechado na v1.150.1 logo abaixo**).
 Mesma disciplina de sempre: corrigir o que dá pra verificar com
 confiança, reportar honestamente o que precisa de julgamento humano,
 nunca inventar uma correção especulativa só pra marcar a tarefa como
 "resolvida".
+
+### Confirmação da trava de permissão em Reservas (v1.150.1)
+
+Usuário voltou da feira, leu o achado acima e confirmou: queria a
+trava sim. `data-required-permission="reservations"` adicionado no
+item de menu, nos 2 KPIs do Dashboard e no botão flutuante "Nova
+reserva". Achado que baixou o risco da mudança bem mais do que eu
+esperava: o backend (`routes/reservations.py`) já protegia TODAS as
+rotas com `@require_permission("reservations")` desde sempre - o gap
+era só visual. Ou seja, nenhum acesso real mudou; só parou de mostrar
+uma aba que, pra quem não tinha a permissão, já quebrava
+silenciosamente com 403 ao tentar usar qualquer coisa nela. Testado
+confirmando que quem tem a permissão continua vendo tudo igual, e
+quem não tem deixa de ver a aba (em vez de ver e tomar erro).
+
+### Botão Ask StayFlow "só as ondas" também pra agência (v1.150.2)
+
+Complemento de um pedido anterior que só cobria promotor - painel de
+agência também não tem o botão flutuante de reserva (só lodging tem),
+mesmo motivo que motivou a versão promotor, agora estendido
+explicitamente. Aproveitei pra tirar um mecanismo frágil da mesma
+categoria do bug generalizado na auditoria de hoje: os dois filhos do
+botão (ícone mascarado azul vs logo crua) eram gateados por
+`data-required-account-kind`/`data-hide-for-account-kind`, resetados
+pelas funções genéricas de visibilidade toda vez que a permissão é
+reavaliada. Trocado por CSS puro via atributo `[data-account-kind]`
+no próprio botão, setado uma única vez por `hydrateUserUI` e nunca
+mais tocado por essas funções - fecha a mesma classe de bug de vez
+nesse elemento específico, sem depender de lembrar a regra toda vez.
+
+### Landing page ganha seletor Hospedagens/Imobiliárias (v1.150.3)
+
+Usuário decidiu se dedicar full-time à StayFlow prospectando os dois
+segmentos ao mesmo tempo (São Paulo, litoral e interior) - o site
+100% hotelaria passava a impressão errada pra um prospect de
+imobiliária logo depois da conversa de venda. Toggle no hero troca,
+sem reload: título/texto principal, o slider de screenshots (filtra
+via `data-vertical="both"/"lodging"` em cada `<img class="slide">` -
+Imobiliárias mostra só as 5 telas genuinamente genéricas, até existir
+screenshot real de Portfólio de Imóveis/Agenda de Visitas), 4 nós do
+diagrama radial, e a faixa de segmentos com 4 ícones SVG novos.
+Decisão de escopo tomada aqui (e revertida no dia seguinte, ver
+v1.150.4): conteúdo da variante Imobiliárias só em português por
+enquanto, já que é o mercado que o usuário está prospectando
+pessoalmente agora - os outros 10 idiomas do hero de hospedagem
+continuam intactos. Slider recodificado pra filtrar por vertical em
+vez de índice fixo, com dots gerados dinamicamente.
+
+Achado à parte, relevante pra confiar em teste local daqui pra frente:
+o servidor de desenvolvimento local serve `StayFlow---Site` a partir
+do repositório CANÔNICO (`FRONTEND_DIR` em `app.py` aponta um nível
+acima de `HostelBot`), não da cópia subtree que o Render publica de
+verdade - isso explica por que testes locais anteriores desta mesma
+sessão só confirmavam HTTP 200 (processo vivo), nunca o conteúdo real
+da mudança. Só descobri forçando uma sincronização manual pra
+conseguir testar de verdade.
+
+### Seletor de Imobiliárias passa a cobrir a página inteira (v1.150.4)
+
+Usuário mandou print de produção no dia seguinte: o toggle da v1.150.3
+só trocava o hero - o resto da página (Features/Platform/How/Future/
+Final CTA/Footer) continuava 100% hotelaria, inclusive dizendo
+"hotelaria" explicitamente no título da seção Plataforma. Pediu
+também pra não deixar "pela metade" - traduzir tudo, nos 11 idiomas.
+Isso reverte diretamente a decisão de escopo que eu tinha tomado um
+dia antes (só português) - o usuário mudou de ideia rápido porque viu
+o resultado pela metade ao vivo, lição de sempre mostrar o resultado
+completo antes de declarar um escopo reduzido como definitivo.
+
+Motor genérico pra não precisar listar elemento por elemento: toda
+chave de i18n ganhou uma variante `.re` (real estate) ao lado da
+original - qualquer elemento `[data-i18n]`/`[data-i18n-html]` com par
+`.re` no dicionário é sobrescrito sozinho ao trocar pra Imobiliárias.
+47 chaves novas × 11 idiomas (traduzidas de verdade, não máquina) + 1
+chave extra (`proof.response.re`) achada numa varredura de
+consistência comparando todo `data-i18n` do HTML contra o dicionário.
+Copy nova incorpora captação de leads como dor central (pedido
+explícito do usuário, "captação é uma das maiores dores de
+imobiliárias"): 1º card de features vira "Captação automática de
+leads", "how it works" abre com "capture every lead automatically".
+`i18n-landing-data.js`: 91→139 chaves, paridade confirmada nos 3
+dicionários do projeto.
+
+### Saga do "botão Ask StayFlow gigante" em produção (v1.150.5-v1.150.6)
+
+Usuário testando ao vivo numa chamada viu o botão flutuante aparecer
+GIGANTE (tamanho natural do arquivo, 1536×1024px) em vez do ícone
+pequeno de sempre - bug ao vivo, resolvido em tempo real. Três causas
+reais empilhadas, nenhuma delas óbvia isoladamente:
+
+(1) `tools/check_i18n_parity.py` é baseado em regex, nunca executa o
+arquivo como JS de verdade - por isso nunca detectou uma vírgula
+faltando em `i18n-dashboard-data.js` (bloco zh, entre uma chave e um
+comentário), erro de sintaxe que quebrava `STAYFLOW_DASHBOARD_I18N`
+inteiro e gerava `ReferenceError` em cascata pro JS inteiro da página.
+Só achado porque pedi pro usuário rodar um diagnóstico no console do
+navegador - "instrumentar em vez de adivinhar", mesmo princípio já
+usado antes nesta sessão.
+
+(2) Repetição do erro clássico já documentado nesta mesma sessão:
+`static/css/app.css` foi editado várias vezes ao longo do dia sem
+NUNCA bumpar `?v=1133` no `<link>` - nenhuma correção chegava a ser
+vista pelo navegador do usuário, não importa quantas vezes o Render
+publicasse. Bumpado em todas as páginas que carregam esse CSS.
+
+(3) Causa raiz real do botão em si: ao simplificar o HTML do botão
+mais cedo no dia (tirar `data-required-account-kind`/
+`data-hide-for-account-kind` frágeis, ver v1.150.2), o
+`style="display:none"` inline do `<img>` cru foi removido, mas nenhum
+default explícito de `display:none` ficou escrito no CSS pro caso
+base - só existia regra de MOSTRAR pra promotor/agência. Hospedagem
+(o único caso sem regra nenhuma) exibia a imagem crua no tamanho
+natural do arquivo. Corrigido com `.ask-floating img{display:none}`
+como base, `admin.html` seguro por ter override próprio com mesma
+especificidade declarado depois no cascade.
+
+Lição consolidada dos 3 achados juntos: "parece resolvido mas não é"
+geralmente tem uma dessas três causas - (a) erro de sintaxe real
+escondido antes de suspeitar de lógica errada, (b) cache-busting não
+bumpado, (c) um estado possível do elemento sem regra explícita
+nenhuma, nunca contar com "ausência de regra" se comportando do jeito
+esperado.
+
+De brinde na mesma madrugada (v1.150.6): usuário pediu 4 propriedades
+demo (uma por vertical) pra uma promotora recém-cadastrada (Maria
+Vitória) apresentar em vendas. Faltava a peça de criar uma hospedagem
+do ZERO via automação (só existia anexar propriedade JÁ EXISTENTE a
+um usuário) - nova rota `POST /internal/hostels` fechou o gap, usada
+pra criar as 4 contas demo com dado real de exemplo. Achado técnico
+no caminho: `curl -d "..."` com acento UTF-8 direto no shell do Git
+Bash corrompe o payload JSON silenciosamente - resolvido escrevendo o
+payload em arquivo UTF-8 explícito em vez de string inline no shell.
+
+### 2 ferramentas de segurança pré-deploy (v1.150.7)
+
+Usuário liberado pra dormir, pediu pra eu continuar sozinho no que
+desse - direto das lições da madrugada anterior. `tools/check_i18n_syntax.py`
+detecta vírgula faltando entre chaves nos dicionários de i18n (o
+buraco exato que `check_i18n_parity.py`, baseado em regex, nunca
+pegaria - extrai chave com ou sem vírgula do mesmo jeito). Testado
+simulando o bug real numa cópia (aponta a linha exata) e contra o
+arquivo já corrigido (passa limpo). `tools/check_cache_busting.py`
+compara `.css`/`.js` modificado no working tree contra o `?v=`
+referenciado em cada página HTML - pega exatamente o erro do
+`app.css` parado em `?v=1133` por 3 edições seguidas. Achado durante
+a implementação: `git diff --name-only` devolve caminho relativo à
+RAIZ DO REPOSITÓRIO, não à pasta atual - como o script vive dentro do
+subtree, o caminho vinha com prefixo `StayFlow---Site/` a mais,
+quebrando a comparação; corrigido com `git diff --relative` +
+`git rev-parse --show-prefix`. Nenhuma das duas ferramentas mexe no
+site sozinha - são diagnóstico manual por enquanto, virar hook de
+pre-commit fica pra decisão futura do usuário.
 
 ### Trava de acesso: cadastro deixa de ser self-service (v1.151.0)
 
@@ -13243,3 +13397,81 @@ URL-encoded corretamente); e as duas funções novas do
 `meta_oauth_service` devolvem erro amigável sem quebrar quando ainda
 não tem WhatsApp conectado - cenário que vai ser comum no começo, tem
 que se comportar bem.
+
+### Auditoria completa de continuidade dos dois documentos oficiais (v1.153.2)
+
+Usuário perguntou "que nos falta?" e eu respondi puxando de uma
+memória leve de roadmap - só que essa memória estava desatualizada
+há mais de uma semana sem eu ter percebido. Ele reagiu direto: "como
+você me deixa desatualizar tanto tempo?" e pediu revisão total dos
+dois documentos oficiais, não só da memória.
+
+Terceira vez que esse mecanismo é acionado nesta mesma StayFlow (as
+duas primeiras foram as versões 1.38.0 e 1.46.0, ambas também
+auditorias de documentação motivadas por o usuário desconfiar de
+cobertura incompleta). Dessa vez usei o protocolo do skill
+`document-audit` já existente no projeto, mas em escala bem maior:
+os dois arquivos juntos somam quase 23 mil linhas, ler tudo sozinho
+dentro da própria conversa ia estourar contexto e levar muito tempo -
+resolvido com 7 agentes em paralelo (3 cobrindo o Master Context, 4
+cobrindo o Diário), cada um com um bloco de linhas fixo e sobreposto o
+suficiente pra garantir cobertura de 100%, todos cruzando contra a
+mesma lista de 142 commits com número de versão extraída do git log
+antes de começar.
+
+Achados reais, não hipotéticos - todos confirmados por texto/código,
+não suposição:
+
+1. O cabeçalho e o fechamento do Master Context ainda diziam "versão
+   1.64.0", quase 3 semanas e 89 versões atrás, enquanto a tabela de
+   Controle de Versões no mesmo documento já estava certinha até
+   v1.153.1. Contradição interna óbvia que ninguém tinha notado porque
+   ninguém lê o documento de cabo a rabo no dia a dia - só a tabela.
+
+2. O Capítulo 16 (inventário narrativo de funcionalidades, diferente
+   da tabela de changelog) estava congelado exatamente na mesma
+   v1.64.0 - as ~89 versões seguintes nunca ganharam seção própria
+   ali, apesar da própria regra do capítulo ("16.18 Critério para
+   atualização") dizer que isso é obrigatório. Resolvido consolidando
+   por capacidade/era (12 seções novas, 16.38-16.49) em vez de tentar
+   reconstruir uma seção por versão - o detalhe fino de cada versão já
+   existe na tabela e aqui no Diário, não faz sentido duplicar 89 vezes
+   só pra "preencher".
+
+3. Uma linha de changelog rotulada "1.147.1" na verdade tinha o
+   conteúdo da v1.147.2 (CRECI/CNPJ) - a v1.147.1 real (fix de um
+   campo de senha mascarado enganando o usuário) nunca tinha sido
+   escrita em lugar nenhum. Só achado cruzando contra o git log de
+   verdade, não dava pra perceber só lendo o texto.
+
+4. A v1.150.4 sumiu da tabela inteira - e junto com ela, uma reversão
+   de decisão registrada na v1.150.3 (conteúdo da landing Imobiliárias
+   só em português) que na verdade foi revertida no dia seguinte
+   (todos os 11 idiomas). Quem lesse só a v1.150.3 achava que a decisão
+   ainda valia.
+
+5. Um erro factual de verdade, não só desatualização: a seção sobre o
+   Hub de impersonation dizia "não existe tela de auditoria pro
+   impersonation_log" - só que essa tela foi entregue em 22/08/2026,
+   quase um mês antes desta auditoria.
+
+6. No Diário, um buraco limpo: as versões 1.150.1 a 1.150.7 (7
+   versões, a sessão inteira de 08-09/09) nunca tiveram seção nenhuma
+   aqui, apesar de cada uma ter seu próprio commit "Documenta ..." no
+   git - alguém (eu, em sessão anterior) escreveu o commit de
+   documentação mas o conteúdo real não chegou a entrar no arquivo, ou
+   entrou e foi perdido numa reformatação. Escritas agora, na ordem
+   certa, com o mesmo nível de detalhe que o resto do Diário tem.
+
+Lição mais importante, registrada também na memória de roadmap: o
+motivo raiz de tudo isso não foi falta de disciplina session a sessão
+(a tabela de changelog em si nunca falhou) - foi a EXISTÊNCIA de
+lugares diferentes que precisam de atualização em paralelo (tabela +
+Capítulo 16 + memória leve de roadmap), sem um lembrete automático de
+"você atualizou só um dos três". Não tem solução de código pra isso -
+só disciplina de, toda vez que uma feature for grande o suficiente pra
+merecer nota no Capítulo 16, realmente escrever lá também, não só na
+tabela. E a memória de roadmap foi reescrita do zero, bem mais curta,
+com uma regra explícita no topo pra nunca mais virar histórico -
+histórico duplicado é o que a deixou grande demais pra manter, o que
+provavelmente é a razão real dela ter parado de ser atualizada.

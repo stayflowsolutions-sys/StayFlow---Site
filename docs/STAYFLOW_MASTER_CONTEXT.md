@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.64.0
+\*\*Versão:\*\* 1.153.2
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 24/08/2026
+\*\*Última atualização:\*\* 14/09/2026
 
 
 
@@ -350,17 +350,23 @@
 
 | 1.147.0 | 08/09/2026 | Oficial | **Opportunity Center: cards clicáveis + responder direto pela oportunidade**, pedido explícito do usuário ("quero que as oportunidades sejam clicáveis e em caixas... um hamburguer com as opções 'ver conversa, responder manualmente, sugerir resposta para a IA'"). Lista principal trocou de linhas de tabela pra cards (mesmo visual do sidebar "Mais importantes"), cada um com botão ☰ abrindo 3 ações: **Ver conversa** (pula pra aba Chats com o hóspede já selecionado via `loadGuestProfile`); **Responder manualmente** (texto exato que a equipe escreve, enviado direto sem revisão de IA); **Sugerir resposta pra IA** (campo de instrução informal opcional + botão ✨ que também funciona sem nada escrito, lendo a conversa sozinha — SEMPRE mostra o rascunho com Enviar/Refazer antes de qualquer coisa sair, nunca manda direto). Novo `services/ai_service.py::draft_guest_reply()` — chamada ÚNICA (não loop de tool-calling como `ask_ai`/`ask_agent`) que só devolve o texto sugerido; reaproveita a tabela/fluxo de rascunho (`guest_message_drafts`, `send_guest_message`, `cancel_guest_message_draft`) que já existia só como ferramenta do Ask StayFlow — nova `create_guest_message_draft(hostel_id, guest_id, message)` evita o fallback de resolução por nome, já que o card clicado já sabe o `guest_id` exato. **Achado de sessão corrigido de quebra**: `i18n-dashboard-data.js` estava com o cache-busting parado em `?v=1144` desde bem antes, apesar de várias edições de i18n terem acontecido depois (toda a maratona do WhatsApp) — bumpado pra `?v=1147` junto com `stayflow-live.js`. 17 chaves i18n novas em 11 idiomas (1.664→1.681). Testado: `create_guest_message_draft` isolado (bloqueia hóspede sem telefone, cross-tenant safe), `draft_guest_reply` com OpenAI mockada (prompt inclui histórico real da conversa, respeita `instruction` quando presente), rotas novas registradas sem colisão (app inteiro importado com sucesso), balanceamento de chaves/parênteses/colchetes no JS. |
 
-| 1.147.1 | 08/09/2026 | Oficial | **CRECI + rótulo dinâmico de documento fiscal** — fechando a fila de pendências da sessão. Modal Empresa ganhou campo CRECI (`settings.creci`, só visível pra `agency_category='imobiliaria'`) e o rótulo do campo de documento fiscal passou a mudar com a moeda escolhida (`TAX_ID_LABEL_BY_CURRENCY` + `updateTaxIdPlaceholder()`, ex: CNPJ pra BRL, CUIT pra ARS) em vez de um rótulo genérico fixo. Migração da coluna `creci` seguindo deliberadamente `add_column_if_not_exists` com teste simulando schema de produção pré-existente — mesma disciplina reforçada depois do incidente do `display_phone_number` (v1.145.0/1.146.x), dessa vez sem repetir o erro. Investigação à parte sobre "notificação da imobiliária seguindo template de hotel": revisão de código e config de conta ativa não reproduziu nenhum bug — registrado como não confirmado, sem correção especulativa; fica pendente até o usuário trazer um exemplo concreto. |
+| 1.147.1 | 07/09/2026 | Oficial | **Fix: campo de Access Token não mostra mais pontinhos enganosos.** Item da fila pendente — o `placeholder` de um `input type="password"` também fica mascarado pelo navegador, então mesmo vazio o campo de Access Token do WhatsApp parecia já ter um token digitado. Removido o placeholder (`dashboard.html`) — campo vazio agora aparece genuinamente vazio, o rótulo acima já identifica o campo. Correção de 1 linha. |
+
+| 1.147.2 | 07/09/2026 | Oficial | **CRECI + rótulo dinâmico de documento fiscal** — fechando a fila de pendências da sessão. Modal Empresa ganhou campo CRECI (`settings.creci`, só visível pra `agency_category='imobiliaria'`) e o rótulo do campo de documento fiscal passou a mudar com a moeda escolhida (`TAX_ID_LABEL_BY_CURRENCY` + `updateTaxIdPlaceholder()`, ex: CNPJ pra BRL, CUIT pra ARS) em vez de um rótulo genérico fixo. Migração da coluna `creci` seguindo deliberadamente `add_column_if_not_exists` com teste simulando schema de produção pré-existente — mesma disciplina reforçada depois do incidente do `display_phone_number` (v1.145.0/1.146.x), dessa vez sem repetir o erro. Investigação à parte sobre "notificação da imobiliária seguindo template de hotel": revisão de código e config de conta ativa não reproduziu nenhum bug — registrado como não confirmado, sem correção especulativa; fica pendente até o usuário trazer um exemplo concreto. |
 
 | 1.148.0 | 08/09/2026 | Oficial | **Limpeza de emoji — primeiro lote (chrome do topbar)**, item da fila represado desde muito antes ("revisão completa futura", reautorizado agora pelo usuário). Trocado ⚙/🔔/👥/🛠 dos itens de menu do topbar (Configurações, Notificações, Equipe, Painel StayFlow) por ícone SVG monoline azul (`#0b84ff`), reaproveitando os mesmos paths já usados no menu lateral — em vez de emoji colorido. Padrão adotado: ícone em `<span class="nav-ico">` separado do texto traduzido (mesma estrutura que o menu lateral já usava), pra trocar/ajustar o ícone sem precisar tocar nas 11 traduções; texto das 3 chaves afetadas (`notif.title`, `topbar.hostelSwitch.settingsLink`, `topbar.userMenu.team`) teve o emoji removido nos 11 idiomas. **Achado técnico durante a implementação**: `applyPermissionVisibility`/`applyAccountKindVisibility` resetam `el.style.display` pra `""` (não pra um valor fixo) sempre que reavaliam visibilidade — um `style="display:flex"` inline direto no botão seria apagado nessa reavaliação, quebrando o alinhamento ícone+texto de novo. Resolvido sem depender de `display` no elemento pai: ícone com `display:inline-flex` + `vertical-align:middle` própria, texto normal ao lado, então funciona em qualquer valor de `display` do botão. Resto do app (~150 emoji em cabeçalhos de seção/modal) fica pra próximos lotes, mesmo espírito iterativo. |
 
 | 1.149.0 | 08/09/2026 | Oficial | **Integração com a Praedium (feed XML)**, motivada por prospecção real (AZV Imóveis, São José dos Campos — pesquisa de mercado identificou a Praedium como o CRM/site que a imobiliária já usa, via rodapé "Desenvolvido por"). Diferente do Tokko Broker (API REST com key própria), a Praedium não documenta API pública de leitura pra terceiro — o mecanismo real (confirmado via central de ajuda deles) é o mesmo feed XML que a imobiliária já gera pra publicar em portais (Zap/VivaReal/OLX/Wimóveis), no formato padrão do setor (VRSync). Novo `services/praedium_service.py` (baixa e faz parse do XML, namespace ignorado de propósito por robustez) + `hostels.praedium_xml_url` + rotas `settings/praedium` (GET/POST/DELETE/sync) — espelha ponto a ponto o padrão já existente do Tokko (`sync_tokko_properties`), incluindo resync automático em background a cada 15min. Card novo em Configurações → Comunicação, visível só pra `agency_category='imobiliaria'`. **Nota honesta, mesma categoria do Tokko**: nomes de tag seguem a documentação pública do VRSync, mas nunca testados contra um feed real da Praedium (nenhuma conta conectada ainda) — parsing defensivo (campo ausente vira `None`, nunca exceção) por causa dessa incerteza; testado com um XML de exemplo sintético no formato VRSync antes do deploy, confirmando extração correta de todos os campos. 17 chaves i18n novas em 11 idiomas (1.682→1.699, 10 delas reaproveitadas literalmente do namespace `settings.tokko.*` por serem texto genérico sem menção a Tokko/API). |
 
-| 1.150.0 | 08/09/2026 | Oficial | **Auditoria de segurança e consistência em 3 frentes** (dados/backend, frontend, rotas), rodada em paralelo a pedido do usuário ("acha tudo e resolve tudo") enquanto ele estava fora. Dois achados reais de IDOR cross-tenant: `update_kitchen_order_item_status`/`get_kitchen_order_aggregate_status` e `request_shift_coverage`/`accept_shift_coverage` não filtravam por `hostel_id` — qualquer conta com permissão "kitchen" ou "scheduling" podia alterar pedido de cozinha ou turno de OUTRO hostel só adivinhando o id na URL; corrigido com filtro/JOIN por `hostel_id` em `database.py` + validação nas rotas (`routes/kitchen.py`, `routes/scheduling.py`), testado com script isolado simulando dois hostels antes de subir. Achado mais grave: `POST /message` (`routes/chat.py`) — rota de teste manual documentada como inofensiva ("não envia mensagem real") — na verdade rodava o pipeline de IA de verdade (custo de token, escrita real em `guests`/`messages`, resposta com o comportamento configurado do hostel) pra QUALQUER chamador sem nenhuma autenticação, bastando saber um telefone cadastrado; confirmado sem nenhum uso no dashboard antes de proteger com `@require_internal_api_key` (mesmo padrão do gêmeo interno já protegido, `internal_simulate_message`). De brinde: `require_internal_api_key` comparava a chave com `!=` (vulnerável a timing attack) — trocado por `hmac.compare_digest`; guarda de duplicidade cross-tenant (já existente pra WhatsApp/Facebook/Instagram desde a v1.145.0) estendida pra Tokko/Praedium/Nuvemshop/Mercado Pago; bug de layout nos 12 checkboxes do modal de Notificações (mesmo padrão do bug corrigido na v1.148.0 — `style="display:flex"` apagado toda vez que a visibilidade por permissão é recalculada) corrigido movendo o layout pra um wrapper que a gate não toca; 16 chaves i18n que faltavam (Portfólio/Parceiros/botões "Novo chamado") adicionadas nos 11 idiomas (1.699→1.715). Reportado mas não corrigido, por decisão explícita de não mexer às cegas em lógica arriscada sem supervisão: webhooks do Mercado Pago sem verificação de assinatura (impacto mitigado — status sempre reconfirmado via API própria com o token do hostel, então não dá pra forjar um pagamento aprovado do nada); nav de Reservas sem gate de permissão, só de `account_kind` (pode ser intencional, tratado como página "núcleo" igual Dashboard/Chats, não módulo opcional — precisa confirmação do usuário). **Atualização (mesmo dia, usuário confirmou ao voltar)**: queria a trava sim — `data-required-permission="reservations"` adicionado no item de menu, nos 2 KPIs do Dashboard e no botão flutuante "Nova reserva" (v1.150.1). Achado que reduziu o risco da mudança: o Backend (`routes/reservations.py`) já protegia todas as rotas com `@require_permission("reservations")` desde sempre — o gap era só visual, então nenhum acesso real mudou, só deixou de mostrar uma aba que já quebrava silenciosamente (403) pra quem não tinha a permissão. Executado via 3 agentes em paralelo, cada um com escopo de arquivo exclusivo pra não colidir; achados cross-arquivo (os 2 IDOR) ficaram só reportados pelo agente que achou e foram corrigidos depois, de forma sequencial, pelo orquestrador. De brinde, resolvida a divergência entre o repositório canônico do frontend (`StayFlow---Site`, parado em v1.142.0) e a cópia subtree que o Render publica — reconciliados via merge (não force-push, decisão deliberada de não usar comando destrutivo em repositório remoto sem autorização explícita do usuário) depois de confirmar que os commits exclusivos do canônico eram só documentação já coberta (com mais detalhe) na cópia subtree. |
+| 1.150.0 | 08/09/2026 | Oficial | **Auditoria de segurança e consistência em 3 frentes** (dados/backend, frontend, rotas), rodada em paralelo a pedido do usuário ("acha tudo e resolve tudo") enquanto ele estava fora. Dois achados reais de IDOR cross-tenant: `update_kitchen_order_item_status`/`get_kitchen_order_aggregate_status` e `request_shift_coverage`/`accept_shift_coverage` não filtravam por `hostel_id` — qualquer conta com permissão "kitchen" ou "scheduling" podia alterar pedido de cozinha ou turno de OUTRO hostel só adivinhando o id na URL; corrigido com filtro/JOIN por `hostel_id` em `database.py` + validação nas rotas (`routes/kitchen.py`, `routes/scheduling.py`), testado com script isolado simulando dois hostels antes de subir. Achado mais grave: `POST /message` (`routes/chat.py`) — rota de teste manual documentada como inofensiva ("não envia mensagem real") — na verdade rodava o pipeline de IA de verdade (custo de token, escrita real em `guests`/`messages`, resposta com o comportamento configurado do hostel) pra QUALQUER chamador sem nenhuma autenticação, bastando saber um telefone cadastrado; confirmado sem nenhum uso no dashboard antes de proteger com `@require_internal_api_key` (mesmo padrão do gêmeo interno já protegido, `internal_simulate_message`). De brinde: `require_internal_api_key` comparava a chave com `!=` (vulnerável a timing attack) — trocado por `hmac.compare_digest`; guarda de duplicidade cross-tenant (já existente pra WhatsApp/Facebook/Instagram desde a v1.145.0) estendida pra Tokko/Praedium/Nuvemshop/Mercado Pago; bug de layout nos 12 checkboxes do modal de Notificações (mesmo padrão do bug corrigido na v1.148.0 — `style="display:flex"` apagado toda vez que a visibilidade por permissão é recalculada) corrigido movendo o layout pra um wrapper que a gate não toca; 16 chaves i18n que faltavam (Portfólio/Parceiros/botões "Novo chamado") adicionadas nos 11 idiomas (1.699→1.715). Reportado mas não corrigido, por decisão explícita de não mexer às cegas em lógica arriscada sem supervisão: webhooks do Mercado Pago sem verificação de assinatura (impacto mitigado — status sempre reconfirmado via API própria com o token do hostel, então não dá pra forjar um pagamento aprovado do nada); nav de Reservas sem gate de permissão, só de `account_kind` (pode ser intencional, tratado como página "núcleo" igual Dashboard/Chats, não módulo opcional — precisa confirmação do usuário). Executado via 3 agentes em paralelo, cada um com escopo de arquivo exclusivo pra não colidir; achados cross-arquivo (os 2 IDOR) ficaram só reportados pelo agente que achou e foram corrigidos depois, de forma sequencial, pelo orquestrador. De brinde, resolvida a divergência entre o repositório canônico do frontend (`StayFlow---Site`, parado em v1.142.0) e a cópia subtree que o Render publica — reconciliados via merge (não force-push, decisão deliberada de não usar comando destrutivo em repositório remoto sem autorização explícita do usuário) depois de confirmar que os commits exclusivos do canônico eram só documentação já coberta (com mais detalhe) na cópia subtree. |
+
+| 1.150.1 | 08/09/2026 | Oficial | **Confirmação da trava de permissão em Reservas** — item deixado como "precisa confirmação do usuário" na v1.150.0, resolvido no mesmo dia quando o usuário voltou e confirmou que queria a trava sim. `data-required-permission="reservations"` adicionado no item de menu, nos 2 KPIs do Dashboard e no botão flutuante "Nova reserva". Achado que reduziu o risco da mudança: o Backend (`routes/reservations.py`) já protegia todas as rotas com `@require_permission("reservations")` desde sempre — o gap era só visual, então nenhum acesso real mudou, só deixou de mostrar uma aba que já quebrava silenciosamente (403) pra quem não tinha a permissão. |
 
 | 1.150.2 | 08/09/2026 | Oficial | **Botão flutuante Ask StayFlow: estilo "só as ondas" (sem círculo azul) estendido pra agência**, complemento de um pedido anterior que só cobria promotor. Painel de agência também não tem o botão flutuante de reserva (só lodging tem), mesmo motivo que motivou a versão promotor — pedido agora explicitamente estendido. Aproveitado pra tirar um mecanismo frágil: os dois filhos do botão (ícone mascarado azul vs logo crua) eram gateados por `data-required-account-kind`/`data-hide-for-account-kind`, resetados pelas funções genéricas de visibilidade toda vez que a permissão é reavaliada (mesma categoria de bug encontrada e corrigida 2x na auditoria de hoje) — trocado por CSS puro via `[data-account-kind]` no próprio botão (setado uma única vez por `hydrateUserUI`, nunca mais tocado por essas funções). |
 
-| 1.150.3 | 08/09/2026 | Oficial | **Landing page (`index.html`) ganha seletor "Hospedagens / Imobiliárias"**, motivado pela decisão do usuário de se dedicar full-time à StayFlow prospectando os dois segmentos ao mesmo tempo (São Paulo, litoral e interior) — site 100% hotelaria passava a impressão errada pra um prospect de imobiliária logo após a conversa de venda. Toggle no hero troca, sem reload: título/texto principal; o slider de screenshots do produto (filtra via `data-vertical="both"/"lodging"` em cada `<img class="slide">` — Imobiliárias mostra só as 5 telas genuinamente genéricas, Dashboard/Chats/Opportunity Center/Financeiro/Equipe, até existir screenshot real de Portfólio de Imóveis/Agenda de Visitas); 4 nós do diagrama radial (Mapa de Quartos→Agenda de Visitas; Booking.com/Airbnb/PMS→Tokko Broker/Praedium/Portais — "Portais" deliberadamente genérico, pedido explícito do usuário pra não fechar a lista de integrações já que mais estão vindo, ex: Omnibees, que mandou e-mail no mesmo dia perguntando sobre parceria); e a faixa de segmentos (Hotéis/Resorts/Hostels/Pousadas→Compra e venda/Locação/Administração/Corretor autônomo, 4 ícones SVG novos no mesmo estilo). Decisão de escopo deliberada: conteúdo da variante Imobiliárias só em português por enquanto (mercado que o usuário está prospectando pessoalmente agora) — não mexe nos outros 10 idiomas do hero de hospedagem, que continuam 100% funcionais via `data-i18n-html` normal. Slider recodificado pra filtrar por vertical em vez de índice fixo (`data-i`), com dots gerados dinamicamente em vez de estáticos no HTML — suporta qualquer quantidade de slides por variante sem duplicar marcação. **Achado à parte**: o servidor local de desenvolvimento serve `StayFlow---Site` a partir do repositório canônico (`FRONTEND_DIR` default em `app.py` aponta um nível acima de `HostelBot`), não da cópia subtree — explica por que testes locais anteriores nesta sessão confirmavam só HTTP 200 (processo vivo), nunca o conteúdo real, até esse achado forçar a sincronizar manualmente pra testar de verdade. |
+| 1.150.3 | 08/09/2026 | Oficial | **Landing page (`index.html`) ganha seletor "Hospedagens / Imobiliárias"**, motivado pela decisão do usuário de se dedicar full-time à StayFlow prospectando os dois segmentos ao mesmo tempo (São Paulo, litoral e interior) — site 100% hotelaria passava a impressão errada pra um prospect de imobiliária logo após a conversa de venda. Toggle no hero troca, sem reload: título/texto principal; o slider de screenshots do produto (filtra via `data-vertical="both"/"lodging"` em cada `<img class="slide">` — Imobiliárias mostra só as 5 telas genuinamente genéricas, Dashboard/Chats/Opportunity Center/Financeiro/Equipe, até existir screenshot real de Portfólio de Imóveis/Agenda de Visitas); 4 nós do diagrama radial (Mapa de Quartos→Agenda de Visitas; Booking.com/Airbnb/PMS→Tokko Broker/Praedium/Portais — "Portais" deliberadamente genérico, pedido explícito do usuário pra não fechar a lista de integrações já que mais estão vindo, ex: Omnibees, que mandou e-mail no mesmo dia perguntando sobre parceria); e a faixa de segmentos (Hotéis/Resorts/Hostels/Pousadas→Compra e venda/Locação/Administração/Corretor autônomo, 4 ícones SVG novos no mesmo estilo). Decisão de escopo, **revertida no dia seguinte pela v1.150.4**: conteúdo da variante Imobiliárias só em português por enquanto (mercado que o usuário está prospectando pessoalmente agora) — não mexe nos outros 10 idiomas do hero de hospedagem, que continuam 100% funcionais via `data-i18n-html` normal. Slider recodificado pra filtrar por vertical em vez de índice fixo (`data-i`), com dots gerados dinamicamente em vez de estáticos no HTML — suporta qualquer quantidade de slides por variante sem duplicar marcação. **Achado à parte**: o servidor local de desenvolvimento serve `StayFlow---Site` a partir do repositório canônico (`FRONTEND_DIR` default em `app.py` aponta um nível acima de `HostelBot`), não da cópia subtree — explica por que testes locais anteriores nesta sessão confirmavam só HTTP 200 (processo vivo), nunca o conteúdo real, até esse achado forçar a sincronizar manualmente pra testar de verdade. |
+
+| 1.150.4 | 08/09/2026 | Oficial | **Landing page: seletor Imobiliárias passa a cobrir a página inteira, traduzido nos 11 idiomas** — usuário apontou (com print de produção) que o toggle da v1.150.3 só cobria o hero; o resto da página (Features/Platform/How/Future/Final CTA/Footer) continuava 100% hotelaria, inclusive dizendo "hotelaria" explicitamente no título da seção Plataforma. Pediu também pra não deixar "pela metade": traduzir tudo, nos 11 idiomas — reversão explícita da decisão de escopo da v1.150.3 (só português), no dia seguinte. Motor genérico: toda chave de i18n ganhou uma variante `.re` (real estate) ao lado da original — qualquer elemento `[data-i18n]`/`[data-i18n-html]` com par `.re` no dicionário é sobrescrito sozinho ao trocar pra Imobiliárias, sem precisar listar elemento por elemento. 47 chaves novas × 11 idiomas (traduzidas de verdade, não máquina) + 1 chave extra (`proof.response.re`) achada numa varredura de consistência comparando todo `data-i18n` do HTML contra o dicionário. Copy nova incorpora captação de leads como dor central (pedido explícito do usuário, "captação é uma das maiores dores de imobiliárias"): 1º card de features vira "Captação automática de leads", "how it works" abre com "capture every lead automatically", CTA final fala em "transformar cada lead num negócio fechado" em vez de genérico. `i18n-landing-data.js`: 91→139 chaves, paridade confirmada nos 3 dicionários do projeto. |
 
 | 1.150.5 | 09/09/2026 | Oficial | **Saga do "botão Ask StayFlow gigante" em produção — 3 causas reais empilhadas, achadas ao vivo com o usuário testando durante uma chamada.** (1) `tools/check_i18n_parity.py` é baseado em regex, nunca executa o arquivo como JS de verdade — por isso nunca pegou uma vírgula faltando em `i18n-dashboard-data.js` (bloco zh, entre `home.priorityActions.emptyDesc` e o comentário "Chaves faltando (auditoria 2026-09-03)"), erro de sintaxe que quebrava `STAYFLOW_DASHBOARD_I18N` inteiro e gerava `ReferenceError` em cascata. Achado só porque o usuário rodou um diagnóstico no console do navegador a pedido — mesmo padrão de "instrumentar em vez de adivinhar" já registrado antes nesta sessão. (2) Repetição do erro clássico já documentado nesta mesma sessão: `static/css/app.css` foi editado várias vezes ao longo do dia (extensão pra agência, fix de overlap, revert pra match positivo) sem NUNCA bumpar `?v=1133` no `<link>` — nenhuma correção chegava a ser vista pelo navegador do usuário, não importa quantas vezes o Render publicasse. Bumpado em todas as páginas que carregam esse CSS (dashboard/admin/admin-hostel/admin-list), mais `landing.css`/`i18n-landing-data.js` em `index.html` (mesmo esquecimento). (3) **Causa raiz real do botão em si**: ao simplificar o HTML do botão mais cedo no dia (tirar `data-required-account-kind`/`data-hide-for-account-kind` frágeis), o `style="display:none"` inline do `<img>` cru foi removido, mas nenhum default explícito de `display:none` foi escrito no CSS pro caso base — só existia regra de MOSTRAR pra promotor/agência. Resultado: hospedagem (o único caso sem regra nenhuma) exibia a imagem `logo2.png` no tamanho NATURAL do arquivo (1536×1024px) por não ter nenhum `display`/`width` aplicado. Corrigido com `.ask-floating img{display:none}` como base. `admin.html` continua seguro (override próprio `.ask-floating-bare img`, mesma especificidade, declarado depois no cascade). **Lição consolidada**: as 3 causas juntas mostram por que "parece resolvido mas não é" acontece — sempre checar (a) se o arquivo tem erro de sintaxe de verdade antes de assumir lógica errada, (b) se o cache-busting foi bumpado, (c) se todo estado POSSÍVEL do elemento (não só o caso que se está corrigindo) tem uma regra explícita, nunca depender de "ausência de regra" se comportar do jeito esperado. |
 
@@ -393,6 +399,8 @@
 | 1.153.0 | 14/09/2026 | Oficial | **Plano Promotor: chats deixa de ser liberado de graça, vira assinatura, e ganha ferramenta própria de prospecção.** Usuário decidiu monetizar o acesso a Chats do promotor (destravado sem custo na v1.151.8) — em vez de a aprovação manual do admin conceder a permissão na hora, ela agora só marca ELEGIBILIDADE; a permissão `chats` de verdade só é concedida quando o pagamento é confirmado via Mercado Pago (mesmo motor de assinatura recorrente já usado pros planos de hospedagem, `services/mercadopago_billing_service.py`, Fase 2/v1.59.0), com 30 dias de teste grátis mas cartão já vinculado desde o início — se a cobrança do dia 31 falhar ou o promotor cancelar, a permissão é revogada automaticamente. Novo `plan_name="prospector"` em `PLAN_PRICES`/`PLAN_PRICES_ARS` (US$19/mês, ARS 19.000, mesma convenção simplificada de preço USD×1000 já usada nos outros planos) — nome deliberadamente diferente de "promoter" pra não colidir com `account_kind='promoter'`, conceito já existente e não relacionado (programa de indicação gratuito). **Arquitetura do bloqueio, único caso do sistema com bloqueio de acesso de verdade por inadimplência**: `database.py::set_prospector_plan_chats_access(hostel_id, allowed)` resolve a membership do promotor (via `requesting_user_id` gravado no pedido aprovado) e liga/desliga o override de `chats` — chamada pelo webhook (`routes/mercadopago_billing_webhook.py`, tanto no branch de pagamento aprovado/rejeitado quanto no de preapproval pausado/cancelado) e por uma rede de segurança nova, `expire_stale_prospector_trials()` (varre trials vencidos com `processor_subscription_id` preenchido mas que nunca viraram `active` — caso a notificação do Mercado Pago se perca — coisa que `expire_stale_trials()` genérica ignora de propósito). Achei explícito no próprio código o motivo de ISSO nunca ter existido pros planos de hospedagem normais ("bloquear acesso é risco alto demais... decisão deliberada da v1.59.0") — aqui o escopo é bem mais contido (só a permissão `chats` de UM tipo de conta), risco aceitável. Novas rotas `GET /promoter/plan-status` e `POST /promoter/plan/subscribe` (`routes/promoter.py`) — não reaproveita `/billing/subscribe` genérico de propósito, já que `billing` nunca foi liberado pra `account_kind='promoter'` (sem risco, mas outra rota deixa a intenção clara). **Comissão do programa de indicação, Cenário A** (dos 3 que propus, o escolhido): assinante do Plano Promotor pula direto pra faixa de 25% de comissão (hoje por volume: 1+=20%, 3+=25%, 6+=30%), funcionando só como PISO — quem já está em faixa maior por volume não perde nada, sem "double-dip" no teto de 30%. `resolve_subscription_referral_commission_pct` ganhou parâmetro `has_active_prospector_plan`, novo helper `partner_has_active_prospector_plan(partner_id)` resolve via `referral_partners.linked_hostel_id`. **Ferramenta de prospecção — decisão de escopo importante**: pesquisa encontrou que `account_kind='promoter'` já tem hoje um `PROMOTER_SYSTEM_PROMPT`+`CAPTURE_LEAD_TOOL` dedicado (`services/ai_service.py`, v1.145.0) que pitcha a StayFlow e captura lead automaticamente quando ALGUÉM MANDA MENSAGEM PRIMEIRO pro canal do promotor — só que fazer a IA mandar a PRIMEIRA mensagem pra um número que nunca escreveu exige template pré-aprovado pela Meta (HSM), outra fila de aprovação burocrática como a do Instagram App Review, fora de controle de prazo. Escopo adotado: reaproveitar 100% o que já existe (IA já pitcha sozinha assim que alguém escreve) e só dar VISIBILIDADE — `PromoterDashboard.html` ganhou um link `wa.me/<número conectado>` pronto pra divulgar (card "Seu link de captação de clientes", com estado bloqueado explicando o pré-requisito quando ainda não tem WhatsApp conectado) + uma aba "Prospecção" reaproveitando a MESMA tabela `leads` genérica que a imobiliária já usa (nada de tabela nova — `create_lead`/`CAPTURE_LEAD_TOOL` já escrevem nela pra conta de promotor desde sempre). Precisou adicionar `"opportunities"` em `PROMOTER_PERMISSIONS` (`utils/permissions.py`) — só dá acesso à tabela de leads em si, não ao Opportunity Center inteiro (que continua escondido do promotor via `data-hide-for-account-kind`, correto: upsell/risco de cancelamento de hóspede não faz sentido pra quem não opera hospedagem). Notificação dupla (pedido explícito do usuário): `create_lead` agora manda push pro admin (`send_push_to_admin`) além do push de sempre pro próprio hostel, quando `account_kind == 'promoter'`; novo laço semanal em `app.py` (`services/weekly_prospect_reminder_service.py`, dedup via tabela `weekly_prospect_reminders_fired`, mesmo padrão `INSERT OR IGNORE` de `late_arrival_alerts_fired`) avisa o promotor toda segunda-feira quantas prospecções tem em aberto, mantendo ele engajado com a ferramenta. Testado em duas rodadas com banco SQLite descartável (25 asserções no total): cadeia completa de billing/permissão (aprovação não concede mais nada → assinatura → webhook aprovado concede → rejeitado revoga → recuperação regrava → `expire_stale_prospector_trials` pega quem nunca confirmou pagamento → piso de comissão sem double-dip → parceiro externo sem hostel nunca quebra) e a parte de leads/lembrete (permissão `opportunities` liberada, `create_lead` não quebra com a notificação dupla, `get_active_prospector_plan_hostels` só lista quem está em dia, dedup semanal, `check_weekly_prospect_reminders` só age numa segunda-feira). 7 chaves i18n novas (`settings.prospectorPlan.*`) em 11 idiomas em `i18n-dashboard-data.js`. |
 
 | 1.153.1 | 14/09/2026 | Oficial | **Duas frentes pro contato automático de prospecção que ficou de fora da v1.153.0**: usuário perguntou se dava pra contornar a exigência de aprovação de template da Meta, e pediu pra deixar as duas frentes prontas — a de verdade (submissão do template) E o contorno (funciona já). **Contorno**: em vez da IA mandar a mensagem sozinha pela Cloud API (só permitido com template aprovado fora da janela de 24h), nova seção "Abordar um contato específico" no `PromoterDashboard.html` — promotor digita nome+WhatsApp de um prospect que ele mesmo encontrou, `POST /promoter/prospects` (`routes/promoter.py`) monta uma mensagem formal pronta (tom já padronizado: "StayFlow Solutions" por extenso, sem gíria) e devolve um link `wa.me/<numero>?text=<mensagem>` — o promotor abre e manda ele mesmo, pelo PRÓPRIO WhatsApp (app, não API), então nenhuma regra de template se aplica (quem envia é uma pessoa, não o sistema). `create_lead` ganhou parâmetro `notify=False` pra esse caminho — diferente de um lead que respondeu de verdade (sinal real de interesse), aqui é só um alvo que o promotor ainda vai abordar, nada aconteceu ainda; notificar o Caio nesse momento seria ruído. **Template de verdade**: novo `services/meta_oauth_service.py::submit_prospect_message_template`/`get_prospect_message_template_status`, usando o `waba_id`/`access_token` que o PRÓPRIO promotor já tem salvo desde que conectou o WhatsApp (`POST /{waba_id}/message_templates` da Graph API) — categoria `MARKETING` (é prospecção comercial pra quem nunca falou com a StayFlow, não suporte a cliente existente, que seria `UTILITY` e a Meta rejeitaria por classificação errada). Ponto importante que mudou o desenho: a aprovação de template é POR CONTA DE NEGÓCIO (WABA), não por app — cada promotor que quiser o contato automático de verdade precisa submeter e ser aprovado na PRÓPRIA WABA dele, não é algo que a StayFlow faz uma vez só centralizadamente. Novos botões "Enviar pra aprovação da Meta"/"Verificar status" no `PromoterDashboard.html`, visíveis só quando o promotor já tem WhatsApp conectado. Testado com banco descartável: `create_lead(notify=False)` não quebra nem manda push, geração da mensagem formal + link `wa.me` corretos (nome do promotor extraído do usuário, telefone normalizado só dígitos, texto URL-encoded certo), e as duas funções novas do `meta_oauth_service` falham graciosamente (sem crash) quando o promotor ainda não conectou WhatsApp nenhum. |
+
+| 1.153.2 | 14/09/2026 | Oficial | **Auditoria completa de continuidade dos dois documentos oficiais** — terceira vez que este mecanismo é acionado (ver v1.38.0/v1.46.0 no Capítulo 18 pras duas anteriores), desta vez motivada por uma memória leve de roadmap (fora destes documentos) ter ficado desatualizada 7+ dias sem ser notada, o que levantou a suspeita de que os documentos oficiais também pudessem ter gaps. Executada via 7 agentes em paralelo lendo os dois arquivos inteiros em blocos sequenciais (protocolo do skill `document-audit`), cruzando cada versão contra os 142 commits com número de versão do git. Achados reais corrigidos: cabeçalho/fechamento do Master Context travados em v1.64.0 havia ~89 versões enquanto a tabela de changelog já estava em dia; Capítulo 16 (inventário de funcionalidades) congelado na mesma v1.64.0, sem nenhuma seção pras ~89 versões seguintes — fechado com 12 novas seções consolidadas por capacidade/era (16.38-16.49) mais nota de continuidade explícita, mesmo padrão já usado no Capítulo 18 pro gap de 1.7.0-1.37.0; linha de changelog rotulada "1.147.1" que na verdade descrevia a v1.147.2 (CRECI/CNPJ) — corrigida, e a v1.147.1 real (fix do campo de Access Token mascarado) documentada pela primeira vez; v1.150.4 ausente da tabela inteira, junto com uma reversão de decisão de escopo nunca registrada; erro factual real (dizia que não existia tela de auditoria do Hub, entregue em 22/08/2026); Capítulo 17 (Roadmap) desatualizado, refeito. No Diário: 7 versões (v1.150.1 a v1.150.7) sem nenhuma entrada, apesar de cada uma ter commit próprio de documentação no git — todas escritas agora; mais uma afirmação desatualizada corrigida (algo listado como "pendente de confirmação do usuário" que a própria versão seguinte, no mesmo dia, já tinha resolvido). Memória de roadmap reescrita do zero (violava a própria regra que já tinha escrito, de nunca acumular histórico) com uma regra explícita de manutenção pra não repetir o gap. |
 
 \---
 
@@ -4224,11 +4232,11 @@ Capítulo 16.
 ativas revogáveis, histórico de tentativas de login) — `sessions` ganhou
 a coluna `impersonating\_from\_hostel\_id` em 13/08/2026 (versão 1.47.0,
 ver 16.33). `quick\_replies` sustenta as Respostas Rápidas da aba Chats.
-`billing` guarda plano, status e trial por hostel (Fase 1, em produção
-há mais tempo do que este documento registrava — Starter/Business/
-Enterprise, `status='trialing'` por 30 dias a partir da criação do
-hostel; a cobrança recorrente automática da assinatura em si, Fase 2-3,
-segue sem processador ligado — ver correção do Capítulo 17). `api\_keys`
+`billing` guarda plano, status e trial por hostel — Starter/Business/
+Enterprise/Prospector, `status='trialing'` por 30 dias a partir da
+criação do hostel; a cobrança recorrente automática da assinatura em
+si (Fase 2-3) está resolvida desde a v1.59.0 (23/08/2026, Mercado Pago
+`preapproval`) — ver Capítulo 17. `api\_keys`
 sustenta o webhook de saída assinado (Fase 6 da integração de canais).
 Ver Capítulo 16.
 
@@ -7415,9 +7423,11 @@ conta para dar suporte, sem precisar da senha do cliente.
 
   lista todas as hospedagens/agências com MRR estimado (a partir de
 
-  `PLAN\_PRICES`, nunca dinheiro de fato coletado da assinatura StayFlow
+  `PLAN\_PRICES`, sempre o valor de TABELA do plano contratado — nunca
 
-  — essa parte segue sem processador ligado, ver Capítulo 17) e
+  o dinheiro de fato cobrado via Mercado Pago em cada assinatura, que já
+
+  está ligado desde a v1.59.0; é uma estimativa deliberada, não um gap) e
 
   comissão real coletada via Mercado Pago Split (`SUM(paid\_amount \*
 
@@ -7471,13 +7481,17 @@ conta para dar suporte, sem precisar da senha do cliente.
 
 
 
-\#### Limitações conhecidas
+\#### Limitações conhecidas (histórico)
 
 
 
-Não existe tela de auditoria para ler o `impersonation\_log` (o registro
+~~Não existe tela de auditoria para ler o `impersonation\_log`~~ —
 
-é gravado, mas nada no Dashboard exibe esse histórico ainda).
+\*\*resolvido em 22/08/2026\*\*: tela de histórico de visitas do Hub
+
+exibindo esse log (o registro já era gravado desde a v1.47.0, faltava
+
+só a UI).
 
 
 
@@ -7622,6 +7636,14 @@ vez, sem depender de treinamento externo ou documentação lida à parte.
 
 
 \*\*Status:\*\* Implementado e validado em produção (adicionado em 20/08/2026, versão 1.49.0)
+
+
+
+\*\*Nota de desambiguação (14/09/2026)\*\*: esta seção é sobre a tabela
+`stayflow\_leads` — CRM pessoal do dono da StayFlow, single-tenant, só
+em `admin.html`. Não confundir com a tabela `leads` (multi-tenant,
+usada por agência/imobiliária e pelo Plano Promotor do promotor — ver
+seção 16.43/16.44), nome parecido mas conceito totalmente diferente.
 
 
 
@@ -7986,6 +8008,350 @@ Dois mecanismos de "conectar" distintos, por limitação técnica real:
 
 
 
+\## Nota de continuidade (v1.65.0 a v1.153.1)
+
+
+
+Este capítulo ficou congelado na v1.64.0 (24/08/2026) por cerca de 3
+semanas, apesar de ~89 versões terem sido shippadas nesse intervalo —
+gap descoberto e fechado numa auditoria completa em 14/09/2026 (ver
+\[\[project\_roadmap\_sequencing\]\] e o Capítulo 18 pra nota equivalente
+sobre o registro narrativo). As seções 16.38 a 16.49 abaixo consolidam
+essas ~89 versões por CAPACIDADE/ERA, não uma por uma — o detalhe
+versão a versão completo (o que mudou, por quê, causa raiz de cada
+bug) já existe na tabela de Controle de Versões no topo deste
+documento e, com narrativa completa, no `docs/DIARIO\_DE\_ENGENHARIA.md`.
+Mesmo princípio já usado pelo próprio Capítulo 18 pra cobrir seu
+gap de 1.7.0–1.37.0.
+
+
+
+\---
+
+
+
+\## 16.38 Billing recorrente + Programa de Indicação
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.59.0, v1.65.0, v1.78.0, v1.79.0, v1.153.0).
+
+
+
+Cobrança recorrente automática via Mercado Pago (`preapproval`, não
+Stripe — Stripe não recebe pra domicílio argentino/monotributo),
+trial de 30 dias, planos Starter/Business/Enterprise e (desde a
+v1.153.0) Prospector. Programa de indicação com comissão recorrente
+em faixas por volume de indicações ATIVAS (1+=20%, 3+=25%, 6+=30%,
+recalculada a cada pagamento, nunca retroativa em lançamento já
+gravado) — entidade `referral\_partners` desacoplada de `hostels` pra
+cobrir tanto hostel cliente indicando outro quanto promotor externo
+sem conta StayFlow. Auto-cadastro público de parceiro
+(`ReferralPartner.html`) desde a v1.79.0. Bloqueio de acesso por
+inadimplência continua deliberadamente FORA de escopo pros planos de
+hospedagem normais (risco de derrubar piloto real por engano) — única
+exceção é o Plano Promotor (v1.153.0), com bloqueio real e contido só
+da permissão "chats".
+
+
+
+\---
+
+
+
+\## 16.39 Maturidade de PMS
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.67.0 a v1.71.0).
+
+
+
+Tarifa por temporada nas modalidades de quarto, reserva de grupo com
+desconto percentual e `group\_total` agregado, multi-propriedade (dono
+já logado cria uma segunda hospedagem pra si mesmo via
+`POST /account/add-hostel` — o mecanismo de troca via
+`hostel\_memberships`/`/select-hostel` já existia publicado e nunca
+tinha sido usado de verdade), ponto de funcionário com geolocalização
+de captura (nunca bloqueio) e histórico de ação rastreável
+(`staff\_attendance`/`staff\_activity\_log`), tags/notas internas/origem
+do lead no perfil do hóspede (`guest\_tags`/`guest\_notes`/
+`guests.lead\_referral\_json`).
+
+
+
+\---
+
+
+
+\## 16.40 Integrações imobiliárias: Tokko Broker e Praedium
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.72.0, v1.73.0, v1.149.0).
+
+
+
+Tokko Broker (API de gestão imobiliária mais usada na Argentina, chave
+simples por imobiliária, sem OAuth) e Praedium (sem API pública de
+leitura — mecanismo real é o mesmo feed XML padrão do setor, VRSync,
+que a imobiliária já gera pra Zap/VivaReal/OLX/Wimóveis), ambos com
+resync automático a cada 15min. Matching de imóvel por preferência do
+comprador no Decision Engine, reaproveitando a mesma validação
+anti-alucinação do matching de tour/passeio — candidatos vêm sempre
+do PRÓPRIO catálogo (`get\_own\_active\_portfolio\_items`).
+
+
+
+\---
+
+
+
+\## 16.41 Módulos operacionais e confiabilidade
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.74.0 a v1.81.0, v1.137.0 a v1.140.0).
+
+
+
+Tela de chamados resolvidos nos 5 módulos operacionais, tarifa por dia
+da semana, alertas automáticos de atraso/no-show (só alerta às 18h,
+nunca marca `no\_show` sozinho), dashboard agregado cross-propriedade.
+Auditoria de confiabilidade do mapa de quartos/check-in/check-out
+antes da demo do Grupo Primavera (dois bugs reais de cama órfã/
+corrompida em check-in/checkout duplicado, corrigidos): API interna
+(`routes/internal\_api.py`) ganhou ~15 rotas pra popular conta demo
+usando o fluxo real, não atalho. Hóspede vira Contato automaticamente
+no check-in real. Alerta de estoque baixo ganhou botão "Pedir agora
+pelo WhatsApp" que manda pedido de verdade pro fornecedor.
+
+
+
+\---
+
+
+
+\## 16.42 Tier white-label pra revenda
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.82.0 a v1.85.0).
+
+
+
+4 pilares independentes: marca própria (logo/cor/domínio customizado),
+entidade revendedor (`resellers`, papel estreito próprio), preço/
+margem por hospedagem-cliente (`billing.custom\_price\_ars`, só o DONO
+do `reseller\_id` daquela hospedagem pode setar — achado de segurança
+corrigido antes de testar: dono real de hospedagem-cliente também
+tinha Admin completo, poderia ter setado o próprio preço), domínio
+próprio. `reseller\_margin\_ledger` registra a margem do revendedor por
+cobrança aprovada.
+
+
+
+\---
+
+
+
+\## 16.43 Painel do promotor e economia do promotor
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.86.0 a v1.105.0, v1.151.0 a v1.153.1).
+
+
+
+`PromoterDashboard.html` standalone (não dentro do `dashboard.html`
+gigante, pra não arriscar vazar UI de hospedagem por um gate
+esquecido) — link de indicação, faixa de comissão, hospedagens
+indicadas, histórico de lançamentos, materiais prontos pra divulgar.
+Papel estreito (`promoter,security,team`) criado automaticamente no
+cadastro (`PromoterSignup.html`, self-service). "Chats" foi removido
+do catálogo padrão de promotor (v1.151.0) — cadastro é aberto, e um
+curioso/concorrente conseguia conectar WhatsApp de teste só pra
+observar a IA da StayFlow responder. Reintroduzido de forma paga e
+contida na v1.153.0 (\*\*Plano Promotor\*\*): pedido de acesso a chats via
+`access\_requests` (mesma fila do formulário público de solicitação),
+aprovação manual do admin só marca elegibilidade, a permissão `chats`
+de verdade só é concedida quando a assinatura recorrente (Mercado
+Pago, US\$19/mês, 30 dias grátis com cartão já vinculado) confirma
+pagamento — e é revogada automaticamente se o pagamento falhar/for
+cancelado, único caso do sistema com bloqueio de acesso real por
+inadimplência. Assinante pula direto pra faixa de comissão de 25%
+(piso, sem reduzir quem já está mais alto por volume). Ferramenta de
+prospecção (v1.153.0/v1.153.1) reaproveita a IA/`CAPTURE\_LEAD\_TOOL` já
+existente pra `account\_kind='promoter'` desde a v1.145.0 — link
+`wa.me` de captação pra divulgar + aba Prospecção (mesma tabela
+`leads` da imobiliária) + contorno manual (mensagem formal + link
+`wa.me` pré-preenchido) pra abordar um contato específico sem
+depender de aprovação de template da Meta (que exigiria fila de
+aprovação por WABA, preparada em código mas não uma dependência do
+contorno).
+
+
+
+\---
+
+
+
+\## 16.44 Vertical de agência/imobiliária
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.106.0 a v1.117.0, v1.134.0).
+
+
+
+BI executivo (ticket médio, "Relatório diário IA"), Opportunity Center
+em pipeline kanban (`opportunities.stage`, separado de `status`),
+Portfólio liberado pra lodging além de agência (venda cruzada
+contextual — spa/restaurante/late-checkout), cancelamento de reserva
+via chat, desconto automático por estadia longa/temporada/fim de
+semana (`get\_stay\_total`), cupom de desconto validado pela IA
+(`discount\_coupons`), "Modo Dono"/"Modo StayFlow" (reconhecimento por
+telefone cadastrado, resumo do negócio direto no WhatsApp do dono, sem
+abrir o painel), rastreio de pedido tipo iFood (mensagem a cada
+mudança de etapa + `Track.html` público), aba de Contatos separada de
+Guests, pedido automático de avaliação no Google pós-checkout,
+multi-corretor por WhatsApp numa imobiliária
+(`membership\_whatsapp\_connections`, cada corretor com o próprio
+número/persona de IA), roteamento automático de lead/visita por fila
+entre corretores ativos.
+
+
+
+\---
+
+
+
+\## 16.45 Maratona de conexão real do WhatsApp
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.142.0 a v1.146.13).
+
+
+
+Suporte a múltiplos números de WhatsApp por hostel
+(`hostel\_whatsapp\_extra\_numbers`), WhatsApp Coexistence (Embedded
+Signup "Onboard WhatsApp Business app users" — conecta um número que
+já está no app WhatsApp Business sem desconectar o celular, mensagens
+espelhadas nos dois lados). Sessão inteira de bugs reais encontrados
+testando a conexão de verdade com um cliente (Viana Soluções
+Imobiliárias) dentro do próprio Meta Business Manager: cadastro manual
+de número nunca assinava `subscribed\_apps` (mensagem de teste nunca
+chegava no webhook); tentativa de descobrir a WABA sozinho via campo
+que não existe na API da Meta; formulário pré-preenchendo dado de
+outra conta; e a causa raiz real de "IA responde no painel mas não
+chega no WhatsApp" — não era bug nosso, era a própria Meta bloqueando
+entrega por verificação de negócio pendente da conta do cliente.
+
+
+
+\---
+
+
+
+\## 16.46 Opportunity Center clicável e ajustes de cadastro por país
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.147.0 a v1.147.2).
+
+
+
+Cards clicáveis no Opportunity Center com menu de 3 ações (ver
+conversa, responder manualmente, sugerir resposta pra IA — sempre com
+rascunho revisável antes de enviar, nunca manda direto). Campo CRECI
+pra imobiliária e rótulo de documento fiscal dinâmico por moeda (CNPJ
+pra BRL, CUIT pra ARS). Fix pontual: placeholder de campo de senha
+(Access Token do WhatsApp) mascarado pelo navegador fazia campo vazio
+parecer preenchido.
+
+
+
+\---
+
+
+
+\## 16.47 Limpeza de emoji
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.148.0, v1.151.1, v1.151.2).
+
+
+
+3 lotes: chrome do topbar, cabeçalhos de página/título de modal (com
+ícone SVG monoline azul substituindo o emoji, não só removendo),
+botões/abas/badges do `dashboard.html` e `admin.html`. Símbolos de
+wayfinding funcionais (→ ← ↗ ↪ ☰ ✓ ✕ ✎) e emoji que É o próprio ícone
+de uma linha/botão icon-only foram deliberadamente preservados, não
+são "emoji feio" — decisão documentada, não esquecimento. Item
+represado desde antes, reautorizado e fechado a pedido explícito do
+usuário ("quero tudo limpo").
+
+
+
+\---
+
+
+
+\## 16.48 Auditoria de segurança de 3 frentes e ajustes de sessão
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.150.0 a v1.150.7).
+
+
+
+Auditoria paralela (3 agentes, um por área) encontrou 2 IDOR
+cross-tenant reais (pedido de cozinha e cobertura de turno não
+filtravam por `hostel\_id`) e uma rota de teste manual
+(`POST /message`) que na verdade rodava o pipeline de IA completo sem
+autenticação nenhuma — todos corrigidos. Confirmação da trava de
+permissão em Reservas. Seletor Hospedagens/Imobiliárias na landing
+page (`index.html`), inicialmente só no hero e só em português,
+estendido no dia seguinte pra página inteira nos 11 idiomas depois do
+usuário ver o resultado parcial ao vivo. Saga do "botão Ask StayFlow
+gigante" em produção — 3 causas reais empilhadas (vírgula faltando
+quebrando o dicionário i18n inteiro, cache-busting não bumpado, estado
+de CSS sem regra explícita pro caso base). `tools/check\_i18n\_syntax.py`
+e `tools/check\_cache\_busting.py` nasceram direto dessas lições.
+
+
+
+\---
+
+
+
+\## 16.49 Trava de acesso e monetização do promotor
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.151.0 a v1.153.1).
+
+
+
+Cadastro de hospedagem/agência deixa de ser self-service — `/register`
+exige `reseller\_code` válido, senão vira `access\_requests` aprovado
+manualmente (senha temporária mostrada uma única vez). Ao vivo com o
+usuário testando: modal pra senha temporária, polling automático da
+aba Chats a cada 5s (não existia nenhum antes), badge de "Chats não
+lidos" na sidebar, fix de pedido de demo duplicando (guard de duplo-clique
+faltando), sino de notificação sem mostrar solicitação de acesso nova,
+tradução incompleta em 9 dos 11 idiomas. Ver 16.43 pro detalhe
+completo do Plano Promotor (v1.153.0/v1.153.1), que nasceu direto
+desta mesma sequência de trabalho.
+
+
+
+\---
+
+
+
 \## 16.18 Critério para atualização
 
 
@@ -8092,17 +8458,25 @@ Ele representa o planejamento oficial da StayFlow.
 
 
 
-\*\*Versão do Produto\*\*
+\*\*Versão do Produto\*\* (atualizado 14/09/2026, v1.153.2)
 
 
 
 Plataforma multi-canal (WhatsApp, Messenger, Instagram Direct) com
 
-Channel Manager (Beds24), Mapa de Quartos, agente conversacional real
+Channel Manager (Beds24), Tokko Broker/Praedium (imobiliária), Mapa de
 
-(Ask StayFlow) e sistema de permissões multi-hostel em produção. Em
+Quartos, agente conversacional real (Ask StayFlow), sistema de
 
-validação comercial fora do nicho hostel (ver Capítulo 1).
+permissões multi-hostel, billing recorrente via Mercado Pago, tier
+
+white-label pra revenda, programa de indicação com comissão em faixas,
+
+e o Plano Promotor (chats pago + ferramenta de prospecção) em produção.
+
+Em validação comercial fora do nicho hostel, atendendo hospedagem,
+
+imobiliária e agência de turismo (ver Capítulo 1).
 
 
 
@@ -8110,127 +8484,109 @@ validação comercial fora do nicho hostel (ver Capítulo 1).
 
 
 
-Validar a StayFlow em um piloto de hospedagem de grande porte fora do
+Consolidar os pilotos ativos multi-vertical (hospedagem, imobiliária,
 
-nicho hostel (primeiro cliente potencial fora da validação inicial),
+agência) e a economia de indicação/promotor que passou a gerar receita
 
-consolidando as frentes de atendimento multi-canal e integração com
+própria (Plano Promotor), enquanto os bloqueadores externos abaixo se
 
-Channel Manager que sustentam essa apresentação.
-
-
-
-Prioridades atuais:
+resolvem.
 
 
 
-\- \*\*Instagram Direct — App Review da Meta\*\*: submissão preparada,
+Prioridades atuais (bloqueadores externos — dependem só do usuário):
 
-  pendente de envio pelo usuário, para obter "Advanced Access" às
 
-  permissões `instagram\_business\_basic`/`instagram\_business\_manage\_messages`
 
-  e destravar a Conversations API (ver Capítulo 16, seção 16.26);
+\- \*\*Instagram Direct — App Review da Meta\*\*: ~90% pronto, falta só
 
-\- ~~cobrança recorrente automática da própria assinatura StayFlow
+  comprovante de endereço pro usuário enviar;
 
-  (Billing Fase 2-3)~~: \*\*resolvido na v1.59.0\*\* (23/08/2026) — ver
+\- \*\*Template de mensagem do Plano Promotor\*\*: código pronto pra
 
-  Capítulo 16, seção 16.4-bis (ou busca por "Billing Fase 2" no
+  submeter (`services/meta\_oauth\_service.py::submit\_prospect\_message\_template`,
 
-  changelog). Decisão: Mercado Pago (API `preapproval`), não Stripe —
+  v1.153.1), mas a aprovação é por WABA — cada promotor que quiser o
 
-  Stripe não abre conta padrão pra recebedor domiciliado na Argentina
+  contato automático de verdade (não o contorno manual via `wa.me`,
 
-  (monotributo), inviabilizando o recebimento do dinheiro. Usa uma
+  que já funciona) precisa submeter e ser aprovado na própria conta;
 
-  credencial própria da conta MP da StayFlow
+\- \*\*Agente de voz\*\* (atender ligação por IA): plano técnico completo
 
-  (`MERCADOPAGO_PLATFORM_ACCESS_TOKEN`), diferente da credencial OAuth
+  em `docs/PLANO\_AGENTE\_DE\_VOZ.md` (Twilio Voice + OpenAI Realtime
 
-  usada pelo Split guest-facing (que é por-hostel). Cobrança em ARS
+  API), aguardando decisão do usuário sobre custo variável por uso e
 
-  (`PLAN_PRICES_ARS`, mantido manualmente, sem motor de câmbio
-
-  automático — essa parte continua fora de escopo). Bloqueio de acesso
-
-  por inadimplência foi deixado deliberadamente de fora desta rodada —
-
-  hoje o trial vencido sem assinatura só atualiza o `status` pra
-
-  `past_due` (bookkeeping), sem travar nenhuma rota. Não confundir com
-
-  o Mercado Pago Split guest-facing (cobrança do hóspede pelo hostel),
-
-  que já era real e está em produção desde antes, com credencial e
-
-  fluxo completamente separados;
+  criação de conta Twilio — não construir sem essa decisão;
 
 \- avaliar estratégia de atendimento para hóspedes localizados no Brasil,
 
-  dada a limitação de mensageria do WhatsApp descrita no Capítulo 16 —
+  dada a limitação de mensageria do WhatsApp — decisão já tomada de
 
-  decisão já tomada de registrar uma segunda conta de WhatsApp Business
+  registrar uma segunda conta de WhatsApp Business localizada no
 
-  localizada no Brasil, implementação pendente;
+  Brasil, implementação ainda pendente;
 
 \- separação definitiva de infraestrutura de deploy (ver 17.3) — dívida
 
-  técnica conhecida, ainda ativa;
+  técnica conhecida, deliberadamente adiada, ainda ativa;
 
-\- ampliar automações operacionais;
+\- polimento visual represado (baixa prioridade, só retomar se o
 
-\- evoluir continuamente a experiência do usuário.
+  usuário pedir de novo): lotes finais de limpeza de emoji, troca de
+
+  `confirm()`/`alert()` nativo do navegador por modal StayFlow.
+
+
+
+Bloqueio de acesso por inadimplência continua deliberadamente de fora
+
+do escopo dos planos de hospedagem/agência normais (risco de derrubar
+
+piloto real por engano) — hoje só o Plano Promotor tem esse bloqueio
+
+real, de forma contida (só a permissão "chats", ver Capítulo 16, seção
+
+16.43).
 
 
 
 \*\*Concluído desde a última grande revisão deste capítulo\*\* (não repetir
 
-como pendência): responsividade mobile da navbar; menu de Configurações
+como pendência) — ver Capítulo 16, seções 16.38 a 16.49, e a tabela de
 
-com Empresa, Comunicação (WhatsApp/Messenger/Instagram), Integrações
+Controle de Versões no topo deste documento pro detalhe completo de
 
-(Beds24 e webhook de saída), Segurança e Billing Fase 1 (planos/trial/
+cada uma: cobrança recorrente automática via Mercado Pago (v1.59.0);
 
-comp accounts) todos funcionais — resta apenas a cobrança recorrente
+programa de indicação com comissão em faixas (v1.65.0, v1.78.0);
 
-automática da assinatura em si (Fase 2-3, ver bullet acima); arquitetura
+maturidade de PMS — temporada, grupo, multi-propriedade, ponto de
 
-de tradução do Dashboard unificada (i18n-core.js, 5 idiomas, ~570
+funcionário (v1.67–1.71); Tokko Broker e Praedium (v1.72.0, v1.73.0,
 
-chaves), incluindo correção de uma condição de corrida real entre
+v1.149.0); tier white-label pra revenda, 4 pilares (v1.82–1.85);
 
-`i18n-core.js` e `i18n-dashboard-data.js` (v1.47.0, ver 16.33); criação
+painel do promotor e programa de indicação externo (v1.86–1.105);
 
-de reserva via modal flutuante; Ask StayFlow como agente real, com
+vertical de agência/imobiliária completa — kanban, cross-sell, Modo
 
-visão de imagem desde a v1.47.0 (ver 16.27); Mapa de Quartos completo;
+Dono, multi-corretor por WhatsApp (v1.106–1.117, v1.134.0); auditoria
 
-integração com Channel Manager (Beds24, 6 fases); auditoria de
+de confiabilidade e demo do Grupo Primavera (v1.137–1.140); conexão
 
-segurança completa com CSP, proteção contra força bruta e verificação
+real do WhatsApp multi-número/coexistência (v1.142–1.146); Opportunity
 
-de assinatura de webhook (v1.39.0); direito ao esquecimento/exclusão de
+Center clicável (v1.147.0); 3 lotes de limpeza de emoji (v1.148.0,
 
-dados do hóspede (v1.40.0); câmbio evoluído pra casa de câmbio real com
+v1.151.1, v1.151.2); auditoria de segurança de 3 frentes, corrigindo 2
 
-cotação automática de todas as moedas cadastradas (v1.41.0 — item
+IDOR cross-tenant reais (v1.150.0); trava de acesso — cadastro deixa
 
-"moeda/câmbio automático por país" da revisão anterior foi resolvido
+de ser self-service (v1.151.0); Plano Promotor completo — chats pago,
 
-dessa forma, não pela regra fixa de margem originalmente cogitada em
-
-1.22.0); revisão mobile de Configurações/Operações/Equipe (v1.42.0);
-
-notificações push nativas no aparelho (v1.43.0); autenticação em duas
-
-etapas — 2FA (v1.44.0); módulo de Eventos (v1.45.0); cadastro self-serve
-
-com página pública de planos, StayFlow Hub com impersonation, contas
-
-de agência parceira (Portfólio/Parceiros), importador de dados via CSV
-
-e tour de onboarding (todos v1.47.0, ver 16.33 e 14.3).
+comissão, ferramenta de prospecção (v1.153.0, v1.153.1).
 
 
 
@@ -8252,19 +8608,55 @@ Entre elas:
 
 
 
-\- Revenue Management avançado (precificação dinâmica, previsão de
+\- Revenue Management avançado (precificação dinâmica, rate shopping de
 
-  demanda — o catálogo básico de upsells já está implementado, ver
+  concorrente, previsão de demanda) — continua sem construir; o que já
 
-  Capítulo 16);
+  existe é catálogo de upsell contextual (spa/restaurante/late-checkout,
 
-\- CRM Inteligente;
+  ver Capítulo 16, seção 16.44), desconto por temporada/fim de semana/
 
-\- Agenda Operacional;
+  estadia longa e cupom validado pela IA (v1.75.0, v1.76.0, v1.110.0,
+
+  v1.111.0) — não é revenue management dinâmico de verdade, fica como
+
+  projeto grande à parte se houver demanda real de cliente;
+
+\- ~~CRM Inteligente~~ — parcialmente resolvido: tags/notas internas/
+
+  origem do lead no perfil do hóspede (v1.67.0), aba de Contatos
+
+  separada (v1.116.0), pipeline kanban do Opportunity Center (ver
+
+  Capítulo 16, seção 16.44). Falta camada de inteligência automática
+
+  (segmentação automática por comportamento, scoring) além do que já
+
+  existe hoje;
+
+\- ~~Agenda Operacional~~ — resolvido: módulo de Escala (`scheduling`,
+
+  cobertura de turno) e Agenda de Visitas pra imobiliária (roteamento
+
+  automático, ver Capítulo 16, seção 16.44);
 
 \- Gestão Financeira avançada (fluxo de caixa, projeções — a consolidação
 
-  básica já está implementada, ver Capítulo 16);
+  básica já está implementada, ver Capítulo 16) — "Modo Dono"/"Modo
+
+  StayFlow" (v1.113.0/v1.114.0) já dá resumo do negócio pelo WhatsApp,
+
+  mas sem projeção de fechamento do mês (métrica que não existe ainda
+
+  em lugar nenhum do backend — v2 se o usuário pedir);
+
+\- mais integrações de PMS além de Beds24/Tokko/Praedium — só sob
+
+  demanda real de um piloto específico, não construir especulativamente
+
+  por número (WeSpeak/R2OS anunciam 100+ integrações, decisão
+
+  deliberada de não perseguir esse número por si só);
 
 \- conexão direta com Booking.com/Airbnb via parceria de API própria —
 
@@ -9500,6 +9892,128 @@ no repositório do backend, não só no do frontend.
 
 
 
+\*\*Nota sobre continuidade deste registro:\*\* entre a versão 1.46.0
+acima e a versão 1.153.2 abaixo, o produto avançou por mais de cem
+versões (Billing recorrente, programa de indicação, maturidade de PMS,
+integrações Tokko/Praedium, tier white-label, painel do promotor,
+vertical completa de agência/imobiliária, maratona de conexão real do
+WhatsApp, auditoria de segurança de 3 frentes, trava de acesso, Plano
+Promotor, entre outras), todas registradas de forma resumida na tabela
+de Controle de Versões no início deste documento e, com narrativa
+completa de causa-raiz/decisão, no `docs/DIARIO\_DE\_ENGENHARIA.md`, mas
+sem entrada narrativa completa (Versão/Data/Área/Descrição/Motivação/
+Impacto) neste capítulo. Mesmo gap já registrado uma vez neste mesmo
+documento (ver nota acima, versão 1.6.0→1.38.0) — sinalizado aqui de
+novo, explicitamente, pra não repetir como esquecimento silencioso.
+Reconstrução retroativa de cada entrada fica como pendência separada,
+priorizável sob demanda.
+
+
+
+\---
+
+
+
+\### Versão 1.153.2
+
+
+
+\*\*Data\*\*
+
+
+
+14/09/2026
+
+
+
+\*\*Área\*\*
+
+
+
+Documentação Oficial (auditoria completa de continuidade — terceira
+vez que este mecanismo é acionado, ver versões 1.38.0/1.46.0 acima para
+as duas anteriores)
+
+
+
+\*\*Descrição\*\*
+
+
+
+O usuário percebeu que uma memória leve de acompanhamento de roadmap
+(mantida à parte destes dois documentos oficiais) tinha ficado
+desatualizada por mais de uma semana sem eu perceber, e questionou
+diretamente como isso foi possível — pedido explícito de auditoria
+total dos dois documentos oficiais, não só da memória leve. Executada
+via 7 agentes em paralelo (3 cobrindo o Documento Mestre, 4 cobrindo o
+Diário, cada um lendo um bloco de linhas sequencial com sobreposição,
+protocolo do skill `document-audit`), cruzando cada versão citada
+contra o histórico real de commits do git (142 commits com número de
+versão, de v1.0.0 a v1.153.2).
+
+Achados reais no Documento Mestre: cabeçalho e fechamento ainda citavam
+a versão 1.64.0 (~3 semanas/89 versões desatualizado) enquanto a
+própria tabela de Controle de Versões já estava em dia até v1.153.1
+
+(esta própria auditoria virou a v1.153.2, ver linha de changelog);
+Capítulo 16 (inventário de funcionalidades) parado na mesma v1.64.0,
+sem nenhuma entrada pras ~89 versões seguintes; uma linha de changelog
+rotulada "1.147.1" na verdade descrevia o conteúdo da v1.147.2 (CRECI/
+CNPJ), e a v1.147.1 real (fix do campo de Access Token) nunca tinha
+sido documentada em lugar nenhum; v1.150.4 ausente da tabela inteira,
+junto com uma reversão de decisão de escopo (conteúdo da landing
+Imobiliárias, só português → todos os 11 idiomas no dia seguinte)
+nunca registrada; erro factual real na seção 16.33.1 (dizia que não
+existia tela de auditoria do Hub, mas foi entregue em 22/08/2026);
+Capítulo 17 (Roadmap) com "Situação Atual"/"Concluído" parados na
+mesma época. No Diário: um único gap real, mas concreto — as versões
+1.150.1 a 1.150.7 (7 versões, sessão de 08–09/09) sem nenhuma entrada
+narrativa, apesar de cada uma ter um commit "Documenta ..." própria no
+git; e uma afirmação (dentro da seção de v1.150.0) tratando como
+"pendente de confirmação do usuário" algo que a própria v1.150.1,
+alguns parágrafos depois, já tinha resolvido no mesmo dia.
+
+
+
+\*\*Motivação\*\*
+
+
+
+Mesma motivação das duas rodadas anteriores (v1.38.0/v1.46.0): o
+usuário não aceita que estes dois documentos fiquem desatualizados
+silenciosamente, e uma auditoria só é confiável se cobrir 100% do
+conteúdo de verdade, não por amostragem. Diferença desta vez: o
+gatilho não foi um capítulo específico com suspeita de erro, foi a
+constatação de que uma memória de acompanhamento mais leve (fora
+destes dois documentos) tinha ficado obsoleta sem ninguém notar —
+motivo suficiente pra desconfiar dos documentos oficiais também, mesmo
+sem evidência direta de erro neles até então.
+
+
+
+\*\*Impacto\*\*
+
+
+
+Cabeçalho/fechamento do Documento Mestre corrigidos pra v1.153.2;
+Capítulo 16 ganhou 12 novas seções (16.38–16.49) consolidando por
+capacidade/era as ~89 versões que faltavam, mais esta nota de
+continuidade explicando a decisão de consolidar em vez de reconstruir
+uma entrada por versão; changelog corrigido (1.147.1/1.147.2
+relabeled, 1.150.1/1.150.4 adicionadas); erro factual do Hub
+corrigido; Capítulo 17 atualizado pra refletir prioridades/
+bloqueadores reais de hoje. Diário ganhou as 7 seções faltando
+(v1.150.1 a v1.150.7) e a correção da afirmação desatualizada. Memória
+de roadmap leve (`project\_roadmap\_sequencing`) também atualizada em
+paralelo, com uma anotação explícita pra evitar o mesmo tipo de gap se
+repetir sem ser notado por tanto tempo de novo.
+
+
+
+\---
+
+
+
 \## 18.5 Atualização do Documento Mestre
 
 
@@ -9584,4 +10098,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.64.0\*\*
+\*\*Fim da Versão Oficial 1.153.2\*\*
