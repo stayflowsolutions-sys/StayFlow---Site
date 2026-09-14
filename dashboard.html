@@ -14404,6 +14404,16 @@ window.uploadGuestDocumentUI = async function(guestId){
       return;
     }
 
+    // Trava o botao ANTES de mandar a requisicao (nao so depois que a
+    // resposta volta) - achado ao vivo (2026-09-14): clique duplo (ou
+    // clique de novo por impaciencia, esperando a rede) disparava dois
+    // pedidos de demo identicos antes do primeiro terminar, duplicando
+    // a solicitacao. Reabre so em caso de erro, pra permitir corrigir
+    // e tentar de novo.
+    const submitBtn = document.getElementById("addHostelSubmitBtn");
+    if(submitBtn.disabled) return;
+    submitBtn.disabled = true;
+
     try{
       const res = await fetch("/account/add-hostel", {
         method: "POST",
@@ -14419,19 +14429,20 @@ window.uploadGuestDocumentUI = async function(guestId){
       if(!data.success){
         msg.textContent = data.message || T('addHostel.msg.failed', 'Não foi possível criar a hospedagem.');
         msg.classList.add("error");
+        submitBtn.disabled = false;
         return;
       }
       if(data.pending){
         msg.textContent = data.message || T('addHostel.msg.pending', 'Pedido enviado! A StayFlow vai liberar o acesso em breve.');
         msg.classList.remove("error");
         msg.classList.add("success");
-        document.getElementById("addHostelSubmitBtn").disabled = true;
         return;
       }
       window.location.href = "/app";
     }catch(e){
       msg.textContent = T('common.connectionError', 'Erro de conexão.');
       msg.classList.add("error");
+      submitBtn.disabled = false;
     }
   };
 

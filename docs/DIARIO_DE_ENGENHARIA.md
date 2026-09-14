@@ -12920,3 +12920,28 @@ balanceamento de chaves `{}` e aspas `"` do bloco `ADMIN_I18N` inteiro
 antes de subir - com 11 idiomas × ~16 chaves inseridas numa tacada só,
 esse tipo de erro (aspas não fechada, vírgula faltando) seria fácil de
 deixar passar sem checar de propósito.
+
+### Pedido de demo duplicando (v1.151.7)
+
+Usuário tentou reaprovar o pedido antigo do Leonardo pra testar o fix
+da v1.151.5 - travou no mesmo erro de sempre, porque esse pedido
+específico foi criado ANTES da correção (sem `requesting_user_id`
+preenchido, coluna nova não retroage em registro antigo). Orientei a
+rejeitar aquele e criar um novo, pra testar o caminho certo.
+
+O pedido novo saiu duplicado - duas solicitações idênticas do
+Leonardo, 1 segundo de diferença. Causa simples: `submitAddHostel`
+só desabilitava o botão de envio DEPOIS da resposta do servidor
+voltar - clique duplo (ou clique de novo por impaciência, esperando a
+rede) disparava duas requisições antes da primeira terminar. Corrigido
+desabilitando o botão logo no INÍCIO da função (antes até de montar a
+requisição), com um guard extra (`if(submitBtn.disabled) return`) pra
+segurança dupla. Reabilita só nos casos de erro (nome vazio, falha de
+rede) - em caso de sucesso ou pendência, fica desabilitado de
+propósito, já que a ação já foi disparada e não faz sentido permitir
+de novo.
+
+Padrão que provavelmente vale revisar em outros formulários do
+projeto num momento futuro (vários outros `submit*` provavelmente têm
+o mesmo gap) - mas escopo de hoje era só resolver o que o usuário
+encontrou testando ao vivo, não uma varredura geral.
