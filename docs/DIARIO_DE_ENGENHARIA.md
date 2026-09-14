@@ -12872,3 +12872,51 @@ bloqueado nos dois casos. Mesma lição de sempre, generalizada de novo:
 o caminho "óbvio" de corrigir um bug (relaxar uma checagem) às vezes
 abre um buraco pior que o bug original - vale parar e pensar no caso
 mais hostil antes de aplicar o conserto mais fácil.
+
+### Sino de notificação e tradução incompleta (v1.151.6)
+
+Mesma sessão de teste ao vivo, dois achados a mais chegaram quase
+juntos. Primeiro: "percebi que a chegada da solicitação não apareceu
+no meu sininho de notificação". Fui olhar `refreshNotifications()` -
+ela só sabia de 2 fontes (chat não lido, suporte não lido), montadas
+direto de `myChatGuests`/`supportThreads`. `access_requests` nunca
+tinha entrado nessa função, mesmo já tendo seu próprio push separado
+(`send_push_to_admin`) - são dois canais diferentes (push é do
+navegador, o sino é a lista dentro do próprio painel), e só um dos
+dois tinha sido ligado. Corrigido guardando a lista de pendentes num
+cache (`accessRequestsCache`, preenchido toda vez que
+`loadAccessRequests()` roda - já rodava a cada 15s) e misturando no
+mesmo array ordenado por data que alimenta o sino, com um terceiro
+tipo de item (`access_request`) que `goToNotifItem` sabe levar pra
+aba certa.
+
+Segundo, quase no mesmo instante: "mudei o idioma e não traduziu
+tudo". Print mostrando o painel em Espanhol com a aba inteira de
+Solicitações de acesso ainda em português - nome do card, mensagem,
+botões Aprovar/Rejeitar, tudo. Causa: quando construí essa aba (dias
+atrás, v1.151.0), só escrevi as chaves em PT+EN, decisão de escopo
+deliberada na hora (justificativa: `admin.html` é ferramenta interna
+de uso único, não o produto multi-idioma de verdade) - mas o usuário
+tem razão em esperar que, uma vez que o painel oferece 11 idiomas,
+qualquer aba dentro dele responda a troca de idioma por igual. `AT()`
+cai pro fallback em português quando a chave não existe no idioma
+atual - por isso nunca quebrou nada, só ficou sempre em português,
+silenciosamente, pra qualquer um dos outros 9 idiomas.
+
+Traduzidas as ~16 chaves que faltavam pros 9 idiomas restantes,
+reaproveitando terminologia já estabelecida no próprio arquivo (como
+"senha temporária" já tinha sido traduzida em `team.tempPasswordHint`,
+usei a mesma forma em vez de inventar uma nova) em vez de traduzir do
+zero sem contexto. Detalhe técnico: 5 dos idiomas (PT/EN/ES/FR/DE)
+guardam várias chaves relacionadas numa linha só, o que dava pra usar
+`old_string` normal no Edit - mas os outros 6 (JA/IT/ZH/RU/KO/NL) têm
+uma chave por linha, e vários deles repetem o MESMO valor literal
+("Team", por exemplo, tanto em italiano quanto em holandês) - usar
+esse texto como âncora ia dar `old_string` ambíguo. Resolvido inserindo
+por NÚMERO DE LINHA direto via script (conferido contra o conteúdo
+real de cada linha antes de rodar, pra garantir que a ordem de leitura
+dos números não tinha mudado entre o grep e a execução). Verificado
+balanceamento de chaves `{}` e aspas `"` do bloco `ADMIN_I18N` inteiro
+antes de subir - com 11 idiomas × ~16 chaves inseridas numa tacada só,
+esse tipo de erro (aspas não fechada, vírgula faltando) seria fácil de
+deixar passar sem checar de propósito.
