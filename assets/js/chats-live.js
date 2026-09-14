@@ -302,6 +302,12 @@ async function loadGuestProfile(guestId) {
         if(!isSameGuest) stayflowLastMessageCount = 0;
         stayflowCurrentGuestId = guest.id || guestId;
 
+        // Abrir a conversa ja marca "visto" no backend (ver GET /guests/
+        // <id>) - atualiza o badge na hora em vez de esperar o proximo
+        // ciclo do polling (ate 20s, ver updateChatsUnreadBadge em
+        // dashboard.html).
+        if(!isSameGuest && typeof window.updateChatsUnreadBadge === "function") window.updateChatsUnreadBadge();
+
         const docsSection = document.getElementById("guestDocumentsSection");
         const docsList = document.getElementById("guestDocumentsList");
         if (docsSection && docsList) {

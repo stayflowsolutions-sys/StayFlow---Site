@@ -12770,3 +12770,58 @@ de copiar um padrão "que já funciona em outro lugar" pra um lugar
 novo, ler a função inteira que vai rodar em loop - o problema nunca é
 "o polling em si", é o efeito colateral de rodar de novo e de novo
 uma função que foi escrita pensando em rodar uma vez só.
+
+### Badge de Chats não lidos: verificar antes de construir (v1.151.4)
+
+Usuário perguntou uma coisa boa depois do polling da v1.151.3: "por
+que só enquanto a aba Chats estiver na tela? não seria melhor tudo em
+tempo real o tempo todo?" - expliquei o motivo (custo de polling
+pesado em toda aba aberta de todo cliente, bateria, e principalmente
+que atualizar conteúdo que ninguém está olhando não ajuda em nada) e
+propus separar em duas coisas: manter o polling pesado só na aba
+Chats, e criar um badge leve de "não lidas" que atualiza em qualquer
+página. Ele perguntou de volta: "mas essa notificação de mensagem não
+existia?" - pergunta certeira, valia checar antes de sair construindo.
+
+Achei que SIM, já existe push de verdade (funciona com aba fechada,
+dispara na hora que a mensagem chega, não é varredura periódica) pra
+2 categorias específicas: conversa assumida manualmente
+(`assumed_conversation`, `routes/chat.py`) e hóspede que a IA
+identificou precisando de atenção humana (`guest_needs_attention`,
+`decision_engine.py`). Não notifica TODA mensagem de propósito -
+decisão de design que o próprio usuário confirmou lembrar de ter
+tomado ("não fazia sentido notificar se a IA estava indo bem"). Então
+o buraco real não era "notificação não existe", era "não tem nada
+visual dentro do painel pra quem já está logado".
+
+Antes de escrever qualquer linha de código do badge, chequei se já
+existia alguma base de "visto/não visto" pra reaproveitar - achei
+`guests.admin_last_seen_at`, mas o próprio comentário no código já
+avisava: é de uma feature completamente diferente (o "Meu chat" do
+painel interno do Caio, ele mesmo conversando com hospedagens como
+suporte StayFlow - `mark_guest_seen_by_admin`,
+`routes/stayflow_admin.py`). Coincidência de nome que quase levou a
+reaproveitar a coisa errada - conferido a fundo antes de usar.
+
+Construído do zero, mas seguindo exatamente os mesmos princípios já
+validados nesta sessão: coluna nova `owner_last_seen_at` (o DONO da
+hospedagem, não o admin StayFlow), marcada dentro do próprio `GET
+/guests/<id>` (que já é chamado tanto na abertura manual quanto pelo
+polling da conversa aberta da v1.151.3 - continuar marcando "visto" a
+cada ciclo do polling é intencional, não um descuido). Contagem separada
+num endpoint leve (`/chats/unread-count`, só o número, não a lista
+inteira) pra poder ser chamado em QUALQUER página sem custo alto -
+mesmo raciocínio de separar "dado pesado" de "sinal leve" que motivou
+a proposta em primeiro lugar. Badge reaproveitando o `.notif-badge` que
+o badge de Suporte já usava (não o `.badge` que eu quase usei por
+engano - existe em `admin.html`, mas só como regra LOCAL dentro do
+`<style>` daquele arquivo, não no `app.css` compartilhado; teria saído
+sem estilo nenhum no dashboard).
+
+Testado com banco descartável cobrindo os 4 cenários antes de subir:
+mensagem nova sem ver conta, depois de ver zera, mensagem nova de novo
+depois de visto volta a contar, e resposta da própria IA/equipe (não
+do hóspede) não conta - os 4 bateram certo. Padrão que já virou hábito
+nesta sessão inteira: nunca declarar uma contagem/trava/mecanismo
+"pronto" só porque o código parece lógico - rodar o cenário de verdade
+antes.
