@@ -13038,3 +13038,43 @@ antes nem de nenhum timing de carregamento. Mesmo princípio de design
 que várias outras correções desta sessão já seguiram: prefira um
 estado que não PODE ficar inconsistente a um estado que precisa ser
 mantido sincronizado com cuidado.
+
+### Avisando o promotor quando o acesso é aprovado (v1.152.0)
+
+Usuário perguntou, meio de conferência: "e se o acesso for concedido
+aí libera o modal de conectar de verdade, é isso?" - resposta sincera
+foi que sim, mas com um detalhe que ele precisava saber antes de
+testar de novo: a sessão do navegador só lê as permissões UMA VEZ, no
+carregamento da página (`/me`), sem nenhum mecanismo que refaça essa
+checagem sozinho depois. Se o promotor estiver com a tela aberta
+exatamente na hora que o Caio aprova, ele não vê nada mudar até dar
+F5.
+
+Perguntei se valia a pena avisar automaticamente - "sim sim, pode
+fazer". Pensando no que já existia: os outros 2 caminhos de aprovação
+(demo de promotor, formulário público) sempre entregam uma senha
+temporária que o Caio repassa na mão - isso já funciona como aviso
+implícito. O caminho de acesso a chats não tem NADA parecido - sem
+um push, a única forma do promotor saber é o Caio mandar mensagem por
+fora mesmo.
+
+Resolvido reaproveitando a MESMA infraestrutura de push que já existia
+(`send_push_to_hostel`, a função por trás de "conversa assumida"/
+"hóspede precisando de atenção") - dispara só quando o tipo de pedido
+aprovado é `chats_access`, com todo cuidado de nunca derrubar a
+resposta HTTP se o envio falhar (cenário normal: promotor ainda não
+ativou push nesse dispositivo específico).
+
+No caminho, achei que `approve_access_request` estava jogando fora uma
+informação que já tinha calculado: pra chegar no `membership_id` certo
+e aplicar o override, a função já precisa resolver o `hostel_id` do
+promotor - só que devolvia `hostel_id: None` pro chamador mesmo assim
+(fazia sentido antes, quando "hostel_id" significava "hospedagem NOVA
+criada", que de fato não existe nesse caminho). Só precisou parar de
+jogar fora e devolver o valor que já estava calculado, sem nenhum
+cálculo extra - a rota usa isso como destino do push.
+
+Testado com banco descartável confirmando que o `hostel_id` devolvido
+bate exatamente com o hostel do promotor (não outro qualquer) antes de
+subir - detalhe pequeno, mas mandar push pro hostel errado seria pior
+que não mandar nada.
