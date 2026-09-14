@@ -12825,3 +12825,98 @@ do hóspede) não conta - os 4 bateram certo. Padrão que já virou hábito
 nesta sessão inteira: nunca declarar uma contagem/trava/mecanismo
 "pronto" só porque o código parece lógico - rodar o cenário de verdade
 antes.
+
+### Aprovar a primeira demo de promotor nunca funcionava (v1.151.5)
+
+Voltando pro checklist de teste visual (trava de acesso), o usuário
+testou o fluxo do promotor de ponta a ponta - criou o pedido de demo,
+foi aprovar no Meu painel, e bateu de frente com "Esse e-mail já tem
+uma conta StayFlow". Bug real, achado só porque ele estava mesmo
+clicando nas coisas (nunca tinha sido testado esse caminho específico
+desde que foi construído, dias atrás).
+
+Causa óbvia depois de olhar: `approve_access_request` só sabia fazer
+uma coisa - criar uma IDENTIDADE NOVA (`create_identity_and_hostel`)
+com o e-mail do pedido. Isso faz sentido pro formulário público
+(`SolicitarAcesso.html`, gente que nunca teve conta), mas o pedido de
+demo do promotor usa o e-mail DELE MESMO, que por definição já tem
+conta - ou seja, esse caminho estava quebrado desde o primeiro dia,
+só ninguém tinha clicado em "Aprovar" numa demo de verdade até agora.
+
+A correção óbvia-mas-errada seria: "se o e-mail já existe, anexa a
+hospedagem nessa conta em vez de bloquear" - e quase fiz isso, até
+parar pra pensar no caminho PÚBLICO: se qualquer um pudesse mandar um
+pedido com o e-mail de OUTRA pessoa (alguém que já é cliente StayFlow)
+e o Caio aprovasse sem saber que é diferente do caso do promotor, a
+hospedagem nova ia parar silenciosamente na conta de alguém que nunca
+pediu nada e nunca provou que é dona daquele e-mail. Simplificar os
+dois casos juntos criava um jeito de sequestrar conta alheia.
+
+Resolvido separando os dois caminhos de verdade, não por inferência de
+e-mail: coluna nova `access_requests.requesting_user_id`, preenchida
+SÓ quando o pedido nasce de uma sessão autenticada (o `+ Adicionar
+hospedagem` do promotor já logado sabe exatamente quem é, capturado
+direto do `user_id` da sessão - não tem como forjar). Se preenchido,
+`approve_access_request` anexa a hospedagem à conta que a pessoa JÁ
+TEM (mesmo mecanismo de multi-propriedade normal,
+`create_hostel_and_membership_for_user` - sem gerar senha nenhuma,
+ela já tem a própria). Se vazio (pedido público, sem sessão nenhuma
+por trás), continua exigindo e-mail livre, exatamente como antes -
+zero mudança de comportamento pro caminho que já funcionava certo.
+
+Testado com banco descartável nos 3 cenários antes de subir: pedido
+público cria identidade nova de verdade; pedido de demo anexa à conta
+existente sem duplicar usuário (promotor termina com os 2 hostels,
+o dele e o da demo); reaprovar um pedido já processado continua
+bloqueado nos dois casos. Mesma lição de sempre, generalizada de novo:
+o caminho "óbvio" de corrigir um bug (relaxar uma checagem) às vezes
+abre um buraco pior que o bug original - vale parar e pensar no caso
+mais hostil antes de aplicar o conserto mais fácil.
+
+### Sino de notificação e tradução incompleta (v1.151.6)
+
+Mesma sessão de teste ao vivo, dois achados a mais chegaram quase
+juntos. Primeiro: "percebi que a chegada da solicitação não apareceu
+no meu sininho de notificação". Fui olhar `refreshNotifications()` -
+ela só sabia de 2 fontes (chat não lido, suporte não lido), montadas
+direto de `myChatGuests`/`supportThreads`. `access_requests` nunca
+tinha entrado nessa função, mesmo já tendo seu próprio push separado
+(`send_push_to_admin`) - são dois canais diferentes (push é do
+navegador, o sino é a lista dentro do próprio painel), e só um dos
+dois tinha sido ligado. Corrigido guardando a lista de pendentes num
+cache (`accessRequestsCache`, preenchido toda vez que
+`loadAccessRequests()` roda - já rodava a cada 15s) e misturando no
+mesmo array ordenado por data que alimenta o sino, com um terceiro
+tipo de item (`access_request`) que `goToNotifItem` sabe levar pra
+aba certa.
+
+Segundo, quase no mesmo instante: "mudei o idioma e não traduziu
+tudo". Print mostrando o painel em Espanhol com a aba inteira de
+Solicitações de acesso ainda em português - nome do card, mensagem,
+botões Aprovar/Rejeitar, tudo. Causa: quando construí essa aba (dias
+atrás, v1.151.0), só escrevi as chaves em PT+EN, decisão de escopo
+deliberada na hora (justificativa: `admin.html` é ferramenta interna
+de uso único, não o produto multi-idioma de verdade) - mas o usuário
+tem razão em esperar que, uma vez que o painel oferece 11 idiomas,
+qualquer aba dentro dele responda a troca de idioma por igual. `AT()`
+cai pro fallback em português quando a chave não existe no idioma
+atual - por isso nunca quebrou nada, só ficou sempre em português,
+silenciosamente, pra qualquer um dos outros 9 idiomas.
+
+Traduzidas as ~16 chaves que faltavam pros 9 idiomas restantes,
+reaproveitando terminologia já estabelecida no próprio arquivo (como
+"senha temporária" já tinha sido traduzida em `team.tempPasswordHint`,
+usei a mesma forma em vez de inventar uma nova) em vez de traduzir do
+zero sem contexto. Detalhe técnico: 5 dos idiomas (PT/EN/ES/FR/DE)
+guardam várias chaves relacionadas numa linha só, o que dava pra usar
+`old_string` normal no Edit - mas os outros 6 (JA/IT/ZH/RU/KO/NL) têm
+uma chave por linha, e vários deles repetem o MESMO valor literal
+("Team", por exemplo, tanto em italiano quanto em holandês) - usar
+esse texto como âncora ia dar `old_string` ambíguo. Resolvido inserindo
+por NÚMERO DE LINHA direto via script (conferido contra o conteúdo
+real de cada linha antes de rodar, pra garantir que a ordem de leitura
+dos números não tinha mudado entre o grep e a execução). Verificado
+balanceamento de chaves `{}` e aspas `"` do bloco `ADMIN_I18N` inteiro
+antes de subir - com 11 idiomas × ~16 chaves inseridas numa tacada só,
+esse tipo de erro (aspas não fechada, vírgula faltando) seria fácil de
+deixar passar sem checar de propósito.
