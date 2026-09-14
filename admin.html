@@ -1055,6 +1055,7 @@
       "accessRequests.subtitle": "Cadastro de hospedagem/agência é por convite (ver SolicitarAcesso.html) - aprove pra criar a conta com senha temporária, ou rejeite. Inclui pedidos de demo de apresentação feitos por promotores.",
       "accessRequests.tempPasswordHint": "Conta criada! Senha temporária (compartilhe com a pessoa agora — não é possível ver de novo depois):",
       "accessRequests.approvedTitle": "Conta aprovada", "accessRequests.copyBtn": "Copiar", "accessRequests.copiedMsg": "Copiado!",
+      "accessRequests.demoApprovedHint": "Demo liberada! A hospedagem já foi adicionada à conta que o promotor já tinha — ele já pode acessar com o próprio login, sem senha nova.",
       "accessRequests.empty": "Nenhuma solicitação pendente.",
       "accessRequests.approveBtn": "Aprovar", "accessRequests.rejectBtn": "Rejeitar",
       "accessRequests.demoTag": "Demo de apresentação (promotor)",
@@ -1234,6 +1235,7 @@
       "accessRequests.subtitle": "Hostel/agency signup is invite-only (see SolicitarAcesso.html) - approve to create the account with a temporary password, or reject. Includes presentation-demo requests from promoters.",
       "accessRequests.tempPasswordHint": "Account created! Temporary password (share it with the person now — it can't be shown again):",
       "accessRequests.approvedTitle": "Account approved", "accessRequests.copyBtn": "Copy", "accessRequests.copiedMsg": "Copied!",
+      "accessRequests.demoApprovedHint": "Demo unlocked! The property was already added to the account the promoter already has — they can access it with their existing login, no new password needed.",
       "accessRequests.empty": "No pending requests.",
       "accessRequests.approveBtn": "Approve", "accessRequests.rejectBtn": "Reject",
       "accessRequests.demoTag": "Presentation demo (promoter)",
@@ -5376,13 +5378,19 @@
         alert(data.message || "Não foi possível aprovar.");
         return;
       }
-      openGenericModal(AT("accessRequests.approvedTitle"), `
-        <p style="font-size:13px;color:var(--muted);margin:0 0 14px">${AT("accessRequests.tempPasswordHint")}</p>
-        <div style="display:flex;gap:8px;align-items:center">
-          <code id="accessRequestPasswordValue" style="flex:1;font-size:16px;font-weight:800;color:#6ff0bd;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px 14px">${data.temporary_password}</code>
-          <button type="button" class="btn secondary" style="width:auto" onclick="copyAccessRequestPassword(this)">${AT("accessRequests.copyBtn")}</button>
-        </div>
-      `);
+      // Pedido de demo de promotor JA LOGADO (ver approve_access_request)
+      // nao cria identidade nova - a hospedagem so entra sob a conta
+      // que ele ja tem, sem senha nenhuma pra mostrar.
+      const bodyHtml = data.temporary_password
+        ? `
+          <p style="font-size:13px;color:var(--muted);margin:0 0 14px">${AT("accessRequests.tempPasswordHint")}</p>
+          <div style="display:flex;gap:8px;align-items:center">
+            <code id="accessRequestPasswordValue" style="flex:1;font-size:16px;font-weight:800;color:#6ff0bd;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px 14px">${data.temporary_password}</code>
+            <button type="button" class="btn secondary" style="width:auto" onclick="copyAccessRequestPassword(this)">${AT("accessRequests.copyBtn")}</button>
+          </div>
+        `
+        : `<p style="font-size:13px;color:var(--muted);margin:0">${AT("accessRequests.demoApprovedHint")}</p>`;
+      openGenericModal(AT("accessRequests.approvedTitle"), bodyHtml);
       loadAccessRequests();
     }catch(e){
       console.warn("Erro ao aprovar solicitação de acesso:", e);

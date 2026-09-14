@@ -12825,3 +12825,50 @@ do hóspede) não conta - os 4 bateram certo. Padrão que já virou hábito
 nesta sessão inteira: nunca declarar uma contagem/trava/mecanismo
 "pronto" só porque o código parece lógico - rodar o cenário de verdade
 antes.
+
+### Aprovar a primeira demo de promotor nunca funcionava (v1.151.5)
+
+Voltando pro checklist de teste visual (trava de acesso), o usuário
+testou o fluxo do promotor de ponta a ponta - criou o pedido de demo,
+foi aprovar no Meu painel, e bateu de frente com "Esse e-mail já tem
+uma conta StayFlow". Bug real, achado só porque ele estava mesmo
+clicando nas coisas (nunca tinha sido testado esse caminho específico
+desde que foi construído, dias atrás).
+
+Causa óbvia depois de olhar: `approve_access_request` só sabia fazer
+uma coisa - criar uma IDENTIDADE NOVA (`create_identity_and_hostel`)
+com o e-mail do pedido. Isso faz sentido pro formulário público
+(`SolicitarAcesso.html`, gente que nunca teve conta), mas o pedido de
+demo do promotor usa o e-mail DELE MESMO, que por definição já tem
+conta - ou seja, esse caminho estava quebrado desde o primeiro dia,
+só ninguém tinha clicado em "Aprovar" numa demo de verdade até agora.
+
+A correção óbvia-mas-errada seria: "se o e-mail já existe, anexa a
+hospedagem nessa conta em vez de bloquear" - e quase fiz isso, até
+parar pra pensar no caminho PÚBLICO: se qualquer um pudesse mandar um
+pedido com o e-mail de OUTRA pessoa (alguém que já é cliente StayFlow)
+e o Caio aprovasse sem saber que é diferente do caso do promotor, a
+hospedagem nova ia parar silenciosamente na conta de alguém que nunca
+pediu nada e nunca provou que é dona daquele e-mail. Simplificar os
+dois casos juntos criava um jeito de sequestrar conta alheia.
+
+Resolvido separando os dois caminhos de verdade, não por inferência de
+e-mail: coluna nova `access_requests.requesting_user_id`, preenchida
+SÓ quando o pedido nasce de uma sessão autenticada (o `+ Adicionar
+hospedagem` do promotor já logado sabe exatamente quem é, capturado
+direto do `user_id` da sessão - não tem como forjar). Se preenchido,
+`approve_access_request` anexa a hospedagem à conta que a pessoa JÁ
+TEM (mesmo mecanismo de multi-propriedade normal,
+`create_hostel_and_membership_for_user` - sem gerar senha nenhuma,
+ela já tem a própria). Se vazio (pedido público, sem sessão nenhuma
+por trás), continua exigindo e-mail livre, exatamente como antes -
+zero mudança de comportamento pro caminho que já funcionava certo.
+
+Testado com banco descartável nos 3 cenários antes de subir: pedido
+público cria identidade nova de verdade; pedido de demo anexa à conta
+existente sem duplicar usuário (promotor termina com os 2 hostels,
+o dele e o da demo); reaprovar um pedido já processado continua
+bloqueado nos dois casos. Mesma lição de sempre, generalizada de novo:
+o caminho "óbvio" de corrigir um bug (relaxar uma checagem) às vezes
+abre um buraco pior que o bug original - vale parar e pensar no caso
+mais hostil antes de aplicar o conserto mais fácil.
