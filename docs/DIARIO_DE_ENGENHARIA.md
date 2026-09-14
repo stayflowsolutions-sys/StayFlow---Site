@@ -13007,3 +13007,34 @@ bateram certo. Chaves i18n novas nos 11 idiomas dos dois arquivos
 (`i18n-dashboard-data.js` pro lado do promotor, `admin.html` pro lado
 do Caio) - já virou hábito automático da sessão, não precisou nem
 pensar se ia fazer só PT+EN dessa vez.
+
+### Card duplicado: escondido/mostrado vira decisão no clique (v1.151.9)
+
+Usuário testou o resultado da v1.151.8 e mandou um print: card de
+"Solicitar acesso" aparecendo JUNTO com os 3 cards de canal
+(WhatsApp/Facebook/Instagram), que deveriam estar escondidos.
+Provavelmente um problema de timing (a sessão levou um instante pra
+refletir a permissão recém-aprovada, e o print pegou o estado
+intermediário) - mas em vez de caçar a causa exata, o usuário já veio
+com uma sugestão melhor: por que ter DOIS elementos pra manter
+sincronizados (3 cards escondidos + 1 card mostrado) se dá pra ter UM
+só, sempre visível, e decidir o comportamento no clique?
+
+Boa ideia, mais simples e mais robusta - eliminei o card separado
+inteiro e troquei a lógica: os 3 cards de canal voltam a ficar SEMPRE
+visíveis (tiro o `data-required-permission="chats"` que tinha
+colocado), e o `onclick` de cada um passa por um wrapper
+(`openChannelModalOrRequestAccess`) que decide na hora: tem "chats"
+na sessão? abre o modal de conectar de verdade. Não tem? abre um modal
+de "Solicitar acesso" no lugar (reaproveitando o mesmo
+`openGenericModal` de sempre, só com conteúdo diferente).
+
+A vantagem real não é só "menos código" - é que não existe mais
+NENHUM jeito dos dois estados aparecerem juntos, porque não tem mais
+dois elementos de DOM que precisam ficar sincronizados entre si. A
+decisão é feita uma vez, no momento exato do clique, lendo a sessão
+atual direto - não depende de nenhum `apply*Visibility` ter rodado
+antes nem de nenhum timing de carregamento. Mesmo princípio de design
+que várias outras correções desta sessão já seguiram: prefira um
+estado que não PODE ficar inconsistente a um estado que precisa ser
+mantido sincronizado com cuidado.
