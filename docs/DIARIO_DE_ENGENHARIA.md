@@ -13189,3 +13189,57 @@ lembrete só inclui quem está em dia, dedup semanal funciona, laço só
 age numa segunda-feira). `python -m py_compile` em todos os arquivos
 tocados, `check_cache_busting.py`/`check_i18n_syntax.py` limpos antes
 de documentar e sincronizar.
+
+### O contorno pro contato automático de prospecção (v1.153.1)
+
+Perguntei ao usuário se ele queria mesmo enfrentar a fila de aprovação
+de template da Meta pro contato automático "frio" (IA mandando a
+primeira mensagem pra quem nunca escreveu) - expliquei que não é só
+demora, é risco real de reprovação, já que a Meta é rígida com
+template que parece prospecção fria pra quem não é cliente ainda. Ele
+confirmou que queria seguir mesmo assim, e pediu as duas frentes
+prontas: a submissão de verdade E um jeito de já ter a mesma
+funcionalidade enquanto isso não aprova.
+
+A saída pro contorno veio de uma observação simples sobre COMO a regra
+da Meta funciona: a trava de "precisa de template aprovado" é
+especificamente sobre a API mandar mensagem sozinha fora da janela de
+24h - não existe trava nenhuma sobre uma PESSOA mandar mensagem pelo
+próprio WhatsApp. Então em vez de tentar automatizar o envio, a
+StayFlow só prepara tudo (mensagem formal pronta + link `wa.me` já
+preenchido com o texto) e quem aperta "enviar" continua sendo o
+promotor, no aplicativo dele. Do ponto de vista da Meta é uma pessoa
+comum mandando mensagem normal - zero regra de template se aplica.
+
+Ponto que só ficou claro investigando a API de verdade: a aprovação de
+template é por WABA (conta de negócio), não por app da Meta. Isso muda
+o modelo mental de "a StayFlow aprova um template e libera pra todo
+mundo" pra "cada promotor que conectar WhatsApp e quiser essa feature
+precisa submeter e ser aprovado na PRÓPRIA conta dele". Documentei
+isso explicitamente na função (`submit_prospect_message_template`,
+`services/meta_oauth_service.py`) porque não é óbvio de olhar o código
+sozinho - reaproveita o token que já está salvo desde a conexão do
+WhatsApp (`hostels.whatsapp_waba_id`/`whatsapp_access_token`), só
+disparando a chamada `POST /{waba_id}/message_templates` com o texto
+formal já definido.
+
+Detalhe pequeno que quase passou batido: `create_lead` sempre
+notificava (push pro hostel + push duplo pro admin, da v1.153.0) toda
+vez que uma linha nova entrava em `leads`. Um prospect que o promotor
+ACABOU de digitar (ainda nem mandou a mensagem, quanto mais recebeu
+resposta) não é a mesma coisa que um lead que respondeu de verdade -
+notificar o Caio nesse momento ia virar ruído (um push pra cada
+contato que o promotor só COGITOU abordar). Resolvido com um parâmetro
+`notify=False` nesse caminho específico, mantendo o comportamento
+antigo (notifica sempre) pro caminho que já existia (`CAPTURE_LEAD_TOOL`,
+onde a notificação continua fazendo sentido - ali sim alguém respondeu
+de verdade).
+
+Testado com banco descartável: `create_lead(notify=False)` não quebra
+e realmente não dispara a branch de notificação; geração da mensagem
+formal (nome do promotor extraído certo, "StayFlow Solutions" por
+extenso) e do link `wa.me` (telefone normalizado só dígitos, texto
+URL-encoded corretamente); e as duas funções novas do
+`meta_oauth_service` devolvem erro amigável sem quebrar quando ainda
+não tem WhatsApp conectado - cenário que vai ser comum no começo, tem
+que se comportar bem.

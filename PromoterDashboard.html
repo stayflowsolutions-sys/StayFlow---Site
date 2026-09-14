@@ -68,9 +68,33 @@ select.leadStatus{background:#0d1421;border:1px solid #233652;border-radius:8px;
     <p class='desc' id='captureLinkLockedMsg'>Assine o Plano Promotor e conecte seu WhatsApp em Configurações pra liberar seu link de captação e a IA que faz o primeiro contato pra você.</p>
   </div>
 
+  <div class='card' id='templateCard' style='display:none'>
+    <h2>Contato automático pra quem nunca escreveu</h2>
+    <p class='desc'>A Meta exige aprovação de um modelo de mensagem antes da IA poder abordar sozinha um contato que nunca falou com você. Envie pra revisão (pode levar de minutos a dias, sem garantia de aprovação) — enquanto isso, use a abordagem manual abaixo, que já funciona.</p>
+    <button type='button' style='width:auto;padding:10px 16px;font-size:13px;margin-right:8px' onclick='submitProspectTemplate()'>Enviar pra aprovação da Meta</button>
+    <button type='button' style='width:auto;padding:10px 16px;font-size:13px;background:#233652' onclick='checkProspectTemplateStatus()'>Verificar status</button>
+    <p id='templateMsg' style='font-size:12px;margin-top:10px;min-height:16px'></p>
+  </div>
+
+  <div class='card'>
+    <h2>Abordar um contato específico</h2>
+    <p class='desc'>Achou uma hospedagem/agência que quer apresentar a StayFlow? Coloque o contato aqui — a gente prepara a mensagem de abordagem, você só confere e envia pelo seu WhatsApp.</p>
+    <label style='display:block;font-size:12px;color:#9aa8bb;margin-bottom:4px'>Nome do contato</label>
+    <input id='prospectNameInput' placeholder='Ex: Maria (Pousada Vista Mar)' style='width:100%;padding:14px;margin:0 0 14px;background:#0d1421;border:1px solid #233652;border-radius:13px;color:#fff;font-size:14px'>
+    <label style='display:block;font-size:12px;color:#9aa8bb;margin-bottom:4px'>WhatsApp do contato</label>
+    <input id='prospectPhoneInput' placeholder='+54 9 11 1234-5678' style='width:100%;padding:14px;margin:0 0 14px;background:#0d1421;border:1px solid #233652;border-radius:13px;color:#fff;font-size:14px'>
+    <button type='button' style='width:auto;padding:12px 20px;font-size:13px' onclick='addProspect()'>Preparar abordagem</button>
+    <p id='prospectFormMsg' style='font-size:12px;margin-top:8px;min-height:16px'></p>
+    <div id='prospectResult' style='display:none;margin-top:14px'>
+      <label style='display:block;font-size:12px;color:#9aa8bb;margin-bottom:6px'>Mensagem pronta</label>
+      <textarea id='prospectMessagePreview' readonly style='width:100%;min-height:110px;padding:12px;background:#0d1421;border:1px solid #233652;border-radius:13px;color:#fff;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:10px'></textarea>
+      <a id='prospectWaLink' href='#' target='_blank' rel='noopener' style='display:inline-block;padding:12px 20px;background:#26e0a0;color:#06101b;font-weight:700;border-radius:13px;text-decoration:none;font-size:13px'>Abrir WhatsApp e enviar</a>
+    </div>
+  </div>
+
   <div class='card'>
     <h2>Prospecção</h2>
-    <p class='desc'>Clientes em potencial capturados pela IA através do seu link de captação.</p>
+    <p class='desc'>Contatos abordados por você e clientes em potencial capturados pela IA através do seu link de captação.</p>
     <div class='tableWrap'>
       <table id='leadsTable' style='display:none'>
         <thead><tr><th>Data</th><th>Nome</th><th>Contato</th><th>Interesse</th><th>Status</th></tr></thead>
@@ -183,9 +207,11 @@ async function loadDashboard(){
       document.getElementById('captureLink').value = `https://wa.me/${digits}?text=${captureText}`;
       document.getElementById('captureLinkCard').style.display = '';
       document.getElementById('captureLinkLockedCard').style.display = 'none';
+      document.getElementById('templateCard').style.display = '';
     }else{
       document.getElementById('captureLinkCard').style.display = 'none';
       document.getElementById('captureLinkLockedCard').style.display = '';
+      document.getElementById('templateCard').style.display = 'none';
     }
 
     const whatsappText = `Oi! Trabalho com a StayFlow, um sistema de gestão com IA pra hotéis, pousadas e hostels (WhatsApp automático, reservas, financeiro, tudo num painel só). Vale a pena dar uma olhada — tem teste grátis: ${referralLink}`;
@@ -314,6 +340,91 @@ async function updateLeadStatus(leadId, status){
     if(!res.ok || !data.success) loadLeads();
   }catch(e){
     loadLeads();
+  }
+}
+
+async function addProspect(){
+  const msg = document.getElementById('prospectFormMsg');
+  const result = document.getElementById('prospectResult');
+  msg.textContent = '';
+  result.style.display = 'none';
+  const name = document.getElementById('prospectNameInput').value.trim();
+  const phone = document.getElementById('prospectPhoneInput').value.trim();
+  if(!name || !phone){
+    msg.style.color = '#ff5d76';
+    msg.textContent = 'Preencha nome e WhatsApp do contato.';
+    return;
+  }
+  try{
+    const res = await fetch('/promoter/prospects', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, phone }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success){
+      msg.style.color = '#ff5d76';
+      msg.textContent = data.message || 'Não foi possível preparar a abordagem.';
+      return;
+    }
+    document.getElementById('prospectMessagePreview').value = data.message;
+    document.getElementById('prospectWaLink').href = data.wa_link;
+    result.style.display = '';
+    msg.style.color = '#26e0a0';
+    msg.textContent = 'Prontinho! Confira a mensagem e clique pra enviar.';
+    document.getElementById('prospectNameInput').value = '';
+    document.getElementById('prospectPhoneInput').value = '';
+    loadLeads();
+  }catch(e){
+    msg.style.color = '#ff5d76';
+    msg.textContent = 'Erro de conexão.';
+  }
+}
+
+async function submitProspectTemplate(){
+  const msg = document.getElementById('templateMsg');
+  msg.style.color = '#9aa8bb';
+  msg.textContent = 'Enviando...';
+  try{
+    const res = await fetch('/promoter/prospect-template/submit', { method: 'POST', credentials: 'same-origin' });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success){
+      msg.style.color = '#ff5d76';
+      msg.textContent = data.message || 'Não foi possível enviar pra aprovação.';
+      return;
+    }
+    msg.style.color = '#26e0a0';
+    msg.textContent = 'Enviado! A revisão da Meta pode levar de minutos a dias — use "Verificar status" depois.';
+  }catch(e){
+    msg.style.color = '#ff5d76';
+    msg.textContent = 'Erro de conexão.';
+  }
+}
+
+const TEMPLATE_STATUS_LABELS = { PENDING: 'Em análise', APPROVED: 'Aprovado', REJECTED: 'Reprovado' };
+
+async function checkProspectTemplateStatus(){
+  const msg = document.getElementById('templateMsg');
+  msg.style.color = '#9aa8bb';
+  msg.textContent = 'Consultando...';
+  try{
+    const res = await fetch('/promoter/prospect-template/status', { credentials: 'same-origin' });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success){
+      msg.style.color = '#ff5d76';
+      msg.textContent = data.message || 'Não foi possível consultar o status.';
+      return;
+    }
+    if(!data.status){
+      msg.style.color = '#9aa8bb';
+      msg.textContent = 'Nenhum template enviado ainda.';
+      return;
+    }
+    msg.style.color = data.status === 'APPROVED' ? '#26e0a0' : (data.status === 'REJECTED' ? '#ff5d76' : '#ffbd4a');
+    msg.textContent = `Status: ${TEMPLATE_STATUS_LABELS[data.status] || data.status}`;
+  }catch(e){
+    msg.style.color = '#ff5d76';
+    msg.textContent = 'Erro de conexão.';
   }
 }
 
