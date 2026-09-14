@@ -12945,3 +12945,65 @@ Padrão que provavelmente vale revisar em outros formulários do
 projeto num momento futuro (vários outros `submit*` provavelmente têm
 o mesmo gap) - mas escopo de hoje era só resolver o que o usuário
 encontrou testando ao vivo, não uma varredura geral.
+
+### Trava + solicitação pra promotor conectar redes (v1.151.8)
+
+Usuário reparou numa inconsistência da própria trava que construímos
+juntos: "o promotor não tem mais acesso ao chats mas ainda tem na
+comunicação a parte de ligar as redes". Não é bug de código - é um
+buraco de COBERTURA: quando tirei "chats" de `PROMOTER_PERMISSIONS`
+(v1.151.0), só pensei na aba Chats em si. Os cards de conectar
+WhatsApp/Facebook/Instagram (Configurações → Comunicação) nunca
+tinham gate de "chats" nenhum - só dependiam de "settings", que
+promotor sempre teve. Continuavam 100% acessíveis o tempo todo, sem
+ninguém ter percebido até agora.
+
+Pedido do usuário foi claro: trava + solicitação, sem decidir ainda
+se vai cobrar por isso. Adicionei `data-required-permission="chats"`
+nos 3 cards, e um card novo "Solicitar acesso" aparece no lugar
+quando falta - resolvido com uma função dedicada em vez de um atributo
+declarativo novo (só 1 card usa esse padrão inverso, não valia a pena
+generalizar pra um caso só).
+
+No caminho de implementar a aprovação, esbarrei num achado
+arquitetural que não era óbvio de fora: `set_membership_override(
+membership_id, "chats", True)` simplesmente NÃO FUNCIONAVA pra
+promotor, mesmo chamando direto. Motivo: `get_effective_permissions`
+intersecta as permissões (role + overrides já aplicados) contra
+`permissions_for_account_kind(account_kind)` no final - e "chats" não
+está nesse catálogo pra promotor, de propósito. Ou seja, o MESMO
+filtro que protege contra vazamento de permissão (achado real de
+2026-09-03: role "Admin" com `ALL_PERMISSIONS_STR` sobrando
+"parking"/"scheduling" numa agência) também apagava um override
+EXPLÍCITO e deliberado. Dois conceitos diferentes (vazamento acidental
+da role vs. decisão pontual pra uma pessoa) estavam sendo filtrados
+pela mesma regra.
+
+Resolvido reordenando a função: filtra a ROLE contra o catálogo
+ANTES, aplica os overrides DEPOIS, sem re-filtrar - um override
+explícito agora sempre vale, mesmo fora do catálogo padrão daquele
+account_kind. Testado explicitamente que isso não reabre o buraco
+original: `permissions_for_account_kind('promoter')` continua sem
+"chats" no catálogo (nenhum OUTRO promotor ganha nada de graça), só a
+pessoa com o override específico.
+
+Pra não construir um sistema de aprovação paralelo, reaproveitei a
+MESMA fila de `access_requests`/Solicitações de acesso que já existia
+- `account_kind="chats_access"` virou um terceiro caminho dentro de
+`approve_access_request` (não cria nem anexa hospedagem nenhuma, só
+liga a permissão). Idempotência própria também
+(`get_pending_chats_access_request`) - mesma categoria de cuidado da
+v1.151.7 (pedido duplicando em clique duplo), só que resolvida do
+lado do backend dessa vez, porque esse botão específico não navega
+pra outro lugar depois do clique (fica na mesma tela, mais fácil de
+clicar de novo sem perceber que já mandou).
+
+Testado com banco descartável cobrindo os 8 passos da história inteira
+antes de subir: promotor sem chats → cria pedido → pedido duplicado
+encontra o mesmo (idempotência) → aprova → promotor com chats →
+catálogo global de promotor continua sem chats (outros promotores
+intocados) → depois de aprovado, não aparece mais como pendente. Todos
+bateram certo. Chaves i18n novas nos 11 idiomas dos dois arquivos
+(`i18n-dashboard-data.js` pro lado do promotor, `admin.html` pro lado
+do Caio) - já virou hábito automático da sessão, não precisou nem
+pensar se ia fazer só PT+EN dessa vez.
