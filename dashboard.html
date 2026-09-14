@@ -14555,11 +14555,30 @@ window.uploadGuestDocumentUI = async function(guestId){
   // ao vivo). Mais simples: card continua igual pra todo mundo, e o
   // CLIQUE decide - quem tem "chats" abre o modal de conectar de
   // verdade, quem nao tem ve um modal de "Solicitar acesso" no lugar.
-  window.openChannelModalOrRequestAccess = function(realOpener){
+  // 3 vias (v1.153.0, Plano Promotor): tem "chats" -> abre o canal de
+  // verdade (igual sempre foi). Sem "chats", consulta /promoter/plan-status
+  // pra saber ONDE a pessoa esta - nunca pediu/pedido pendente -> modal
+  // de solicitacao (fluxo original); pedido ja aprovado mas sem plano
+  // pago ativo -> modal do Plano Promotor. Rota exige a permissao
+  // "promoter" - conta que nao e promotor cai no catch/fallback e ve o
+  // modal de solicitacao de sempre (comportamento antigo preservado).
+  window.openChannelModalOrRequestAccess = async function(realOpener){
     const session = window.STAYFLOW_SESSION || {};
     if((session.permissions || []).includes("chats")){
       realOpener();
-    }else{
+      return;
+    }
+    try{
+      const res = await fetch("/promoter/plan-status", { credentials: "same-origin" });
+      const data = await res.json().catch(() => ({}));
+      if(data.success && data.chats_granted){
+        realOpener();
+      }else if(data.success && data.request_status === "approved"){
+        openPlanoPromotorModal(data.plan_status, data.plan_price_usd);
+      }else{
+        openChatsAccessRequestModal();
+      }
+    }catch(e){
       openChatsAccessRequestModal();
     }
   };
@@ -14586,6 +14605,47 @@ window.uploadGuestDocumentUI = async function(guestId){
         return;
       }
       btn.textContent = T('settings.chatsAccessRequest.pending', 'Pedido enviado — aguardando aprovação');
+    }catch(e){
+      btn.disabled = false;
+      alert(T('common.connectionError', 'Erro de conexão.'));
+    }
+  };
+
+  // Modal do Plano Promotor (v1.153.0) - mostrado depois que o pedido
+  // de acesso a chats ja foi aprovado, antes de conectar o canal de
+  // verdade. plan_status "none" = nunca assinou (oferta padrao, 30
+  // dias gratis); "past_due"/"canceled" = ja assinou antes mas o
+  // pagamento falhou/foi cancelado (mensagem de reativacao, mesmo
+  // botao/rota - o Mercado Pago cria uma nova assinatura recorrente).
+  window.openPlanoPromotorModal = function(planStatus, priceUsd){
+    const price = priceUsd || 19;
+    const isReactivation = planStatus === "past_due" || planStatus === "canceled";
+    const title = T('settings.prospectorPlan.title', 'Plano Promotor');
+    const desc = isReactivation
+      ? T('settings.prospectorPlan.descReactivate', 'Sua assinatura do Plano Promotor está com o pagamento pendente. Reative pra continuar usando o Chats.')
+      : T('settings.prospectorPlan.desc', 'Conecte WhatsApp/Instagram/Facebook e use a ferramenta de prospecção pra trazer novos clientes pra StayFlow.');
+    openGenericModal(title, `
+      <p style="margin-bottom:12px">${desc}</p>
+      <p style="margin-bottom:16px;font-size:1.1em"><strong>US$ ${price}/mês</strong>${isReactivation ? '' : ' — ' + T('settings.prospectorPlan.trial', '30 dias grátis, depois cobrança automática')}</p>
+      <button class="btn" type="button" id="prospectorPlanSubscribeBtn" onclick="subscribeProspectorPlan()">${isReactivation ? T('settings.prospectorPlan.reactivateBtn', 'Reativar assinatura') : T('settings.prospectorPlan.subscribeBtn', 'Contratar')}</button>
+    `);
+  };
+
+  window.subscribeProspectorPlan = async function(){
+    const btn = document.getElementById("prospectorPlanSubscribeBtn");
+    if(btn.disabled) return;
+    btn.disabled = true;
+    try{
+      const res = await fetch("/promoter/plan/subscribe", {
+        method: "POST", credentials: "same-origin",
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!data.success || !data.init_point){
+        btn.disabled = false;
+        alert(data.message || T('settings.prospectorPlan.failed', 'Não foi possível iniciar a assinatura.'));
+        return;
+      }
+      window.location.href = data.init_point;
     }catch(e){
       btn.disabled = false;
       alert(T('common.connectionError', 'Erro de conexão.'));
@@ -15116,7 +15176,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 <script src="assets/js/chats-live.js?v=1127"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1155"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1156"></script>
 <script>
 (function(){
   "use strict";

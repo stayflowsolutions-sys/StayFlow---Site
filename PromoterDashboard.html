@@ -34,6 +34,7 @@ td{padding:10px;border-bottom:1px solid #16233a}
 .pill.paid_out{background:#0f3d2e;color:#26e0a0}
 .empty{color:#65758b;font-size:13px;padding:14px 0}
 .tableWrap{overflow-x:auto}
+select.leadStatus{background:#0d1421;border:1px solid #233652;border-radius:8px;color:#fff;padding:6px 8px;font-size:12px}
 </style></head><body>
 <div class='wrap'>
   <div class='topbar'>
@@ -50,6 +51,33 @@ td{padding:10px;border-bottom:1px solid #16233a}
       <button type='button' id='shareBtn' style='display:none;background:#233652' onclick='shareLink()'>Compartilhar</button>
     </div>
     <p id='copyMsg'></p>
+  </div>
+
+  <div class='card' id='captureLinkCard' style='display:none'>
+    <h2>Seu link de captação de clientes</h2>
+    <p class='desc'>Divulgue esse link (redes sociais, indicação pessoal) — quem clicar e mandar mensagem cai direto na sua conversa, e a IA da StayFlow já faz o primeiro contato e avisa a gente quando esquentar.</p>
+    <div class='codeRow'>
+      <input id='captureLink' readonly>
+      <button type='button' onclick='copyCaptureLink()'>Copiar</button>
+    </div>
+    <p id='copyCaptureMsg'></p>
+  </div>
+
+  <div class='card' id='captureLinkLockedCard'>
+    <h2>Sua ferramenta de captação de clientes</h2>
+    <p class='desc' id='captureLinkLockedMsg'>Assine o Plano Promotor e conecte seu WhatsApp em Configurações pra liberar seu link de captação e a IA que faz o primeiro contato pra você.</p>
+  </div>
+
+  <div class='card'>
+    <h2>Prospecção</h2>
+    <p class='desc'>Clientes em potencial capturados pela IA através do seu link de captação.</p>
+    <div class='tableWrap'>
+      <table id='leadsTable' style='display:none'>
+        <thead><tr><th>Data</th><th>Nome</th><th>Contato</th><th>Interesse</th><th>Status</th></tr></thead>
+        <tbody id='leadsTableBody'></tbody>
+      </table>
+    </div>
+    <p class='empty' id='leadsEmpty'>Nenhuma prospecção capturada ainda.</p>
   </div>
 
   <div class='card'>
@@ -115,6 +143,14 @@ td{padding:10px;border-bottom:1px solid #16233a}
 <script>
 const STATUS_LABELS = { trialing: 'Em teste', active: 'Ativo', past_due: 'Pagamento pendente', canceled: 'Cancelado', comp: 'Cortesia' };
 const LEDGER_STATUS_LABELS = { accrued: 'A receber', paid_out: 'Pago' };
+const LEAD_STATUS_ORDER = ['new', 'contacted', 'converted', 'lost'];
+const LEAD_STATUS_LABELS = { new: 'Novo', contacted: 'Contatado', converted: 'Convertido', lost: 'Perdido' };
+
+function escapeHtml(text){
+  const div = document.createElement('div');
+  div.textContent = text == null ? '' : String(text);
+  return div.innerHTML;
+}
 
 (async function(){
   try{
@@ -124,6 +160,7 @@ const LEDGER_STATUS_LABELS = { accrued: 'A receber', paid_out: 'Pago' };
     if(!session.success || !session.user){ window.location.href = '/Login.html'; return; }
     if(session.account_kind !== 'promoter'){ window.location.href = '/app'; return; }
     loadDashboard();
+    loadLeads();
   }catch(e){
     window.location.href = '/Login.html';
   }
@@ -139,6 +176,17 @@ async function loadDashboard(){
     const referralLink = `${location.origin}/Register.html?ref=${data.referral_code}`;
     document.getElementById('referralLink').value = referralLink;
     if(navigator.share) document.getElementById('shareBtn').style.display = '';
+
+    if(data.whatsapp_connected && data.whatsapp_display_number){
+      const digits = data.whatsapp_display_number.replace(/[^0-9]/g, '');
+      const captureText = encodeURIComponent('Oi! Vi seu contato e queria saber mais sobre a StayFlow.');
+      document.getElementById('captureLink').value = `https://wa.me/${digits}?text=${captureText}`;
+      document.getElementById('captureLinkCard').style.display = '';
+      document.getElementById('captureLinkLockedCard').style.display = 'none';
+    }else{
+      document.getElementById('captureLinkCard').style.display = 'none';
+      document.getElementById('captureLinkLockedCard').style.display = '';
+    }
 
     const whatsappText = `Oi! Trabalho com a StayFlow, um sistema de gestão com IA pra hotéis, pousadas e hostels (WhatsApp automático, reservas, financeiro, tudo num painel só). Vale a pena dar uma olhada — tem teste grátis: ${referralLink}`;
     const captionText = `A StayFlow automatiza o atendimento e a gestão da sua hospedagem com IA — do primeiro contato no WhatsApp até o check-out. Teste grátis: ${referralLink}`;
@@ -206,6 +254,67 @@ function copyLink(){
     document.getElementById('copyMsg').textContent = 'Link copiado!';
     setTimeout(() => { document.getElementById('copyMsg').textContent = ''; }, 2000);
   }).catch(() => {});
+}
+
+function copyCaptureLink(){
+  const input = document.getElementById('captureLink');
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(() => {
+    document.getElementById('copyCaptureMsg').textContent = 'Link copiado!';
+    setTimeout(() => { document.getElementById('copyCaptureMsg').textContent = ''; }, 2000);
+  }).catch(() => {});
+}
+
+async function loadLeads(){
+  const table = document.getElementById('leadsTable');
+  const tbody = document.getElementById('leadsTableBody');
+  const empty = document.getElementById('leadsEmpty');
+  try{
+    const res = await fetch('/leads', { credentials: 'same-origin' });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data.success) return;
+    const items = data.leads || [];
+    if(items.length){
+      table.style.display = '';
+      empty.style.display = 'none';
+      tbody.innerHTML = items.map(leadRowHtml).join('');
+    }else{
+      table.style.display = 'none';
+      empty.style.display = '';
+    }
+  }catch(e){
+    console.warn('Erro ao carregar prospecção:', e);
+  }
+}
+
+function leadRowHtml(lead){
+  const status = LEAD_STATUS_ORDER.includes(lead.status) ? lead.status : 'new';
+  const options = LEAD_STATUS_ORDER.map(s => `<option value="${s}" ${s === status ? 'selected' : ''}>${LEAD_STATUS_LABELS[s]}</option>`).join('');
+  const createdAt = (lead.created_at || '').split(' ')[0] || '-';
+  return `
+    <tr>
+      <td>${createdAt}</td>
+      <td>${escapeHtml(lead.guest_name || '-')}</td>
+      <td>${escapeHtml(lead.phone || '-')}</td>
+      <td>${escapeHtml(lead.interest || '-')}</td>
+      <td><select class="leadStatus" onchange="updateLeadStatus(${lead.id}, this.value)">${options}</select></td>
+    </tr>`;
+}
+
+async function updateLeadStatus(leadId, status){
+  try{
+    const res = await fetch(`/leads/${leadId}/status`, {
+      method: 'PATCH', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success) loadLeads();
+  }catch(e){
+    loadLeads();
+  }
 }
 
 function shareLink(){
