@@ -9,7 +9,7 @@
 <link rel="icon" href="/assets/images/icon-192.png">
 <link rel="stylesheet" href="static/css/tokens.css?v=1125">
 <link rel="stylesheet" href="static/css/reset.css?v=1125">
-<link rel="stylesheet" href="static/css/app.css?v=1152">
+<link rel="stylesheet" href="static/css/app.css?v=1153">
 <style>
   /* ===== Extensoes locais - o shell inteiro (sidebar/topbar/.page/
      .kpi/.chat-layout/.chat-item/.messages/.msg/.hostel-mini/
@@ -111,6 +111,16 @@
   .ask-floating-bare img{ width:160px; height:auto; display:block; filter:drop-shadow(0 10px 24px rgba(11,132,255,.4)); }
   .ask-floating-bare:hover img{ transform:translateY(-2px); }
   .ask-floating-bare img{ transition:transform .18s; }
+  /* Achado ao vivo pelo usuario (15/09): logo2.png tem bastante
+     margem transparente em volta do desenho (medido via bbox do canal
+     alfa: ondas ocupam so ~34% da largura/32% da altura do arquivo) -
+     como o botao vira "so a logo" (sem quadrado ao redor), essa
+     margem transparente inteira ficava clicavel, roubando clique de
+     botoes atras dele (ex: "Editar" numa linha de tabela perto do
+     canto inferior direito). clip-path corta o hit-test pro poligono
+     visivel, sem precisar editar o arquivo de imagem - mesmo tamanho
+     visual das 3 ondas, sem a margem invisivel. */
+  .ask-floating-bare img{ clip-path:inset(27% 30% 36% 32%); }
 </style>
 </head>
 <body>
