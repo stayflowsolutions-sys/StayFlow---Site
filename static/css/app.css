@@ -1935,6 +1935,13 @@ body::before{
   width:160px;
   height:auto;
   filter:drop-shadow(0 10px 22px #0b84ff4a);
+  /* Achado ao vivo pelo usuario (15/09, admin.html - mesmo logo2.png
+     usado aqui): margem transparente em volta do desenho (~34%
+     largura/32% altura visivel, medido via bbox do canal alfa) ficava
+     inteira clicavel por tras ser "so a logo" sem quadrado, roubando
+     clique de botao atras. clip-path corta o hit-test pro poligono
+     visivel, mesmo tamanho das 3 ondas, sem editar o arquivo. */
+  clip-path:inset(27% 30% 36% 32%);
 }
 .ask-floating[data-account-kind="promoter"]:hover, .ask-floating[data-account-kind="agency"]:hover{
   transform:translateY(-4px);
