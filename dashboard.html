@@ -2063,6 +2063,7 @@ async function deleteRoleConfirm(roleId){
     <button type="button" class="ops-tab" data-ops-tab="maintenance" data-required-permission="maintenance" onclick="switchOperationsTab('maintenance')" data-i18n="nav.maintenance">Manutenção</button>
     <button type="button" class="ops-tab" data-ops-tab="patrimonialSecurity" data-required-permission="patrimonial_security" onclick="switchOperationsTab('patrimonialSecurity')" data-i18n="nav.patrimonialSecurity">Segurança Patrimonial</button>
     <button type="button" class="ops-tab" data-ops-tab="parking" data-required-permission="parking" onclick="switchOperationsTab('parking')" data-i18n="nav.parking">Estacionamento</button>
+    <button type="button" class="ops-tab" data-ops-tab="comandas" data-required-permission="comandas" onclick="switchOperationsTab('comandas')" data-i18n="comandas.tab">Comandas</button>
   </div>
 
   <div data-ops-section="tasks" class="grid">
@@ -2184,7 +2185,10 @@ async function deleteRoleConfirm(roleId){
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
         <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2z"/></svg></span><span data-i18n="maintenance.tickets.title">Chamados em aberto</span></h2>
- <button type="button" class="btn primary" onclick="openNewMaintenanceTicketModal()" data-i18n="maintenance.tickets.newBtn">Novo chamado</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn secondary" data-required-account-kind="lodging" onclick="openFloorPlansModal()" data-i18n="settings.floorPlans.viewLinkBtn">Ver plantas do imóvel</button>
+          <button type="button" class="btn primary" onclick="openNewMaintenanceTicketModal()" data-i18n="maintenance.tickets.newBtn">Novo chamado</button>
+        </div>
       </div>
       <div class="ops-tabs" style="margin-bottom:12px" data-ticket-view-tabs="maintenance">
         <button type="button" class="ops-tab active" data-ticket-view="open" onclick="switchTicketView('maintenance','open')" data-i18n="tickets.tabOpen">Abertos</button>
@@ -2371,6 +2375,22 @@ async function deleteRoleConfirm(roleId){
         </table>
         <button type="button" class="btn secondary" id="parkingResolvedLoadMoreBtn" style="display:none;margin-top:10px" onclick="loadMoreResolvedTickets('parking')" data-i18n="opportunities.loadMoreBtn">Mostrar mais</button>
       </div>
+    </div>
+  </div>
+
+  <div data-ops-section="comandas" style="display:none">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span data-i18n="comandas.tables.title">Mesas</span></h2>
+        <button type="button" class="btn primary" onclick="openNewRestaurantTableModal()" data-i18n="comandas.tables.addBtn">+ Nova mesa</button>
+      </div>
+      <div class="sf-empty" id="comandaTablesEmpty">
+        <div>
+          <strong data-i18n="comandas.tables.emptyTitle">Nenhuma mesa cadastrada.</strong>
+          <span data-i18n="comandas.tables.emptyDesc">Cadastre as mesas do salão pra começar a abrir comandas.</span>
+        </div>
+      </div>
+      <div id="comandaTablesGrid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px"></div>
     </div>
   </div>
 </section>
@@ -2893,6 +2913,16 @@ async function deleteRoleConfirm(roleId){
           <div>
             <h2 data-i18n="settings.company.title">Empresa</h2>
             <p class="settings-summary-desc" data-i18n="settings.company.desc">Dados legais, horários padrão e identidade visual da hospedagem.</p>
+          </div>
+          <span class="settings-summary-chevron">›</span>
+        </div>
+      </div>
+
+      <div class="card settings-summary-card" data-settings-section="empresa" data-required-account-kind="lodging" onclick="openFloorPlansModal()">
+        <div class="settings-summary-row">
+          <div>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M9 4v6M9 14h12"/></svg></span><span data-i18n="settings.floorPlans.title">Plantas do Imóvel</span></h2>
+            <p class="settings-summary-desc" data-i18n="settings.floorPlans.desc">Arquitetônica, elétrica, hidráulica e gás — pra equipe consultar na hora de um chamado.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
         </div>
@@ -6374,6 +6404,7 @@ async function deleteRoleConfirm(roleId){
             <option value="Resort">${T('settings.hostelType.resort', 'Resort')}</option>
             <option value="Pousada">${T('settings.hostelType.pousada', 'Pousada')}</option>
             <option value="Flat">${T('settings.hostelType.flat', 'Flat')}</option>
+            <option value="Casa de Repouso">${T('settings.hostelType.nursingHome', 'Casa de Repouso')}</option>
             <option value="__new_hostel_type__">${T('settings.hostelType.newOption', '+ Novo tipo...')}</option>
           </select>
         </div>`;
@@ -11740,6 +11771,7 @@ window.switchOperationsTab = function(tabId){
     maintenance: () => typeof loadMaintenance === "function" && loadMaintenance(),
     patrimonialSecurity: () => typeof loadPatrimonialSecurity === "function" && loadPatrimonialSecurity(),
     parking: () => typeof loadParking === "function" && loadParking(),
+    comandas: () => typeof loadComandas === "function" && loadComandas(),
   };
   const loader = loaders[tabId];
   if(loader) loader();
@@ -12270,6 +12302,294 @@ window.advanceKitchenItem = async function(ticketId, itemId, currentStatus){
   }catch(e){
     console.warn("Erro ao avançar status do item:", e);
     alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+// ----- Comandas (Restaurante/Bistro) -----
+
+let _comandasOpenByTable = {};
+
+async function loadComandas(){
+  const emptyEl = document.getElementById("comandaTablesEmpty");
+  const gridEl = document.getElementById("comandaTablesGrid");
+
+  try{
+    const [tablesRes, comandasRes] = await Promise.all([
+      fetch("/comandas/tables", { credentials: "same-origin" }),
+      fetch("/comandas", { credentials: "same-origin" }),
+    ]);
+    if(!tablesRes.ok) return;
+    const tables = await tablesRes.json();
+    const openComandas = comandasRes.ok ? await comandasRes.json() : [];
+
+    _comandasOpenByTable = {};
+    openComandas.forEach(c => { _comandasOpenByTable[c.table_id] = c; });
+
+    if(!tables.length){
+      if(emptyEl) emptyEl.style.display = "flex";
+      if(gridEl) gridEl.style.display = "none";
+      return;
+    }
+    if(emptyEl) emptyEl.style.display = "none";
+    if(gridEl) gridEl.style.display = "grid";
+
+    gridEl.innerHTML = tables.map(t => {
+      const isFree = t.status === "livre";
+      const comanda = _comandasOpenByTable[t.id];
+      const totalLine = comanda ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">US$ ${Number(comanda.total_amount || 0).toFixed(2)}</div>` : "";
+      return `
+        <div class="card" style="cursor:pointer;padding:14px;text-align:center;${isFree ? "" : "border-color:#e0a30b"}" onclick="openComandaForTable(${t.id}, '${t.status}')">
+          <div style="font-weight:700;font-size:14px">${t.label}</div>
+          <span class="status-pill ${isFree ? "ok" : "warm"}" style="margin-top:6px;display:inline-block">${isFree ? T('comandas.tables.status.free', 'Livre') : T('comandas.tables.status.occupied', 'Ocupada')}</span>
+          ${totalLine}
+        </div>
+      `;
+    }).join("");
+  }catch(e){
+    console.warn("Erro ao carregar mesas/comandas:", e);
+  }
+}
+
+window.openNewRestaurantTableModal = function(){
+  openGenericModal(T('comandas.newTable.modalTitle', 'Nova mesa'), `
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('comandas.tables.title', 'Mesa')}</label>
+      <input type="text" id="newRestaurantTableLabel" autocomplete="off" placeholder="${T('comandas.newTable.labelPlaceholder', 'Ex: Mesa 4, Varanda 2')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+    </div>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="btn" type="button" onclick="submitNewRestaurantTable()">${T('comandas.newTable.submitBtn', 'Criar mesa')}</button>
+    </div>
+    <div id="newRestaurantTableMessage" class="generic-modal-message"></div>
+  `);
+};
+
+window.submitNewRestaurantTable = async function(){
+  const msg = document.getElementById("newRestaurantTableMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const label = (document.getElementById("newRestaurantTableLabel")?.value || "").trim();
+  if(!label){
+    if(msg){ msg.textContent = T('comandas.messages.tableLabelRequired', 'Informe o nome/número da mesa.'); msg.classList.add("error"); }
+    return;
+  }
+
+  try{
+    const res = await fetch("/comandas/tables", {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ label }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadComandas();
+  }catch(e){
+    console.warn("Erro ao criar mesa:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+window.deleteRestaurantTableUI = async function(tableId){
+  if(!confirm(T('comandas.tables.confirmDelete', 'Excluir esta mesa?'))) return;
+  try{
+    const res = await fetch(`/comandas/tables/${tableId}`, { method: "DELETE", credentials: "same-origin" });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+      return;
+    }
+    loadComandas();
+  }catch(e){
+    console.warn("Erro ao excluir mesa:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+window.openComandaForTable = async function(tableId, status){
+  try{
+    if(status === "livre"){
+      const res = await fetch("/comandas", {
+        method: "POST", credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ table_id: tableId }),
+      });
+      const data = await res.json();
+      if(!res.ok || !data.success){
+        alert(data.message || T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+      loadComandas();
+      openComandaDetailModal(data.id);
+    }else{
+      const existing = _comandasOpenByTable[tableId];
+      if(!existing){
+        alert(T('common.error.generic', 'Erro de conexão.'));
+        return;
+      }
+      openComandaDetailModal(existing.id);
+    }
+  }catch(e){
+    console.warn("Erro ao abrir comanda:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+window.openComandaDetailModal = function(comandaId){
+  openGenericModal(T('comandas.detail.modalTitleLoading', 'Comanda'), `<p style="color:var(--muted);font-size:13px">${T('common.loading', 'Carregando...')}</p>`, true);
+  loadComandaDetail(comandaId);
+};
+
+window.loadComandaDetail = async function(comandaId){
+  const bodyEl = document.getElementById("genericModalBody");
+  if(!bodyEl) return;
+
+  let comanda, menuItems;
+  try{
+    const [comandaRes, menuRes] = await Promise.all([
+      fetch(`/comandas/${comandaId}`, { credentials: "same-origin" }),
+      fetch("/kitchen/menu", { credentials: "same-origin" }),
+    ]);
+    if(!comandaRes.ok){
+      bodyEl.innerHTML = `<p style="color:var(--muted);font-size:13px">${T('common.error.generic', 'Erro de conexão.')}</p>`;
+      return;
+    }
+    comanda = await comandaRes.json();
+    menuItems = menuRes.ok ? await menuRes.json() : [];
+  }catch(e){
+    console.warn("Erro ao carregar comanda:", e);
+    bodyEl.innerHTML = `<p style="color:var(--muted);font-size:13px">${T('common.error.generic', 'Erro de conexão.')}</p>`;
+    return;
+  }
+
+  const titleEl = document.getElementById("genericModalTitle");
+  if(titleEl) titleEl.textContent = T('comandas.detail.modalTitle', 'Comanda — {table}', { table: comanda.table_label });
+
+  const activeItems = (comanda.items || []).filter(i => !i.voided);
+  const itemsHtml = activeItems.length ? activeItems.map(i => `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+      <div>
+        <div style="font-weight:600;font-size:13.5px">${i.quantity}x ${i.menu_item_name}</div>
+        <div style="color:var(--muted);font-size:12px">US$ ${Number(i.unit_price * i.quantity).toFixed(2)}${i.notes ? " · " + i.notes : ""}</div>
+      </div>
+      <button type="button" class="btn secondary" style="font-size:11px;padding:6px 10px" onclick="voidComandaItemUI(${comanda.id}, ${i.id})">${T('comandas.detail.voidBtn', 'Anular')}</button>
+    </div>
+  `).join("") : `<p style="color:var(--muted);font-size:13px">${T('comandas.detail.itemsEmpty', 'Nenhum item lançado ainda.')}</p>`;
+
+  const menuOptionsHtml = menuItems.map(m => `<option value="${m.id}">${m.name} — US$ ${Number(m.price || 0).toFixed(2)}</option>`).join("");
+  const addFormHtml = menuItems.length ? `
+    <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:10px">
+      <h3 style="margin:0 0 10px;font-size:14px">${T('comandas.detail.addItemTitle', 'Adicionar item')}</h3>
+      <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('comandas.detail.menuItemLabel', 'Item do cardápio')}</label>
+          <select id="comandaAddItemMenuId" style="width:100%">${menuOptionsHtml}</select>
+        </div>
+        <div style="grid-column:span 3">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('comandas.detail.quantityLabel', 'Quantidade')}</label>
+          <input type="number" min="1" value="1" id="comandaAddItemQuantity" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 3;display:flex;align-items:flex-end">
+          <button type="button" class="btn" style="width:100%" onclick="submitAddComandaItem(${comanda.id})">${T('comandas.detail.addBtn', 'Adicionar')}</button>
+        </div>
+        <div style="grid-column:span 12">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('comandas.detail.notesLabel', 'Observação (opcional)')}</label>
+          <input type="text" id="comandaAddItemNotes" autocomplete="off" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+      </div>
+    </div>
+  ` : `<p style="color:var(--muted);font-size:13px;margin-top:10px">${T('comandas.detail.noMenuItems', 'Cadastre itens no cardápio da Cozinha antes de lançar um pedido.')}</p>`;
+
+  bodyEl.innerHTML = `
+    <div id="comandaItemsList">${itemsHtml}</div>
+    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;padding-top:10px">
+      <span>${T('comandas.detail.totalLabel', 'Total')}</span>
+      <span>US$ ${Number(comanda.total_amount || 0).toFixed(2)}</span>
+    </div>
+    ${addFormHtml}
+    <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:14px">
+      <h3 style="margin:0 0 10px;font-size:14px">${T('comandas.detail.closeTitle', 'Fechar conta')}</h3>
+      <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--gap)">
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('comandas.detail.methodLabel', 'Forma de pagamento')}</label>
+          <input type="text" id="comandaCloseMethod" autocomplete="off" placeholder="${T('comandas.detail.methodPlaceholder', 'Ex: Dinheiro, Cartão, Pix')}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+        <div style="grid-column:span 6">
+          <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px">${T('comandas.detail.amountPaidLabel', 'Valor pago')}</label>
+          <input type="number" step="0.01" min="0" id="comandaCloseAmount" value="${Number(comanda.balance || 0).toFixed(2)}" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:11px 12px;">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px">
+        <button class="btn" type="button" onclick="submitCloseComanda(${comanda.id})">${T('comandas.detail.closeBtn', 'Fechar conta')}</button>
+      </div>
+    </div>
+    <div id="comandaDetailMessage" class="generic-modal-message"></div>
+  `;
+};
+
+window.submitAddComandaItem = async function(comandaId){
+  const msg = document.getElementById("comandaDetailMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const menuItemId = Number(document.getElementById("comandaAddItemMenuId")?.value);
+  const quantity = Number(document.getElementById("comandaAddItemQuantity")?.value) || 1;
+  const notes = (document.getElementById("comandaAddItemNotes")?.value || "").trim();
+
+  try{
+    const res = await fetch(`/comandas/${comandaId}/items`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ menu_item_id: menuItemId, quantity, notes }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    loadComandaDetail(comandaId);
+    loadComandas();
+  }catch(e){
+    console.warn("Erro ao adicionar item na comanda:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+window.voidComandaItemUI = async function(comandaId, itemId){
+  try{
+    await fetch(`/comandas/${comandaId}/items/${itemId}`, { method: "DELETE", credentials: "same-origin" });
+    loadComandaDetail(comandaId);
+    loadComandas();
+  }catch(e){
+    console.warn("Erro ao anular item da comanda:", e);
+    alert(T('common.error.generic', 'Erro de conexão.'));
+  }
+};
+
+window.submitCloseComanda = async function(comandaId){
+  const msg = document.getElementById("comandaDetailMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const method = (document.getElementById("comandaCloseMethod")?.value || "").trim();
+  const amountPaid = document.getElementById("comandaCloseAmount")?.value;
+
+  try{
+    const res = await fetch(`/comandas/${comandaId}/close`, {
+      method: "POST", credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ method, amount_paid: amountPaid === "" ? null : Number(amountPaid) }),
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
+      return;
+    }
+    closeGenericModal();
+    loadComandas();
+  }catch(e){
+    console.warn("Erro ao fechar comanda:", e);
+    if(msg){ msg.textContent = T('common.error.generic', 'Erro de conexão.'); msg.classList.add("error"); }
   }
 };
 
@@ -13989,6 +14309,103 @@ window.uploadGuestDocumentUI = async function(guestId){
   }
 };
 
+const FLOOR_PLAN_TYPES = ['architectural', 'electrical', 'hydraulic', 'gas'];
+
+function floorPlanTypeLabel(type){
+  const fallback = { architectural: 'Arquitetônica', electrical: 'Elétrica', hydraulic: 'Hidráulica', gas: 'Gás' };
+  return T(`settings.floorPlans.type.${type}`, fallback[type] || type);
+}
+
+window.openFloorPlansModal = async function(){
+  openGenericModal(T('settings.floorPlans.title', 'Plantas do Imóvel'), `
+    <p style="margin-bottom:16px;color:var(--muted);font-size:13px">${T('settings.floorPlans.modalDesc', 'Envie as plantas do imóvel pra equipe consultar na hora de um chamado de manutenção.')}</p>
+    <div id="floorPlansSections">${T('common.loading', 'Carregando...')}</div>
+  `, true);
+  await loadFloorPlansIntoModal();
+};
+
+window.loadFloorPlansIntoModal = async function(){
+  const container = document.getElementById("floorPlansSections");
+  if(!container) return;
+  try{
+    const res = await fetch("/settings/floor-plans", { credentials: "same-origin" });
+    const data = await res.json();
+    const plans = (data.success && data.plans) || [];
+    container.innerHTML = FLOOR_PLAN_TYPES.map(type => {
+      const items = plans.filter(p => p.plan_type === type);
+      const itemsHtml = items.length
+        ? items.map(p => `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)">
+              <a href="/settings/floor-plans/${p.id}/file" target="_blank" rel="noopener">${escapeHtml(p.label || floorPlanTypeLabel(type))}</a>
+              <button class="btn secondary" type="button" style="padding:4px 10px;font-size:12px" onclick="deleteFloorPlanUI(${p.id})">${T('settings.floorPlans.deleteBtn', 'Excluir')}</button>
+            </div>`).join("")
+        : `<span style="color:var(--muted);font-size:13px">${T('settings.floorPlans.empty', 'Nenhuma planta enviada ainda.')}</span>`;
+      return `
+        <div class="guest-profile-section" style="${type === 'architectural' ? 'border-top:0;padding-top:0;margin-top:0' : ''}">
+          <h4>${floorPlanTypeLabel(type)}</h4>
+          ${itemsHtml}
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="file" id="floorPlanFile_${type}" accept="image/jpeg,image/png,image/webp,application/pdf">
+            <input type="text" id="floorPlanLabel_${type}" placeholder="${T('settings.floorPlans.labelPlaceholder', 'Rótulo opcional, ex: Térreo')}" style="max-width:220px">
+            <button class="btn secondary" type="button" onclick="uploadFloorPlanUI('${type}')">${T('settings.floorPlans.addBtn', 'Adicionar')}</button>
+          </div>
+          <div id="floorPlanMsg_${type}" class="generic-modal-message"></div>
+        </div>`;
+    }).join("");
+  }catch(e){
+    container.innerHTML = `<p class="generic-modal-message error">${T('common.connectionError', 'Erro de conexão.')}</p>`;
+  }
+};
+
+window.uploadFloorPlanUI = async function(planType){
+  const msg = document.getElementById(`floorPlanMsg_${planType}`);
+  const fileInput = document.getElementById(`floorPlanFile_${planType}`);
+  const labelInput = document.getElementById(`floorPlanLabel_${planType}`);
+  msg.textContent = "";
+  msg.className = "generic-modal-message";
+
+  const file = fileInput.files[0];
+  if(!file){
+    msg.textContent = T('settings.floorPlans.noFileChosen', 'Escolha um arquivo primeiro.');
+    msg.classList.add("error");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("plan_type", planType);
+  if(labelInput.value.trim()) formData.append("label", labelInput.value.trim());
+
+  try{
+    const res = await fetch("/settings/floor-plans", { method: "POST", credentials: "same-origin", body: formData });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success){
+      msg.textContent = data.message || T('settings.floorPlans.uploadFailed', 'Não foi possível enviar a planta.');
+      msg.classList.add("error");
+      return;
+    }
+    await loadFloorPlansIntoModal();
+  }catch(e){
+    msg.textContent = T('common.connectionError', 'Erro de conexão.');
+    msg.classList.add("error");
+  }
+};
+
+window.deleteFloorPlanUI = async function(planId){
+  if(!confirm(T('settings.floorPlans.confirmDelete', 'Excluir esta planta?'))) return;
+  try{
+    const res = await fetch(`/settings/floor-plans/${planId}`, { method: "DELETE", credentials: "same-origin" });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success){
+      alert(data.message || T('common.connectionError', 'Erro de conexão.'));
+      return;
+    }
+    await loadFloorPlansIntoModal();
+  }catch(e){
+    alert(T('common.connectionError', 'Erro de conexão.'));
+  }
+};
+
 // ===== CHATS: /chats =====
 // loadChats() vive em assets/js/chats-live.js (versão completa: lista
 // clicável + perfil do hóspede). Havia uma definição duplicada aqui
@@ -15176,7 +15593,7 @@ window.uploadGuestDocumentUI = async function(guestId){
 <script src="assets/js/chats-live.js?v=1127"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1156"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1157"></script>
 <script>
 (function(){
   "use strict";
