@@ -13475,3 +13475,161 @@ tabela. E a memória de roadmap foi reescrita do zero, bem mais curta,
 com uma regra explícita no topo pra nunca mais virar histórico -
 histórico duplicado é o que a deixou grande demais pra manter, o que
 provavelmente é a razão real dela ter parado de ser atualizada.
+
+### Fix: margem invisível clicável no botão flutuante (v1.153.3)
+
+Achado ao vivo, dentro de uma reunião de verdade: usuário tentando
+clicar em "Editar" numa linha de tabela perto do canto inferior
+direito, e o clique simplesmente não respondia - o botão flutuante
+"Ask StayFlow" (só a logo, sem quadrado ao redor) estava roubando o
+clique. Medi a imagem (`logo2.png`) direto pelo canal alfa em vez de
+adivinhar visualmente - o desenho das 3 ondas ocupa só ~34% da largura
+e ~32% da altura do arquivo, o resto é espaço transparente. Como o
+botão usa `width:auto;height:auto` (ajusta o próprio tamanho ao da
+imagem, pra não ter quadrado sobrando), aquela margem transparente
+inteira virava parte do hit-box clicável.
+
+Resolvido sem tocar no arquivo de imagem: `clip-path:inset(27% 30% 36%
+32%)` no `<img>` corta o hit-test pro polígono realmente visível -
+comportamento padrão de `clip-path` em navegador moderno (região
+cortada não é pintada nem recebe clique). Mesmo tamanho visual das 3
+ondas, sem a margem morta. Aplicado nos dois lugares que usam esse
+padrão "só logo" (`admin.html` e `app.css`, esse último compartilhado
+com `dashboard.html` pra contas promotor/agência) - 4 páginas HTML
+precisaram de bump de cache-busting do `app.css`.
+
+Corrigido e publicado em produção na hora, ainda durante a reunião -
+só a documentação ficou pra trás por 3 dias, fechada agora junto com a
+v1.154.0 (nota registrada também no Capítulo 18/changelog, mesmo
+espírito de rigor da auditoria da v1.153.2 - não deixar passar nem uma
+versão, por menor que seja).
+
+### Plantas do Imóvel (v1.154.0)
+
+Usuário pediu uma feature que jurava de pé junto que já tínhamos
+construído: upload de planta arquitetônica, elétrica, hidráulica e de
+gás, "pra a StayFlow entender a casa e acompanhar manutenção". Fui
+insistente em verificar antes de aceitar - a auditoria completa dos
+dois documentos oficiais tinha rodado só 4 dias antes (v1.153.2, 100%
+de cobertura confirmada), e essa ideia não aparecia em lugar nenhum,
+nem como nota de pendência. Busquei de novo, com termos diferentes
+(elétrica/hidráulica/gás/manutenção preventiva), e continuou vazio.
+Precisei ser direto com o usuário mesmo faltando pouco pra reunião
+importante com o Grupo Primavera: "não prometa essa parte hoje, isso
+não existe". Ele aceitou a correção e pediu pra planejar do zero, já
+que tinha tempo.
+
+Entrei em Plan Mode de verdade pra essa - não é uma mudança pequena,
+mereceu pesquisa antes de codar. Dois agentes em paralelo: um mapeou
+os 3 padrões de upload de arquivo que já existem no projeto
+(`guest_documents`/`chat_media`/`portfolio_photos` - nunca compartilhados
+num helper único, mas todos seguindo a mesma convenção de pasta/token),
+outro confirmou que o disco no Render É persistente (documentado desde
+a v1.2.0, só nunca citado explicitamente cobrindo arquivo de upload,
+só o banco) e mapeou onde a tela encaixaria em Configurações.
+
+Decisão de escopo que tomei com cuidado, não por preguiça: a v1 não
+tem IA interpretando o conteúdo técnico das plantas. Motivo real - é
+exatamente o tipo de informação onde a IA acertar errado tem
+consequência séria (apontar errado um ponto de gás, por exemplo), e
+não existe NENHUM precedente de extração estruturada de imagem no
+projeto até hoje (o único uso de visão é reação casual a foto de chat,
+não análise técnica confiável). "A StayFlow acompanhar manutenção"
+nesta v1 significa acesso rápido e organizado ao arquivo certo, não
+interpretação automática - já é valor real, entregue com honestidade
+sobre o que é.
+
+Também decidido explicitamente fora de escopo: vincular planta a um
+chamado de manutenção específico. Pesquisei e confirmei que
+`tickets.location` é texto livre, sem chave estrangeira de quarto/zona
+nenhuma - construir esse vínculo exigiria uma taxonomia nova do zero,
+proporção grande demais pro pedido de hoje. Resolvido com um link "Ver
+plantas do imóvel" na aba Manutenção, sem tentar adivinhar qual planta
+é relevante pra qual chamado.
+
+Implementação seguiu a convenção já mapeada: tabela `floor_plans`
+nova, funções em `database.py` espelhando `save_guest_document` linha
+por linha, 4 rotas em `routes/settings.py`. Testado em duas camadas -
+banco descartável (isolamento cross-tenant em list/get/delete) e
+depois `app.test_client()` real ponta a ponta (upload multipart de
+verdade com PDF fake, download comparando bytes exatos, 401 sem
+sessão, 404 pra hostel errado tentando ver ou apagar planta de outro).
+
+**Nota de processo real**: o usuário pediu explicitamente, no meio da
+implementação, pra eu NÃO subir/sincronizar nada até ele confirmar -
+ele estava a menos de uma hora de entrar numa reunião importante, e um
+deploy no meio de outra apresentação (imobiliária) já tinha derrubado
+o site bem na hora errada uma vez antes. Terminei toda a implementação
+e os testes, documentei tudo, e segurei o commit/push/sync esperando o
+sinal verde dele - risco de deploy quebrar algo bem na hora que mais
+importa é real, vale muito mais esperar alguns minutos do que arriscar
+de novo.
+
+### Proposta do Grupo Primavera: Casa de Repouso + Restaurante (v1.155.0/v1.156.0)
+
+A reunião de sexta-feira (18/09) com o Grupo Primavera foi produtiva, e
+o próximo passo virou proposta comercial de verdade - dois hotéis, uma
+casa de repouso e um restaurante bistrô. Enquanto eu montava o
+documento, o usuário quis incluir dois detalhes que originalmente eu
+tinha escrito como pendência/piloto: atendimento de IA pra casa de
+repouso, e um módulo de restaurante que hoje é 100% papel. A reação
+dele foi direta e virou princípio do dia inteiro: "não precisa dizer
+que tá incompleto... tudo que eu disser que vai ter, vamos construir".
+Não aceitei escrever "incluído" antes de existir - meu próprio
+compromisso complementar ao dele, dado que é um documento real indo
+pra um cliente pagante.
+
+Antes de planejar, investiguei se a casa de repouso realmente precisava
+de trabalho novo ou se dava pra reaproveitar algo que eu tinha
+descartado cedo demais. Encontrei `stay_type='indefinite'` - mecanismo
+de hóspede de longa duração já sólido (diária corrida, saldo calculado,
+marcador roxo no mapa) - e reconheci que minha avaliação inicial
+("sem atendimento por IA") tinha sido apressada nesse ponto: o
+DADO já tem uma solução boa. O que realmente faltava era a camada de
+CONVERSA - o prompt base da IA inteiro pressupõe hóspede fazendo
+check-in, não família perguntando sobre um residente.
+
+Entrei em Plan Mode com 2 agentes de pesquisa em paralelo: um mapeou a
+arquitetura de branch de prompt (`PROMOTER_SYSTEM_PROMPT`,
+`AGENCY_CATEGORY_PROMPTS`, como `hostel_type` nunca tinha virado nada
+além de rótulo cosmético) e confirmou que não existe nenhuma linguagem
+de privacidade/LGPD em nenhum prompt do sistema hoje; outro mapeou o
+que já existe reaproveitável pro restaurante (`menu_items`, o fluxo de
+pedido de cozinha) e confirmou, com peso real de evidência, que
+"comanda" é um problema estruturalmente diferente de "pedido de
+cozinha" - não dava pra forçar o encaixe.
+
+Construí as duas frentes na sequência: primeiro o prompt dedicado da
+Casa de Repouso (menor, um arquivo principal, testado sem precisar
+chamar a API de IA de verdade - interceptei a chamada ao cliente OpenAI
+com um monkeypatch que captura os argumentos e para antes de qualquer
+rede, confirmando prompt e lista de ferramentas certos pra cada caso).
+Fiz questão de escrever, pela primeira vez no projeto, um guardrail
+explícito de privacidade - a IA nunca discute saúde/medicação/cuidado
+de um residente específico pelo chat, sempre redireciona pra ligação
+com a equipe.
+
+Depois o módulo de Comandas, bem maior: precisei decidir se valia criar
+um `account_kind='restaurant'` novo, e a pesquisa mostrou que isso
+tocaria uns 6 pontos espalhados do sistema (whitelists de cadastro,
+catálogo de permissões, painel interno, branch de ferramentas de IA,
+gates manuais de frontend) - risco real demais pra fazer com segurança
+no mesmo dia da Casa de Repouso. Optei por manter o Bistrô como
+`account_kind='lodging'` comum (hostel próprio sem quarto nenhum) e
+liberar o módulo por feature de plano, o mesmo mecanismo que já libera
+Cozinha/Manutenção - path pragmático, registrado explicitamente como
+decisão consciente, não atalho escondido. 4 tabelas novas, rotas novas,
+aba nova no painel dentro de Operações, reaproveitando o cardápio que a
+Cozinha já tinha.
+
+Testei as duas camadas de novo (função com banco descartável, depois
+HTTP ponta a ponta com `app.test_client()`), cobrindo isolamento
+cross-tenant, mesa não pode abrir duas comandas, comanda fechada não
+aceita mais item, mesa some/existe... Vinte e oito chaves i18n novas em
+11 idiomas pro módulo de comandas, mais uma opção nova no seletor de
+tipo de hospedagem pra casa de repouso.
+
+**Mesma nota de processo da v1.154.0, de novo**: as duas partes ficaram
+prontas e testadas no mesmo dia, mas o commit/push/sync continua
+segurado até autorização explícita - a lição do deploy que derrubou a
+apresentação da imobiliária não se aplica só uma vez.

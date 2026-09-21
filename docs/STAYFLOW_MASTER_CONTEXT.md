@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.153.2
+\*\*Versão:\*\* 1.156.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 14/09/2026
+\*\*Última atualização:\*\* 21/09/2026
 
 
 
@@ -401,6 +401,14 @@
 | 1.153.1 | 14/09/2026 | Oficial | **Duas frentes pro contato automático de prospecção que ficou de fora da v1.153.0**: usuário perguntou se dava pra contornar a exigência de aprovação de template da Meta, e pediu pra deixar as duas frentes prontas — a de verdade (submissão do template) E o contorno (funciona já). **Contorno**: em vez da IA mandar a mensagem sozinha pela Cloud API (só permitido com template aprovado fora da janela de 24h), nova seção "Abordar um contato específico" no `PromoterDashboard.html` — promotor digita nome+WhatsApp de um prospect que ele mesmo encontrou, `POST /promoter/prospects` (`routes/promoter.py`) monta uma mensagem formal pronta (tom já padronizado: "StayFlow Solutions" por extenso, sem gíria) e devolve um link `wa.me/<numero>?text=<mensagem>` — o promotor abre e manda ele mesmo, pelo PRÓPRIO WhatsApp (app, não API), então nenhuma regra de template se aplica (quem envia é uma pessoa, não o sistema). `create_lead` ganhou parâmetro `notify=False` pra esse caminho — diferente de um lead que respondeu de verdade (sinal real de interesse), aqui é só um alvo que o promotor ainda vai abordar, nada aconteceu ainda; notificar o Caio nesse momento seria ruído. **Template de verdade**: novo `services/meta_oauth_service.py::submit_prospect_message_template`/`get_prospect_message_template_status`, usando o `waba_id`/`access_token` que o PRÓPRIO promotor já tem salvo desde que conectou o WhatsApp (`POST /{waba_id}/message_templates` da Graph API) — categoria `MARKETING` (é prospecção comercial pra quem nunca falou com a StayFlow, não suporte a cliente existente, que seria `UTILITY` e a Meta rejeitaria por classificação errada). Ponto importante que mudou o desenho: a aprovação de template é POR CONTA DE NEGÓCIO (WABA), não por app — cada promotor que quiser o contato automático de verdade precisa submeter e ser aprovado na PRÓPRIA WABA dele, não é algo que a StayFlow faz uma vez só centralizadamente. Novos botões "Enviar pra aprovação da Meta"/"Verificar status" no `PromoterDashboard.html`, visíveis só quando o promotor já tem WhatsApp conectado. Testado com banco descartável: `create_lead(notify=False)` não quebra nem manda push, geração da mensagem formal + link `wa.me` corretos (nome do promotor extraído do usuário, telefone normalizado só dígitos, texto URL-encoded certo), e as duas funções novas do `meta_oauth_service` falham graciosamente (sem crash) quando o promotor ainda não conectou WhatsApp nenhum. |
 
 | 1.153.2 | 14/09/2026 | Oficial | **Auditoria completa de continuidade dos dois documentos oficiais** — terceira vez que este mecanismo é acionado (ver v1.38.0/v1.46.0 no Capítulo 18 pras duas anteriores), desta vez motivada por uma memória leve de roadmap (fora destes documentos) ter ficado desatualizada 7+ dias sem ser notada, o que levantou a suspeita de que os documentos oficiais também pudessem ter gaps. Executada via 7 agentes em paralelo lendo os dois arquivos inteiros em blocos sequenciais (protocolo do skill `document-audit`), cruzando cada versão contra os 142 commits com número de versão do git. Achados reais corrigidos: cabeçalho/fechamento do Master Context travados em v1.64.0 havia ~89 versões enquanto a tabela de changelog já estava em dia; Capítulo 16 (inventário de funcionalidades) congelado na mesma v1.64.0, sem nenhuma seção pras ~89 versões seguintes — fechado com 12 novas seções consolidadas por capacidade/era (16.38-16.49) mais nota de continuidade explícita, mesmo padrão já usado no Capítulo 18 pro gap de 1.7.0-1.37.0; linha de changelog rotulada "1.147.1" que na verdade descrevia a v1.147.2 (CRECI/CNPJ) — corrigida, e a v1.147.1 real (fix do campo de Access Token mascarado) documentada pela primeira vez; v1.150.4 ausente da tabela inteira, junto com uma reversão de decisão de escopo nunca registrada; erro factual real (dizia que não existia tela de auditoria do Hub, entregue em 22/08/2026); Capítulo 17 (Roadmap) desatualizado, refeito. No Diário: 7 versões (v1.150.1 a v1.150.7) sem nenhuma entrada, apesar de cada uma ter commit próprio de documentação no git — todas escritas agora; mais uma afirmação desatualizada corrigida (algo listado como "pendente de confirmação do usuário" que a própria versão seguinte, no mesmo dia, já tinha resolvido). Memória de roadmap reescrita do zero (violava a própria regra que já tinha escrito, de nunca acumular histórico) com uma regra explícita de manutenção pra não repetir o gap. |
+
+| 1.153.3 | 15/09/2026 | Oficial | **Fix: botão flutuante Ask StayFlow com margem invisível clicável** — achado ao vivo pelo usuário durante uma reunião, tentando clicar em "Editar" numa linha de tabela perto do botão flutuante e o clique não respondia. Causa raiz: `logo2.png` tem bastante espaço transparente em volta do desenho das ondas (medido via bbox do canal alfa: o glifo ocupa só ~34% da largura e ~32% da altura do arquivo). Como o botão "só logo" (sem quadrado ao redor — usado em `admin.html` e por contas promotor/agência no dashboard) ajusta a própria largura/altura ao tamanho da imagem (`width:auto;height:auto`), a margem transparente inteira ficava dentro do hit-box do botão, roubando clique de qualquer elemento posicionado atrás dele perto do canto inferior direito. Corrigido com `clip-path:inset(27% 30% 36% 32%)` no `<img>` — corta o hit-test pro polígono visível (comportamento padrão de `clip-path` em navegadores modernos), sem editar o arquivo de imagem e sem mudar o tamanho visual das 3 ondas. Aplicado em `admin.html` (`.ask-floating-bare`) e `static/css/app.css` (regra usada por `dashboard.html` pras contas promotor/agência) — 4 páginas HTML precisaram de bump de cache-busting do `app.css` compartilhado. **Nota de processo**: esta versão foi corrigida e publicada ao vivo durante a própria reunião (achado real, resolvido em minutos), mas só documentada agora, 3 dias depois, junto com a v1.154.0 — gap pequeno de disciplina, corrigido no mesmo espírito da auditoria da v1.153.2 (não deixar passar mesmo uma versão). |
+
+| 1.154.0 | 18/09/2026 | Oficial | **Plantas do Imóvel** — usuário pediu uma feature que acreditava já existir (upload de planta arquitetônica/elétrica/hidráulica/gás pra "a StayFlow entender a casa"); auditoria dos dois documentos oficiais (só 4 dias antes) confirmou que nunca tinha sido construída nem discutida — feature nova de verdade, planejada com cuidado antes de codar (Plan Mode, 2 agentes de pesquisa em paralelo). **Decisão de escopo deliberada**: v1 é um repositório organizado de arquivo por tipo, SEM IA interpretando o conteúdo técnico dos desenhos — risco de segurança real demais (a IA acertar errado um ponto elétrico/gás é o tipo de erro que pode machucar gente), sem nenhum precedente de extração estruturada de imagem no projeto hoje. Nova tabela `floor_plans` (`hostel_id, plan_type, label, file_path, mime_type`, `plan_type` em `{architectural, electrical, hydraulic, gas}`, permite múltiplas plantas do mesmo tipo — hotel com mais de um andar/bloco), seguindo a MESMA convenção de armazenamento já usada por `guest_documents`/`chat_media`/`portfolio_photos` (nunca compartilhada num helper único até hoje, mas confirmada em disco persistente do Render — Capítulo 12.8). 4 rotas novas em `routes/settings.py` (`GET/POST /settings/floor-plans`, `GET .../\<id\>/file`, `DELETE .../\<id\>`), todas `@require_permission("settings")` e escopadas por `hostel_id` (nunca confiar em id cru — testado explicitamente). Novo card em Configurações (grupo "Empresa", `data-required-account-kind="lodging"`) e link "Ver plantas do imóvel" na aba Manutenção — sem tentar vincular planta a chamado específico (tickets não têm FK de quarto/zona hoje, seria escopo grande demais pra esta rodada; fica pra v2 se o cliente pedir depois de ver a v1 funcionando). 15 chaves i18n novas em 11 idiomas. Testado com banco descartável (isolamento cross-tenant em list/get/delete) e com `app.test_client()` real ponta a ponta (upload multipart de verdade, download com conteúdo conferido byte a byte, 401 sem sessão, 404 pra hostel errado tentando ver/apagar planta de outro). **Nota de processo**: implementado e testado, mas publicação segurada a pedido explícito do usuário — reunião importante em andamento, e um deploy no meio já tinha derrubado uma apresentação anterior (imobiliária). Só sincronizado/publicado depois de confirmação direta. |
+
+| 1.155.0 | 21/09/2026 | Oficial | **Prompt dedicado de IA pra Casa de Repouso** — parte 1 de 2 do trabalho pra proposta comercial do Grupo Primavera (que inclui uma casa de repouso entre as 4 unidades), sob a regra do usuário "tudo que eu disser que vai ter, vamos construir": nada entra na proposta como incluído antes de existir de verdade. Planejado em Plan Mode com 2 agentes de pesquisa em paralelo. Investigação confirmou que `hostel_type` nunca tinha virado nada além de um rótulo cosmético (`{hostel_type_label}`, uma palavra numa frase) — o prompt base de hospedagem (`SYSTEM_PROMPT`) é inteiramente centrado em "colete datas, feche reserva sozinho, rode o checklist de registro de hóspede (nome/nacionalidade/data de nascimento/foto de documento)", errado pra uma família perguntando sobre um residente. Novo `NURSING_HOME_SYSTEM_PROMPT` em `services/ai_service.py`, primeiro branch de prompt por `hostel_type` do sistema (`hostel_type == "Casa de Repouso"`, valor salvo pelo seletor de Configurações, nova opção nos 11 idiomas) — segue a mesma estrutura de `PROMOTER_SYSTEM_PROMPT` (negação explícita de identidade logo na abertura: não é hotel, quem escreve quase sempre é familiar/responsável, nunca a própria pessoa residente) e do padrão "colher interesse + agendar visita, nunca fechar sozinho" já usado por `AGENCY_CATEGORY_PROMPTS\["imobiliaria"\]`. Ferramentas concedidas deliberadamente mínimas (`SAVE_GUEST_NAME_TOOL`, `SAVE_GUEST_LANGUAGE_TOOL`, `CAPTURE_LEAD_TOOL`, `GET_OFFERINGS_TOOL`) — NUNCA `create_reservation` (autônomo, sem aprovação humana) nem `save_guest_date_of_birth`/`save_guest_nationality` (checklist de check-in de hóspede de hotel, sem sentido pra admissão de residente). **Guardrail novo, inédito no projeto**: cláusula de privacidade não-sobreponível por instrução customizada (mesmo padrão de "nunca sobreposto" já usado em `_custom_instructions_section`) proibindo a IA de discutir condição de saúde/medicação/detalhes de cuidado de um residente específico pelo chat, redirecionando sempre pra ligação com a equipe — nenhuma linguagem de LGPD/privacidade/dado sensível existia em nenhum prompt do sistema até agora. Testado sem chamada real à API de IA: `.format()` do template novo confirmado sem `KeyError`, e a seleção de prompt/ferramentas testada interceptando a chamada ao cliente OpenAI (monkeypatch que captura os argumentos e para antes da chamada de rede) pra confirmar que `hostel_type="Casa de Repouso"` escolhe o prompt certo e nunca inclui as ferramentas de reserva, enquanto `hostel_type="hotel"`/vazio continuam no fluxo genérico normal. |
+
+| 1.156.0 | 21/09/2026 | Oficial | **Módulo de Comandas (Restaurante/Bistrô)** — parte 2 de 2 do trabalho pra proposta do Grupo Primavera (mesma regra "só promete o que já existe"), pro Restaurante Bistrô que hoje roda 100% manual (comanda de papel). Planejado em Plan Mode com 2 agentes de pesquisa em paralelo, que confirmaram: `menu_items` (tabela já existente do módulo de Cozinha) tem exatamente a forma de um cardápio, reaproveitável direto; o fluxo de pedido de cozinha (`tickets` tipo `kitchen_order`) resolve PRODUÇÃO (a cozinha fez/entregou?), não COMANDA (conta de uma mesa acumulando pedidos até fechar com pagamento) — problema estruturalmente diferente, sem nenhum precedente de "mesa" no sistema; e que criar um `account_kind='restaurant'` novo tocaria ~6 pontos espalhados do sistema (3 whitelists em `routes/auth.py`, `permissions_for_account_kind`, o branch binário `is_agency` de `routes/stayflow_admin.py`, o branch de ferramentas de IA, gates manuais de `dashboard.html`) — arriscado demais pra um único dia junto com a Casa de Repouso. **Decisão**: Bistrô continua `account_kind='lodging'` (hostel próprio, sem quartos), módulo liberado por feature de plano nova (`"comandas"`, mesmo mecanismo que já libera `"kitchen"`/`"maintenance"` — adicionada a `OPS_BUNDLE_FEATURES` e aos planos Business/Enterprise) e por permissão nova (`"comandas"` em `utils/permissions.py`). 4 tabelas novas em `database.py` (`restaurant_tables`, `comandas`, `comanda_items` com `unit_price` travado no lançamento — mesmo princípio de `kitchen_order_items` —, `comanda_payments`), seguindo o padrão de saldo sob-demanda já usado por `get_reservation_balance`/`reservation_payments` (nunca campo cacheado). Novo blueprint `routes/comandas.py` (8 rotas, todas `@require_permission("comandas")` + `@require_plan_feature("comandas")`, mesmo padrão de `routes/kitchen.py`) e nova aba "Comandas" dentro da página Operações (`dashboard.html`, grade de mesas livre/ocupada, modal de detalhe da comanda com lançamento/anulação de item e fechamento com pagamento) — reaproveita o cardápio e as rotas de `menu_items` já existentes do módulo de Cozinha, sem duplicar CRUD. 28 chaves i18n novas em 11 idiomas. Testado em duas camadas com banco descartável: função (abrir mesa → abrir comanda → total soma certo → anular item recalcula → isolamento cross-tenant em item/comanda/mesa → fechar com pagamento parcial mostra saldo certo → mesa volta a "livre" → recusa mexer em comanda fechada → recusa apagar mesa com comanda aberta) e HTTP ponta a ponta via `app.test_client()` (mesmas regras, incluindo 401 sem sessão e 404 cross-tenant). **Nota de processo**: as duas partes (1.155.0 e 1.156.0) implementadas e testadas no mesmo dia, mas publicação segurada até autorização explícita do usuário — mesma cautela já registrada na v1.154.0 (deploy no meio de reunião/apresentação já derrubou o site uma vez antes). Proposta comercial só será atualizada pra dizer "incluído" depois da confirmação de que pode subir. |
 
 \---
 
@@ -8352,6 +8360,109 @@ desta mesma sequência de trabalho.
 
 
 
+\## 16.50 Plantas do Imóvel
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.154.0, 18/09/2026).
+
+
+
+Repositório organizado de arquivo por tipo — arquitetônica, elétrica,
+hidráulica e gás — pra equipe consultar rápido na hora de um chamado
+de manutenção, sem depender de PDF perdido em pasta/e-mail. Nova
+tabela `floor\_plans`, permite múltiplas plantas do mesmo tipo (hotel
+com mais de um andar/bloco). Mesma convenção de armazenamento dos
+outros 3 buckets de arquivo já existentes (`guest\_documents`/
+`chat\_media`/`portfolio\_photos`) — disco persistente do Render
+confirmado (seção 12.8). Card novo em Configurações (grupo Empresa,
+só pra `account\_kind='lodging'`) e link direto na aba Manutenção.
+
+
+
+\*\*Decisão de escopo deliberada\*\*: SEM IA interpretando o conteúdo
+técnico das plantas — risco de segurança real demais (indicar errado
+um ponto elétrico/gás pode machucar gente), sem nenhum precedente de
+extração estruturada de imagem no projeto até hoje. Também sem vínculo
+automático planta↔quarto/chamado (tickets não têm FK de quarto/zona
+hoje) — fica pra v2 só se o cliente pedir depois de ver a v1
+funcionando.
+
+
+
+\---
+
+
+
+\## 16.51 Prompt dedicado de IA pra Casa de Repouso
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.155.0, 21/09/2026).
+
+
+
+Primeiro branch de prompt por `hostel\_type` do sistema (antes só um
+rótulo cosmético) — `hostel\_type == "Casa de Repouso"` escolhe
+`NURSING\_HOME\_SYSTEM\_PROMPT` em vez do `SYSTEM\_PROMPT` genérico de
+hospedagem, que é centrado em "colete datas, feche reserva sozinho,
+rode checklist de registro de hóspede" (errado pra uma família
+perguntando sobre um residente, não hóspede fazendo check-in). Segue a
+mesma estrutura de `PROMOTER\_SYSTEM\_PROMPT` (negação explícita de
+identidade) e o padrão "colher interesse + agendar visita, nunca
+fechar sozinho" já usado por `AGENCY\_CATEGORY\_PROMPTS\["imobiliaria"\]`.
+
+
+
+Ferramentas concedidas deliberadamente mínimas — nunca
+`create\_reservation` (autônomo, sem aprovação humana) nem
+`save\_guest\_date\_of\_birth`/`save\_guest\_nationality` (checklist de
+check-in de hotel). Guardrail de privacidade novo e não-sobreponível
+por instrução customizada: a IA nunca discute condição de
+saúde/medicação/cuidado de um residente específico pelo chat, sempre
+redireciona pra ligação com a equipe — primeira linguagem desse tipo
+em qualquer prompt do sistema.
+
+
+
+\---
+
+
+
+\## 16.52 Módulo de Comandas (Restaurante/Bistrô)
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.156.0, 21/09/2026).
+
+
+
+Sistema digital de mesas + comandas + fechamento de conta, pra
+substituir comanda de papel. 4 tabelas novas (`restaurant\_tables`,
+`comandas`, `comanda\_items`, `comanda\_payments`) — problema
+estruturalmente diferente do fluxo de pedido de cozinha já existente
+(`kitchen\_order\_items` resolve produção/entrega, não conta acumulando
+por mesa até fechar com pagamento). Reaproveita o cardápio
+(`menu\_items`) e as rotas de cardápio já existentes do módulo de
+Cozinha, sem duplicar CRUD. Total sempre calculado sob demanda, nunca
+campo cacheado — mesmo princípio de `get\_reservation\_balance`.
+
+
+
+\*\*Decisão de escopo deliberada\*\*: sem `account\_kind` novo — tocaria
+~6 pontos espalhados do sistema, arriscado demais pra um dia só.
+Bistrô continua `account\_kind='lodging'` (hostel próprio sem quartos),
+módulo liberado por feature de plano (`"comandas"`, mesmo mecanismo já
+usado por `"kitchen"`/`"maintenance"`) e permissão dedicada. Sem
+integração comanda↔cozinha nem divisão de conta entre pessoas na v1 —
+avaliar em v2 se o cliente pedir.
+
+
+
+\---
+
+
+
 \## 16.18 Critério para atualização
 
 
@@ -10098,4 +10209,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.153.2\*\*
+\*\*Fim da Versão Oficial 1.156.0\*\*
