@@ -28,7 +28,7 @@
 </script>
 <link rel="stylesheet" href="static/css/tokens.css?v=1125">
 <link rel="stylesheet" href="static/css/reset.css?v=1125">
-<link rel="stylesheet" href="static/css/app.css?v=1153">
+<link rel="stylesheet" href="static/css/app.css?v=1154">
 
 </head>
 
@@ -1300,7 +1300,7 @@ async function deleteRoleConfirm(roleId){
 
 <header class="topbar">
   <div>
-    <button class="btn secondary mobile-menu" onclick="toggleSidebar()">☰</button>
+    <button class="btn secondary mobile-menu" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-3px"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
     <h1 id="pageTitle" data-i18n="nav.dashboard">Dashboard</h1>
     <p id="pageSubtitle" data-i18n="topbar.subtitle.default">Visão geral inteligente da operação</p>
   </div>
@@ -1380,7 +1380,7 @@ async function deleteRoleConfirm(roleId){
           <span style="vertical-align:middle">Painel StayFlow</span>
         </button>
         <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
-          <span data-i18n="topbar.userMenu.logout">↪ Sair</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span data-i18n="topbar.userMenu.logout">Sair</span>
         </button>
       </div>
     </div>
@@ -1510,7 +1510,7 @@ async function deleteRoleConfirm(roleId){
 
     <!-- Operação -->
     <div class="card span-4" data-required-account-kind="lodging">
-      <h2 data-i18n="home.operation.title">Operação</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span><span data-i18n="home.operation.title">Operação</span></h2>
       <div class="ops-health">
         <div class="health-ring">
           <strong id="opsHealthScore">—</strong>
@@ -1524,7 +1524,7 @@ async function deleteRoleConfirm(roleId){
 
     <!-- Atividades de hoje -->
     <div class="card span-4">
-      <h2 data-i18n="home.timeline.title">Atividades de hoje</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span><span data-i18n="home.timeline.title">Atividades de hoje</span></h2>
       <div id="todayTimeline" class="timeline">
         <!-- O script live pode inserir .timeline-item aqui -->
       </div>
@@ -1538,7 +1538,7 @@ async function deleteRoleConfirm(roleId){
 
     <!-- Ações prioritárias -->
     <div class="card span-8">
-      <h2 data-i18n="home.priorityActions.title">Ações prioritárias</h2>
+      <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 2 15 8.5 22 9.5 17 14.5 18.5 21.5 12 18 5.5 21.5 7 14.5 2 9.5 9 8.5z"/></svg></span><span data-i18n="home.priorityActions.title">Ações prioritárias</span></h2>
       <table id="liveActivityTable" class="table">
         <thead>
           <tr>
@@ -1606,7 +1606,7 @@ async function deleteRoleConfirm(roleId){
     <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M9 15 15 9"/><path d="M10 6l1-1a4 4 0 0 1 6 6l-1 1"/><path d="M14 18l-1 1a4 4 0 0 1-6-6l1-1"/></svg></span><span data-i18n="referrals.linkTitle">Seu link de indicação</span></h2>
     <p style="color:var(--muted);font-size:13px;margin:6px 0 16px" data-i18n="referrals.linkDesc">Compartilhe com qualquer hospedagem — quando alguém se cadastrar por ele e virar cliente pagante, a comissão cai automaticamente pra você, todo mês.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px 16px">
-      <span style="font-size:16px;line-height:1">🔗</span>
+      <span style="font-size:16px;line-height:1"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
       <input id="promoterHomeLink" readonly style="flex:1;min-width:220px;background:transparent;border:none;font-family:ui-monospace,'SF Mono',Consolas,monospace;font-size:13px;color:#f7fbff;outline:none">
  <button class="btn secondary" type="button" onclick="copyPromoterHomeLink()"><span data-i18n="referrals.copyBtn">Copiar</span></button>
  <button class="btn" type="button" id="promoterHomeShareBtn" style="display:none" onclick="sharePromoterHomeLink()"><span data-i18n="referrals.shareBtn">Compartilhar</span></button>
@@ -1693,7 +1693,7 @@ async function deleteRoleConfirm(roleId){
       <input type="text" id="chatContactSearchInput" oninput="handleChatContactSearch(this.value)" placeholder="Buscar conversa ou contato salvo..." data-i18n-placeholder="chats.searchPlaceholder" style="width:100%;background:#02070d;border:1px solid var(--line);border-radius:15px;color:white;padding:10px 14px;flex:0 0 auto">
       <div id="chatContactSearchResults" style="display:none;flex:0 0 auto"></div>
       <div class="card chat-list" id="realChatList" style="flex:1;min-height:0">
-        <h2 data-i18n="chats.conversationsTitle">Conversas</h2>
+        <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8M8 12h5"/></svg></span><span data-i18n="chats.conversationsTitle">Conversas</span></h2>
         <!-- chats-live.js preenche esta área -->
         <div class="sf-empty" id="chatListEmpty">
           <div>
@@ -1706,9 +1706,9 @@ async function deleteRoleConfirm(roleId){
 
     <div class="card chat-window">
       <div class="chat-window-head">
-        <button type="button" class="chat-mobile-back" onclick="setChatMobileView('list')" data-i18n-title="common.back" title="Voltar">←</button>
+        <button type="button" class="chat-mobile-back" onclick="setChatMobileView('list')" data-i18n-title="common.back" title="Voltar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button>
         <h2 id="chatTitle" data-i18n="chats.defaultTitle" onclick="setChatMobileView('profile')" style="cursor:pointer">Conversa</h2>
-        <button type="button" class="chat-mobile-profile-btn" onclick="setChatMobileView('profile')" data-i18n-title="chats.guestProfileTitle" title="Perfil do hóspede">👤</button>
+        <button type="button" class="chat-mobile-profile-btn" onclick="setChatMobileView('profile')" data-i18n-title="chats.guestProfileTitle" title="Perfil do hóspede"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg></button>
       </div>
       <span id="chatMode" class="status-pill ai" data-i18n="chats.waitingConnection">Aguardando conexão</span>
       <span id="chatChance" class="status-pill cold">Score: —</span>
@@ -1718,8 +1718,8 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div class="chat-input" style="position:relative">
-        <button class="btn secondary" type="button" id="chatQuickReplyTrigger" onclick="toggleQuickReplyPicker(event)" data-i18n-title="chats.quickReplyTitle" title="Respostas rápidas" style="flex:0 0 auto">💬</button>
-        <button class="btn secondary" type="button" id="chatAttachPhotoTrigger" onclick="document.getElementById('chatPhotoInput').click()" data-i18n-title="chats.attachPhotoTitle" title="Anexar foto" style="flex:0 0 auto">📷</button>
+        <button class="btn secondary" type="button" id="chatQuickReplyTrigger" onclick="toggleQuickReplyPicker(event)" data-i18n-title="chats.quickReplyTitle" title="Respostas rápidas" style="flex:0 0 auto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8M8 12h5"/></svg></button>
+        <button class="btn secondary" type="button" id="chatAttachPhotoTrigger" onclick="document.getElementById('chatPhotoInput').click()" data-i18n-title="chats.attachPhotoTitle" title="Anexar foto" style="flex:0 0 auto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
         <input type="file" id="chatPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="sendPhotoToGuestUI(this)">
         <input id="chatMessageInput" data-i18n-placeholder="chats.inputPlaceholder" placeholder="Escrever mensagem como recepção...">
         <button class="btn green" type="button" id="chatSendBtn" data-mode="assume" onclick="chatPrimaryBtnClick(this)" data-i18n="chats.takeoverBtn">Assumir</button>
@@ -1732,7 +1732,7 @@ async function deleteRoleConfirm(roleId){
     <div class="card guest-profile">
       <div class="chat-window-head">
         <button type="button" class="chat-mobile-back" onclick="setChatMobileView('chat')" data-i18n-title="common.back" title="Voltar">←</button>
-        <h2 data-i18n="chats.guestProfileTitle">Perfil do hóspede</h2>
+        <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg></span><span data-i18n="chats.guestProfileTitle">Perfil do hóspede</span></h2>
       </div>
 
       <div class="smart-profile-hero">
@@ -1945,7 +1945,7 @@ async function deleteRoleConfirm(roleId){
         <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="6" rx="1.5"/><rect x="13" y="13" width="8" height="6" rx="1.5"/></svg></span><span data-i18n="roommap.title">Mapa de Quartos</span></h2>
         <div class="hostel-selector-wrap">
           <button type="button" class="btn secondary" id="roomMapActionsBtn" onclick="toggleRoomMapMenu(event)" data-i18n-title="roommap.actionsMenu.title" title="Ações">
-            ☰ <span data-i18n="roommap.actionsMenu.label">Ações</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:4px"><path d="M3 6h18M3 12h18M3 18h18"/></svg> <span data-i18n="roommap.actionsMenu.label">Ações</span>
           </button>
           <div id="roomMapActionsDropdown" class="hostel-selector-dropdown" style="display:none;min-width:240px;left:auto;right:0">
  <button type="button" class="hostel-selector-option" onclick="toggleRoomMapMenu();openCreateCategoryModal()"><span data-i18n="roommap.categories.title">Modalidades de quarto</span></button>
@@ -1969,7 +1969,7 @@ async function deleteRoleConfirm(roleId){
       <div class="sf-empty" id="roomMapEmpty">
         <div>
           <strong data-i18n="roommap.emptyTitle">Nenhum quarto cadastrado ainda.</strong>
-          <span data-i18n="roommap.emptyDesc2">Use o menu "☰ Ações" acima pra criar modalidades e quartos e montar o mapa da sua propriedade.</span>
+          <span data-i18n="roommap.emptyDesc2">Use o menu "Ações" acima pra criar modalidades e quartos e montar o mapa da sua propriedade.</span>
         </div>
       </div>
       <div class="bed-map-grid" id="roomMapGrid" style="display:none"></div>
@@ -2531,7 +2531,7 @@ async function deleteRoleConfirm(roleId){
   <div data-events-section="list" class="grid">
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="events.list.title">Eventos agendados</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span data-i18n="events.list.title">Eventos agendados</span></h2>
  <button type="button" class="btn primary" onclick="openNewEventModal()" data-i18n="events.list.addBtn">Novo evento</button>
       </div>
 
@@ -2559,7 +2559,7 @@ async function deleteRoleConfirm(roleId){
   <div data-events-section="spaces" class="grid" style="display:none">
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="events.spaces.title">Espaços para eventos</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M5 21V5a2 2 0 0 1 2-2h6l4 4v14"/><path d="M5 21h14"/><circle cx="14" cy="12" r="1"/></svg></span><span data-i18n="events.spaces.title">Espaços para eventos</span></h2>
  <button type="button" class="btn primary" onclick="openEventSpaceModal()" data-i18n="events.spaces.addBtn">Novo espaço</button>
       </div>
       <div class="sf-empty" id="eventSpacesEmpty">
@@ -2575,7 +2575,7 @@ async function deleteRoleConfirm(roleId){
   <div data-events-section="addons" class="grid" style="display:none">
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="events.addons.title">Adicionais e serviços extras</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M20 12v9H4v-9"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></span><span data-i18n="events.addons.title">Adicionais e serviços extras</span></h2>
  <button type="button" class="btn primary" onclick="openEventAddonModal()" data-i18n="events.addons.addBtn">Novo adicional</button>
       </div>
       <div class="sf-empty" id="eventAddonsEmpty">
@@ -2594,7 +2594,7 @@ async function deleteRoleConfirm(roleId){
   <div class="grid">
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="portfolio.title" id="portfolioSectionTitle">Meu Portfólio</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span><span data-i18n="portfolio.title" id="portfolioSectionTitle">Meu Portfólio</span></h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
  <button type="button" class="btn secondary" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openPasteListingModal()" data-i18n="portfolio.pasteListingBtn" style="display:none">Colar anúncio</button>
  <button type="button" class="btn primary" onclick="openPortfolioItemModal()" data-i18n="portfolio.addBtn">Novo item</button>
@@ -2650,7 +2650,7 @@ async function deleteRoleConfirm(roleId){
 <section id="partners" class="page">
   <div class="grid">
     <div class="card span-12">
-      <h2 style="margin:0 0 4px" data-i18n="partners.title">Parceiros</h2>
+      <h2 style="margin:0 0 4px"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><span data-i18n="partners.title">Parceiros</span></h2>
       <p style="color:var(--muted);font-size:13px;margin:0 0 14px" data-i18n="partners.subtitle">Ative itens de agências parceiras (turismo, aluguel de carro/bike/equipamento) pra oferecer aos seus hóspedes, mesmo sem ter esse serviço próprio.</p>
       <div class="sf-empty" id="partnersEmpty">
         <div>
@@ -2781,10 +2781,10 @@ async function deleteRoleConfirm(roleId){
 
     <div class="span-8">
 
-      <button class="btn secondary settings-mobile-back" type="button" onclick="settingsBackToMenu()">← <span data-i18n="common.back">Voltar</span></button>
+      <button class="btn secondary settings-mobile-back" type="button" onclick="settingsBackToMenu()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg> <span data-i18n="common.back">Voltar</span></button>
 
       <div class="card">
-        <h2 data-i18n="settings.systemStatus.title">Status do sistema</h2>
+        <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h2l1.5 3 2-6 1.5 3h2"/></svg></span><span data-i18n="settings.systemStatus.title">Status do sistema</span></h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <span class="status-pill ok" data-i18n="settings.systemStatus.frontendOnline">Frontend Online</span>
           <span id="statusBackendPill" class="status-pill cold">Backend: verificando...</span>
@@ -2795,7 +2795,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="geral" onclick="openGeneralSettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.general.title">Geral</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span data-i18n="settings.general.title">Geral</span></h2>
             <p class="settings-summary-desc" id="generalSettingsSummaryDesc" data-i18n="settings.general.summaryDesc">Nome da hospedagem e tipo de propriedade.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2805,7 +2805,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="geral" onclick="openImportDataModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.importData.title">Importar dados</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></span><span data-i18n="settings.importData.title">Importar dados</span></h2>
             <p class="settings-summary-desc" id="importDataSummaryDesc" data-i18n="settings.importData.desc">Já tem quartos e hóspedes numa planilha? Importe tudo de uma vez.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2835,7 +2835,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="empresa" onclick="openCompanySettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.company.title">Empresa</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1M9 13h1M14 9h1M14 13h1M9 21v-4h6v4"/></svg></span><span data-i18n="settings.company.title">Empresa</span></h2>
             <p class="settings-summary-desc" data-i18n="settings.company.desc">Dados legais, horários padrão e identidade visual da hospedagem.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2959,7 +2959,7 @@ async function deleteRoleConfirm(roleId){
       <div class="card settings-summary-card" data-settings-section="ia" onclick="openAISettingsModal()">
         <div class="settings-summary-row">
           <div>
-            <h2 data-i18n="settings.ai.title">IA StayFlow</h2>
+            <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 9h.01M15 9h.01"/><path d="M9 15c.83.67 1.87 1 3 1s2.17-.33 3-1"/></svg></span><span data-i18n="settings.ai.title">IA StayFlow</span></h2>
             <p class="settings-summary-desc" data-i18n="settings.ai.summaryDesc">Resposta automática, geração de oportunidades e instruções personalizadas da IA.</p>
           </div>
           <span class="settings-summary-chevron">›</span>
@@ -2977,7 +2977,7 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div class="card" data-settings-section="seguranca">
-        <h2 data-i18n="settings.security.title">Segurança</h2>
+        <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg></span><span data-i18n="settings.security.title">Segurança</span></h2>
 
         <h3 data-i18n="settings.security.activeSessionsTitle" style="margin:0 0 10px;font-size:14px;font-weight:800">Sessões ativas</h3>
         <p data-i18n="settings.security.activeSessionsDesc" style="font-size:12px;color:var(--muted);margin:0 0 10px">Dispositivos/navegadores com sessão válida hoje. Revogar uma sessão bloqueia o próximo acesso dela imediatamente.</p>
@@ -2995,7 +2995,7 @@ async function deleteRoleConfirm(roleId){
       </div>
 
       <div class="card" data-required-permission="billing" data-settings-section="billing" data-hide-for-account-kind="promoter">
-        <h2 data-i18n="settings.billing.title">Billing</h2>
+        <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><span data-i18n="settings.billing.title">Billing</span></h2>
         <div id="billingSummaryContent"><p style="color:var(--muted)" data-i18n="common.loading">Carregando...</p></div>
       </div>
 
@@ -3092,7 +3092,7 @@ async function deleteRoleConfirm(roleId){
   <div data-team-section="members" class="grid">
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="team.tab.members">Equipe</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.5 14c2.8.3 4.9 2.6 4.9 6" opacity=".6"/></svg></span><span data-i18n="team.tab.members">Equipe</span></h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
  <button class="btn secondary" type="button" data-required-account-kind="agency" data-required-agency-category="imobiliaria" onclick="openTeamWhatsappAuditModal()" data-i18n="team.whatsappAuditBtn" style="display:none">WhatsApp da equipe</button>
           <button class="btn primary" type="button" onclick="openInviteForm()" data-i18n="team.inviteBtn">+ Convidar</button>
@@ -3105,7 +3105,7 @@ async function deleteRoleConfirm(roleId){
   <div data-team-section="roles" class="grid" style="display:none">
     <div class="card span-12">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-        <h2 style="margin:0" data-i18n="team.tab.roles">Funções</h2>
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M8.5 13.5 6 22l6-3 6 3-2.5-8.5"/></svg></span><span data-i18n="team.tab.roles">Funções</span></h2>
         <button class="btn primary" type="button" onclick="openNewRoleForm()" data-i18n="team.newRoleBtn">+ Nova função</button>
       </div>
       <div id="rolesListContainer"></div>
@@ -3114,7 +3114,7 @@ async function deleteRoleConfirm(roleId){
 
   <div data-team-section="scheduling" class="grid" style="display:none">
     <div class="card span-12">
- <h2 data-i18n="attendance.title">Ponto</h2>
+ <h2><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5"/><path d="M9 2h6"/></svg></span><span data-i18n="attendance.title">Ponto</span></h2>
       <p id="attendanceStatusText" style="color:var(--muted);font-size:13px;margin:0 0 10px" data-i18n="attendance.loading">Carregando...</p>
       <button type="button" class="btn" id="attendanceToggleBtn" onclick="toggleAttendance()" data-i18n="attendance.clockInBtn">Bater ponto de entrada</button>
     </div>
@@ -3173,11 +3173,11 @@ async function deleteRoleConfirm(roleId){
 
   <div id="askFilePreview" style="display:none;align-items:center;gap:8px;padding:8px 14px;font-size:12.5px;color:var(--muted)">
     <span id="askFilePreviewName"></span>
-    <button type="button" onclick="askStayFlowClearFile()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0">✕</button>
+    <button type="button" onclick="askStayFlowClearFile()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="ask-input">
     <input type="file" id="askFileInput" accept="image/*" style="display:none" onchange="askStayFlowFileSelected(this)">
-    <button type="button" class="btn secondary" onclick="document.getElementById('askFileInput').click()" title="Anexar foto ou arquivo" style="min-width:unset;padding:0 12px">📷</button>
+    <button type="button" class="btn secondary" onclick="document.getElementById('askFileInput').click()" title="Anexar foto ou arquivo" style="min-width:unset;padding:0 12px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
     <input data-i18n-placeholder="ask.inputPlaceholder" placeholder="Pergunte algo sobre a operação...">
     <button class="btn" onclick="askStayFlowSend(this)" data-i18n="chats.sendBtn">Enviar</button>
   </div>
@@ -6604,7 +6604,7 @@ async function deleteRoleConfirm(roleId){
         const rolesWarningHtml = (data.roles_created_empty && data.roles_created_empty.length)
  ? `<p style="color:var(--yellow);font-size:12.5px;margin-top:8px">Função(ões) criada(s) sem nenhuma permissão: <strong>${data.roles_created_empty.join(", ")}</strong>. Vá em Equipe &gt; Funções e defina o acesso antes de avisar essas pessoas.</p>`
           : "";
-        previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${data.invited.length} pessoa(s) convidada(s).</p>${credentialsHtml}${rolesWarningHtml}${errorsHtml}`);
+        previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 13l4 4L19 7"/></svg>${data.invited.length} pessoa(s) convidada(s).</p>${credentialsHtml}${rolesWarningHtml}${errorsHtml}`);
       } else {
         const IMPORT_COUNT_LABELS = {
           rooms: `${data.created} quarto(s) criado(s)`,
@@ -6612,7 +6612,7 @@ async function deleteRoleConfirm(roleId){
           reservations: `${data.created} reserva(s) criada(s)`,
           portfolio: `${data.created} item(ns) de portfólio criado(s)`,
         };
-        previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px">✓ ${IMPORT_COUNT_LABELS[kind]}.</p>${errorsHtml}`);
+        previewEl.insertAdjacentHTML("beforeend", `<p style="color:var(--green);font-size:13px;margin-top:8px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M5 13l4 4L19 7"/></svg>${IMPORT_COUNT_LABELS[kind]}.</p>${errorsHtml}`);
       }
       btnEl.textContent = "Concluído";
 
@@ -7365,6 +7365,25 @@ async function deleteRoleConfirm(roleId){
     switchSettingsSection("geral");
   }
 
+  // Preenche todo ".sf-empty" que ainda nao tem icone com uma copia
+  // (maior, apagada) do nav-ico da propria secao/card - "auditoria e
+  // preenchimento" da limpeza de emoji (v1.157.0), sem precisar de 42
+  // edicoes manuais uma por uma: reaproveita o icone que a secao ja
+  // declarou no <h2>, em vez de desenhar um novo pra cada estado vazio.
+  function decorateEmptyStates(){
+    document.querySelectorAll(".sf-empty").forEach(empty => {
+      if(empty.querySelector(".sf-empty-icon")) return;
+      const container = empty.closest(".card") || empty.closest("section") || document;
+      const sourceIcon = container.querySelector(".nav-ico svg");
+      if(!sourceIcon) return;
+      const iconWrap = document.createElement("div");
+      iconWrap.className = "sf-empty-icon";
+      iconWrap.innerHTML = sourceIcon.outerHTML;
+      const textWrap = empty.querySelector("div") || empty;
+      textWrap.insertBefore(iconWrap, textWrap.firstChild);
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", ()=>{
     const active = $(".page.active")?.id || "dashboard";
     updateTopbar(active);
@@ -7372,6 +7391,7 @@ async function deleteRoleConfirm(roleId){
     bindEnterToSend();
     bindSettingsMenu();
     hydrateSettings();
+    decorateEmptyStates();
   });
 })();
 </script>
@@ -7974,7 +7994,7 @@ window.addGroupRoomBlock = function(){
       <option value="">${T('longTermStay.bedOptionNone', 'Sem cama (atribuir depois)')}</option>
     </select>
     <input type="number" step="0.01" class="nr-group-amount" placeholder="${T('reservations.newReservation.amountAutoPlaceholder', 'Calculado automaticamente se vazio')}" style="grid-column:span 3;background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:8px 10px;font-size:12px">
-    <span style="grid-column:span 1;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.7" onclick="this.closest('.nr-group-block').remove()" title="${T('reservations.group.removeRoomTitle', 'Remover quarto')}">✕</span>
+    <span style="grid-column:span 1;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.7" onclick="this.closest('.nr-group-block').remove()" title="${T('reservations.group.removeRoomTitle', 'Remover quarto')}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
   `;
   list.appendChild(block);
 };
@@ -8365,8 +8385,8 @@ function renderRoomMap(rooms){
           <div class="bed-room-meta">${room.category_name ? escapeHtml(room.category_name) : T('roommap.noCategoryLabel', 'Sem modalidade')}${room.floor ? " · " + escapeHtml(room.floor) : ""}</div>
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0">
-          <button type="button" onclick="editRoomUI(${room.id})" title="${T('roommap.room.editModalTitle', 'Editar quarto')}" style="background:none;border:1px solid var(--line);border-radius:8px;color:#7bc2ff;cursor:pointer;font-size:12px;padding:3px 7px">✎</button>
-          <button type="button" onclick="deleteRoomUI(${room.id}, '${room.name.replace(/'/g, "\\'")}')" title="${T('roommap.room.deleteBtn', 'Excluir quarto')}" style="background:none;border:1px solid var(--line);border-radius:8px;color:#ff8b8b;cursor:pointer;font-size:12px;padding:3px 7px">✕</button>
+          <button type="button" onclick="editRoomUI(${room.id})" title="${T('roommap.room.editModalTitle', 'Editar quarto')}" style="background:none;border:1px solid var(--line);border-radius:8px;color:#7bc2ff;cursor:pointer;font-size:12px;padding:3px 7px"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+          <button type="button" onclick="deleteRoomUI(${room.id}, '${room.name.replace(/'/g, "\\'")}')" title="${T('roommap.room.deleteBtn', 'Excluir quarto')}" style="background:none;border:1px solid var(--line);border-radius:8px;color:#ff8b8b;cursor:pointer;font-size:12px;padding:3px 7px"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
       <div class="bed-tiles">${tilesHtml || `<span style="font-size:12px;color:var(--muted)">${T('roommap.noBedsLabel', 'Sem camas cadastradas.')}</span>`}</div>
@@ -8702,7 +8722,7 @@ async function loadCategoryRates(categoryId){
     list.innerHTML = rules.map(r => `
       <div style="display:flex;justify-content:space-between;align-items:center;background:#0d1421;border:1px solid #ffffff14;border-radius:10px;padding:8px 10px;font-size:12px">
         <span><strong>${escapeHtml(r.name || T('rates.unnamed', 'Sem nome'))}</strong> · ${r.start_date} → ${r.end_date} · ${currencySymbol()} ${Number(r.price_per_night).toFixed(2)}</span>
-        <span style="cursor:pointer;opacity:.7" onclick="removeCategoryRate(${categoryId}, ${r.id})" title="${T('rates.removeTitle', 'Remover tarifa')}">✕</span>
+        <span style="cursor:pointer;opacity:.7" onclick="removeCategoryRate(${categoryId}, ${r.id})" title="${T('rates.removeTitle', 'Remover tarifa')}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
       </div>
     `).join("");
   }catch(e){
@@ -8967,8 +8987,8 @@ function categoryPillsHtml(categories){
     ? categories.map(c => `
         <span style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0;padding:4px 4px 4px 10px;border:1px solid var(--line);border-radius:999px">
           ${escapeHtml(c.name)}${c.capacity ? ` (${c.capacity})` : ""}${c.price_per_night ? ` · ${formatMoney(c.price_per_night)}${T('roommap.category.perNightSuffix', '/noite')}` : ""}
-          <button type="button" onclick="editCategoryUI(${c.id})" title="${T('roommap.category.editModalTitle', 'Editar modalidade')}" style="background:none;border:0;color:#7bc2ff;cursor:pointer;font-size:12px;padding:2px">✎</button>
-          <button type="button" onclick="deleteCategoryUI(${c.id}, '${c.name.replace(/'/g, "\\'")}')" title="${T('roommap.category.deleteBtn', 'Excluir modalidade')}" style="background:none;border:0;color:#ff8b8b;cursor:pointer;font-size:12px;padding:2px">✕</button>
+          <button type="button" onclick="editCategoryUI(${c.id})" title="${T('roommap.category.editModalTitle', 'Editar modalidade')}" style="background:none;border:0;color:#7bc2ff;cursor:pointer;font-size:12px;padding:2px"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+          <button type="button" onclick="deleteCategoryUI(${c.id}, '${c.name.replace(/'/g, "\\'")}')" title="${T('roommap.category.deleteBtn', 'Excluir modalidade')}" style="background:none;border:0;color:#ff8b8b;cursor:pointer;font-size:12px;padding:2px"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </span>
       `).join("")
     : T('roommap.noCategoriesYet', 'Nenhuma modalidade criada ainda.');
@@ -11589,13 +11609,23 @@ function updateAlertBadge(){
 // existia a contagem, sem nenhum lugar pra ver o conteudo de verdade).
 // Categoria vem do backend (routes/operations.py) junto com a pagina de
 // destino, pra clicar num alerta levar direto pra tela relacionada.
+// Icones inline SVG (mesmo estilo nav-ico/24x24, stroke-width 2) em vez
+// de emoji cru - substitui a caixa preta emoji-como-icone-de-UI (v1.157.0).
+const NOTIF_ICON_BELL_SERVICE = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 0 1 16 0z"/><path d="M2 15h20"/><circle cx="12" cy="7" r="1"/></svg>';
+const NOTIF_ICON_DOOR = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V5a2 2 0 0 1 2-2h6l4 4v14"/><path d="M5 21h14"/><circle cx="14" cy="12" r="1"/></svg>';
+const NOTIF_ICON_CHAT = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8M8 12h5"/></svg>';
+const NOTIF_ICON_PACKAGE = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>';
+const NOTIF_ICON_NEW = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>';
+const NOTIF_ICON_CLEANING = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>';
+const NOTIF_ICON_BELL_DEFAULT = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+
 const NOTIF_CATEGORY_META = {
-  checkin_checkout: { icon: "🛎️", labelKey: "notif.category.checkinCheckout", fallback: "Check-in/Check-out" },
-  arrival:          { icon: "🚪", labelKey: "notif.category.arrival", fallback: "Chegada" },
-  guest_urgent:     { icon: "💬", labelKey: "notif.category.guestUrgent", fallback: "Hóspede urgente" },
-  low_stock:        { icon: "📦", labelKey: "notif.category.lowStock", fallback: "Estoque baixo" },
-  new_reservation:  { icon: "🆕", labelKey: "notif.category.newReservation", fallback: "Nova reserva" },
-  cleaning:         { icon: "🧹", labelKey: "notif.category.cleaning", fallback: "Limpeza" },
+  checkin_checkout: { icon: NOTIF_ICON_BELL_SERVICE, labelKey: "notif.category.checkinCheckout", fallback: "Check-in/Check-out" },
+  arrival:          { icon: NOTIF_ICON_DOOR, labelKey: "notif.category.arrival", fallback: "Chegada" },
+  guest_urgent:     { icon: NOTIF_ICON_CHAT, labelKey: "notif.category.guestUrgent", fallback: "Hóspede urgente" },
+  low_stock:        { icon: NOTIF_ICON_PACKAGE, labelKey: "notif.category.lowStock", fallback: "Estoque baixo" },
+  new_reservation:  { icon: NOTIF_ICON_NEW, labelKey: "notif.category.newReservation", fallback: "Nova reserva" },
+  cleaning:         { icon: NOTIF_ICON_CLEANING, labelKey: "notif.category.cleaning", fallback: "Limpeza" },
 };
 
 let notifActiveFilter = "all";
@@ -11649,7 +11679,7 @@ function renderNotificationsPanel(){
 
   const allChip = `<button type="button" class="notif-filter-chip ${notifActiveFilter === "all" ? "active" : ""}" onclick="setNotifFilter('all')">${T('notif.filter.all', 'Todos')} (${alerts.length})</button>`;
   const categoryChips = categoriesPresent.map(cat => {
-    const meta = NOTIF_CATEGORY_META[cat] || { icon: "🔔", labelKey: null, fallback: cat };
+    const meta = NOTIF_CATEGORY_META[cat] || { icon: NOTIF_ICON_BELL_DEFAULT, labelKey: null, fallback: cat };
     const label = meta.labelKey ? T(meta.labelKey, meta.fallback) : meta.fallback;
     const count = alerts.filter(a => a.category === cat).length;
     return `<button type="button" class="notif-filter-chip ${notifActiveFilter === cat ? "active" : ""}" onclick="setNotifFilter('${cat}')">${meta.icon} ${label} (${count})</button>`;
@@ -11664,7 +11694,7 @@ function renderNotificationsPanel(){
   }
 
   listEl.innerHTML = filtered.map(a => {
-    const meta = NOTIF_CATEGORY_META[a.category] || { icon: "🔔" };
+    const meta = NOTIF_CATEGORY_META[a.category] || { icon: NOTIF_ICON_BELL_DEFAULT };
     return `<button type="button" class="notif-item" onclick="openNotificationAlert('${a.page}')"><span class="notif-item-icon">${meta.icon}</span><span>${escapeHtml(a.message)}</span></button>`;
   }).join("");
 }
@@ -12785,7 +12815,7 @@ window.openCameraSettingsModal = function(){
       </div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px">
-      <a id="openCamerasLink" href="#" target="_blank" rel="noopener" class="btn secondary" style="display:none">${T('patrimonialSecurity.integrations.openBtn', 'Abrir câmeras ↗')}</a>
+      <a id="openCamerasLink" href="#" target="_blank" rel="noopener" class="btn secondary" style="display:none">${T('patrimonialSecurity.integrations.openBtn', 'Abrir câmeras')} <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg></a>
       <button class="btn" type="button" onclick="saveCameraIntegration()">${T('common.save', 'Salvar')}</button>
     </div>
     <div id="cameraFeedPreviewWrap" style="display:none;margin-top:16px">
@@ -13922,7 +13952,7 @@ window.handleChatContactSearch = function(value){
         <div style="display:grid;gap:6px">
           ${contacts.map(c => `
             <div class="chat-item" style="cursor:default" onclick="startChatWithContactUI(${c.id})">
-              ${chatAvatarHtml(c.name, c.id, null, "📇")}
+              ${chatAvatarHtml(c.name, c.id, null, '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 9h4M15 13h4M6 16h6"/></svg>')}
               <div class="chat-item-body">
                 <div class="chat-name"><span>${escapeHtml(c.name)}</span></div>
                 <div class="chat-preview">${escapeHtml(c.phone || "")}</div>
@@ -14061,7 +14091,7 @@ function renderGuestProfileModal(profile, editMode){
         const isImage = (d.mime_type || "").startsWith("image/");
         return `
           <a class="guest-doc-thumb" href="/guests/documents/${d.id}/file" target="_blank" rel="noopener">
-            ${isImage ? `<img src="/guests/documents/${d.id}/file" alt="">` : `📄<br>${(d.mime_type || "").split("/")[1] || "arquivo"}`}
+            ${isImage ? `<img src="/guests/documents/${d.id}/file" alt="">` : `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg><br>${(d.mime_type || "").split("/")[1] || "arquivo"}`}
           </a>
         `;
       }).join("")
@@ -15517,7 +15547,7 @@ window.deleteFloorPlanUI = async function(planId){
 <script src="assets/js/chats-live.js?v=1127"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1157"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1158"></script>
 <script>
 (function(){
   "use strict";
