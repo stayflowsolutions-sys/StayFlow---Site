@@ -118,6 +118,18 @@
     </div>
   </div>
 
+  <div id="sfAlertOverlay" class="sf-alert-overlay">
+    <div class="sf-alert-modal" id="sfAlertModal">
+      <div class="sf-alert-icon">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5"/><path d="M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></svg>
+      </div>
+      <div class="sf-alert-message" id="sfAlertMessage"></div>
+      <input type="text" class="sf-alert-input" id="sfAlertInput" style="display:none">
+      <div class="sf-alert-actions" id="sfAlertActions"></div>
+    </div>
+  </div>
+
+  <script src="assets/js/stayflow-alert.js?v=1"></script>
   <script>
     const ICON_STAR_OUTLINE = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;margin-right:7px"><path d="M12 2 15 8.5 22 9.5 17 14.5 18.5 21.5 12 18 5.5 21.5 7 14.5 2 9.5 9 8.5z"/></svg>';
     const ICON_STAR_FILLED = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;margin-right:7px"><path d="M12 2 15 8.5 22 9.5 17 14.5 18.5 21.5 12 18 5.5 21.5 7 14.5 2 9.5 9 8.5z"/></svg>';
