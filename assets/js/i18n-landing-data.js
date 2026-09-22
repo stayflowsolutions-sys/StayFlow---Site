@@ -62,7 +62,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "High-standard hospitality,<br><em>operated with precision.</em>",
     "hero.text": "StayFlow is the digital manager your property deserves — <strong>hotels, resorts, hostels and guesthouses</strong>. It answers, negotiates and closes bookings across your channels, while your team handles what only a human can.",
 
-    "cta.demo": "Free trial →",
+    "cta.demo": "Free trial",
     "cta.dashboard": "View the cockpit",
     "cta.demo2": "Book a demo →",
     "hero.split.product": "StayFlow, up close",
@@ -213,7 +213,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "A hospitalidade de alto padrão,<br><em>operada com precisão.</em>",
     "hero.text": "A StayFlow é o gerente digital que sua hospedagem merece — <strong>hotéis, resorts, hostels e pousadas</strong>. Ela responde, negocia e fecha reservas pelos seus canais, enquanto sua equipe cuida do que só um humano pode fazer.",
 
-    "cta.demo": "Teste grátis →",
+    "cta.demo": "Teste grátis",
     "cta.dashboard": "Ver o cockpit",
     "cta.demo2": "Agendar demonstração →",
     "hero.split.product": "StayFlow por dentro",
@@ -364,7 +364,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "La hospitalidad de alto nivel,<br><em>operada con precisión.</em>",
     "hero.text": "StayFlow es el gerente digital que tu hospedaje merece — <strong>hoteles, resorts, hostels y posadas</strong>. Responde, negocia y cierra reservas en tus canales, mientras tu equipo se ocupa de lo que solo un humano puede hacer.",
 
-    "cta.demo": "Teste grátis →",
+    "cta.demo": "Teste grátis",
     "cta.dashboard": "Ver el cockpit",
     "cta.demo2": "Agendar demostración →",
     "hero.split.product": "StayFlow por dentro",
@@ -515,7 +515,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "L'hôtellerie haut de gamme,<br><em>opérée avec précision.</em>",
     "hero.text": "StayFlow est le gestionnaire digital que votre établissement mérite — <strong>hôtels, resorts, hostels et pensions</strong>. Il répond, négocie et conclut des réservations sur vos canaux, pendant que votre équipe s'occupe de ce que seul un humain peut faire.",
 
-    "cta.demo": "Essai gratuit →",
+    "cta.demo": "Essai gratuit",
     "cta.dashboard": "Voir le cockpit",
     "cta.demo2": "Planifier une démo →",
     "hero.split.product": "StayFlow de près",
@@ -666,7 +666,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "Gehobene Gastfreundschaft,<br><em>präzise gesteuert.</em>",
     "hero.text": "StayFlow ist der digitale Manager, den Ihre Unterkunft verdient — <strong>Hotels, Resorts, Hostels und Pensionen</strong>. Er antwortet, verhandelt und schließt Buchungen über Ihre Kanäle ab, während sich Ihr Team um das kümmert, was nur ein Mensch tun kann.",
 
-    "cta.demo": "Kostenlos testen →",
+    "cta.demo": "Kostenlos testen",
     "cta.dashboard": "Cockpit ansehen",
     "cta.demo2": "Demo vereinbaren →",
     "hero.split.product": "StayFlow im Detail",
@@ -817,7 +817,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "ハイスタンダードなホスピタリティを、<br><em>精密に運営。</em>",
     "hero.text": "StayFlowは、貴施設にふさわしいデジタルマネージャーです — <strong>ホテル、リゾート、ホステル、ゲストハウス</strong>に対応。各チャネルでの予約対応・交渉・成約を担い、その間チームは人にしかできない業務に集中できます。",
 
-    "cta.demo": "無料トライアル →",
+    "cta.demo": "無料トライアル",
     "cta.dashboard": "コックピットを見る",
     "cta.demo2": "デモを予約する →",
     "hero.split.product": "StayFlowの詳細",
@@ -968,7 +968,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "Ospitalità di alto livello,<br><em>gestita con precisione.</em>",
     "hero.text": "StayFlow è il manager digitale che la tua struttura merita — <strong>hotel, resort, hostel e guesthouse</strong>. Risponde, negozia e chiude prenotazioni sui tuoi canali, mentre il tuo team si occupa di ciò che solo una persona può fare.",
 
-    "cta.demo": "Prova gratuita →",
+    "cta.demo": "Prova gratuita",
     "cta.dashboard": "Vedi il cockpit",
     "cta.demo2": "Prenota una demo →",
     "hero.split.product": "StayFlow da vicino",
@@ -1119,7 +1119,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "高标准的酒店服务，<br><em>以精准的方式运营。</em>",
     "hero.text": "StayFlow是您的物业应得的数字化管理者 — 适用于<strong>酒店、度假村、青年旅舍和民宿</strong>。它在您的各个渠道上回复咨询、协商价格并促成预订，让您的团队专注于只有人才能完成的工作。",
 
-    "cta.demo": "免费试用 →",
+    "cta.demo": "免费试用",
     "cta.dashboard": "查看驾驶舱",
     "cta.demo2": "预约演示 →",
     "hero.split.product": "近距离了解StayFlow",
@@ -1270,7 +1270,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "Гостеприимство высокого уровня,<br><em>управляемое с точностью.</em>",
     "hero.text": "StayFlow — это цифровой менеджер, которого заслуживает ваш объект размещения — <strong>отели, курорты, хостелы и гостевые дома</strong>. Он отвечает, ведёт переговоры и закрывает бронирования по всем вашим каналам, пока ваша команда занимается тем, что может сделать только человек.",
 
-    "cta.demo": "Бесплатный пробный период →",
+    "cta.demo": "Бесплатный пробный период",
     "cta.dashboard": "Посмотреть кокпит",
     "cta.demo2": "Записаться на демо →",
     "hero.split.product": "StayFlow вблизи",
@@ -1421,7 +1421,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "높은 수준의 호스피탈리티,<br><em>정밀하게 운영됩니다.</em>",
     "hero.text": "StayFlow는 <strong>호텔, 리조트, 호스텔, 게스트하우스</strong>를 위한, 당신의 숙박시설에 걸맞은 디지털 매니저입니다. 모든 채널에서 응답하고, 협상하고, 예약을 성사시키는 동안 팀은 사람만이 할 수 있는 일에 집중할 수 있습니다.",
 
-    "cta.demo": "무료 체험 →",
+    "cta.demo": "무료 체험",
     "cta.dashboard": "코크핏 보기",
     "cta.demo2": "데모 예약 →",
     "hero.split.product": "StayFlow 자세히 보기",
@@ -1572,7 +1572,7 @@ const STAYFLOW_LANDING_I18N = {
     "hero.title": "Gastvrijheid van hoog niveau,<br><em>met precisie beheerd.</em>",
     "hero.text": "StayFlow is de digitale manager die uw accommodatie verdient — <strong>hotels, resorts, hostels en guesthouses</strong>. Hij beantwoordt, onderhandelt en sluit boekingen af via al uw kanalen, terwijl uw team zich bezighoudt met wat alleen een mens kan doen.",
 
-    "cta.demo": "Gratis proefperiode →",
+    "cta.demo": "Gratis proefperiode",
     "cta.dashboard": "Bekijk de cockpit",
     "cta.demo2": "Demo plannen →",
     "hero.split.product": "StayFlow van dichtbij",

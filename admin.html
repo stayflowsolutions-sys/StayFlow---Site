@@ -9,7 +9,7 @@
 <link rel="icon" href="/assets/images/icon-192.png">
 <link rel="stylesheet" href="static/css/tokens.css?v=1125">
 <link rel="stylesheet" href="static/css/reset.css?v=1125">
-<link rel="stylesheet" href="static/css/app.css?v=1153">
+<link rel="stylesheet" href="static/css/app.css?v=1154">
 <style>
   /* ===== Extensoes locais - o shell inteiro (sidebar/topbar/.page/
      .kpi/.chat-layout/.chat-item/.messages/.msg/.hostel-mini/
@@ -177,7 +177,7 @@
 <div class="main">
   <header class="topbar">
     <div>
-      <button class="btn secondary mobile-menu" onclick="toggleSidebar()">☰</button>
+      <button class="btn secondary mobile-menu" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-3px"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
       <h1 id="pageTitle">Visão geral</h1>
       <p id="pageSubtitle">Visão viva da StayFlow — não é o dashboard de nenhuma conta específica.</p>
     </div>
@@ -257,7 +257,7 @@
           </div>
           <div class="hostel-selector-divider"></div>
           <button type="button" class="hostel-selector-settings-link" onclick="stayflowLogout()">
-            <span data-i18n="userMenu.logout">↪ Sair</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span data-i18n="userMenu.logout">Sair</span>
           </button>
         </div>
       </div>
@@ -342,13 +342,13 @@
           </div>
           <div id="chatMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
             <div class="chat-window-head">
-              <button type="button" class="chat-mobile-back" onclick="setAdminChatMobileView('chatShell','list')" data-i18n-title="common.back" title="Voltar">←</button>
+              <button type="button" class="chat-mobile-back" onclick="setAdminChatMobileView('chatShell','list')" data-i18n-title="common.back" title="Voltar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button>
               <h2 id="chatActiveName">—</h2>
               <span class="status-pill cold" id="chatActivePhone">—</span>
             </div>
             <div class="messages" id="chatMessages"></div>
             <div class="chat-input">
-              <button class="btn secondary" type="button" onclick="document.getElementById('myChatPhotoInput').click()" data-i18n-title="chat.attachPhotoTitle" title="Anexar foto" style="flex:0 0 auto">📷</button>
+              <button class="btn secondary" type="button" onclick="document.getElementById('myChatPhotoInput').click()" data-i18n-title="chat.attachPhotoTitle" title="Anexar foto" style="flex:0 0 auto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
               <input type="file" id="myChatPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="sendMyChatPhoto(this)">
               <input type="text" id="chatInput" placeholder="Escrever mensagem..." data-i18n-placeholder="chat.input.placeholder">
               <button class="btn green" type="button" id="myChatSendBtn" data-mode="assume" onclick="myChatPrimaryBtnClick(this)" data-i18n="chat.btn.assume">Assumir</button>
@@ -373,7 +373,7 @@
           </div>
           <div id="supportMainActive" style="display:none;flex:1;min-height:0;flex-direction:column">
             <div class="chat-window-head">
-              <button type="button" class="chat-mobile-back" onclick="setAdminChatMobileView('supportShell','list')" data-i18n-title="common.back" title="Voltar">←</button>
+              <button type="button" class="chat-mobile-back" onclick="setAdminChatMobileView('supportShell','list')" data-i18n-title="common.back" title="Voltar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button>
               <h2 id="supportActiveName">—</h2>
               <span class="status-pill ai" id="supportActiveKind">—</span>
             </div>
@@ -1119,7 +1119,7 @@
       "propertySelector.empty": "Nenhuma conta de teste marcada ainda.<br>Marca uma no perfil dela (aba Propriedades → abrir a conta → \"Marcar como minha conta de teste\").",
       "propertySelector.noMatch": "Nenhuma propriedade encontrada.",
  "notif.title": "Notificações", "notif.empty": "Nenhuma novidade.", "notif.button.title": "Notificações",
-      "lang.title": "Idioma", "userMenu.title": "Menu do usuário", "userMenu.role": "Dono · StayFlow", "userMenu.logout": "↪ Sair",
+      "lang.title": "Idioma", "userMenu.title": "Menu do usuário", "userMenu.role": "Dono · StayFlow", "userMenu.logout": "Sair",
       "loading": "Carregando...", "error": "Não foi possível carregar o painel.",
       "overview.kpi.accounts": "Contas", "overview.kpi.mrr": "MRR estimado", "overview.kpi.mrr.note": "Cobrança automática ainda não ligada — valor de tabela.",
       "overview.kpi.commission": "Comissão real coletada", "overview.kpi.commission.note": "Dinheiro real, via Mercado Pago Split de Pagos.",
@@ -1300,7 +1300,7 @@
       "propertySelector.empty": "No test account marked yet.<br>Mark one on its profile (Properties tab → open the account → \"Mark as my test account\").",
       "propertySelector.noMatch": "No property found.",
  "notif.title": "Notifications", "notif.empty": "Nothing new.", "notif.button.title": "Notifications",
-      "lang.title": "Language", "userMenu.title": "User menu", "userMenu.role": "Owner · StayFlow", "userMenu.logout": "↪ Log out",
+      "lang.title": "Language", "userMenu.title": "User menu", "userMenu.role": "Owner · StayFlow", "userMenu.logout": "Log out",
       "loading": "Loading...", "error": "Could not load the panel.",
       "overview.kpi.accounts": "Accounts", "overview.kpi.mrr": "Estimated MRR", "overview.kpi.mrr.note": "Automatic billing not connected yet — list value.",
       "overview.kpi.commission": "Commission collected", "overview.kpi.commission.note": "Real money, via Mercado Pago Split de Pagos.",
@@ -1481,7 +1481,7 @@
       "propertySelector.empty": "Todavía no marcaste ninguna cuenta de prueba.<br>Marcala en su perfil (pestaña Propiedades → abrir la cuenta → \"Marcar como mi cuenta de prueba\").",
       "propertySelector.noMatch": "No se encontró ninguna propiedad.",
  "notif.title": "Notificaciones", "notif.empty": "Nada nuevo.", "notif.button.title": "Notificaciones",
-      "lang.title": "Idioma", "userMenu.title": "Menú de usuario", "userMenu.role": "Dueño · StayFlow", "userMenu.logout": "↪ Salir",
+      "lang.title": "Idioma", "userMenu.title": "Menú de usuario", "userMenu.role": "Dueño · StayFlow", "userMenu.logout": "Salir",
       "loading": "Cargando...", "error": "No se pudo cargar el panel.",
       "overview.kpi.accounts": "Cuentas", "overview.kpi.mrr": "MRR estimado", "overview.kpi.mrr.note": "El cobro automático todavía no está conectado — valor de lista.",
       "overview.kpi.commission": "Comisión real cobrada", "overview.kpi.commission.note": "Dinero real, vía Mercado Pago Split de Pagos.",
@@ -1662,7 +1662,7 @@
       "propertySelector.empty": "Aucun compte de test marqué pour l'instant.<br>Marquez-en un sur son profil (onglet Propriétés → ouvrir le compte → \"Marquer comme mon compte de test\").",
       "propertySelector.noMatch": "Aucune propriété trouvée.",
  "notif.title": "Notifications", "notif.empty": "Rien de nouveau.", "notif.button.title": "Notifications",
-      "lang.title": "Langue", "userMenu.title": "Menu utilisateur", "userMenu.role": "Propriétaire · StayFlow", "userMenu.logout": "↪ Se déconnecter",
+      "lang.title": "Langue", "userMenu.title": "Menu utilisateur", "userMenu.role": "Propriétaire · StayFlow", "userMenu.logout": "Se déconnecter",
       "loading": "Chargement...", "error": "Impossible de charger le panneau.",
       "overview.kpi.accounts": "Comptes", "overview.kpi.mrr": "MRR estimé", "overview.kpi.mrr.note": "Facturation automatique pas encore connectée — valeur catalogue.",
       "overview.kpi.commission": "Commission réelle collectée", "overview.kpi.commission.note": "Argent réel, via Mercado Pago Split de Pagos.",
@@ -1843,7 +1843,7 @@
       "propertySelector.empty": "Noch kein Testkonto markiert.<br>Markieren Sie eines im Profil (Reiter Unterkünfte → Konto öffnen → \"Als mein Testkonto markieren\").",
       "propertySelector.noMatch": "Keine Unterkunft gefunden.",
  "notif.title": "Benachrichtigungen", "notif.empty": "Nichts Neues.", "notif.button.title": "Benachrichtigungen",
-      "lang.title": "Sprache", "userMenu.title": "Benutzermenü", "userMenu.role": "Inhaber · StayFlow", "userMenu.logout": "↪ Abmelden",
+      "lang.title": "Sprache", "userMenu.title": "Benutzermenü", "userMenu.role": "Inhaber · StayFlow", "userMenu.logout": "Abmelden",
       "loading": "Wird geladen...", "error": "Panel konnte nicht geladen werden.",
       "overview.kpi.accounts": "Konten", "overview.kpi.mrr": "Geschätzter MRR", "overview.kpi.mrr.note": "Automatische Abrechnung noch nicht angebunden — Listenwert.",
       "overview.kpi.commission": "Erhaltene Provision", "overview.kpi.commission.note": "Echtes Geld, über Mercado Pago Split de Pagos.",
@@ -2081,7 +2081,7 @@
       "lang.title": "言語",
       "userMenu.title": "ユーザーメニュー",
       "userMenu.role": "オーナー · StayFlow",
-      "userMenu.logout": "↪ ログアウト",
+      "userMenu.logout": "ログアウト",
       "loading": "読み込み中...",
       "error": "パネルを読み込めませんでした。",
       "overview.kpi.accounts": "アカウント数",
@@ -2391,7 +2391,7 @@
       "lang.title": "Lingua",
       "userMenu.title": "Menu utente",
       "userMenu.role": "Titolare · StayFlow",
-      "userMenu.logout": "↪ Esci",
+      "userMenu.logout": "Esci",
       "loading": "Caricamento...",
       "error": "Non è stato possibile caricare il pannello.",
       "overview.kpi.accounts": "Account",
@@ -2701,7 +2701,7 @@
       "lang.title": "语言",
       "userMenu.title": "用户菜单",
       "userMenu.role": "所有者 · StayFlow",
-      "userMenu.logout": "↪ 退出登录",
+      "userMenu.logout": "退出登录",
       "loading": "加载中…",
       "error": "无法加载后台。",
       "overview.kpi.accounts": "账户数",
@@ -3010,7 +3010,7 @@
       "lang.title": "Язык",
       "userMenu.title": "Меню пользователя",
       "userMenu.role": "Владелец · StayFlow",
-      "userMenu.logout": "↪ Выйти",
+      "userMenu.logout": "Выйти",
       "loading": "Загрузка...",
       "error": "Не удалось загрузить панель.",
       "overview.kpi.accounts": "Аккаунты",
@@ -3320,7 +3320,7 @@
       "lang.title": "언어",
       "userMenu.title": "사용자 메뉴",
       "userMenu.role": "대표 · StayFlow",
-      "userMenu.logout": "↪ 로그아웃",
+      "userMenu.logout": "로그아웃",
       "loading": "불러오는 중...",
       "error": "패널을 불러올 수 없습니다.",
       "overview.kpi.accounts": "계정",
@@ -3630,7 +3630,7 @@
       "lang.title": "Taal",
       "userMenu.title": "Gebruikersmenu",
       "userMenu.role": "Eigenaar · StayFlow",
-      "userMenu.logout": "↪ Uitloggen",
+      "userMenu.logout": "Uitloggen",
       "loading": "Laden...",
       "error": "Kan het paneel niet laden.",
       "overview.kpi.accounts": "Accounts",
@@ -4389,9 +4389,14 @@
       const data = await res.json();
       if(!data.success) return;
 
-      const INTEGRATION_ICONS = { beds24_master: "🔗", mercadopago_marketplace: "💳", meta_app: "📘", instagram_app: "📷" };
+      const ICON_LINK = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+      const ICON_CARD = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>';
+      const ICON_CHAT = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8M8 12h5"/></svg>';
+      const ICON_CAMERA = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+      const ICON_PLUG = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6"/><path d="M6 8h12v5a6 6 0 0 1-12 0z"/><path d="M12 19v3"/></svg>';
+      const INTEGRATION_ICONS = { beds24_master: ICON_LINK, mercadopago_marketplace: ICON_CARD, meta_app: ICON_CHAT, instagram_app: ICON_CAMERA };
       document.getElementById("integrationsList").innerHTML = Object.entries(data.integrations).map(([key, ok]) => {
-        const ico = INTEGRATION_ICONS[key] || "🔌";
+        const ico = INTEGRATION_ICONS[key] || ICON_PLUG;
         const label = AT(`integration.${key}.label`);
         const desc = AT(`integration.${key}.desc`);
         return `
@@ -4415,7 +4420,7 @@
       if(data.software_persona_hostel_id) loadAdminCommunicationCards();
 
       document.getElementById("adminEmailsList").innerHTML = data.admin_emails.length
-        ? data.admin_emails.map(e => `<div class="prop-row" style="cursor:default"><div class="ico">👤</div><div class="name">${e}</div></div>`).join("")
+        ? data.admin_emails.map(e => `<div class="prop-row" style="cursor:default"><div class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg></div><div class="name">${e}</div></div>`).join("")
         : `<div class="prop-empty">${AT("config.admins.empty")}</div>`;
     }catch(e){
       console.warn("Erro ao carregar status das integrações:", e);
@@ -4576,7 +4581,7 @@
           : "em andamento";
         return `
           <div class="prop-row" style="cursor:default">
-            <div class="ico">👁️</div>
+            <div class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
             <div>
               <div class="name">${(entry.hostel_name || "Conta removida").replace(/</g, "&lt;")}</div>
               <div class="meta">${(entry.admin_email || "—").replace(/</g, "&lt;")} · ${started} → ${endedLabel}</div>
@@ -5323,10 +5328,10 @@
     const isOverdue = l.next_action_date && l.next_action_date < today && !["piloto_ativo", "no_show", "cancelado", "sem_interesse", "perdido"].includes(l.status);
     const nextActionLabel = l.next_action_date ? parseUtc(l.next_action_date + "T00:00:00")?.toLocaleDateString("pt-BR") : "—";
     const timeLabel = l.next_action_time ? ` ${l.next_action_time}` : "";
-    const alarmBadge = (l.next_action_time && l.alarm_offsets_minutes) ? ' <span title="Alarme ativo (' + l.alarm_offsets_minutes.replace(/</g, "&lt;") + ' min antes)">🔔</span>' : "";
+    const alarmBadge = (l.next_action_time && l.alarm_offsets_minutes) ? ' <span title="Alarme ativo (' + l.alarm_offsets_minutes.replace(/</g, "&lt;") + ' min antes)" style="display:inline-flex;vertical-align:-3px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>' : "";
     return `
       <tr>
-        <td>${(l.name || "").replace(/</g, "&lt;")}${l.training_candidate ? ' <span title="Candidata a treinamento pago">🎓</span>' : ""}</td>
+        <td>${(l.name || "").replace(/</g, "&lt;")}${l.training_candidate ? ' <span title="Candidata a treinamento pago" style="display:inline-flex;vertical-align:-3px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5"/></svg></span>' : ""}</td>
         <td>${(l.property_name || "—").replace(/</g, "&lt;")}</td>
         <td>${LEAD_PRIORITY_LABELS[l.priority] || l.priority}</td>
         <td>${LEAD_CHANNEL_LABELS[l.channel] || (l.channel || "—")}</td>
@@ -5486,7 +5491,7 @@
       document.getElementById("teamList").innerHTML = data.team.length
         ? data.team.map(m => `
           <div class="prop-row" style="cursor:default">
-            <div class="ico">👤</div>
+            <div class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg></div>
             <div><div class="name">${(m.name || "").replace(/</g, "&lt;")}</div><div class="meta">${m.email} · ${AT("team.addedOn", { date: parseUtc(m.added_at)?.toLocaleDateString("pt-BR") || "" })}</div></div>
             <div class="right"><button type="button" class="payout-btn" style="background:#ff5d7618;border-color:#ff5d7630;color:#ff9caf" onclick="removeTeamMember(${m.id})">${AT("team.remove")}</button></div>
           </div>`).join("")
@@ -5580,7 +5585,7 @@
         const safeMessage = r.message ? `<div class="meta" style="margin-top:2px;font-style:italic">${r.message.replace(/</g, "&lt;")}</div>` : "";
         return `
           <div class="prop-row" style="cursor:default;align-items:flex-start">
-            <div class="ico">${r.account_kind === "chats_access" ? "💬" : isDemo ? "🎤" : "🔑"}</div>
+            <div class="ico">${r.account_kind === "chats_access" ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8M8 12h5"/></svg>' : isDemo ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v4"/><path d="M8 23h8"/></svg>' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="14" r="3.3"/><path d="M9.3 11.7 18 3"/><path d="M15 6l2.5 2.5"/><path d="M13 8l2 2"/></svg>'}</div>
             <div>
               <div class="name">${safeName} — ${safeHostel} <span style="color:var(--muted);font-weight:400">(${kindLabel}${r.agency_category ? " · " + r.agency_category : ""})</span></div>
               <div class="meta">${r.email}${r.phone ? " · " + r.phone : ""} · ${parseUtc(r.created_at)?.toLocaleString("pt-BR") || ""}</div>
@@ -6020,7 +6025,7 @@
     document.getElementById("adminNotifList").innerHTML = items.length
       ? items.map(it => `
         <button type="button" class="notif-item" onclick="goToNotifItem('${it.kind}', ${it.id})">
-          <span class="notif-item-icon">${it.kind === "chat" ? "💬" : it.kind === "access_request" ? "🔑" : "🆘"}</span>
+          <span class="notif-item-icon">${it.kind === "chat" ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5h16v10H8l-4 4v-14z"/><path d="M8 9h8M8 12h5"/></svg>' : it.kind === "access_request" ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="14" r="3.3"/><path d="M9.3 11.7 18 3"/><path d="M15 6l2.5 2.5"/><path d="M13 8l2 2"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4"/><path d="M12 17h.01"/></svg>'}</span>
           <span><strong>${(it.label || "").replace(/</g, "&lt;")}</strong><br>${(it.preview || "").slice(0, 60).replace(/</g, "&lt;")}</span>
         </button>`).join("")
       : `<div class="notif-empty">${AT("notif.empty")}</div>`;

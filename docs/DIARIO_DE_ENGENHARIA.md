@@ -13682,3 +13682,62 @@ renomear os ~121 `alert()` do dashboard pra `stayflowAlert` só por
 nome (já funcionam certo), e um variante visual de "sucesso" do modal
 (hoje só existe o estilo neutro, usado tanto pra erro quanto pra
 sucesso) - fica pra uma Fase 2 se pedido.
+
+### Limpeza de emoji, finalmente completa (v1.158.0)
+
+Terceira vez que esse item aparece nesta sessão - as duas primeiras
+foram cortadas no meio por um pedido urgente antes de eu resolver a
+ambiguidade que eu mesmo tinha levantado ("emoji azul padrão StayFlow"
+- ícone SVG ou emoji unicode em tom azul?). Perguntei de novo, o
+usuário confirmou minha recomendação (SVG - emoji nativo renderiza na
+paleta do sistema operacional, impossível garantir a cor exata da
+marca em todo dispositivo/navegador), e dessa vez consegui ir até o
+fim.
+
+Mandei um agente de exploração levantar TUDO antes de tocar em
+qualquer arquivo - achou ~47 emoji-como-ícone-de-interface espalhados
+entre dashboard.html e admin.html (a maioria trocas triviais óbvias:
+seta, lupa, câmera, sino), confirmou zero emoji de conteúdo de chat
+sendo tocado sem querer, e mapeou com precisão o padrão de ícone já
+usado no projeto (nav-ico, 24x24, stroke, sem nenhuma biblioteca
+externa - sempre foi SVG inline mesmo).
+
+Achado real que quase virou bug silencioso: `data-i18n` sobrescreve
+`textContent` do elemento assim que a tradução carrega - se eu tivesse
+colocado o ícone SVG direto dentro do span traduzido (que foi
+literalmente minha primeira tentativa, no botão de "Sair"), o ícone
+teria sumido no primeiro carregamento de página em produção, silencioso
+igual o bug do `admin.html` da tarefa anterior. Corrigi reestruturando
+pra ícone como elemento irmão, fora do span com `data-i18n` - e aí
+percebi que o MESMO problema existia de um jeito mais sutil: três
+textos de tradução tinham o glifo embutido dentro da própria string
+traduzida (`"↪ Sair"`, `"Abrir câmeras ↗"`, `"Free trial →"`), não só
+como HTML solto - precisei tirar o caractere das 11-12 traduções de
+cada uma, não só do HTML em português.
+
+Bônus que só apareceu fazendo a varredura final de conferência (script
+Python contando toda faixa unicode de emoji que sobrou nos 5 arquivos):
+achei uma frase de ajuda que citava textualmente `"☰ Ações"` - texto
+que ficou desatualizado no instante em que troquei aquele mesmo ☰ por
+um ícone de verdade, já que o caractere citado não existe mais na tela.
+Pequeno, mas é exatamente o tipo de detalhe que só aparece com auditoria
+completa, não com passada superficial.
+
+A parte de "preencher onde falta ícone" (metade do pedido original,
+não só trocar o que já existia) virou o achado mais valioso: os 42
+blocos de estado vazio (`.sf-empty`) do dashboard não tinham ícone
+nenhum, zero, sistemicamente - não fazia sentido editar isso 42 vezes
+na mão. Escrevi uma função pequena (`decorateEmptyStates`, chamada uma
+vez no carregamento da página) que olha a seção/card onde cada estado
+vazio está, acha o ícone que aquela seção já declarou no próprio título,
+e clona ele (maior, apagado) pra dentro do estado vazio - reaproveitando
+o que já existe em vez de desenhar 42 ícones novos. Fora isso, 4 cards
+de Configurações e 13 títulos de seção realmente não tinham ícone
+nenhum e precisaram de escolha nova (gente, prédio, cadeado, cartão,
+etc.) - segui o mesmo vocabulário visual do resto do produto.
+
+Deixei de fora, deliberadamente, só uma coisa: o `document.title` do
+admin.html usa um emoji (🔴) pra sinalizar mensagem nova na aba do
+navegador - título de aba não aceita HTML nem SVG, só texto puro, então
+ali o emoji nativo continua sendo a única opção que funciona de
+verdade.

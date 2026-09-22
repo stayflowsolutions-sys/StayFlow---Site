@@ -1471,6 +1471,22 @@ body::before{
   font-size:14px;
   line-height:1.5;
 }
+/* Icone decorativo injetado por decorateEmptyStates() (v1.157.0) -
+   reaproveita o mesmo SVG do nav-ico da secao, so maior e apagado. */
+.sf-empty-icon{
+  width:36px;
+  height:36px;
+  margin:0 auto 10px;
+  opacity:.32;
+  color:#9aa8bb;
+}
+.sf-empty-icon svg{
+  width:100%;
+  height:100%;
+  stroke:currentColor;
+  fill:none;
+  stroke-width:1.5;
+}
 
 /* ===== Chats ===== */
 .chat-layout{
