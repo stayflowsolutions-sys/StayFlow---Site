@@ -945,6 +945,17 @@
   <div id="genericModalBody" class="generic-modal-body"></div>
 </div>
 
+<div id="sfAlertOverlay" class="sf-alert-overlay">
+  <div class="sf-alert-modal" id="sfAlertModal">
+    <div class="sf-alert-icon">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5"/><path d="M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></svg>
+    </div>
+    <div class="sf-alert-message" id="sfAlertMessage"></div>
+    <input type="text" class="sf-alert-input" id="sfAlertInput" style="display:none">
+    <div class="sf-alert-actions" id="sfAlertActions"></div>
+  </div>
+</div>
+
 <div id="askAdminOverlay" class="ask-overlay" onclick="closeAskAdmin()"></div>
 
 <aside id="askAdminPanel" class="ask-panel">
@@ -974,6 +985,7 @@
 </button>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
+<script src="assets/js/stayflow-alert.js?v=1"></script>
 <script>
   // ===== Traducoes do Meu painel (chrome estatico - dados reais como
   // nomes de hospede/hospedagem, mensagens e descricoes de transacao
@@ -5118,7 +5130,7 @@
   };
 
   window.deleteExpense = async function(id){
-    if(!confirm(AT("expenses.deleteConfirm"))) return;
+    if(!await stayflowConfirm(AT("expenses.deleteConfirm"))) return;
     try{
       await fetch(`/stayflow-admin/expenses/${id}`, { method: "DELETE", credentials: "same-origin" });
       loadExpenses();
@@ -5297,7 +5309,7 @@
   };
 
   window.deleteLead = async function(id){
-    if(!confirm("Excluir este contato?")) return;
+    if(!await stayflowConfirm("Excluir este contato?")) return;
     try{
       await fetch(`/stayflow-admin/leads/${id}`, { method: "DELETE", credentials: "same-origin" });
       loadLeads();
@@ -5455,7 +5467,7 @@
   };
 
   window.removeTeamMember = async function(id){
-    if(!confirm(AT("team.removeConfirm"))) return;
+    if(!await stayflowConfirm(AT("team.removeConfirm"))) return;
     try{
       await fetch(`/stayflow-admin/team/${id}`, { method: "DELETE", credentials: "same-origin" });
       loadTeam();
@@ -5531,7 +5543,7 @@
   };
 
   window.rejectAccessRequestUI = async function(id, name){
-    if(!confirm(AT("accessRequests.rejectConfirm", { name: name || "" }))) return;
+    if(!await stayflowConfirm(AT("accessRequests.rejectConfirm", { name: name || "" }))) return;
     try{
       await fetch(`/stayflow-admin/access-requests/${id}/reject`, { method: "POST", credentials: "same-origin" });
       loadAccessRequests();

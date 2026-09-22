@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.156.0
+\*\*Versão:\*\* 1.157.0
 
 
 
@@ -409,6 +409,8 @@
 | 1.155.0 | 21/09/2026 | Oficial | **Prompt dedicado de IA pra Casa de Repouso** — parte 1 de 2 do trabalho pra proposta comercial do Grupo Primavera (que inclui uma casa de repouso entre as 4 unidades), sob a regra do usuário "tudo que eu disser que vai ter, vamos construir": nada entra na proposta como incluído antes de existir de verdade. Planejado em Plan Mode com 2 agentes de pesquisa em paralelo. Investigação confirmou que `hostel_type` nunca tinha virado nada além de um rótulo cosmético (`{hostel_type_label}`, uma palavra numa frase) — o prompt base de hospedagem (`SYSTEM_PROMPT`) é inteiramente centrado em "colete datas, feche reserva sozinho, rode o checklist de registro de hóspede (nome/nacionalidade/data de nascimento/foto de documento)", errado pra uma família perguntando sobre um residente. Novo `NURSING_HOME_SYSTEM_PROMPT` em `services/ai_service.py`, primeiro branch de prompt por `hostel_type` do sistema (`hostel_type == "Casa de Repouso"`, valor salvo pelo seletor de Configurações, nova opção nos 11 idiomas) — segue a mesma estrutura de `PROMOTER_SYSTEM_PROMPT` (negação explícita de identidade logo na abertura: não é hotel, quem escreve quase sempre é familiar/responsável, nunca a própria pessoa residente) e do padrão "colher interesse + agendar visita, nunca fechar sozinho" já usado por `AGENCY_CATEGORY_PROMPTS\["imobiliaria"\]`. Ferramentas concedidas deliberadamente mínimas (`SAVE_GUEST_NAME_TOOL`, `SAVE_GUEST_LANGUAGE_TOOL`, `CAPTURE_LEAD_TOOL`, `GET_OFFERINGS_TOOL`) — NUNCA `create_reservation` (autônomo, sem aprovação humana) nem `save_guest_date_of_birth`/`save_guest_nationality` (checklist de check-in de hóspede de hotel, sem sentido pra admissão de residente). **Guardrail novo, inédito no projeto**: cláusula de privacidade não-sobreponível por instrução customizada (mesmo padrão de "nunca sobreposto" já usado em `_custom_instructions_section`) proibindo a IA de discutir condição de saúde/medicação/detalhes de cuidado de um residente específico pelo chat, redirecionando sempre pra ligação com a equipe — nenhuma linguagem de LGPD/privacidade/dado sensível existia em nenhum prompt do sistema até agora. Testado sem chamada real à API de IA: `.format()` do template novo confirmado sem `KeyError`, e a seleção de prompt/ferramentas testada interceptando a chamada ao cliente OpenAI (monkeypatch que captura os argumentos e para antes da chamada de rede) pra confirmar que `hostel_type="Casa de Repouso"` escolhe o prompt certo e nunca inclui as ferramentas de reserva, enquanto `hostel_type="hotel"`/vazio continuam no fluxo genérico normal. |
 
 | 1.156.0 | 21/09/2026 | Oficial | **Módulo de Comandas (Restaurante/Bistrô)** — parte 2 de 2 do trabalho pra proposta do Grupo Primavera (mesma regra "só promete o que já existe"), pro Restaurante Bistrô que hoje roda 100% manual (comanda de papel). Planejado em Plan Mode com 2 agentes de pesquisa em paralelo, que confirmaram: `menu_items` (tabela já existente do módulo de Cozinha) tem exatamente a forma de um cardápio, reaproveitável direto; o fluxo de pedido de cozinha (`tickets` tipo `kitchen_order`) resolve PRODUÇÃO (a cozinha fez/entregou?), não COMANDA (conta de uma mesa acumulando pedidos até fechar com pagamento) — problema estruturalmente diferente, sem nenhum precedente de "mesa" no sistema; e que criar um `account_kind='restaurant'` novo tocaria ~6 pontos espalhados do sistema (3 whitelists em `routes/auth.py`, `permissions_for_account_kind`, o branch binário `is_agency` de `routes/stayflow_admin.py`, o branch de ferramentas de IA, gates manuais de `dashboard.html`) — arriscado demais pra um único dia junto com a Casa de Repouso. **Decisão**: Bistrô continua `account_kind='lodging'` (hostel próprio, sem quartos), módulo liberado por feature de plano nova (`"comandas"`, mesmo mecanismo que já libera `"kitchen"`/`"maintenance"` — adicionada a `OPS_BUNDLE_FEATURES` e aos planos Business/Enterprise) e por permissão nova (`"comandas"` em `utils/permissions.py`). 4 tabelas novas em `database.py` (`restaurant_tables`, `comandas`, `comanda_items` com `unit_price` travado no lançamento — mesmo princípio de `kitchen_order_items` —, `comanda_payments`), seguindo o padrão de saldo sob-demanda já usado por `get_reservation_balance`/`reservation_payments` (nunca campo cacheado). Novo blueprint `routes/comandas.py` (8 rotas, todas `@require_permission("comandas")` + `@require_plan_feature("comandas")`, mesmo padrão de `routes/kitchen.py`) e nova aba "Comandas" dentro da página Operações (`dashboard.html`, grade de mesas livre/ocupada, modal de detalhe da comanda com lançamento/anulação de item e fechamento com pagamento) — reaproveita o cardápio e as rotas de `menu_items` já existentes do módulo de Cozinha, sem duplicar CRUD. 28 chaves i18n novas em 11 idiomas. Testado em duas camadas com banco descartável: função (abrir mesa → abrir comanda → total soma certo → anular item recalcula → isolamento cross-tenant em item/comanda/mesa → fechar com pagamento parcial mostra saldo certo → mesa volta a "livre" → recusa mexer em comanda fechada → recusa apagar mesa com comanda aberta) e HTTP ponta a ponta via `app.test_client()` (mesmas regras, incluindo 401 sem sessão e 404 cross-tenant). **Nota de processo**: as duas partes (1.155.0 e 1.156.0) implementadas e testadas no mesmo dia, mas publicação segurada até autorização explícita do usuário — mesma cautela já registrada na v1.154.0 (deploy no meio de reunião/apresentação já derrubou o site uma vez antes). Proposta comercial só será atualizada pra dizer "incluído" depois da confirmação de que pode subir. |
+
+| 1.157.0 | 21/09/2026 | Oficial | **Diálogos nativos (Fase 1): motor `alert`/`confirm`/`prompt` extraído e compartilhado, bug real corrigido em `admin.html`.** Retomando a fila de polimento visual pendente. Investigação (agente de exploração) achou que `dashboard.html` já tinha um substituto completo do `alert()`/`confirm()`/`prompt()` nativo por modal StayFlow (`sfAlertOpen`/`window.alert` override/`stayflowConfirm`/`stayflowPrompt`, Promise-based, i18n-aware) — só que vivia inteiramente dentro do script inline de `dashboard.html`, nunca compartilhado. Achado real no caminho: `admin.html:4480` (`disconnectAdminPersonaChannel`, desconectar WhatsApp/Instagram da conta assistente) já chamava `await stayflowConfirm(...)` sem a função existir ali — `ReferenceError` em produção, fluxo quebrado silenciosamente. Extraído o motor inteiro pra `assets/js/stayflow-alert.js` (CSS `.sf-alert-*` já vivia em `static/css/app.css`, compartilhado desde sempre) — `dashboard.html` passou a carregar via `<script src>` em vez de definir inline (mantendo só o Escape/Enter do `genericModal`, que é local de cada página); `admin.html` e `admin-hostel.html` ganharam o mesmo `<script src>` e o markup `#sfAlertOverlay`. Como `window.alert` é sobrescrito globalmente, os ~27 `alert()` já existentes em `admin.html`/`admin-hostel.html` passaram a usar o modal StayFlow automaticamente, sem tocar em nenhum call-site. Os 8 `confirm()` nativos restantes (4 em `admin.html`: despesa/contato/equipe/pedido de acesso; 4 em `dashboard.html`: cupom/mesa de restaurante/contato/planta) convertidos individualmente pra `if(!await stayflowConfirm(...)) return;` — todas as funções envolvidas já eram `async`, confirmado antes de converter. Validado sem runtime de JS disponível no ambiente (sem `node`): balanceamento de chaves/parênteses em todos os `<script>` de cada arquivo tocado (bateu em todos), checkers do projeto (`check_cache_busting.py`, `check_i18n_syntax.py`). **Fora de escopo desta rodada** (fica pra uma Fase 2, se pedido): renomear os ~121 `alert()` de `dashboard.html` pra `stayflowAlert` só por consistência (já funcionam certo, é só nome); diferenciar visualmente sucesso vs erro (hoje todo `alert()` usa o mesmo estilo neutro); os 2 casos de "criado com sucesso, aqui está o código" em `admin.html` que merecem um variante "success" do modal. |
 
 \---
 
@@ -8463,6 +8465,45 @@ avaliar em v2 se o cliente pedir.
 
 
 
+\## 16.53 Diálogos nativos → modal StayFlow (Fase 1)
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.157.0, 21/09/2026) — retomada
+parcial da fila de polimento visual pendente.
+
+
+
+`dashboard.html` já tinha um substituto completo de
+`alert()`/`confirm()`/`prompt()` nativo por modal StayFlow
+(`sfAlertOpen`/override de `window.alert`/`stayflowConfirm`/
+`stayflowPrompt`, Promise-based) — só que vivia só ali, nunca
+compartilhado com `admin.html`/`admin-hostel.html`. Extraído pra
+`assets/js/stayflow-alert.js`, incluído nas 3 páginas. Achado real no
+caminho: `admin.html` já chamava `stayflowConfirm(...)` numa função
+(desconectar WhatsApp/Instagram da conta assistente) sem a função
+existir ali — `ReferenceError` quebrando o fluxo silenciosamente,
+corrigido de graça pela extração.
+
+
+
+Como `window.alert` é override global, todo `alert()` já existente nas
+páginas que passaram a carregar o script novo virou modal StayFlow sem
+tocar em nenhum call-site. Só os 8 `confirm()` nativos restantes
+precisaram de conversão individual pra `await stayflowConfirm(...)`.
+
+
+
+\*\*Fora de escopo desta rodada\*\*: renomear `alert()` pra `stayflowAlert`
+só por consistência de nome; variante visual "sucesso" do modal
+(hoje só existe o estilo neutro/erro).
+
+
+
+\---
+
+
+
 \## 16.18 Critério para atualização
 
 
@@ -10209,4 +10250,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.156.0\*\*
+\*\*Fim da Versão Oficial 1.157.0\*\*

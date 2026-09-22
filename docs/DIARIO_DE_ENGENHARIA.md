@@ -13633,3 +13633,52 @@ tipo de hospedagem pra casa de repouso.
 prontas e testadas no mesmo dia, mas o commit/push/sync continua
 segurado até autorização explícita - a lição do deploy que derrubou a
 apresentação da imobiliária não se aplica só uma vez.
+
+### Diálogos nativos, Fase 1 (v1.157.0)
+
+Depois de comitar/publicar tudo do Grupo Primavera e resolver a
+logística de mandar proposta+contrato pro Miguel (Gmail conectado no
+chat mas não disponível pra rotina da nuvem - tentei duas vezes, não
+forcei uma terceira sem sinal novo, dei o e-mail pronto pra copiar em
+vez de insistir num caminho técnico incerto), o usuário pediu pra
+seguir com os polimentos visuais pendentes. Antes de tocar em
+qualquer coisa, perguntei o que "emoji azul padrão StayFlow" significa
+de verdade (ícone SVG ou emoji unicode tom azul) - pergunta que já
+estava em aberto de uma retomada anterior da mesma tarefa, hoje mesmo,
+interrompida por outro pedido antes de eu receber resposta. Enquanto
+isso ficava em aberto, mandei um agente investigar a outra fila
+pendente (trocar `confirm()`/`alert()` nativo por modal StayFlow), que
+não tinha essa mesma ambiguidade.
+
+Achado que mudou o tamanho da tarefa pra melhor: `dashboard.html` já
+tinha um substituto completo do dialog nativo - `sfAlertOpen` +
+override de `window.alert` + `stayflowConfirm`/`stayflowPrompt`
+(Promise, já que modal de verdade não bloqueia a thread como
+`confirm()` nativo bloqueia). Só que vivia inteiro dentro do script
+inline do dashboard, nunca extraído - `admin.html` e
+`admin-hostel.html` nunca tiveram acesso a ele. E tinha um bug real no
+meio disso: `admin.html` já CHAMAVA `stayflowConfirm(...)` (fluxo de
+desconectar WhatsApp/Instagram da conta assistente comercial) sem a
+função existir ali - `ReferenceError` quebrando esse fluxo em produção,
+silenciosamente, até alguém tentar usar exatamente esse botão.
+
+Trabalho virou extração, não invenção: motor inteiro pra
+`assets/js/stayflow-alert.js` (CSS já estava compartilhado em
+`app.css` desde sempre, só nunca tinha sido aproveitado fora do
+dashboard), incluído nas 3 páginas. Como `window.alert` é override
+global, todo `alert()` que já existia em `admin.html`/`admin-hostel.html`
+(quase 30 chamadas) virou modal StayFlow automaticamente, sem editar
+um call-site sequer - só os 8 `confirm()` nativos restantes (4 em cada
+arquivo) precisaram de conversão manual pra
+`await stayflowConfirm(...)`, depois de confirmar que toda função
+envolvida já era `async` (nenhuma precisou virar async agora).
+
+Sem `node` disponível no ambiente pra rodar um lint/parse de verdade,
+validação foi: contagem de chaves/parênteses balanceadas em TODOS os
+blocos `<script>` dos 3 arquivos tocados (nenhum desbalanceado), mais
+os checkers do projeto (`check_cache_busting.py`,
+`check_i18n_syntax.py`). Ficou de fora desta rodada, deliberadamente:
+renomear os ~121 `alert()` do dashboard pra `stayflowAlert` só por
+nome (já funcionam certo), e um variante visual de "sucesso" do modal
+(hoje só existe o estilo neutro, usado tanto pra erro quanto pra
+sucesso) - fica pra uma Fase 2 se pedido.
