@@ -115,6 +115,39 @@
         </form>
         <div id="editPlanMsg"></div>
       </div>
+
+      <div class="admin-section-title" style="margin-top:32px">Dados pessoais da conta</div>
+      <div class="card" style="padding:20px">
+        <p style="color:var(--muted);font-size:12px;margin:0 0 14px">Nome e e-mail de LOGIN da pessoa dona da conta (primeiro membro cadastrado). Use "Editar" quando algo foi digitado errado no cadastro — ex: e-mail com erro de digitação que impede o dono de entrar.</p>
+
+        <div id="ownerInfoView" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap">
+          <div style="display:flex;gap:32px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Nome</div>
+              <div id="ownerInfoName" style="font-size:15px;font-weight:700">—</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">E-mail (login)</div>
+              <div id="ownerInfoEmail" style="font-size:15px;font-weight:700">—</div>
+            </div>
+          </div>
+          <button type="button" id="editOwnerInfoBtn" onclick="toggleOwnerInfoEdit(true)">Editar</button>
+        </div>
+
+        <form id="editOwnerInfoForm" class="edit-plan-form" style="display:none">
+          <div style="flex:1;min-width:220px">
+            <label for="ownerNameInput">Nome</label>
+            <input type="text" id="ownerNameInput" required style="background:var(--panel-2,#101826);border:1px solid var(--border,#233652);color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;width:100%">
+          </div>
+          <div style="flex:1;min-width:220px">
+            <label for="ownerEmailInput">E-mail (login)</label>
+            <input type="email" id="ownerEmailInput" required style="background:var(--panel-2,#101826);border:1px solid var(--border,#233652);color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;width:100%">
+          </div>
+          <button type="submit" id="editOwnerInfoSubmit">Salvar</button>
+          <button type="button" onclick="toggleOwnerInfoEdit(false)" style="background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:11px 20px;font-size:14px;cursor:pointer">Cancelar</button>
+        </form>
+        <div id="editOwnerInfoMsg"></div>
+      </div>
     </div>
   </div>
 
@@ -330,6 +363,9 @@
 
         if(d.plan_name) document.getElementById("planSelect").value = d.plan_name;
         if(d.status) document.getElementById("statusSelect").value = d.status;
+        document.getElementById("ownerInfoName").textContent = d.owner_name || "nome não informado";
+        document.getElementById("ownerInfoEmail").textContent = d.owner_email || "e-mail não informado";
+        ownerInfoData = { name: d.owner_name || "", email: d.owner_email || "" };
 
         renderOperacao(d.account_kind, d.operacao);
 
@@ -374,6 +410,55 @@
           msg.textContent = "Plano atualizado.";
           msg.className = "ok";
           await loadProfile();
+        }catch(err){
+          console.error(err);
+          msg.textContent = "Erro ao salvar. Tente novamente.";
+          msg.className = "err";
+        }finally{
+          submitBtn.disabled = false;
+        }
+      });
+
+      let ownerInfoData = { name: "", email: "" };
+
+      window.toggleOwnerInfoEdit = function(show){
+        document.getElementById("ownerInfoView").style.display = show ? "none" : "flex";
+        document.getElementById("editOwnerInfoForm").style.display = show ? "flex" : "none";
+        document.getElementById("editOwnerInfoMsg").textContent = "";
+        document.getElementById("editOwnerInfoMsg").className = "";
+        if(show){
+          document.getElementById("ownerNameInput").value = ownerInfoData.name;
+          document.getElementById("ownerEmailInput").value = ownerInfoData.email;
+        }
+      };
+
+      document.getElementById("editOwnerInfoForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById("editOwnerInfoMsg");
+        const submitBtn = document.getElementById("editOwnerInfoSubmit");
+        const name = document.getElementById("ownerNameInput").value.trim();
+        const email = document.getElementById("ownerEmailInput").value.trim();
+
+        submitBtn.disabled = true;
+        msg.textContent = "Salvando...";
+        msg.className = "";
+        try{
+          const res = await fetch(`/stayflow-admin/hostel/${hostelId}/owner`, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email }),
+          });
+          const d = await res.json();
+          if(!res.ok || !d.success){
+            msg.textContent = d.message || "Não foi possível salvar.";
+            msg.className = "err";
+            return;
+          }
+          msg.textContent = "Dados atualizados.";
+          msg.className = "ok";
+          await loadProfile();
+          toggleOwnerInfoEdit(false);
         }catch(err){
           console.error(err);
           msg.textContent = "Erro ao salvar. Tente novamente.";
