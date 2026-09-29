@@ -13741,3 +13741,39 @@ admin.html usa um emoji (🔴) pra sinalizar mensagem nova na aba do
 navegador - título de aba não aceita HTML nem SVG, só texto puro, então
 ali o emoji nativo continua sendo a única opção que funciona de
 verdade.
+
+### Dados pessoais da conta - bug real de produção (v1.159.0)
+
+Voltando de um hiato de uma semana na conversa, o usuário trouxe um
+caso real: cadastrou um amigo (uma estética automotiva) pelo formulário
+público, aprovou o pedido, mandou a senha temporária - e o amigo não
+conseguia logar de jeito nenhum. Antes de tocar em qualquer coisa,
+mandei investigar o pipeline inteiro (solicitação pública → aprovação
+→ geração de senha → checagem de login) pra não ficar chutando causa. O
+relatório veio com hipóteses bem fundamentadas (senha corrompida no
+repasse via WhatsApp - underscore vira itálico e some visualmente da
+tela; bloqueio por tentativas erradas) mas a causa real acabou sendo
+mais simples: um dígito errado no e-mail digitado no formulário
+(`vinidbalsabelli@gmail.com` em vez de `vinidbalsanelli@gmail.com`).
+
+Não existia NENHUMA tela no painel interno pra corrigir isso - só um
+UPDATE manual no banco resolvia, o que não é sustentável pra um erro de
+digitação que vai acontecer de novo. Minha primeira tentativa foi
+estreita demais: uma seção "Corrigir e-mail do dono", só isso. O
+usuário me corrigiu na hora - "nao gostei dessa onda de corrigir email
+do dono, nada a ver, tem que ter uma sessao que mostre os dados
+pessoais da conta, e que tenha botao de editar, apenas, nao
+exclusivamente mudar email do dono". Generalizei pra uma seção de
+verdade ("Dados pessoais da conta", nome + e-mail, com botão Editar
+revelando um formulário inline) em vez de uma ferramenta de propósito
+único - o tipo de correção de escopo que vale a pena ouvir na hora, não
+defender a versão menor só porque já estava pronta.
+
+Reaproveitei a mesma resolução de "quem é o dono" que a tela já usava
+pra mostrar owner_name/owner_email (primeiro hostel_membership da
+hospedagem) - a função nova só generaliza pra também poder ESCREVER
+esses campos, com validação de e-mail (formato + unicidade contra a
+constraint UNIQUE que já existe em `users.email`) e nome (não-vazio).
+Testado com banco descartável cobrindo cada combinação (só e-mail, só
+nome, os dois, e cada rejeição), e confirmado que a rota exige sessão
+de admin StayFlow de verdade.

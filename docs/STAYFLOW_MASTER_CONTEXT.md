@@ -8,7 +8,7 @@
 
 
 
-\*\*Versão:\*\* 1.158.0
+\*\*Versão:\*\* 1.159.0
 
 
 
@@ -24,7 +24,7 @@
 
 
 
-\*\*Última atualização:\*\* 22/09/2026
+\*\*Última atualização:\*\* 29/09/2026
 
 
 
@@ -413,6 +413,8 @@
 | 1.157.0 | 21/09/2026 | Oficial | **Diálogos nativos (Fase 1): motor `alert`/`confirm`/`prompt` extraído e compartilhado, bug real corrigido em `admin.html`.** Retomando a fila de polimento visual pendente. Investigação (agente de exploração) achou que `dashboard.html` já tinha um substituto completo do `alert()`/`confirm()`/`prompt()` nativo por modal StayFlow (`sfAlertOpen`/`window.alert` override/`stayflowConfirm`/`stayflowPrompt`, Promise-based, i18n-aware) — só que vivia inteiramente dentro do script inline de `dashboard.html`, nunca compartilhado. Achado real no caminho: `admin.html:4480` (`disconnectAdminPersonaChannel`, desconectar WhatsApp/Instagram da conta assistente) já chamava `await stayflowConfirm(...)` sem a função existir ali — `ReferenceError` em produção, fluxo quebrado silenciosamente. Extraído o motor inteiro pra `assets/js/stayflow-alert.js` (CSS `.sf-alert-*` já vivia em `static/css/app.css`, compartilhado desde sempre) — `dashboard.html` passou a carregar via `<script src>` em vez de definir inline (mantendo só o Escape/Enter do `genericModal`, que é local de cada página); `admin.html` e `admin-hostel.html` ganharam o mesmo `<script src>` e o markup `#sfAlertOverlay`. Como `window.alert` é sobrescrito globalmente, os ~27 `alert()` já existentes em `admin.html`/`admin-hostel.html` passaram a usar o modal StayFlow automaticamente, sem tocar em nenhum call-site. Os 8 `confirm()` nativos restantes (4 em `admin.html`: despesa/contato/equipe/pedido de acesso; 4 em `dashboard.html`: cupom/mesa de restaurante/contato/planta) convertidos individualmente pra `if(!await stayflowConfirm(...)) return;` — todas as funções envolvidas já eram `async`, confirmado antes de converter. Validado sem runtime de JS disponível no ambiente (sem `node`): balanceamento de chaves/parênteses em todos os `<script>` de cada arquivo tocado (bateu em todos), checkers do projeto (`check_cache_busting.py`, `check_i18n_syntax.py`). **Fora de escopo desta rodada** (fica pra uma Fase 2, se pedido): renomear os ~121 `alert()` de `dashboard.html` pra `stayflowAlert` só por consistência (já funcionam certo, é só nome); diferenciar visualmente sucesso vs erro (hoje todo `alert()` usa o mesmo estilo neutro); os 2 casos de "criado com sucesso, aqui está o código" em `admin.html` que merecem um variante "success" do modal. |
 
 | 1.158.0 | 22/09/2026 | Oficial | **Limpeza de emoji → ícones SVG StayFlow (auditoria completa e preenchimento).** Retomada da fila de polimento visual, terceira tentativa — as duas primeiras foram interrompidas por pedidos urgentes antes de resolver a ambiguidade de "emoji azul padrão StayFlow"; desta vez a dúvida foi resolvida (SVG na cor da marca, não emoji unicode — motivo técnico: emoji nativo renderiza na paleta do sistema operacional, impossível garantir a cor exata em todo dispositivo). Levantamento completo via agente de exploração encontrou ~47 emoji usados como UI chrome (nav, botões, cards, badges) em `dashboard.html` e `admin.html`, mais 2 em `admin-hostel.html`/`admin-list.html`/`index.html`, e confirmou zero emoji fora do escopo de conteúdo de chat (mensagem de hóspede) sendo tocado. **Achado real no caminho**: `data-i18n`/`applyTranslations()` sobrescreve `textContent` do elemento no carregamento — colocar um ícone SVG *dentro* de um span com `data-i18n` apagaria o ícone assim que a tradução rodasse; resolvido reestruturando pra ícone como irmão fora do span traduzido (padrão que já existia em alguns cards antigos, ex. "Plantas do Imóvel", só nunca documentado). Mesmo problema achado em 3 strings de tradução com o glifo *embutido no próprio texto* (`topbar.userMenu.logout` = "↪ Sair", `patrimonialSecurity.integrations.openBtn` = "Abrir câmeras ↗", `cta.demo` da landing = "Free trial →") — glifo removido das 11 (ou 12, contando `index.html`) traduções de cada chave, ícone movido pra fora da string. Também achada e corrigida uma cópia desatualizada (`roommap.emptyDesc2` mencionava textualmente `"☰ Ações"`, referência a um caractere que deixou de existir depois da troca). **Preenchimento sistêmico dos 42 blocos `.sf-empty` sem nenhum ícone** (nenhum tinha, achado real do levantamento) — em vez de 42 edições manuais, uma função `decorateEmptyStates()` (chamada uma vez no `DOMContentLoaded`) clona o `nav-ico` já declarado na seção/card e injeta (maior, apagado) no estado vazio correspondente; nova classe `.sf-empty-icon` em `app.css`. Mais 4 cards de Configurações (Geral/Importar dados/Empresa/IA StayFlow) e 13 títulos de seção sem ícone (Operação, Atividades de hoje, Ações prioritárias, Conversas, Perfil do hóspede, 3 de Eventos, Portfólio, Parceiros, Status do sistema, Segurança, Billing, Equipe, Funções, Ponto) ganharam ícone novo — todos desenhados no mesmo padrão `nav-ico`/24x24/stroke-width já usado no projeto, nenhuma biblioteca externa. Em `admin.html`: troca de todos os emoji restantes, incluindo um mapa `INTEGRATION_ICONS` (beds24/Mercado Pago/Meta/Instagram) e duas listas condicionais (tipo de conta, tipo de notificação) que viraram lookup de SVG em vez de emoji cru. **Fora de escopo, deixado de propósito**: `document.title = "🔴 Nova mensagem"` em `admin.html` — título de aba do navegador não aceita HTML/SVG, só texto/emoji nativo funciona ali, permanece como está. Validado sem `node` disponível: balanceamento de chaves/parênteses nos `<script>` dos 5 arquivos tocados, `check_i18n_syntax.py`, `check_cache_busting.py` (3 assets estáticos com versão bumped: `i18n-dashboard-data.js`, `i18n-landing-data.js`, `app.css`), e uma varredura final por qualquer emoji de UI restante (achou só o `document.title`, confirmando cobertura completa). |
+
+| 1.159.0 | 29/09/2026 | Oficial | **Dados pessoais da conta (painel interno) — corrige e-mail digitado errado numa solicitação de acesso.** Achado ao vivo: usuário cadastrou um amigo (estética automotiva) via `SolicitarAcesso.html`, aprovou o pedido e repassou a senha temporária, mas o amigo não conseguia logar — causa raiz era um e-mail digitado errado no formulário público (`vinidbalsabelli@gmail.com` em vez de `vinidbalsanelli@gmail.com`), e não existia nenhuma tela no painel interno da StayFlow pra corrigir isso sem mexer direto no banco. Primeira tentativa foi uma correção pontual "consertar e-mail do dono" — o usuário pediu pra generalizar: uma seção de verdade de "Dados pessoais da conta" (nome + e-mail de login), com botão Editar, não uma ferramenta de uso único. Nova função `database.update_hostel_owner_info(hostel_id, name=None, email=None)` — os dois campos são independentes (edita só o que for passado), reaproveita a mesma resolução de "dono" já usada por `get_hostel_owner_and_address` (primeiro `hostel_membership` da hospedagem), valida e-mail (formato + unicidade contra `users.email UNIQUE`) e nome (não-vazio) antes de gravar. Nova rota `POST /stayflow-admin/hostel/<id>/owner` (`routes/stayflow_admin.py`, `@require_stayflow_admin`, mesmo padrão de `/hostel/<id>/test-account`). Nova seção em `admin-hostel.html`: exibição de nome/e-mail atuais + botão "Editar" que revela um formulário inline (mesmo padrão visual de "Editar plano" já existente nessa página) — sem modal genérico, porque essa página nunca teve um (mantém a convenção já estabelecida ali). Testado com banco descartável: edita só e-mail, só nome, os dois juntos, rejeita e-mail inválido/em branco/duplicado de outra conta, rejeita chamada vazia, rejeita hostel sem dono, e confirma via `app.test_client()` que a rota exige sessão de admin StayFlow (401 sem sessão). Corrigido ao vivo o cadastro do amigo do usuário como primeiro uso real da feature. |
 
 \---
 
@@ -8543,6 +8545,39 @@ aba do navegador não aceita SVG, só texto/emoji nativo).
 
 
 
+\## 16.55 Dados pessoais da conta (painel interno)
+
+
+
+\*\*Status:\*\* Implementado e validado (v1.159.0, 29/09/2026).
+
+
+
+Nova seção em `admin-hostel.html` (painel interno da StayFlow, não o
+painel do cliente) mostrando nome e e-mail de login da pessoa dona da
+conta, com botão "Editar" — formulário inline revela nome/e-mail
+editáveis, mesmo padrão visual de "Editar plano" já existente na
+página. `database.update_hostel_owner_info(hostel_id, name=None,
+email=None)` edita os dois campos de forma independente, com validação
+de e-mail (formato + unicidade) e nome (não-vazio). Rota `POST
+/stayflow-admin/hostel/\<id\>/owner`, `@require_stayflow_admin`.
+
+
+
+\*\*Motivação real\*\*: um e-mail digitado errado no formulário público
+de solicitação de acesso (`SolicitarAcesso.html`) cria a conta
+normalmente (aprovação + senha temporária funcionam), mas o dono nunca
+mais consegue logar — e não existia nenhuma tela pra corrigir isso sem
+editar o banco direto. Primeira versão implementada foi uma correção
+pontual só de e-mail; generalizada a pedido do usuário pra uma seção
+de dados pessoais de verdade, com edição de nome também.
+
+
+
+\---
+
+
+
 \## 16.18 Critério para atualização
 
 
@@ -10289,4 +10324,4 @@ Este documento é um ativo permanente da empresa e deverá evoluir junto com o p
 
 
 
-\*\*Fim da Versão Oficial 1.158.0\*\*
+\*\*Fim da Versão Oficial 1.159.0\*\*
