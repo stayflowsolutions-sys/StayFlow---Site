@@ -1260,6 +1260,9 @@ async function deleteRoleConfirm(roleId){
     <button data-page="contacts" data-required-permission="chats" data-hide-for-account-kind="promoter" onclick="openPage('contacts',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 5h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4z"/><circle cx="10" cy="11" r="2.5"/><path d="M6 17c.5-2 2-3 4-3s3.5 1 4 3"/><path d="M2 8v8"/></svg></span><span data-i18n="nav.contacts">Contatos</span>
     </button>
+    <button data-page="orcamentos" data-required-permission="chats" data-required-account-kind="agency" data-required-agency-category="automotivo" onclick="openPage('orcamentos',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M9 3h6l1 4H8l1-4z"/><path d="M5 7h14l-1.2 12.1A2 2 0 0 1 15.8 21H8.2a2 2 0 0 1-2-1.9L5 7z"/><path d="M9 11h6"/><path d="M9 15h4"/></svg></span><span data-i18n="nav.orcamentos">Orçamentos</span>
+    </button>
     <button data-page="operations" data-required-account-kind="lodging" onclick="openPage('operations',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20l2-11h4l2 11"/><path d="M9 9 8 4h8l-1 5"/></svg></span><span data-i18n="nav.operations">Operações</span>
     </button>
@@ -2361,6 +2364,25 @@ async function deleteRoleConfirm(roleId){
       </div>
     </div>
     <div id="contactsList" style="display:grid;gap:8px"></div>
+  </div>
+</section>
+
+<!-- ORCAMENTOS (Estetica Automotiva) -->
+<section id="orcamentos" class="page">
+  <div class="grid">
+    <div class="card span-12">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <h2 style="margin:0"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><path d="M9 3h6l1 4H8l1-4z"/><path d="M5 7h14l-1.2 12.1A2 2 0 0 1 15.8 21H8.2a2 2 0 0 1-2-1.9L5 7z"/><path d="M9 11h6"/><path d="M9 15h4"/></svg></span><span data-i18n="orcamentos.title">Orçamentos</span></h2>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 14px" data-i18n="orcamentos.subtitle">Pedidos de orçamento coletados pela IA no WhatsApp — confirme o preço e o status de cada um.</p>
+      <div class="sf-empty" id="orcamentosEmpty">
+        <div>
+          <strong data-i18n="orcamentos.emptyTitle">Nenhum orçamento pendente ainda.</strong>
+          <span data-i18n="orcamentos.emptyDesc">Quando um cliente pedir um serviço pelo WhatsApp, o pedido aparece aqui pra você preencher o preço.</span>
+        </div>
+      </div>
+      <div id="orcamentosList" style="display:grid;gap:8px"></div>
+    </div>
   </div>
 </section>
 
@@ -13856,7 +13878,177 @@ window.openContactModal = async function(contactId){
     <div style="display:flex;justify-content:flex-end;margin-top:14px">
       <button class="btn" type="button" onclick="submitContact(${contactId || "null"})">${T('common.save', 'Salvar')}</button>
     </div>
+    ${contactId && (window.STAYFLOW_SESSION || {}).agency_category === "automotivo" ? `
+      <div class="guest-profile-section" style="margin-top:18px">
+        <h4>${T('contacts.vehicles.title', 'Veículos cadastrados')}</h4>
+        <div id="contactVehiclesList">${T('common.loading', 'Carregando...')}</div>
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <input type="text" id="vehiclePlate" placeholder="${T('contacts.vehicles.platePlaceholder', 'Placa')}" style="background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:9px 10px;text-transform:uppercase">
+          <input type="text" id="vehicleBrand" placeholder="${T('contacts.vehicles.brandPlaceholder', 'Marca')}" style="background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:9px 10px">
+          <input type="text" id="vehicleModel" placeholder="${T('contacts.vehicles.modelPlaceholder', 'Modelo')}" style="background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:9px 10px">
+          <input type="text" id="vehicleColor" placeholder="${T('contacts.vehicles.colorPlaceholder', 'Cor')}" style="background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:9px 10px">
+        </div>
+        <div style="margin-top:8px;display:flex;justify-content:flex-end">
+          <button class="btn secondary" type="button" onclick="addVehicleUI(${contactId})">${T('contacts.vehicles.addBtn', 'Adicionar veículo')}</button>
+        </div>
+        <div id="contactVehicleMessage" class="generic-modal-message"></div>
+      </div>
+    ` : ""}
   `);
+  if(contactId && (window.STAYFLOW_SESSION || {}).agency_category === "automotivo"){
+    loadContactVehicles(contactId);
+  }
+};
+
+window.loadContactVehicles = async function(contactId){
+  const list = document.getElementById("contactVehiclesList");
+  if(!list) return;
+  try{
+    const res = await fetch(`/contacts/${contactId}/vehicles`, { credentials: "same-origin" });
+    const vehicles = res.ok ? await res.json() : [];
+    list.innerHTML = vehicles.length
+      ? vehicles.map(v => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)">
+            <span>${escapeHtml([v.brand, v.model].filter(Boolean).join(" ") || T('contacts.vehicles.unnamed', 'Veículo'))}${v.plate ? ` — ${escapeHtml(v.plate)}` : ""}${v.color ? ` (${escapeHtml(v.color)})` : ""}</span>
+            <button class="btn secondary" type="button" style="padding:4px 10px;font-size:12px" onclick="deleteVehicleUI(${contactId}, ${v.id})">${T('common.delete', 'Excluir')}</button>
+          </div>`).join("")
+      : `<span style="color:var(--muted);font-size:13px">${T('contacts.vehicles.empty', 'Nenhum veículo cadastrado ainda.')}</span>`;
+  }catch(e){
+    list.innerHTML = `<span class="generic-modal-message error">${T('common.connectionError', 'Erro de conexão.')}</span>`;
+  }
+};
+
+window.addVehicleUI = async function(contactId){
+  const msg = document.getElementById("contactVehicleMessage");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+
+  const payload = {
+    plate: document.getElementById("vehiclePlate").value.trim(),
+    brand: document.getElementById("vehicleBrand").value.trim(),
+    model: document.getElementById("vehicleModel").value.trim(),
+    color: document.getElementById("vehicleColor").value.trim(),
+  };
+
+  try{
+    const res = await fetch(`/contacts/${contactId}/vehicles`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      if(msg){ msg.textContent = data.message || T('contacts.vehicles.saveFailed', 'Não foi possível salvar o veículo.'); msg.classList.add("error"); }
+      return;
+    }
+    ["vehiclePlate", "vehicleBrand", "vehicleModel", "vehicleColor"].forEach(id => { document.getElementById(id).value = ""; });
+    loadContactVehicles(contactId);
+  }catch(e){
+    if(msg){ msg.textContent = T('common.connectionError', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+window.deleteVehicleUI = async function(contactId, vehicleId){
+  if(!await stayflowConfirm(T('contacts.vehicles.deleteConfirm', 'Excluir este veículo?'))) return;
+  try{
+    await fetch(`/contacts/${contactId}/vehicles/${vehicleId}`, { method: "DELETE", credentials: "same-origin" });
+    loadContactVehicles(contactId);
+  }catch(e){
+    console.warn("Erro ao excluir veículo:", e);
+  }
+};
+
+// ===== Orcamentos (Estetica Automotiva) =====
+
+function orcamentoStatusLabel(status){
+  const fallback = { pending_price: 'Aguardando preço', quoted: 'Preço definido', approved: 'Aprovado', declined: 'Recusado' };
+  return T(`orcamentos.status.${status}`, fallback[status] || status);
+}
+
+window.loadServiceOrders = async function(){
+  const emptyEl = document.getElementById("orcamentosEmpty");
+  const listEl = document.getElementById("orcamentosList");
+  if(!listEl) return;
+  try{
+    const res = await fetch("/service-orders", { credentials: "same-origin" });
+    const orders = res.ok ? await res.json() : [];
+    if(emptyEl) emptyEl.style.display = orders.length ? "none" : "";
+    listEl.innerHTML = orders.map(o => {
+      const vehicleLabel = [o.vehicle_brand, o.vehicle_model].filter(Boolean).join(" ") + (o.vehicle_plate ? ` (${o.vehicle_plate})` : "");
+      const statusClass = o.status === "pending_price" ? "warm" : (o.status === "declined" ? "hot" : "ok");
+      return `
+        <div class="card" style="padding:14px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+            <div>
+              <strong>${escapeHtml(o.contact_name || "")}</strong>
+              ${o.contact_phone ? `<span style="color:var(--muted);font-size:12px;margin-left:8px">${escapeHtml(o.contact_phone)}</span>` : ""}
+              ${vehicleLabel.trim() ? `<div style="font-size:13px;color:var(--muted);margin-top:2px">${escapeHtml(vehicleLabel)}</div>` : ""}
+              <div style="font-size:13px;margin-top:6px">${escapeHtml(o.requested_services || "")}</div>
+            </div>
+            <span class="status-pill ${statusClass}" style="white-space:nowrap">${orcamentoStatusLabel(o.status)}</span>
+          </div>
+          ${o.status === "pending_price" ? `
+            <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input type="number" step="0.01" min="0" id="orcamentoPrice_${o.id}" placeholder="${T('orcamentos.pricePlaceholder', 'Preço')}" style="max-width:140px;background:#02070d;border:1px solid var(--line);border-radius:10px;color:white;padding:8px 10px">
+              <button class="btn secondary" type="button" style="padding:6px 12px;font-size:12px" onclick="setOrcamentoPriceUI(${o.id})">${T('orcamentos.setPriceBtn', 'Definir preço')}</button>
+            </div>
+          ` : ""}
+          ${o.status === "quoted" ? `
+            <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+              <strong>${(typeof currencySymbol === "function" ? currencySymbol() : "")}${Number(o.price).toFixed(2)}</strong>
+              <div style="display:flex;gap:8px">
+                <button class="btn secondary" type="button" style="padding:6px 12px;font-size:12px" onclick="setOrcamentoStatusUI(${o.id}, 'approved')">${T('orcamentos.approveBtn', 'Aprovar')}</button>
+                <button class="btn secondary" type="button" style="padding:6px 12px;font-size:12px" onclick="setOrcamentoStatusUI(${o.id}, 'declined')">${T('orcamentos.declineBtn', 'Recusar')}</button>
+              </div>
+            </div>
+          ` : ""}
+          <div id="orcamentoMsg_${o.id}" class="generic-modal-message"></div>
+        </div>`;
+    }).join("");
+  }catch(e){
+    listEl.innerHTML = `<p class="generic-modal-message error">${T('common.connectionError', 'Erro de conexão.')}</p>`;
+  }
+};
+
+window.setOrcamentoPriceUI = async function(orderId){
+  const input = document.getElementById(`orcamentoPrice_${orderId}`);
+  const msg = document.getElementById(`orcamentoMsg_${orderId}`);
+  const price = parseFloat(input ? input.value : "");
+  if(msg){ msg.textContent = ""; msg.className = "generic-modal-message"; }
+  if(!price || price <= 0){
+    if(msg){ msg.textContent = T('orcamentos.invalidPrice', 'Informe um preço válido.'); msg.classList.add("error"); }
+    return;
+  }
+  try{
+    const res = await fetch(`/service-orders/${orderId}/price`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ price })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok || !data.success){
+      if(msg){ msg.textContent = data.message || T('orcamentos.saveFailed', 'Não foi possível salvar o preço.'); msg.classList.add("error"); }
+      return;
+    }
+    loadServiceOrders();
+  }catch(e){
+    if(msg){ msg.textContent = T('common.connectionError', 'Erro de conexão.'); msg.classList.add("error"); }
+  }
+};
+
+window.setOrcamentoStatusUI = async function(orderId, status){
+  try{
+    await fetch(`/service-orders/${orderId}/status`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ status })
+    });
+    loadServiceOrders();
+  }catch(e){
+    console.warn("Erro ao atualizar status do orçamento:", e);
+  }
 };
 
 window.submitContact = async function(contactId){
@@ -15547,7 +15739,7 @@ window.deleteFloorPlanUI = async function(planId){
 <script src="assets/js/chats-live.js?v=1127"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1158"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1159"></script>
 <script>
 (function(){
   "use strict";
@@ -15569,6 +15761,7 @@ window.deleteFloorPlanUI = async function(planId){
     team: ["loadTeamList", "loadRolesList", "loadScheduling"],
     guests: ["loadGuests"],
     contacts: ["loadContacts"],
+    orcamentos: ["loadServiceOrders"],
     finance: ["loadFinance", "loadExchangeSummary"],
     inventory: ["loadInventory", "loadSuppliers"],
     revenue: ["loadRevenue"],

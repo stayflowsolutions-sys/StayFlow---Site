@@ -13777,3 +13777,64 @@ constraint UNIQUE que já existe em `users.email`) e nome (não-vazio).
 Testado com banco descartável cobrindo cada combinação (só e-mail, só
 nome, os dois, e cada rejeição), e confirmado que a rota exige sessão
 de admin StayFlow de verdade.
+
+### Módulo Estética Automotiva - cliente + carro + orçamento por WhatsApp (v1.160.0)
+
+Puxado pela mesma conversa do bug de login acima - enquanto resolvíamos
+o e-mail digitado errado, o usuário mencionou que vai instalar a
+StayFlow em duas estéticas automotivas de amigos dele (o motivo
+original de ter criado a categoria de agência "automotivo"). Perguntou
+se a aba de Contatos já registrava o carro do cliente. Fui conferir
+antes de responder - não registrava; o único código com campo de
+veículo era o módulo de Estacionamento, exclusivo de hospedagem,
+inacessível pra conta de agência. Respondi isso primeiro, sem inventar
+que existia.
+
+O pedido veio completo e detalhado de uma vez: "cadastro de cliente,
+carro, serviço contratado... área de portfólio os serviços de
+lavagem... área pra insulfilm... e PPF também... e que o sistema
+colete isso do cliente por WhatsApp e já entregue o orçamento pro dono
+só passar o preço". Entrei em Plan Mode pra desenhar antes de
+escrever código - o modo saiu sozinho no meio da pesquisa (sem eu
+chamar ExitPlanMode), tratei isso como sinal pra seguir em frente com
+pragmatismo em vez de travar pedindo confirmação de novo, já que o
+pedido do usuário já tinha vindo extremamente explícito.
+
+**Achado real que quase virou bug silencioso**: o nome natural pra
+tabela nova de veículo era `vehicles` - só que esse nome já existe,
+usado pelo módulo de Estacionamento (schema completamente diferente:
+guest_id, spot_number, checked_in_at, nada de contact_id). SQLite
+`CREATE TABLE IF NOT EXISTS` com o mesmo nome duas vezes não dá erro
+nenhum - a segunda declaração vira no-op silencioso, e dependendo de
+qual bloco roda primeiro no `create_database()`, um dos dois módulos
+fica com o schema errado do outro. Isso só apareceu numa auditoria
+própria antes do primeiro teste (percebi ao revisar os `grep` de
+`FROM vehicles`/`INTO vehicles` e ver dois grupos de resultado com
+colunas incompatíveis). Renomeei pra `customer_vehicles` antes de
+rodar qualquer teste - sem isso, o primeiro deploy real quebraria
+silenciosamente o Estacionamento de alguma hospedagem existente (ou o
+módulo novo, dependendo da ordem), sem nenhum erro no log.
+
+Reaproveitei bastante convenção já estabelecida: `portfolio_items` é
+genérico o bastante pra cadastrar Lavagem Simples/Completa/Detalhada e
+os graus de Insulfilm/PPF sem nenhuma mudança de schema (o dono
+cadastra normal em Portfólio, zero trabalho extra); o padrão de
+`get_or_create_contact_by_phone` segue o mesmo dedupe já usado em
+`sync_whatsapp_app_contact`; a ferramenta de IA `create_service_quote`
+segue o mesmo formato/disciplina de `CAPTURE_LEAD_TOOL` (nunca inventa
+preço, só coleta e notifica); a nova página "Orçamentos" usa o mesmo
+par `data-required-account-kind`/`data-required-agency-category` já
+usado pro card do Tokko Broker e outras telas exclusivas de
+imobiliária. O preço do orçamento fica sempre `NULL` até o dono
+preencher - nem a ferramenta de IA nem nenhuma rota nova tem como
+setar um valor além de `POST .../price`, testado explicitamente
+(`test_tool_never_has_price_field`).
+
+Testado com banco descartável (21 testes: CRUD de veículo, isolamento
+cross-tenant, dedupe de contato, notificação ao criar orçamento,
+validação de preço/status, filtro por status/hostel) e confirmação de
+que as rotas novas aparecem certas no `app.url_map`. i18n em 11
+idiomas via script (25 chaves x 11 idiomas), paridade confirmada pelo
+checker do projeto. Pendente: uso real quando o usuário instalar nas
+duas estéticas dos amigos dele - esse vai ser o primeiro teste de
+verdade com dado real, igual aconteceu com o bug de login.
