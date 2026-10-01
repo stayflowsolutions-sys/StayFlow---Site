@@ -13838,3 +13838,58 @@ idiomas via script (25 chaves x 11 idiomas), paridade confirmada pelo
 checker do projeto. Pendente: uso real quando o usuário instalar nas
 duas estéticas dos amigos dele - esse vai ser o primeiro teste de
 verdade com dado real, igual aconteceu com o bug de login.
+
+### CSP bloqueando conexão de WhatsApp - primeiro uso real do módulo automotivo (v1.160.1)
+
+Exatamente a previsão do fim da entrada anterior se confirmou: o
+usuário foi instalar a StayFlow num lava-rápido (primeira das
+instalações reais do módulo de Estética Automotiva) e esbarrou num
+problema - mas não no módulo em si, num bug de infraestrutura bem mais
+antigo e bem mais sério, que nunca tinha sido pego porque ninguém
+tinha tentado conectar um WhatsApp novo desde que a CSP foi endurecida.
+
+A sequência de diagnóstico foi longa e valeu a pena documentar o
+caminho: primeiro apareceu "Aplicativo inativo" tentando logar - isso
+era a conta do dono não estar cadastrada como Testador (Evaluador) no
+app da Meta, já que o App Review nunca foi completado (mesma pendência
+do Capítulo 16.56/memória de localização). Resolvido guiando o usuário
+passo a passo pela tela de Roles da Meta (ele no computador, eu sem
+acesso a tela nenhuma, só lendo prints) até aceitar o convite. Depois
+disso, apareceu "defina a opção login com SDK do Java[Script] como
+sim" - outra configuração desligada no painel da Meta (Inicio de
+sesión con Facebook > Configurar > SDK para JavaScript), ativada e
+com o domínio `stayflowsolutions.com` adicionado.
+
+Só depois de resolver essas duas é que apareceu o erro de verdade:
+"Conexión incompleta — intentá de nuevo", tanto no fluxo de número
+novo quanto no de coexistência (número já ativo no app WhatsApp
+Business do celular do dono - importante pro usuário, que não queria
+derrubar o WhatsApp dele). Dar erro nos dois fluxos foi o sinal de que
+não era configuração da Meta, era algo nosso. Pedi pro usuário abrir o
+Console do navegador (F12) e repetir a tentativa - a primeira leitura
+veio cheia de 403 irrelevantes (rotas de hospedagem que uma conta de
+agência não tem permissão de ver, nada a ver com o problema); pedi pra
+limpar o console e repetir só o clique do botão, e aí sim apareceu a
+causa raiz: `Content-Security-Policy` bloqueando
+`www.facebook.com/x/oauth/status` e
+`www.facebook.com/platform/impression.php` - chamadas internas que o
+próprio SDK do Facebook (`sdk.js`) faz durante o Embedded Signup, além
+das chamadas a `graph.facebook.com` que já estavam liberadas.
+
+A CSP (`app.py`, `_CSP_DIRECTIVES`) só previa `connect.facebook.net`
+(onde o SDK carrega) e `graph.facebook.com` (API) no `connect-src` -
+nunca `www.facebook.com`, porque até agora ninguém tinha testado o
+fluxo de Embedded Signup de ponta a ponta com o Console aberto desde
+que essa política foi endurecida (ver Capítulo 18 do Master Context,
+auditoria de segurança anterior). Corrigido adicionando
+`https://www.facebook.com` ao `connect-src`. Esse bug afetava
+QUALQUER conta tentando conectar WhatsApp pela primeira vez, não só o
+lava-rápido - só não tinha aparecido antes porque pouca gente passa
+por esse fluxo específico (a maioria das contas de piloto já tinha
+WhatsApp conectado antes da CSP endurecer).
+
+Lição principal: quando um erro genérico ("conexão incompleta") se
+repete em dois fluxos diferentes do mesmo recurso, é sinal de parar de
+mexer em configuração externa (Meta) e olhar o Console do navegador -
+foi o passo que realmente destravou o diagnóstico, bem mais rápido que
+continuar tentando variações de configuração na Meta às cegas.
