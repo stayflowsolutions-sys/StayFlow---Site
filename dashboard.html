@@ -4431,6 +4431,10 @@ async function deleteRoleConfirm(roleId){
       window.FB.login(function(response){
         window.removeEventListener("message", onMessage);
         const code = response && response.authResponse && response.authResponse.code;
+        // DEBUG TEMPORARIO (01/10/2026) - diagnostico ao vivo de
+        // "Conexao incompleta" apos descartar bloqueio de CSP. Remover
+        // depois que a causa real for identificada.
+        console.log("DEBUG WhatsApp Embedded Signup:", { response: response, code: code, sessionInfo: sessionInfo, finishEvent: finishEvent });
         if(!code || !sessionInfo || !sessionInfo.phone_number_id || !sessionInfo.waba_id){
           if(response && response.authResponse) alert(T('settings.whatsapp.msg.oauthIncomplete', 'Conexão incompleta — tenta de novo.'));
           return;
