@@ -13893,3 +13893,35 @@ repete em dois fluxos diferentes do mesmo recurso, é sinal de parar de
 mexer em configuração externa (Meta) e olhar o Console do navegador -
 foi o passo que realmente destravou o diagnóstico, bem mais rápido que
 continuar tentando variações de configuração na Meta às cegas.
+
+### Redefinir senha de outro membro da equipe - a correção do Marcelo nunca virou feature (v1.161.0)
+
+Usuário pediu pra mudar a senha da Maria Vitória (perdeu acesso) e não
+achou a opção - "a gente fez pra eu mudar a do marcelo, não é possível
+que você fez só pra um login específico e não geral". Ele estava
+certo, e eu precisei confirmar isso investigando o código antes de
+responder qualquer coisa: não existia NENHUMA função geral de
+redefinir a senha de outra pessoa - só autoatendimento
+(`/security/change-password`, exige a senha atual de quem está
+logado) e a senha temporária que só é gerada uma vez, na hora do
+convite inicial (`/team/invite`). O que foi feito pro Marcelo não
+podia ter sido uma feature reaproveitável porque ela simplesmente não
+existia - foi alguma intervenção pontual (provavelmente direto no
+banco), exatamente o tipo de atalho que o usuário já tinha rejeitado
+antes nesta mesma sessão (ver "Dados pessoais da conta", v1.159.0) -
+"nunca fazer ferramenta de uso único quando dá pra fazer geral".
+
+Construí a função de verdade: `admin_reset_user_password` no
+database.py, deliberadamente separada de `update_user_password`
+(autoatendimento) porque o comportamento de `must_change_password`
+precisa ser o OPOSTO - autoatendimento desliga a flag (a pessoa acabou
+de escolher a própria senha de verdade), redefinição por admin LIGA a
+flag de volta (é uma senha temporária, a pessoa é obrigada a trocar no
+próximo login, mesmo contrato do convite inicial). Nova rota
+`POST /team/<membership_id>/reset-password`, mesma permissão "team" já
+usada pro resto da aba Equipe, revoga todas as sessões ativas da
+pessoa (mesmo efeito de segurança de uma troca de senha normal) e
+devolve a senha temporária só uma vez, mesmo padrão visual do convite.
+Testado com banco descartável confirmando que a senha antiga para de
+funcionar, a nova funciona, a flag liga certo, e que não regredi o
+comportamento do autoatendimento no processo.

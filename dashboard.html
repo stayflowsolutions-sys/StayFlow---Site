@@ -647,6 +647,7 @@ async function loadTeamList() {
           <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openRoleChangeForm(${member.membership_id})">${T('team.changeRoleBtn', 'Trocar função')}</button>
           <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openMemberPermissionsForm(${member.membership_id})">${T('team.permissionsBtn', 'Permissões')}</button>
           <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="openMemberActivityLog(${member.membership_id}, '${escapeHtml(member.name).replace(/'/g, "\\'")}')">${T('team.historyBtn', 'Histórico')}</button>
+          <button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="resetMemberPassword(${member.membership_id}, '${escapeHtml(member.name).replace(/'/g, "\\'")}')">${T('team.resetPasswordBtn', 'Redefinir senha')}</button>
           ${member.active
             ? `<button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="deactivateMember(${member.membership_id})">${T('team.deactivateBtn', 'Desativar')}</button>`
             : `<button class="btn secondary" type="button" style="font-size:11px;padding:6px 10px" onclick="reactivateMember(${member.membership_id})">${T('team.reactivateBtn', 'Reativar')}</button>`
@@ -1045,6 +1046,33 @@ async function reactivateMember(membershipId){
   }catch(e){
     console.error("Erro ao reativar:", e);
     alert("Erro de conexão ao reativar.");
+  }
+}
+
+async function resetMemberPassword(membershipId, memberName){
+  if(!await stayflowConfirm(T('team.confirm.resetPassword', 'Redefinir a senha de {name}? A senha atual dela deixa de funcionar na hora.', { name: memberName }))) return;
+
+  try{
+    const res = await fetch(`/team/${membershipId}/reset-password`, {
+      method: "POST",
+      credentials: "same-origin"
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.success){
+      alert(data.message || T('team.msg.resetPasswordFailed', 'Não foi possível redefinir a senha.'));
+      return;
+    }
+
+    openGenericModal(T('team.resetPasswordBtn', 'Redefinir senha'), `
+      <p style="color:#7bffa0;font-weight:700">${T('team.msg.resetPasswordDone', 'Senha redefinida!')}</p>
+      <p style="font-size:13px;color:var(--muted)">${T('team.msg.resetPasswordDoneDesc', 'Compartilhe esta senha temporária com a pessoa — ela será obrigada a trocá-la no próximo acesso. Esta senha não será mostrada novamente.')}</p>
+      <div style="background:#02070d;border:1px solid var(--line);border-radius:12px;padding:12px;font-family:monospace;font-size:15px;text-align:center;user-select:all">${escapeHtml(data.temporary_password)}</div>
+      <button class="btn" type="button" onclick="closeGenericModal(); loadTeamList();">${T('common.close', 'Fechar')}</button>
+    `);
+  }catch(e){
+    console.error("Erro ao redefinir senha:", e);
+    alert(T('common.connectionError', 'Erro de conexão.'));
   }
 }
 
@@ -15743,7 +15771,7 @@ window.deleteFloorPlanUI = async function(planId){
 <script src="assets/js/chats-live.js?v=1127"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1159"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1160"></script>
 <script>
 (function(){
   "use strict";
