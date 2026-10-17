@@ -131,7 +131,16 @@
               <div id="ownerInfoEmail" style="font-size:15px;font-weight:700">—</div>
             </div>
           </div>
-          <button type="button" id="editOwnerInfoBtn" onclick="toggleOwnerInfoEdit(true)">Editar</button>
+          <div style="display:flex;gap:8px">
+            <button type="button" id="editOwnerInfoBtn" onclick="toggleOwnerInfoEdit(true)">Editar</button>
+            <button type="button" id="resetOwnerPasswordBtn" onclick="resetOwnerPassword()" style="background:transparent;border:1px solid var(--line);color:var(--text)">Redefinir senha</button>
+          </div>
+        </div>
+
+        <div id="ownerPasswordResult" style="display:none;margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2,#101826)">
+          <div style="font-size:12px;color:#7bffa0;font-weight:700;margin-bottom:6px">Senha redefinida!</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Repasse esta senha temporária pra pessoa — ela será obrigada a trocá-la no próximo acesso. Esta senha não será mostrada novamente.</div>
+          <div id="ownerPasswordValue" style="background:#02070d;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:monospace;font-size:15px;text-align:center;user-select:all"></div>
         </div>
 
         <form id="editOwnerInfoForm" class="edit-plan-form" style="display:none">
@@ -426,6 +435,7 @@
         document.getElementById("editOwnerInfoForm").style.display = show ? "flex" : "none";
         document.getElementById("editOwnerInfoMsg").textContent = "";
         document.getElementById("editOwnerInfoMsg").className = "";
+        document.getElementById("ownerPasswordResult").style.display = "none";
         if(show){
           document.getElementById("ownerNameInput").value = ownerInfoData.name;
           document.getElementById("ownerEmailInput").value = ownerInfoData.email;
@@ -467,6 +477,32 @@
           submitBtn.disabled = false;
         }
       });
+
+      window.resetOwnerPassword = async function(){
+        if(!await stayflowConfirm("Redefinir a senha de login dessa conta? A senha atual deixa de funcionar na hora.")) return;
+
+        const btn = document.getElementById("resetOwnerPasswordBtn");
+        const resultBox = document.getElementById("ownerPasswordResult");
+        btn.disabled = true;
+        try{
+          const res = await fetch(`/stayflow-admin/hostel/${hostelId}/owner/reset-password`, {
+            method: "POST",
+            credentials: "same-origin",
+          });
+          const d = await res.json();
+          if(!res.ok || !d.success){
+            alert(d.message || "Não foi possível redefinir a senha.");
+            return;
+          }
+          document.getElementById("ownerPasswordValue").textContent = d.temporary_password;
+          resultBox.style.display = "block";
+        }catch(err){
+          console.error(err);
+          alert("Erro de conexão ao redefinir a senha.");
+        }finally{
+          btn.disabled = false;
+        }
+      };
 
       await loadProfile();
     })();

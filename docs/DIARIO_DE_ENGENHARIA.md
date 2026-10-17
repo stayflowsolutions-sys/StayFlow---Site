@@ -13925,3 +13925,36 @@ devolve a senha temporária só uma vez, mesmo padrão visual do convite.
 Testado com banco descartável confirmando que a senha antiga para de
 funcionar, a nova funciona, a flag liga certo, e que não regredi o
 comportamento do autoatendimento no processo.
+
+### Pivô: não era membro de equipe, era conta de Promotor (v1.161.1)
+
+Entreguei a v1.161.0 achando que tinha resolvido - usuário perguntou
+"por que redefinir senha está na aba equipe? não faz nada, só
+responde". Investiguei com ele e descobri o real contexto: Maria
+Vitória não é funcionária de hospedagem nenhuma, é dona de uma conta
+Promotor, e o que ele queria era mudar a senha dela de dentro do
+painel interno (manutenção direta, mesmo estilo da correção de
+e-mail da v1.159.0), não da aba Equipe de um dashboard comum - os dois
+contextos nem se cruzam (a aba Equipe só lista `hostel_memberships` do
+hostel_id da sessão atual; conta Promotor dela é outro hostel_id
+inteiro, com ela mesma como única membership).
+
+Ele também fechou a generalização que eu quase deixei escapar de novo:
+"isso deve valer pra todos os perfis, não só promotor". Por sorte a
+seção que eu ia estender (`admin-hostel.html`, "Dados pessoais da
+conta") já é inerentemente genérica - é a MESMA tela usada pra
+qualquer cliente (lodging/agency/promoter), porque a função que
+resolve "quem é o dono" (`update_hostel_owner_info`) nunca filtrou por
+account_kind. Só precisei extrair essa resolução pra
+`get_hostel_owner_user_id` (reaproveitada) e escrever
+`reset_hostel_owner_password` por cima dela + das funções da v1.161.0
+(`admin_reset_user_password`/`revoke_other_sessions`) - sem duplicar
+nada. Testei explicitamente os 3 tipos de conta (lodging/agency/
+promoter) pra confirmar que não é especial de nenhum.
+
+Lição: a v1.161.0 não estava tecnicamente errada (é uma feature válida,
+vale a pena manter), só resolvia o problema errado - eu assumi
+"membro da equipe perdeu senha" rápido demais sem confirmar ONDE
+exatamente o usuário queria mexer. Perguntar "isso é funcionário seu ou
+dono de outra conta?" antes de escrever qualquer linha teria evitado
+a primeira rodada inteira.
