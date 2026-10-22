@@ -13958,3 +13958,71 @@ vale a pena manter), só resolvia o problema errado - eu assumi
 exatamente o usuário queria mexer. Perguntar "isso é funcionário seu ou
 dono de outra conta?" antes de escrever qualquer linha teria evitado
 a primeira rodada inteira.
+
+### CNPJ saiu, Verificação do Negócio concluída, e nasce o módulo de Métricas Sociais (v1.162.0)
+
+O CNPJ da StayFlow (STAYFLOW SOLUTIONS LTDA) saiu oficialmente, destravando
+de vez a novela de meses da Verificação do Negócio na Meta. Processo guiado
+passo a passo por print (usuário no computador, eu sem acesso a tela
+nenhuma): abrir conta PJ (Banco Inter deu erro recorrente nunca resolvido,
+C6 funcionou), comprovante de endereço do C6 veio com o endereço PESSOAL
+em vez do comercial (corrigido no app do banco), endereço pré-preenchido
+no formulário da Meta ainda trazia resquício de Mendoza/Argentina (trocado
+pelo endereço real de São José dos Campos/SP). Verificado em 21/10/2026 -
+bem mais rápido que os "1-5 dias úteis" estimados.
+
+Com a Verificação do Negócio pronta, a Verificação de Acesso (Tech
+Provider, a trava real do WhatsApp Embedded Signup com contas de
+terceiros, descoberta numa sessão anterior) foi submetida em seguida -
+resposta em até 5 dias.
+
+Retomei a submissão de App Review do Instagram que estava 90% pronta
+desde agosto. 14 permissões na fila - perguntei uma a uma se cada uma
+tinha uso real no produto hoje, e o usuário foi honesto: 6 não tinham
+("poderia fazer" não é "faço"), removidas antes de enviar (`edita la
+solicitud`) pra não arriscar rejeição pedindo permissão sem demonstrar
+uso genuíno. Lição que vale generalizar: numa revisão de app com Meta,
+sempre separar "o que o produto faz hoje" de "o que poderia fazer" antes
+de montar a lista de permissões - a tentação de pedir tudo de uma vez
+("pra não ter que voltar depois") é real, mas sai mais caro em risco de
+rejeição do que valeria a economia de uma segunda rodada de revisão.
+
+No meio dessa triagem, o usuário pediu métricas completas do Instagram
+(seguidores, origem, alcance de post pago, conversão, comentários) -
+perguntei onde no painel isso já aparecia, e a resposta revelou que ele
+queria a feature, não que ela já existisse. Confirmei no código (`grep`
+não achou nada) antes de escrever qualquer descrição pra Meta - feature
+que não existe não pode entrar numa submissão que exige vídeo de uso
+real. Removida também da fila atual, virou tarefa nova.
+
+O usuário então expandiu o pedido ao vivo, duas vezes seguidas: primeiro
+"pra todas as redes, Facebook e Instagram, e OTAs também", depois "não
+só perfil de hotel, todas as versões que a StayFlow já tem". Separei os
+dois pedidos por peso real: redes sociais (Facebook+Instagram) são
+viáveis com a MESMA API da Meta já integrada, OTAs (Booking/Airbnb) são
+um projeto inteiro à parte (cada uma com API própria, aprovação de
+parceiro separada - a da Airbnb em especial é bastante restrita) -
+cancelamos o nome genérico "métricas completas" e documentamos OTAs como
+próximo passo, não construído agora. O "todas as versões" acabou sendo
+de graça: `facebook_page_id`/`instagram_business_id` já são colunas
+genéricas em `hostels`, sem filtro de account_kind - qualquer conta que
+conectar essas redes automaticamente tem acesso ao painel novo.
+
+Pesquisa técnica real antes de codar qualquer coisa: a API de Insights
+tanto do Instagram (abril/2025) quanto da Página do Facebook (15/06/2026,
+JÁ PASSADO na data de hoje) passou por depreciações grandes - "impressions"
+foi substituído por "views" nos dois, e várias métricas de alcance único
+foram removidas. Como nem a documentação oficial da Meta estava 100%
+clara sobre os nomes finais (confirmado até por ferramentas de terceiros
+especializadas em rastrear essas mudanças), decidi construir toda função
+nova como best-effort: cada chamada de métrica individual isolada em
+try/except, devolvendo `None` em vez de derrubar o painel inteiro -
+filosofia já estabelecida no projeto (ver `create_vehicles`/`reset-password`
+desta mesma sessão), reaplicada aqui por necessidade real de uma API que
+muda de nome com frequência, não só por hábito.
+
+Construído: 5 funções novas em `meta_oauth_service.py`, rota
+`GET /settings/social-metrics`, página nova "Métricas Sociais" no menu
+(sem trava de account_kind), 13 chaves de i18n x 11 idiomas. Testado com
+mocks confirmando que falha de rede/API em qualquer chamada nunca propaga
+exceção - sempre degrada pra `None`/lista vazia.

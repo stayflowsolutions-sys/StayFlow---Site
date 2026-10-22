@@ -1315,6 +1315,9 @@ async function deleteRoleConfirm(roleId){
     <button data-page="reports" data-hide-for-account-kind="promoter,agency" onclick="openPage('reports',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M5 19V5"/><path d="M9 19v-7"/><path d="M13 19V8"/><path d="M17 19v-4"/></svg></span><span data-i18n="nav.reports">Relatórios</span>
     </button>
+    <button data-page="socialMetrics" data-required-permission="settings" onclick="openPage('socialMetrics',this)">
+      <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><path d="M6.5 10v4a2 2 0 0 0 2 2H11"/><circle cx="17.5" cy="17.5" r="3.5"/></svg></span><span data-i18n="nav.socialMetrics">Métricas Sociais</span>
+    </button>
     <button data-page="settings" onclick="openPage('settings',this)">
       <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 2.9a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L5.1 11a7 7 0 0 0 0 2l-2 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1l.4 2.9h4.8l.4-2.9a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6a7 7 0 0 0 .1-1z"/></svg></span><span data-i18n="nav.settings">Configurações</span>
     </button>
@@ -2800,6 +2803,70 @@ async function deleteRoleConfirm(roleId){
         </div>
         <div id="reportsDailyActions" style="display:grid;gap:8px"></div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- METRICAS SOCIAIS (v1.162.0) - generico pra qualquer tipo de conta,
+     mostra o que estiver conectado (Instagram e/ou Facebook) -->
+<section id="socialMetrics" class="page">
+  <div class="grid">
+    <div class="card span-12">
+      <h2 style="margin:0 0 4px"><span class="nav-ico" style="display:inline-flex;vertical-align:middle;margin-right:8px;color:#0b84ff"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><path d="M6.5 10v4a2 2 0 0 0 2 2H11"/><circle cx="17.5" cy="17.5" r="3.5"/></svg></span><span data-i18n="socialMetrics.title">Métricas Sociais</span></h2>
+      <p style="color:var(--muted);font-size:13px;margin:0" data-i18n="socialMetrics.subtitle">Desempenho do Instagram e Facebook conectados a essa conta.</p>
+    </div>
+
+    <div class="card span-12" id="socialMetricsNoneConnected" style="display:none">
+      <div class="sf-empty">
+        <div>
+          <strong data-i18n="socialMetrics.noneTitle">Nenhuma rede social conectada ainda.</strong>
+          <span data-i18n="socialMetrics.noneDesc">Conecte o Instagram e/ou Facebook em Configurações → Comunicação pra ver as métricas aqui.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card span-12" id="socialMetricsInstagramCard" style="display:none">
+      <h3 style="margin:0 0 12px;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1"/></svg> Instagram</h3>
+      <div class="grid" style="margin-bottom:14px">
+        <div class="card span-3 kpi">
+          <div class="label" data-i18n="socialMetrics.followers">Seguidores</div>
+          <div class="value" id="igFollowersCount">—</div>
+        </div>
+        <div class="card span-3 kpi">
+          <div class="label" data-i18n="socialMetrics.reach">Alcance (dia)</div>
+          <div class="value" id="igReach">—</div>
+        </div>
+        <div class="card span-3 kpi">
+          <div class="label" data-i18n="socialMetrics.views">Visualizações (dia)</div>
+          <div class="value" id="igViews">—</div>
+        </div>
+        <div class="card span-3 kpi">
+          <div class="label" data-i18n="socialMetrics.profileViews">Visitas ao perfil</div>
+          <div class="value" id="igProfileViews">—</div>
+        </div>
+      </div>
+      <div id="igDemographicsBlock" style="margin-bottom:14px;display:none">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px" data-i18n="socialMetrics.followersFrom">De onde vêm os seguidores</div>
+        <div id="igDemographicsList" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px" data-i18n="socialMetrics.recentPosts">Posts recentes</div>
+      <div id="igPostsList" style="display:grid;gap:8px"></div>
+    </div>
+
+    <div class="card span-12" id="socialMetricsFacebookCard" style="display:none">
+      <h3 style="margin:0 0 12px;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg> Facebook</h3>
+      <div class="grid" style="margin-bottom:14px">
+        <div class="card span-4 kpi">
+          <div class="label" data-i18n="socialMetrics.followers">Seguidores</div>
+          <div class="value" id="fbFollowersCount">—</div>
+        </div>
+        <div class="card span-4 kpi">
+          <div class="label" data-i18n="socialMetrics.likes">Curtidas da Página</div>
+          <div class="value" id="fbFanCount">—</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px" data-i18n="socialMetrics.recentPosts">Posts recentes</div>
+      <div id="fbPostsList" style="display:grid;gap:8px"></div>
     </div>
   </div>
 </section>
@@ -9558,6 +9625,89 @@ async function loadReportsDailySummary(){
   }
 }
 
+// Metricas Sociais (v1.162.0) - generico pra qualquer tipo de conta,
+// mostra Instagram e/ou Facebook conforme o que estiver conectado.
+function socialMetricValue(value){
+  return (value === null || value === undefined) ? "—" : value.toLocaleString();
+}
+
+window.loadSocialMetrics = async function(){
+  const noneCard = document.getElementById("socialMetricsNoneConnected");
+  const igCard = document.getElementById("socialMetricsInstagramCard");
+  const fbCard = document.getElementById("socialMetricsFacebookCard");
+
+  try{
+    const res = await fetch("/settings/social-metrics", { credentials: "same-origin" });
+    const data = await res.json();
+    if(!data.success) return;
+
+    const hasInstagram = Boolean(data.instagram);
+    const hasFacebook = Boolean(data.facebook);
+
+    if(noneCard) noneCard.style.display = (!hasInstagram && !hasFacebook) ? "" : "none";
+
+    if(igCard){
+      igCard.style.display = hasInstagram ? "" : "none";
+      if(hasInstagram){
+        const ig = data.instagram;
+        document.getElementById("igFollowersCount").textContent = socialMetricValue(ig.followers_count);
+        document.getElementById("igReach").textContent = socialMetricValue(ig.reach);
+        document.getElementById("igViews").textContent = socialMetricValue(ig.views);
+        document.getElementById("igProfileViews").textContent = socialMetricValue(ig.profile_views);
+
+        const demoBlock = document.getElementById("igDemographicsBlock");
+        const demoList = document.getElementById("igDemographicsList");
+        if(ig.demographics && ig.demographics.length){
+          demoBlock.style.display = "";
+          demoList.innerHTML = ig.demographics
+            .slice(0, 8)
+            .map(d => `<span class="status-pill cold">${escapeHtml(d.country || "?")}: ${socialMetricValue(d.value)}</span>`)
+            .join("");
+        } else if(demoBlock){
+          demoBlock.style.display = "none";
+        }
+
+        const postsList = document.getElementById("igPostsList");
+        const posts = ig.recent_posts || [];
+        postsList.innerHTML = posts.length
+          ? posts.map(p => `
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+                <div style="flex:1;min-width:0">
+                  <a href="${p.permalink || '#'}" target="_blank" rel="noopener" style="font-size:13px;color:#f7fbff;text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.caption || "(sem legenda)")}</a>
+                  <div style="font-size:11px;color:var(--muted)">${p.timestamp ? new Date(p.timestamp).toLocaleDateString() : ""}</div>
+                </div>
+                <div style="font-size:11px;color:var(--muted);white-space:nowrap">👁 ${socialMetricValue(p.reach)} · ❤ ${socialMetricValue(p.likes)} · 💬 ${socialMetricValue(p.comments)} · 🔖 ${socialMetricValue(p.saved)}</div>
+              </div>`).join("")
+          : `<span style="color:var(--muted);font-size:13px">${T('socialMetrics.noPosts', 'Nenhum post encontrado ainda.')}</span>`;
+      }
+    }
+
+    if(fbCard){
+      fbCard.style.display = hasFacebook ? "" : "none";
+      if(hasFacebook){
+        const fb = data.facebook;
+        document.getElementById("fbFollowersCount").textContent = socialMetricValue(fb.followers_count);
+        document.getElementById("fbFanCount").textContent = socialMetricValue(fb.fan_count);
+
+        const postsList = document.getElementById("fbPostsList");
+        const posts = fb.recent_posts || [];
+        postsList.innerHTML = posts.length
+          ? posts.map(p => `
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+                <div style="flex:1;min-width:0">
+                  <a href="${p.permalink_url || '#'}" target="_blank" rel="noopener" style="font-size:13px;color:#f7fbff;text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.message || "(sem texto)")}</a>
+                  <div style="font-size:11px;color:var(--muted)">${p.created_time ? new Date(p.created_time).toLocaleDateString() : ""}</div>
+                </div>
+                <div style="font-size:11px;color:var(--muted);white-space:nowrap">👁 ${socialMetricValue(p.views)} · 👥 ${socialMetricValue(p.engaged_users)}</div>
+              </div>`).join("")
+          : `<span style="color:var(--muted);font-size:13px">${T('socialMetrics.noPosts', 'Nenhum post encontrado ainda.')}</span>`;
+      }
+    }
+  }catch(e){
+    console.warn("Erro ao carregar Metricas Sociais:", e);
+  }
+};
+
 // Grafico de linha simples em Canvas nativo (mesmo estilo do
 // growthCanvas do painel interno da StayFlow) - 3 series finas
 // (mensagens recebidas/conversas/conversoes) sem biblioteca externa,
@@ -15771,7 +15921,7 @@ window.deleteFloorPlanUI = async function(planId){
 <script src="assets/js/chats-live.js?v=1127"></script>
 
 <script src="assets/js/i18n-core.js?v=1125"></script>
-<script src="assets/js/i18n-dashboard-data.js?v=1160"></script>
+<script src="assets/js/i18n-dashboard-data.js?v=1161"></script>
 <script>
 (function(){
   "use strict";
@@ -15802,6 +15952,7 @@ window.deleteFloorPlanUI = async function(planId){
     agenda: ["loadAgendaVisits"],
     partners: ["loadPartners"],
     reports: ["loadReports"],
+    socialMetrics: ["loadSocialMetrics"],
     settings: ["hydrateSettingsFromBackend", "loadGeneralSettingsSummary", "loadOwnerModeSummary", "loadGoogleReviewSummary", "loadWhatsappSettings", "loadBeds24Settings", "loadOutboundWebhookSettings", "loadFacebookSettings", "loadInstagramSettings", "loadNuvemshopSettings", "loadBillingSummary"]
   };
 
